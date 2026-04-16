@@ -1,6 +1,7 @@
 import json
 import logging
 import os
+import urllib.parse
 
 from django.conf import settings
 from django.core.exceptions import BadRequest
@@ -150,15 +151,26 @@ class LocationAddView( HiModalView ):
         request.view_parameters.view_type = ViewType.LOCATION_VIEW
         request.view_parameters.update_location_view( location_view )
         request.view_parameters.to_session( request )
-        
-        redirect_url = reverse('home')
+
+        return self.post_create_redirect( request, location, location_view )
+
+    def post_create_redirect( self, request, location, location_view ):
+        side_url = reverse( 'location_edit_mode', kwargs={ 'location_id': location.id } )
+        redirect_url = (
+            reverse( 'home' )
+            + '?' + urllib.parse.urlencode({ HiSideView.SIDE_URL_PARAM_NAME: side_url })
+        )
         return antinode.redirect_response( redirect_url )
 
-    
+
 class LocationAddFirstView( LocationAddView ):
 
     def get_template_name( self ) -> str:
         return 'location/edit/modals/location_add_first.html'
+
+    def post_create_redirect( self, request, location, location_view ):
+        redirect_url = reverse( 'home' )
+        return antinode.redirect_response( redirect_url )
 
     
 @method_decorator( edit_required, name='dispatch' )

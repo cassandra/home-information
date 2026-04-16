@@ -46,16 +46,23 @@ class LocationSvgFileForm( SvgFileForm ):
     
 class LocationAddForm( LocationSvgFileForm ):
 
-    # N.B. When adding a Location, we use limited field options to
-    # keep it simpler.
-        
+    DEFAULT_BACKGROUND_TEMPLATE = 'blank.html'
+
     name = forms.CharField(
-        label = 'Location Name',
+        label = 'Name',
         required = True,
+        widget = forms.TextInput( attrs={ 'class': 'form-control', 'style': 'min-width: 20rem;' } ),
     )
 
     def allow_default_svg_file(self):
         return True
+
+    def get_default_svg_content(self):
+        template_name = os.path.join(
+            self.BACKGROUNDS_TEMPLATE_DIR,
+            self.DEFAULT_BACKGROUND_TEMPLATE,
+        )
+        return render_to_string( template_name )
 
     
 class LocationSvgTemplateForm( LocationSvgFileForm ):

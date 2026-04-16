@@ -125,7 +125,7 @@ class TestLocationAddView(DualModeViewTestCase):
         
         data = response.json()
         home_url = reverse('home')
-        self.assertEqual(data['location'], home_url)
+        self.assertTrue(data['location'].startswith(home_url))
         
         # Test that new Location was created
         self.assertEqual(Location.objects.count(), initial_location_count + 1)

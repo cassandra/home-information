@@ -48,7 +48,10 @@ class LocationViewDefaultView( View ):
             )
         except LocationView.DoesNotExist:
             redirect_url = reverse( 'start' )
-            
+
+        query_string = request.META.get( 'QUERY_STRING', '' )
+        if query_string:
+            redirect_url = redirect_url + '?' + query_string
         return HttpResponseRedirect( redirect_url )
 
     

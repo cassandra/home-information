@@ -1033,6 +1033,13 @@ g[hover] {
     margin-top: 0.25rem;
     line-height: 1.3;
 }
+.getting-started-guide a:not(.plain) {
+    color: var(--primary-color);
+    text-decoration: underline;
+}
+.getting-started-guide a:not(.plain):hover {
+    color: var(--primary-highlight-color);
+}
 
 .getting-started-guide .help-hint {
     display: flex;

@@ -177,6 +177,9 @@ class HomeView( View ):
             redirect_url = reverse( 'collection_view_default' )
         else:
             redirect_url = reverse( 'location_view_default' )
+        query_string = request.META.get( 'QUERY_STRING', '' )
+        if query_string:
+            redirect_url = redirect_url + '?' + query_string
         return HttpResponseRedirect( redirect_url )
         
         
