@@ -4,6 +4,7 @@ import os
 
 from django.conf import settings
 from django.core.exceptions import BadRequest
+from django.core.files.storage import default_storage
 from django.db import transaction
 from django.http import Http404, HttpResponse, HttpResponseNotAllowed, HttpResponseRedirect
 from django.shortcuts import render
@@ -749,6 +750,38 @@ class LocationSvgEditSaveView( View, LocationViewMixin ):
 
         LocationManager().save_draft_svg( location, svg_content )
         return HttpResponse( 'OK' )
+
+
+@method_decorator( edit_required, name='dispatch' )
+class LocationSvgEditExportView( View, LocationViewMixin ):
+
+    def get( self, request, *args, **kwargs ):
+        location = self.get_location( request, *args, **kwargs )
+        manager = LocationManager()
+
+        draft_filename = manager.get_draft_svg_filename( location )
+        if not default_storage.exists( draft_filename ):
+            raise BadRequest( 'No draft to export.' )
+
+        with default_storage.open( draft_filename, 'r' ) as f:
+            draft_content = f.read()
+
+        session_key = f'{LocationSvgEditView.SVG_EDIT_VIEWBOX_SESSION_PREFIX}{location.id}'
+        viewbox_str = request.session.get( session_key, location.svg_view_box_str )
+
+        svg_content = (
+            '<?xml version="1.0" encoding="utf-8"?>\n'
+            f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="{viewbox_str}">\n'
+            f'{draft_content}\n'
+            '</svg>\n'
+        )
+
+        safe_name = location.name.lower().replace( ' ', '-' )
+        filename = f'background-{safe_name}.svg'
+
+        response = HttpResponse( svg_content, content_type='image/svg+xml' )
+        response['Content-Disposition'] = f'attachment; filename="{filename}"'
+        return response
 
 
 @method_decorator( edit_required, name='dispatch' )
