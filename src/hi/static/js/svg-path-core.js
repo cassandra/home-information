@@ -59,6 +59,7 @@
     let gConfig = null;
     let gSelectedPathSvgGroup = null;
     let gSvgPathEditData = null;
+    let gDragData = null;
     let gIgnoreClick = false;
 
     let uniqueIdCounter = 0;
@@ -72,6 +73,18 @@
 
         init: function( config ) {
             gConfig = config;
+        },
+
+        handleSinglePointerEventStart: function( singlePointerEvent ) {
+            return _handleSinglePointerEventStart( singlePointerEvent );
+        },
+
+        handleSinglePointerEventMove: function( singlePointerEvent ) {
+            return _handleSinglePointerEventMove( singlePointerEvent );
+        },
+
+        handleSinglePointerEventEnd: function( singlePointerEvent ) {
+            return _handleSinglePointerEventEnd( singlePointerEvent );
         },
 
         handleClick: function( event ) {
@@ -106,6 +119,111 @@
     };
 
     window.Hi.SvgPathCore = HiSvgPathCore;
+
+    /* ==================== */
+    /* Pointer Event Handling */
+    /* ==================== */
+
+    function _handleSinglePointerEventStart( singlePointerEvent ) {
+        if ( ! gSvgPathEditData ) { return false; }
+
+        var target = singlePointerEvent.start.event.target;
+        if ( ! $( target ).hasClass( PROXY_POINT_CLASS ) ) { return false; }
+
+        var baseSvgElement = $( gConfig.baseSvgSelector );
+        var eventSvgPoint = Hi.svgUtils.toSvgPoint( baseSvgElement,
+                                                     singlePointerEvent.start.x,
+                                                     singlePointerEvent.start.y );
+
+        var proxyPoint = target;
+        var offsetX = eventSvgPoint.x - parseFloat( $( proxyPoint ).attr( 'cx' ) );
+        var offsetY = eventSvgPoint.y - parseFloat( $( proxyPoint ).attr( 'cy' ) );
+
+        var beforeProxyLine = getPrecedingProxyLine( proxyPoint );
+        var afterProxyLine = getFollowingProxyLine( proxyPoint );
+
+        gDragData = {
+            proxyPoint: proxyPoint,
+            baseSvgElement: baseSvgElement,
+            offsetX: offsetX,
+            offsetY: offsetY,
+            beforeProxyLine: beforeProxyLine,
+            afterProxyLine: afterProxyLine,
+            isDragging: false,
+            lastSvgPoint: null,
+        };
+        return true;
+    }
+
+    function _handleSinglePointerEventMove( singlePointerEvent ) {
+        if ( ! gDragData ) { return false; }
+
+        var baseSvgElement = gDragData.baseSvgElement;
+        var eventSvgPoint = Hi.svgUtils.toSvgPoint( baseSvgElement,
+                                                     singlePointerEvent.last.x,
+                                                     singlePointerEvent.last.y );
+
+        var distanceX = Math.abs( singlePointerEvent.last.x - singlePointerEvent.start.x );
+        var distanceY = Math.abs( singlePointerEvent.last.y - singlePointerEvent.start.y );
+
+        if ( ! gDragData.isDragging
+             && distanceX <= CURSOR_MOVEMENT_THRESHOLD_PIXELS
+             && distanceY <= CURSOR_MOVEMENT_THRESHOLD_PIXELS ) {
+            return true;
+        }
+
+        gDragData.isDragging = true;
+        gSvgPathEditData.dragProxyPoint = gDragData.proxyPoint;
+
+        var proxyPoint = gDragData.proxyPoint;
+        var ctrlKey = singlePointerEvent.last.event ? singlePointerEvent.last.event.ctrlKey : false;
+
+        if ( ctrlKey ) {
+            if ( ! gDragData.lastSvgPoint ) {
+                gDragData.lastSvgPoint = {
+                    x: eventSvgPoint.x - gDragData.offsetX,
+                    y: eventSvgPoint.y - gDragData.offsetY,
+                };
+            }
+            var newPos = {
+                x: eventSvgPoint.x - gDragData.offsetX,
+                y: eventSvgPoint.y - gDragData.offsetY,
+            };
+            var deltaCx = newPos.x - gDragData.lastSvgPoint.x;
+            var deltaCy = newPos.y - gDragData.lastSvgPoint.y;
+            gDragData.lastSvgPoint = newPos;
+            moveAllProxyPoints( deltaCx, deltaCy );
+            setActionStateAttr( 'move' );
+        } else {
+            var newCx = eventSvgPoint.x - gDragData.offsetX;
+            var newCy = eventSvgPoint.y - gDragData.offsetY;
+            $( proxyPoint ).attr( 'cx', newCx ).attr( 'cy', newCy );
+
+            if ( gDragData.beforeProxyLine.length > 0 ) {
+                gDragData.beforeProxyLine.attr( 'x2', newCx ).attr( 'y2', newCy );
+            }
+            if ( gDragData.afterProxyLine.length > 0 ) {
+                gDragData.afterProxyLine.attr( 'x1', newCx ).attr( 'y1', newCy );
+            }
+            setActionStateAttr( '' );
+        }
+
+        setSelectedProxyElement( proxyPoint );
+        return true;
+    }
+
+    function _handleSinglePointerEventEnd( singlePointerEvent ) {
+        if ( ! gDragData ) { return false; }
+
+        saveSvgPath();
+        gSvgPathEditData.dragProxyPoint = null;
+        setActionStateAttr( '' );
+        if ( gDragData.isDragging ) {
+            gIgnoreClick = true;
+        }
+        gDragData = null;
+        return true;
+    }
 
     /* ==================== */
     /* Click Handling       */
@@ -702,89 +820,10 @@
     /* ==================== */
 
     function addProxyPointEventHandler( proxyPoint, beforeProxyLine, afterProxyLine ) {
-        $( proxyPoint ).on( 'mousedown', function( event ) {
-            event.preventDefault();
-            event.stopImmediatePropagation();
-
-            var startMousePosition = { x: event.clientX, y: event.clientY };
-            var baseSvgElement = $( gConfig.baseSvgSelector );
-            var eventSvgPoint = Hi.svgUtils.toSvgPoint( baseSvgElement, event.clientX, event.clientY );
-
-            var offsetX = eventSvgPoint.x - parseFloat( $( proxyPoint ).attr( 'cx' ) );
-            var offsetY = eventSvgPoint.y - parseFloat( $( proxyPoint ).attr( 'cy' ) );
-
-            var isDragging = false;
-
-            var lastSvgPoint = null;
-
-            function onMouseMove( event ) {
-                if ( ! gSvgPathEditData ) { return; }
-
-                var currentMousePosition = { x: event.clientX, y: event.clientY };
-                var distanceX = Math.abs( currentMousePosition.x - startMousePosition.x );
-                var distanceY = Math.abs( currentMousePosition.y - startMousePosition.y );
-
-                if ( isDragging
-                     || distanceX > CURSOR_MOVEMENT_THRESHOLD_PIXELS
-                     || distanceY > CURSOR_MOVEMENT_THRESHOLD_PIXELS ) {
-                    isDragging = true;
-                    event.preventDefault();
-                    event.stopImmediatePropagation();
-
-                    var eventSvgPoint = Hi.svgUtils.toSvgPoint( baseSvgElement,
-                                                                 event.clientX, event.clientY );
-
-                    gSvgPathEditData.dragProxyPoint = event.target;
-
-                    if ( event.ctrlKey ) {
-                        /* CTRL+drag: move all proxy points by the same delta. */
-                        if ( ! lastSvgPoint ) {
-                            lastSvgPoint = { x: eventSvgPoint.x - offsetX, y: eventSvgPoint.y - offsetY };
-                        }
-                        var newPos = { x: eventSvgPoint.x - offsetX, y: eventSvgPoint.y - offsetY };
-                        var deltaCx = newPos.x - lastSvgPoint.x;
-                        var deltaCy = newPos.y - lastSvgPoint.y;
-                        lastSvgPoint = newPos;
-                        moveAllProxyPoints( deltaCx, deltaCy );
-                        setActionStateAttr( 'move' );
-                    } else {
-                        /* Normal drag: move only the dragged point. */
-                        var newCx = eventSvgPoint.x - offsetX;
-                        var newCy = eventSvgPoint.y - offsetY;
-                        $( proxyPoint ).attr( 'cx', newCx ).attr( 'cy', newCy );
-
-                        if ( $( beforeProxyLine ).length > 0 ) {
-                            $( beforeProxyLine ).attr( 'x2', newCx ).attr( 'y2', newCy );
-                        }
-                        if ( $( afterProxyLine ).length > 0 ) {
-                            $( afterProxyLine ).attr( 'x1', newCx ).attr( 'y1', newCy );
-                        }
-                        setActionStateAttr( '' );
-                    }
-
-                    setSelectedProxyElement( proxyPoint );
-                }
-            }
-
-            function onMouseUp( event ) {
-                if ( ! gSvgPathEditData ) { return; }
-
-                event.preventDefault();
-                event.stopImmediatePropagation();
-                saveSvgPath();
-                gSvgPathEditData.dragProxyPoint = null;
-                lastSvgPoint = null;
-                setActionStateAttr( '' );
-                if ( isDragging ) {
-                    gIgnoreClick = true;
-                }
-                $( document ).off( 'mousemove', onMouseMove );
-                $( document ).off( 'mouseup', onMouseUp );
-            }
-
-            $( document ).on( 'mousemove', onMouseMove );
-            $( document ).on( 'mouseup', onMouseUp );
-        });
+        /* Proxy point drag is now handled via the centralized pointer event
+           dispatch in svg-bg-event-listeners.js. This function is retained for
+           the call sites that set up proxy point structure, but no longer
+           attaches per-element mouse handlers. */
     }
 
     /* ==================== */

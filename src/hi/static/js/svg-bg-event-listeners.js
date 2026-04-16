@@ -269,6 +269,9 @@
     function dispatchSinglePointerEventStart( currentEvent, singlePointerEvent ) {
         var handled = Hi.SvgIconCore.handleSinglePointerEventStart( singlePointerEvent );
         if ( ! handled ) {
+            handled = Hi.SvgPathCore.handleSinglePointerEventStart( singlePointerEvent );
+        }
+        if ( ! handled ) {
             handled = Hi.SvgPanZoomCore.handleSinglePointerEventStart( singlePointerEvent.start.event );
         }
         if ( handled && currentEvent ) {
@@ -278,7 +281,9 @@
 
     function dispatchSinglePointerEventMove( currentEvent, singlePointerEvent ) {
         var handled = Hi.SvgIconCore.handleSinglePointerEventMove( singlePointerEvent );
-        /* Future: try path-core */
+        if ( ! handled ) {
+            handled = Hi.SvgPathCore.handleSinglePointerEventMove( singlePointerEvent );
+        }
         if ( ! handled ) {
             handled = Hi.SvgPanZoomCore.handleSinglePointerEventMove(
                 singlePointerEvent.start.event, singlePointerEvent.last.event );
@@ -290,6 +295,9 @@
 
     function dispatchSinglePointerEventEnd( currentEvent, singlePointerEvent ) {
         var handled = Hi.SvgIconCore.handleSinglePointerEventEnd( singlePointerEvent );
+        if ( ! handled ) {
+            handled = Hi.SvgPathCore.handleSinglePointerEventEnd( singlePointerEvent );
+        }
         if ( ! handled ) {
             handled = Hi.SvgPanZoomCore.handleSinglePointerEventEnd();
         }
