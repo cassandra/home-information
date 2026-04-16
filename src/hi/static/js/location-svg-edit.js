@@ -202,7 +202,34 @@
     /* Draft Save           */
     /* ==================== */
 
-    var PROXY_PATH_CONTAINER_ID = 'hi-proxy-path-container';
+    function cleanCloneForSave( clone ) {
+        /* Remove proxy path editing containers. */
+        var proxies = clone.querySelectorAll( '#hi-proxy-path-container' );
+        for ( var i = 0; i < proxies.length; i++ ) {
+            proxies[i].parentNode.removeChild( proxies[i] );
+        }
+
+        /* Remove editing highlight classes. */
+        var highlighted = clone.querySelectorAll( '.highlighted' );
+        for ( var i = 0; i < highlighted.length; i++ ) {
+            highlighted[i].classList.remove( 'highlighted' );
+        }
+
+        /* Remove action-state attributes. */
+        var withActionState = clone.querySelectorAll( '[action-state]' );
+        for ( var i = 0; i < withActionState.length; i++ ) {
+            withActionState[i].removeAttribute( 'action-state' );
+        }
+
+        /* Remove any display:none from hidden path groups (during proxy editing). */
+        var hidden = clone.querySelectorAll( '[style*="display"]' );
+        for ( var i = 0; i < hidden.length; i++ ) {
+            hidden[i].style.removeProperty( 'display' );
+            if ( ! hidden[i].getAttribute( 'style' ) ) {
+                hidden[i].removeAttribute( 'style' );
+            }
+        }
+    }
 
     function saveDraft() {
         var canvasSvg = document.getElementById( CANVAS_SVG_ID );
@@ -211,20 +238,10 @@
         var editorGroup = canvasSvg.querySelector( 'g[data-hi-editor]' );
         if ( ! editorGroup ) { return; }
 
-        /* Temporarily remove proxy editing elements before serializing. */
-        var proxyContainer = document.getElementById( PROXY_PATH_CONTAINER_ID );
-        var proxyParent = null;
-        if ( proxyContainer ) {
-            proxyParent = proxyContainer.parentNode;
-            proxyParent.removeChild( proxyContainer );
-        }
-
-        var svgContent = editorGroup.outerHTML;
-
-        /* Restore proxy elements. */
-        if ( proxyContainer && proxyParent ) {
-            proxyParent.appendChild( proxyContainer );
-        }
+        /* Clone and clean: serialize a pristine copy without editing artifacts. */
+        var clone = editorGroup.cloneNode( true );
+        cleanCloneForSave( clone );
+        var svgContent = clone.outerHTML;
 
         if ( ! Hi.SvgEdit.saveUrl ) { return; }
 
