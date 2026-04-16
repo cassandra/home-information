@@ -1,0 +1,145 @@
+{% extends "modals/action_done.html" %}
+{% load icons %}
+
+{% block modal_dialog_class %}hi-modal-dialog-700{% endblock %}
+
+{% block title_text %}
+Background Editor Help
+{% endblock %}
+
+{% block body %}
+
+<div class="editing-help-guide">
+    <div class="guide-header">
+        {% icon "edit" size="lg" color="primary" %}
+        <h5>Quick Reference Guide</h5>
+    </div>
+
+    <div class="editing-help-categories">
+        <!-- Adding Elements -->
+        <div class="help-category">
+            <div class="category-header">
+                <div class="category-icon">
+                    {% icon "plus" size="sm" color="primary" %}
+                </div>
+                <h6 class="category-title">Adding Elements</h6>
+            </div>
+            <ul class="help-actions">
+                <li>
+                    <span class="action-method">Drag from Palette</span>
+                    <span class="action-description">Drop onto canvas to add</span>
+                </li>
+            </ul>
+        </div>
+
+        <!-- Canvas Navigation -->
+        <div class="help-category">
+            <div class="category-header">
+                <div class="category-icon">
+                    {% icon "move" size="sm" color="primary" %}
+                </div>
+                <h6 class="category-title">Canvas Navigation</h6>
+            </div>
+            <ul class="help-actions">
+                <li>
+                    <span class="action-method">Click & Drag</span>
+                    <span class="action-description">Pan the canvas</span>
+                </li>
+                <li>
+                    <span class="action-method">Mouse Wheel</span>
+                    <span class="action-description">Zoom in/out</span>
+                </li>
+                <li>
+                    <span class="action-method">+ / -</span>
+                    <span class="action-description">Zoom in/out</span>
+                </li>
+            </ul>
+        </div>
+
+        <!-- Icon Editing (Doors, Windows) -->
+        <div class="help-category">
+            <div class="category-header">
+                <div class="category-icon">
+                    {% icon "zoom" size="sm" color="primary" %}
+                </div>
+                <h6 class="category-title">Icon Editing</h6>
+            </div>
+            <ul class="help-actions">
+                <li>
+                    <span class="action-method">Click</span>
+                    <span class="action-description">Select icon</span>
+                </li>
+                <li>
+                    <span class="action-method">Drag</span>
+                    <span class="action-description">Move icon</span>
+                </li>
+                <li>
+                    <span class="action-method">S + Drag/Wheel/+/-</span>
+                    <span class="action-description">Scale icon</span>
+                </li>
+                <li>
+                    <span class="action-method">R + Drag/Wheel/+/-</span>
+                    <span class="action-description">Rotate icon</span>
+                </li>
+                <li>
+                    <span class="action-method">M</span>
+                    <span class="action-description">Mirror horizontally</span>
+                </li>
+                <li>
+                    <span class="action-method">X / DEL</span>
+                    <span class="action-description">Delete selected icon</span>
+                </li>
+                <li>
+                    <span class="action-method">ESC</span>
+                    <span class="action-description">Deselect</span>
+                </li>
+            </ul>
+        </div>
+
+        <!-- Path Editing (Walls, Floors, Areas) -->
+        <div class="help-category">
+            <div class="category-header">
+                <div class="category-icon">
+                    {% icon "path" size="sm" color="primary" %}
+                </div>
+                <h6 class="category-title">Path Editing</h6>
+            </div>
+            <ul class="help-actions">
+                <li>
+                    <span class="action-method">Click</span>
+                    <span class="action-description">Select path to edit vertices</span>
+                </li>
+                <li>
+                    <span class="action-method">Drag Point</span>
+                    <span class="action-description">Move single vertex</span>
+                </li>
+                <li>
+                    <span class="action-method">CTRL + Drag</span>
+                    <span class="action-description">Move entire path</span>
+                </li>
+                <li>
+                    <span class="action-method">I / INSERT</span>
+                    <span class="action-description">Insert vertex</span>
+                </li>
+                <li>
+                    <span class="action-method">X / DEL</span>
+                    <span class="action-description">Delete vertex</span>
+                </li>
+                <li>
+                    <span class="action-method">A / +</span>
+                    <span class="action-description">Add new path segment</span>
+                </li>
+                <li>
+                    <span class="action-method">CTRL + X</span>
+                    <span class="action-description">Delete entire path</span>
+                </li>
+                <li>
+                    <span class="action-method">ESC</span>
+                    <span class="action-description">Finish path editing</span>
+                </li>
+            </ul>
+        </div>
+    </div>
+</div>
+
+{% endblock %}

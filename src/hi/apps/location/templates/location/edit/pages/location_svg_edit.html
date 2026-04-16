@@ -44,19 +44,28 @@
 </div>
 
 <div id="{{ DIVID.LOCATION_SVG_EDIT_BOTTOM }}" class="fixed-bottom">
-  <form action="{% url 'location_svg_edit_viewbox' location_id=location.id %}"
-        method="post" class="form d-flex align-items-center px-3 h-100"
-        data-async="#hi-svg-edit-canvas-container" data-mode="replace">
-    {% csrf_token %}
-    <label class="me-2 mb-0" style="font-size: 0.85rem;">Canvas Size:</label>
-    <label class="me-1 mb-0" style="font-size: 0.85rem;">W</label>
-    <input type="number" name="width" class="form-control form-control-sm"
-           style="width: 6rem;" value="{{ svg_view_box.width|floatformat:0 }}" min="100" step="50">
-    <label class="ms-2 me-1 mb-0" style="font-size: 0.85rem;">H</label>
-    <input type="number" name="height" class="form-control form-control-sm"
-           style="width: 6rem;" value="{{ svg_view_box.height|floatformat:0 }}" min="100" step="50">
-    <button type="submit" class="btn btn-sm btn-outline-primary ms-2">Apply</button>
-  </form>
+  <div class="d-flex justify-content-between align-items-center px-3 h-100">
+    <form action="{% url 'location_svg_edit_viewbox' location_id=location.id %}"
+          method="post" class="form d-flex align-items-center"
+          data-async="#hi-svg-edit-canvas-container" data-mode="replace">
+      {% csrf_token %}
+      <label class="me-2 mb-0" style="font-size: 0.85rem;">Canvas Size:</label>
+      <label class="me-1 mb-0" style="font-size: 0.85rem;">W</label>
+      <input type="number" name="width" class="form-control form-control-sm"
+             style="width: 6rem;" value="{{ svg_view_box.width|floatformat:0 }}" min="100" step="50">
+      <label class="ms-2 me-1 mb-0" style="font-size: 0.85rem;">H</label>
+      <input type="number" name="height" class="form-control form-control-sm"
+             style="width: 6rem;" value="{{ svg_view_box.height|floatformat:0 }}" min="100" step="50">
+      <button type="submit" class="btn btn-sm btn-outline-primary ms-2">Apply</button>
+    </form>
+    <div>
+      <a href="{% url 'location_svg_edit_help' %}"
+         class="btn btn-tertiary btn-control" role="button"
+         data-async="true">
+        {% icon "question-circle" size="sm" css_class="hi-icon-left" %}HELP
+      </a>
+    </div>
+  </div>
 </div>
 
 <div id="{{ DIVID.LOCATION_SVG_EDIT_MAIN }}" class="container-fluid"

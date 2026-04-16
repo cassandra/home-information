@@ -736,3 +736,12 @@ class LocationSvgEditSaveView( View, LocationViewMixin ):
         LocationManager().save_draft_svg( location, svg_content )
         return HttpResponse( 'OK' )
 
+
+class LocationSvgEditHelpView( HiModalView ):
+
+    def get_template_name( self ) -> str:
+        return 'location/edit/modals/location_svg_edit_help.html'
+
+    def get( self, request, *args, **kwargs ):
+        return self.modal_response( request )
+

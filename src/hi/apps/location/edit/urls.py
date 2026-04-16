@@ -85,4 +85,8 @@ urlpatterns = [
              views.LocationSvgEditSaveView.as_view(),
              name='location_svg_edit_save'),
 
+    re_path( r'^svg/edit/help$',
+             views.LocationSvgEditHelpView.as_view(),
+             name='location_svg_edit_help'),
+
 ]
