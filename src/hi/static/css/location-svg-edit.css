@@ -126,5 +126,6 @@
 .hi-palette-swatch path.fireplaces    { fill: #fff0f0; stroke: black; stroke-width: 1; }
 .hi-palette-swatch path.stairs        { fill: #f0f0f0; stroke: black; stroke-width: 1; }
 .hi-palette-swatch path.shelves       { fill: #fffff0; stroke: black; stroke-width: 1; }
+.hi-palette-swatch path.cabinets     { fill: #c8a882; stroke: black; stroke-width: 1; }
 .hi-palette-swatch path.fencing       { fill: none; stroke: #432b0f; stroke-width: 8; }
 .hi-palette-swatch path.property-lines { fill: none; stroke: black; stroke-width: 3; stroke-dasharray: 8,3; }

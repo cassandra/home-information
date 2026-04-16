@@ -191,6 +191,11 @@ svg.hi-location-view-svg path.sinks {
     stroke: black;
     stroke-width: 1;
 }
+svg.hi-location-view-svg path.cabinets {
+    fill: #c8a882;
+    stroke: black;
+    stroke-width: 1;
+}
 
 /* Open-path stroke-based wall styles for editor-compatible SVGs */
 svg.hi-location-view-svg path.exterior-wall-stroke {
