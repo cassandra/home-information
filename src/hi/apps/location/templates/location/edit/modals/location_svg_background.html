@@ -1,0 +1,49 @@
+{% extends "modals/action_done.html" %}
+{% load icons %}
+
+{% block modal_dialog_class %}hi-modal-dialog-500{% endblock %}
+
+{% block title_text %}
+Background Image
+{% endblock %}
+
+{% block body %}
+<div class="d-flex flex-column gap-3 py-2">
+
+  <a href="{% url 'location_edit_svg_edit' location_id=location.id %}"
+     class="btn btn-outline-primary btn-block text-start p-3">
+    <div class="d-flex align-items-center">
+      {% icon "edit" size="sm" css_class="hi-icon-left" %}
+      <div>
+        <div class="fw-bold">Edit Current</div>
+        <small class="text-muted">Open the background editor</small>
+      </div>
+    </div>
+  </a>
+
+  <a href="{% url 'location_svg_template_select' location_id=location.id %}"
+     class="btn btn-outline-secondary btn-block text-start p-3" role="button"
+     data-async="true">
+    <div class="d-flex align-items-center">
+      {% icon "layers" size="sm" css_class="hi-icon-left" %}
+      <div>
+        <div class="fw-bold">Choose a Template</div>
+        <small class="text-muted">Start from a built-in floor plan</small>
+      </div>
+    </div>
+  </a>
+
+  <a href="{% url 'location_edit_svg_replace' location_id=location.id %}"
+     class="btn btn-outline-secondary btn-block text-start p-3" role="button"
+     data-async="true">
+    <div class="d-flex align-items-center">
+      {% icon "upload" size="sm" css_class="hi-icon-left" %}
+      <div>
+        <div class="fw-bold">Upload SVG</div>
+        <small class="text-muted">Use your own SVG file</small>
+      </div>
+    </div>
+  </a>
+
+</div>
+{% endblock %}

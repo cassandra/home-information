@@ -3,6 +3,7 @@ import os
 
 from django import forms
 from django.conf import settings
+from django.template.loader import render_to_string
 
 from hi.apps.common.svg_forms import SvgDecimalFormField, SvgFileForm
 from hi.apps.common.svg_models import SvgItemPositionBounds
@@ -17,17 +18,28 @@ logger = logging.getLogger(__name__)
 
 
 class LocationSvgFileForm( SvgFileForm ):
-    
+
+    BACKGROUNDS_TEMPLATE_DIR = 'location/svg/backgrounds'
+    DEFAULT_BACKGROUND_TEMPLATE = 'single_story.html'
+
     def get_default_source_directory(self):
         return os.path.join(
             settings.BASE_DIR,
             'static',
             'img',
+            'backgrounds',
         )
 
     def get_default_basename(self):
-        return 'location-default.svg'
-    
+        return 'single-story.svg'
+
+    def get_default_svg_content(self):
+        template_name = os.path.join(
+            self.BACKGROUNDS_TEMPLATE_DIR,
+            self.DEFAULT_BACKGROUND_TEMPLATE,
+        )
+        return render_to_string( template_name )
+
     def get_media_destination_directory(self):
         return 'location/svg'
 
@@ -46,6 +58,26 @@ class LocationAddForm( LocationSvgFileForm ):
         return True
 
     
+class LocationSvgTemplateForm( LocationSvgFileForm ):
+
+    def __init__( self, *args, template_name=None, **kwargs ):
+        super().__init__( *args, **kwargs )
+        self._template_name = template_name
+
+    def allow_default_svg_file(self):
+        return True
+
+    def get_default_basename(self):
+        return self._template_name
+
+    def get_default_svg_content(self):
+        template_path = os.path.join(
+            self.BACKGROUNDS_TEMPLATE_DIR,
+            self._template_name,
+        )
+        return render_to_string( template_path )
+
+
 class LocationSvgReplaceForm( LocationSvgFileForm ):
 
     def allow_default_svg_file(self):

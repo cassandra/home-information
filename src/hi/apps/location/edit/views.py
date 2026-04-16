@@ -1,6 +1,8 @@
 import json
 import logging
+import os
 
+from django.conf import settings
 from django.core.exceptions import BadRequest
 from django.db import transaction
 from django.http import Http404, HttpResponse, HttpResponseNotAllowed, HttpResponseRedirect
@@ -158,6 +160,18 @@ class LocationAddFirstView( LocationAddView ):
         return 'location/edit/modals/location_add_first.html'
 
     
+@method_decorator( edit_required, name='dispatch' )
+class LocationSvgBackgroundView( HiModalView, LocationViewMixin ):
+
+    def get_template_name( self ) -> str:
+        return 'location/edit/modals/location_svg_background.html'
+
+    def get( self, request, *args, **kwargs ):
+        location = self.get_location( request, *args, **kwargs )
+        context = { 'location': location }
+        return self.modal_response( request, context )
+
+
 @method_decorator( edit_required, name='dispatch' )
 class LocationSvgReplaceView( HiModalView, LocationViewMixin ):
 
@@ -768,6 +782,67 @@ class LocationSvgEditRevertView( HiModalView, LocationViewMixin ):
 
         redirect_url = reverse( 'location_edit_svg_edit', kwargs={ 'location_id': location.id } )
         return antinode.redirect_response( redirect_url )
+
+
+@method_decorator( edit_required, name='dispatch' )
+class LocationSvgTemplateSelectView( HiModalView, LocationViewMixin ):
+
+    def get_template_name( self ) -> str:
+        return 'location/edit/modals/location_svg_template_select.html'
+
+    def get( self, request, *args, **kwargs ):
+        location = self.get_location( request, *args, **kwargs )
+        templates = self._scan_templates()
+        context = {
+            'location': location,
+            'svg_templates': templates,
+        }
+        return self.modal_response( request, context )
+
+    def post( self, request, *args, **kwargs ):
+        location = self.get_location( request, *args, **kwargs )
+        template_name = request.POST.get( 'template_name', '' )
+        if not template_name:
+            raise BadRequest( 'No template selected.' )
+
+        svg_form = forms.LocationSvgTemplateForm(
+            data={ 'has_dangerous_svg_items': 'false' },
+            template_name=template_name,
+        )
+        if not svg_form.is_valid():
+            raise BadRequest( 'Invalid template.' )
+
+        LocationManager().update_location_svg(
+            location = location,
+            svg_fragment_filename = svg_form.cleaned_data.get( 'svg_fragment_filename' ),
+            svg_fragment_content = svg_form.cleaned_data.get( 'svg_fragment_content' ),
+            svg_viewbox = svg_form.cleaned_data.get( 'svg_viewbox' ),
+        )
+
+        redirect_url = reverse('home')
+        return antinode.redirect_response( redirect_url )
+
+    def _scan_templates( self ):
+        template_dir = os.path.join(
+            settings.BASE_DIR, 'templates', 'location', 'svg', 'backgrounds',
+        )
+        templates = []
+        if not os.path.isdir( template_dir ):
+            return templates
+
+        for filename in sorted( os.listdir( template_dir ) ):
+            if not filename.endswith( '.html' ):
+                continue
+            name = filename.replace( '.html', '' ).replace( '_', ' ' ).title()
+            template_path = os.path.join(
+                forms.LocationSvgFileForm.BACKGROUNDS_TEMPLATE_DIR, filename,
+            )
+            templates.append({
+                'template_name': filename,
+                'template_path': template_path,
+                'name': name,
+            })
+        return templates
 
 
 class LocationSvgEditHelpView( HiModalView ):

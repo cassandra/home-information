@@ -32,11 +32,16 @@
             return;
         }
 
-        var editorGroup = canvasSvg.querySelector('g[data-hi-editor]');
-        if (!editorGroup) {
-            return;
+        /* Find the palette defs — the <defs> that contains <g> children
+           with data-bg-edit-type attributes (as opposed to the fill pattern defs). */
+        var defsElement = null;
+        var allDefs = canvasSvg.querySelectorAll('defs');
+        for (var di = 0; di < allDefs.length; di++) {
+            if (allDefs[di].querySelector('g[data-bg-edit-type]')) {
+                defsElement = allDefs[di];
+                break;
+            }
         }
-        var defsElement = editorGroup.querySelector('defs');
         if (!defsElement) {
             return;
         }

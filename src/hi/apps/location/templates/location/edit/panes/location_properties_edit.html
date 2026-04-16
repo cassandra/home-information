@@ -17,17 +17,10 @@
 
 {% if request.view_parameters.is_editing %}
 <div class="sidebar-form-actions">
-  <a href="{% url 'location_edit_svg_edit' location_id=location.id %}"
-     id="hi-svg-replace-link" class="btn btn-sm btn-tertiary btn-block btn-control" role="button">
-    {% icon "edit" size="sm" css_class="hi-icon-left" %}EDIT BACKGROUND IMAGE
-  </a>
-</div>
-
-<div class="sidebar-form-actions">
-  <a href="{% url 'location_edit_svg_replace' location_id=location.id %}"
-     id="hi-svg-replace-link" class="btn btn-sm btn-secondary btn-block btn-control" role="button"
+  <a href="{% url 'location_svg_background' location_id=location.id %}"
+     id="hi-svg-background-link" class="btn btn-sm btn-tertiary btn-block btn-control" role="button"
      data-async="true">
-    {% icon "upload" size="sm" css_class="hi-icon-left" %}REPLACE BACKGROUND IMAGE
+    {% icon "layers" size="sm" css_class="hi-icon-left" %}BACKGROUND IMAGE
   </a>
 </div>
 

@@ -92,6 +92,14 @@ class SvgFileForm(forms.Form):
     def get_media_destination_directory(self):
         # Relative to MEDIA_ROOT.
         raise NotImplementedError( 'Subclasses must override this method.' )
+
+    def get_default_svg_content(self):
+        default_svg_path = os.path.join(
+            self.get_default_source_directory(),
+            self.get_default_basename(),
+        )
+        with open( default_svg_path, 'r' ) as f:
+            return f.read()
     
     MAX_SVG_FILE_SIZE_MEGABYTES = 5
     MAX_SVG_FILE_SIZE_BYTES = MAX_SVG_FILE_SIZE_MEGABYTES * 1024 * 1024
@@ -137,13 +145,8 @@ class SvgFileForm(forms.Form):
             if require_svg_file:
                 raise ValidationError( 'You need to re-select the SVG file.' )
 
-            default_svg_path = os.path.join(
-                self.get_default_source_directory(),
-                self.get_default_basename(),
-            )
-            with open( default_svg_path, 'r' ) as f:
-                svg_content = f.read()
-            svg_filename = self.get_default_basename()          
+            svg_content = self.get_default_svg_content()
+            svg_filename = self.get_default_basename()
         else:
             svg_file_handle.seek(0)  # Guard against multiple calls to clean()
             svg_content = svg_file_handle.read().decode('utf-8')

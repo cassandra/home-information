@@ -1,0 +1,34 @@
+{% extends "modals/action_done.html" %}
+{% load icons %}
+
+{% block modal_dialog_class %}hi-modal-dialog-700{% endblock %}
+
+{% block title_text %}
+Choose a Template
+{% endblock %}
+
+{% block body %}
+<p class="text-muted" style="font-size: 0.85rem;">
+  Select a starting template for your background. This will replace the current background image.
+</p>
+
+<div class="d-flex flex-wrap gap-3 justify-content-center py-2">
+  {% for tmpl in svg_templates %}
+  <form action="{% url 'location_svg_template_select' location_id=location.id %}"
+        method="post" class="form" data-async="modal" style="display: inline;">
+    {% csrf_token %}
+    <input type="hidden" name="template_name" value="{{ tmpl.template_name }}">
+    <button type="submit" class="btn btn-outline-secondary p-2 hi-svg-template-card"
+            title="{{ tmpl.name }}">
+      <div class="hi-svg-template-thumbnail">
+        <svg viewBox="0 0 2000 2000" class="hi-location-view-svg"
+             width="100%" height="100%" preserveAspectRatio="xMidYMid meet">
+          {% include tmpl.template_path %}
+        </svg>
+      </div>
+      <div class="hi-svg-template-name">{{ tmpl.name }}</div>
+    </button>
+  </form>
+  {% endfor %}
+</div>
+{% endblock %}

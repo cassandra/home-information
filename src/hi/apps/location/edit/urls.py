@@ -65,8 +65,16 @@ urlpatterns = [
              views.LocationItemPathView.as_view(), 
              name='location_edit_location_item_path' ),
     
-    re_path( r'^svg/edit/(?P<location_id>\d+)$', 
-             views.LocationSvgEditView.as_view(), 
+    re_path( r'^svg/background/(?P<location_id>\d+)$',
+             views.LocationSvgBackgroundView.as_view(),
+             name='location_svg_background'),
+
+    re_path( r'^svg/template/(?P<location_id>\d+)$',
+             views.LocationSvgTemplateSelectView.as_view(),
+             name='location_svg_template_select'),
+
+    re_path( r'^svg/edit/(?P<location_id>\d+)$',
+             views.LocationSvgEditView.as_view(),
              name='location_edit_svg_edit'),
 
     re_path( r'^svg/edit/cancel/(?P<location_id>\d+)$', 
