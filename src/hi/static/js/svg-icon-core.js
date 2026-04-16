@@ -197,6 +197,9 @@
                     rotateLeftFromKeypress();
                 }
 
+            } else if ( event.key === 'm' ) {
+                mirrorSelectedIcon();
+
             } else if ( event.key === 'Escape' ) {
                 scaleAbort();
                 rotateAbort();
@@ -218,6 +221,18 @@
 
         hasSelection: function() {
             return gSelectedGroup !== null;
+        },
+
+        deleteSelectedElement: function() {
+            if ( ! gSelectedGroup ) { return; }
+            var element = gSelectedGroup;
+            clearSelection();
+            $( element ).remove();
+        },
+
+        mirrorSelected: function() {
+            if ( ! gSelectedGroup ) { return; }
+            mirrorSelectedIcon();
         },
     };
 
@@ -245,6 +260,46 @@
                 gConfig.onDeselect();
             }
         }
+    }
+
+    /* ==================== */
+    /* Mirror               */
+    /* ==================== */
+
+    function mirrorSelectedIcon() {
+        if ( ! gSelectedGroup ) { return; }
+
+        var transformStr = $( gSelectedGroup ).attr( 'transform' );
+        var parsed = Hi.svgUtils.getSvgTransformValues( transformStr );
+
+        /* Find the element's center in parent SVG space before mirroring. */
+        var baseSvgElement = $( gConfig.baseSvgSelector );
+        var centerBefore = Hi.svgUtils.getSvgCenterPoint( gSelectedGroup, baseSvgElement );
+
+        /* Negate scale.x and translate.x to mirror horizontally. */
+        var newScale = {
+            x: -1.0 * parsed.scale.x,
+            y: parsed.scale.y,
+        };
+        var newTranslate = {
+            x: -1.0 * parsed.translate.x,
+            y: parsed.translate.y,
+        };
+
+        /* Apply the mirror, then find the new center. */
+        setSvgTransformAttr( gSelectedGroup, newScale, newTranslate, parsed.rotate );
+        var centerAfter = Hi.svgUtils.getSvgCenterPoint( gSelectedGroup, baseSvgElement );
+
+        /* Adjust translate to compensate for center shift. */
+        if ( centerBefore && centerAfter ) {
+            var deltaCenterX = centerBefore.x - centerAfter.x;
+            var deltaCenterY = centerBefore.y - centerAfter.y;
+            newTranslate.x += deltaCenterX / newScale.x;
+            newTranslate.y += deltaCenterY / newScale.y;
+            setSvgTransformAttr( gSelectedGroup, newScale, newTranslate, parsed.rotate );
+        }
+
+        debouncedSave( gSelectedGroup );
     }
 
     /* ==================== */

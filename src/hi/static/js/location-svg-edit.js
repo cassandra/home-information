@@ -186,6 +186,14 @@
     }
 
     /* ==================== */
+    /* Element Delete       */
+    /* ==================== */
+
+    Hi.SvgEdit.onElementDeleted = function() {
+        saveDraft();
+    };
+
+    /* ==================== */
     /* Draft Save           */
     /* ==================== */
 

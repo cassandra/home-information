@@ -89,6 +89,18 @@
         hasSelection: function() {
             return gSelectedPathSvgGroup !== null;
         },
+
+        deleteSelectedElement: function() {
+            if ( ! gSelectedPathSvgGroup ) { return; }
+            /* Remove proxy editing UI. */
+            var proxyPathContainer = $( '#' + PROXY_PATH_CONTAINER_ID );
+            $( proxyPathContainer ).remove();
+            /* Remove the actual element. */
+            var element = gSelectedPathSvgGroup;
+            gSelectedPathSvgGroup = null;
+            gSvgPathEditData = null;
+            $( element ).remove();
+        },
     };
 
     window.Hi.SvgPathCore = HiSvgPathCore;
@@ -701,6 +713,8 @@
 
             var isDragging = false;
 
+            var lastSvgPoint = null;
+
             function onMouseMove( event ) {
                 if ( ! gSvgPathEditData ) { return; }
 
@@ -719,15 +733,31 @@
                                                                  event.clientX, event.clientY );
 
                     gSvgPathEditData.dragProxyPoint = event.target;
-                    var newCx = eventSvgPoint.x - offsetX;
-                    var newCy = eventSvgPoint.y - offsetY;
-                    $( proxyPoint ).attr( 'cx', newCx ).attr( 'cy', newCy );
 
-                    if ( $( beforeProxyLine ).length > 0 ) {
-                        $( beforeProxyLine ).attr( 'x2', newCx ).attr( 'y2', newCy );
-                    }
-                    if ( $( afterProxyLine ).length > 0 ) {
-                        $( afterProxyLine ).attr( 'x1', newCx ).attr( 'y1', newCy );
+                    if ( event.ctrlKey ) {
+                        /* CTRL+drag: move all proxy points by the same delta. */
+                        if ( ! lastSvgPoint ) {
+                            lastSvgPoint = { x: eventSvgPoint.x - offsetX, y: eventSvgPoint.y - offsetY };
+                        }
+                        var newPos = { x: eventSvgPoint.x - offsetX, y: eventSvgPoint.y - offsetY };
+                        var deltaCx = newPos.x - lastSvgPoint.x;
+                        var deltaCy = newPos.y - lastSvgPoint.y;
+                        lastSvgPoint = newPos;
+                        moveAllProxyPoints( deltaCx, deltaCy );
+                        setActionStateAttr( 'move' );
+                    } else {
+                        /* Normal drag: move only the dragged point. */
+                        var newCx = eventSvgPoint.x - offsetX;
+                        var newCy = eventSvgPoint.y - offsetY;
+                        $( proxyPoint ).attr( 'cx', newCx ).attr( 'cy', newCy );
+
+                        if ( $( beforeProxyLine ).length > 0 ) {
+                            $( beforeProxyLine ).attr( 'x2', newCx ).attr( 'y2', newCy );
+                        }
+                        if ( $( afterProxyLine ).length > 0 ) {
+                            $( afterProxyLine ).attr( 'x1', newCx ).attr( 'y1', newCy );
+                        }
+                        setActionStateAttr( '' );
                     }
 
                     setSelectedProxyElement( proxyPoint );
@@ -741,6 +771,8 @@
                 event.stopImmediatePropagation();
                 saveSvgPath();
                 gSvgPathEditData.dragProxyPoint = null;
+                lastSvgPoint = null;
+                setActionStateAttr( '' );
                 if ( isDragging ) {
                     gIgnoreClick = true;
                 }
@@ -751,6 +783,35 @@
             $( document ).on( 'mousemove', onMouseMove );
             $( document ).on( 'mouseup', onMouseUp );
         });
+    }
+
+    /* ==================== */
+    /* Whole Path Move      */
+    /* ==================== */
+
+    function moveAllProxyPoints( deltaCx, deltaCy ) {
+        if ( ! gSvgPathEditData || ! gSvgPathEditData.proxyPathContainer ) { return; }
+
+        var proxyPoints = $( gSvgPathEditData.proxyPathContainer ).find( PROXY_POINT_SELECTOR );
+        proxyPoints.each( function() {
+            var cx = parseFloat( $( this ).attr( 'cx' ) ) + deltaCx;
+            var cy = parseFloat( $( this ).attr( 'cy' ) ) + deltaCy;
+            $( this ).attr( 'cx', cx ).attr( 'cy', cy );
+        });
+
+        var proxyLines = $( gSvgPathEditData.proxyPathContainer ).find( PROXY_LINE_SELECTOR );
+        proxyLines.each( function() {
+            $( this ).attr( 'x1', parseFloat( $( this ).attr( 'x1' ) ) + deltaCx );
+            $( this ).attr( 'y1', parseFloat( $( this ).attr( 'y1' ) ) + deltaCy );
+            $( this ).attr( 'x2', parseFloat( $( this ).attr( 'x2' ) ) + deltaCx );
+            $( this ).attr( 'y2', parseFloat( $( this ).attr( 'y2' ) ) + deltaCy );
+        });
+    }
+
+    function setActionStateAttr( actionState ) {
+        if ( gConfig && gConfig.baseSvgSelector ) {
+            $( gConfig.baseSvgSelector ).attr( 'action-state', actionState || '' );
+        }
     }
 
     /* ==================== */

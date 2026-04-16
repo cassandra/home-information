@@ -377,7 +377,26 @@
         $( document ).on( 'keydown', function( event ) {
             if ( $( event.target ).is( 'input, textarea' ) ) { return; }
             if ( $( event.target ).closest( '.modal' ).length > 0 ) { return; }
-            var handled = Hi.SvgIconCore.handleKeyDown( event );
+
+            /* Editor-level delete commands — before routing to cores. */
+            var handled = false;
+            var isDeleteKey = ( event.key === 'x' || event.key === 'Delete' || event.key === 'Backspace' );
+
+            if ( isDeleteKey && ! event.ctrlKey && Hi.SvgIconCore.hasSelection() ) {
+                Hi.SvgIconCore.deleteSelectedElement();
+                Hi.SvgEdit.onElementDeleted();
+                handled = true;
+
+            } else if ( event.key === 'x' && event.ctrlKey && Hi.SvgPathCore.hasSelection() ) {
+                Hi.SvgPathCore.deleteSelectedElement();
+                Hi.SvgEdit.onElementDeleted();
+                handled = true;
+            }
+
+            /* Core-level commands. */
+            if ( ! handled ) {
+                handled = Hi.SvgIconCore.handleKeyDown( event );
+            }
             if ( ! handled ) {
                 handled = Hi.SvgPathCore.handleKeyDown( event );
             }
