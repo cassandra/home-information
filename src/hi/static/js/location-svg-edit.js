@@ -489,10 +489,7 @@
             }
             baseGroup.appendChild( editorGroup );
 
-            showConformanceWarning(
-                'This background was not created with the editor. '
-                + 'You can add new elements from the palette, but existing content cannot be edited.'
-            );
+            showConformanceWarning();
             return;
         }
 
@@ -511,24 +508,16 @@
         }
 
         if ( totalElements > 0 && editableElements < totalElements ) {
-            showConformanceWarning(
-                'Some elements in this background were not created with the editor and cannot be edited.'
-            );
+            showConformanceWarning();
         }
     }
 
-    function showConformanceWarning( message ) {
-        var warningsArea = document.getElementById( 'hi-svg-edit-warnings' );
-        if ( ! warningsArea ) { return; }
+    function showConformanceWarning() {
+        $( '#hi-svg-edit-conformance-warning' ).show();
+    }
 
-        var alert = document.createElement( 'div' );
-        alert.className = 'alert alert-warning alert-dismissible fade show m-0 py-1 px-3 rounded-0';
-        alert.setAttribute( 'role', 'alert' );
-        alert.style.fontSize = '0.85rem';
-        alert.innerHTML = message
-            + '<button type="button" class="close" data-dismiss="alert" '
-            + 'aria-label="Close"><span aria-hidden="true">&times;</span></button>';
-        warningsArea.appendChild( alert );
+    function refreshAfterAsyncRender() {
+        Hi.SvgPanZoomCore.refresh();
     }
 
     $(document).ready(function() {
@@ -536,6 +525,7 @@
         initPaletteDrop();
         initCores();
         checkConformance();
+        AN.addAfterAsyncRenderFunction( refreshAfterAsyncRender );
     });
 
 })();

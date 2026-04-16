@@ -547,6 +547,7 @@ function asyncUpdateData( $target, $mode, data, xhr ) {
           $target.html(data);
          }
          handleNewContentAdded( $target );
+         afterAsyncRender();
      }
     }
     if (ct.indexOf('json') > -1) {

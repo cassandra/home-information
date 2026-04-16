@@ -41,6 +41,10 @@
             gSvgElement = $( config.baseSvgSelector )[0] || null;
         },
 
+        refresh: function() {
+            gSvgElement = gConfig ? $( gConfig.baseSvgSelector )[0] || null : null;
+        },
+
         handleSinglePointerEventStart: function( event ) {
             if ( ! gSvgElement ) { return false; }
 
