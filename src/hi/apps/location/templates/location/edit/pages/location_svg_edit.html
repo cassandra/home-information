@@ -69,4 +69,8 @@
 
 {% block footer_post_javascript %}
 {% javascript 'js_location_svg_edit' %}
+<script>
+  Hi.SvgEdit.saveUrl = "{% url 'location_svg_edit_save' location_id=location.id %}";
+  Hi.SvgEdit.csrfToken = "{{ csrf_token }}";
+</script>
 {% endblock %}

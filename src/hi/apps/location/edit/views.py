@@ -723,3 +723,16 @@ class LocationSvgEditViewBoxView( View, LocationViewMixin ):
         canvas_html = template.render( context, request=request )
         return HttpResponse( canvas_html )
 
+
+@method_decorator( edit_required, name='dispatch' )
+class LocationSvgEditSaveView( View, LocationViewMixin ):
+
+    def post( self, request, *args, **kwargs ):
+        location = self.get_location( request, *args, **kwargs )
+        svg_content = request.POST.get( 'svg_content', '' )
+        if not svg_content:
+            raise BadRequest( 'No SVG content provided.' )
+
+        LocationManager().save_draft_svg( location, svg_content )
+        return HttpResponse( 'OK' )
+

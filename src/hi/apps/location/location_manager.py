@@ -128,6 +128,13 @@ class LocationManager(Singleton):
             dest.write( content )
         return draft_filename
 
+    def save_draft_svg( self, location : Location, content : str ) -> None:
+        draft_filename = self.get_draft_svg_filename( location )
+        self._ensure_directory_exists( draft_filename )
+        with default_storage.open( draft_filename, 'w' ) as dest:
+            dest.write( content )
+        return
+
     def commit_draft_svg( self, location : Location ) -> None:
         draft_filename = self.get_draft_svg_filename( location )
         with default_storage.open( draft_filename, 'r' ) as source:

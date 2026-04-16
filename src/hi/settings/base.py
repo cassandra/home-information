@@ -304,7 +304,11 @@ PIPELINE = {
         'js_location_svg_edit': {
             'source_filenames': (
                 'js/svg-utils.js',
+                'js/svg-pan-zoom-core.js',
+                'js/svg-icon-core.js',
+                'js/svg-path-core.js',
                 'js/location-svg-edit.js',
+                'js/svg-bg-event-listeners.js',
             ),
             'output_filename': 'js/js_location_svg_edit.js',
         },

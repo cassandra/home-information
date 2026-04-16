@@ -179,8 +179,104 @@
         return (minX - pad) + ' ' + (minY - pad) + ' ' + (width + pad * 2) + ' ' + (height + pad * 2);
     }
 
+    /* ==================== */
+    /* Draft Save           */
+    /* ==================== */
+
+    var PROXY_PATH_CONTAINER_ID = 'hi-proxy-path-container';
+
+    function saveDraft() {
+        var canvasSvg = document.getElementById( CANVAS_SVG_ID );
+        if ( ! canvasSvg ) { return; }
+
+        var editorGroup = canvasSvg.querySelector( 'g[data-hi-editor]' );
+        if ( ! editorGroup ) { return; }
+
+        /* Temporarily remove proxy editing elements before serializing. */
+        var proxyContainer = document.getElementById( PROXY_PATH_CONTAINER_ID );
+        var proxyParent = null;
+        if ( proxyContainer ) {
+            proxyParent = proxyContainer.parentNode;
+            proxyParent.removeChild( proxyContainer );
+        }
+
+        var svgContent = editorGroup.outerHTML;
+
+        /* Restore proxy elements. */
+        if ( proxyContainer && proxyParent ) {
+            proxyParent.appendChild( proxyContainer );
+        }
+
+        if ( ! Hi.SvgEdit.saveUrl ) { return; }
+
+        $.post( Hi.SvgEdit.saveUrl, {
+            svg_content: svgContent,
+            csrfmiddlewaretoken: Hi.SvgEdit.csrfToken,
+        });
+    }
+
+    /* ==================== */
+    /* Core Initialization  */
+    /* ==================== */
+
+    function initCores() {
+        Hi.SvgPanZoomCore.init({
+            baseSvgSelector: '#' + CANVAS_SVG_ID,
+            areaSelector: '#hi-svg-edit-canvas',
+            onSave: null,
+            shouldSave: function() { return false; },
+        });
+
+        Hi.SvgIconCore.init({
+            identifyElement: function( event ) {
+                var target = event.target || event.srcElement;
+                var group = $( target ).closest( 'g.hi-bg-element' );
+                if ( group.length > 0 && group.attr( 'data-bg-edit-type' ) === 'icon' ) {
+                    return group[0];
+                }
+                return null;
+            },
+            onSelect: function( element ) {
+                Hi.SvgPathCore.clearSelection();
+            },
+            onDeselect: function() {
+                /* Future: clear element info in editor UI */
+            },
+            onSave: function( element, positionData ) {
+                saveDraft();
+            },
+            baseSvgSelector: '#' + CANVAS_SVG_ID,
+            areaSelector: '#hi-svg-edit-canvas',
+            highlightClass: 'highlighted',
+        });
+
+        Hi.SvgPathCore.init({
+            identifyElement: function( event ) {
+                var target = event.target || event.srcElement;
+                var group = $( target ).closest( 'g.hi-bg-element' );
+                if ( group.length > 0 ) {
+                    var editType = group.attr( 'data-bg-edit-type' );
+                    if ( editType === 'open' || editType === 'closed' ) {
+                        return group[0];
+                    }
+                }
+                return null;
+            },
+            onSelect: function( element ) {
+                Hi.SvgIconCore.clearSelection();
+            },
+            onDeselect: function() {
+                saveDraft();
+            },
+            onSave: null,
+            baseSvgSelector: '#' + CANVAS_SVG_ID,
+            highlightClass: 'highlighted',
+        });
+    }
+
     $(document).ready(function() {
         buildPalette();
+        initCores();
     });
 
 })();
