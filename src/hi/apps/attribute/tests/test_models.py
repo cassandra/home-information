@@ -1,4 +1,3 @@
-import importlib
 import json
 import logging
 import uuid
@@ -39,16 +38,12 @@ class TestAttributeModel(BaseTestCase):
     @staticmethod
     def _create_valid_pdf_bytes():
         try:
-            fitz = importlib.import_module('fitz')
+            image = Image.new('RGB', size=(360, 220), color=(255, 255, 255))
+            pdf_bytes = BytesIO()
+            image.save(pdf_bytes, format='PDF')
+            return pdf_bytes.getvalue()
         except Exception:
             return None
-
-        pdf_document = fitz.open()
-        first_page = pdf_document.new_page(width=360, height=220)
-        first_page.insert_text((36, 72), 'HI PDF Preview Test')
-        pdf_bytes = pdf_document.tobytes()
-        pdf_document.close()
-        return pdf_bytes
 
     def test_attribute_model_enum_property_conversions(self):
         """Test enum property conversions - custom business logic."""
@@ -276,7 +271,7 @@ class TestAttributeModel(BaseTestCase):
         """Test thumbnail generation from first page of a PDF file."""
         pdf_bytes = self._create_valid_pdf_bytes()
         if not pdf_bytes:
-            self.skipTest('PyMuPDF not installed in this environment')
+            self.skipTest('Unable to generate test PDF bytes in this environment')
 
         with self.isolated_media_root():
             source_path = 'test_attributes/manual.pdf'

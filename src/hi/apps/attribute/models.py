@@ -1,4 +1,3 @@
-import importlib
 import json
 import logging
 import mimetypes
@@ -235,34 +234,25 @@ class AttributeModel(models.Model):
 
     def _render_pdf_first_page_image(self, file_handle, image_module):
         try:
-            fitz = importlib.import_module('fitz')
+            from pdf2image import convert_from_bytes
         except Exception as e:
-            logger.warning(f'PyMuPDF unavailable for PDF thumbnail generation: {e}')
+            logger.warning( f'pdf2image unavailable for PDF thumbnail generation: {e}' )
             return None
 
         try:
             pdf_bytes = file_handle.read()
-            with fitz.open(stream=pdf_bytes, filetype='pdf') as pdf_document:
-                if pdf_document.page_count < 1:
-                    logger.warning(
-                        f'Cannot generate thumbnail for empty PDF: {self.file_value.name}'
-                    )
-                    return None
-
-                first_page = pdf_document.load_page(0)
-                render_matrix = fitz.Matrix(1.5, 1.5)
-                pixmap = first_page.get_pixmap(matrix=render_matrix, alpha=False)
-
-            return image_module.frombytes(
-                'RGB',
-                (pixmap.width, pixmap.height),
-                pixmap.samples,
+            rendered_pages = convert_from_bytes(
+                pdf_bytes,
+                first_page=1,
+                last_page=1,
             )
+            if not rendered_pages:
+                logger.warning( f'Cannot generate thumbnail for empty PDF: {self.file_value.name}' )
+                return None
+            return rendered_pages[0]
 
         except Exception as e:
-            logger.warning(
-                f'Error rendering PDF thumbnail for {self.file_value.name}: {e}'
-            )
+            logger.warning( f'Error rendering PDF thumbnail for {self.file_value.name}: {e}' )
             return None
 
     def _load_source_image_for_thumbnail(self, file_handle, mime_type, image_module, image_ops_module):
