@@ -64,6 +64,7 @@ AVAILABLE_ICONS = {
     'sync',
     'tasks',
     'times-circle',
+    'undo',
     'unlock',
     'upload',
     'video',

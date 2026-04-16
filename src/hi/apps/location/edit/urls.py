@@ -81,6 +81,10 @@ urlpatterns = [
              views.LocationSvgEditViewBoxView.as_view(),
              name='location_svg_edit_viewbox'),
 
+    re_path( r'^svg/edit/revert/(?P<location_id>\d+)$',
+             views.LocationSvgEditRevertView.as_view(),
+             name='location_svg_edit_revert'),
+
     re_path( r'^svg/edit/save/(?P<location_id>\d+)$',
              views.LocationSvgEditSaveView.as_view(),
              name='location_svg_edit_save'),

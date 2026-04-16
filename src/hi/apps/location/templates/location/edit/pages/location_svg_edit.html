@@ -27,7 +27,15 @@
           <a href="{% url 'location_svg_edit_cancel' location_id=location.id %}"
              id="hi-location-svg-edit-cancel-link" class="btn btn-outline-tertiary" role="button"
              data-async="true">
-            {% icon "cancel" size="sm" css_class="hi-icon-left" %} CANCEL EDITS
+            {% icon "cancel" size="sm" css_class="hi-icon-left" %} CANCEL
+          </a>
+        </div>
+
+        <div class="align-self-center m-1">
+          <a href="{% url 'location_svg_edit_revert' location_id=location.id %}"
+             id="hi-location-svg-edit-revert-link" class="btn btn-outline-tertiary" role="button"
+             data-async="true">
+            {% icon "undo" size="sm" css_class="hi-icon-left" %} REVERT
           </a>
         </div>
 
@@ -35,7 +43,7 @@
           <a href="{% url 'location_svg_edit_exit' location_id=location.id %}"
              id="hi-location-svg-edit-exit-link" class="btn btn-primary" role="button"
              data-async="true">
-            {% icon "save" size="sm" css_class="hi-icon-left" %} SAVE & EXIT
+            {% icon "save" size="sm" css_class="hi-icon-left" %} DONE
           </a>
         </div>
       </div>

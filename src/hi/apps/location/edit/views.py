@@ -737,6 +737,39 @@ class LocationSvgEditSaveView( View, LocationViewMixin ):
         return HttpResponse( 'OK' )
 
 
+@method_decorator( edit_required, name='dispatch' )
+class LocationSvgEditRevertView( HiModalView, LocationViewMixin ):
+
+    def get_template_name( self ) -> str:
+        return 'location/edit/modals/location_svg_edit_revert.html'
+
+    def get( self, request, *args, **kwargs ):
+        location = self.get_location( request, *args, **kwargs )
+        manager = LocationManager()
+
+        session_key = f'{LocationSvgEditView.SVG_EDIT_VIEWBOX_SESSION_PREFIX}{location.id}'
+        viewbox_changed = ( request.session.get( session_key ) != location.svg_view_box_str )
+        has_changes = manager.draft_has_changes( location ) or viewbox_changed
+
+        if not has_changes:
+            return antinode.dismiss_modal_response()
+
+        context = { 'location': location }
+        return self.modal_response( request, context )
+
+    def post( self, request, *args, **kwargs ):
+        location = self.get_location( request, *args, **kwargs )
+        manager = LocationManager()
+
+        manager.create_draft_svg( location )
+
+        session_key = f'{LocationSvgEditView.SVG_EDIT_VIEWBOX_SESSION_PREFIX}{location.id}'
+        request.session[session_key] = location.svg_view_box_str
+
+        redirect_url = reverse( 'location_edit_svg_edit', kwargs={ 'location_id': location.id } )
+        return antinode.redirect_response( redirect_url )
+
+
 class LocationSvgEditHelpView( HiModalView ):
 
     def get_template_name( self ) -> str:
