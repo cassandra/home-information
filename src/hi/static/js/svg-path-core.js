@@ -90,6 +90,8 @@
             return gSelectedPathSvgGroup !== null;
         },
 
+        PROXY_PATH_CONTAINER_ID: PROXY_PATH_CONTAINER_ID,
+
         deleteSelectedElement: function() {
             if ( ! gSelectedPathSvgGroup ) { return; }
             /* Remove proxy editing UI. */

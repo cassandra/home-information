@@ -6,8 +6,34 @@
     window.Hi.SvgEdit = window.Hi.SvgEdit || {};
 
     const SVG_NS = 'http://www.w3.org/2000/svg';
+
+    /* Element IDs (must match DIVID values in constants.py and templates) */
     const PALETTE_CONTAINER_ID = 'hi-svg-edit-palette';
     const CANVAS_SVG_ID = 'hi-svg-edit-svg';
+    const CANVAS_AREA_ID = 'hi-svg-edit-canvas';
+    const CANVAS_CONTAINER_ID = 'hi-svg-edit-canvas-container';
+    const CONFORMANCE_WARNING_ID = 'hi-svg-edit-conformance-warning';
+
+    /* SVG element attributes and classes (shared with SVG templates and saved files) */
+    const BG_ELEMENT_CLASS = 'hi-bg-element';
+    const BG_HIT_AREA_CLASS = 'hi-bg-hit-area';
+    const BG_EDITOR_ATTR = 'data-hi-editor';
+    const BG_TYPE_ATTR = 'data-bg-type';
+    const BG_EDIT_TYPE_ATTR = 'data-bg-edit-type';
+    const BG_LAYER_ATTR = 'data-bg-layer';
+
+    /* Palette template attributes (read from <defs>) */
+    const BG_LABEL_ATTR = 'data-bg-label';
+    const BG_CATEGORY_ATTR = 'data-bg-category';
+    const BG_TEMPLATE_ID_ATTR = 'data-bg-template-id';
+
+    /* Palette CSS classes (JS-generated DOM + location-svg-edit.css) */
+    const PALETTE_CATEGORY_CLASS = 'hi-palette-category';
+    const PALETTE_CATEGORY_LABEL_CLASS = 'hi-palette-category-label';
+    const PALETTE_ITEMS_CLASS = 'hi-palette-items';
+    const PALETTE_ITEM_CLASS = 'hi-palette-item';
+    const PALETTE_LABEL_CLASS = 'hi-palette-label';
+    const PALETTE_SWATCH_CLASS = 'hi-palette-swatch';
 
     const CATEGORY_ORDER = ['structural', 'features', 'exterior'];
     const CATEGORY_LABELS = {
@@ -37,7 +63,7 @@
         var defsElement = null;
         var allDefs = canvasSvg.querySelectorAll('defs');
         for (var di = 0; di < allDefs.length; di++) {
-            if (allDefs[di].querySelector('g[data-bg-edit-type]')) {
+            if (allDefs[di].querySelector('g[' + BG_EDIT_TYPE_ATTR + ']')) {
                 defsElement = allDefs[di];
                 break;
             }
@@ -48,16 +74,16 @@
 
         var templates = [];
         $(defsElement).children('g').each(function() {
-            var editType = $(this).attr('data-bg-edit-type');
+            var editType = $(this).attr(BG_EDIT_TYPE_ATTR);
             if (!editType) {
                 return;
             }
             templates.push({
                 id: $(this).attr('id'),
                 editType: editType,
-                label: $(this).attr('data-bg-label') || '',
-                category: $(this).attr('data-bg-category') || '',
-                layer: parseInt($(this).attr('data-bg-layer') || '0', 10),
+                label: $(this).attr(BG_LABEL_ATTR) || '',
+                category: $(this).attr(BG_CATEGORY_ATTR) || '',
+                layer: parseInt($(this).attr(BG_LAYER_ATTR) || '0', 10),
                 element: this,
             });
         });
@@ -85,15 +111,15 @@
             }
 
             var catDiv = document.createElement('div');
-            catDiv.className = 'hi-palette-category';
+            catDiv.className = PALETTE_CATEGORY_CLASS;
 
             var catLabel = document.createElement('span');
-            catLabel.className = 'hi-palette-category-label';
+            catLabel.className = PALETTE_CATEGORY_LABEL_CLASS;
             catLabel.textContent = CATEGORY_LABELS[catKey] || catKey;
             catDiv.appendChild(catLabel);
 
             var itemsDiv = document.createElement('div');
-            itemsDiv.className = 'hi-palette-items';
+            itemsDiv.className = PALETTE_ITEMS_CLASS;
 
             for (var ti = 0; ti < catTemplates.length; ti++) {
                 var tmpl = catTemplates[ti];
@@ -108,8 +134,8 @@
 
     function createPaletteItem(tmpl) {
         var itemDiv = document.createElement('div');
-        itemDiv.className = 'hi-palette-item';
-        itemDiv.setAttribute('data-bg-template-id', tmpl.id);
+        itemDiv.className = PALETTE_ITEM_CLASS;
+        itemDiv.setAttribute(BG_TEMPLATE_ID_ATTR, tmpl.id);
         itemDiv.setAttribute('draggable', 'true');
         itemDiv.setAttribute('title', tmpl.label);
 
@@ -122,7 +148,7 @@
         itemDiv.appendChild(swatchSvg);
 
         var label = document.createElement('span');
-        label.className = 'hi-palette-label';
+        label.className = PALETTE_LABEL_CLASS;
         label.textContent = tmpl.label;
         itemDiv.appendChild(label);
 
@@ -131,7 +157,7 @@
 
     function createSwatchSvg(tmpl) {
         var svg = document.createElementNS(SVG_NS, 'svg');
-        svg.setAttribute('class', 'hi-palette-swatch');
+        svg.setAttribute('class', PALETTE_SWATCH_CLASS);
         svg.setAttribute('width', SWATCH_WIDTH);
         svg.setAttribute('height', SWATCH_HEIGHT);
 
@@ -204,15 +230,15 @@
 
     function cleanCloneForSave( clone ) {
         /* Remove proxy path editing containers. */
-        var proxies = clone.querySelectorAll( '#hi-proxy-path-container' );
+        var proxies = clone.querySelectorAll( '#' + Hi.SvgPathCore.PROXY_PATH_CONTAINER_ID );
         for ( var i = 0; i < proxies.length; i++ ) {
             proxies[i].parentNode.removeChild( proxies[i] );
         }
 
         /* Remove editing highlight classes. */
-        var highlighted = clone.querySelectorAll( '.highlighted' );
+        var highlighted = clone.querySelectorAll( '.' + Hi.HIGHLIGHTED_CLASS );
         for ( var i = 0; i < highlighted.length; i++ ) {
-            highlighted[i].classList.remove( 'highlighted' );
+            highlighted[i].classList.remove( Hi.HIGHLIGHTED_CLASS );
         }
 
         /* Remove action-state attributes. */
@@ -235,7 +261,7 @@
         var canvasSvg = document.getElementById( CANVAS_SVG_ID );
         if ( ! canvasSvg ) { return; }
 
-        var editorGroup = canvasSvg.querySelector( 'g[data-hi-editor]' );
+        var editorGroup = canvasSvg.querySelector( 'g[' + BG_EDITOR_ATTR + ']' );
         if ( ! editorGroup ) { return; }
 
         /* Clone and clean: serialize a pristine copy without editing artifacts. */
@@ -256,7 +282,7 @@
     /* ==================== */
 
     function initPaletteDrop() {
-        var $canvas = $( '#hi-svg-edit-canvas' );
+        var $canvas = $( '#' + CANVAS_AREA_ID );
 
         $canvas.on( 'dragover', function( event ) {
             event.preventDefault();
@@ -279,9 +305,9 @@
                 $( canvasSvg ), event.originalEvent.clientX, event.originalEvent.clientY
             );
 
-            var editType = $( templateElement ).attr( 'data-bg-edit-type' );
+            var editType = $( templateElement ).attr( BG_EDIT_TYPE_ATTR );
             var bgType = templateId.replace( /^hi-/, '' );
-            var layer = parseInt( $( templateElement ).attr( 'data-bg-layer' ) || '0', 10 );
+            var layer = parseInt( $( templateElement ).attr( BG_LAYER_ATTR ) || '0', 10 );
 
             var newElement = createElementFromTemplate( templateElement, bgType, editType, layer, svgPoint );
             if ( newElement ) {
@@ -300,10 +326,10 @@
         var SVG_NS = 'http://www.w3.org/2000/svg';
         var group = document.createElementNS( SVG_NS, 'g' );
         group.setAttribute( 'id', generateBgId() );
-        group.setAttribute( 'class', 'hi-bg-element' );
-        group.setAttribute( 'data-bg-type', bgType );
-        group.setAttribute( 'data-bg-edit-type', editType );
-        group.setAttribute( 'data-bg-layer', layer );
+        group.setAttribute( 'class', BG_ELEMENT_CLASS );
+        group.setAttribute( BG_TYPE_ATTR, bgType );
+        group.setAttribute( BG_EDIT_TYPE_ATTR, editType );
+        group.setAttribute( BG_LAYER_ATTR, layer );
 
         /* Clone template content (paths, rects) into the new group. */
         var children = templateElement.childNodes;
@@ -326,7 +352,7 @@
             hitRect.setAttribute( 'width', bbox.width );
             hitRect.setAttribute( 'height', bbox.height );
             hitRect.setAttribute( 'fill', 'transparent' );
-            hitRect.setAttribute( 'class', 'hi-bg-hit-area' );
+            hitRect.setAttribute( 'class', BG_HIT_AREA_CLASS );
             group.appendChild( hitRect );
 
         } else if ( editType === 'open' ) {
@@ -339,7 +365,7 @@
                 /* Add hit-area path with same data. */
                 var hitPath = document.createElementNS( SVG_NS, 'path' );
                 hitPath.setAttribute( 'd', offsetD );
-                hitPath.setAttribute( 'class', 'hi-bg-hit-area' );
+                hitPath.setAttribute( 'class', BG_HIT_AREA_CLASS );
                 group.appendChild( hitPath );
             }
 
@@ -389,13 +415,13 @@
     function insertAtLayer( canvasSvg, newElement, layer ) {
         /* Insert the element at the correct position based on layer ordering.
            Elements with higher layer numbers come later in the DOM (render on top). */
-        var editorGroup = canvasSvg.querySelector( 'g[data-hi-editor]' );
+        var editorGroup = canvasSvg.querySelector( 'g[' + BG_EDITOR_ATTR + ']' );
         if ( ! editorGroup ) { return; }
 
-        var elements = editorGroup.querySelectorAll( 'g.hi-bg-element' );
+        var elements = editorGroup.querySelectorAll( 'g.' + BG_ELEMENT_CLASS );
         var insertBefore = null;
         for ( var i = 0; i < elements.length; i++ ) {
-            var elemLayer = parseInt( elements[i].getAttribute( 'data-bg-layer' ) || '0', 10 );
+            var elemLayer = parseInt( elements[i].getAttribute( BG_LAYER_ATTR ) || '0', 10 );
             if ( elemLayer > layer ) {
                 insertBefore = elements[i];
                 break;
@@ -416,7 +442,7 @@
     function initCores() {
         Hi.SvgPanZoomCore.init({
             baseSvgSelector: '#' + CANVAS_SVG_ID,
-            areaSelector: '#hi-svg-edit-canvas',
+            areaSelector: '#' + CANVAS_AREA_ID,
             onSave: null,
             shouldSave: function() { return false; },
         });
@@ -424,8 +450,8 @@
         Hi.SvgIconCore.init({
             identifyElement: function( event ) {
                 var target = event.target || event.srcElement;
-                var group = $( target ).closest( 'g.hi-bg-element' );
-                if ( group.length > 0 && group.attr( 'data-bg-edit-type' ) === 'icon' ) {
+                var group = $( target ).closest( 'g.' + BG_ELEMENT_CLASS );
+                if ( group.length > 0 && group.attr( BG_EDIT_TYPE_ATTR ) === 'icon' ) {
                     return group[0];
                 }
                 return null;
@@ -440,16 +466,16 @@
                 saveDraft();
             },
             baseSvgSelector: '#' + CANVAS_SVG_ID,
-            areaSelector: '#hi-svg-edit-canvas',
-            highlightClass: 'highlighted',
+            areaSelector: '#' + CANVAS_AREA_ID,
+            highlightClass: Hi.HIGHLIGHTED_CLASS,
         });
 
         Hi.SvgPathCore.init({
             identifyElement: function( event ) {
                 var target = event.target || event.srcElement;
-                var group = $( target ).closest( 'g.hi-bg-element' );
+                var group = $( target ).closest( 'g.' + BG_ELEMENT_CLASS );
                 if ( group.length > 0 ) {
-                    var editType = group.attr( 'data-bg-edit-type' );
+                    var editType = group.attr( BG_EDIT_TYPE_ATTR );
                     if ( editType === 'open' || editType === 'closed' ) {
                         return group[0];
                     }
@@ -464,7 +490,7 @@
             },
             onSave: null,
             baseSvgSelector: '#' + CANVAS_SVG_ID,
-            highlightClass: 'highlighted',
+            highlightClass: Hi.HIGHLIGHTED_CLASS,
         });
     }
 
@@ -476,14 +502,14 @@
         var canvasSvg = document.getElementById( CANVAS_SVG_ID );
         if ( ! canvasSvg ) { return; }
 
-        var baseGroup = canvasSvg.querySelector( 'g.hi-location-view-base' );
+        var baseGroup = canvasSvg.querySelector( Hi.LOCATION_VIEW_BASE_SELECTOR );
         if ( ! baseGroup ) { return; }
 
-        var editorGroup = baseGroup.querySelector( 'g[data-hi-editor]' );
+        var editorGroup = baseGroup.querySelector( 'g[' + BG_EDITOR_ATTR + ']' );
         if ( ! editorGroup ) {
             /* Wrap existing content in an editor group so palette items can be added. */
             editorGroup = document.createElementNS( 'http://www.w3.org/2000/svg', 'g' );
-            editorGroup.setAttribute( 'data-hi-editor', '1' );
+            editorGroup.setAttribute( BG_EDITOR_ATTR, '1' );
             while ( baseGroup.firstChild ) {
                 editorGroup.appendChild( baseGroup.firstChild );
             }
@@ -501,8 +527,8 @@
             var child = children[i];
             if ( child.tagName === 'defs' ) { continue; }
             totalElements++;
-            if ( child.classList && child.classList.contains( 'hi-bg-element' )
-                 && child.getAttribute( 'data-bg-edit-type' ) ) {
+            if ( child.classList && child.classList.contains( BG_ELEMENT_CLASS )
+                 && child.getAttribute( BG_EDIT_TYPE_ATTR ) ) {
                 editableElements++;
             }
         }
@@ -513,7 +539,7 @@
     }
 
     function showConformanceWarning() {
-        $( '#hi-svg-edit-conformance-warning' ).show();
+        $( '#' + CONFORMANCE_WARNING_ID ).show();
     }
 
     function refreshAfterAsyncRender() {

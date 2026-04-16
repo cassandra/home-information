@@ -1,8 +1,8 @@
 {% load static %}
 {% load common_tags %}
 <link rel="stylesheet" href="{% static 'css/svg-location-color.css' %}">
-<div id="hi-svg-edit-canvas" class="hi-location-view">
-  <svg id="hi-svg-edit-svg"
+<div id="{{ DIVID.LOCATION_SVG_EDIT_CANVAS }}" class="hi-location-view">
+  <svg id="{{ DIVID.LOCATION_SVG_EDIT_SVG }}"
        class="hi-location-view-svg"
        xmlns="http://www.w3.org/2000/svg"
        viewBox="{{ svg_view_box }}"

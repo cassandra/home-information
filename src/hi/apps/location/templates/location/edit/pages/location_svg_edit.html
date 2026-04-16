@@ -9,7 +9,7 @@
 {% block content %}
 <div id="{{ DIVID.LOCATION_SVG_EDIT_TOP }}" class="fixed-top">
   <div class="d-flex justify-content-between">
-    <div id="hi-svg-edit-palette" class="hi-palette-container align-self-center">
+    <div id="{{ DIVID.LOCATION_SVG_EDIT_PALETTE }}" class="hi-palette-container align-self-center">
     </div>
 
     <div class="align-self-center">
@@ -46,7 +46,7 @@
   <div class="d-flex justify-content-between align-items-center px-3 h-100">
     <form action="{% url 'location_svg_edit_viewbox' location_id=location.id %}"
           method="post" class="form d-flex align-items-center"
-          data-async="#hi-svg-edit-canvas-container">
+          data-async="#{{ DIVID.LOCATION_SVG_EDIT_CANVAS_CONTAINER }}">
       {% csrf_token %}
       <label class="me-2 mb-0 mx-1" style="font-size: 0.85rem;"><b>Canvas Size:</b></label>
       <label class="me-1 mb-0 mx-1" style="font-size: 0.85rem;">W</label>
@@ -76,7 +76,7 @@
     <button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>
   </div>
   {% endif %}
-  <div id="hi-svg-edit-conformance-warning" class="alert alert-warning alert-dismissible fade show m-0 py-1 px-3 rounded-0" role="alert" style="font-size: 0.85rem; display: none;">
+  <div id="{{ DIVID.LOCATION_SVG_EDIT_CONFORMANCE_WARNING }}" class="alert alert-warning alert-dismissible fade show m-0 py-1 px-3 rounded-0" role="alert" style="font-size: 0.85rem; display: none;">
     {% icon "warning" size="sm" css_class="hi-icon-left" %}
     Not all elements in this background are editable. It contains some imported content. Only elements added in this editor are editable.
     <button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>
@@ -85,7 +85,7 @@
 
 <div id="{{ DIVID.LOCATION_SVG_EDIT_MAIN }}" class="container-fluid"
      style="margin-bottom: var(--svg-editor-bottom-height);">
-  <div id="hi-svg-edit-canvas-container">
+  <div id="{{ DIVID.LOCATION_SVG_EDIT_CANVAS_CONTAINER }}">
     {% include "location/edit/panes/location_svg_edit_canvas.html" %}
   </div>
 </div>

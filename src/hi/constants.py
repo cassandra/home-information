@@ -157,4 +157,11 @@ DIVID = {
     'LOCATION_SVG_EDIT_BOTTOM': 'hi-location-svg-editor-bottom',
     'LOCATION_SVG_EDIT_MAIN': 'hi-location-svg-editor-main',
 
+    # Location SVG Editor Elements
+    'LOCATION_SVG_EDIT_PALETTE': 'hi-svg-edit-palette',
+    'LOCATION_SVG_EDIT_SVG': 'hi-svg-edit-svg',
+    'LOCATION_SVG_EDIT_CANVAS': 'hi-svg-edit-canvas',
+    'LOCATION_SVG_EDIT_CANVAS_CONTAINER': 'hi-svg-edit-canvas-container',
+    'LOCATION_SVG_EDIT_CONFORMANCE_WARNING': 'hi-svg-edit-conformance-warning',
+
 }
