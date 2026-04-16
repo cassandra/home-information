@@ -113,6 +113,7 @@ class SvgFileForm(forms.Form):
     }
     HREF_ATTRS = {
         'href', 'xlink:href',
+        '{http://www.w3.org/1999/xlink}href',
     }
 
     def __init__(self, *args, **kwargs):

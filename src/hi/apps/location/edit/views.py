@@ -799,7 +799,7 @@ class LocationSvgEditRevertView( HiModalView, LocationViewMixin ):
         has_changes = manager.draft_has_changes( location ) or viewbox_changed
 
         if not has_changes:
-            return antinode.dismiss_modal_response()
+            return HttpResponse( status=204 )
 
         context = { 'location': location }
         return self.modal_response( request, context )
