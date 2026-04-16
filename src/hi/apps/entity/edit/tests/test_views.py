@@ -89,6 +89,20 @@ class TestEntityAddView(DualModeViewTestCase):
         data = response.json()
         self.assertIn('modal', data)
 
+    def test_get_entity_add_form_quantity_defaults_to_one(self):
+        """Test quantity field defaults to 1 in add form."""
+        url = reverse('entity_edit_entity_add')
+        response = self.client.get(url)
+
+        self.assertSuccessResponse(response)
+        self.assertHtmlResponse(response)
+        self.assertIn('entity_form', response.context)
+
+        entity_form = response.context['entity_form']
+        self.assertIn('quantity', entity_form.fields)
+        self.assertEqual(entity_form.fields['quantity'].initial, 1)
+        self.assertEqual(entity_form['quantity'].value(), 1)
+
     def test_post_invalid_form(self):
         """Test POST request with invalid form data."""
         # Submit form with missing required fields
@@ -117,6 +131,112 @@ class TestEntityAddView(DualModeViewTestCase):
         # Verify no Entity was created with invalid data
         self.assertFalse(Entity.objects.filter(name='').exists())
 
+    def test_post_invalid_form_quantity_above_max(self):
+        """Test POST request rejects quantity values above 100."""
+        form_data = {
+            'name': 'Test Entity',
+            'entity_type_str': str(EntityType.LIGHT),
+            'quantity': '101',
+        }
+
+        url = reverse('entity_edit_entity_add')
+        response = self.client.post(url, form_data)
+
+        self.assertSuccessResponse(response)
+        self.assertHtmlResponse(response)
+        self.assertIn('entity_form', response.context)
+
+        form = response.context['entity_form']
+        self.assertFalse(form.is_valid())
+        self.assertIn('quantity', form.errors)
+        self.assertEqual(Entity.objects.filter(name='Test Entity').count(), 0)
+
+    def test_post_invalid_form_quantity_below_min(self):
+        """Test POST request rejects quantity values below 1."""
+        form_data = {
+            'name': 'Test Entity',
+            'entity_type_str': str(EntityType.LIGHT),
+            'quantity': '0',
+        }
+
+        url = reverse('entity_edit_entity_add')
+        response = self.client.post(url, form_data)
+
+        self.assertSuccessResponse(response)
+        self.assertHtmlResponse(response)
+        self.assertIn('entity_form', response.context)
+
+        form = response.context['entity_form']
+        self.assertFalse(form.is_valid())
+        self.assertIn('quantity', form.errors)
+        self.assertEqual(Entity.objects.filter(name='Test Entity').count(), 0)
+
+    def test_post_invalid_form_quantity_missing(self):
+        """Test POST request rejects missing quantity."""
+        form_data = {
+            'name': 'Test Entity',
+            'entity_type_str': str(EntityType.LIGHT),
+        }
+
+        url = reverse('entity_edit_entity_add')
+        response = self.client.post(url, form_data)
+
+        self.assertSuccessResponse(response)
+        self.assertHtmlResponse(response)
+        self.assertIn('entity_form', response.context)
+
+        form = response.context['entity_form']
+        self.assertFalse(form.is_valid())
+        self.assertIn('quantity', form.errors)
+        self.assertEqual(Entity.objects.filter(name='Test Entity').count(), 0)
+
+    def test_post_invalid_form_quantity_non_numeric(self):
+        """Test POST request rejects non-numeric quantity values."""
+        form_data = {
+            'name': 'Test Entity',
+            'entity_type_str': str(EntityType.LIGHT),
+            'quantity': 'abc',
+        }
+
+        url = reverse('entity_edit_entity_add')
+        response = self.client.post(url, form_data)
+
+        self.assertSuccessResponse(response)
+        self.assertHtmlResponse(response)
+        self.assertIn('entity_form', response.context)
+
+        form = response.context['entity_form']
+        self.assertFalse(form.is_valid())
+        self.assertIn('quantity', form.errors)
+        self.assertEqual(Entity.objects.filter(name='Test Entity').count(), 0)
+
+    def test_post_valid_form(self):
+        """Test POST request with valid form data."""
+        self.setSessionViewType(ViewType.CONFIGURATION)
+
+        form_data = {
+            'name': 'Test Entity',
+            'entity_type_str': str(EntityType.LIGHT),
+            'quantity': '3',
+        }
+
+        initial_entity_count = Entity.objects.count()
+
+        url = reverse('entity_edit_entity_add')
+        response = self.client.post(url, form_data)
+
+        self.assertSuccessResponse(response)
+        self.assertJsonResponse(response)
+        response_data = response.json()
+        self.assertEqual(response_data['location'], reverse('home'))
+
+        self.assertEqual(Entity.objects.count(), initial_entity_count + 3)
+
+        created_entities = Entity.objects.filter(name__startswith='Test Entity')
+        self.assertEqual(created_entities.count(), 3)
+        for entity in created_entities:
+            self.assertEqual(entity.entity_type_str, str(EntityType.LIGHT))
+
     def test_post_valid_form_location_view(self):
         """Test POST request with valid form data in location view context."""
         # Set location view context
@@ -125,7 +245,8 @@ class TestEntityAddView(DualModeViewTestCase):
         # Create comprehensive form data for new entity
         form_data = {
             'name': 'Test Entity',
-            'entity_type_str': str(EntityType.LIGHT)
+            'entity_type_str': str(EntityType.LIGHT),
+            'quantity': '1',
         }
 
         # Count existing entities before
@@ -166,7 +287,8 @@ class TestEntityAddView(DualModeViewTestCase):
         url = reverse('entity_edit_entity_add')
         response = self.client.post(url, {
             'name': 'Test Entity Collection',
-            'entity_type_str': str(EntityType.WALL_SWITCH)
+            'entity_type_str': str(EntityType.WALL_SWITCH),
+            'quantity': '1',
         })
 
         # Expect antinode.js response (200 with JSON redirect)
@@ -195,7 +317,8 @@ class TestEntityAddView(DualModeViewTestCase):
         url = reverse('entity_edit_entity_add')
         response = self.client.post(url, {
             'name': 'Test Entity Configuration',
-            'entity_type_str': str(EntityType.MOTION_SENSOR)
+            'entity_type_str': str(EntityType.MOTION_SENSOR),
+            'quantity': '1',
         })
 
         # Expect antinode.js response (200 with JSON redirect)
@@ -225,7 +348,8 @@ class TestEntityAddView(DualModeViewTestCase):
         url = reverse('entity_edit_entity_add')
         response = self.client.post(url, {
             'name': 'Test Entity No Location',
-            'entity_type_str': str(EntityType.PRESENCE_SENSOR)
+            'entity_type_str': str(EntityType.PRESENCE_SENSOR),
+            'quantity': '1',
         })
 
         # Expect antinode.js response (200 with JSON redirect)

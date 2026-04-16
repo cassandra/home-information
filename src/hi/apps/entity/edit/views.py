@@ -15,7 +15,7 @@ import hi.apps.common.antinode as antinode
 from hi.apps.entity.entity_manager import EntityManager
 from hi.apps.entity.entity_pairing_manager import EntityPairingManager, EntityPairingError
 from hi.apps.entity.edit.entity_type_transition_handler import EntityTypeTransitionHandler
-from hi.apps.entity.forms import EntityForm
+from hi.apps.entity.forms import EntityAddForm, EntityForm
 from hi.apps.entity.models import (
     ArchivedEntity,
     ArchivedEntityAttribute,
@@ -70,39 +70,36 @@ class EntityAddView( HiModalView ):
     
     def get( self, request, *args, **kwargs ):
         context = {
-            'entity_form': EntityForm(),
+            'entity_form': EntityAddForm(),
         }
         return self.modal_response( request, context )
     
     def post( self, request, *args, **kwargs ):
-        entity_form = EntityForm( request.POST )
+        entity_form = EntityAddForm( request.POST )
         if not entity_form.is_valid():
             context = {
                 'entity_form': entity_form,
             }
             return self.modal_response( request, context )
 
-        quantity = entity_form.cleaned_data['quantity']
         with transaction.atomic():
-            created_entities = self._create_entities_bulk(
-                entity_form = entity_form,
-                quantity = quantity,
-            )
+            created_entities = self._create_entities_bulk( entity_form = entity_form )
             for i, entity in enumerate( created_entities ):
                 self._add_to_current_view_type(
                     request = request,
                     entity = entity,
                     bulk_grid_index = i,
-                    bulk_grid_total = quantity,
+                    bulk_grid_total = len( created_entities ),
                 )
                 continue
             
         redirect_url = reverse('home')
         return self.redirect_response( request, redirect_url )
 
-    def _create_entities_bulk(self, entity_form: EntityForm, quantity: int) -> List[Entity]:
+    def _create_entities_bulk(self, entity_form: EntityAddForm) -> List[Entity]:
         base_name = entity_form.cleaned_data['name']
         entity_type_str = entity_form.cleaned_data['entity_type_str']
+        quantity = entity_form.cleaned_data['quantity']
 
         entities = []
         for i in range( 1, quantity + 1 ):

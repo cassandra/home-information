@@ -7,8 +7,6 @@ from hi.apps.entity.models import Entity, EntityAttribute
 
 class EntityForm( forms.ModelForm ):
 
-    MAX_BULK_ADD_QUANTITY = 100
-
     class Meta:
         model = Entity
         fields = (
@@ -23,6 +21,11 @@ class EntityForm( forms.ModelForm ):
         required = True,
         widget = forms.Select( attrs = { 'class' : 'custom-select' } ),
     )
+
+
+class EntityAddForm( EntityForm ):
+
+    MAX_BULK_ADD_QUANTITY = 100
 
     quantity = forms.IntegerField(
         label = 'Quantity',
