@@ -468,10 +468,74 @@
         });
     }
 
+    /* ==================== */
+    /* Conformance Check    */
+    /* ==================== */
+
+    function checkConformance() {
+        var canvasSvg = document.getElementById( CANVAS_SVG_ID );
+        if ( ! canvasSvg ) { return; }
+
+        var baseGroup = canvasSvg.querySelector( 'g.hi-location-view-base' );
+        if ( ! baseGroup ) { return; }
+
+        var editorGroup = baseGroup.querySelector( 'g[data-hi-editor]' );
+        if ( ! editorGroup ) {
+            /* Wrap existing content in an editor group so palette items can be added. */
+            editorGroup = document.createElementNS( 'http://www.w3.org/2000/svg', 'g' );
+            editorGroup.setAttribute( 'data-hi-editor', '1' );
+            while ( baseGroup.firstChild ) {
+                editorGroup.appendChild( baseGroup.firstChild );
+            }
+            baseGroup.appendChild( editorGroup );
+
+            showConformanceWarning(
+                'This background was not created with the editor. '
+                + 'You can add new elements from the palette, but existing content cannot be edited.'
+            );
+            return;
+        }
+
+        /* Count direct child elements of the editor group (excluding defs). */
+        var children = editorGroup.children;
+        var totalElements = 0;
+        var editableElements = 0;
+        for ( var i = 0; i < children.length; i++ ) {
+            var child = children[i];
+            if ( child.tagName === 'defs' ) { continue; }
+            totalElements++;
+            if ( child.classList && child.classList.contains( 'hi-bg-element' )
+                 && child.getAttribute( 'data-bg-edit-type' ) ) {
+                editableElements++;
+            }
+        }
+
+        if ( totalElements > 0 && editableElements < totalElements ) {
+            showConformanceWarning(
+                'Some elements in this background were not created with the editor and cannot be edited.'
+            );
+        }
+    }
+
+    function showConformanceWarning( message ) {
+        var warningsArea = document.getElementById( 'hi-svg-edit-warnings' );
+        if ( ! warningsArea ) { return; }
+
+        var alert = document.createElement( 'div' );
+        alert.className = 'alert alert-warning alert-dismissible fade show m-0 py-1 px-3 rounded-0';
+        alert.setAttribute( 'role', 'alert' );
+        alert.style.fontSize = '0.85rem';
+        alert.innerHTML = message
+            + '<button type="button" class="close" data-dismiss="alert" '
+            + 'aria-label="Close"><span aria-hidden="true">&times;</span></button>';
+        warningsArea.appendChild( alert );
+    }
+
     $(document).ready(function() {
         buildPalette();
         initPaletteDrop();
         initCores();
+        checkConformance();
     });
 
 })();

@@ -26,6 +26,20 @@
 }
 
 /* ==================== */
+/* Warnings Area        */
+/* ==================== */
+
+.hi-svg-edit-warnings {
+    position: relative;
+    z-index: 10;
+}
+.hi-svg-edit-warnings .alert {
+    border-left: none;
+    border-right: none;
+    border-radius: 0;
+}
+
+/* ==================== */
 /* Palette              */
 /* ==================== */
 
