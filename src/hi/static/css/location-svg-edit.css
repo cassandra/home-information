@@ -4,23 +4,29 @@
     --svg-editor-top-height: 5rem;
     --svg-editor-bottom-height: 4rem;
     --svg-editor-main-height: 4rem;
+
+    /* Teal-based edit mode colors (distinct from orange entity editing) */
+    --svg-editor-bg: #E0F2F2;
+    --svg-editor-border-color: #177072;
+    --svg-editor-dash-color: #115354;
+    --svg-editor-shadow-rgba: rgba(23, 112, 114, 0.1);
 }
 
 #hi-location-svg-editor-top {
     height: calc( var(--svg-editor-top-height) );
-    background: var(--edit-mode-tertiary-bg);
-    border-bottom: 4px dashed var(--edit-mode-dash-color);
-    box-shadow: inset 0 -2px 8px rgba(212, 119, 94, 0.1);
+    background: var(--svg-editor-bg);
+    border-bottom: 4px dashed var(--svg-editor-dash-color);
+    box-shadow: inset 0 -2px 8px var(--svg-editor-shadow-rgba);
 }
 #hi-location-svg-editor-bottom {
     height: var(--svg-editor-bottom-height);
-    background: var(--edit-mode-tertiary-bg);
-    border-top: 4px dashed var(--edit-mode-dash-color);
-    box-shadow: inset 0 2px 8px rgba(212, 119, 94, 0.1);
+    background: var(--svg-editor-bg);
+    border-top: 4px dashed var(--svg-editor-dash-color);
+    box-shadow: inset 0 2px 8px var(--svg-editor-shadow-rgba);
 }
 #hi-location-svg-editor-main {
-    background: linear-gradient(135deg, var(--edit-mode-secondary-bg) 0%, var(--white) 50%, var(--edit-mode-secondary-bg) 100%);
-    box-shadow: inset 0 0 0 3px var(--edit-mode-secondary-bg);
+    background: linear-gradient(135deg, var(--svg-editor-bg) 0%, var(--white) 50%, var(--svg-editor-bg) 100%);
+    box-shadow: inset 0 0 0 3px var(--svg-editor-bg);
     position: relative;
     height: calc( 100vh - var(--svg-editor-top-height) - var(--svg-editor-bottom-height) );
 }
@@ -58,6 +64,14 @@
     gap: 0.75rem;
     padding: 0 0.5rem;
     overflow-x: auto;
+    overflow-y: hidden;
+    min-width: 0;
+    scrollbar-width: thin;
+}
+.hi-svg-edit-buttons {
+    flex-shrink: 0;
+    padding: 0 0.25rem;
+    white-space: nowrap;
 }
 
 .hi-palette-category {

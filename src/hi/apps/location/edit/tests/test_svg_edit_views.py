@@ -248,8 +248,8 @@ class TestLocationSvgEditExitView(LocationSvgEditViewTestBase):
 class TestLocationSvgEditRevertView(LocationSvgEditViewTestBase):
     """Tests for LocationSvgEditRevertView - revert draft to live content."""
 
-    def test_get_no_changes_returns_no_content(self):
-        """GET with no changes returns 204 No Content (nothing to revert)."""
+    def test_get_no_changes_shows_info_modal(self):
+        """GET with no changes shows informational modal explaining nothing to revert."""
         self._create_draft()  # Draft matches live
 
         # Set the session viewbox to match the location (as the edit view would)
@@ -261,7 +261,7 @@ class TestLocationSvgEditRevertView(LocationSvgEditViewTestBase):
         url = reverse('location_svg_edit_revert', kwargs={'location_id': self.location.id})
         response = self.async_get(url)
 
-        self.assertEqual(response.status_code, 204)
+        self.assertSuccessResponse(response)
 
     def test_get_with_changes_shows_confirmation_modal(self):
         """GET with changes should show revert confirmation modal."""

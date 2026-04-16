@@ -2,48 +2,38 @@
 {% load pipeline %}
 {% load icons %}
 
+{% block head_title %}Background Editor — Home Information{% endblock %}
+
 {% block head_css %}
 {% stylesheet 'css_location_svg_edit' %}
 {% endblock %}
 
 {% block content %}
 <div id="{{ DIVID.LOCATION_SVG_EDIT_TOP }}" class="fixed-top">
-  <div class="d-flex justify-content-between">
-    <div id="{{ DIVID.LOCATION_SVG_EDIT_PALETTE }}" class="hi-palette-container align-self-center">
+  <div class="d-flex align-items-center">
+    <div id="{{ DIVID.LOCATION_SVG_EDIT_PALETTE }}" class="hi-palette-container flex-grow-1">
     </div>
 
-    <div class="align-self-center">
-      <div class="d-flex justify-content-between">
-        <div class="align-self-center m-1">
-          <a href="{% url 'location_svg_edit_cancel' location_id=location.id %}"
-             id="hi-location-svg-edit-cancel-link" class="btn btn-outline-tertiary" role="button"
-             data-async="true">
-            {% icon "cancel" size="sm" css_class="hi-icon-left" %} CANCEL
-          </a>
-        </div>
-
-        <div class="align-self-center m-1">
-          <a href="{% url 'location_svg_edit_revert' location_id=location.id %}"
-             id="hi-location-svg-edit-revert-link" class="btn btn-outline-tertiary" role="button"
-             data-async="true">
-            {% icon "undo" size="sm" css_class="hi-icon-left" %} REVERT
-          </a>
-        </div>
-
-        <div class="align-self-center m-1">
-          <a href="{% url 'location_svg_edit_exit' location_id=location.id %}"
-             id="hi-location-svg-edit-exit-link" class="btn btn-primary" role="button"
-             data-async="true">
-            {% icon "save" size="sm" css_class="hi-icon-left" %} DONE
-          </a>
-        </div>
-      </div>
+    <div class="hi-svg-edit-buttons d-flex flex-nowrap align-items-center">
+      <a href="{% url 'location_svg_edit_cancel' location_id=location.id %}"
+         id="hi-location-svg-edit-cancel-link" class="btn btn-outline-tertiary mx-1" role="button"
+         data-async="true">
+        {% icon "cancel" size="sm" css_class="hi-icon-left" %}CANCEL
+      </a>
+      <a href="{% url 'location_svg_edit_exit' location_id=location.id %}"
+         id="hi-location-svg-edit-exit-link" class="btn btn-primary mx-1" role="button"
+         data-async="true">
+        {% icon "save" size="sm" css_class="hi-icon-left" %}DONE
+      </a>
     </div>
   </div>
 </div>
 
 <div id="{{ DIVID.LOCATION_SVG_EDIT_BOTTOM }}" class="fixed-bottom">
   <div class="d-flex justify-content-between align-items-center px-3 h-100">
+    <div class="d-flex align-items-center">
+      <span class="text-muted mr-3" style="font-size: 0.8rem; font-weight: 600; letter-spacing: 0.03em; color: var(--svg-editor-dash-color);">BACKGROUND EDITOR</span>
+      <span class="text-muted mx-2" style="font-size: 0.85rem;">|</span>
     <form action="{% url 'location_svg_edit_viewbox' location_id=location.id %}"
           method="post" class="form d-flex align-items-center"
           data-async="#{{ DIVID.LOCATION_SVG_EDIT_CANVAS_CONTAINER }}">
@@ -57,20 +47,22 @@
              style="width: 6rem;" value="{{ svg_view_box.height|floatformat:0 }}" min="100" step="50">
       <button type="submit" class="btn btn-sm btn-outline-primary ms-2 mx-1">Apply</button>
     </form>
-    <div class="d-flex gap-2">
-      <div class="mx-2">
-        <a href="{% url 'location_svg_edit_export' location_id=location.id %}"
-           class="btn btn-sm btn-outline-primary" role="button">
-          {% icon "download" size="sm" css_class="hi-icon-left" %}EXPORT
-        </a>
-      </div>
-      <div class="mx-2">
-        <a href="{% url 'location_svg_edit_help' %}"
-           class="btn btn-tertiary btn-control" role="button"
-           data-async="true">
-          {% icon "question-circle" size="sm" css_class="hi-icon-left" %}HELP
-        </a>
-      </div>
+    </div>
+    <div class="d-flex flex-nowrap gap-2 align-items-center">
+      <a href="{% url 'location_svg_edit_revert' location_id=location.id %}"
+         id="hi-location-svg-edit-revert-link" class="btn btn-sm btn-outline-secondary text-nowrap mx-1" role="button"
+         data-async="true">
+        {% icon "undo" size="sm" css_class="hi-icon-left" %}REVERT
+      </a>
+      <a href="{% url 'location_svg_edit_export' location_id=location.id %}"
+         class="btn btn-sm btn-outline-primary text-nowrap mx-1" role="button">
+        {% icon "download" size="sm" css_class="hi-icon-left" %}EXPORT
+      </a>
+      <a href="{% url 'location_svg_edit_help' %}"
+         class="btn btn-tertiary text-nowrap mx-1" role="button"
+         data-async="true">
+        {% icon "question-circle" size="sm" css_class="hi-icon-left" %}HELP
+      </a>
     </div>
   </div>
 </div>
