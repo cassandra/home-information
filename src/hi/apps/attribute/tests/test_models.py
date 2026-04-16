@@ -11,6 +11,7 @@ from PIL import Image
 
 from hi.apps.attribute.models import AttributeModel
 from hi.apps.attribute.enums import AttributeValueType, AttributeType
+from hi.apps.attribute.thumbnail import generate_thumbnail_best_effort
 from hi.apps.entity.enums import EntityType
 from hi.apps.entity.models import Entity, EntityAttribute
 from hi.integrations.transient_models import IntegrationKey
@@ -237,7 +238,7 @@ class TestAttributeModel(BaseTestCase):
             )
             attr.file_value = source_path
 
-            generated = attr.generate_thumbnail_best_effort()
+            generated = generate_thumbnail_best_effort(attr)
 
             self.assertTrue(generated)
             self.assertTrue(default_storage.exists(attr.thumbnail_relative_path))
@@ -260,7 +261,7 @@ class TestAttributeModel(BaseTestCase):
             )
             attr.file_value = source_path
 
-            generated = attr.generate_thumbnail_best_effort()
+            generated = generate_thumbnail_best_effort(attr)
 
             self.assertFalse(generated)
             self.assertFalse(attr.has_thumbnail)
@@ -285,7 +286,7 @@ class TestAttributeModel(BaseTestCase):
             )
             attr.file_value = source_path
 
-            generated = attr.generate_thumbnail_best_effort()
+            generated = generate_thumbnail_best_effort(attr)
 
             self.assertTrue(generated)
             self.assertTrue(default_storage.exists(attr.thumbnail_relative_path))

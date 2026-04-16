@@ -1,10 +1,7 @@
 import json
 import logging
-import mimetypes
-from io import BytesIO
 from pathlib import PurePosixPath
 
-from django.core.files.base import ContentFile
 from django.core.files.storage import default_storage
 from django.db import models
 
@@ -18,26 +15,12 @@ from .enums import (
     AttributeType,
 )
 from .managers import ActiveAttributeManager, DeletedAttributeManager
+from .thumbnail import THUMBNAIL_SUBDIRECTORY, THUMBNAIL_SUFFIX, THUMBNAIL_SUPPORTED_MIME_TYPES, effective_file_mime_type
 
 logger = logging.getLogger(__name__)
 
 
 class AttributeModel(models.Model):
-
-    THUMBNAIL_SUBDIRECTORY = 'thumbnails'
-    THUMBNAIL_SUFFIX = '.thumb.png'
-    THUMBNAIL_SIZE = (320, 320)
-    THUMBNAIL_MAX_SOURCE_BYTES = 20 * 1024 * 1024
-    THUMBNAIL_IMAGE_MIME_TYPES = {
-        'image/jpeg',
-        'image/png',
-        'image/webp',
-        'image/gif',
-    }
-    THUMBNAIL_PDF_MIME_TYPES = {
-        'application/pdf',
-    }
-    THUMBNAIL_SUPPORTED_MIME_TYPES = THUMBNAIL_IMAGE_MIME_TYPES | THUMBNAIL_PDF_MIME_TYPES
 
     supports_soft_delete = False
 
@@ -172,39 +155,29 @@ class AttributeModel(models.Model):
             logger.error( f'Bad value range for attribute {self.name}: {e}' )
             pass
         return dict()
-
-    def _effective_file_mime_type(self):
-        if self.file_mime_type:
-            mime_type = self.file_mime_type.split(';', 1)[0].strip().lower()
-            if mime_type:
-                return mime_type
-
-        if self.file_value and self.file_value.name:
-            guessed_mime_type, _ = mimetypes.guess_type(self.file_value.name)
-            if guessed_mime_type:
-                return guessed_mime_type.strip().lower()
-        return None
-
-    @property
+    
     def supports_thumbnail_generation(self):
         if not self.file_value or not self.file_value.name:
             return False
 
-        mime_type = self._effective_file_mime_type()
+        mime_type = effective_file_mime_type(
+            file_value=self.file_value,
+            file_mime_type=self.file_mime_type,
+        )
         if not mime_type:
             return False
-        return bool(mime_type in self.THUMBNAIL_SUPPORTED_MIME_TYPES)
+        return bool(mime_type in THUMBNAIL_SUPPORTED_MIME_TYPES)
 
     @property
     def thumbnail_relative_path(self):
-        if not self.supports_thumbnail_generation:
+        if not self.supports_thumbnail_generation():
             return None
 
         source_path = PurePosixPath(self.file_value.name)
-        thumbnail_name = f'{source_path.stem}{self.THUMBNAIL_SUFFIX}'
+        thumbnail_name = f'{source_path.stem}{THUMBNAIL_SUFFIX}'
         if str(source_path.parent) == '.':
-            return str(PurePosixPath(self.THUMBNAIL_SUBDIRECTORY) / thumbnail_name)
-        return str(source_path.parent / self.THUMBNAIL_SUBDIRECTORY / thumbnail_name)
+            return str(PurePosixPath(THUMBNAIL_SUBDIRECTORY) / thumbnail_name)
+        return str(source_path.parent / THUMBNAIL_SUBDIRECTORY / thumbnail_name)
 
     def _thumbnail_exists(self):
         if hasattr(self, '_thumbnail_exists_cache'):
@@ -231,110 +204,6 @@ class AttributeModel(models.Model):
         if self.has_thumbnail:
             return 'thumbnail'
         return 'placeholder'
-
-    def _render_pdf_first_page_image(self, file_handle, image_module):
-        try:
-            from pdf2image import convert_from_bytes
-        except Exception as e:
-            logger.warning( f'pdf2image unavailable for PDF thumbnail generation: {e}' )
-            return None
-
-        try:
-            pdf_bytes = file_handle.read()
-            rendered_pages = convert_from_bytes(
-                pdf_bytes,
-                first_page=1,
-                last_page=1,
-            )
-            if not rendered_pages:
-                logger.warning( f'Cannot generate thumbnail for empty PDF: {self.file_value.name}' )
-                return None
-            return rendered_pages[0]
-
-        except Exception as e:
-            logger.warning( f'Error rendering PDF thumbnail for {self.file_value.name}: {e}' )
-            return None
-
-    def _load_source_image_for_thumbnail(self, file_handle, mime_type, image_module, image_ops_module):
-        if mime_type in self.THUMBNAIL_PDF_MIME_TYPES:
-            return self._render_pdf_first_page_image(file_handle, image_module)
-
-        with image_module.open(file_handle) as img:
-            processed_img = image_ops_module.exif_transpose(img)
-            return processed_img.copy()
-
-    def generate_thumbnail_best_effort(self, force=False):
-        thumbnail_path = self.thumbnail_relative_path
-        if not thumbnail_path:
-            return False
-
-        mime_type = self._effective_file_mime_type()
-
-        if not force and default_storage.exists(thumbnail_path):
-            self._thumbnail_exists_cache = True
-            return True
-
-        if self.file_value and getattr(self.file_value, 'size', None):
-            if self.file_value.size > self.THUMBNAIL_MAX_SOURCE_BYTES:
-                logger.info(
-                    f'Skipping thumbnail generation for {self.file_value.name}: '
-                    f'file too large ({self.file_value.size} bytes)'
-                )
-                return False
-
-        try:
-            from PIL import Image, ImageOps, UnidentifiedImageError
-        except Exception as e:
-            logger.warning(f'Pillow unavailable for thumbnail generation: {e}')
-            return False
-
-        try:
-            with default_storage.open(self.file_value.name, 'rb') as file_handle:
-                processed_img = self._load_source_image_for_thumbnail(
-                    file_handle=file_handle,
-                    mime_type=mime_type,
-                    image_module=Image,
-                    image_ops_module=ImageOps,
-                )
-
-            if not processed_img:
-                self._thumbnail_exists_cache = False
-                return False
-
-            resampling = (
-                Image.Resampling.LANCZOS
-                if hasattr(Image, 'Resampling')
-                else Image.LANCZOS
-            )
-            processed_img.thumbnail(self.THUMBNAIL_SIZE, resampling)
-
-            if processed_img.mode not in ('RGB', 'RGBA'):
-                if 'A' in processed_img.getbands():
-                    processed_img = processed_img.convert('RGBA')
-                else:
-                    processed_img = processed_img.convert('RGB')
-
-            bytes_buffer = BytesIO()
-            processed_img.save(bytes_buffer, format='PNG', optimize=True)
-            thumbnail_content = ContentFile(bytes_buffer.getvalue())
-
-            if default_storage.exists(thumbnail_path):
-                default_storage.delete(thumbnail_path)
-
-            default_storage.save(thumbnail_path, thumbnail_content)
-            self._thumbnail_exists_cache = True
-            return True
-
-        except UnidentifiedImageError:
-            logger.warning(
-                f'Cannot generate thumbnail due to unrecognized image content: {self.file_value.name}'
-            )
-        except Exception as e:
-            logger.warning(
-                f'Error generating thumbnail for {self.file_value.name}: {e}'
-            )
-        self._thumbnail_exists_cache = False
-        return False
 
     def save(self, *args, **kwargs):
         # Skip history tracking for kwargs that disable it
