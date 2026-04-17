@@ -4,8 +4,7 @@
   "locations": [
     {
       "name": "My Home",
-      "svg_fragment_filename": "location/svg/two_story-0.svg",
-      "svg_view_box_str": "0.0 0.0 2000.0 2000.0",
+      "svg_template_name": "profiles/svg/backgrounds/first-floor-0.svg",
       "order_id": 0,
       "views": [
         {
@@ -36,8 +35,7 @@
     },
     {
       "name": "Upstairs",
-      "svg_fragment_filename": "location/svg/two_story-1.svg",
-      "svg_view_box_str": "0.0 0.0 2000.0 2000.0",
+      "svg_template_name": "profiles/svg/backgrounds/second-floor-0.svg",
       "order_id": 1,
       "views": [
         {

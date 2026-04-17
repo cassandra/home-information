@@ -4,8 +4,7 @@
   "locations": [
     {
       "name": "My Home",
-      "svg_fragment_filename": "location/svg/apartment-0.svg",
-      "svg_view_box_str": "0.0 0.0 2000.0 2000.0",
+      "svg_template_name": "profiles/svg/backgrounds/apartment-0.svg",
       "order_id": 0,
       "views": [
         {

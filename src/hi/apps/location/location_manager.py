@@ -5,9 +5,11 @@ from typing import List
 from django.core.files.storage import default_storage, FileSystemStorage
 from django.db import transaction
 from django.http import HttpRequest
+from django.template.loader import render_to_string
 
 from hi.apps.common.singleton import Singleton
 from hi.apps.common.svg_models import SvgViewBox
+from hi.apps.common.svg_utils import process_svg_content
 from hi.apps.monitor.status_display_manager import StatusDisplayManager
 
 from .enums import LocationViewType, SvgStyleName
@@ -93,9 +95,42 @@ class LocationManager(Singleton):
         location.svg_fragment_filename = svg_fragment_filename
         location.svg_view_box_str = str( svg_viewbox )
         location.save()
-        
+
         return
-    
+
+    def render_svg_template_to_media( self, svg_template_name ):
+        """
+        Render an SVG template, process it, and write to MEDIA_ROOT.
+        Returns the result dict from process_svg_content (includes
+        svg_fragment_filename, svg_fragment_content, svg_viewbox).
+        Does NOT update any Location model.
+        """
+        svg_content = render_to_string( svg_template_name )
+        source_filename = os.path.basename( svg_template_name )
+        result = process_svg_content(
+            svg_content = svg_content,
+            media_destination_directory = 'location/svg',
+            source_filename = source_filename,
+        )
+        self._ensure_directory_exists( result['svg_fragment_filename'] )
+        with default_storage.open( result['svg_fragment_filename'], 'w' ) as dest:
+            dest.write( result['svg_fragment_content'] )
+        return result
+
+    def update_location_svg_from_template( self, location, svg_template_name ):
+        """
+        Render an SVG template, process it, write to MEDIA_ROOT, and update
+        the Location model.
+        """
+        result = self.render_svg_template_to_media( svg_template_name )
+        self.update_location_svg(
+            location = location,
+            svg_fragment_filename = result['svg_fragment_filename'],
+            svg_fragment_content = result['svg_fragment_content'],
+            svg_viewbox = result['svg_viewbox'],
+        )
+        return result
+
     def get_draft_svg_filename( self, location : Location ) -> str:
         base, ext = os.path.splitext( location.svg_fragment_filename )
         return f'{base}.draft{ext}'

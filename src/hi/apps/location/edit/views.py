@@ -3,7 +3,6 @@ import logging
 import os
 import urllib.parse
 
-from django.conf import settings
 from django.core.exceptions import BadRequest
 from django.core.files.storage import default_storage
 from django.db import transaction
@@ -853,35 +852,36 @@ class LocationSvgTemplateSelectView( HiModalView, LocationViewMixin ):
         if not template_name:
             raise BadRequest( 'No template selected.' )
 
-        svg_form = forms.LocationSvgTemplateForm(
-            data={ 'has_dangerous_svg_items': 'false' },
-            template_name=template_name,
+        template_path = os.path.join(
+            forms.LocationSvgFileForm.BACKGROUNDS_TEMPLATE_DIR, template_name,
         )
-        if not svg_form.is_valid():
-            raise BadRequest( 'Invalid template.' )
-
-        LocationManager().update_location_svg(
+        LocationManager().update_location_svg_from_template(
             location = location,
-            svg_fragment_filename = svg_form.cleaned_data.get( 'svg_fragment_filename' ),
-            svg_fragment_content = svg_form.cleaned_data.get( 'svg_fragment_content' ),
-            svg_viewbox = svg_form.cleaned_data.get( 'svg_viewbox' ),
+            svg_template_name = template_path,
         )
 
         redirect_url = reverse('home')
         return antinode.redirect_response( redirect_url )
 
     def _scan_templates( self ):
+        from hi.apps.profiles import apps as profiles_apps
         template_dir = os.path.join(
-            settings.BASE_DIR, 'templates', 'location', 'svg', 'backgrounds',
+            os.path.dirname( profiles_apps.__file__ ),
+            'templates', 'profiles', 'svg', 'backgrounds',
         )
         templates = []
         if not os.path.isdir( template_dir ):
             return templates
 
         for filename in sorted( os.listdir( template_dir ) ):
-            if not filename.endswith( '.html' ):
+            if not filename.endswith( '.svg' ):
                 continue
-            name = filename.replace( '.html', '' ).replace( '_', ' ' ).title()
+            name = filename.replace( '.svg', '' ).replace( '-', ' ' ).replace( '_', ' ' )
+            # Strip trailing version number (e.g., " 0" from "first floor 0")
+            parts = name.rsplit( ' ', 1 )
+            if len( parts ) == 2 and parts[1].isdigit():
+                name = parts[0]
+            name = name.title()
             template_path = os.path.join(
                 forms.LocationSvgFileForm.BACKGROUNDS_TEMPLATE_DIR, filename,
             )

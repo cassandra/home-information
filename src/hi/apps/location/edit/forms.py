@@ -19,8 +19,8 @@ logger = logging.getLogger(__name__)
 
 class LocationSvgFileForm( SvgFileForm ):
 
-    BACKGROUNDS_TEMPLATE_DIR = 'location/svg/backgrounds'
-    DEFAULT_BACKGROUND_TEMPLATE = 'single_story.html'
+    BACKGROUNDS_TEMPLATE_DIR = 'profiles/svg/backgrounds'
+    DEFAULT_BACKGROUND_TEMPLATE = 'single-story-0.svg'
 
     def get_default_source_directory(self):
         return os.path.join(
@@ -46,7 +46,7 @@ class LocationSvgFileForm( SvgFileForm ):
     
 class LocationAddForm( LocationSvgFileForm ):
 
-    DEFAULT_BACKGROUND_TEMPLATE = 'blank.html'
+    DEFAULT_BACKGROUND_TEMPLATE = 'blank.svg'
 
     name = forms.CharField(
         label = 'Name',
@@ -65,26 +65,6 @@ class LocationAddForm( LocationSvgFileForm ):
         return render_to_string( template_name )
 
     
-class LocationSvgTemplateForm( LocationSvgFileForm ):
-
-    def __init__( self, *args, template_name=None, **kwargs ):
-        super().__init__( *args, **kwargs )
-        self._template_name = template_name
-
-    def allow_default_svg_file(self):
-        return True
-
-    def get_default_basename(self):
-        return self._template_name
-
-    def get_default_svg_content(self):
-        template_path = os.path.join(
-            self.BACKGROUNDS_TEMPLATE_DIR,
-            self._template_name,
-        )
-        return render_to_string( template_path )
-
-
 class LocationSvgReplaceForm( LocationSvgFileForm ):
 
     def allow_default_svg_file(self):

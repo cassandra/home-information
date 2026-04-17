@@ -1,0 +1,124 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 2000 2000">
+<g data-hi-editor="1" data-hi-name="Apartment">
+
+  <!-- Layer 1: Ground/exterior areas -->
+  <g id="bg-0a22b215" class="hi-bg-element" data-bg-type="grass" data-bg-layer="1" data-bg-edit-type="closed">
+    <path class="grass" d="M 64.00,81.00 L 1905.00,78.00 L 1905.00,1903.00 L 65.00,1906.00 Z" />
+  </g>
+
+  <!-- Layer 2: Pavement -->
+  <g id="bg-2cf1eea5" class="hi-bg-element" data-bg-type="pavement" data-bg-layer="2" data-bg-edit-type="closed">
+    <path class="pavement" d="M 926.25,1605.50 L 1077.00,1605.25 L 1077.00,1922.00 L 924.25,1924.75 Z" />
+  </g>
+  <g id="bg-7a1e950d" class="hi-bg-element" data-bg-type="pavement" data-bg-layer="2" data-bg-edit-type="closed">
+    <path class="pavement" d="M 805.33,483.33 L 1194.67,483.00 L 1194.00,611.00 L 804.67,610.33 Z" />
+  </g>
+
+  <!-- Layer 3: Floors -->
+  <g id="bg-e8b66f5d" class="hi-bg-element" data-bg-type="interior-floors" data-bg-layer="3" data-bg-edit-type="closed">
+    <path class="interior-floors" d="M 153.00,618.00 L 1853.00,620.00 L 1852.00,1599.00 L 154.00,1596.00 Z" />
+  </g>
+
+  <!-- Layer 4: Walls -->
+  <g id="bg-1a07a6b9" class="hi-bg-element" data-bg-type="exterior-walls" data-bg-layer="4" data-bg-edit-type="open">
+    <path class="exterior-wall-stroke" d="M 150,1025 L 150,619 L 493,619" />
+    <path class="hi-bg-hit-area" d="M 150,1025 L 150,619 L 493,619" />
+  </g>
+  <g id="bg-50cee777" class="hi-bg-element" data-bg-type="exterior-walls" data-bg-layer="4" data-bg-edit-type="open">
+    <path class="exterior-wall-stroke" d="M 592,619 L 945,619" />
+    <path class="hi-bg-hit-area" d="M 592,619 L 945,619" />
+  </g>
+  <g id="bg-3429acda" class="hi-bg-element" data-bg-type="exterior-walls" data-bg-layer="4" data-bg-edit-type="open">
+    <path class="exterior-wall-stroke" d="M 1055,619 L 1408,619" />
+    <path class="hi-bg-hit-area" d="M 1055,619 L 1408,619" />
+  </g>
+  <g id="bg-19a9ba81" class="hi-bg-element" data-bg-type="exterior-walls" data-bg-layer="4" data-bg-edit-type="open">
+    <path class="exterior-wall-stroke" d="M 1507,619 L 1852,619 L 1852,1025" />
+    <path class="hi-bg-hit-area" d="M 1507,619 L 1852,619 L 1852,1025" />
+  </g>
+  <g id="bg-582cca5a" class="hi-bg-element" data-bg-type="exterior-walls" data-bg-layer="4" data-bg-edit-type="open">
+    <path class="exterior-wall-stroke" d="M 1852,1125 L 1852,1598 L 1564,1598" />
+    <path class="hi-bg-hit-area" d="M 1852,1125 L 1852,1598 L 1564,1598" />
+  </g>
+  <g id="bg-f7ad815e" class="hi-bg-element" data-bg-type="exterior-walls" data-bg-layer="4" data-bg-edit-type="open">
+    <path class="exterior-wall-stroke" d="M 1464,1598 L 1446,1598" />
+    <path class="hi-bg-hit-area" d="M 1464,1598 L 1446,1598" />
+  </g>
+  <g id="bg-00f79498" class="hi-bg-element" data-bg-type="exterior-walls" data-bg-layer="4" data-bg-edit-type="open">
+    <path class="exterior-wall-stroke" d="M 1347,1598 L 1055,1598" />
+    <path class="hi-bg-hit-area" d="M 1347,1598 L 1055,1598" />
+  </g>
+  <g id="bg-fd363813" class="hi-bg-element" data-bg-type="exterior-walls" data-bg-layer="4" data-bg-edit-type="open">
+    <path class="exterior-wall-stroke" d="M 946,1598 L 654,1598" />
+    <path class="hi-bg-hit-area" d="M 946,1598 L 654,1598" />
+  </g>
+  <g id="bg-6e444f56" class="hi-bg-element" data-bg-type="exterior-walls" data-bg-layer="4" data-bg-edit-type="open">
+    <path class="exterior-wall-stroke" d="M 554,1598 L 545,1598" />
+    <path class="hi-bg-hit-area" d="M 554,1598 L 545,1598" />
+  </g>
+  <g id="bg-79a02952" class="hi-bg-element" data-bg-type="exterior-walls" data-bg-layer="4" data-bg-edit-type="open">
+    <path class="exterior-wall-stroke" d="M 436,1598 L 150,1598 L 150,1125" />
+    <path class="hi-bg-hit-area" d="M 436,1598 L 150,1598 L 150,1125" />
+  </g>
+
+  <!-- Layer 5: Openings -->
+  <g id="bg-8d83315b" class="hi-bg-element" data-bg-type="door-standard" data-bg-layer="5" data-bg-edit-type="icon"
+     transform="scale(1.1 1.1) translate(859,563) rotate(0, 0, 0)">
+    <path class="doors" d="M 0,0 L 70.71,70.71" />
+    <path class="door-arcs" d="M 100,0 C 100,26.52 89.46,51.96 70.71,70.71" />
+    <rect x="0" y="0" width="100" height="71" fill="transparent" class="hi-bg-hit-area" />
+  </g>
+  <g id="bg-c576f9a5" class="hi-bg-element" data-bg-type="door-standard" data-bg-layer="5" data-bg-edit-type="icon"
+     transform="scale(1.1 1.1) translate(959,1453) rotate(180)">
+    <path class="doors" d="M 0,0 L 70.71,70.71" />
+    <path class="door-arcs" d="M 100,0 C 100,26.52 89.46,51.96 70.71,70.71" />
+    <rect x="0" y="0" width="100" height="71" fill="transparent" class="hi-bg-hit-area" />
+  </g>
+  <g id="bg-006cba1c" class="hi-bg-element" data-bg-type="window-standard" data-bg-layer="5" data-bg-edit-type="icon"
+     transform="translate(149.4,1126.6) rotate(-90)">
+    <path class="windows" d="M 0,0 L 105,0 L 105,9 L 0,9 Z" />
+    <rect x="0" y="-11" width="105" height="30" fill="transparent" class="hi-bg-hit-area" />
+  </g>
+  <g id="bg-a4d604ae" class="hi-bg-element" data-bg-type="window-standard" data-bg-layer="5" data-bg-edit-type="icon"
+     transform="translate(490.1,618.8)">
+    <path class="windows" d="M 0,0 L 105,0 L 105,9 L 0,9 Z" />
+    <rect x="0" y="-11" width="105" height="30" fill="transparent" class="hi-bg-hit-area" />
+  </g>
+  <g id="bg-f0e18a68" class="hi-bg-element" data-bg-type="window-standard" data-bg-layer="5" data-bg-edit-type="icon"
+     transform="translate(1405.6,618.9)">
+    <path class="windows" d="M 0,0 L 105,0 L 105,9 L 0,9 Z" />
+    <rect x="0" y="-11" width="105" height="30" fill="transparent" class="hi-bg-hit-area" />
+  </g>
+  <g id="bg-cc0b47a2" class="hi-bg-element" data-bg-type="window-standard" data-bg-layer="5" data-bg-edit-type="icon"
+     transform="translate(1843.4,1127.0) rotate(-90)">
+    <path class="windows" d="M 0,0 L 105,0 L 105,9 L 0,9 Z" />
+    <rect x="0" y="-11" width="105" height="30" fill="transparent" class="hi-bg-hit-area" />
+  </g>
+  <g id="bg-97c5cd15" class="hi-bg-element" data-bg-type="window-standard" data-bg-layer="5" data-bg-edit-type="icon"
+     transform="translate(1461.4,1588.9)">
+    <path class="windows" d="M 0,0 L 105,0 L 105,9 L 0,9 Z" />
+    <rect x="0" y="-11" width="105" height="30" fill="transparent" class="hi-bg-hit-area" />
+  </g>
+  <g id="bg-1c5bcb76" class="hi-bg-element" data-bg-type="window-standard" data-bg-layer="5" data-bg-edit-type="icon"
+     transform="translate(1343.2,1589.4)">
+    <path class="windows" d="M 0,0 L 105,0 L 105,9 L 0,9 Z" />
+    <rect x="0" y="-11" width="105" height="30" fill="transparent" class="hi-bg-hit-area" />
+  </g>
+  <g id="bg-237e5409" class="hi-bg-element" data-bg-type="window-standard" data-bg-layer="5" data-bg-edit-type="icon"
+     transform="translate(433.8,1589.2)">
+    <path class="windows" d="M 0,0 L 105,0 L 105,9 L 0,9 Z" />
+    <rect x="0" y="-11" width="105" height="30" fill="transparent" class="hi-bg-hit-area" />
+  </g>
+  <g id="bg-ad8eaed6" class="hi-bg-element" data-bg-type="window-standard" data-bg-layer="5" data-bg-edit-type="icon"
+     transform="translate(551.6,1589.1)">
+    <path class="windows" d="M 0,0 L 105,0 L 105,9 L 0,9 Z" />
+    <rect x="0" y="-11" width="105" height="30" fill="transparent" class="hi-bg-hit-area" />
+  </g>
+
+  <!-- Layer 7: Property lines -->
+  <g id="bg-575a51e2" class="hi-bg-element" data-bg-type="property-lines" data-bg-layer="7" data-bg-edit-type="closed">
+    <path class="property-lines" d="M 64.00,81.00 L 1905.00,78.00 L 1905.00,1903.00 L 65.00,1906.00 Z" />
+  </g>
+
+</g>
+</svg>
