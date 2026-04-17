@@ -1,6 +1,7 @@
 import json
 import logging
 import os
+import re
 from decimal import Decimal
 from pathlib import Path
 from typing import Dict, List, Any, Optional
@@ -187,6 +188,14 @@ class ProfileSnapshotGenerator:
         slug = location_name.lower().replace(' ', '-')
         order_id = location_data.get(PC.LOCATION_FIELD_ORDER_ID, 0)
         filename = f'{profile_type}-{slug}-{order_id}.svg'
+
+        # Update data-hi-name to reflect the location name
+        fragment_content = re.sub(
+            r'data-hi-name="[^"]*"',
+            f'data-hi-name="{location_name}"',
+            fragment_content,
+            count=1,
+        )
 
         full_svg = (
             '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 2000 2000">\n'

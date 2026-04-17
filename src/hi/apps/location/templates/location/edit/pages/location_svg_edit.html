@@ -32,7 +32,10 @@
 <div id="{{ DIVID.LOCATION_SVG_EDIT_BOTTOM }}" class="fixed-bottom">
   <div class="d-flex justify-content-between align-items-center px-3 h-100">
     <div class="d-flex align-items-center">
-      <span class="text-muted mr-3" style="font-size: 0.8rem; font-weight: 600; letter-spacing: 0.03em; color: var(--svg-editor-dash-color);">BACKGROUND EDITOR</span>
+      <span class="mr-3" style="line-height: 1.2;">
+        <span class="d-block text-muted" style="font-size: 0.7rem; font-weight: 600; letter-spacing: 0.03em;">BACKGROUND EDITOR</span>
+        <span class="d-block" style="font-size: 1rem; font-weight: 600; color: var(--svg-editor-border-color);">{{ location.name }}</span>
+      </span>
       <span class="text-muted mx-2" style="font-size: 0.85rem;">|</span>
     <form action="{% url 'location_svg_edit_viewbox' location_id=location.id %}"
           method="post" class="form d-flex align-items-center"
