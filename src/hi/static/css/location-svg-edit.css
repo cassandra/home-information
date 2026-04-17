@@ -150,5 +150,16 @@
 .hi-palette-swatch path.stairs        { fill: #f0f0f0; stroke: black; stroke-width: 1; }
 .hi-palette-swatch path.shelves       { fill: #fffff0; stroke: black; stroke-width: 1; }
 .hi-palette-swatch path.cabinets     { fill: #c8a882; stroke: black; stroke-width: 1; }
+.hi-palette-swatch path.sliding-doors  { fill: #c0c0c0; stroke: black; stroke-width: 1; }
+.hi-palette-swatch line.sliding-doors-center { stroke: black; stroke-width: 2; }
+.hi-palette-swatch path.dead-space     { fill: #f0f0c0; stroke: #b0b080; stroke-width: 1; }
+.hi-palette-swatch path.transitions    { fill: none; stroke: #808080; stroke-width: 2; }
+.hi-palette-swatch path.tiles          { fill: #f5f5f5; stroke: #c0c0c0; stroke-width: 1; }
+.hi-palette-swatch path.asphalt        { fill: #2F4F4F; stroke: none; }
+.hi-palette-swatch path.stone          { fill: #b0c4de; stroke: none; }
+.hi-palette-swatch path.brick          { fill: #A0522D; stroke: none; }
+.hi-palette-swatch path.mulch          { fill: #d2a679; stroke: none; }
+.hi-palette-swatch path.rock-beds      { fill: #f0e4d2; stroke: none; }
+.hi-palette-swatch path.gravel         { fill: #D3D3D3; stroke: none; }
 .hi-palette-swatch path.fencing       { fill: none; stroke: #432b0f; stroke-width: 8; }
 .hi-palette-swatch path.property-lines { fill: none; stroke: black; stroke-width: 3; stroke-dasharray: 8,3; }
