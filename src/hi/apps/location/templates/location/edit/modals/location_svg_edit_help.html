@@ -16,42 +16,38 @@ Background Editor Help
     </div>
 
     <div class="editing-help-categories">
-        <!-- Adding Elements -->
-        <div class="help-category">
-            <div class="category-header">
-                <div class="category-icon">
-                    {% icon "plus" size="sm" color="primary" %}
-                </div>
-                <h6 class="category-title">Adding Elements</h6>
-            </div>
-            <ul class="help-actions">
-                <li>
-                    <span class="action-method">Drag from Palette</span>
-                    <span class="action-description">Drop onto canvas to add</span>
-                </li>
-            </ul>
-        </div>
-
-        <!-- Canvas Navigation -->
+        <!-- General -->
         <div class="help-category">
             <div class="category-header">
                 <div class="category-icon">
                     {% icon "move" size="sm" color="primary" %}
                 </div>
-                <h6 class="category-title">Canvas Navigation</h6>
+                <h6 class="category-title">General</h6>
             </div>
             <ul class="help-actions">
+                <li>
+                    <span class="action-method">Drag from Palette</span>
+                    <span class="action-description">Drop onto canvas to add element</span>
+                </li>
                 <li>
                     <span class="action-method">Click & Drag</span>
                     <span class="action-description">Pan the canvas</span>
                 </li>
                 <li>
-                    <span class="action-method">Mouse Wheel</span>
+                    <span class="action-method">Mouse Wheel / + / -</span>
                     <span class="action-description">Zoom in/out</span>
                 </li>
                 <li>
-                    <span class="action-method">+ / -</span>
-                    <span class="action-description">Zoom in/out</span>
+                    <span class="action-method">CTRL + Z</span>
+                    <span class="action-description">Undo last change</span>
+                </li>
+                <li>
+                    <span class="action-method">SHIFT + Drag</span>
+                    <span class="action-description">Fine positioning (bypass snap)</span>
+                </li>
+                <li>
+                    <span class="action-method">Snap (footer)</span>
+                    <span class="action-description">Set grid size, 0 to disable</span>
                 </li>
             </ul>
         </div>
@@ -97,72 +93,53 @@ Background Editor Help
         </div>
 
         <!-- Path Editing (Walls, Floors, Areas) -->
-        <div class="help-category">
+        <div class="help-category help-category-wide">
             <div class="category-header">
                 <div class="category-icon">
                     {% icon "path" size="sm" color="primary" %}
                 </div>
                 <h6 class="category-title">Path Editing</h6>
             </div>
-            <ul class="help-actions">
-                <li>
-                    <span class="action-method">Click</span>
-                    <span class="action-description">Select path to edit vertices</span>
-                </li>
-                <li>
-                    <span class="action-method">Drag Point</span>
-                    <span class="action-description">Move single vertex</span>
-                </li>
-                <li>
-                    <span class="action-method">CTRL + Drag</span>
-                    <span class="action-description">Move entire path</span>
-                </li>
-                <li>
-                    <span class="action-method">I / INSERT</span>
-                    <span class="action-description">Insert vertex</span>
-                </li>
-                <li>
-                    <span class="action-method">X / DEL</span>
-                    <span class="action-description">Delete vertex</span>
-                </li>
-                <li>
-                    <span class="action-method">A / +</span>
-                    <span class="action-description">Add new path segment</span>
-                </li>
-                <li>
-                    <span class="action-method">CTRL + X</span>
-                    <span class="action-description">Delete entire path</span>
-                </li>
-                <li>
-                    <span class="action-method">ESC</span>
-                    <span class="action-description">Finish path editing</span>
-                </li>
-            </ul>
+            <div class="help-actions-columns">
+                <ul class="help-actions">
+                    <li>
+                        <span class="action-method">Click</span>
+                        <span class="action-description">Select path to edit vertices</span>
+                    </li>
+                    <li>
+                        <span class="action-method">Drag Point</span>
+                        <span class="action-description">Move single vertex</span>
+                    </li>
+                    <li>
+                        <span class="action-method">CTRL + Drag</span>
+                        <span class="action-description">Move entire path</span>
+                    </li>
+                    <li>
+                        <span class="action-method">I / INSERT</span>
+                        <span class="action-description">Insert vertex</span>
+                    </li>
+                </ul>
+                <ul class="help-actions">
+                    <li>
+                        <span class="action-method">X / DEL</span>
+                        <span class="action-description">Delete vertex</span>
+                    </li>
+                    <li>
+                        <span class="action-method">A / +</span>
+                        <span class="action-description">Add new path segment</span>
+                    </li>
+                    <li>
+                        <span class="action-method">CTRL + X</span>
+                        <span class="action-description">Delete entire path</span>
+                    </li>
+                    <li>
+                        <span class="action-method">ESC</span>
+                        <span class="action-description">Finish path editing</span>
+                    </li>
+                </ul>
+            </div>
         </div>
 
-        <!-- Snap Grid -->
-        <div class="help-category">
-            <div class="category-header">
-                <div class="category-icon">
-                    {% icon "settings" size="sm" color="primary" %}
-                </div>
-                <h6 class="category-title">Snap Grid</h6>
-            </div>
-            <ul class="help-actions">
-                <li>
-                    <span class="action-method">Default</span>
-                    <span class="action-description">Dragging snaps to grid (set in footer)</span>
-                </li>
-                <li>
-                    <span class="action-method">SHIFT + Drag</span>
-                    <span class="action-description">Fine positioning (1-pixel precision)</span>
-                </li>
-                <li>
-                    <span class="action-method">Snap: 0 px</span>
-                    <span class="action-description">Disable snap grid</span>
-                </li>
-            </ul>
-        </div>
     </div>
 </div>
 

@@ -392,8 +392,13 @@
             if ( $( event.target ).is( 'input, textarea' ) ) { return; }
             if ( $( event.target ).closest( '.modal' ).length > 0 ) { return; }
 
-            /* Editor-level delete commands — before routing to cores. */
+            /* Editor-level commands — before routing to cores. */
             var handled = false;
+
+            if ( event.key === 'z' && ( event.ctrlKey || event.metaKey ) && ! event.shiftKey ) {
+                handled = Hi.SvgEdit.undo();
+            }
+
             var isDeleteKey = ( event.key === 'x' || event.key === 'Delete' || event.key === 'Backspace' );
 
             if ( isDeleteKey && ! event.ctrlKey && Hi.SvgIconCore.hasSelection() ) {

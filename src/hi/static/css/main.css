@@ -1128,6 +1128,16 @@ g[hover] {
     font-size: 1rem;
 }
 
+.editing-help-guide .help-category-wide {
+    grid-column: 1 / -1;
+}
+
+.editing-help-guide .help-actions-columns {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0 1.5rem;
+}
+
 .editing-help-guide .help-actions {
     list-style: none;
     padding: 0;

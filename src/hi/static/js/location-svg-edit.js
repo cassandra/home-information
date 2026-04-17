@@ -226,6 +226,69 @@
     };
 
     /* ==================== */
+    /* Undo                 */
+    /* ==================== */
+
+    var UNDO_STACK_MAX = 20;
+    var gUndoStack = [];
+    var gLastSavedSnapshot = null;
+
+    function getCleanSnapshot() {
+        var canvasSvg = document.getElementById( CANVAS_SVG_ID );
+        if ( ! canvasSvg ) { return null; }
+
+        var editorGroup = canvasSvg.querySelector( 'g[' + BG_EDITOR_ATTR + ']' );
+        if ( ! editorGroup ) { return null; }
+
+        var clone = editorGroup.cloneNode( true );
+        cleanCloneForSave( clone );
+        return clone.outerHTML;
+    }
+
+    function pushUndoSnapshot() {
+        var snapshot = gLastSavedSnapshot;
+        if ( ! snapshot ) {
+            snapshot = getCleanSnapshot();
+        }
+        if ( ! snapshot ) { return; }
+
+        if ( gUndoStack.length >= UNDO_STACK_MAX ) {
+            gUndoStack.shift();
+        }
+        gUndoStack.push( snapshot );
+    }
+
+    Hi.SvgEdit.undo = function() {
+        if ( gUndoStack.length === 0 ) { return false; }
+
+        Hi.SvgIconCore.clearSelection();
+        Hi.SvgPathCore.clearSelection();
+
+        var snapshot = gUndoStack.pop();
+        var canvasSvg = document.getElementById( CANVAS_SVG_ID );
+        if ( ! canvasSvg ) { return false; }
+
+        var editorGroup = canvasSvg.querySelector( 'g[' + BG_EDITOR_ATTR + ']' );
+        if ( ! editorGroup ) { return false; }
+
+        editorGroup.outerHTML = snapshot;
+        gLastSavedSnapshot = snapshot;
+
+        /* Persist the restored state to the draft file. */
+        if ( Hi.SvgEdit.saveUrl ) {
+            $.post( Hi.SvgEdit.saveUrl, {
+                svg_content: snapshot,
+                csrfmiddlewaretoken: Hi.SvgEdit.csrfToken,
+            });
+        }
+        return true;
+    };
+
+    Hi.SvgEdit.hasUndo = function() {
+        return gUndoStack.length > 0;
+    };
+
+    /* ==================== */
     /* Draft Save           */
     /* ==================== */
 
@@ -265,10 +328,14 @@
         var editorGroup = canvasSvg.querySelector( 'g[' + BG_EDITOR_ATTR + ']' );
         if ( ! editorGroup ) { return; }
 
+        pushUndoSnapshot();
+
         /* Clone and clean: serialize a pristine copy without editing artifacts. */
         var clone = editorGroup.cloneNode( true );
         cleanCloneForSave( clone );
         var svgContent = clone.outerHTML;
+
+        gLastSavedSnapshot = svgContent;
 
         if ( ! Hi.SvgEdit.saveUrl ) { return; }
 
@@ -553,6 +620,9 @@
         initCores();
         checkConformance();
         AN.addAfterAsyncRenderFunction( refreshAfterAsyncRender );
+
+        /* Seed undo cache so the first edit has a valid pre-edit state. */
+        gLastSavedSnapshot = getCleanSnapshot();
 
         $( '#hi-svg-edit-snap-grid' ).on( 'change input', function() {
             Hi.SvgEdit.snapGridPixels = parseInt( $( this ).val(), 10 ) || 0;
