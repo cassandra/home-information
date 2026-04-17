@@ -208,13 +208,17 @@ class TestLocationSvgEditExitView(LocationSvgEditViewTestBase):
         self.assertTemplateRendered(response, 'location/edit/modals/location_svg_edit_exit.html')
 
     def test_post_commits_draft_to_live(self):
-        """POST should commit draft content to the live SVG file."""
+        """POST should commit draft content to a new SVG file and update the location."""
         edited_content = '<ellipse rx="100" ry="50"/>'
         self._create_draft(edited_content)
+        old_filename = self.location.svg_fragment_filename
 
         url = reverse('location_svg_edit_exit', kwargs={'location_id': self.location.id})
         self.client.post(url)
 
+        self.location.refresh_from_db()
+        # Commit writes to a new unique filename
+        self.assertNotEqual(self.location.svg_fragment_filename, old_filename)
         with default_storage.open(self.location.svg_fragment_filename, 'r') as f:
             live_content = f.read()
         self.assertEqual(live_content, edited_content)

@@ -20,34 +20,14 @@ class TestProfileManagerErrorHandling(BaseTestCase):
         self.profile_manager = ProfileManager()
         self.data_generator = ProfileTestDataGenerator()
 
-    def test_missing_svg_files_continues_loading(self):
-        """Test that missing SVG files don't stop entire profile loading."""
-        # Create malformed data with non-existent SVG file
+    def test_missing_svg_template_raises_error(self):
+        """Test that a non-existent SVG template causes an error during rendering."""
         malformed_data = self.data_generator.create_missing_svg_file_data()
-        
-        # Create temporary JSON file
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False) as f:
-            import json
-            json.dump(malformed_data, f, indent=2)
-            temp_file = f.name
-        
-        try:
-            # Load malformed profile data directly
-            with self.assertRaises(ValueError) as cm:
-                stats = self.profile_manager._load_json_file(temp_file)
-                self.profile_manager._validate_fundamental_requirements(stats)
-                # Since we can't directly test the robust methods without refactoring,
-                # we'll verify that missing SVG files cause ValueError
-                self.profile_manager._create_locations([malformed_data['locations'][0]])
-            
-            # Verify error message mentions the missing file
-            error_message = str(cm.exception)
-            self.assertIn('SVG file not found', error_message)
-            self.assertIn('nonexistent-file.svg', error_message)
-            
-        finally:
-            # Clean up temp file
-            Path(temp_file).unlink(missing_ok=True)
+
+        with tempfile.TemporaryDirectory() as temp_media_root:
+            with self.settings(MEDIA_ROOT=temp_media_root):
+                with self.assertRaises(Exception):
+                    self.profile_manager._render_svg_templates(malformed_data)
 
     def test_invalid_entity_types_individual_failure(self):
         """Test that invalid entity types cause individual entity creation failures."""
@@ -146,8 +126,8 @@ class TestProfileManagerErrorHandling(BaseTestCase):
         """Test that our data generator utilities produce the expected malformed data."""
         # Test missing SVG file data
         svg_data = self.data_generator.create_missing_svg_file_data()
-        self.assertIn('nonexistent-file.svg', 
-                      svg_data['locations'][0]['svg_fragment_filename'])
+        self.assertIn('nonexistent-file.svg',
+                      svg_data['locations'][0]['svg_template_name'])
         
         # Test invalid entity type data
         entity_data = self.data_generator.create_invalid_entity_types_data()
@@ -162,7 +142,7 @@ class TestProfileManagerErrorHandling(BaseTestCase):
         self.assertGreaterEqual(len(mixed_data['entities']), 1)
         
         # First location should be corrupted
-        self.assertIn('invalid-first.svg', mixed_data['locations'][0]['svg_fragment_filename'])
+        self.assertIn('invalid-first.svg', mixed_data['locations'][0]['svg_template_name'])
         
         # First entity should be corrupted  
         self.assertEqual(mixed_data['entities'][0]['entity_type_str'], 'INVALID_FIRST_ENTITY')
@@ -239,12 +219,10 @@ class TestProfileManagerErrorHandling(BaseTestCase):
         from django.conf import settings
         
         for location_data in malformed_data['locations']:
-            svg_filename = location_data['svg_fragment_filename']
-            full_path = os.path.join(settings.MEDIA_ROOT, svg_filename)
-            
-            # Verify the SVG file doesn't exist (would cause location creation failure)
-            self.assertFalse(os.path.exists(full_path), 
-                             f"Test SVG file should not exist: {full_path}")
+            svg_template_name = location_data['svg_template_name']
+            # Verify the template name references a non-existent template
+            self.assertIn('invalid', svg_template_name,
+                          f"Test template should have invalid reference: {svg_template_name}")
 
     def test_minimum_viability_failure_all_entities_fail(self):
         """Test that profile loading fails when no entities can be created."""
@@ -274,9 +252,9 @@ class TestProfileManagerErrorHandling(BaseTestCase):
         valid_locations = 0
         for i, location in enumerate(locations):
             if i == 0:  # First should be invalid
-                self.assertIn('invalid-first.svg', location['svg_fragment_filename'])
+                self.assertIn('invalid-first.svg', location['svg_template_name'])
             else:  # Others should be valid
-                self.assertNotIn('invalid', location['svg_fragment_filename'])
+                self.assertNotIn('invalid', location['svg_template_name'])
                 valid_locations += 1
         
         self.assertGreater(valid_locations, 0, "Should have at least one valid location")
