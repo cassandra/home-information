@@ -25,19 +25,32 @@
     box-shadow: inset 0 2px 8px var(--svg-editor-shadow-rgba);
 }
 #hi-location-svg-editor-main {
-    background: linear-gradient(135deg, var(--svg-editor-bg) 0%, var(--white) 50%, var(--svg-editor-bg) 100%);
-    box-shadow: inset 0 0 0 3px var(--svg-editor-bg);
+    background: var(--white);
     position: relative;
     height: calc( 100vh - var(--svg-editor-top-height) - var(--svg-editor-bottom-height) );
 }
 #hi-location-svg-editor-main .hi-location-view {
     height: 100%;
     width: 100%;
+    padding: 10px;
+    box-sizing: border-box;
 }
 #hi-location-svg-editor-main .hi-location-view-svg {
     width: 100%;
     height: 100%;
     display: block;
+}
+
+/* ==================== */
+/* Canvas Boundary      */
+/* ==================== */
+
+.hi-svg-edit-boundary {
+    fill: none;
+    stroke: #c0c0c0;
+    stroke-width: 1;
+    stroke-dasharray: 8 4;
+    vector-effect: non-scaling-stroke;
 }
 
 /* ==================== */

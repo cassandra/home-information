@@ -12,6 +12,9 @@
       {% include "location/panes/svg_fill_patterns_color.html" %}
     </defs>
     {% include "location/edit/svg/svg_edit_palette.svg" %}
+    <rect class="hi-svg-edit-boundary" x="{{ svg_view_box.x }}" y="{{ svg_view_box.y }}"
+          width="{{ svg_view_box.width }}" height="{{ svg_view_box.height }}"
+          pointer-events="none" />
     <g class="hi-location-view-base">
       {% include_media_template draft_svg_filename %}
     </g>
