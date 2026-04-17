@@ -1,6 +1,5 @@
 import json
 import logging
-from pathlib import PurePosixPath
 
 from django.core.files.storage import default_storage
 from django.db import models
@@ -15,7 +14,7 @@ from .enums import (
     AttributeType,
 )
 from .managers import ActiveAttributeManager, DeletedAttributeManager
-from .thumbnail import THUMBNAIL_SUBDIRECTORY, THUMBNAIL_SUFFIX, THUMBNAIL_SUPPORTED_MIME_TYPES, effective_file_mime_type
+from .thumbnail import AttributeThumbnailRules
 
 logger = logging.getLogger(__name__)
 
@@ -155,39 +154,37 @@ class AttributeModel(models.Model):
             logger.error( f'Bad value range for attribute {self.name}: {e}' )
             pass
         return dict()
-    
-    def supports_thumbnail_generation(self):
-        if not self.file_value or not self.file_value.name:
-            return False
 
-        mime_type = effective_file_mime_type(
+    @property
+    def supports_thumbnail_generation(self):
+        return AttributeThumbnailRules.supports_thumbnail_generation(
             file_value=self.file_value,
             file_mime_type=self.file_mime_type,
         )
-        if not mime_type:
-            return False
-        return bool(mime_type in THUMBNAIL_SUPPORTED_MIME_TYPES)
 
     @property
     def thumbnail_relative_path(self):
-        if not self.supports_thumbnail_generation():
-            return None
-
-        source_path = PurePosixPath(self.file_value.name)
-        thumbnail_name = f'{source_path.stem}{THUMBNAIL_SUFFIX}'
-        if str(source_path.parent) == '.':
-            return str(PurePosixPath(THUMBNAIL_SUBDIRECTORY) / thumbnail_name)
-        return str(source_path.parent / THUMBNAIL_SUBDIRECTORY / thumbnail_name)
+        return AttributeThumbnailRules.thumbnail_relative_path(
+            file_value=self.file_value,
+            file_mime_type=self.file_mime_type,
+        )
 
     def _thumbnail_exists(self):
         if hasattr(self, '_thumbnail_exists_cache'):
             return self._thumbnail_exists_cache
 
         thumbnail_path = self.thumbnail_relative_path
-        self._thumbnail_exists_cache = bool(
-            thumbnail_path and default_storage.exists(thumbnail_path)
-        )
+        self._thumbnail_exists_cache = bool( thumbnail_path and default_storage.exists(thumbnail_path) )
         return self._thumbnail_exists_cache
+
+    def set_thumbnail_exists_cache(self, exists):
+        self._thumbnail_exists_cache = bool(exists)
+        return self._thumbnail_exists_cache
+
+    def clear_thumbnail_exists_cache(self):
+        if hasattr(self, '_thumbnail_exists_cache'):
+            del self._thumbnail_exists_cache
+        return
 
     @property
     def has_thumbnail(self):
@@ -272,6 +269,8 @@ class AttributeModel(models.Model):
                     logger.debug(f'Deleted Attribute thumbnail: {thumbnail_path}')
             except Exception as e:
                 logger.warn(f'Error deleting Attribute thumbnail {thumbnail_path}: {e}')
+
+        self.set_thumbnail_exists_cache(False)
 
         super().delete( *args, **kwargs )
         return

@@ -6,7 +6,7 @@ from django import forms
 from hi.apps.common.utils import is_blank, str_to_bool
 
 from .enums import AttributeType, AttributeValueType
-from .thumbnail import generate_thumbnail_best_effort
+from .thumbnail import AttributeThumbnail
 
 
 class RegularAttributeBaseFormSet(forms.BaseInlineFormSet):
@@ -196,5 +196,6 @@ class AttributeUploadForm( forms.ModelForm ):
 
         if commit:
             instance.save()
-            generate_thumbnail_best_effort(instance)
+            thumbnail_generated = AttributeThumbnail(instance).generate_thumbnail_best_effort()
+            instance.set_thumbnail_exists_cache(thumbnail_generated)
         return instance
