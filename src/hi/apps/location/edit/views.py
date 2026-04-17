@@ -864,6 +864,7 @@ class LocationSvgTemplateSelectView( HiModalView, LocationViewMixin ):
         return antinode.redirect_response( redirect_url )
 
     def _scan_templates( self ):
+        import re
         from hi.apps.profiles import apps as profiles_apps
         template_dir = os.path.join(
             os.path.dirname( profiles_apps.__file__ ),
@@ -876,12 +877,18 @@ class LocationSvgTemplateSelectView( HiModalView, LocationViewMixin ):
         for filename in sorted( os.listdir( template_dir ) ):
             if not filename.endswith( '.svg' ):
                 continue
-            name = filename.replace( '.svg', '' ).replace( '-', ' ' ).replace( '_', ' ' )
-            # Strip trailing version number (e.g., " 0" from "first floor 0")
-            parts = name.rsplit( ' ', 1 )
-            if len( parts ) == 2 and parts[1].isdigit():
-                name = parts[0]
-            name = name.title()
+
+            filepath = os.path.join( template_dir, filename )
+            location_name = self._read_svg_hi_name( filepath )
+            profile_name = self._derive_profile_name( filename )
+
+            if location_name and profile_name:
+                name = f'{profile_name} \u2014 {location_name}'
+            elif location_name:
+                name = location_name
+            else:
+                name = profile_name or filename
+
             template_path = os.path.join(
                 forms.LocationSvgFileForm.BACKGROUNDS_TEMPLATE_DIR, filename,
             )
@@ -891,6 +898,36 @@ class LocationSvgTemplateSelectView( HiModalView, LocationViewMixin ):
                 'name': name,
             })
         return templates
+
+    def _read_svg_hi_name( self, filepath ):
+        """Read the data-hi-name attribute from the SVG file."""
+        import re
+        try:
+            with open( filepath, 'r' ) as f:
+                # Only need to check the first few lines
+                for _ in range( 5 ):
+                    line = f.readline()
+                    if not line:
+                        break
+                    match = re.search( r'data-hi-name="([^"]*)"', line )
+                    if match:
+                        return match.group( 1 )
+        except OSError:
+            pass
+        return None
+
+    def _derive_profile_name( self, filename ):
+        """
+        Derive a display-friendly profile name from the filename.
+        e.g., 'single_story-0.svg' -> 'Single Story',
+              'blank.svg' -> None (no profile prefix).
+        """
+        stem = filename.replace( '.svg', '' )
+        # Match profile-type prefix before the final '-N' index
+        parts = stem.rsplit( '-', 1 )
+        if len( parts ) == 2 and parts[1].isdigit():
+            return parts[0].replace( '_', ' ' ).replace( '-', ' ' ).title()
+        return None
 
 
 class LocationSvgEditHelpView( HiModalView ):

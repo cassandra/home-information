@@ -4,13 +4,12 @@
   "locations": [
     {
       "name": "My Home",
-      "svg_template_name": "profiles/svg/backgrounds/apartment-0.svg",
       "order_id": 0,
       "views": [
         {
           "name": "All",
           "location_view_type_str": "default",
-          "svg_view_box_str": "113.22166091814749 449.0580103532524 1775.3292954434396 1342.0739711557344",
+          "svg_view_box_str": "0 0 2000 2000",
           "svg_style_name_str": "color",
           "svg_rotate": 0.0,
           "order_id": 2
@@ -23,7 +22,8 @@
           "svg_rotate": 0.0,
           "order_id": 4
         }
-      ]
+      ],
+      "svg_template_name": "profiles/svg/backgrounds/apartment-0.svg"
     }
   ],
   "collections": [
@@ -41,7 +41,7 @@
       "paths": [
         {
           "location_name": "My Home",
-          "svg_path": " M 1226.2400978455232,643.139246764765 L 1383.0349608404613,642.1058605342962 L 1381.3716307623363,734.2256108201307 L 1225.131394232242,734.7047367966932 Z"
+          "svg_path": " M 1535.784470404117,1516.7419078975774 L 1651.3066893560863,1513.4157360225774 L 1651.9360838873363,1619.2929936326307 L 1534.6757667908357,1619.7719365037244 Z"
         }
       ],
       "visible_in_views": [
@@ -61,7 +61,7 @@
       "paths": [
         {
           "location_name": "My Home",
-          "svg_path": "M 823.3533790955232,985.8875988155462 L 1178.4192381842113,985.8875988155462 L 1178.4192381842113,1254.3023930466932 L 823.3533790955232,1254.3023930466932 Z"
+          "svg_path": " M 279.93116840216385,1758.6019542842962 L 715.249255274055,1758.6018322139837 L 717.542224024055,1841.2900639451307 L 279.931198919742,1836.7042485154432 Z"
         }
       ],
       "visible_in_views": [
@@ -77,9 +77,24 @@
       "positions": [
         {
           "location_name": "My Home",
-          "svg_x": 278.080048,
-          "svg_y": 961.716675,
+          "svg_x": 344.568634,
+          "svg_y": 1080.940186,
           "svg_scale": 1.673368
+        }
+      ],
+      "visible_in_views": [
+        "All"
+      ]
+    },
+    {
+      "name": "Bathroom Sink",
+      "entity_type_str": "sink",
+      "positions": [
+        {
+          "location_name": "My Home",
+          "svg_x": 1288.621338,
+          "svg_y": 205.063538,
+          "svg_scale": 2.327722
         }
       ],
       "visible_in_views": [
@@ -97,10 +112,10 @@
       "positions": [
         {
           "location_name": "My Home",
-          "svg_x": 1465.060425,
-          "svg_y": 1752.144287,
+          "svg_x": 1852.565186,
+          "svg_y": 456.639404,
           "svg_scale": 1.330223,
-          "svg_rotate": 269.918069
+          "svg_rotate": 359.425448
         }
       ],
       "visible_in_views": [
@@ -113,9 +128,25 @@
       "positions": [
         {
           "location_name": "My Home",
-          "svg_x": 1747.110962,
-          "svg_y": 711.662842,
+          "svg_x": 1054.647949,
+          "svg_y": 1754.944092,
           "svg_scale": 2.99799
+        }
+      ],
+      "visible_in_views": [
+        "All"
+      ]
+    },
+    {
+      "name": "Cooktop/Stove",
+      "entity_type_str": "cooktop",
+      "positions": [
+        {
+          "location_name": "My Home",
+          "svg_x": 1305.283203,
+          "svg_y": 1761.574463,
+          "svg_scale": 2.418551,
+          "svg_rotate": 179.907031
         }
       ],
       "visible_in_views": [
@@ -128,8 +159,8 @@
       "positions": [
         {
           "location_name": "My Home",
-          "svg_x": 1766.678955,
-          "svg_y": 1381.208496,
+          "svg_x": 1564.899292,
+          "svg_y": 842.380737,
           "svg_scale": 2.397479
         }
       ],
@@ -146,6 +177,22 @@
       "entity_type_str": "other"
     },
     {
+      "name": "Kitchen Sink",
+      "entity_type_str": "sink",
+      "positions": [
+        {
+          "location_name": "My Home",
+          "svg_x": 1000.171997,
+          "svg_y": 1522.862305,
+          "svg_scale": 2.48603,
+          "svg_rotate": 270.224076
+        }
+      ],
+      "visible_in_views": [
+        "All"
+      ]
+    },
+    {
       "name": "Laptop",
       "entity_type_str": "computer"
     },
@@ -155,8 +202,8 @@
       "positions": [
         {
           "location_name": "My Home",
-          "svg_x": 1582.65979,
-          "svg_y": 703.361755,
+          "svg_x": 1543.670532,
+          "svg_y": 1765.032959,
           "svg_scale": 2.208718
         }
       ],
@@ -174,8 +221,8 @@
       "positions": [
         {
           "location_name": "My Home",
-          "svg_x": 1759.571411,
-          "svg_y": 913.085083,
+          "svg_x": 1592.185059,
+          "svg_y": 1387.713745,
           "svg_scale": 3.580818
         }
       ],
@@ -188,14 +235,44 @@
       "entity_type_str": "appliance"
     },
     {
+      "name": "Shower",
+      "entity_type_str": "shower",
+      "positions": [
+        {
+          "location_name": "My Home",
+          "svg_x": 1567.708008,
+          "svg_y": 299.34079,
+          "svg_scale": 2.378895
+        }
+      ],
+      "visible_in_views": [
+        "All"
+      ]
+    },
+    {
       "name": "Television",
       "entity_type_str": "television",
       "positions": [
         {
           "location_name": "My Home",
-          "svg_x": 284.881439,
-          "svg_y": 820.065247,
+          "svg_x": 530.237915,
+          "svg_y": 1097.506348,
           "svg_scale": 3.494066
+        }
+      ],
+      "visible_in_views": [
+        "All"
+      ]
+    },
+    {
+      "name": "Toilet",
+      "entity_type_str": "toilet",
+      "positions": [
+        {
+          "location_name": "My Home",
+          "svg_x": 999.789795,
+          "svg_y": 246.871094,
+          "svg_scale": 2.733936
         }
       ],
       "visible_in_views": [
@@ -208,8 +285,8 @@
       "positions": [
         {
           "location_name": "My Home",
-          "svg_x": 1771.391724,
-          "svg_y": 1208.834717,
+          "svg_x": 1560.447021,
+          "svg_y": 608.101624,
           "svg_scale": 2.375069
         }
       ],
@@ -238,8 +315,8 @@
       "positions": [
         {
           "location_name": "My Home",
-          "svg_x": 788.435913,
-          "svg_y": 705.137451,
+          "svg_x": 815.954895,
+          "svg_y": 1773.63147,
           "svg_scale": 1.95791
         }
       ],

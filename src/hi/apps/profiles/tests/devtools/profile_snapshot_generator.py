@@ -7,9 +7,7 @@ from pathlib import Path
 from typing import Dict, List, Any, Optional
 
 from django.core.files.storage import default_storage
-from django.template.loader import render_to_string
 
-from hi.apps.common.svg_utils import process_svg_content
 from hi.apps.entity.models import Entity
 from hi.apps.location.models import Location
 from hi.apps.location.edit.forms import LocationSvgFileForm
@@ -52,8 +50,7 @@ class ProfileSnapshotGenerator:
         output_paths = []
         profile_data = self._build_profile_data(profile_type)
 
-        # Reconcile SVG backgrounds: map to existing templates or create new ones
-        template_paths = self._reconcile_svg_templates(profile_data, profile_type, output_to_tmp)
+        template_paths = self._write_svg_templates(profile_data, profile_type, output_to_tmp)
         output_paths.extend(template_paths)
 
         if output_to_tmp:
@@ -80,80 +77,75 @@ class ProfileSnapshotGenerator:
         """
         return Path(__file__).parent.parent.parent / 'assets'
     
-    def _reconcile_svg_templates( self,
-                                  profile_data: Dict[str, Any],
-                                  profile_type: ProfileType,
-                                  output_to_tmp: bool = False) -> List[Path]:
+    def _write_svg_templates( self,
+                              profile_data: Dict[str, Any],
+                              profile_type: ProfileType,
+                              output_to_tmp: bool = False) -> List[Path]:
         """
-        For each Location in the profile data, determine which SVG background
-        template it corresponds to. Compares the Location's MEDIA_ROOT SVG
-        fragment against all rendered templates. If a match is found, references
-        that template. If no match, creates a new template from the fragment.
+        Write SVG background templates for each Location in the profile.
+
+        Each Location's SVG fragment is read from MEDIA_ROOT, wrapped in a
+        full SVG document, and written as a template file named by profile
+        type and location index (e.g., 'single_story-0.svg').
 
         Modifies location data in-place: replaces the temporary
         '_media_svg_fragment_filename' field with the proper
         'svg_template_name' field.
 
         Returns:
-            List of Paths for any newly created template files.
+            List of Paths for all written template files.
         """
-        created_paths = []
-        locations_data = profile_data.get(PC.PROFILE_FIELD_LOCATIONS, [])
+        if output_to_tmp:
+            template_dir = self.TMP_OUTPUT_DIR / 'templates' / 'profiles' / 'svg' / 'backgrounds'
+        else:
+            template_dir = self._get_backgrounds_template_dir()
+        template_dir.mkdir(parents=True, exist_ok=True)
         backgrounds_template_dir = LocationSvgFileForm.BACKGROUNDS_TEMPLATE_DIR
-        template_dir = self._get_backgrounds_template_dir()
 
-        # Build a cache of rendered template content for comparison
-        template_content_map = {}
-        for filename in sorted(os.listdir(template_dir)):
-            if not filename.endswith('.svg'):
-                continue
-            template_path = os.path.join(backgrounds_template_dir, filename)
-            try:
-                rendered = render_to_string(template_path)
-                result = process_svg_content(
-                    svg_content=rendered,
-                    media_destination_directory='location/svg',
-                    source_filename=filename,
-                )
-                template_content_map[template_path] = result['svg_fragment_content']
-            except Exception as e:
-                logger.warning(f'Could not render template {filename} for comparison: {e}')
+        written_paths = []
+        locations_data = profile_data.get(PC.PROFILE_FIELD_LOCATIONS, [])
 
-        for location_data in locations_data:
+        for index, location_data in enumerate(locations_data):
             svg_fragment_filename = location_data.pop('_media_svg_fragment_filename', None)
             if not svg_fragment_filename:
                 location_data[PC.LOCATION_FIELD_SVG_TEMPLATE_NAME] = ''
                 continue
 
-            # Read the Location's current SVG from MEDIA_ROOT
             try:
                 with default_storage.open(svg_fragment_filename, 'r') as f:
-                    media_content = f.read()
+                    fragment_content = f.read()
             except Exception as e:
                 logger.warning(f'Could not read SVG from MEDIA_ROOT: {svg_fragment_filename}: {e}')
                 location_data[PC.LOCATION_FIELD_SVG_TEMPLATE_NAME] = ''
                 continue
 
-            # Compare against each rendered template
-            matched_template = None
-            for template_path, template_content in template_content_map.items():
-                if media_content.strip() == template_content.strip():
-                    matched_template = template_path
-                    break
+            location_name = location_data.get(PC.LOCATION_FIELD_NAME, 'unknown')
+            filename = f'{profile_type}-{index}.svg'
 
-            if matched_template:
-                location_data[PC.LOCATION_FIELD_SVG_TEMPLATE_NAME] = matched_template
-                logger.debug(f'Matched SVG to template: {svg_fragment_filename} -> {matched_template}')
-            else:
-                # No match — create a new template from the fragment
-                new_template_name, new_path = self._create_template_from_fragment(
-                    media_content, location_data, profile_type, output_to_tmp,
-                )
-                location_data[PC.LOCATION_FIELD_SVG_TEMPLATE_NAME] = new_template_name
-                created_paths.append(new_path)
-                logger.info(f'Created new template: {svg_fragment_filename} -> {new_template_name}')
+            # Update data-hi-name to reflect the location name
+            fragment_content = re.sub(
+                r'data-hi-name="[^"]*"',
+                f'data-hi-name="{location_name}"',
+                fragment_content,
+                count=1,
+            )
 
-        return created_paths
+            full_svg = (
+                '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 2000 2000">\n'
+                f'{fragment_content}\n'
+                '</svg>\n'
+            )
+
+            output_path = template_dir / filename
+            with open(output_path, 'w') as f:
+                f.write(full_svg)
+
+            template_name = os.path.join(backgrounds_template_dir, filename)
+            location_data[PC.LOCATION_FIELD_SVG_TEMPLATE_NAME] = template_name
+            written_paths.append(output_path)
+            logger.info(f'Wrote SVG template: {svg_fragment_filename} -> {output_path}')
+
+        return written_paths
 
     def _get_backgrounds_template_dir(self) -> Path:
         """Get the filesystem path to the backgrounds template directory."""
@@ -161,55 +153,6 @@ class ProfileSnapshotGenerator:
             Path(__file__).parent.parent.parent
             / 'templates' / 'profiles' / 'svg' / 'backgrounds'
         )
-
-    def _create_template_from_fragment( self,
-                                        fragment_content,
-                                        location_data,
-                                        profile_type,
-                                        output_to_tmp: bool = False) -> tuple:
-        """
-        Create a new SVG template file from a MEDIA_ROOT fragment.
-        Wraps the fragment in a full SVG document with a default viewBox
-        and saves to the backgrounds template directory (or tmp dir if testing).
-
-        Returns:
-            Tuple of (template_name, output_path) where template_name is the
-            template path for use in profile JSON (e.g.,
-            'profiles/svg/backgrounds/single-story-my-home-0.svg') and
-            output_path is the Path to the written file.
-        """
-        if output_to_tmp:
-            template_dir = self.TMP_OUTPUT_DIR / 'templates' / 'profiles' / 'svg' / 'backgrounds'
-        else:
-            template_dir = self._get_backgrounds_template_dir()
-        backgrounds_template_dir = LocationSvgFileForm.BACKGROUNDS_TEMPLATE_DIR
-
-        location_name = location_data.get(PC.LOCATION_FIELD_NAME, 'unknown')
-        slug = location_name.lower().replace(' ', '-')
-        order_id = location_data.get(PC.LOCATION_FIELD_ORDER_ID, 0)
-        filename = f'{profile_type}-{slug}-{order_id}.svg'
-
-        # Update data-hi-name to reflect the location name
-        fragment_content = re.sub(
-            r'data-hi-name="[^"]*"',
-            f'data-hi-name="{location_name}"',
-            fragment_content,
-            count=1,
-        )
-
-        full_svg = (
-            '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 2000 2000">\n'
-            f'{fragment_content}\n'
-            '</svg>\n'
-        )
-
-        output_path = template_dir / filename
-        output_path.parent.mkdir(parents=True, exist_ok=True)
-        with open(output_path, 'w') as f:
-            f.write(full_svg)
-
-        template_name = os.path.join(backgrounds_template_dir, filename)
-        return template_name, output_path
     
     def _get_profile_json_path(self, profile_type: ProfileType) -> Path:
         """Get the path to the profile JSON file in the data directory."""
