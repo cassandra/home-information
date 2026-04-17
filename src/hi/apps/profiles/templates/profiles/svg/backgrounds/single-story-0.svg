@@ -115,10 +115,5 @@
     <rect x="0" y="-11" width="105" height="30" fill="transparent" class="hi-bg-hit-area" />
   </g>
 
-  <!-- Layer 7: Property lines -->
-  <g id="bg-575a51e2" class="hi-bg-element" data-bg-type="property-lines" data-bg-layer="7" data-bg-edit-type="closed">
-    <path class="property-lines" d="M 64.00,81.00 L 1905.00,78.00 L 1905.00,1903.00 L 65.00,1906.00 Z" />
-  </g>
-
 </g>
 </svg>

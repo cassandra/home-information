@@ -75,7 +75,7 @@ svg.hi-location-view-svg path.pool-coping {
     stroke-width: 1;
 }
 svg.hi-location-view-svg path.property-lines {
-    fill: none;
+    fill: #e8e8e8;
     stroke: black;
     stroke-width: 5;
     stroke-dasharray: 50,10,50,10,10,10;
@@ -107,7 +107,7 @@ svg.hi-location-view-svg path.utilities {
 }
 svg.hi-location-view-svg path.interior-floors {
     fill: #f8f8f8;
-    stroke: none;
+    stroke: #d0d0d0;
     stroke-width: 1;
 }
 svg.hi-location-view-svg path.transitions {

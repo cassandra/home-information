@@ -375,12 +375,14 @@
             if ( gPotentialClickState && gPotentialClickState.waitingForClick ) {
                 gPotentialClickState = null;
             }
-            var handled = Hi.SvgIconCore.handleClick( event );
+            /* Pan-zoom click suppression first — a completed pan drag
+               must not be interpreted as a selection by other cores. */
+            var handled = Hi.SvgPanZoomCore.handleClick( event );
             if ( ! handled ) {
-                handled = Hi.SvgPathCore.handleClick( event );
+                handled = Hi.SvgIconCore.handleClick( event );
             }
             if ( ! handled ) {
-                handled = Hi.SvgPanZoomCore.handleClick( event );
+                handled = Hi.SvgPathCore.handleClick( event );
             }
             if ( handled ) {
                 event.preventDefault();

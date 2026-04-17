@@ -152,7 +152,7 @@
 .hi-palette-swatch path.ground        { fill: #e8dcc3; stroke: none; }
 .hi-palette-swatch path.pavement      { fill: #e8e8e8; stroke: none; }
 .hi-palette-swatch path.wood-decks    { fill: #f2e7d9; stroke: none; }
-.hi-palette-swatch path.interior-floors { fill: #f8f8f8; stroke: #ccc; stroke-width: 1; }
+.hi-palette-swatch path.interior-floors { fill: #f8f8f8; stroke: #d0d0d0; stroke-width: 1; }
 .hi-palette-swatch path.exterior-wall-stroke { fill: none; stroke: black; stroke-width: 16; }
 .hi-palette-swatch path.interior-wall-stroke { fill: none; stroke: #202020; stroke-width: 8; }
 .hi-palette-swatch path.windows       { fill: #78e3df; stroke: black; stroke-width: 1; }
