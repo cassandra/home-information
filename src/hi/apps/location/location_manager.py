@@ -7,6 +7,7 @@ from django.db import transaction
 from django.http import HttpRequest
 from django.template.loader import render_to_string
 
+from hi.apps.common.file_utils import derive_new_unique_filename
 from hi.apps.common.singleton import Singleton
 from hi.apps.common.svg_models import SvgViewBox
 from hi.apps.common.svg_utils import process_svg_content
@@ -174,8 +175,18 @@ class LocationManager(Singleton):
         draft_filename = self.get_draft_svg_filename( location )
         with default_storage.open( draft_filename, 'r' ) as source:
             content = source.read()
-        with default_storage.open( location.svg_fragment_filename, 'w' ) as dest:
+
+        # Write to a new unique filename rather than overwriting the original.
+        # This leaves the previous version as an orphan in MEDIA_ROOT,
+        # providing a natural backup in case of accidental changes.
+        new_filename = derive_new_unique_filename( location.svg_fragment_filename )
+        self._ensure_directory_exists( new_filename )
+        with default_storage.open( new_filename, 'w' ) as dest:
             dest.write( content )
+
+        location.svg_fragment_filename = new_filename
+        location.save()
+
         default_storage.delete( draft_filename )
         return
 
