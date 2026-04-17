@@ -333,15 +333,19 @@
     function updateDrag( singlePointerEvent ) {
         if ( ! gDragData ) { return; }
 
-        var cursorSvgPoint = Hi.svgUtils.toSvgPoint( gDragData.baseSvgElement,
+        var svgElement = gDragData.baseSvgElement;
+        var cursorSvgPoint = Hi.svgUtils.toSvgPoint( svgElement,
                                                       singlePointerEvent.last.x,
                                                       singlePointerEvent.last.y );
+        var shiftHeld = singlePointerEvent.last.event ? singlePointerEvent.last.event.shiftKey : false;
+        var snappedX = Hi.svgUtils.snapToGrid( svgElement, cursorSvgPoint.x, shiftHeld );
+        var snappedY = Hi.svgUtils.snapToGrid( svgElement, cursorSvgPoint.y, shiftHeld );
 
         var scale = gDragData.originalSvgScale;
         var rotate = gDragData.originalSvgRotate;
         var translate = {
-            x: ( cursorSvgPoint.x / scale.x ) - gDragData.cursorSvgOffset.x,
-            y: ( cursorSvgPoint.y / scale.y ) - gDragData.cursorSvgOffset.y,
+            x: ( snappedX / scale.x ) - gDragData.cursorSvgOffset.x,
+            y: ( snappedY / scale.y ) - gDragData.cursorSvgOffset.y,
         };
 
         setSvgTransformAttr( gDragData.element, scale, translate, rotate );
@@ -479,11 +483,12 @@
 
         var transformStr = $( gActionEditData.element ).attr( 'transform' );
         var oldTransform = Hi.svgUtils.getSvgTransformValues( transformStr );
+        var shiftHeld = singlePointerEvent.last.event ? singlePointerEvent.last.event.shiftKey : false;
 
         var newRotate = { angle: oldTransform.rotate.angle + deltaAngle,
                           cx: oldTransform.rotate.cx,
                           cy: oldTransform.rotate.cy };
-        newRotate.angle = Hi.normalizeAngle( newRotate.angle );
+        newRotate.angle = Hi.svgUtils.snapAngle( Hi.normalizeAngle( newRotate.angle ), shiftHeld );
 
         setSvgTransformAttr( gActionEditData.element,
                              oldTransform.scale, oldTransform.translate, newRotate );
@@ -516,7 +521,7 @@
         var newRotate = { angle: oldTransform.rotate.angle + deltaAngle,
                           cx: oldTransform.rotate.cx,
                           cy: oldTransform.rotate.cy };
-        newRotate.angle = Hi.normalizeAngle( newRotate.angle );
+        newRotate.angle = Hi.svgUtils.snapAngle( Hi.normalizeAngle( newRotate.angle ), false );
 
         setSvgTransformAttr( svgElement,
                              oldTransform.scale, oldTransform.translate, newRotate );

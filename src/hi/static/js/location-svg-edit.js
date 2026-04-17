@@ -4,6 +4,7 @@
 
     window.Hi = window.Hi || {};
     window.Hi.SvgEdit = window.Hi.SvgEdit || {};
+    window.Hi.SvgEdit.snapGridPixels = 5;
 
     const SVG_NS = 'http://www.w3.org/2000/svg';
 
@@ -552,6 +553,10 @@
         initCores();
         checkConformance();
         AN.addAfterAsyncRenderFunction( refreshAfterAsyncRender );
+
+        $( '#hi-svg-edit-snap-grid' ).on( 'change input', function() {
+            Hi.SvgEdit.snapGridPixels = parseInt( $( this ).val(), 10 ) || 0;
+        });
     });
 
 })();

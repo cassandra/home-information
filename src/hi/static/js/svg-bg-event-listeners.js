@@ -268,8 +268,14 @@
 
     function dispatchSinglePointerEventStart( currentEvent, singlePointerEvent ) {
         var handled = Hi.SvgIconCore.handleSinglePointerEventStart( singlePointerEvent );
+        if ( handled ) {
+            Hi.SvgPathCore.clearSelection();
+        }
         if ( ! handled ) {
             handled = Hi.SvgPathCore.handleSinglePointerEventStart( singlePointerEvent );
+            if ( handled ) {
+                Hi.SvgIconCore.clearSelection();
+            }
         }
         if ( ! handled ) {
             handled = Hi.SvgPanZoomCore.handleSinglePointerEventStart( singlePointerEvent.start.event );

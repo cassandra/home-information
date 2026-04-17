@@ -47,6 +47,12 @@
              style="width: 6rem;" value="{{ svg_view_box.height|floatformat:0 }}" min="100" step="50">
       <button type="submit" class="btn btn-sm btn-outline-primary ms-2 mx-1">Apply</button>
     </form>
+      <span class="text-muted mx-2" style="font-size: 0.85rem;">|</span>
+      <label class="me-1 mb-0 mx-1" style="font-size: 0.85rem;"><b>Snap:</b></label>
+      <input type="number" id="hi-svg-edit-snap-grid" class="form-control form-control-sm"
+             style="width: 4rem;" value="5" min="0" max="50" step="1"
+             title="Snap grid in screen pixels (0 to disable, hold Shift for fine mode)">
+      <label class="ms-1 mb-0" style="font-size: 0.85rem;">px</label>
     </div>
     <div class="d-flex flex-nowrap gap-2 align-items-center">
       <a href="{% url 'location_svg_edit_revert' location_id=location.id %}"

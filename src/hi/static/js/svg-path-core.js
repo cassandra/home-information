@@ -176,7 +176,9 @@
         gSvgPathEditData.dragProxyPoint = gDragData.proxyPoint;
 
         var proxyPoint = gDragData.proxyPoint;
-        var ctrlKey = singlePointerEvent.last.event ? singlePointerEvent.last.event.ctrlKey : false;
+        var lastEvent = singlePointerEvent.last.event;
+        var ctrlKey = lastEvent ? lastEvent.ctrlKey : false;
+        var shiftHeld = lastEvent ? lastEvent.shiftKey : false;
 
         if ( ctrlKey ) {
             if ( ! gDragData.lastSvgPoint ) {
@@ -186,8 +188,8 @@
                 };
             }
             var newPos = {
-                x: eventSvgPoint.x - gDragData.offsetX,
-                y: eventSvgPoint.y - gDragData.offsetY,
+                x: Hi.svgUtils.snapToGrid( baseSvgElement, eventSvgPoint.x - gDragData.offsetX, shiftHeld ),
+                y: Hi.svgUtils.snapToGrid( baseSvgElement, eventSvgPoint.y - gDragData.offsetY, shiftHeld ),
             };
             var deltaCx = newPos.x - gDragData.lastSvgPoint.x;
             var deltaCy = newPos.y - gDragData.lastSvgPoint.y;
@@ -195,8 +197,8 @@
             moveAllProxyPoints( deltaCx, deltaCy );
             setActionStateAttr( 'move' );
         } else {
-            var newCx = eventSvgPoint.x - gDragData.offsetX;
-            var newCy = eventSvgPoint.y - gDragData.offsetY;
+            var newCx = Hi.svgUtils.snapToGrid( baseSvgElement, eventSvgPoint.x - gDragData.offsetX, shiftHeld );
+            var newCy = Hi.svgUtils.snapToGrid( baseSvgElement, eventSvgPoint.y - gDragData.offsetY, shiftHeld );
             $( proxyPoint ).attr( 'cx', newCx ).attr( 'cy', newCy );
 
             if ( gDragData.beforeProxyLine.length > 0 ) {

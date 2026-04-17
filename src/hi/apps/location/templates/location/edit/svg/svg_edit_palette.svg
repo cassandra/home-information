@@ -30,7 +30,7 @@
   </g>
 
   <!-- Features -->
-  <g id="hi-countertops" data-bg-edit-type="closed" data-bg-label="Counter" data-bg-category="features" data-bg-layer="6">
+  <g id="hi-countertops" data-bg-edit-type="closed" data-bg-label="Counter" data-bg-category="features" data-bg-layer="3">
     <path class="countertops" d="M 0,0 L 80,0 L 80,30 L 0,30 Z" />
   </g>
   <g id="hi-fireplaces" data-bg-edit-type="closed" data-bg-label="Fireplace" data-bg-category="features" data-bg-layer="6">
@@ -39,10 +39,10 @@
   <g id="hi-stairs" data-bg-edit-type="icon" data-bg-label="Stairs" data-bg-category="features" data-bg-layer="6">
     <path class="stairs" d="M 0,0 L 60,0 L 60,10 L 0,10 Z M 0,10 L 60,10 L 60,20 L 0,20 Z M 0,20 L 60,20 L 60,30 L 0,30 Z M 0,30 L 60,30 L 60,40 L 0,40 Z M 0,40 L 60,40 L 60,50 L 0,50 Z M 0,50 L 60,50 L 60,60 L 0,60 Z M 0,60 L 60,60 L 60,70 L 0,70 Z M 0,70 L 60,70 L 60,80 L 0,80 Z" />
   </g>
-  <g id="hi-shelves" data-bg-edit-type="closed" data-bg-label="Shelves" data-bg-category="features" data-bg-layer="6">
+  <g id="hi-shelves" data-bg-edit-type="closed" data-bg-label="Shelves" data-bg-category="features" data-bg-layer="3">
     <path class="shelves" d="M 0,0 L 80,0 L 80,20 L 0,20 Z" />
   </g>
-  <g id="hi-cabinets" data-bg-edit-type="closed" data-bg-label="Cabinet" data-bg-category="features" data-bg-layer="6">
+  <g id="hi-cabinets" data-bg-edit-type="closed" data-bg-label="Cabinet" data-bg-category="features" data-bg-layer="3">
     <path class="cabinets" d="M 0,0 L 80,0 L 80,20 L 0,20 Z" />
   </g>
   <g id="hi-tiles" data-bg-edit-type="closed" data-bg-label="Tile" data-bg-category="features" data-bg-layer="3">

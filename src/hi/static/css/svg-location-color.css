@@ -160,7 +160,7 @@ svg.hi-location-view-svg path.door-arcs {
 svg.hi-location-view-svg path.doors {
     fill: none;
     stroke: black;
-    stroke-width: 3;
+    stroke-width: 4.5;
 }
 svg.hi-location-view-svg path.sliding-doors {
     fill: #c0c0c0;
