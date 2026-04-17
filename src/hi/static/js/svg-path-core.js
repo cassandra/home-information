@@ -2,18 +2,8 @@
   SVG Path Core
 
   Provides proxy-point-based path editing for open and closed SVG paths.
-  Initialized with a configuration object that specifies how to identify
-  path elements, what to do on selection, and how to persist changes.
-
-  Usage:
-    Hi.SvgPathCore.init({
-        identifyElement: function(event) { ... },
-        onSelect: function(element) { ... },
-        onDeselect: function() { ... },
-        onSave: function(element, svgPathString) { ... },
-        baseSvgSelector: '#my-svg',
-        highlightClass: 'highlighted',
-    });
+  Initialized with a configuration object. See DEFAULT_CONFIG for all
+  available options and their defaults.
 */
 
 (function() {
@@ -56,6 +46,17 @@
         CLOSED: 'closed',
     };
 
+    var DEFAULT_CONFIG = {
+        identifyElement: null,      /* function(event) — return SVG group element or null */
+        onSelect: null,             /* function(element) — called on path selection */
+        onDeselect: null,           /* function() — called when selection is cleared */
+        onSave: null,               /* function(element, svgPathString) — called after path changes */
+        onDeleteAll: null,          /* function() — called after entire element deletion */
+        baseSvgSelector: null,      /* CSS selector for the containing SVG element */
+        highlightClass: 'highlighted',  /* CSS class for selected proxy elements */
+        allowDeleteAll: false,      /* allow delete key to remove entire element */
+    };
+
     let gConfig = null;
     let gSelectedPathSvgGroup = null;
     let gSvgPathEditData = null;
@@ -72,7 +73,7 @@
     const HiSvgPathCore = {
 
         init: function( config ) {
-            gConfig = config;
+            gConfig = $.extend( {}, DEFAULT_CONFIG, config );
         },
 
         handleSinglePointerEventStart: function( singlePointerEvent ) {
@@ -276,7 +277,14 @@
             return true;
 
         } else {
-            if ( ! gSvgPathEditData.selectedProxyElement ) { return false; }
+            if ( ! gSvgPathEditData.selectedProxyElement ) {
+                if ( PATH_ACTION_DELETE_KEY_CODES.indexOf( event.keyCode ) >= 0
+                     && gConfig.allowDeleteAll ) {
+                    deleteEntireElement();
+                    return true;
+                }
+                return false;
+            }
 
             if ( PATH_ACTION_DELETE_KEY_CODES.indexOf( event.keyCode ) >= 0 ) {
                 if ( $( gSvgPathEditData.selectedProxyElement ).hasClass( PROXY_POINT_CLASS ) ) {
@@ -588,6 +596,23 @@
     }
 
     /* ==================== */
+    /* Delete Entire Element */
+    /* ==================== */
+
+    function deleteEntireElement() {
+        if ( ! gSelectedPathSvgGroup ) { return; }
+        var proxyPathContainer = $( '#' + PROXY_PATH_CONTAINER_ID );
+        $( proxyPathContainer ).remove();
+        var element = gSelectedPathSvgGroup;
+        gSelectedPathSvgGroup = null;
+        gSvgPathEditData = null;
+        $( element ).remove();
+        if ( gConfig.onDeleteAll ) {
+            gConfig.onDeleteAll();
+        }
+    }
+
+    /* ==================== */
     /* Delete Points        */
     /* ==================== */
 
@@ -756,7 +781,12 @@
     function removeProxyPathIfAllowed( targetProxyPathGroup ) {
         var proxyPathContainer = $( '#' + PROXY_PATH_CONTAINER_ID );
         var proxyPathGroups = $( proxyPathContainer ).find( PROXY_PATH_GROUP_SELECTOR );
-        if ( proxyPathGroups.length < 2 ) { return; }
+        if ( proxyPathGroups.length < 2 ) {
+            if ( gConfig.allowDeleteAll ) {
+                deleteEntireElement();
+            }
+            return;
+        }
         $( targetProxyPathGroup ).remove();
         setSelectedProxyElement( null );
         saveSvgPath();

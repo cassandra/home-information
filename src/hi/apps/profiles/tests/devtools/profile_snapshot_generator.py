@@ -23,35 +23,40 @@ logger = logging.getLogger(__name__)
 class ProfileSnapshotGenerator:
     """
     Generates JSON profile specifications from current database state.
-    
+
     Creates profile data files in the same format used by ProfileManager for
     loading, allowing developers to capture UI-configured layouts as templates.
     """
-    
-    def generate_snapshot(self, profile_type: ProfileType, output_to_tmp: bool = True) -> Path:
+
+    TMP_OUTPUT_DIR = Path('/tmp/hi-profile-snapshot')
+
+    def generate_snapshot(self, profile_type: ProfileType, output_to_tmp: bool = True) -> list:
         """
         Generate a JSON snapshot of the current database state.
-        
+
         Args:
             profile_type: The ProfileType enum to use for naming
-            output_to_tmp: If True, writes to /tmp; if False, overwrites existing profile data file
-            
+            output_to_tmp: If True, writes to /tmp/hi-profile-snapshot/;
+                           if False, overwrites existing profile data files
+
         Returns:
-            Path to the generated JSON file
-            
+            List of Paths to all generated files (JSON and any new SVG templates)
+
         Raises:
             ValueError: If database is empty (no locations)
         """
         if not Location.objects.exists():
             raise ValueError("Cannot generate snapshot from empty database")
-        
+
+        output_paths = []
         profile_data = self._build_profile_data(profile_type)
 
         # Reconcile SVG backgrounds: map to existing templates or create new ones
-        self._reconcile_svg_templates(profile_data, profile_type, output_to_tmp)
+        template_paths = self._reconcile_svg_templates(profile_data, profile_type, output_to_tmp)
+        output_paths.extend(template_paths)
 
         if output_to_tmp:
-            output_path = Path('/tmp') / profile_type.json_filename()
+            output_path = self.TMP_OUTPUT_DIR / profile_type.json_filename()
             output_path.parent.mkdir(parents=True, exist_ok=True)
         else:
             output_path = self._get_profile_json_path(profile_type)
@@ -59,8 +64,9 @@ class ProfileSnapshotGenerator:
         with open(output_path, 'w') as f:
             json.dump(profile_data, f, indent=2, default=str)
 
-        logger.info(f"Generated profile snapshot to {output_path}")
-        return output_path
+        output_paths.insert(0, output_path)
+        logger.info(f"Generated profile snapshot: {[str(p) for p in output_paths]}")
+        return output_paths
     
     def _get_assets_base_directory(self) -> Path:
         """
@@ -76,7 +82,7 @@ class ProfileSnapshotGenerator:
     def _reconcile_svg_templates( self,
                                   profile_data: Dict[str, Any],
                                   profile_type: ProfileType,
-                                  output_to_tmp: bool = False) -> None:
+                                  output_to_tmp: bool = False) -> List[Path]:
         """
         For each Location in the profile data, determine which SVG background
         template it corresponds to. Compares the Location's MEDIA_ROOT SVG
@@ -86,7 +92,11 @@ class ProfileSnapshotGenerator:
         Modifies location data in-place: replaces the temporary
         '_media_svg_fragment_filename' field with the proper
         'svg_template_name' field.
+
+        Returns:
+            List of Paths for any newly created template files.
         """
+        created_paths = []
         locations_data = profile_data.get(PC.PROFILE_FIELD_LOCATIONS, [])
         backgrounds_template_dir = LocationSvgFileForm.BACKGROUNDS_TEMPLATE_DIR
         template_dir = self._get_backgrounds_template_dir()
@@ -135,11 +145,14 @@ class ProfileSnapshotGenerator:
                 logger.debug(f'Matched SVG to template: {svg_fragment_filename} -> {matched_template}')
             else:
                 # No match — create a new template from the fragment
-                new_template_name = self._create_template_from_fragment(
+                new_template_name, new_path = self._create_template_from_fragment(
                     media_content, location_data, profile_type, output_to_tmp,
                 )
                 location_data[PC.LOCATION_FIELD_SVG_TEMPLATE_NAME] = new_template_name
+                created_paths.append(new_path)
                 logger.info(f'Created new template: {svg_fragment_filename} -> {new_template_name}')
+
+        return created_paths
 
     def _get_backgrounds_template_dir(self) -> Path:
         """Get the filesystem path to the backgrounds template directory."""
@@ -152,18 +165,20 @@ class ProfileSnapshotGenerator:
                                         fragment_content,
                                         location_data,
                                         profile_type,
-                                        output_to_tmp: bool = False) -> str:
+                                        output_to_tmp: bool = False) -> tuple:
         """
         Create a new SVG template file from a MEDIA_ROOT fragment.
         Wraps the fragment in a full SVG document with a default viewBox
-        and saves to the backgrounds template directory (or /tmp if testing).
+        and saves to the backgrounds template directory (or tmp dir if testing).
 
         Returns:
-            The template path suitable for use in profile JSON (e.g.,
-            'profiles/svg/backgrounds/single-story-my-home-0.svg').
+            Tuple of (template_name, output_path) where template_name is the
+            template path for use in profile JSON (e.g.,
+            'profiles/svg/backgrounds/single-story-my-home-0.svg') and
+            output_path is the Path to the written file.
         """
         if output_to_tmp:
-            template_dir = Path('/tmp') / 'profiles' / 'svg' / 'backgrounds'
+            template_dir = self.TMP_OUTPUT_DIR / 'templates' / 'profiles' / 'svg' / 'backgrounds'
         else:
             template_dir = self._get_backgrounds_template_dir()
         backgrounds_template_dir = LocationSvgFileForm.BACKGROUNDS_TEMPLATE_DIR
@@ -184,8 +199,8 @@ class ProfileSnapshotGenerator:
         with open(output_path, 'w') as f:
             f.write(full_svg)
 
-        template_path = os.path.join(backgrounds_template_dir, filename)
-        return template_path
+        template_name = os.path.join(backgrounds_template_dir, filename)
+        return template_name, output_path
     
     def _get_profile_json_path(self, profile_type: ProfileType) -> Path:
         """Get the path to the profile JSON file in the data directory."""

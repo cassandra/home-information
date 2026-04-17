@@ -1,17 +1,9 @@
 /*
   SVG Pan/Zoom Core
 
-  Provides viewBox-based pan and zoom for an SVG element. Initialized with
-  a configuration object that specifies the target SVG, container area,
-  and optional save callback.
-
-  Usage:
-    Hi.SvgPanZoomCore.init({
-        baseSvgSelector: '#my-svg',
-        areaSelector: '#my-container',
-        onSave: function(viewBoxStr) { ... },
-        shouldSave: function() { return true; },
-    });
+  Provides viewBox-based pan and zoom for an SVG element.
+  Initialized with a configuration object. See DEFAULT_CONFIG for all
+  available options and their defaults.
 */
 
 (function() {
@@ -25,6 +17,13 @@
     const MOUSE_WHEEL_ZOOM_SCALE_FACTOR_PERCENT = 10.0;
     const ZOOM_SAVE_DEBOUNCE_MS = 400;
 
+    var DEFAULT_CONFIG = {
+        baseSvgSelector: null,      /* CSS selector for the target SVG element */
+        areaSelector: null,         /* CSS selector for the container area */
+        onSave: null,               /* function(viewBoxStr) — called after pan/zoom changes */
+        shouldSave: null,           /* function() — return true to enable saving */
+    };
+
     let gConfig = null;
     let gSvgElement = null;
     let gTransformData = null;
@@ -37,8 +36,8 @@
     const HiSvgPanZoomCore = {
 
         init: function( config ) {
-            gConfig = config;
-            gSvgElement = $( config.baseSvgSelector )[0] || null;
+            gConfig = $.extend( {}, DEFAULT_CONFIG, config );
+            gSvgElement = $( gConfig.baseSvgSelector )[0] || null;
         },
 
         refresh: function() {

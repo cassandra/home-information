@@ -557,6 +557,10 @@
                 saveDraft();
             },
             onSave: null,
+            allowDeleteAll: true,
+            onDeleteAll: function() {
+                Hi.SvgEdit.onElementDeleted();
+            },
             baseSvgSelector: '#' + CANVAS_SVG_ID,
             highlightClass: Hi.HIGHLIGHTED_CLASS,
         });

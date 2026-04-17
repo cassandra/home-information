@@ -2,19 +2,8 @@
   SVG Icon Core
 
   Provides drag/scale/rotate editing for positioned SVG icon elements.
-  Initialized with a configuration object that specifies how to identify
-  icon elements, what to do on selection, and how to persist changes.
-
-  Usage:
-    Hi.SvgIconCore.init({
-        identifyElement: function(event) { ... },
-        onSelect: function(element) { ... },
-        onDeselect: function() { ... },
-        onSave: function(element, positionData) { ... },
-        baseSvgSelector: '#my-svg',
-        areaSelector: '#my-container',
-        highlightClass: 'highlighted',
-    });
+  Initialized with a configuration object. See DEFAULT_CONFIG for all
+  available options and their defaults.
 */
 
 (function() {
@@ -44,6 +33,16 @@
         ROTATE: 'rotate',
     };
 
+    var DEFAULT_CONFIG = {
+        identifyElement: null,      /* function(event) — return SVG group element or null */
+        onSelect: null,             /* function(element) — called on icon selection */
+        onDeselect: null,           /* function() — called when selection is cleared */
+        onSave: null,               /* function(element, positionData) — called after position changes */
+        baseSvgSelector: null,      /* CSS selector for the containing SVG element */
+        areaSelector: null,         /* CSS selector for the editing area container */
+        highlightClass: 'highlighted',  /* CSS class for selected icon */
+    };
+
     let gConfig = null;
     let gActionState = SvgActionStateType.MOVE;
     let gSelectedGroup = null;
@@ -57,7 +56,7 @@
     const HiSvgIconCore = {
 
         init: function( config ) {
-            gConfig = config;
+            gConfig = $.extend( {}, DEFAULT_CONFIG, config );
         },
 
         handleSinglePointerEventStart: function( singlePointerEvent ) {
