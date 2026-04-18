@@ -3,8 +3,8 @@
 
   Normalizes browser pointer/mouse/wheel/keyboard events and dispatches
   them to the background editor's core modules. Modeled on
-  svg-event-listeners.js but routes to pan-zoom-core, icon-core, and
-  path-core instead of entity modules.
+  svg-entity-event-listeners.js but routes to pan-zoom-core, icon-core,
+  and path-core instead of entity modules.
 
   Dispatch priority:
     1. Icon core (if an icon is selected or clicked)

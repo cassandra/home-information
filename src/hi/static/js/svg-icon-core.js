@@ -41,6 +41,7 @@
         baseSvgSelector: null,      /* CSS selector for the containing SVG element */
         areaSelector: null,         /* CSS selector for the editing area container */
         highlightClass: 'highlighted',  /* CSS class for selected icon */
+        enableMirror: true,         /* allow 'm' key to mirror icon horizontally */
     };
 
     let gConfig = null;
@@ -196,7 +197,7 @@
                     rotateLeftFromKeypress();
                 }
 
-            } else if ( event.key === 'm' ) {
+            } else if ( event.key === 'm' && gConfig.enableMirror ) {
                 mirrorSelectedIcon();
 
             } else if ( event.key === 'Escape' ) {

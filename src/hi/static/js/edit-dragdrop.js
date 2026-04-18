@@ -6,8 +6,6 @@
 	// Externally accessible functions here.
     };
 
-    window.Hi.edit.path = HiEditDragDrop;
-
     /*
       DRAG AND DROP EDITING
 

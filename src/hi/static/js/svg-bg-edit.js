@@ -556,7 +556,13 @@
             onDeselect: function() {
                 saveDraft();
             },
-            onSave: null,
+            onSave: function( element, svgPathString ) {
+                /* Update the hidden path element's d attribute so
+                   saveDraft() serializes the current geometry. */
+                $( element ).find( 'path' ).not( '.hi-bg-hit-area' ).attr( 'd', svgPathString );
+                $( element ).find( 'path.hi-bg-hit-area' ).attr( 'd', svgPathString );
+                saveDraft();
+            },
             allowDeleteAll: true,
             onDeleteAll: function() {
                 Hi.SvgEdit.onElementDeleted();

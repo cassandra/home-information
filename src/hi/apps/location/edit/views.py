@@ -1,6 +1,7 @@
 import json
 import logging
 import os
+import re
 import urllib.parse
 
 from django.core.exceptions import BadRequest
@@ -864,7 +865,6 @@ class LocationSvgTemplateSelectView( HiModalView, LocationViewMixin ):
         return antinode.redirect_response( redirect_url )
 
     def _scan_templates( self ):
-        import re
         from hi.apps.profiles import apps as profiles_apps
         template_dir = os.path.join(
             os.path.dirname( profiles_apps.__file__ ),
@@ -901,7 +901,6 @@ class LocationSvgTemplateSelectView( HiModalView, LocationViewMixin ):
 
     def _read_svg_hi_name( self, filepath ):
         """Read the data-hi-name attribute from the SVG file."""
-        import re
         try:
             with open( filepath, 'r' ) as f:
                 # Only need to check the first few lines

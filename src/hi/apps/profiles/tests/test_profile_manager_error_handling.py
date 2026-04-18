@@ -1,6 +1,5 @@
 import logging
 import tempfile
-from pathlib import Path
 
 from hi.apps.profiles.profile_manager import ProfileManager, ProfileLoadingStats
 from hi.apps.entity.models import Entity, EntityPosition
@@ -212,11 +211,6 @@ class TestProfileManagerErrorHandling(BaseTestCase):
         """Test that profile loading fails when no locations can be created."""
         # Create data where all locations will fail due to missing SVG files
         malformed_data = self.data_generator.create_all_locations_invalid_data()
-        
-        # Since we can't easily test the full robust loading without exposing internal methods,
-        # we'll verify the data would cause all locations to fail by testing SVG validation
-        import os
-        from django.conf import settings
         
         for location_data in malformed_data['locations']:
             svg_template_name = location_data['svg_template_name']
