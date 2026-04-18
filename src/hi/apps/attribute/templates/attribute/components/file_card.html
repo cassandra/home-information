@@ -8,8 +8,8 @@ Individual file attribute card with preview, actions, and metadata
      data-attribute-id="{{ attribute.id }}" 
      data-url-detect="true"
      data-order-index="{{ forloop.counter }}"
-  data-thumbnail-ready="{{ attribute.has_thumbnail|yesno:'true,false' }}"
-  data-preview-state="{{ attribute.preview_state }}"
+     data-thumbnail-ready="{{ attribute.has_thumbnail|yesno:'true,false' }}"
+     data-preview-state="{{ attribute.preview_state }}"
      data-mime-type="{{ attribute.file_mime_type|default:'unknown' }}"
      data-file-size="{{ attribute.file_value.size|default:0 }}">
   
