@@ -15,8 +15,12 @@ urlpatterns = [
              views.ViewReferenceHelpView.as_view(), 
              name='profiles_view_reference_help'),
     
-    re_path( r'^edit-reference-help$', 
-             views.EditReferenceHelpView.as_view(), 
+    re_path( r'^edit-reference-help$',
+             views.EditReferenceHelpView.as_view(),
              name='profiles_edit_reference_help'),
-    
+
+    re_path( r'^dismiss-view-intro-help$',
+             views.DismissViewIntroHelpView.as_view(),
+             name='profiles_dismiss_view_intro_help'),
+
 ]
