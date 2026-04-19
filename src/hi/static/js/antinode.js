@@ -1,7 +1,7 @@
 // Anti-Node - Less Javascript is Better
 //             Server-side rendering for asynchronous interactions 
 //
-// Copyright 2020-2025 by POMDP, Inc. - All rights reserved
+// Copyright 2020-2026 by POMDP, LLC - All rights reserved
 
 // ====================
 // OVERVIEW
