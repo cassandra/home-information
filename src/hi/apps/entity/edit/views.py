@@ -101,18 +101,20 @@ class EntityAddView( HiModalView ):
         entity_type_str = entity_form.cleaned_data['entity_type_str']
         quantity = entity_form.cleaned_data['quantity']
 
-        entities = []
+        # Use create() in a loop rather than bulk_create() to ensure
+        # save() overrides and post_save signal handlers fire. At the
+        # 100-entity cap this is fast enough and avoids subtle bugs if
+        # save-time side effects are added to Entity in the future.
+        created_entities = []
         for i in range( 1, quantity + 1 ):
             entity_name = base_name if quantity == 1 else f'{base_name} ({i})'
-            entity = Entity(
+            entity = Entity.objects.create(
                 name=entity_name,
                 entity_type_str=entity_type_str,
             )
-            entities.append(entity)
+            created_entities.append(entity)
             continue
 
-        created_entities = Entity.objects.bulk_create(entities)
-        
         return created_entities
 
     def _add_to_current_view_type( self,
