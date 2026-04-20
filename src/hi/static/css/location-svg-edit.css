@@ -34,6 +34,8 @@
     width: 100%;
     padding: 10px;
     box-sizing: border-box;
+    background-color: var(--white);
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='14' height='14'><circle cx='7' cy='7' r='1' fill='%23cccccc'/></svg>");
 }
 #hi-location-svg-editor-main .hi-location-view-svg {
     width: 100%;
