@@ -1,8 +1,8 @@
 <img src="../src/hi/static/img/hi-logo-w-tagline-197x96.png" alt="Home Information Logo" width="128">
 
-# Layout Editor
+# Item Layout Editor
 
-This page provides an overview of the editing mode features and basic operations. Editing mode is not the main mode used day-to-day. It is only used to initially setup you home and then occasionally to adjust the layout and add/remove items.
+This page provides an overview of the item editing mode features and basic operations. Editing mode is not the main mode used day-to-day. It is only used to initially setup you home and then occasionally to adjust the layout and add/remove items.
 
 You enter edit mode with the "EDIT" button near the top right of the screen.
 
@@ -118,11 +118,9 @@ Below is the Attic space's view after using a custom SVG background and adding t
 
 ## Custom Background Images
 
-When creating a new space, you get the option to add a custom background image. However, you can also change the background image at any time by choosing "EDIT" by the space name.
+When creating a new space, you get a blank floor plan background to start. You can then customize this by using the Background Editor, choosing from a list of predefined templates or even upload your own SVG background image.
 
-<img src="img/editing/location-layout-edit-button-1024x768.png" alt="location-layout-edit-button-1024x768.png" width="250" />
-
-<img src="img/editing/location-layout-edit-1024x768.png" alt="location-layout-edit-1024x768.png" width="400" />
+<img src="img/editing/location-layout-edit-button-1024x768.png" alt="location-layout-edit-button-1024x768.png" width="250" /> &nbsp; <img src="img/editing/location-layout-edit-1024x768.png" alt="location-layout-edit-1024x768.png" width="400" />
 
 
-To create your own custom background image, see the [Custom Background Image Page](CustomBackgrounds.md).
+For more details, see the [Custom Background Image Page](CustomBackgrounds.md).
