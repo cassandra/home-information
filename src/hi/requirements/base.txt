@@ -15,6 +15,7 @@ idna==3.10
 multidict==6.0.5
 numpy==2.1.0
 pillow==12.1.1
+pdf2image==1.17.0
 Pint==0.25
 psutil==6.0.0
 python-dateutil==2.9.0.post0

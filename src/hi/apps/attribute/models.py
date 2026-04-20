@@ -14,6 +14,7 @@ from .enums import (
     AttributeType,
 )
 from .managers import ActiveAttributeManager, DeletedAttributeManager
+from .thumbnail import AttributeThumbnailRules
 
 logger = logging.getLogger(__name__)
 
@@ -154,6 +155,53 @@ class AttributeModel(models.Model):
             pass
         return dict()
 
+    @property
+    def supports_thumbnail_generation(self):
+        return AttributeThumbnailRules.supports_thumbnail_generation(
+            file_value=self.file_value,
+            file_mime_type=self.file_mime_type,
+        )
+
+    @property
+    def thumbnail_relative_path(self):
+        return AttributeThumbnailRules.thumbnail_relative_path(
+            file_value=self.file_value,
+            file_mime_type=self.file_mime_type,
+        )
+
+    def _thumbnail_exists(self):
+        if hasattr(self, '_thumbnail_exists_cache'):
+            return self._thumbnail_exists_cache
+
+        thumbnail_path = self.thumbnail_relative_path
+        self._thumbnail_exists_cache = bool( thumbnail_path and default_storage.exists(thumbnail_path) )
+        return self._thumbnail_exists_cache
+
+    def set_thumbnail_exists_cache(self, exists):
+        self._thumbnail_exists_cache = bool(exists)
+        return self._thumbnail_exists_cache
+
+    def clear_thumbnail_exists_cache(self):
+        if hasattr(self, '_thumbnail_exists_cache'):
+            del self._thumbnail_exists_cache
+        return
+
+    @property
+    def has_thumbnail(self):
+        return self._thumbnail_exists()
+
+    @property
+    def thumbnail_url(self):
+        if not self._thumbnail_exists():
+            return None
+        return default_storage.url(self.thumbnail_relative_path)
+
+    @property
+    def preview_state(self):
+        if self.has_thumbnail:
+            return 'thumbnail'
+        return 'placeholder'
+
     def save(self, *args, **kwargs):
         # Skip history tracking for kwargs that disable it
         track_history = kwargs.pop('track_history', True)
@@ -201,6 +249,8 @@ class AttributeModel(models.Model):
     def delete( self, *args, **kwargs ):
         """ Deleting file from MEDIA_ROOT on best effort basis.  Ignore if fails. """
         
+        thumbnail_path = self.thumbnail_relative_path
+
         if self.file_value:
             try:
                 if default_storage.exists( self.file_value.name ):
@@ -211,6 +261,16 @@ class AttributeModel(models.Model):
             except Exception as e:
                 # Log the error or handle it accordingly
                 logger.warn( f'Error deleting Attribute file {self.file_value.name}: {e}' )
+
+        if thumbnail_path:
+            try:
+                if default_storage.exists(thumbnail_path):
+                    default_storage.delete(thumbnail_path)
+                    logger.debug(f'Deleted Attribute thumbnail: {thumbnail_path}')
+            except Exception as e:
+                logger.warn(f'Error deleting Attribute thumbnail {thumbnail_path}: {e}')
+
+        self.set_thumbnail_exists_cache(False)
 
         super().delete( *args, **kwargs )
         return

@@ -19,5 +19,8 @@ python manage.py sync_settings
 echo "Syncing integrations..."
 python manage.py sync_integrations
 
+echo "Backfilling missing file thumbnails..."
+python manage.py backfill_attribute_thumbnails
+
 echo "Starting supervisord..."
 exec "$@"
