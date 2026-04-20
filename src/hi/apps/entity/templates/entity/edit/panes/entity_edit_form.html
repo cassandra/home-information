@@ -1,0 +1,31 @@
+{% for hidden in entity_form.hidden_fields %}
+{{ hidden }}
+{% endfor %}
+
+{% if entity_form.non_field_errors %}
+<div class="sidebar-form-errors">
+  {% for err in entity_form.non_field_errors %}
+  <p class="sidebar-form-error">ERROR: {{ err }}</p>
+  {% endfor %}
+</div>
+{% endif %}
+
+<div class="sidebar-form-field">
+  <label for="{{ entity_form.name.id_for_label }}" class="sidebar-form-label">{{ entity_form.name.label }}</label>
+  <input type="text" id="{{ entity_form.name.id_for_label }}" name="{{ entity_form.name.name }}" value="{{ entity_form.name.value|default:'' }}" class="sidebar-form-input">
+  {% if entity_form.name.errors %}
+    <div class="sidebar-form-error">{{ entity_form.name.errors }}</div>
+  {% endif %}
+</div>
+
+<div class="sidebar-form-field">
+  <label for="{{ entity_form.entity_type_str.id_for_label }}" class="sidebar-form-label">{{ entity_form.entity_type_str.label }}</label>
+  <select id="{{ entity_form.entity_type_str.id_for_label }}" name="{{ entity_form.entity_type_str.name }}" class="sidebar-form-input">
+    {% for value, label in entity_form.entity_type_str.field.choices %}
+      <option value="{{ value }}"{% if entity_form.entity_type_str.value == value %} selected{% endif %}>{{ label }}</option>
+    {% endfor %}
+  </select>
+  {% if entity_form.entity_type_str.errors %}
+    <div class="sidebar-form-error">{{ entity_form.entity_type_str.errors }}</div>
+  {% endif %}
+</div>
