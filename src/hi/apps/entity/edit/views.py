@@ -120,8 +120,8 @@ class EntityAddView( HiModalView ):
     def _add_to_current_view_type( self,
                                    request,
                                    entity : Entity,
-                                   bulk_grid_index : int = None,
-                                   bulk_grid_total : int = None ):
+                                   bulk_grid_index : Optional[int] = None,
+                                   bulk_grid_total : Optional[int] = None ):
         
         if request.view_parameters.view_type.is_location_view:
             try:
