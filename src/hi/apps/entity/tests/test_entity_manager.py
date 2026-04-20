@@ -441,3 +441,110 @@ class TestEntityManager(BaseTestCase):
         self.assertEqual( scale, Decimal( str( location.svg_position_bounds.min_scale ) ) )
         return
 
+    def _create_bulk_position_location_view( self, x, y, width, height ):
+        from hi.apps.common.svg_models import SvgViewBox
+
+        location_view = Mock()
+        location_view.svg_view_box = SvgViewBox(
+            x = x, y = y, width = width, height = height,
+        )
+        return location_view
+
+    def test_bulk_position_single_entity_returns_center(self):
+        """Single entity in a bulk add should be centered in the view."""
+        manager = EntityManager()
+        location_view = self._create_bulk_position_location_view( 0, 0, 1000, 1000 )
+
+        svg_x, svg_y = manager._get_bulk_initial_entity_position(
+            location_view = location_view,
+            bulk_grid_index = 0,
+            bulk_grid_total = 1,
+        )
+        self.assertAlmostEqual( svg_x, 500.0 )
+        self.assertAlmostEqual( svg_y, 500.0 )
+        return
+
+    def test_bulk_position_multiple_entities_distributed_around_center(self):
+        """Multiple entities should be placed symmetrically around the view center."""
+        manager = EntityManager()
+        location_view = self._create_bulk_position_location_view( 0, 0, 1000, 1000 )
+
+        # For 4 entities in a 4-column grid, one row, columns centered at indices
+        # 0..3 with offset from center at (-1.5, -0.5, 0.5, 1.5) * spacing.
+        positions = [
+            manager._get_bulk_initial_entity_position(
+                location_view = location_view,
+                bulk_grid_index = i,
+                bulk_grid_total = 4,
+            )
+            for i in range( 4 )
+        ]
+        x_values = [ p[0] for p in positions ]
+        y_values = [ p[1] for p in positions ]
+
+        # Symmetric around center x=500: first and last should mirror, middle two mirror.
+        self.assertAlmostEqual( x_values[0] + x_values[3], 1000.0 )
+        self.assertAlmostEqual( x_values[1] + x_values[2], 1000.0 )
+        # All in the same row, so y is identical.
+        self.assertEqual( len( set( round( y, 6 ) for y in y_values ) ), 1 )
+        # Single row means y sits at center.
+        self.assertAlmostEqual( y_values[0], 500.0 )
+        return
+
+    def test_bulk_position_viewbox_offset_respects_origin(self):
+        """Grid positioning should be centered on the viewbox center, not origin."""
+        manager = EntityManager()
+        location_view = self._create_bulk_position_location_view( 200, 300, 1000, 1000 )
+
+        svg_x, svg_y = manager._get_bulk_initial_entity_position(
+            location_view = location_view,
+            bulk_grid_index = 0,
+            bulk_grid_total = 1,
+        )
+        # Viewbox center is (200 + 500, 300 + 500) = (700, 800).
+        self.assertAlmostEqual( svg_x, 700.0 )
+        self.assertAlmostEqual( svg_y, 800.0 )
+        return
+
+    def test_bulk_position_grid_wraps_to_multiple_rows(self):
+        """With more entities than columns, indices should wrap into additional rows."""
+        manager = EntityManager()
+        location_view = self._create_bulk_position_location_view( 0, 0, 1000, 1000 )
+
+        # 8 entities with 4-column default = 2 rows. Index 0 is top-left, index 4
+        # is first of second row (same column as index 0).
+        x_0, y_0 = manager._get_bulk_initial_entity_position(
+            location_view = location_view,
+            bulk_grid_index = 0,
+            bulk_grid_total = 8,
+        )
+        x_4, y_4 = manager._get_bulk_initial_entity_position(
+            location_view = location_view,
+            bulk_grid_index = 4,
+            bulk_grid_total = 8,
+        )
+        self.assertAlmostEqual( x_0, x_4 )
+        self.assertLess( y_0, y_4 )
+        return
+
+    def test_bulk_position_clamps_to_viewbox_margin(self):
+        """Grid positions that would exceed viewbox bounds should clamp inside margin."""
+        manager = EntityManager()
+        # Very small viewbox so spacing would push grid cells outside.
+        location_view = self._create_bulk_position_location_view( 0, 0, 100, 100 )
+
+        svg_x, svg_y = manager._get_bulk_initial_entity_position(
+            location_view = location_view,
+            bulk_grid_index = 0,
+            bulk_grid_total = 16,
+        )
+        margin_fraction = manager.DEFAULT_INITIAL_POSITION_VIEWBOX_MARGIN_FRACTION
+        margin_x = 100 * margin_fraction
+        margin_y = 100 * margin_fraction
+
+        self.assertGreaterEqual( svg_x, margin_x )
+        self.assertLessEqual( svg_x, 100 - margin_x )
+        self.assertGreaterEqual( svg_y, margin_y )
+        self.assertLessEqual( svg_y, 100 - margin_y )
+        return
+

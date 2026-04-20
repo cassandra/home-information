@@ -1,6 +1,6 @@
 import logging
 import re
-from typing import Any, Dict, Optional
+from typing import Any, Dict, List, Optional
 
 from django.core.exceptions import BadRequest, PermissionDenied
 from django.db import transaction
@@ -15,7 +15,7 @@ import hi.apps.common.antinode as antinode
 from hi.apps.entity.entity_manager import EntityManager
 from hi.apps.entity.entity_pairing_manager import EntityPairingManager, EntityPairingError
 from hi.apps.entity.edit.entity_type_transition_handler import EntityTypeTransitionHandler
-from hi.apps.entity.forms import EntityForm
+from hi.apps.entity.forms import EntityAddForm, EntityForm
 from hi.apps.entity.models import (
     ArchivedEntity,
     ArchivedEntityAttribute,
@@ -70,12 +70,12 @@ class EntityAddView( HiModalView ):
     
     def get( self, request, *args, **kwargs ):
         context = {
-            'entity_form': EntityForm(),
+            'entity_form': EntityAddForm(),
         }
         return self.modal_response( request, context )
     
     def post( self, request, *args, **kwargs ):
-        entity_form = EntityForm( request.POST )
+        entity_form = EntityAddForm( request.POST )
         if not entity_form.is_valid():
             context = {
                 'entity_form': entity_form,
@@ -83,16 +83,45 @@ class EntityAddView( HiModalView ):
             return self.modal_response( request, context )
 
         with transaction.atomic():
-            entity = entity_form.save()
-            self._add_to_current_view_type(
-                request = request,
-                entity = entity,
-            )
+            created_entities = self._create_entities_bulk( entity_form = entity_form )
+            for i, entity in enumerate( created_entities ):
+                self._add_to_current_view_type(
+                    request = request,
+                    entity = entity,
+                    bulk_grid_index = i,
+                    bulk_grid_total = len( created_entities ),
+                )
+                continue
             
         redirect_url = reverse('home')
         return self.redirect_response( request, redirect_url )
 
-    def _add_to_current_view_type( self, request, entity : Entity ):
+    def _create_entities_bulk(self, entity_form: EntityAddForm) -> List[Entity]:
+        base_name = entity_form.cleaned_data['name']
+        entity_type_str = entity_form.cleaned_data['entity_type_str']
+        quantity = entity_form.cleaned_data['quantity']
+
+        # Use create() in a loop rather than bulk_create() to ensure
+        # save() overrides and post_save signal handlers fire. At the
+        # 100-entity cap this is fast enough and avoids subtle bugs if
+        # save-time side effects are added to Entity in the future.
+        created_entities = []
+        for i in range( 1, quantity + 1 ):
+            entity_name = base_name if quantity == 1 else f'{base_name} ({i})'
+            entity = Entity.objects.create(
+                name=entity_name,
+                entity_type_str=entity_type_str,
+            )
+            created_entities.append(entity)
+            continue
+
+        return created_entities
+
+    def _add_to_current_view_type( self,
+                                   request,
+                                   entity : Entity,
+                                   bulk_grid_index : Optional[int] = None,
+                                   bulk_grid_total : Optional[int] = None ):
         
         if request.view_parameters.view_type.is_location_view:
             try:
@@ -100,6 +129,8 @@ class EntityAddView( HiModalView ):
                 EntityManager().add_entity_to_view(
                     entity = entity,
                     location_view = current_location_view,
+                    bulk_grid_index = bulk_grid_index,
+                    bulk_grid_total = bulk_grid_total,
                 )
             except LocationView.DoesNotExist:
                 logger.warning( 'No current location view to add new entity to.')

@@ -492,8 +492,27 @@ class TestEntityPropertiesEditView(SyncViewTestCase):
         """Test that GET requests are not allowed (only POST)."""
         url = reverse('entity_properties_edit', kwargs={'entity_id': self.entity.id})
         response = self.client.get(url)
-        
+
         self.assertEqual(response.status_code, 405)
+
+    def test_properties_edit_uses_edit_form_pane_not_add_form_pane(self):
+        """Regression: the properties edit sidebar must include the
+        edit-specific form pane, not the bulk-add form pane. The two used
+        to share a single pane, which caused the add-only 'quantity' field
+        to render in the sidebar and silently ignore its value on save.
+        """
+        url = reverse('entity_properties_edit', kwargs={'entity_id': self.entity.id})
+        form_data = {
+            'name': self.entity.name,
+            'entity_type_str': self.entity.entity_type_str,
+        }
+        response = self.client.post(url, form_data)
+
+        self.assertSuccessResponse(response)
+        self.assertTemplateRendered(response, 'entity/edit/panes/entity_properties_edit.html')
+        self.assertTemplateRendered(response, 'entity/edit/panes/entity_edit_form.html')
+        rendered_templates = [t.name for t in response.templates]
+        self.assertNotIn('entity/edit/panes/entity_add_form.html', rendered_templates)
 
 
 class TestEntityAttributeUploadView(SyncViewTestCase):
