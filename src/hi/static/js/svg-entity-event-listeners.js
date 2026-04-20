@@ -297,6 +297,15 @@
     
     function dispatchSinglePointerEventStart( currentEvent, singlePointerEvent ) {
 	let handled = Hi.edit.icon.handleSinglePointerEventStart( singlePointerEvent );
+	if ( handled ) {
+	    Hi.SvgPathCore.clearSelection();
+	}
+	if ( ! handled) {
+	    handled = Hi.edit.path.handleSinglePointerEventStart( singlePointerEvent );
+	    if ( handled ) {
+		Hi.SvgIconCore.clearSelection();
+	    }
+	}
         if ( ! handled) {
 	    handled = Hi.location.handleSinglePointerEventStart( singlePointerEvent );
 	}
@@ -308,15 +317,21 @@
     function dispatchSinglePointerEventMove( currentEvent, singlePointerEvent ) {
 	let handled = Hi.edit.icon.handleSinglePointerEventMove( singlePointerEvent );
 	if ( ! handled) {
+	    handled = Hi.edit.path.handleSinglePointerEventMove( singlePointerEvent );
+	}
+	if ( ! handled) {
 	    handled = Hi.location.handleSinglePointerEventMove( singlePointerEvent );
 	}
 	if ( handled && currentEvent ) {
 	    currentEvent.stopImmediatePropagation();
    	}
     }
-    
+
     function dispatchSinglePointerEventEnd( currentEvent, singlePointerEvent ) {
 	let handled = Hi.edit.icon.handleSinglePointerEventEnd( singlePointerEvent );
+	if ( ! handled) {
+	    handled = Hi.edit.path.handleSinglePointerEventEnd( singlePointerEvent );
+	}
 	if ( ! handled) {
 	    handled = Hi.location.handleSinglePointerEventEnd( singlePointerEvent );
 	}
@@ -397,12 +412,14 @@
 		gPotentialClickState = null;
 	    }
 	    
-	    let handled = Hi.edit.icon.handleClick( event );
+	    /* Pan-zoom click suppression first — a completed pan drag
+	       must not be interpreted as a selection by other modules. */
+	    let handled = Hi.location.handleClick( event );
 	    if ( ! handled ) {
-		handled = Hi.edit.path.handleClick( event );
+		handled = Hi.edit.icon.handleClick( event );
 	    }
 	    if ( ! handled ) {
-		handled = Hi.location.handleClick( event );
+		handled = Hi.edit.path.handleClick( event );
 	    }
 	    if ( handled ) {
 		event.preventDefault();

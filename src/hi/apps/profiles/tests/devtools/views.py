@@ -45,11 +45,11 @@ class ProfileDevtoolsSnapshotView(HiModalView):
         
         try:
             generator = ProfileSnapshotGenerator()
-            output_path = generator.generate_snapshot(profile_type, output_to_tmp)
-            
+            output_paths = generator.generate_snapshot(profile_type, output_to_tmp)
+
             context = {
                 'profile_type_label': profile_type.label,
-                'output_path': str(output_path),
+                'output_paths': [str(p) for p in output_paths],
                 'output_to_tmp': output_to_tmp,
             }
             

@@ -1,7 +1,6 @@
 import logging
 import tempfile
 from pathlib import Path
-from unittest.mock import patch
 
 from hi.apps.profiles.profile_manager import ProfileManager
 from hi.apps.profiles.enums import ProfileType
@@ -217,95 +216,58 @@ class TestProfileManager(BaseTestCase):
             except Exception as e:
                 self.fail(f"Failed to load JSON for {profile_type}: {e}")
 
-    def test_svg_fragment_file_management_with_test_isolation(self):
-        """Test SVG fragment copying with proper test isolation using temporary directories."""
+    def test_svg_template_rendering_to_media(self):
+        """Test that profile loading renders SVG templates to MEDIA_ROOT files."""
         import os
-        
-        # Create temporary directories for test isolation
-        with tempfile.TemporaryDirectory() as temp_media_root:
-            with tempfile.TemporaryDirectory() as temp_assets_root:
-                # Set up test assets directory structure
-                test_assets_dir = Path(temp_assets_root)
-                test_svg_dir = test_assets_dir / 'location' / 'svg'
-                test_svg_dir.mkdir(parents=True, exist_ok=True)
-                
-                # Create test SVG fragment files
-                test_svg_files = {
-                    'location/svg/single_story-0.svg': '<g id="test-main">Test Main Floor</g>',
-                    'location/svg/single_story-1.svg': '<g id="test-main">Test Main Floor</g>',
-                }
-                
-                for svg_path, svg_content in test_svg_files.items():
-                    full_svg_path = test_assets_dir / svg_path
-                    with open(full_svg_path, 'w') as f:
-                        f.write(svg_content)
-                
-                # Use Django's override_settings and patch the assets directory
-                with self.settings(MEDIA_ROOT=temp_media_root):
-                    with patch.object(self.profile_manager,
-                                      '_get_assets_base_directory',
-                                      return_value=test_assets_dir):
-                        
-                        # Test the actual profile loading with SVG copying
-                        stats = self.profile_manager.load_profile(ProfileType.SINGLE_STORY)
-                        self.assertTrue(stats.meets_minimum_requirements())
-                        
-                        # Verify that SVG files were copied to test MEDIA_ROOT
-                        for svg_filename in test_svg_files.keys():
-                            media_path = os.path.join(temp_media_root, svg_filename)
-                            self.assertTrue(
-                                os.path.exists(media_path), 
-                                f"SVG file should be copied to test MEDIA_ROOT: {media_path}")
-                            
-                            # Verify file content was copied correctly
-                            with open(media_path, 'r') as f:
-                                copied_content = f.read()
-                            self.assertEqual(
-                                copied_content, test_svg_files[svg_filename],
-                                f"SVG file content should match: {svg_filename}")
-                        
-                        # Verify database objects were created
-                        locations = Location.objects.all()
-                        self.assertGreater(locations.count(), 0, "Should create locations")
-                        
-                        for location in locations:
-                            self.assertIsNotNone(
-                                location.svg_fragment_filename,
-                                "Location should have SVG fragment filename")
-                            # Verify the referenced file exists in test MEDIA_ROOT
-                            full_path = os.path.join(temp_media_root, location.svg_fragment_filename)
-                            self.assertTrue(
-                                os.path.exists(full_path),
-                                f"Location SVG file should exist in test MEDIA_ROOT: {full_path}")
-    
-    def test_real_profile_assets_exist(self):
-        """Test that the real profile JSON files point to existing assets."""
-        for profile_type in ProfileType:
-            # Load the real JSON file
-            json_path = self.profile_manager._get_profile_json_path(profile_type)
-            profile_data = self.profile_manager._load_json_file(json_path)
-            
-            # Check that all referenced SVG files exist in the real assets directory
-            locations_data = profile_data.get('locations', [])
-            assets_base_dir = self.profile_manager._get_assets_base_directory()
-            
-            for location_data in locations_data:
-                svg_filename = location_data.get('svg_fragment_filename')
-                if svg_filename:
-                    asset_path = assets_base_dir / svg_filename
-                    self.assertTrue(
-                        asset_path.exists(), 
-                        f"Real profile {profile_type} references missing asset: {asset_path}")
-    
-    def test_profile_svg_copying_error_handling(self):
-        """Test error handling when SVG fragment files are missing from assets."""
+
         with tempfile.TemporaryDirectory() as temp_media_root:
             with self.settings(MEDIA_ROOT=temp_media_root):
-                # Mock a missing SVG file by patching the copy method
-                with patch.object(self.profile_manager, '_copy_svg_fragment_files') as mock_copy:
-                    # Make the copy method raise FileNotFoundError
-                    mock_copy.side_effect = FileNotFoundError("SVG fragment file not found in assets")
-                    
-                    # Should raise FileNotFoundError when SVG file is missing
-                    with self.assertRaises(FileNotFoundError):
-                        self.profile_manager.load_profile(ProfileType.SINGLE_STORY)
+                stats = self.profile_manager.load_profile(ProfileType.SINGLE_STORY)
+                self.assertTrue(stats.meets_minimum_requirements())
+
+                locations = Location.objects.all()
+                self.assertGreater(locations.count(), 0, "Should create locations")
+
+                for location in locations:
+                    self.assertIsNotNone(
+                        location.svg_fragment_filename,
+                        "Location should have SVG fragment filename")
+                    full_path = os.path.join(temp_media_root, location.svg_fragment_filename)
+                    self.assertTrue(
+                        os.path.exists(full_path),
+                        f"Rendered SVG should exist in MEDIA_ROOT: {full_path}")
+                    # Verify file has content
+                    with open(full_path, 'r') as f:
+                        content = f.read()
+                    self.assertGreater(len(content), 0,
+                                       f"SVG file should not be empty: {full_path}")
+    
+    def test_real_profile_templates_exist(self):
+        """Test that the real profile JSON files reference existing SVG templates."""
+        from django.template.loader import get_template
+
+        for profile_type in ProfileType:
+            json_path = self.profile_manager._get_profile_json_path(profile_type)
+            profile_data = self.profile_manager._load_json_file(json_path)
+
+            for location_data in profile_data.get('locations', []):
+                svg_template_name = location_data.get('svg_template_name')
+                if svg_template_name:
+                    try:
+                        get_template(svg_template_name)
+                    except Exception:
+                        self.fail(
+                            f"Profile {profile_type} references missing template: {svg_template_name}"
+                        )
+    
+    def test_profile_svg_template_error_handling(self):
+        """Test error handling when SVG template references are invalid."""
+        with tempfile.TemporaryDirectory() as temp_media_root:
+            with self.settings(MEDIA_ROOT=temp_media_root):
+                # Load real profile data and corrupt the template reference
+                json_path = self.profile_manager._get_profile_json_path(ProfileType.SINGLE_STORY)
+                profile_data = self.profile_manager._load_json_file(json_path)
+                profile_data['locations'][0]['svg_template_name'] = 'profiles/svg/backgrounds/nonexistent.svg'
+
+                with self.assertRaises(Exception):
+                    self.profile_manager._render_svg_templates(profile_data)

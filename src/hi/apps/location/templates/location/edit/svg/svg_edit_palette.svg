@@ -1,0 +1,89 @@
+<defs>
+  <!-- Structural: Icons -->
+  <g id="hi-door-standard" data-bg-edit-type="icon" data-bg-label="Door" data-bg-category="structural" data-bg-layer="240">
+    <path class="doors" d="M 0,0 L 70.71,70.71" />
+    <path class="door-arcs" d="M 100,0 C 100,26.52 89.46,51.96 70.71,70.71" />
+  </g>
+  <g id="hi-window-standard" data-bg-edit-type="icon" data-bg-label="Window" data-bg-category="structural" data-bg-layer="250">
+    <path class="windows" d="M 0,0 L 105,0 L 105,9 L 0,9 Z" />
+  </g>
+  <g id="hi-sliding-door" data-bg-edit-type="icon" data-bg-label="Door (alt)" data-bg-category="structural" data-bg-layer="260">
+    <path class="sliding-doors" d="M 0,0 L 120,0 L 120,9 L 0,9 Z" />
+    <line class="sliding-doors-center" x1="60" y1="-2" x2="60" y2="11" />
+  </g>
+
+  <!-- Structural: Paths -->
+  <g id="hi-dead-space" data-bg-edit-type="closed" data-bg-label="Dead Space" data-bg-category="structural" data-bg-layer="135">
+    <path class="dead-space" d="M 0,0 L 100,0 L 100,100 L 0,100 Z" />
+  </g>
+  <g id="hi-exterior-walls" data-bg-edit-type="open" data-bg-label="Ext. Wall" data-bg-category="structural" data-bg-layer="220">
+    <path class="exterior-wall-stroke" d="M 0,0 L 200,0" />
+  </g>
+  <g id="hi-interior-walls" data-bg-edit-type="open" data-bg-label="Int. Wall" data-bg-category="structural" data-bg-layer="210">
+    <path class="interior-wall-stroke" d="M 0,0 L 200,0" />
+  </g>
+  <g id="hi-interior-floors" data-bg-edit-type="closed" data-bg-label="Floor" data-bg-category="structural" data-bg-layer="130">
+    <path class="interior-floors" d="M 0,0 L 100,0 L 100,100 L 0,100 Z" />
+  </g>
+  <g id="hi-transitions" data-bg-edit-type="open" data-bg-label="Transition" data-bg-category="structural" data-bg-layer="190">
+    <path class="transitions" d="M 0,0 L 200,0" />
+  </g>
+
+  <!-- Features -->
+  <g id="hi-countertops" data-bg-edit-type="closed" data-bg-label="Counter" data-bg-category="features" data-bg-layer="150">
+    <path class="countertops" d="M 0,0 L 80,0 L 80,30 L 0,30 Z" />
+  </g>
+  <g id="hi-fireplaces" data-bg-edit-type="closed" data-bg-label="Fireplace" data-bg-category="features" data-bg-layer="180">
+    <path class="fireplaces" d="M 0,0 L 60,0 L 60,40 L 0,40 Z" />
+  </g>
+  <g id="hi-stairs" data-bg-edit-type="icon" data-bg-label="Stairs" data-bg-category="features" data-bg-layer="200">
+    <path class="stairs" d="M 0,0 L 60,0 L 60,10 L 0,10 Z M 0,10 L 60,10 L 60,20 L 0,20 Z M 0,20 L 60,20 L 60,30 L 0,30 Z M 0,30 L 60,30 L 60,40 L 0,40 Z M 0,40 L 60,40 L 60,50 L 0,50 Z M 0,50 L 60,50 L 60,60 L 0,60 Z M 0,60 L 60,60 L 60,70 L 0,70 Z M 0,70 L 60,70 L 60,80 L 0,80 Z" />
+  </g>
+  <g id="hi-shelves" data-bg-edit-type="closed" data-bg-label="Shelves" data-bg-category="features" data-bg-layer="160">
+    <path class="shelves" d="M 0,0 L 80,0 L 80,20 L 0,20 Z" />
+  </g>
+  <g id="hi-cabinets" data-bg-edit-type="closed" data-bg-label="Cabinet" data-bg-category="features" data-bg-layer="170">
+    <path class="cabinets" d="M 0,0 L 80,0 L 80,20 L 0,20 Z" />
+  </g>
+  <g id="hi-tiles" data-bg-edit-type="closed" data-bg-label="Tile" data-bg-category="features" data-bg-layer="140">
+    <path class="tiles" d="M 0,0 L 100,0 L 100,100 L 0,100 Z" />
+  </g>
+
+  <!-- Exterior -->
+  <g id="hi-grass" data-bg-edit-type="closed" data-bg-label="Grass" data-bg-category="exterior" data-bg-layer="20">
+    <path class="grass" d="M 0,0 L 100,0 L 100,100 L 0,100 Z" />
+  </g>
+  <g id="hi-ground" data-bg-edit-type="closed" data-bg-label="Ground" data-bg-category="exterior" data-bg-layer="30">
+    <path class="ground" d="M 0,0 L 100,0 L 100,100 L 0,100 Z" />
+  </g>
+  <g id="hi-pavement" data-bg-edit-type="closed" data-bg-label="Pavement" data-bg-category="exterior" data-bg-layer="40">
+    <path class="pavement" d="M 0,0 L 100,0 L 100,100 L 0,100 Z" />
+  </g>
+  <g id="hi-asphalt" data-bg-edit-type="closed" data-bg-label="Asphalt" data-bg-category="exterior" data-bg-layer="50">
+    <path class="asphalt" d="M 0,0 L 100,0 L 100,100 L 0,100 Z" />
+  </g>
+  <g id="hi-mulch" data-bg-edit-type="closed" data-bg-label="Mulch" data-bg-category="exterior" data-bg-layer="60">
+    <path class="mulch" d="M 0,0 L 100,0 L 100,100 L 0,100 Z" />
+  </g>
+  <g id="hi-rock-beds" data-bg-edit-type="closed" data-bg-label="Rock Bed" data-bg-category="exterior" data-bg-layer="70">
+    <path class="rock-beds" d="M 0,0 L 100,0 L 100,100 L 0,100 Z" />
+  </g>
+  <g id="hi-stone" data-bg-edit-type="closed" data-bg-label="Stone" data-bg-category="exterior" data-bg-layer="80">
+    <path class="stone" d="M 0,0 L 100,0 L 100,100 L 0,100 Z" />
+  </g>
+  <g id="hi-brick" data-bg-edit-type="closed" data-bg-label="Brick" data-bg-category="exterior" data-bg-layer="90">
+    <path class="brick" d="M 0,0 L 100,0 L 100,100 L 0,100 Z" />
+  </g>
+  <g id="hi-gravel" data-bg-edit-type="closed" data-bg-label="Gravel" data-bg-category="exterior" data-bg-layer="100">
+    <path class="gravel" d="M 0,0 L 100,0 L 100,100 L 0,100 Z" />
+  </g>
+  <g id="hi-wood-decks" data-bg-edit-type="closed" data-bg-label="Deck" data-bg-category="exterior" data-bg-layer="110">
+    <path class="wood-decks" d="M 0,0 L 100,0 L 100,100 L 0,100 Z" />
+  </g>
+  <g id="hi-fencing" data-bg-edit-type="open" data-bg-label="Fence" data-bg-category="exterior" data-bg-layer="230">
+    <path class="fencing" d="M 0,0 L 200,0" />
+  </g>
+  <g id="hi-property-lines" data-bg-edit-type="closed" data-bg-label="Property" data-bg-category="exterior" data-bg-layer="10">
+    <path class="property-lines" d="M 0,0 L 100,0 L 100,100 L 0,100 Z" />
+  </g>
+</defs>

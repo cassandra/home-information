@@ -1,7 +1,7 @@
 // Anti-Node - Less Javascript is Better
 //             Server-side rendering for asynchronous interactions 
 //
-// Copyright 2020-2025 by POMDP, Inc. - All rights reserved
+// Copyright 2020-2026 by POMDP, LLC - All rights reserved
 
 // ====================
 // OVERVIEW
@@ -287,7 +287,19 @@
             });
         },
         
-        addAfterAsyncRenderFunction: addAfterAsyncRenderFunction
+        addAfterAsyncRenderFunction: addAfterAsyncRenderFunction,
+
+        // Display modal content that was rendered server-side.
+        // Creates a modal wrapper, appends the content, and shows it.
+        //
+        // Usage:
+        //   AN.displayModal('<div class="modal-dialog">...</div>');
+        //
+        displayModal: function( modalContent ) {
+            let targetObj = getNewModal();
+            targetObj.append( modalContent );
+            showModal( targetObj );
+        }
     }
     
     window.AN = AN;
@@ -346,7 +358,7 @@ function asyncSubmitHandlerHelper( $form ) {
 
     if (( $($form).attr('method') )
         && ( $($form).attr('method').toUpperCase() == 'GET' )) {
-        let formData = $form.serializeArray();
+        formData = $form.serializeArray();
         if ( lastButtonName ) {
             formData.push( { name: lastButtonName, value: lastButtonValue } );
         }
@@ -547,6 +559,7 @@ function asyncUpdateData( $target, $mode, data, xhr ) {
           $target.html(data);
          }
          handleNewContentAdded( $target );
+         afterAsyncRender();
      }
     }
     if (ct.indexOf('json') > -1) {
@@ -562,7 +575,11 @@ function asyncUpdateData( $target, $mode, data, xhr ) {
      }
      
        asyncUpdateDataFromJson( $target, $mode, json );
-    } 
+    }
+
+    if ( typeof handlePostAsyncUpdate === "function") {
+        handlePostAsyncUpdate();
+    }
 };
 
 //====================
@@ -693,12 +710,8 @@ function asyncUpdateDataFromJson( $target, $mode, json ) {
             console.warn('AntiNode scrollTo: Target element not found:', targetId);
         }
     }
-    
-    if ( typeof handlePostAsyncUpdate === "function") {
-        handlePostAsyncUpdate();
-    }
 };
-        
+
 //====================
 function handleSetAttributes( attributesMap ) {
     for ( let selector in attributesMap ) {
@@ -874,7 +887,17 @@ function showModal( modalObj ) {
     if ( modalHideStartMs ) {
         deferredModalShowObj = modalObj;
     } else {
-        $(modalObj).modal("show");
+        // Check if modal content requests protection (no dismiss on backdrop click or Escape)
+        var protectedEl = $(modalObj).find('[data-modal-protected]').first();
+        var isProtected = protectedEl.length > 0 && protectedEl.data('modal-protected');
+        if (isProtected) {
+            $(modalObj).modal({
+                backdrop: 'static',
+                keyboard: false
+            });
+        } else {
+            $(modalObj).modal("show");
+        }
     }
 };
 
@@ -983,16 +1006,16 @@ function lastButtonClickHandler(event) {
     $(theForm).data('lastSubmitButtonValue', this.value);
 };
 
-function showLoadingIniterstitial() {
+function showLoadingInterstitial() {
     $('#antinode-loader').show();
 };
 
-function hideLoadingIniterstitial() {
+function hideLoadingInterstitial() {
     $('#antinode-loader').hide();
 };
 
 function synchronousSubmitHandler() {
-    $('#antinode-loader').show();
+    showLoadingInterstitial();
     $( this ).find( 'button[type="submit"]' ).prop('disabled', true);
 }
     
@@ -1052,11 +1075,11 @@ $.ajaxSuppressLoader = false;
 $(document)
         .ajaxStart(function () {
             if ( ! $.ajaxSuppressLoader ) {
-                $('#antinode-loader').show();
+                showLoadingInterstitial();
             }
         })
         .ajaxStop(function () {
-            $('#antinode-loader').hide();
+            hideLoadingInterstitial();
         });
     
 })();

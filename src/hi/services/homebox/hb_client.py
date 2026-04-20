@@ -32,13 +32,28 @@ class HbClient:
     def _login(self):
         url = f"{self._api_url}/{self.API_VERSION}/users/login"
         data = {
-            'username': self._user, 
-            'password': self._password, 
+            'username': self._user,
+            'password': self._password,
             'stayLoggedIn': True
         }
-        response = self._session.post(url, json=data, timeout=self.DEFAULT_TIMEOUT)
+        try:
+            response = self._session.post(url, json=data, timeout=self.DEFAULT_TIMEOUT)
+        except Exception as e:
+            raise ConnectionError(
+                f'Cannot connect to HomeBox at {self._api_url}. '
+                f'Verify the API URL is correct and the server is running.'
+            ) from e
+
         response.raise_for_status()
-        
+
+        content_type = response.headers.get('content-type', '')
+        if 'json' not in content_type:
+            raise ValueError(
+                f'HomeBox API URL may be incorrect. Expected JSON response but received '
+                f'{content_type or "unknown content type"}. '
+                f'Ensure the URL includes the API path (e.g., http://host:port/api).'
+            )
+
         token = response.json().get('token')
         if token:
             self._session.headers.update({'Authorization': token})

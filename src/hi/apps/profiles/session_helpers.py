@@ -39,6 +39,11 @@ def mark_edit_mode_entry(request):
     request.session[EDIT_MODE_ENTRY_COUNT_KEY] = count + 1
 
     
+def dismiss_view_intro_help(request):
+    """Dismiss view mode help early by removing the session timestamp."""
+    request.session.pop(VIEW_INTRO_HELP_SESSION_KEY, None)
+
+
 def should_show_view_intro_help(request):
     """Check if view mode help should be shown based on session timing."""
     timestamp = request.session.get(VIEW_INTRO_HELP_SESSION_KEY)

@@ -250,6 +250,12 @@ PIPELINE = {
             ),
             'output_filename': 'css/css_head.css',
         },
+        'css_location_svg_edit': {
+            'source_filenames': (
+                'css/location-svg-edit.css',
+            ),
+            'output_filename': 'css/css_location_svg_edit.css',
+        },
     },
     'JAVASCRIPT': {
         'js_before_content': {
@@ -286,14 +292,25 @@ PIPELINE = {
                 'js/svg-utils.js',
                 'js/status.js',
                 'js/auto-view.js',
-                'js/edit.js',
                 'js/edit-dragdrop.js',
-                'js/svg-icon.js',
-                'js/svg-path.js',
-                'js/svg-location.js',
-                'js/svg-event-listeners.js',
+                'js/svg-icon-core.js',
+                'js/svg-path-core.js',
+                'js/svg-pan-zoom-core.js',
+                'js/svg-entity-edit.js',
+                'js/svg-entity-event-listeners.js',
             ),
             'output_filename': 'js/js_hi_grid_content.js',
+        },
+        'js_location_svg_edit': {
+            'source_filenames': (
+                'js/svg-utils.js',
+                'js/svg-pan-zoom-core.js',
+                'js/svg-icon-core.js',
+                'js/svg-path-core.js',
+                'js/svg-bg-edit.js',
+                'js/svg-bg-event-listeners.js',
+            ),
+            'output_filename': 'js/js_location_svg_edit.js',
         },
     }
 }

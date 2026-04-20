@@ -13,7 +13,8 @@ svg.hi-location-view-svg path.rock-beds {
     stroke: black;
     stroke-width: 1;
 }
-svg.hi-location-view-svg path.stone-walls {
+svg.hi-location-view-svg path.stone-walls,
+svg.hi-location-view-svg path.stone {
     fill: url(#stone-pattern);
     stroke: black;
     stroke-width: 1;
@@ -25,7 +26,7 @@ svg.hi-location-view-svg path.landscape-transitions {
 }
 svg.hi-location-view-svg path.brick {
     fill: url(#brick-pattern);
-    stroke: #606060;
+    stroke: #805040;
     stroke-width: 4;
 }
 svg.hi-location-view-svg path.mulch {
@@ -74,7 +75,7 @@ svg.hi-location-view-svg path.pool-coping {
     stroke-width: 1;
 }
 svg.hi-location-view-svg path.property-lines {
-    fill: none;
+    fill: #e8e8e8;
     stroke: black;
     stroke-width: 5;
     stroke-dasharray: 50,10,50,10,10,10;
@@ -106,8 +107,13 @@ svg.hi-location-view-svg path.utilities {
 }
 svg.hi-location-view-svg path.interior-floors {
     fill: #f8f8f8;
-    stroke: none;
+    stroke: #d0d0d0;
     stroke-width: 1;
+}
+svg.hi-location-view-svg path.transitions {
+    fill: none;
+    stroke: #808080;
+    stroke-width: 2;
 }
 svg.hi-location-view-svg path.floor-transitions {
     fill: none;
@@ -154,7 +160,16 @@ svg.hi-location-view-svg path.door-arcs {
 svg.hi-location-view-svg path.doors {
     fill: none;
     stroke: black;
-    stroke-width: 3;
+    stroke-width: 4.5;
+}
+svg.hi-location-view-svg path.sliding-doors {
+    fill: #c0c0c0;
+    stroke: black;
+    stroke-width: 1;
+}
+svg.hi-location-view-svg line.sliding-doors-center {
+    stroke: black;
+    stroke-width: 2;
 }
 svg.hi-location-view-svg path.countertops {
     fill: #e0e0e0;
@@ -190,4 +205,33 @@ svg.hi-location-view-svg path.sinks {
     fill: #f8f8f8;
     stroke: black;
     stroke-width: 1;
+}
+svg.hi-location-view-svg path.cabinets {
+    fill: #c8a882;
+    stroke: black;
+    stroke-width: 1;
+}
+
+/* Open-path stroke-based wall styles for editor-compatible SVGs */
+svg.hi-location-view-svg path.exterior-wall-stroke {
+    fill: none;
+    stroke: black;
+    stroke-width: 16;
+}
+svg.hi-location-view-svg path.interior-wall-stroke {
+    fill: none;
+    stroke: #202020;
+    stroke-width: 8;
+}
+
+/* Hit areas for editor-compatible background elements */
+svg.hi-location-view-svg path.hi-bg-hit-area {
+    stroke: transparent;
+    stroke-width: 30;
+    fill: none;
+    pointer-events: stroke;
+}
+svg.hi-location-view-svg rect.hi-bg-hit-area {
+    fill: transparent;
+    pointer-events: all;
 }

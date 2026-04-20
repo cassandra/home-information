@@ -49,7 +49,7 @@ The install script automatically handles everything: Docker setup verification, 
 **Visual Organization:**
 - Position items exactly where they belong on floor plans or property maps
 - Create multiple views (whole house, kitchen only, security zones, etc.)
-- Upload custom background images of your actual property
+- Customize the floor plan to match your home and property
 
 **Home Automation Integration:**
 - Control lights, switches, and devices through [Home Assistant](docs/Integrations.md)

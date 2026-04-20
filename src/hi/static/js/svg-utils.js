@@ -27,6 +27,12 @@
 	},
 	getSvgTransformValues: function( transformAttrStr ) {
 	    return _getSvgTransformValues( transformAttrStr );
+	},
+	snapToGrid: function( svgElement, value, shiftHeld ) {
+	    return _snapToGrid( svgElement, value, shiftHeld );
+	},
+	snapAngle: function( angle, shiftHeld ) {
+	    return _snapAngle( angle, shiftHeld );
 	}
     };
     
@@ -190,6 +196,41 @@
 	return transform;
     }
     
+    function _snapToGrid( svgElement, value, shiftHeld ) {
+        var gridPixels = ( window.Hi && window.Hi.SvgEdit )
+            ? ( window.Hi.SvgEdit.snapGridPixels || 0 ) : 0;
+        if ( gridPixels <= 0 ) { return value; }
+
+        var pixelsPerSvgUnit = _getPixelsPerSvgUnit( svgElement );
+        var svgUnitsPerPixel = 1.0 / pixelsPerSvgUnit.scaleX;
+        var screenPixels = shiftHeld ? 1 : gridPixels;
+        var gridSize = screenPixels * svgUnitsPerPixel;
+
+        return Math.round( value / gridSize ) * gridSize;
+    }
+
+    var FACTORS_OF_45 = [ 1, 3, 5, 9, 15, 45 ];
+
+    function _snapAngle( angle, shiftHeld ) {
+        var gridPixels = ( window.Hi && window.Hi.SvgEdit )
+            ? ( window.Hi.SvgEdit.snapGridPixels || 0 ) : 0;
+        if ( gridPixels <= 0 ) { return angle; }
+
+        var snapDegrees;
+        if ( shiftHeld ) {
+            snapDegrees = 1;
+        } else {
+            /* Find the largest factor of 45 that is <= gridPixels. */
+            snapDegrees = 1;
+            for ( var i = 0; i < FACTORS_OF_45.length; i++ ) {
+                if ( FACTORS_OF_45[i] <= gridPixels ) {
+                    snapDegrees = FACTORS_OF_45[i];
+                }
+            }
+        }
+        return Math.round( angle / snapDegrees ) * snapDegrees;
+    }
+
     function _getSvgTransformValuesOriginal( transformAttrStr ) {
 	let scale = { x: 1, y: 1 }, rotate = { angle: 0, cx: 0, cy: 0 }, translate = { x: 0, y: 0 };
 

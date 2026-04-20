@@ -1,5 +1,5 @@
 /*  Home Information
-    Copyright 2024 by POMDP, Inc.
+    Copyright 2024-2026 by POMDP, LLC
     All Rights Reserved.  
 */
 :root {
@@ -1033,6 +1033,13 @@ g[hover] {
     margin-top: 0.25rem;
     line-height: 1.3;
 }
+.getting-started-guide a:not(.plain) {
+    color: var(--primary-color);
+    text-decoration: underline;
+}
+.getting-started-guide a:not(.plain):hover {
+    color: var(--primary-highlight-color);
+}
 
 .getting-started-guide .help-hint {
     display: flex;
@@ -1119,6 +1126,16 @@ g[hover] {
     margin: 0;
     color: var(--black);
     font-size: 1rem;
+}
+
+.editing-help-guide .help-category-wide {
+    grid-column: 1 / -1;
+}
+
+.editing-help-guide .help-actions-columns {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0 1.5rem;
 }
 
 .editing-help-guide .help-actions {
@@ -1992,4 +2009,33 @@ g[hover] {
     border-radius: 0.25rem;
     font-size: 0.875rem;
     background-color: var(--white);
+}
+
+/* ==================== */
+/* SVG Template Cards   */
+/* ==================== */
+
+.hi-svg-template-card {
+    width: 180px;
+    cursor: pointer;
+    transition: border-color 0.15s, box-shadow 0.15s;
+}
+.hi-svg-template-card:hover {
+    border-color: var(--primary-color) !important;
+    box-shadow: 0 0 0 2px rgba(var(--primary-color-rgb, 13, 110, 253), 0.25);
+}
+.hi-svg-template-thumbnail {
+    width: 160px;
+    height: 120px;
+    background: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 4px;
+    overflow: hidden;
+    margin: 0 auto;
+}
+.hi-svg-template-name {
+    font-size: 0.8rem;
+    font-weight: 600;
+    text-align: center;
+    margin-top: 0.25rem;
 }

@@ -1,0 +1,178 @@
+/* Location SVG Editor Styles */
+
+:root {
+    --svg-editor-top-height: 5rem;
+    --svg-editor-bottom-height: 4rem;
+    --svg-editor-main-height: 4rem;
+
+    /* Teal-based edit mode colors (distinct from orange entity editing) */
+    --svg-editor-bg: #E0F2F2;
+    --svg-editor-border-color: #177072;
+    --svg-editor-dash-color: #115354;
+    --svg-editor-shadow-rgba: rgba(23, 112, 114, 0.1);
+}
+
+#hi-location-svg-editor-top {
+    height: calc( var(--svg-editor-top-height) );
+    background: var(--svg-editor-bg);
+    border-bottom: 4px dashed var(--svg-editor-dash-color);
+    box-shadow: inset 0 -2px 8px var(--svg-editor-shadow-rgba);
+}
+#hi-location-svg-editor-bottom {
+    height: var(--svg-editor-bottom-height);
+    background: var(--svg-editor-bg);
+    border-top: 4px dashed var(--svg-editor-dash-color);
+    box-shadow: inset 0 2px 8px var(--svg-editor-shadow-rgba);
+}
+#hi-location-svg-editor-main {
+    background: var(--white);
+    position: relative;
+    height: calc( 100vh - var(--svg-editor-top-height) - var(--svg-editor-bottom-height) );
+}
+#hi-location-svg-editor-main .hi-location-view {
+    height: 100%;
+    width: 100%;
+    padding: 10px;
+    box-sizing: border-box;
+}
+#hi-location-svg-editor-main .hi-location-view-svg {
+    width: 100%;
+    height: 100%;
+    display: block;
+}
+
+/* ==================== */
+/* Canvas Boundary      */
+/* ==================== */
+
+.hi-svg-edit-boundary {
+    fill: none;
+    stroke: #c0c0c0;
+    stroke-width: 1;
+    stroke-dasharray: 8 4;
+    vector-effect: non-scaling-stroke;
+}
+
+/* ==================== */
+/* Warnings Area        */
+/* ==================== */
+
+.hi-svg-edit-warnings {
+    position: relative;
+    z-index: 10;
+}
+.hi-svg-edit-warnings .alert {
+    border-left: none;
+    border-right: none;
+    border-radius: 0;
+}
+
+/* ==================== */
+/* Palette              */
+/* ==================== */
+
+.hi-palette-container {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0 0.5rem;
+    overflow-x: auto;
+    overflow-y: hidden;
+    min-width: 0;
+    scrollbar-width: thin;
+}
+.hi-svg-edit-buttons {
+    flex-shrink: 0;
+    padding: 0 0.25rem;
+    white-space: nowrap;
+}
+
+.hi-palette-category {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+}
+
+.hi-palette-category-label {
+    font-size: 0.65rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    color: var(--edit-mode-text-color, #888);
+    writing-mode: vertical-rl;
+    text-orientation: mixed;
+    letter-spacing: 0.05em;
+}
+
+.hi-palette-items {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+}
+
+.hi-palette-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    cursor: grab;
+    padding: 2px;
+    border: 1px solid transparent;
+    border-radius: 4px;
+    transition: border-color 0.15s, background-color 0.15s;
+}
+
+.hi-palette-item:hover {
+    border-color: var(--edit-mode-dash-color, #d4775e);
+    background-color: rgba(212, 119, 94, 0.08);
+}
+
+.hi-palette-label {
+    font-size: 0.55rem;
+    color: var(--edit-mode-text-color, #aaa);
+    text-align: center;
+    line-height: 1;
+    margin-top: 1px;
+    white-space: nowrap;
+}
+
+.hi-palette-swatch {
+    display: block;
+    border: 1px solid rgba(128, 128, 128, 0.3);
+    border-radius: 2px;
+    background: #fff;
+}
+
+/* ==================== */
+/* Palette Swatch Fills */
+/* ==================== */
+/* Flat-color overrides for palette swatches since fill patterns
+   from the main SVG are not available in separate mini-SVGs.
+   Colors are the dominant color from each pattern definition. */
+
+.hi-palette-swatch path.grass         { fill: #d0ffd0; stroke: none; }
+.hi-palette-swatch path.ground        { fill: #e8dcc3; stroke: none; }
+.hi-palette-swatch path.pavement      { fill: #e8e8e8; stroke: none; }
+.hi-palette-swatch path.wood-decks    { fill: #f2e7d9; stroke: none; }
+.hi-palette-swatch path.interior-floors { fill: #f8f8f8; stroke: #d0d0d0; stroke-width: 1; }
+.hi-palette-swatch path.exterior-wall-stroke { fill: none; stroke: black; stroke-width: 16; }
+.hi-palette-swatch path.interior-wall-stroke { fill: none; stroke: #202020; stroke-width: 8; }
+.hi-palette-swatch path.windows       { fill: #78e3df; stroke: black; stroke-width: 1; }
+.hi-palette-swatch path.doors         { fill: none; stroke: black; stroke-width: 4.5; }
+.hi-palette-swatch path.door-arcs     { fill: none; stroke: black; stroke-width: 1; }
+.hi-palette-swatch path.countertops   { fill: #e0e0e0; stroke: black; stroke-width: 1; }
+.hi-palette-swatch path.fireplaces    { fill: #fff0f0; stroke: black; stroke-width: 1; }
+.hi-palette-swatch path.stairs        { fill: #f0f0f0; stroke: black; stroke-width: 1; }
+.hi-palette-swatch path.shelves       { fill: #fffff0; stroke: black; stroke-width: 1; }
+.hi-palette-swatch path.cabinets     { fill: #c8a882; stroke: black; stroke-width: 1; }
+.hi-palette-swatch path.sliding-doors  { fill: #c0c0c0; stroke: black; stroke-width: 1; }
+.hi-palette-swatch line.sliding-doors-center { stroke: black; stroke-width: 2; }
+.hi-palette-swatch path.dead-space     { fill: #f0f0c0; stroke: #b0b080; stroke-width: 1; }
+.hi-palette-swatch path.transitions    { fill: none; stroke: #808080; stroke-width: 2; }
+.hi-palette-swatch path.tiles          { fill: #f5f5f5; stroke: #c0c0c0; stroke-width: 1; }
+.hi-palette-swatch path.asphalt        { fill: #2F4F4F; stroke: none; }
+.hi-palette-swatch path.stone          { fill: #b0c4de; stroke: none; }
+.hi-palette-swatch path.brick          { fill: #A0522D; stroke: none; }
+.hi-palette-swatch path.mulch          { fill: #d2a679; stroke: none; }
+.hi-palette-swatch path.rock-beds      { fill: #f0e4d2; stroke: none; }
+.hi-palette-swatch path.gravel         { fill: #D3D3D3; stroke: none; }
+.hi-palette-swatch path.fencing       { fill: none; stroke: #432b0f; stroke-width: 8; }
+.hi-palette-swatch path.property-lines { fill: none; stroke: black; stroke-width: 3; stroke-dasharray: 8,3; }
