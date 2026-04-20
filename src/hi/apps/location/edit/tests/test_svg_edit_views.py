@@ -2,6 +2,7 @@ import logging
 import os
 import shutil
 import tempfile
+import urllib.parse
 
 from django.core.files.storage import default_storage
 from django.test import override_settings
@@ -65,6 +66,15 @@ class LocationSvgEditViewTestBase(DualModeViewTestCase):
         self.manager.create_draft_svg(self.location)
         if content is not None:
             self.manager.save_draft_svg(self.location, content)
+
+    def _assert_exit_redirect_to_location_edit(self, response):
+        """Editor exit paths redirect to home with the location edit sidebar loaded."""
+        expected_side_url = reverse(
+            'location_edit_mode', kwargs={'location_id': self.location.id}
+        )
+        redirect_url = response.json().get('location', '')
+        self.assertIn(reverse('home'), redirect_url)
+        self.assertIn(f'details={urllib.parse.quote(expected_side_url, safe="")}', redirect_url)
 
 
 class TestLocationSvgEditView(LocationSvgEditViewTestBase):
@@ -142,6 +152,8 @@ class TestLocationSvgEditCancelView(LocationSvgEditViewTestBase):
         self.assertJsonResponse(response)
         # Should clean up draft
         self.assertFalse(self.manager.draft_svg_exists(self.location))
+        # Redirect should land back on home with the location edit sidebar loaded
+        self._assert_exit_redirect_to_location_edit(response)
 
     def test_get_with_changes_shows_modal(self):
         """GET with draft changes should show confirmation modal."""
@@ -155,7 +167,7 @@ class TestLocationSvgEditCancelView(LocationSvgEditViewTestBase):
         self.assertTemplateRendered(response, 'location/edit/modals/location_svg_edit_cancel.html')
 
     def test_post_deletes_draft_and_redirects(self):
-        """POST should delete draft and redirect to home."""
+        """POST should delete draft and redirect to the location edit sidebar."""
         self._create_draft('<circle r="999"/>')
 
         url = reverse('location_svg_edit_cancel', kwargs={'location_id': self.location.id})
@@ -164,6 +176,7 @@ class TestLocationSvgEditCancelView(LocationSvgEditViewTestBase):
         self.assertSuccessResponse(response)
         self.assertJsonResponse(response)
         self.assertFalse(self.manager.draft_svg_exists(self.location))
+        self._assert_exit_redirect_to_location_edit(response)
 
     def test_post_does_not_modify_live_svg(self):
         """POST cancel should leave the live SVG file unchanged."""
@@ -195,6 +208,7 @@ class TestLocationSvgEditExitView(LocationSvgEditViewTestBase):
 
         self.assertSuccessResponse(response)
         self.assertJsonResponse(response)
+        self._assert_exit_redirect_to_location_edit(response)
 
     def test_get_with_changes_shows_modal(self):
         """GET with draft changes should show confirmation modal."""
@@ -214,7 +228,7 @@ class TestLocationSvgEditExitView(LocationSvgEditViewTestBase):
         old_filename = self.location.svg_fragment_filename
 
         url = reverse('location_svg_edit_exit', kwargs={'location_id': self.location.id})
-        self.client.post(url)
+        response = self.client.post(url)
 
         self.location.refresh_from_db()
         # Commit writes to a new unique filename
@@ -222,6 +236,7 @@ class TestLocationSvgEditExitView(LocationSvgEditViewTestBase):
         with default_storage.open(self.location.svg_fragment_filename, 'r') as f:
             live_content = f.read()
         self.assertEqual(live_content, edited_content)
+        self._assert_exit_redirect_to_location_edit(response)
 
     def test_post_removes_draft_file(self):
         """POST should remove the draft file after committing."""

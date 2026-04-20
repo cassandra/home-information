@@ -1,5 +1,8 @@
+import urllib.parse
+
 from django.core.exceptions import BadRequest
 from django.http import Http404, HttpResponse
+from django.urls import reverse
 
 import hi.apps.common.antinode as antinode
 from hi.apps.entity.models import Entity
@@ -7,6 +10,7 @@ from hi.apps.location.location_manager import LocationManager
 from hi.apps.location.models import Location, LocationView
 from hi.apps.monitor.status_display_data import StatusDisplayData
 from hi.apps.monitor.status_display_manager import StatusDisplayManager
+from hi.hi_async_view import HiSideView
 
 
 class LocationViewMixin:
@@ -40,6 +44,15 @@ class LocationViewMixin:
             )
         except LocationView.DoesNotExist:
             raise Http404( request )
+
+    def redirect_to_location_edit_side_view( self, location : Location ) -> HttpResponse:
+        """ Redirect to home with the location edit sidebar loaded alongside. """
+        side_url = reverse( 'location_edit_mode', kwargs={ 'location_id': location.id } )
+        redirect_url = (
+            reverse( 'home' )
+            + '?' + urllib.parse.urlencode({ HiSideView.SIDE_URL_PARAM_NAME: side_url })
+        )
+        return antinode.redirect_response( redirect_url )
 
     def get_entity_svg_update_reponse( self, entity : Entity ) -> HttpResponse:
         """ For updating a single entity in the location view vis antinode reponse """

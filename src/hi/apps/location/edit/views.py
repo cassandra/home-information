@@ -2,7 +2,6 @@ import json
 import logging
 import os
 import re
-import urllib.parse
 
 from django.core.exceptions import BadRequest
 from django.core.files.storage import default_storage
@@ -117,7 +116,7 @@ class LocationItemEditModeView( View ):
 
 
 @method_decorator( edit_required, name='dispatch' )
-class LocationAddView( HiModalView ):
+class LocationAddView( HiModalView, LocationViewMixin ):
 
     def get_template_name( self ) -> str:
         return 'location/edit/modals/location_add.html'
@@ -155,12 +154,7 @@ class LocationAddView( HiModalView ):
         return self.post_create_redirect( request, location, location_view )
 
     def post_create_redirect( self, request, location, location_view ):
-        side_url = reverse( 'location_edit_mode', kwargs={ 'location_id': location.id } )
-        redirect_url = (
-            reverse( 'home' )
-            + '?' + urllib.parse.urlencode({ HiSideView.SIDE_URL_PARAM_NAME: side_url })
-        )
-        return antinode.redirect_response( redirect_url )
+        return self.redirect_to_location_edit_side_view( location )
 
 
 class LocationAddFirstView( LocationAddView ):
@@ -666,8 +660,7 @@ class LocationSvgEditCancelView( HiModalView, LocationViewMixin ):
         if not has_changes:
             request.session.pop( session_key, None )
             manager.delete_draft_svg( location )
-            redirect_url = reverse('home')
-            return antinode.redirect_response( redirect_url )
+            return self.redirect_to_location_edit_side_view( location )
 
         context = { 'location': location }
         return self.modal_response( request, context )
@@ -677,8 +670,7 @@ class LocationSvgEditCancelView( HiModalView, LocationViewMixin ):
         session_key = f'{LocationSvgEditView.SVG_EDIT_VIEWBOX_SESSION_PREFIX}{location.id}'
         request.session.pop( session_key, None )
         LocationManager().delete_draft_svg( location )
-        redirect_url = reverse('home')
-        return antinode.redirect_response( redirect_url )
+        return self.redirect_to_location_edit_side_view( location )
 
 
 @method_decorator( edit_required, name='dispatch' )
@@ -698,8 +690,7 @@ class LocationSvgEditExitView( HiModalView, LocationViewMixin ):
         if not has_changes:
             request.session.pop( session_key, None )
             manager.delete_draft_svg( location )
-            redirect_url = reverse('home')
-            return antinode.redirect_response( redirect_url )
+            return self.redirect_to_location_edit_side_view( location )
 
         context = { 'location': location }
         return self.modal_response( request, context )
@@ -716,8 +707,7 @@ class LocationSvgEditExitView( HiModalView, LocationViewMixin ):
             location.svg_view_box_str = viewbox_str
             location.save()
 
-        redirect_url = reverse('home')
-        return antinode.redirect_response( redirect_url )
+        return self.redirect_to_location_edit_side_view( location )
 
 
 @method_decorator( edit_required, name='dispatch' )

@@ -122,10 +122,12 @@ class TestLocationAddView(DualModeViewTestCase):
         # Test actual redirect behavior (JSON redirect)
         self.assertSuccessResponse(response)
         self.assertJsonResponse(response)
-        
+
         data = response.json()
         home_url = reverse('home')
         self.assertTrue(data['location'].startswith(home_url))
+        # Normal add redirects to home with the location edit sidebar preloaded
+        self.assertIn('details=', data['location'])
         
         # Test that new Location was created
         self.assertEqual(Location.objects.count(), initial_location_count + 1)
@@ -159,6 +161,54 @@ class TestLocationAddView(DualModeViewTestCase):
         
         # Verify no location was created when form validation fails
         self.assertEqual(Location.objects.filter(name='').count(), 0)
+
+
+class TestLocationAddFirstView(DualModeViewTestCase):
+    """
+    Tests for LocationAddFirstView - used during first-time profile
+    initialization. Differs from LocationAddView only in its post-create
+    redirect target: plain home (where the Getting Started helper sidebar
+    guides next steps), not home-with-location-edit-sidebar.
+    """
+
+    def setUp(self):
+        super().setUp()
+        self.setSessionViewMode(ViewMode.EDIT)
+        self._temp_media_dir = tempfile.mkdtemp()
+        self._settings_patcher = override_settings(MEDIA_ROOT=self._temp_media_dir)
+        self._settings_patcher.enable()
+
+    def tearDown(self):
+        if hasattr(self, '_settings_patcher'):
+            self._settings_patcher.disable()
+        if hasattr(self, '_temp_media_dir'):
+            shutil.rmtree(self._temp_media_dir, ignore_errors=True)
+        LocationManager._instance = None
+        CollectionManager._instance = None
+        EntityManager._instance = None
+        super().tearDown()
+
+    def test_post_redirects_to_plain_home(self):
+        """First-time location add lands on plain home so the Getting Started
+        sidebar can guide the user, not on the Location Edit sidebar."""
+        form_data = {
+            'name': 'First Location',
+            'use_default_svg_file': 'on',
+        }
+        url = reverse('location_edit_location_add_first')
+        response = self.client.post(url, form_data)
+
+        self.assertSuccessResponse(response)
+        self.assertJsonResponse(response)
+
+        data = response.json()
+        home_url = reverse('home')
+        # Must be plain home, NOT home with a details= sidebar parameter
+        self.assertEqual(data['location'], home_url)
+        self.assertNotIn('details=', data['location'])
+
+        # Still creates the location like the parent class
+        self.assertTrue(Location.objects.filter(name='First Location').exists())
 
 
 class TestLocationSvgReplaceView(DualModeViewTestCase):
