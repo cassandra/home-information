@@ -19,11 +19,19 @@ urlpatterns = [
              views.IntegrationEnableView.as_view(), 
              name='integrations_enable' ),
 
-    re_path( r'^disable/(?P<integration_id>[\w\-]+)$', 
-             views.IntegrationDisableView.as_view(), 
+    re_path( r'^disable/(?P<integration_id>[\w\-]+)$',
+             views.IntegrationDisableView.as_view(),
              name='integrations_disable' ),
 
-    re_path( r'^health/(?P<integration_id>[\w\-]+)$', 
+    re_path( r'^pause/(?P<integration_id>[\w\-]+)$',
+             views.IntegrationPauseView.as_view(),
+             name='integrations_pause' ),
+
+    re_path( r'^resume/(?P<integration_id>[\w\-]+)$',
+             views.IntegrationResumeView.as_view(),
+             name='integrations_resume' ),
+
+    re_path( r'^health/(?P<integration_id>[\w\-]+)$',
              views.IntegrationHealthStatusView.as_view(), 
              name='integrations_health_status' ),
 

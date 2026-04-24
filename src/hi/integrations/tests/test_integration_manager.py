@@ -10,12 +10,13 @@ from unittest.mock import Mock, AsyncMock, patch
 from django.test import TestCase
 
 from hi.apps.attribute.enums import AttributeType, AttributeValueType
+from hi.apps.entity.models import Entity, EntityAttribute
 from hi.integrations.integration_manager import IntegrationManager
 from hi.integrations.integration_data import IntegrationData
 from hi.integrations.integration_gateway import IntegrationGateway
 from hi.integrations.models import Integration, IntegrationAttribute
 from hi.integrations.transient_models import IntegrationMetaData, IntegrationKey
-from hi.integrations.enums import IntegrationAttributeType
+from hi.integrations.enums import IntegrationAttributeType, IntegrationDisableMode
 
 logging.disable(logging.CRITICAL)
 
@@ -406,7 +407,7 @@ class IntegrationManagerTestCase(TestCase):
         manager = IntegrationManager()
         
         # Clear any existing data to start clean
-        manager._integration_data_map.clear()
+        manager.reset_for_testing()
         
         results = []
         errors = []
@@ -566,28 +567,248 @@ class IntegrationManagerTestCase(TestCase):
     def test_disable_integration_database_transaction(self):
         """Test disable integration with database transaction and monitor stop."""
         manager = IntegrationManager()
-        
+
         integration = Integration.objects.create(
             integration_id='test_integration',
-            is_enabled=True
+            is_enabled=True,
+            is_paused=True,
         )
-        
+
         gateway = MockIntegrationGateway('test_integration')
         data = IntegrationData(
             integration_gateway=gateway,
             integration=integration
         )
-        
+
         with patch.object(manager, '_stop_integration_monitor') as mock_stop:
             # Call disable
             manager.disable_integration(data)
-            
+
             # Verify database changes
             integration.refresh_from_db()
             self.assertFalse(integration.is_enabled)
-            
+            # Disable also clears is_paused so a subsequent Configure starts clean.
+            self.assertFalse(integration.is_paused)
+
             # Verify monitor was stopped
             mock_stop.assert_called_once_with(integration_data=data)
+
+    def _make_integration_with_entities(self, integration_id, include_user_data_entity):
+        """
+        Fixture helper: create an integration with two attached entities —
+        one integration-only (no user data) and optionally one with
+        user-created attributes. Also creates retained IntegrationAttribute
+        rows to verify config retention on disable.
+        """
+        integration = Integration.objects.create(
+            integration_id=integration_id,
+            is_enabled=True,
+            is_paused=False,
+        )
+        # Retained configuration attributes (should survive disable).
+        IntegrationAttribute.objects.create(
+            integration=integration,
+            name='API URL',
+            value='http://example.com',
+            value_type_str=str(AttributeValueType.TEXT),
+            attribute_type_str=str(AttributeType.PREDEFINED),
+        )
+
+        integration_only_entity = Entity.objects.create(
+            name='Integration Only Entity',
+            entity_type_str='LIGHT',
+            integration_id=integration_id,
+            integration_name='device_no_user_data',
+        )
+        EntityAttribute.objects.create(
+            entity=integration_only_entity,
+            name='Integration Config',
+            value='from integration',
+            value_type_str=str(AttributeValueType.TEXT),
+            attribute_type_str=str(AttributeType.PREDEFINED),
+            integration_key_str=f'{integration_id}:device_no_user_data',
+        )
+
+        user_data_entity = None
+        if include_user_data_entity:
+            user_data_entity = Entity.objects.create(
+                name='User Data Entity',
+                entity_type_str='LIGHT',
+                integration_id=integration_id,
+                integration_name='device_with_user_data',
+            )
+            EntityAttribute.objects.create(
+                entity=user_data_entity,
+                name='User Note',
+                value='user-supplied note',
+                value_type_str=str(AttributeValueType.TEXT),
+                attribute_type_str=str(AttributeType.CUSTOM),
+            )
+
+        gateway = MockIntegrationGateway(integration_id)
+        data = IntegrationData(integration_gateway=gateway, integration=integration)
+        return integration, data, integration_only_entity, user_data_entity
+
+    def test_disable_integration_safe_mode_splits_entities_by_user_data(self):
+        """SAFE mode deletes no-user-data entities and preserves user-data entities."""
+        manager = IntegrationManager()
+        manager.reset_for_testing()
+
+        integration, data, integration_only_entity, user_data_entity = (
+            self._make_integration_with_entities('disable_safe_test', include_user_data_entity=True)
+        )
+        no_user_id = integration_only_entity.id
+        user_data_id = user_data_entity.id
+
+        with patch.object(manager, '_stop_integration_monitor'):
+            manager.disable_integration(data, mode=IntegrationDisableMode.SAFE)
+
+        # Integration-only entity is gone.
+        self.assertFalse(Entity.objects.filter(id=no_user_id).exists())
+        # User-data entity survives and is disconnected (integration_id cleared).
+        preserved = Entity.objects.get(id=user_data_id)
+        self.assertIsNone(preserved.integration_id)
+        self.assertTrue(preserved.name.startswith('[Disconnected]'))
+
+        # Configuration attributes retained for re-Configure.
+        self.assertEqual(integration.attributes.count(), 1)
+
+    def test_disable_integration_all_mode_deletes_everything(self):
+        """ALL mode hard-deletes every attached entity regardless of user data."""
+        manager = IntegrationManager()
+        manager.reset_for_testing()
+
+        integration, data, integration_only_entity, user_data_entity = (
+            self._make_integration_with_entities('disable_all_test', include_user_data_entity=True)
+        )
+        no_user_id = integration_only_entity.id
+        user_data_id = user_data_entity.id
+
+        with patch.object(manager, '_stop_integration_monitor'):
+            manager.disable_integration(data, mode=IntegrationDisableMode.ALL)
+
+        self.assertFalse(Entity.objects.filter(id=no_user_id).exists())
+        self.assertFalse(Entity.objects.filter(id=user_data_id).exists())
+
+        # Configuration attributes retained even when entities all deleted.
+        self.assertEqual(integration.attributes.count(), 1)
+
+    def test_disable_integration_stops_monitor_before_entity_changes(self):
+        """Monitors must stop before any entity mutation to avoid races with sync."""
+        manager = IntegrationManager()
+        manager.reset_for_testing()
+
+        _integration, data, integration_only_entity, _ = (
+            self._make_integration_with_entities('disable_order_test', include_user_data_entity=False)
+        )
+        entity_id = integration_only_entity.id
+
+        call_order = []
+
+        def record_stop(**_kwargs):
+            # At the moment the monitor is stopped, the entity must still exist.
+            call_order.append(('stop', Entity.objects.filter(id=entity_id).exists()))
+
+        def record_entity_delete_observer(sender, instance, **_kwargs):
+            if instance.id == entity_id:
+                call_order.append(('entity_delete', instance.id))
+
+        from django.db.models.signals import pre_delete
+        pre_delete.connect(record_entity_delete_observer, sender=Entity)
+        try:
+            with patch.object(manager, '_stop_integration_monitor', side_effect=record_stop):
+                manager.disable_integration(data, mode=IntegrationDisableMode.SAFE)
+        finally:
+            pre_delete.disconnect(record_entity_delete_observer, sender=Entity)
+
+        self.assertEqual(call_order[0][0], 'stop')
+        self.assertTrue(call_order[0][1], 'Entity should still exist when stop is called')
+        self.assertTrue(any(event[0] == 'entity_delete' for event in call_order))
+
+    def test_pause_integration_noop_when_not_enabled(self):
+        """Pause on a not-enabled integration is a no-op (no DB write, no stop)."""
+        manager = IntegrationManager()
+        manager.reset_for_testing()
+
+        integration = Integration.objects.create(
+            integration_id='pause_noop_test',
+            is_enabled=False,
+            is_paused=False,
+        )
+        gateway = MockIntegrationGateway('pause_noop_test')
+        data = IntegrationData(integration_gateway=gateway, integration=integration)
+
+        with patch.object(manager, '_stop_integration_monitor') as mock_stop:
+            manager.pause_integration(data)
+
+            integration.refresh_from_db()
+            self.assertFalse(integration.is_enabled)
+            self.assertFalse(integration.is_paused)
+            mock_stop.assert_not_called()
+
+    def test_pause_integration_noop_when_already_paused(self):
+        """Pause on an already-paused integration is a no-op."""
+        manager = IntegrationManager()
+        manager.reset_for_testing()
+
+        integration = Integration.objects.create(
+            integration_id='pause_already_test',
+            is_enabled=True,
+            is_paused=True,
+        )
+        gateway = MockIntegrationGateway('pause_already_test')
+        data = IntegrationData(integration_gateway=gateway, integration=integration)
+
+        with patch.object(manager, '_stop_integration_monitor') as mock_stop:
+            manager.pause_integration(data)
+
+            integration.refresh_from_db()
+            self.assertTrue(integration.is_paused)
+            mock_stop.assert_not_called()
+
+    def test_resume_integration_noop_when_not_enabled(self):
+        """Resume on a not-enabled integration is a no-op."""
+        manager = IntegrationManager()
+        manager.reset_for_testing()
+
+        integration = Integration.objects.create(
+            integration_id='resume_noop_test',
+            is_enabled=False,
+            is_paused=False,
+        )
+        gateway = MockIntegrationGateway('resume_noop_test')
+        data = IntegrationData(integration_gateway=gateway, integration=integration)
+
+        with patch.object(manager, '_launch_integration_monitor_task') as mock_launch:
+            manager.resume_integration(data)
+
+            integration.refresh_from_db()
+            self.assertFalse(integration.is_enabled)
+            mock_launch.assert_not_called()
+
+    def test_resume_integration_retries_launch_when_not_paused(self):
+        """Resume always attempts the launch even when is_paused is already False.
+
+        This allows the user to recover from a prior failed launch by invoking
+        resume again. _launch_integration_monitor_task is idempotent when the
+        monitor is already running.
+        """
+        manager = IntegrationManager()
+        manager.reset_for_testing()
+
+        integration = Integration.objects.create(
+            integration_id='resume_retry_test',
+            is_enabled=True,
+            is_paused=False,
+        )
+        gateway = MockIntegrationGateway('resume_retry_test')
+        data = IntegrationData(integration_gateway=gateway, integration=integration)
+
+        with patch.object(manager, '_launch_integration_monitor_task') as mock_launch:
+            manager.resume_integration(data)
+
+            mock_launch.assert_called_once_with(integration_data=data)
+
 
     def test_data_lock_thread_safety_during_attribute_creation(self):
         """Test thread safety of attribute creation operations."""

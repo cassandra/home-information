@@ -52,6 +52,7 @@ AVAILABLE_ICONS = {
     'minus-circle',
     'move',
     'path',
+    'pause',
     'play',
     'plug',
     'plus',

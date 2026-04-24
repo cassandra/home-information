@@ -4,6 +4,30 @@ from hi.apps.attribute.enums import AttributeValueType
 from hi.apps.common.enums import LabeledEnum
 
 
+class IntegrationDisableMode( LabeledEnum ):
+    """
+    Mode used when removing (disabling) an integration. Controls how the
+    integration's attached entities are handled.
+
+    SAFE — delete entities without user-created data; preserve entities with
+    user-created data by disconnecting them (strips integration association,
+    removes integration-only components, applies '[Disconnected]' name
+    prefix). This mirrors the sync-time preservation behavior.
+
+    ALL  — hard-delete all entities attached to the integration regardless of
+    user-created data.
+    """
+
+    SAFE = ( 'Delete Safe',
+             'Delete entities without user data; preserve those with user data' )
+    ALL  = ( 'Delete All',
+             'Hard-delete all entities regardless of user data' )
+
+    @classmethod
+    def default(cls):
+        return cls.SAFE
+
+
 class IntegrationAttributeType( LabeledEnum ):
     """ Abstract base class for integrations ot define the required attributes they need. """
     

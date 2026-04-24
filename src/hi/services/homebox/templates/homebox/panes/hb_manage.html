@@ -8,7 +8,8 @@
          alt="{{ core.integration_data.integration_metadata.label }} Logo">
     {{ core.integration_data.integration_metadata.label }}
   </div>
-  <div class="">
+  <div class="d-flex">
+    {% include "integrations/panes/lifecycle_actions.html" %}
     <form action="{% url 'hb_sync' %}"
         method="POST" role="form" data-async="true">
       {% csrf_token %}

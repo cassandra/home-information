@@ -78,7 +78,7 @@ class IntegrationModelTestCase(TestCase):
         integration = Integration.objects.create(
             integration_id='default_test'
         )
-        
+
         # Should default to False
         self.assertFalse(integration.is_enabled)
 

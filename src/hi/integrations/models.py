@@ -20,6 +20,10 @@ class Integration( models.Model ):
         'Enabled?',
         default = False,
     )
+    is_paused = models.BooleanField(
+        'Paused?',
+        default = False,
+    )
     created_datetime = models.DateTimeField(
         'Created',
         auto_now_add = True,
