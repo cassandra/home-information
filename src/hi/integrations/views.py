@@ -86,7 +86,7 @@ class IntegrationEnableView( HiModalView, IntegrationViewMixin, AttributeEditVie
         )
             
         if integration_data.integration.is_enabled:
-            raise BadRequest( f'{integration_data.label} is already enabled' )
+            raise BadRequest( f'{integration_data.label} is already configured' )
 
         integration_manager.ensure_all_attributes_exist(
             integration_metadata = integration_data.integration_metadata,
@@ -94,10 +94,10 @@ class IntegrationEnableView( HiModalView, IntegrationViewMixin, AttributeEditVie
         )
         attr_item_context = IntegrationAttributeItemEditContext(
             integration_data = integration_data,
-            update_button_label = 'ENABLE',
+            update_button_label = 'CONFIGURE',
             suppress_history = True,
             show_secrets = True,
-            
+
         )
         template_context = self.create_initial_template_context(
             attr_item_context= attr_item_context,
@@ -111,11 +111,11 @@ class IntegrationEnableView( HiModalView, IntegrationViewMixin, AttributeEditVie
             integration_id = integration_id,
         )
         if integration_data.integration.is_enabled:
-            raise BadRequest( f'{integration_data.label} is already enabled' )
+            raise BadRequest( f'{integration_data.label} is already configured' )
 
         attr_item_context = IntegrationAttributeItemEditContext(
             integration_data = integration_data,
-            update_button_label = 'ENABLE',
+            update_button_label = 'CONFIGURE',
             suppress_history = True,
             show_secrets = True,
         )
@@ -143,7 +143,7 @@ class IntegrationEnableView( HiModalView, IntegrationViewMixin, AttributeEditVie
         self.validate_attributes_extra_helper(
             attr_item_context,
             regular_attributes_formset,
-            error_title = 'Cannot enable integration.' )            
+            error_title = 'Cannot configure integration.' )
         return
 
     
@@ -177,7 +177,7 @@ class IntegrationDisableView( HiModalView, IntegrationViewMixin ):
         integration_id = kwargs.get('integration_id')
         integration_data = self.get_integration_data( integration_id = integration_id )
         if not integration_data.integration.is_enabled:
-            raise BadRequest( f'{integration_data.label} is already disabled' )
+            raise BadRequest( f'{integration_data.label} is not configured' )
         return integration_data
 
     def _build_remove_context(self, integration_data):
@@ -200,7 +200,7 @@ class IntegrationPauseView( View, IntegrationViewMixin ):
             integration_id = integration_id,
         )
         if not integration_data.integration.is_enabled:
-            raise BadRequest( f'{integration_data.label} integration is not enabled' )
+            raise BadRequest( f'{integration_data.label} integration is not configured' )
 
         IntegrationManager().pause_integration( integration_data = integration_data )
 
@@ -217,7 +217,7 @@ class IntegrationResumeView( View, IntegrationViewMixin ):
             integration_id = integration_id,
         )
         if not integration_data.integration.is_enabled:
-            raise BadRequest( f'{integration_data.label} integration is not enabled' )
+            raise BadRequest( f'{integration_data.label} integration is not configured' )
 
         IntegrationManager().resume_integration( integration_data = integration_data )
 
@@ -246,7 +246,7 @@ class IntegrationManageView( ConfigPageView, IntegrationViewMixin, AttributeEdit
             integration_data = integration_manager.get_default_integration_data()
         
         if not integration_data.integration.is_enabled:
-            raise BadRequest( f'{integration_data.label} integration is not enabled' )
+            raise BadRequest( f'{integration_data.label} integration is not configured' )
             
         # Get health status from the integration gateway
         health_status_provider = integration_data.integration_gateway.get_health_status_provider()
@@ -293,7 +293,7 @@ class IntegrationManageView( ConfigPageView, IntegrationViewMixin, AttributeEdit
             integration_data = integration_manager.get_default_integration_data()
 
         if not integration_data.integration.is_enabled:
-            raise BadRequest( f'{integration_data.label} integration is not enabled' )
+            raise BadRequest( f'{integration_data.label} integration is not configured' )
 
         # Get health status from the integration gateway
         health_status_provider = integration_data.integration_gateway.get_health_status_provider()
