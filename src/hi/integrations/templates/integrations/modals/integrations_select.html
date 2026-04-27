@@ -37,7 +37,7 @@ Select Integrations
   <div class="col-3">
     {% if integration_data.integration.is_enabled %}
     <a href="{% url 'integrations_disable' integration_id=integration_data.integration.integration_id %}"
-       role="button" class="btn btn-warning btn-control" data-async="modal">
+       role="button" class="btn btn-danger btn-control" data-async="modal">
       {% icon "delete" size="sm" css_class="hi-icon-left" %}REMOVE
     </a>
     {% else %}

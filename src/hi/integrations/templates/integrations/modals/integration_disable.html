@@ -1,6 +1,7 @@
-{% extends "modals/action_with_cancel.html" %}
+{% extends "modals/action_2_with_cancel.html" %}
+{% load icons %}
 
-{% block header_class %}bg-warning{% endblock %}
+{% block header_class %}bg-secondary{% endblock %}
 
 {% block preamble %}
 <form action="{% url 'integrations_disable' integration_id=integration_data.integration_id %}"
@@ -37,7 +38,8 @@
   <li>
     <strong>DELETE ALL</strong> — delete all {{ removal_summary.total_count }}
     {% if removal_summary.total_count == 1 %}entity{% else %}entities{% endif %}
-    regardless of custom data.
+    and all the custom data associated with these items.
+    You will not be able to recover the deleted custom data.
   </li>
 </ul>
 {% else %}
@@ -54,20 +56,25 @@
 </p>
 {% endblock %}
 
-{% block action_right %}
+{% block action_center %}
 {% if removal_summary.has_mixed_state %}
-<button type="submit" class="btn btn-warning"
-        name="mode" value="{{ disable_mode_safe }}">
-  DELETE SAFE
-</button>
 <button type="submit" class="btn btn-outline-danger ml-2"
         name="mode" value="{{ disable_mode_all }}">
-  DELETE ALL
+  {% icon "warning" size="sm" css_class="hi-icon-left" %}DELETE ALL
+</button>
+{% endif %}
+{% endblock %}
+
+{% block action_right %}
+{% if removal_summary.has_mixed_state %}
+<button type="submit" class="btn btn-secondary"
+        name="mode" value="{{ disable_mode_safe }}">
+  {% icon "shield" size="sm" css_class="hi-icon-left" %}DELETE SAFE
 </button>
 {% else %}
-<button type="submit" class="btn btn-warning"
+<button type="submit" class="btn btn-danger"
         name="mode" value="{{ disable_mode_safe }}">
-  DELETE
+  {% icon "delete" size="sm" css_class="hi-icon-left" %}DELETE
 </button>
 {% endif %}
 {% endblock %}
