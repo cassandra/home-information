@@ -78,15 +78,23 @@ class HbClient:
             return response.json()
         return response
 
+    def get_items_summary(self) -> List[Dict[str, Any]]:
+        """
+        Fetches just the items summary list (one API call). Does not fetch
+        per-item details. Suitable for lightweight reachability /
+        health-check probes where only the count or IDs are needed.
+        """
+        url_list = f"{self._api_url}/{self.API_VERSION}/items"
+        data = self._make_request('GET', url_list)
+        return data.get('items', []) if isinstance(data, dict) else data
+
     def get_items(self) -> List[HbItem]:
         """
         Fetches the list of items and, for each one, fetches the full details.
         Returns a list of fully populated HbItem objects.
         """
-        url_list = f"{self._api_url}/{self.API_VERSION}/items"
-        data = self._make_request('GET', url_list)
-        items_summary = data.get('items', []) if isinstance(data, dict) else data
-        
+        items_summary = self.get_items_summary()
+
         full_items = []
         for summary in items_summary:
             item_id = summary.get('id')
@@ -97,7 +105,7 @@ class HbClient:
                     full_items.append(HbItem(api_dict=item_detail, client=self))
                 except Exception as e:
                     logger.error(f"Error fetching details for item {item_id}: {e}")
-                    
+
         return full_items
 
     def download_attachment(self, item_id: str, attachment_id: str) -> Optional[Dict[str, Any]]:

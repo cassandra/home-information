@@ -15,14 +15,17 @@ from hi.apps.attribute.enums import AttributeType
 from hi.apps.common.delayed_signal_processor import DelayedSignalProcessor
 from hi.apps.common.singleton import Singleton
 from hi.apps.common.module_utils import import_module_safe
+from hi.apps.entity.models import Entity
 from hi.apps.system.health_status_provider import HealthStatusProvider
 
-from .enums import IntegrationAttributeType
+from .entity_operations import EntityIntegrationOperations
+from .enums import IntegrationAttributeType, IntegrationDisableMode
 from .integration_data import IntegrationData
 from .integration_gateway import IntegrationGateway
 from .transient_models import IntegrationKey
 from .models import Integration, IntegrationAttribute
 from .transient_models import IntegrationMetaData
+from .user_data_detector import EntityUserDataDetector
 
 logger = logging.getLogger(__name__)
 
@@ -40,6 +43,16 @@ class IntegrationManager( Singleton ):
         self._initialized = False
         self._data_lock = threading.Lock()
         self._monitor_event_loop = None
+        return
+
+    def reset_for_testing(self):
+        """
+        Reset the manager's in-memory state. Intended for use in tests only,
+        to provide isolation from singleton state that persists across test
+        methods (integration data map, monitor map).
+        """
+        self._integration_data_map.clear()
+        self._monitor_map.clear()
         return
 
     def get_integration_data_list( self, enabled_only = False ) -> List[ IntegrationData ]:
@@ -340,19 +353,108 @@ class IntegrationManager( Singleton ):
         with self._data_lock:
             with transaction.atomic():
                 integration_data.integration.is_enabled = True
+                integration_data.integration.is_paused = False
                 integration_data.integration.save()
             self.refresh_integrations_from_db()
             self._launch_integration_monitor_task(
                 integration_data = integration_data,
             )
         return
-                
-    def disable_integration( self, integration_data : IntegrationData ):
+
+    def disable_integration( self,
+                             integration_data : IntegrationData,
+                             mode             : IntegrationDisableMode = None ):
+        """
+        Remove an integration: stop monitors, handle attached entities per
+        mode, flip state flags. Configuration attributes (IntegrationAttribute
+        rows) are retained so a subsequent Configure can reuse them.
+
+        Mode semantics:
+          SAFE (default): delete entities without user-created data; preserve
+          entities with user-created data by detaching them from the
+          integration (via EntityIntegrationOperations.preserve_with_user_data).
+          Preserved entities get the '[Disconnected]' name prefix.
+
+          ALL: hard-delete all entities attached to this integration
+          regardless of user data.
+
+        Monitors are stopped first to avoid races with in-flight sync work.
+        """
+        if mode is None:
+            mode = IntegrationDisableMode.default()
+
+        with self._data_lock:
+            # Stop monitors before any entity changes to avoid races with
+            # in-flight sync work.
+            self._stop_integration_monitor( integration_data = integration_data )
+
+            integration_id = integration_data.integration_id
+
+            with transaction.atomic():
+                # Targeted entity set includes the integration's own entities
+                # plus any delegate entities that would be orphaned by their
+                # removal (e.g., the Area entity auto-created when a motion
+                # sensor was added to a view).
+                target_ids = EntityIntegrationOperations.get_removal_entity_ids(
+                    integration_id = integration_id,
+                )
+                entities = list( Entity.objects.filter( id__in = target_ids ) )
+                if mode == IntegrationDisableMode.ALL:
+                    for entity in entities:
+                        entity.delete()
+                else:  # SAFE
+                    for entity in entities:
+                        if EntityUserDataDetector.has_user_created_attributes( entity ):
+                            EntityIntegrationOperations.preserve_with_user_data(
+                                entity = entity,
+                                integration_name = integration_id,
+                            )
+                        else:
+                            entity.delete()
+
+                integration_data.integration.is_enabled = False
+                integration_data.integration.is_paused = False
+                integration_data.integration.save()
+        return
+
+    def pause_integration( self, integration_data : IntegrationData ):
+        """
+        Stop the integration's monitors while leaving is_enabled, entities,
+        and configuration intact. No-op if the integration is not enabled or
+        is already paused. The DB flag represents user intent: once set, a
+        failed monitor stop does not re-trigger on a subsequent pause call.
+        """
+        if not integration_data.integration.is_enabled:
+            return
+        if integration_data.integration.is_paused:
+            return
         with self._data_lock:
             with transaction.atomic():
-                integration_data.integration.is_enabled = False
+                integration_data.integration.is_paused = True
                 integration_data.integration.save()
+            self.refresh_integrations_from_db()
             self._stop_integration_monitor( integration_data = integration_data )
+        return
+
+    def resume_integration( self, integration_data : IntegrationData ):
+        """
+        Relaunch the integration's monitors after a pause. No-op if the
+        integration is not enabled. Unlike pause, resume always attempts the
+        monitor launch regardless of the is_paused flag, so that a prior
+        failed launch can be retried by invoking resume again.
+        _launch_integration_monitor_task is idempotent when the monitor is
+        already running.
+        """
+        if not integration_data.integration.is_enabled:
+            return
+        with self._data_lock:
+            with transaction.atomic():
+                integration_data.integration.is_paused = False
+                integration_data.integration.save()
+            self.refresh_integrations_from_db()
+            self._launch_integration_monitor_task(
+                integration_data = integration_data,
+            )
         return
     
     def notify_integration_settings_changed(self):

@@ -15,6 +15,7 @@ INSTALLED_APPS = [
     'hi.apps.common',
     'hi.simulator',
     'hi.simulator.services.hass',
+    'hi.simulator.services.homebox',
     'hi.simulator.services.zoneminder',
 ]
 

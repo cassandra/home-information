@@ -58,6 +58,15 @@ class Entity( IntegrationDetailsModel, LocationItemModelMixin ):
         'Has Video Stream',
         default = False,
     )
+    is_disabled = models.BooleanField(
+        'Disabled?',
+        default = False,
+        help_text = (
+            'When True, capabilities the entity would normally provide are '
+            'suppressed. Used by the integration disconnect path and any '
+            'future user-initiated "disable" UX.'
+        ),
+    )
     created_datetime = models.DateTimeField(
         'Created',
         auto_now_add = True,

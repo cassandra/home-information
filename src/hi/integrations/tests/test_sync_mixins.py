@@ -6,6 +6,7 @@ import logging
 
 from django.test import TestCase, TransactionTestCase
 
+from hi.apps.attribute.enums import AttributeType
 from hi.apps.entity.models import Entity, EntityAttribute, EntityState
 from hi.apps.sense.models import Sensor
 from hi.apps.control.models import Controller
@@ -51,7 +52,7 @@ class IntegrationSyncMixinTestCase(TestCase):
             name='Integration Data',
             value='Integration-specific data',
             value_type_str='TEXT',
-            attribute_type_str='CONFIGURATION',
+            attribute_type_str=str(AttributeType.PREDEFINED),
             integration_key_str='test_integration:test_device_1'
         )
         
@@ -92,7 +93,7 @@ class IntegrationSyncMixinTestCase(TestCase):
             name='User Note',
             value='This is a user note',
             value_type_str='TEXT',
-            attribute_type_str='DOCUMENTATION'
+            attribute_type_str=str(AttributeType.CUSTOM)
             # integration_key_str is None (user-created)
         )
         
@@ -102,7 +103,7 @@ class IntegrationSyncMixinTestCase(TestCase):
             name='Integration Data',
             value='Integration data',
             value_type_str='TEXT',
-            attribute_type_str='CONFIGURATION',
+            attribute_type_str=str(AttributeType.PREDEFINED),
             integration_key_str='test_integration:test_device_1'
         )
         
@@ -191,7 +192,7 @@ class IntegrationSyncMixinTestCase(TestCase):
             name='User Note',
             value='User note',
             value_type_str='TEXT',
-            attribute_type_str='DOCUMENTATION'
+            attribute_type_str=str(AttributeType.CUSTOM)
         )
         
         # Create integration sensor
@@ -239,7 +240,7 @@ class IntegrationSyncMixinTestCase(TestCase):
             name='User Note',
             value='User note',
             value_type_str='TEXT',
-            attribute_type_str='DOCUMENTATION'
+            attribute_type_str=str(AttributeType.CUSTOM)
         )
         
         # Call the method
@@ -262,7 +263,7 @@ class IntegrationSyncMixinTestCase(TestCase):
             name='User Note',
             value='User note',
             value_type_str='TEXT',
-            attribute_type_str='DOCUMENTATION'
+            attribute_type_str=str(AttributeType.CUSTOM)
         )
         
         # Create second entity state
@@ -328,7 +329,7 @@ class IntegrationSyncMixinTestCase(TestCase):
             name='Integration Data',
             value='Some data',
             value_type_str='TEXT',
-            attribute_type_str='CONFIGURATION',
+            attribute_type_str=str(AttributeType.PREDEFINED),
             integration_key_str='test_integration:test_device_1'
         )
         
@@ -363,7 +364,7 @@ class IntegrationSyncMixinTestCase(TestCase):
             name='User Note',
             value='Important note',
             value_type_str='TEXT',
-            attribute_type_str='DOCUMENTATION'
+            attribute_type_str=str(AttributeType.CUSTOM)
         )
         
         # Call the method
@@ -388,7 +389,7 @@ class IntegrationSyncMixinTestCase(TestCase):
                 name=f'Integration Config {i}',
                 value=f'Config value {i}',
                 value_type_str='TEXT',
-                attribute_type_str='CONFIGURATION',
+                attribute_type_str=str(AttributeType.PREDEFINED),
                 integration_key_str=f'test_integration:config_{i}'
             )
             integration_attrs.append(attr)
@@ -399,7 +400,7 @@ class IntegrationSyncMixinTestCase(TestCase):
             name='User Documentation',
             value='User-created note',
             value_type_str='TEXT',
-            attribute_type_str='DOCUMENTATION'
+            attribute_type_str=str(AttributeType.CUSTOM)
         )
         
         # Call the method
@@ -480,7 +481,7 @@ class IntegrationSyncMixinTestCase(TestCase):
             name='User Note',
             value='User note',
             value_type_str='TEXT',
-            attribute_type_str='DOCUMENTATION'
+            attribute_type_str=str(AttributeType.CUSTOM)
         )
         
         # Call the method
@@ -552,7 +553,7 @@ class IntegrationSyncMixinTestCase(TestCase):
             name='Config 1',
             value='Value 1',
             value_type_str='TEXT',
-            attribute_type_str='CONFIGURATION',
+            attribute_type_str=str(AttributeType.PREDEFINED),
             integration_key_str='test_integration:config_1'
         )
         
@@ -561,7 +562,7 @@ class IntegrationSyncMixinTestCase(TestCase):
             name='Config 2',
             value='Value 2',
             value_type_str='TEXT',
-            attribute_type_str='CONFIGURATION',
+            attribute_type_str=str(AttributeType.PREDEFINED),
             integration_key_str='test_integration:config_2'
         )
         
@@ -602,7 +603,7 @@ class IntegrationSyncMixinTestCase(TestCase):
             name='User Note',
             value='User note',
             value_type_str='TEXT',
-            attribute_type_str='DOCUMENTATION'
+            attribute_type_str=str(AttributeType.CUSTOM)
         )
         
         # Call the method
@@ -657,7 +658,7 @@ class IntegrationSyncMixinTransactionTestCase(TransactionTestCase):
             name='User Note',
             value='Critical user note',
             value_type_str='TEXT',
-            attribute_type_str='DOCUMENTATION'
+            attribute_type_str=str(AttributeType.CUSTOM)
         )
         
         # Create complex state structure
@@ -696,7 +697,7 @@ class IntegrationSyncMixinTransactionTestCase(TransactionTestCase):
             name='Integration Config',
             value='Config data',
             value_type_str='TEXT',
-            attribute_type_str='CONFIGURATION',
+            attribute_type_str=str(AttributeType.PREDEFINED),
             integration_key_str='test_integration:config_1'
         )
         
@@ -755,7 +756,7 @@ class IntegrationSyncMixinTransactionTestCase(TransactionTestCase):
             name='User Note',
             value='User note',
             value_type_str='TEXT',
-            attribute_type_str='DOCUMENTATION'
+            attribute_type_str=str(AttributeType.CUSTOM)
         )
         
         # Create integration sensor that will be orphaned (state will be deleted)
@@ -849,7 +850,7 @@ class IntegrationSyncMixinTransactionTestCase(TransactionTestCase):
             name='Integration Config',
             value='Config value',
             value_type_str='TEXT',
-            attribute_type_str='CONFIGURATION',
+            attribute_type_str=str(AttributeType.PREDEFINED),
             integration_key_str='test_integration:device_2'
         )
         
@@ -876,7 +877,7 @@ class IntegrationSyncMixinTransactionTestCase(TransactionTestCase):
             name='Integration Config',
             value='Config value',
             value_type_str='TEXT',
-            attribute_type_str='CONFIGURATION',
+            attribute_type_str=str(AttributeType.PREDEFINED),
             integration_key_str='test_integration:device_3'
         )
         
@@ -886,7 +887,7 @@ class IntegrationSyncMixinTransactionTestCase(TransactionTestCase):
             name='User Comment',
             value='User added this',
             value_type_str='TEXT',
-            attribute_type_str='DOCUMENTATION'
+            attribute_type_str=str(AttributeType.CUSTOM)
             # No integration_key_str - user created
         )
         
@@ -954,7 +955,7 @@ class IntegrationSyncMixinTransactionTestCase(TransactionTestCase):
             name='User Note',
             value='Important user data',
             value_type_str='TEXT',
-            attribute_type_str='DOCUMENTATION'
+            attribute_type_str=str(AttributeType.CUSTOM)
         )
         
         # Store IDs for verification
@@ -1036,7 +1037,7 @@ class IntegrationSyncMixinTransactionTestCase(TransactionTestCase):
                     name='User Data',
                     value='User value',
                     value_type_str='TEXT',
-                    attribute_type_str='DOCUMENTATION'
+                    attribute_type_str=str(AttributeType.CUSTOM)
                 )
                 
                 # Create fresh result for each test

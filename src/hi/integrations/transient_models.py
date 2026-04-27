@@ -79,6 +79,31 @@ class IntegrationDetails:
 
 
 @dataclass
+class IntegrationRemovalSummary:
+    """
+    Classification of an integration's attached entities for the Remove
+    confirmation dialog. Raw counts only; derived values are properties so
+    the object stays consistent.
+    """
+
+    total_count: int
+    user_data_count: int
+
+    @property
+    def deletable_count(self) -> int:
+        return self.total_count - self.user_data_count
+
+    @property
+    def has_mixed_state(self) -> bool:
+        """
+        True when at least one entity has user data. Drives the dialog
+        decision between a single DELETE action and the DELETE SAFE /
+        DELETE ALL variants.
+        """
+        return self.user_data_count > 0
+
+
+@dataclass
 class IntegrationValidationResult:
     """Result from integration configuration validation."""
 

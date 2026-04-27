@@ -1,30 +1,84 @@
-{% extends "modals/action_with_cancel.html" %}
+{% extends "modals/action_2_with_cancel.html" %}
+{% load icons %}
 
 {% block header_class %}bg-secondary{% endblock %}
 
 {% block preamble %}
 <form action="{% url 'integrations_disable' integration_id=integration_data.integration_id %}"
-      method="post" enctype="multipart/form-data"
+      method="post"
       class="form" data-async="modal">
   {% csrf_token %}
-  {% endblock %}
+{% endblock %}
 
-  {% block title_text %}
-  {{ integration_data.label }}
-  {% endblock %}
-  
-  {% block body %}
-  <h4>Disable  {{ integration_data.label }} Integration?</h4>
+{% block title_text %}
+{{ integration_data.label }}
+{% endblock %}
 
-  {% endblock %}
+{% block body %}
+<h4>Remove {{ integration_data.label }} Integration?</h4>
 
-  {% block action_right %}
-  <button id="hi-integration-disable" type="submit" class="btn btn-warning"
-          name="action" value="enable">
-    DISABLE
-  </button>
-  {% endblock %}
-  
-  {% block postamble %}
+{% if removal_summary.total_count == 0 %}
+<p>This integration has no attached entities.</p>
+{% elif removal_summary.has_mixed_state %}
+<p>
+  This integration has <strong>{{ removal_summary.total_count }}</strong>
+  {% if removal_summary.total_count == 1 %}entity{% else %}entities{% endif %}.
+  <strong>{{ removal_summary.user_data_count }}</strong> of
+  {% if removal_summary.user_data_count == 1 %}them has{% else %}them have{% endif %}
+  custom data you've added.
+</p>
+<ul>
+  <li>
+    <strong>DELETE SAFE</strong> — delete the {{ removal_summary.deletable_count }}
+    {% if removal_summary.deletable_count == 1 %}entity{% else %}entities{% endif %}
+    without custom data, and preserve the {{ removal_summary.user_data_count }} with custom
+    data (disconnected from this integration, prefixed with
+    <code>[Disconnected]</code>, custom attributes and layout retained).
+  </li>
+  <li>
+    <strong>DELETE ALL</strong> — delete all {{ removal_summary.total_count }}
+    {% if removal_summary.total_count == 1 %}entity{% else %}entities{% endif %}
+    and all the custom data associated with these items.
+    You will not be able to recover the deleted custom data.
+  </li>
+</ul>
+{% else %}
+<p>
+  This integration has <strong>{{ removal_summary.total_count }}</strong>
+  {% if removal_summary.total_count == 1 %}entity{% else %}entities{% endif %}.
+  None have custom data you've added, so all will be deleted.
+</p>
+{% endif %}
+
+<p class="text-muted small">
+  Configuration values are retained. If you re-configure this integration
+  later, it will start fresh without reconnecting to any preserved entities.
+</p>
+{% endblock %}
+
+{% block action_center %}
+{% if removal_summary.has_mixed_state %}
+<button type="submit" class="btn btn-outline-danger ml-2"
+        name="mode" value="{{ disable_mode_all }}">
+  {% icon "warning" size="sm" css_class="hi-icon-left" %}DELETE ALL
+</button>
+{% endif %}
+{% endblock %}
+
+{% block action_right %}
+{% if removal_summary.has_mixed_state %}
+<button type="submit" class="btn btn-secondary"
+        name="mode" value="{{ disable_mode_safe }}">
+  {% icon "shield" size="sm" css_class="hi-icon-left" %}DELETE SAFE
+</button>
+{% else %}
+<button type="submit" class="btn btn-danger"
+        name="mode" value="{{ disable_mode_safe }}">
+  {% icon "delete" size="sm" css_class="hi-icon-left" %}DELETE
+</button>
+{% endif %}
+{% endblock %}
+
+{% block postamble %}
 </form>
 {% endblock %}

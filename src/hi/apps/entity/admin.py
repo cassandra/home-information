@@ -75,6 +75,7 @@ class EntityAdmin(admin.ModelAdmin):
         'entity_type_str',
         'integration_id',
         'integration_name',
+        'is_disabled',
         'created_datetime',
     )
 
