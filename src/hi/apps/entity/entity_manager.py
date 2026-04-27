@@ -605,9 +605,18 @@ class EntityManager(Singleton):
         return entity_view_group_list
     
     def get_view_stream_entities(self) -> List[ Entity ]:
-        """ Return all entities that have a video stream capability """
-        # Phase 4: Use has_video_stream flag instead of VIDEO_STREAM EntityState
-        return list(Entity.objects.filter(has_video_stream=True))
+        """
+        Return all entities that have a video-stream capability AND are
+        not currently disabled. Both conditions are required for an entity
+        to surface in capability-driven enumerations like the sidebar
+        Cameras list. Per-entity view sites should keep using the raw
+        has_video_stream flag — the disabled gate only applies at
+        listing time.
+        """
+        return list(Entity.objects.filter(
+            has_video_stream = True,
+            is_disabled = False,
+        ))
 
     
 _thread_local = local()

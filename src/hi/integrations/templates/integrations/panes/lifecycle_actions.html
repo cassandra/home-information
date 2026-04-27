@@ -1,0 +1,27 @@
+{% load icons %}
+{% comment %}
+  Shared Pause/Resume lifecycle actions fragment.
+
+  Integrations that have monitors and want to expose Pause/Resume controls
+  should include this fragment from their per-integration manage template
+  alongside any other integration-specific controls (e.g., SYNC). Rendering
+  is conditional on is_enabled so the control is hidden for not-yet-
+  configured integrations.
+{% endcomment %}
+{% if core.integration_data.is_enabled %}
+<form class="mr-2"
+      method="post"
+      action="{% if core.integration_data.is_paused %}{% url 'integrations_resume' integration_id=core.integration_data.integration_id %}{% else %}{% url 'integrations_pause' integration_id=core.integration_data.integration_id %}{% endif %}"
+      data-async="true">
+  {% csrf_token %}
+  {% if core.integration_data.is_paused %}
+  <button type="submit" class="btn btn-outline-primary">
+    {% icon "play" size="sm" css_class="hi-icon-left" %}RESUME
+  </button>
+  {% else %}
+  <button type="submit" class="btn btn-outline-secondary">
+    {% icon "pause" size="sm" css_class="hi-icon-left" %}PAUSE
+  </button>
+  {% endif %}
+</form>
+{% endif %}

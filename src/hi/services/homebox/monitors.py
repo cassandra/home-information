@@ -9,9 +9,15 @@ logger = logging.getLogger(__name__)
 
 
 class HomeBoxMonitor( PeriodicMonitor, HomeBoxMixin ):
+    """
+    HomeBox does not have real-time per-item state to poll. The monitor's
+    only job is a periodic reachability/health probe so the integration's
+    health status reflects whether the API is currently reachable. Entity
+    creation/update/removal happens only via user-initiated SYNC.
+    """
 
     MONITOR_ID = 'hi.services.homebox.monitor'
-    HOMEBOX_POLLING_INTERVAL_SECS = 30
+    HOMEBOX_POLLING_INTERVAL_SECS = 300
     HOMEBOX_API_TIMEOUT_SECS = 20.0
 
     def __init__( self ):
@@ -61,15 +67,19 @@ class HomeBoxMonitor( PeriodicMonitor, HomeBoxMixin ):
             self.record_error( 'No manager found.' )
             return
 
-        item_list = await self._process_items( hb_manager )
+        item_count = await self._check_api_reachable( hb_manager )
 
-        message = (
-            f'Processed HomeBox resources. '
-            f'items={len(item_list)}'
-        )
+        message = f'HomeBox API reachable. items={item_count}'
         self.record_healthy( message )
         hb_manager.record_healthy( message )
         return
 
-    async def _process_items(self, hb_manager):
-        return await hb_manager.fetch_hb_items_from_api_async( verbose = False )
+    async def _check_api_reachable(self, hb_manager) -> int:
+        """
+        Lightweight reachability probe: hits the items summary endpoint
+        (one API call, no per-item detail fetches) and returns the count.
+        The count is informational; the probe's purpose is to confirm
+        the API is up and authentication is still valid.
+        """
+        item_list = await hb_manager.fetch_hb_items_summary_from_api_async()
+        return len(item_list)

@@ -7,6 +7,7 @@ import logging
 from django.test import TestCase
 from django.db import IntegrityError
 
+from hi.apps.attribute.enums import AttributeType
 from hi.apps.entity.models import Entity, EntityAttribute, EntityState
 from hi.apps.sense.models import Sensor
 from hi.apps.control.models import Controller
@@ -47,7 +48,7 @@ class EntityUserDataDetectorTestCase(TestCase):
             name='User Note',
             value='This is a user note',
             value_type_str='TEXT',
-            attribute_type_str='DOCUMENTATION'
+            attribute_type_str=str(AttributeType.CUSTOM)
             # integration_key_str is None (user-created)
         )
         
@@ -73,7 +74,7 @@ class EntityUserDataDetectorTestCase(TestCase):
             name='Integration Data',
             value='Integration-specific data',
             value_type_str='TEXT',
-            attribute_type_str='CONFIGURATION',
+            attribute_type_str=str(AttributeType.PREDEFINED),
             integration_key_str='test_integration:test_device_1'
         )
         
@@ -109,7 +110,7 @@ class EntityUserDataDetectorTestCase(TestCase):
             name='User Note',
             value='User data',
             value_type_str='TEXT',
-            attribute_type_str='DOCUMENTATION'
+            attribute_type_str=str(AttributeType.CUSTOM)
             # integration_key_str is None (user-created)
         )
         integration_attr = EntityAttribute.objects.create(
@@ -117,7 +118,7 @@ class EntityUserDataDetectorTestCase(TestCase):
             name='Integration Data',
             value='Integration data',
             value_type_str='TEXT',
-            attribute_type_str='CONFIGURATION',
+            attribute_type_str=str(AttributeType.PREDEFINED),
             integration_key_str='test_integration:test_device_1'
         )
         
@@ -375,14 +376,14 @@ class EntityUserDataDetectorTestCase(TestCase):
             name='User Note 1',
             value='First note',
             value_type_str='TEXT',
-            attribute_type_str='DOCUMENTATION'
+            attribute_type_str=str(AttributeType.CUSTOM)
         )
         attr2 = EntityAttribute.objects.create(
             entity=self.entity,
             name='User Note 2',
             value='Second note',
             value_type_str='TEXT',
-            attribute_type_str='CONFIGURATION'
+            attribute_type_str=str(AttributeType.CUSTOM)
         )
         
         result = EntityUserDataDetector.has_user_created_attributes(self.entity)
@@ -509,7 +510,7 @@ class EntityUserDataDetectorTestCase(TestCase):
                     name=f'Test Attr {key}',
                     value='test value',
                     value_type_str='TEXT',
-                    attribute_type_str='CONFIGURATION',
+                    attribute_type_str=str(AttributeType.PREDEFINED),
                     integration_key_str=key
                 )
                 

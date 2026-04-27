@@ -157,6 +157,25 @@ class HomeBoxManager( SingletonManager, AggregateHealthProvider, ApiHealthStatus
             self.fetch_hb_items_from_api,
             thread_sensitive = True,
         )(verbose=verbose)
+
+    def fetch_hb_items_summary_from_api( self ) -> list:
+        """
+        Lightweight one-call probe used by the monitor's reachability
+        heartbeat. Returns the items summary list (no per-item detail
+        fetches) or an empty list if the client is unavailable.
+        """
+        if not self.hb_client:
+            logger.warning('HomeBox client not available - cannot fetch items summary')
+            return []
+
+        with self.api_call_context( 'hb_items_summary' ):
+            return self.hb_client.get_items_summary()
+
+    async def fetch_hb_items_summary_from_api_async( self ) -> list:
+        return await sync_to_async(
+            self.fetch_hb_items_summary_from_api,
+            thread_sensitive = True,
+        )()
     
     def test_connection(self) -> bool:
         try:

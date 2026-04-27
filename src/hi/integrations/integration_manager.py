@@ -391,9 +391,14 @@ class IntegrationManager( Singleton ):
             integration_id = integration_data.integration_id
 
             with transaction.atomic():
-                entities = list(
-                    Entity.objects.filter( integration_id = integration_id )
+                # Targeted entity set includes the integration's own entities
+                # plus any delegate entities that would be orphaned by their
+                # removal (e.g., the Area entity auto-created when a motion
+                # sensor was added to a view).
+                target_ids = EntityIntegrationOperations.get_removal_entity_ids(
+                    integration_id = integration_id,
                 )
+                entities = list( Entity.objects.filter( id__in = target_ids ) )
                 if mode == IntegrationDisableMode.ALL:
                     for entity in entities:
                         entity.delete()
