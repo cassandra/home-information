@@ -105,8 +105,20 @@ class PeriodicMonitor( HealthStatusProvider ):
 
         except Exception as e:
             query_duration = (datetimeproxy.now() - query_start_time).total_seconds()
-            self._logger.exception( f"Query {self._query_counter} failed"
-                                    f" after {query_duration:.2f}s: {e}" )
+            # Most monitor failures are recurring upstream-connectivity
+            # issues (server down, fault-injection, transient network
+            # errors). Logging a full traceback every cycle is noise.
+            # Emit a single-line summary at ERROR level and keep the
+            # traceback available at DEBUG for when an operator is
+            # actively investigating.
+            self._logger.error(
+                f"Query {self._query_counter} failed after {query_duration:.2f}s: "
+                f"{type(e).__name__}: {e}"
+            )
+            self._logger.debug(
+                f"Traceback for query {self._query_counter} failure:",
+                exc_info=True,
+            )
             # Don't re-raise - the monitor loop in start() will continue despite failures
         return
 
