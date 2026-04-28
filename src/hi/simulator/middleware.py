@@ -51,7 +51,6 @@ class SimulatorFaultInjectionMiddleware:
 
     def __init__(self, get_response):
         self.get_response = get_response
-        self._segment_to_simulator = None  # Lazy-built on first request
         return
 
     def __call__(self, request):
@@ -94,9 +93,10 @@ class SimulatorFaultInjectionMiddleware:
         return self.get_response( request )
 
     def _resolve_simulator(self, short_name):
-        if self._segment_to_simulator is None:
-            mapping = {}
-            for sim_data in SimulatorManager().get_simulator_data_list():
-                mapping[ sim_data.simulator.url_path_segment ] = sim_data.simulator
-            self._segment_to_simulator = mapping
-        return self._segment_to_simulator.get( short_name )
+        # No cache — the lookup is cheap (small list, dict comprehension)
+        # and avoids staleness if the simulator registry is ever changed
+        # at runtime (e.g., test isolation, future dynamic registration).
+        for sim_data in SimulatorManager().get_simulator_data_list():
+            if sim_data.simulator.url_path_segment == short_name:
+                return sim_data.simulator
+        return None

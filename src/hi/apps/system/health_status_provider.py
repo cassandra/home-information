@@ -87,10 +87,11 @@ class HealthStatusProvider(ABC):
         entirely (the default — most providers update local health
         only). Override and return an AlarmLevel to participate; the
         HealthStatusAlarmMapper will compute a "natural" level for the
-        transition (ERROR=CRITICAL, DISABLED=WARNING, recovery=INFO)
+        transition (ERROR=CRITICAL, WARNING=WARNING, recovery=INFO)
         and clamp it down to this ceiling so different providers can
         express their relative importance without each owning the
-        full mapping policy.
+        full mapping policy. Transitions involving UNKNOWN or DISABLED
+        on either side are suppressed entirely.
 
         Subclass guidance:
         - User-facing managers (whose state transitions reflect

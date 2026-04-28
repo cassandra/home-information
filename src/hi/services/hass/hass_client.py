@@ -105,6 +105,16 @@ class HassClient:
         if response.status_code != 200:
             raise ValueError( f"Failed to set state: {response.status_code} {response.text}" )
 
+        # Guard against the wrong-base-URL / misconfigured-proxy case
+        # where the upstream returns 200 with non-JSON. Without this,
+        # response.json() would raise an opaque JSONDecodeError.
+        content_type = response.headers.get('content-type', '')
+        if 'json' not in content_type.lower():
+            raise ValueError(
+                f'HASS API URL may be incorrect. Expected JSON response but '
+                f'received {content_type or "unknown content type"}. '
+                f'Ensure the URL points at the HASS API root.'
+            )
         return response.json()
 
     def call_service( self, domain: str, service: str, hass_state_id: str, service_data: dict = None ):
@@ -130,7 +140,19 @@ class HassClient:
         response = post( url, json = data, headers = self._headers, timeout = self._timeout_secs )
         if response.status_code not in [200, 201]:
             raise ValueError( f"Failed to call service: {response.status_code} {response.text}" )
-            
+
+        # Guard against the wrong-base-URL / misconfigured-proxy case
+        # where the upstream returns a 2xx with non-JSON. Callers that
+        # parse the response (e.g., HassController) would otherwise hit
+        # an opaque JSONDecodeError downstream.
+        content_type = response.headers.get('content-type', '') if response.headers else ''
+        if 'json' not in content_type.lower():
+            raise ValueError(
+                f'HASS API URL may be incorrect. Expected JSON response but '
+                f'received {content_type or "unknown content type"}. '
+                f'Ensure the URL points at the HASS API root.'
+            )
+
         logger.debug( f'HAss call_service: {domain}.{service} for {hass_state_id}, response={response.status_code}' )
         return response
 

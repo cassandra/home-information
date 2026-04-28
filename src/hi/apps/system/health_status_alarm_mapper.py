@@ -16,10 +16,15 @@ Design echoes WeatherAlertAlarmMapper:
 Per-provider seriousness is expressed as a maximum alarm level (the
 "ceiling"), declared by the provider via HealthStatusProvider.alarm_max_level.
 The mapper picks a "natural" alarm level for the transition class
-(ERROR=CRITICAL, DISABLED=WARNING, recovery=INFO) and clamps to the
+(ERROR=CRITICAL, WARNING=WARNING, recovery=INFO) and clamps to the
 provider's ceiling. This lets each provider declare relative importance
 (e.g., HASS/ZM ceiling=CRITICAL, HomeBox ceiling=INFO) without owning the
 full mapping policy.
+
+Transitions involving UNKNOWN or DISABLED on either side are
+suppressed entirely (no alarm fires). UNKNOWN is initialization noise
+with no settled baseline; DISABLED is operator-initiated and the
+operator already knows.
 """
 from typing import List, Optional
 import logging

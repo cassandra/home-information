@@ -10,7 +10,7 @@ and the canonical status.label as the displayed text.
 {% endcomment %}
 {% if health_status %}
 {% with status=health_status.status %}
-<button class="btn btn-sm hi-health-badge hi-health-badge-{{ status.name|lower }}">
+<span class="btn btn-sm hi-health-badge hi-health-badge-{{ status.name|lower }}">
   {% if status.is_healthy %}
     {% icon "check-circle" size="md" css_class="mr-1" %}{{ status.label }}
   {% elif status.is_critical %}
@@ -22,6 +22,6 @@ and the canonical status.label as the displayed text.
   {% else %}
     {% icon "question-circle" size="md" css_class="mr-1" %}{{ status.label }}
   {% endif %}
-</button>
+</span>
 {% endwith %}
 {% endif %}

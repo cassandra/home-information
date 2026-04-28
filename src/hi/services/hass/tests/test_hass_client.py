@@ -267,9 +267,10 @@ class TestHassClientSetStateMethod(TestCase):
         
         mock_response = Mock()
         mock_response.status_code = 200
+        mock_response.headers = {'content-type': 'application/json'}
         mock_response.json.return_value = expected_response_data
         mock_post.return_value = mock_response
-        
+
         result = self.client.set_state('light.living_room', 'on')
         
         # Test the actual return value, not the mock call
@@ -296,9 +297,10 @@ class TestHassClientSetStateMethod(TestCase):
         
         mock_response = Mock()
         mock_response.status_code = 200
+        mock_response.headers = {'content-type': 'application/json'}
         mock_response.json.return_value = expected_response
         mock_post.return_value = mock_response
-        
+
         result = self.client.set_state('light.living_room', 'on', input_attributes)
         
         # Test that attributes are preserved in the response
@@ -356,12 +358,14 @@ class TestHassClientSetStateMethod(TestCase):
     @patch('hi.services.hass.hass_client.post')
     def test_set_state_json_response_parsing_error(self, mock_post):
         """Test set_state handles JSON response parsing errors"""
-        # Mock response with invalid JSON
+        # Mock response with invalid JSON. Content-type advertises JSON
+        # so the upstream-mismatch guard passes and json() is reached.
         mock_response = Mock()
         mock_response.status_code = 200
+        mock_response.headers = {'content-type': 'application/json'}
         mock_response.json.side_effect = json.JSONDecodeError("Invalid JSON", "", 0)
         mock_post.return_value = mock_response
-        
+
         with self.assertRaises(json.JSONDecodeError):
             self.client.set_state('light.living_room', 'on')
 
@@ -400,6 +404,7 @@ class TestHassClientCallServiceMethod(TestCase):
         """Test call_service properly merges entity_id with additional service data"""
         mock_response = Mock()
         mock_response.status_code = 201  # Test that 201 is also accepted
+        mock_response.headers = {'content-type': 'application/json'}
         mock_post.return_value = mock_response
         
         service_data = {'brightness': 255, 'color_temp': 300}
@@ -465,15 +470,17 @@ class TestHassClientCallServiceMethod(TestCase):
         # Test 200 response
         mock_response_200 = Mock()
         mock_response_200.status_code = 200
+        mock_response_200.headers = {'content-type': 'application/json'}
         mock_post.return_value = mock_response_200
-        
+
         result1 = self.client.call_service('light', 'turn_on', 'light.living_room')
         self.assertEqual(result1, mock_response_200)
         self.assertEqual(result1.status_code, 200)
-        
+
         # Test 201 response
         mock_response_201 = Mock()
         mock_response_201.status_code = 201
+        mock_response_201.headers = {'content-type': 'application/json'}
         mock_post.return_value = mock_response_201
         
         result2 = self.client.call_service('light', 'turn_off', 'light.living_room')
@@ -489,6 +496,7 @@ class TestHassClientCallServiceMethod(TestCase):
         """Test call_service works correctly when service_data is None or empty"""
         mock_response = Mock()
         mock_response.status_code = 200
+        mock_response.headers = {'content-type': 'application/json'}
         mock_post.return_value = mock_response
         
         # Test with None service_data
@@ -513,6 +521,7 @@ class TestHassClientCallServiceMethod(TestCase):
         """Test call_service builds correct URLs for different domain/service combinations"""
         mock_response = Mock()
         mock_response.status_code = 200
+        mock_response.headers = {'content-type': 'application/json'}
         mock_post.return_value = mock_response
         
         # Test URL construction for different service types
@@ -704,6 +713,7 @@ class TestHassClientEdgeCases(TestCase):
         """Test set_state with empty attributes dictionary"""
         mock_response = Mock()
         mock_response.status_code = 200
+        mock_response.headers = {'content-type': 'application/json'}
         mock_response.json.return_value = {}
         mock_post.return_value = mock_response
         
@@ -720,6 +730,7 @@ class TestHassClientEdgeCases(TestCase):
         """Test call_service with empty service data dictionary"""
         mock_response = Mock()
         mock_response.status_code = 200
+        mock_response.headers = {'content-type': 'application/json'}
         mock_post.return_value = mock_response
         
         # Empty dict should not add extra data to payload
@@ -845,6 +856,7 @@ class TestHassClientWithRealData(TestCase):
         # Mock successful response
         mock_response = Mock()
         mock_response.status_code = 200
+        mock_response.headers = {'content-type': 'application/json'}
         mock_response.json.return_value = {'state': 'on'}
         mock_post.return_value = mock_response
         
@@ -879,6 +891,7 @@ class TestHassClientWithRealData(TestCase):
         # Mock successful response
         mock_response = Mock()
         mock_response.status_code = 200
+        mock_response.headers = {'content-type': 'application/json'}
         mock_post.return_value = mock_response
         
         # Test realistic service calls based on our entity types
@@ -910,6 +923,7 @@ class TestHassClientWithRealData(TestCase):
         """Test call_service() with realistic service data for camera entities"""
         mock_response = Mock()
         mock_response.status_code = 200
+        mock_response.headers = {'content-type': 'application/json'}
         mock_post.return_value = mock_response
         
         # Test camera-specific service calls with additional data
