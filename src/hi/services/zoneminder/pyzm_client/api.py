@@ -198,7 +198,30 @@ class ZMApi (Base):
                 r.raise_for_status()
 
             g.logger.Debug(1, r.text)
-            rj = r.json()
+
+            # Validate that the upstream returned JSON before parsing.
+            # A 200 with HTML body means the configured API URL is not
+            # actually pointing at the ZoneMinder API root (misconfigured
+            # proxy, captive portal, wrong base URL). Surface that as a
+            # clear ValueError so the connection-test path reports a
+            # meaningful reason instead of a raw JSONDecodeError.
+            content_type = r.headers.get('content-type', '') if r.headers else ''
+            if 'json' not in content_type.lower():
+                self.authenticated = False
+                raise ValueError(
+                    'ZoneMinder API URL may be incorrect. Expected JSON '
+                    'response but received {}. Ensure the URL points at '
+                    'the ZoneMinder API root.'.format(
+                        content_type or 'unknown content type'
+                    )
+                )
+            try:
+                rj = r.json()
+            except ValueError as e:
+                self.authenticated = False
+                raise ValueError(
+                    'ZoneMinder login response was not valid JSON: {}'.format(e)
+                ) from e
             self.api_version = rj.get('apiversion')
             self.zm_version = rj.get('version')
             if self.auth_enabled:

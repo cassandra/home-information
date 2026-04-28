@@ -45,7 +45,23 @@ class HassClient:
 
         url = f'{self._api_base_url}/api/states'
         response = get( url, headers = self._headers, timeout = self._timeout_secs )
-        data = json.loads(response.text)
+        if response.status_code not in (200, 201):
+            raise ValueError(
+                f'HASS states fetch failed: {response.status_code} {response.text}'
+            )
+        content_type = response.headers.get('content-type', '')
+        if 'json' not in content_type.lower():
+            raise ValueError(
+                f'HASS API URL may be incorrect. Expected JSON response but '
+                f'received {content_type or "unknown content type"}. '
+                f'Ensure the URL points at the HASS API root.'
+            )
+        try:
+            data = json.loads(response.text)
+        except json.JSONDecodeError as e:
+            raise ValueError(
+                f'HASS states response was not valid JSON: {e}'
+            ) from e
         if self.TRACE:
             logger.debug( f'HAss Response = {response.text}' )
         return [ HassConverter.create_hass_state(x) for x in data ]
@@ -55,12 +71,25 @@ class HassClient:
         Lightweight reachability probe. Hits the HASS root API endpoint
         which authenticates the bearer token and confirms the service is
         responding without fetching the full states payload.
+
+        Also validates that the response body is JSON-shaped. A 200 with
+        an HTML body means we are talking to something that is not the
+        HASS API (misconfigured proxy, captive portal, wrong base URL),
+        and we want test_connection to fail at save time rather than
+        letting the runtime sync path JSONDecodeError later.
         """
         url = f'{self._api_base_url}/api/'
         response = get( url, headers = self._headers, timeout = self._timeout_secs )
         if response.status_code not in (200, 201):
             raise ValueError(
                 f'HASS ping failed: {response.status_code} {response.text}'
+            )
+        content_type = response.headers.get('content-type', '')
+        if 'json' not in content_type.lower():
+            raise ValueError(
+                f'HASS API URL may be incorrect. Expected JSON response but '
+                f'received {content_type or "unknown content type"}. '
+                f'Ensure the URL points at the HASS API root.'
             )
         return
 

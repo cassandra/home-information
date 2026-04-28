@@ -21,7 +21,7 @@
     <div id="simulator-{{ simulator.id }}" role="tabpanel" 
 	 class="tab-pane fade {% if simulator.id == current_simulator.id %}show active{% endif %}" 
 	 aria-labelledby="hi-simulator-tab-{{ simulator.id }}">
-      <div>
+      <div class="d-flex align-items-center justify-content-between mb-2">
 	<div class="dropdown">
 	  <button class="btn btn-secondary btn-control dropdown-toggle" type="button"
 		  id="hi-sim-entity-{{ simulator.id }}-menu" data-toggle="dropdown">
@@ -42,6 +42,8 @@
 	    {% endfor %}
 	  </div>
 	</div>
+
+	{% include "simulator/panes/fault_mode_form.html" with simulator=simulator fault_mode_choices=fault_mode_choices %}
       </div>
       
       {% for sim_entity in simulator.sim_entities %}

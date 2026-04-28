@@ -1,0 +1,19 @@
+<div id="hi-fault-mode-{{ simulator.id }}" class="hi-fault-mode-form-wrap">
+  <form action="{% url 'simulator_fault_mode_set' simulator_id=simulator.id %}"
+	method="POST" class="form-inline hi-fault-mode-form"
+	data-async="#hi-fault-mode-{{ simulator.id }}"
+	data-mode="replace">
+    {% csrf_token %}
+    <label class="mr-2 mb-0" for="fault-mode-{{ simulator.id }}">Fault mode:</label>
+    <select id="fault-mode-{{ simulator.id }}" name="fault_mode"
+	    class="form-control form-control-sm"
+	    onchange-async="true">
+      {% for mode in fault_mode_choices %}
+      <option value="{{ mode.name }}"
+	      {% if simulator.fault_mode == mode %}selected{% endif %}>
+	{{ mode.label }}
+      </option>
+      {% endfor %}
+    </select>
+  </form>
+</div>

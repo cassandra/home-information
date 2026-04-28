@@ -44,11 +44,24 @@ class HomeBoxSynchronizer( HomeBoxMixin, IntegrationSyncMixin ):
         result = ProcessingResult( title = 'HomeBox Import Result' )
 
         if not hb_manager.hb_client:
-            logger.debug( 'HomeBox client not created. HomeBox integration disabled?' )
-            result.error_list.append( 'Sync problem. HomeBox integration disabled?' )
+            health_status = hb_manager.health_status
+            reason = health_status.last_message or 'HomeBox integration is disabled or not configured.'
+            logger.debug( f'HomeBox client not available: {reason}' )
+            result.error_list.append( f'Cannot sync HomeBox: {reason}' )
             return result
 
-        item_list = hb_manager.fetch_hb_items_from_api()
+        try:
+            item_list = hb_manager.fetch_hb_items_from_api()
+        except Exception as e:
+            # Runtime API call hit a transient upstream problem (login
+            # failure, NON_JSON response, etc.). Surface the underlying
+            # message rather than propagating a 500. The HbClient's
+            # lazy-login path will retry on the next sync attempt,
+            # naturally recovering once the upstream is healthy.
+            logger.exception( 'HomeBox sync failed during fetch.' )
+            result.error_list.append( f'Cannot sync HomeBox: {e}' )
+            return result
+
         result.message_list.append( f'Found {len(item_list)} current HomeBox items.' )
 
         self._sync_helper_entities( item_list = item_list, result = result )

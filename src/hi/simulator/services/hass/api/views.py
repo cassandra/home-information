@@ -26,6 +26,19 @@ _SUPPORTED_SERVICES = {
 }
 
 
+class PingView( View ):
+    """
+    Mirrors the real Home Assistant API root endpoint, which returns a
+    small JSON envelope confirming the API is running. Used by
+    `HassClient.ping()` as a lightweight reachability + content-type
+    probe so test_connection can fail quickly when the configured base
+    URL points at the wrong place.
+    """
+
+    def get(self, request, *args, **kwargs):
+        return JsonResponse( { 'message': 'API running.' } )
+
+
 class AllStatesView( View ):
 
     def get(self, request, *args, **kwargs):
@@ -34,8 +47,8 @@ class AllStatesView( View ):
             hass_sim_state_list = hass_simulator.get_hass_sim_state_list()
             return JsonResponse( [ x.to_api_dict() for x in hass_sim_state_list ], safe = False )
 
-        except Exception as e:
-            logger.exception( 'Problem processing HAss states API request', e )
+        except Exception:
+            logger.exception( 'Problem processing HAss states API request' )
             return JsonResponse( list(), safe = False )
 
 
@@ -132,6 +145,6 @@ class ServiceCallView( View ):
         except BadRequest:
             raise
 
-        except Exception as e:
-            logger.exception( 'Problem processing HAss service call', e )
+        except Exception:
+            logger.exception( 'Problem processing HAss service call' )
             return JsonResponse( list(), safe = False )

@@ -67,7 +67,19 @@ class HomeBoxMonitor( PeriodicMonitor, HomeBoxMixin ):
             self.record_error( 'No manager found.' )
             return
 
-        item_count = await self._check_api_reachable( hb_manager )
+        try:
+            item_count = await self._check_api_reachable( hb_manager )
+        except Exception as e:
+            # The probe failed (client unavailable, upstream unreachable,
+            # bad response, etc.). Record the actual reason on BOTH the
+            # monitor and the manager so the integration's user-visible
+            # health surfaces the real cause instead of the last-known
+            # success message.
+            message = f'HomeBox API probe failed: {e}'
+            logger.warning( message )
+            self.record_warning( message )
+            hb_manager.record_warning( message )
+            return
 
         message = f'HomeBox API reachable. items={item_count}'
         self.record_healthy( message )

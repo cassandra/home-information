@@ -40,6 +40,26 @@ class SimStateType(LabeledEnum):
         return f'simulator/panes/sim_control_{self.name.lower()}.html'
 
     
+class SimulatorFaultMode(LabeledEnum):
+    """
+    Fault-injection state for a simulated service. Set per-simulator from
+    the simulator UI; consumed by SimulatorFaultInjectionMiddleware to
+    short-circuit API responses so the main app's integration
+    test_connection probe paths can be exercised without standing up real
+    misbehaving servers.
+    """
+
+    HEALTHY       = ( 'Healthy'      , 'Pass requests through normally (default).' )
+    AUTH_FAIL     = ( 'Auth Fail'    , 'Return 401 from every API request.' )
+    SERVER_ERROR  = ( 'Server Error' , 'Return 500 from every API request.' )
+    SLOW          = ( 'Slow'         , 'Sleep past the integration probe timeout, then pass through.' )
+    NON_JSON      = ( 'Non-JSON'     , 'Return 200 with text/html body (simulates wrong base URL / proxy).' )
+
+    @classmethod
+    def default(cls):
+        return cls.HEALTHY
+
+
 class SimEntityType(LabeledEnum):
 
     AIR_CONDITIONER      = ( 'Air Conditioner', '' )

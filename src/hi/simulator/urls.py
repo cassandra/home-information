@@ -49,6 +49,10 @@ urlpatterns = [
     re_path( r'^entity/state/set/(?P<simulator_id>[\w_\-\.\:]+)/(?P<sim_entity_id>\d+)/(?P<sim_state_id>[\w\-]+)$',
              views.SimStateSetView.as_view(),
              name = 'simulator_entity_state_set' ),
+
+    re_path( r'^fault-mode/set/(?P<simulator_id>[\w_\-\.\:]+)$',
+             views.SetSimulatorFaultModeView.as_view(),
+             name = 'simulator_fault_mode_set' ),
 ]
 
 
@@ -68,8 +72,8 @@ def discover_urls():
 
             discovered_url_modules[short_name] = urls_module
 
-        except Exception as e:
-            logger.exception( f'Problem importing URL module: {module_name}', e )
+        except Exception:
+            logger.exception( f'Problem importing URL module: {module_name}' )
             pass
         continue
 

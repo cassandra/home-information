@@ -147,8 +147,11 @@ class HomeBoxManager( SingletonManager, AggregateHealthProvider, ApiHealthStatus
             logger.debug( 'Getting current HomeBox items.' )
 
         if not self.hb_client:
-            logger.warning('HomeBox client not available - cannot fetch items')
-            return []
+            raise IntegrationError(
+                'HomeBox client is not available. The most recent reload '
+                'failed to construct a client (typically a connection or '
+                'configuration problem with the upstream HomeBox API).'
+            )
 
         with self.api_call_context( 'hb_items' ):
             return self.hb_client.get_items()
@@ -162,12 +165,18 @@ class HomeBoxManager( SingletonManager, AggregateHealthProvider, ApiHealthStatus
     def fetch_hb_items_summary_from_api( self ) -> list:
         """
         Lightweight one-call probe used by the monitor's reachability
-        heartbeat. Returns the items summary list (no per-item detail
-        fetches) or an empty list if the client is unavailable.
+        heartbeat. Raises IntegrationError when the client is
+        unavailable so the monitor's heartbeat correctly reflects the
+        broken state — silently returning [] would let the monitor
+        report 'API reachable' against a non-existent client and
+        overwrite the manager's true WARNING/ERROR health.
         """
         if not self.hb_client:
-            logger.warning('HomeBox client not available - cannot fetch items summary')
-            return []
+            raise IntegrationError(
+                'HomeBox client is not available. The most recent reload '
+                'failed to construct a client (typically a connection or '
+                'configuration problem with the upstream HomeBox API).'
+            )
 
         with self.api_call_context( 'hb_items_summary' ):
             return self.hb_client.get_items_summary()

@@ -91,6 +91,8 @@ class TestHassClientStatesMethod(TestCase):
         """Test states() returns empty list when HASS returns no entities"""
         with patch('hi.services.hass.hass_client.get') as mock_get:
             mock_response = Mock()
+            mock_response.status_code = 200
+            mock_response.headers = {'content-type': 'application/json'}
             mock_response.text = '[]'
             mock_get.return_value = mock_response
             
@@ -108,11 +110,13 @@ class TestHassClientStatesMethod(TestCase):
         
         with patch('hi.services.hass.hass_client.get') as mock_get:
             mock_response = Mock()
+            mock_response.status_code = 200
+            mock_response.headers = {'content-type': 'application/json'}
             mock_response.text = json.dumps(real_hass_data)
             mock_get.return_value = mock_response
-            
+
             result = self.client.states()
-            
+
             # Verify data transformation quality
             self.assertEqual(len(result), len(real_hass_data))
             self.assertIsInstance(result, list)
@@ -136,18 +140,47 @@ class TestHassClientStatesMethod(TestCase):
             with self.assertRaises(ConnectionError):
                 self.client.states()
     
-    def test_states_propagates_json_decode_errors(self):
-        """Test states() properly propagates JSON parsing errors with context"""
+    def test_states_raises_value_error_on_malformed_json(self):
+        """A 200 with content-type=json but a malformed body must surface
+        as a ValueError so the monitor can record a meaningful error
+        instead of an opaque JSONDecodeError traceback."""
         with patch('hi.services.hass.hass_client.get') as mock_get:
             mock_response = Mock()
+            mock_response.status_code = 200
+            mock_response.headers = {'content-type': 'application/json'}
             mock_response.text = 'invalid json {"incomplete"'
             mock_get.return_value = mock_response
-            
-            with self.assertRaises(json.JSONDecodeError) as context:
+
+            with self.assertRaises(ValueError) as context:
                 self.client.states()
-            
-            # Verify the error provides useful information for debugging
-            self.assertIn('Expecting', str(context.exception))
+
+            self.assertIn('not valid JSON', str(context.exception))
+
+    def test_states_raises_value_error_on_non_2xx(self):
+        with patch('hi.services.hass.hass_client.get') as mock_get:
+            mock_response = Mock()
+            mock_response.status_code = 500
+            mock_response.text = 'Internal Server Error'
+            mock_get.return_value = mock_response
+
+            with self.assertRaises(ValueError) as context:
+                self.client.states()
+            self.assertIn('500', str(context.exception))
+
+    def test_states_raises_value_error_on_non_json_content_type(self):
+        """Mirrors ping() — a 200 with HTML body means we are not talking
+        to the HASS API; surface that as a clear error instead of letting
+        json.loads raise."""
+        with patch('hi.services.hass.hass_client.get') as mock_get:
+            mock_response = Mock()
+            mock_response.status_code = 200
+            mock_response.headers = {'content-type': 'text/html'}
+            mock_response.text = '<html><body>not the API</body></html>'
+            mock_get.return_value = mock_response
+
+            with self.assertRaises(ValueError) as context:
+                self.client.states()
+            self.assertIn('URL may be incorrect', str(context.exception))
     
     def test_states_handles_single_entity_response(self):
         """Test states() correctly processes single entity response"""
@@ -162,11 +195,13 @@ class TestHassClientStatesMethod(TestCase):
         
         with patch('hi.services.hass.hass_client.get') as mock_get:
             mock_response = Mock()
+            mock_response.status_code = 200
+            mock_response.headers = {'content-type': 'application/json'}
             mock_response.text = json.dumps([single_entity])
             mock_get.return_value = mock_response
-            
+
             result = self.client.states()
-            
+
             self.assertEqual(len(result), 1)
             state = result[0]
             self.assertEqual(state.entity_id, 'sensor.temperature')
@@ -192,6 +227,8 @@ class TestHassClientStatesMethod(TestCase):
         
         with patch('hi.services.hass.hass_client.get') as mock_get:
             mock_response = Mock()
+            mock_response.status_code = 200
+            mock_response.headers = {'content-type': 'application/json'}
             mock_response.text = json.dumps([sample_entity])
             mock_get.return_value = mock_response
             
@@ -526,6 +563,7 @@ class TestHassClientPingAndTimeout(TestCase):
     def test_ping_calls_root_api_endpoint_with_configured_timeout(self, mock_get):
         mock_response = Mock()
         mock_response.status_code = 200
+        mock_response.headers = {'content-type': 'application/json'}
         mock_get.return_value = mock_response
 
         client = HassClient(self.api_options, timeout_secs=4)
@@ -544,6 +582,7 @@ class TestHassClientPingAndTimeout(TestCase):
         for status_code in (200, 201):
             mock_response = Mock()
             mock_response.status_code = status_code
+            mock_response.headers = {'content-type': 'application/json'}
             mock_get.return_value = mock_response
             # Should not raise
             client.ping()
@@ -559,6 +598,20 @@ class TestHassClientPingAndTimeout(TestCase):
         with self.assertRaises(ValueError) as context:
             client.ping()
         self.assertIn('401', str(context.exception))
+
+    @patch('hi.services.hass.hass_client.get')
+    def test_ping_raises_on_non_json_content_type(self, mock_get):
+        """A 200 with HTML body must fail — the URL is not the API root."""
+        mock_response = Mock()
+        mock_response.status_code = 200
+        mock_response.headers = {'content-type': 'text/html'}
+        mock_response.text = '<html><body>not the API</body></html>'
+        mock_get.return_value = mock_response
+
+        client = HassClient(self.api_options)
+        with self.assertRaises(ValueError) as context:
+            client.ping()
+        self.assertIn('URL may be incorrect', str(context.exception))
 
 
 class TestHassClientConstants(TestCase):
@@ -621,6 +674,8 @@ class TestHassClientEdgeCases(TestCase):
         # Mock an API call to verify the URL construction works correctly
         with patch('hi.services.hass.hass_client.get') as mock_get:
             mock_response = Mock()
+            mock_response.status_code = 200
+            mock_response.headers = {'content-type': 'application/json'}
             mock_response.text = '[]'
             mock_get.return_value = mock_response
             
@@ -635,11 +690,13 @@ class TestHassClientEdgeCases(TestCase):
     def test_states_empty_response(self, mock_get):
         """Test states method with empty response"""
         mock_response = Mock()
+        mock_response.status_code = 200
+        mock_response.headers = {'content-type': 'application/json'}
         mock_response.text = '[]'
         mock_get.return_value = mock_response
-        
+
         result = self.client.states()
-        
+
         self.assertEqual(result, [])
     
     @patch('hi.services.hass.hass_client.post')
@@ -697,6 +754,8 @@ class TestHassClientWithRealData(TestCase):
         """Test states() method processes real HASS data through entire pipeline"""
         # Use real HASS data without mocking the converter
         mock_response = Mock()
+        mock_response.status_code = 200
+        mock_response.headers = {'content-type': 'application/json'}
         mock_response.text = json.dumps(self.real_hass_states_data)
         mock_get.return_value = mock_response
         
@@ -924,6 +983,8 @@ class TestHassClientWithRealData(TestCase):
         self.assertGreater(len(complex_entities), 0, "Should have entities with complex attributes")
         
         mock_response = Mock()
+        mock_response.status_code = 200
+        mock_response.headers = {'content-type': 'application/json'}
         mock_response.text = json.dumps(complex_entities)
         mock_get.return_value = mock_response
         

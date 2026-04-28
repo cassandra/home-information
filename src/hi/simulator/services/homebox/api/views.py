@@ -55,8 +55,8 @@ class AllItemsView( View ):
             ]
             return JsonResponse( { 'items': items } )
 
-        except Exception as e:
-            logger.exception( 'Problem processing HomeBox items list', e )
+        except Exception:
+            logger.exception( 'Problem processing HomeBox items list' )
             return JsonResponse( { 'items': [] } )
 
 

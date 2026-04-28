@@ -178,8 +178,8 @@ class SimulatorManager( Singleton ):
                         )
                     continue                
                 
-            except Exception as e:
-                logger.exception( f'Problem getting simulator for {module_name}.', e )
+            except Exception:
+                logger.exception( f'Problem getting simulator for {module_name}.' )
             continue
 
         return
@@ -233,8 +233,8 @@ class SimulatorManager( Singleton ):
             )
             try:
                 simulator_data.simulator.add_sim_entity( sim_entity = sim_entity )
-            except SimEntityValidationError as ve:
-                logger.exception( 'Could not add DB simulator entity.', ve )
+            except SimEntityValidationError:
+                logger.exception( 'Could not add DB simulator entity.' )
             continue
         
         return

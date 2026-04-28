@@ -96,9 +96,10 @@ class TestHassClientFactory(TestCase):
 
     @patch('hi.services.hass.hass_client.get')
     def test_test_client_success(self, mock_get):
-        """test_client succeeds when the ping endpoint returns 200."""
+        """test_client succeeds when the ping endpoint returns 200 with a JSON body."""
         mock_response = Mock()
         mock_response.status_code = 200
+        mock_response.headers = {'content-type': 'application/json'}
         mock_response.text = '{"message": "API running."}'
         mock_get.return_value = mock_response
 
@@ -116,6 +117,29 @@ class TestHassClientFactory(TestCase):
         mock_get.assert_called_once()
         call_url = mock_get.call_args[0][0]
         self.assertTrue(call_url.endswith('/api/'))
+
+    @patch('hi.services.hass.hass_client.get')
+    def test_test_client_ping_200_with_html_body_fails(self, mock_get):
+        """test_client fails when ping returns 200 but the body is not JSON.
+
+        Guards against the 'wrong base URL / misconfigured proxy' case
+        where an upstream returns a friendly 200 HTML page. We want
+        test_connection to surface this at save time rather than letting
+        the runtime sync path JSONDecodeError later.
+        """
+        mock_response = Mock()
+        mock_response.status_code = 200
+        mock_response.headers = {'content-type': 'text/html'}
+        mock_response.text = '<html><body>not the API</body></html>'
+        mock_get.return_value = mock_response
+
+        attributes = self._create_test_attributes()
+        client = self.factory.create_client(attributes)
+
+        result = self.factory.test_client(client)
+
+        self.assertFalse(result.is_valid)
+        self.assertIn('URL may be incorrect', result.error_message)
 
     @patch('hi.services.hass.hass_client.get')
     def test_test_client_ping_non_2xx_status_fails(self, mock_get):
