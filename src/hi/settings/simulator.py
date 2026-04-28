@@ -30,6 +30,7 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 
     'hi.simulator.middleware.SimViewMiddleware',
+    'hi.simulator.middleware.SimulatorFaultInjectionMiddleware',
 ]
 
 ROOT_URLCONF = 'hi.simulator.urls'

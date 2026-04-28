@@ -535,8 +535,8 @@ class TestEventManagerEventActions(AsyncEventManagerTestCase):
                 await self.manager._do_new_event_action([event])
                 
                 # Examine the results - should have called alert manager with correct alarm
-                mock_alert_manager.add_alarm.assert_called_once()
-                alarm_call_args = mock_alert_manager.add_alarm.call_args[0][0]
+                mock_alert_manager.add_alarm_async.assert_called_once()
+                alarm_call_args = mock_alert_manager.add_alarm_async.call_args[0][0]
                 self.assertEqual(alarm_call_args.title, 'Test Event')
                 self.assertEqual(alarm_call_args.alarm_level, AlarmLevel.CRITICAL)
         
@@ -578,7 +578,7 @@ class TestEventManagerEventActions(AsyncEventManagerTestCase):
                 await self.manager._do_new_event_action([event])
                 
                 # Examine the results - should NOT have called alert manager
-                mock_alert_manager.add_alarm.assert_not_called()
+                mock_alert_manager.add_alarm_async.assert_not_called()
         
         self.run_async(async_test_logic())
         return

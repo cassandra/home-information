@@ -1,5 +1,6 @@
 import logging
 
+from hi.apps.alert.enums import AlarmLevel
 from hi.apps.monitor.periodic_monitor import PeriodicMonitor
 from hi.apps.system.provider_info import ProviderInfo
 
@@ -31,11 +32,20 @@ class HomeBoxMonitor( PeriodicMonitor, HomeBoxMixin ):
     def get_api_timeout(self) -> float:
         return self.HOMEBOX_API_TIMEOUT_SECS
 
+    def alarm_ceiling(self):
+        # HomeBox tracks inventory data — degraded availability is
+        # informational, not safety-critical, so cap at INFO.
+        return AlarmLevel.INFO
+
     async def _initialize(self):
         hb_manager = await self.hb_manager_async()
         if not hb_manager:
             return
         hb_manager.register_change_listener( self.refresh )
+        # See HassMonitor._initialize for the rationale behind subordinate
+        # registration: aggregated manager health pulls monitor status on
+        # demand, so a healthy reload cannot mask a failing monitor.
+        hb_manager.add_subordinate_health_status_provider( self )
         self._was_initialized = True
         return
 
@@ -67,11 +77,21 @@ class HomeBoxMonitor( PeriodicMonitor, HomeBoxMixin ):
             self.record_error( 'No manager found.' )
             return
 
-        item_count = await self._check_api_reachable( hb_manager )
+        try:
+            item_count = await self._check_api_reachable( hb_manager )
+        except Exception as e:
+            # The probe failed (client unavailable, upstream unreachable,
+            # bad response, etc.). Manager picks up our status via
+            # add_subordinate_health_status_provider registration — its
+            # aggregated health will reflect this WARNING the next time
+            # it is read.
+            message = f'HomeBox API probe failed: {e}'
+            logger.warning( message )
+            self.record_warning( message )
+            return
 
         message = f'HomeBox API reachable. items={item_count}'
         self.record_healthy( message )
-        hb_manager.record_healthy( message )
         return
 
     async def _check_api_reachable(self, hb_manager) -> int:

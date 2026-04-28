@@ -53,8 +53,8 @@ class MonitorsView( View ):
             return JsonResponse({
                 'monitors': [ x.to_api_dict() for x in zm_monitor_sim_entity_list ],
             })
-        except Exception as e:
-            logger.exception( 'Problem processing ZM monitors API request', e )
+        except Exception:
+            logger.exception( 'Problem processing ZM monitors API request' )
             return JsonResponse({
                 'monitors': [ ],
             })
@@ -100,8 +100,8 @@ class StatesView( View ):
             return JsonResponse({
                 'states': [ x.to_api_dict() for x in zm_sim_run_state_list ],
             })
-        except Exception as e:
-            logger.exception( 'Problem processing ZM states API request', e )
+        except Exception:
+            logger.exception( 'Problem processing ZM states API request' )
             return JsonResponse({
                 'states': [ ],
             })
@@ -165,8 +165,8 @@ class EventsIndexView( View ):
                 'pagination': zm_pagination.to_api_dict(),
 
             })
-        except Exception as e:
-            logger.exception( 'Problem processing ZM events API request', e )
+        except Exception:
+            logger.exception( 'Problem processing ZM events API request' )
             return JsonResponse({
                 'events': [ ],
                 'pagination': ZmPagination( page = 1 ).to_api_dict(),
@@ -210,7 +210,7 @@ class EventsIndexView( View ):
                         'operator': operator.strip(),
                         'value_datetime': value_datetime,
                     }
-                except ValueError as ve:
-                    logger.exception( f'Problem parsing filter date: {value}', ve )
+                except ValueError:
+                    logger.exception( f'Problem parsing filter date: {value}' )
             continue
         return filters

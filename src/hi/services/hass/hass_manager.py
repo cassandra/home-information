@@ -1,6 +1,6 @@
 import logging
 from asgiref.sync import sync_to_async
-from typing import Dict, List
+from typing import Dict, List, Optional
 
 from hi.apps.common.singleton_manager import SingletonManager
 from hi.apps.common.utils import str_to_bool
@@ -15,6 +15,7 @@ from hi.integrations.exceptions import (
     IntegrationDisabledError,
 )
 from hi.integrations.transient_models import (
+    ConnectionTestResult,
     IntegrationKey,
     IntegrationValidationResult,
 )
@@ -186,28 +187,6 @@ class HassManager( SingletonManager, AggregateHealthProvider, ApiHealthStatusPro
             thread_sensitive=True
         )(verbose=verbose)
     
-    def test_connection(self) -> bool:
-        """Test the connection to HASS API and update health status."""
-        try:
-            if not self.hass_client:
-                self.record_error("HASS client not configured")
-                return False
-            
-            # Try to fetch states to test connection
-            states = self.fetch_hass_states_from_api(verbose=False)
-            if states is not None:
-                self.record_healthy('OK')
-                return True
-            else:
-                self.record_error("Failed to fetch states from HASS API")
-                return False
-                
-        except Exception as e:
-            error_msg = f'Connection test failed: {e}'
-            logger.debug(error_msg)
-            self.record_error( f"Connection error: {error_msg}" )
-            return False
-    
     def test_client_with_attributes(
             self,
             hass_attr_type_to_attribute: Dict[HassAttributeType, IntegrationAttribute]
@@ -242,30 +221,61 @@ class HassManager( SingletonManager, AggregateHealthProvider, ApiHealthStatusPro
             self,
             integration_attributes: List[IntegrationAttribute]) -> IntegrationValidationResult:
         """
-        Validate HASS configuration using provided attributes.
-
-        Args:
-            integration_attributes: List of IntegrationAttribute objects
-
-        Returns:
-            IntegrationValidationResult with validation results
+        Schema-only validation. Confirms required attributes are present
+        and structurally usable. Does NOT touch the network — for live
+        connection probing, see test_connection().
         """
         try:
-            # Build attribute mapping without enforcing requirements (for validation testing)
-            hass_attr_type_to_attribute = self._build_hass_attr_type_to_attribute_map(
+            self._build_hass_attr_type_to_attribute_map(
                 integration_attributes=integration_attributes,
-                enforce_requirements=False
+                enforce_requirements=True,
             )
+            return IntegrationValidationResult.success()
 
-            # Use existing test method
-            return self.test_client_with_attributes(hass_attr_type_to_attribute)
-
+        except IntegrationAttributeError as e:
+            return IntegrationValidationResult.error(
+                status=HealthStatusType.ERROR,
+                error_message=str(e),
+            )
         except Exception as e:
             logger.exception(f'Error in HASS configuration validation: {e}')
             return IntegrationValidationResult.error(
                 status=HealthStatusType.WARNING,
                 error_message=f'Configuration validation failed: {e}'
             )
+
+    def test_connection(
+            self,
+            integration_attributes: List[IntegrationAttribute],
+            timeout_secs: Optional[float]) -> ConnectionTestResult:
+        """
+        Live connection probe with bounded timeout. Builds a temporary
+        HassClient against the proposed attributes and exercises the
+        lightweight `/api/` ping endpoint.
+        """
+        try:
+            hass_attr_type_to_attribute = self._build_hass_attr_type_to_attribute_map(
+                integration_attributes=integration_attributes,
+                enforce_requirements=True,
+            )
+            temp_client = self._client_factory.create_client(
+                hass_attr_type_to_attribute=hass_attr_type_to_attribute,
+                timeout_secs=timeout_secs,
+            )
+            validation_result = self._client_factory.test_client(temp_client)
+            if validation_result.is_valid:
+                return ConnectionTestResult.success()
+            return ConnectionTestResult.failure(
+                validation_result.error_message or 'Connection test failed'
+            )
+
+        except IntegrationAttributeError as e:
+            return ConnectionTestResult.failure(str(e))
+        except IntegrationError as e:
+            return ConnectionTestResult.failure(str(e))
+        except Exception as e:
+            logger.exception(f'Error in HASS connection test: {e}')
+            return ConnectionTestResult.failure(f'Connection test error: {e}')
     
     def _build_hass_attr_type_to_attribute_map(
             self, 

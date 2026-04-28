@@ -33,7 +33,11 @@ class TestHbClient(SimpleTestCase):
 
         return response
 
-    def test_init_strips_trailing_slash_and_logs_in_when_credentials_exist(self):
+    def test_init_strips_trailing_slash_and_defers_login(self):
+        """Client construction must not perform network I/O. _login is
+        deferred to first request so a transient upstream problem at
+        construction time does not leave the manager with a permanently
+        null client."""
         with patch.object(HbClient, '_login') as mock_login:
             client = HbClient(api_options={
                 HbClient.API_URL: 'https://homebox.local/',
@@ -42,7 +46,30 @@ class TestHbClient(SimpleTestCase):
             })
 
         self.assertEqual(client._api_url, 'https://homebox.local')
-        mock_login.assert_called_once()
+        mock_login.assert_not_called()
+        self.assertFalse(client._authenticated)
+
+    def test_make_request_lazy_logs_in_on_first_use(self):
+        """First _make_request call performs the deferred login."""
+        with patch.object(HbClient, '_login') as mock_login:
+            client = HbClient(api_options={
+                HbClient.API_URL: 'https://homebox.local',
+                HbClient.API_USER: 'user',
+                HbClient.API_PASSWORD: 'pass',
+            })
+
+            success = self._response(status_code=200, json_data={'items': []})
+            client._session.request = Mock(return_value=success)
+
+            # Simulate _login marking the client as authenticated.
+            def fake_login():
+                client._authenticated = True
+            mock_login.side_effect = fake_login
+
+            result = client._make_request('GET', 'https://homebox.local/v1/items')
+
+            mock_login.assert_called_once()
+            self.assertEqual(result, {'items': []})
 
     def test_make_request_retries_after_unauthorized(self):
         with patch.object(HbClient, '_login') as mock_login:
@@ -51,7 +78,9 @@ class TestHbClient(SimpleTestCase):
                 HbClient.API_USER: 'user',
                 HbClient.API_PASSWORD: 'pass',
             })
-            mock_login.reset_mock()
+            # Pretend a prior request already authenticated us so we are
+            # exercising only the 401 -> re-login -> retry path here.
+            client._authenticated = True
 
             unauthorized = self._response(status_code=401, json_data={'detail': 'Unauthorized'})
             success = self._response(status_code=200, json_data={'items': []})
@@ -65,8 +94,10 @@ class TestHbClient(SimpleTestCase):
         mock_login.assert_called_once()
 
     def test_make_request_returns_response_for_non_json_content(self):
-        with patch.object(HbClient, '_login'):
-            client = HbClient(api_options=self._api_options())
+        client = HbClient(api_options=self._api_options())
+        # Already-authenticated path so we exercise only the binary
+        # attachment-download branch without triggering a lazy login.
+        client._authenticated = True
 
         binary_response = self._response(
             status_code=200,
@@ -79,6 +110,26 @@ class TestHbClient(SimpleTestCase):
         result = client._make_request('GET', 'https://homebox.local/v1/items/1/attachments/1')
 
         self.assertIs(result, binary_response)
+
+    def test_get_items_summary_raises_when_response_is_not_json(self):
+        """A non-JSON response on the items endpoint means the configured
+        API URL is wrong; surface that as a clear ValueError instead of
+        passing the raw Response through to get_items where it would
+        explode on byte iteration."""
+        client = HbClient(api_options=self._api_options())
+        client._authenticated = True
+
+        non_json_response = self._response(
+            status_code=200,
+            json_data=None,
+            content_type='text/html',
+            content=b'<html><body>not the API</body></html>',
+        )
+        client._session.request = Mock(return_value=non_json_response)
+
+        with self.assertRaises(ValueError) as context:
+            client.get_items_summary()
+        self.assertIn('URL may be incorrect', str(context.exception))
 
     def test_get_items_fetches_detail_and_skips_invalid_or_failed_items(self):
         with patch.object(HbClient, '_login'):

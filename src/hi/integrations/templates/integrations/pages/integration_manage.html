@@ -24,11 +24,7 @@
           {{ integration_data.label }}
         </span>
         {% with health_status=integration_data.integration_gateway.get_health_status_provider.health_status %}
-        {% if health_status.is_error %}
-        <span class="text-danger">
-        &nbsp; {% icon "warning" size="lg" css_class="mr-1" %}
-        </span>
-        {% endif %}
+        {% include "integrations/panes/integration_status_indicator.html" with health_status=health_status is_paused=integration_data.integration.is_paused %}
         {% endwith %}
       </div>
     </a>

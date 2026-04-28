@@ -4,6 +4,10 @@ from . import views
 
 urlpatterns = [
 
+    re_path( r'^$',
+             views.PingView.as_view(),
+             name = 'hass_api_ping' ),
+
     re_path( r'^states$',
              views.AllStatesView.as_view(),
              name = 'hass_api_states' ),

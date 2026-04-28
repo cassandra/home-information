@@ -4,6 +4,7 @@ import logging
 from .pyzm_client.helpers.Monitor import Monitor as ZmMonitor
 
 import hi.apps.common.datetimeproxy as datetimeproxy
+from hi.apps.alert.enums import AlarmLevel
 from hi.apps.entity.enums import EntityStateValue
 from hi.apps.monitor.periodic_monitor import PeriodicMonitor
 from hi.apps.sense.sensor_response_manager import SensorResponseMixin
@@ -48,15 +49,24 @@ class ZoneMinderMonitor( PeriodicMonitor, ZoneMinderMixin, SensorResponseMixin )
     def get_api_timeout(self) -> float:
         return self.ZONEMINDER_API_TIMEOUT_SECS
 
+    def alarm_ceiling(self):
+        # ZM outage in the background masks security camera events.
+        # Treat health failures here as serious.
+        return AlarmLevel.CRITICAL
+
     async def _initialize(self):
         zm_manager = await self.zm_manager_async()  # Allows sync use elsewhere in module
         if not zm_manager:
             return
         _ = await self.sensor_response_manager_async()  # Allows sync use elsewhere in module
-        
+
         self._zm_tzname = await zm_manager.get_zm_tzname_async()
         self._poll_from_datetime = datetimeproxy.now()
         zm_manager.register_change_listener( self.refresh )
+        # See HassMonitor._initialize for the rationale behind subordinate
+        # registration: aggregated manager health pulls monitor status on
+        # demand, so a healthy reload cannot mask a failing monitor.
+        zm_manager.add_subordinate_health_status_provider( self )
         self._was_initialized = True
         return
     
@@ -110,8 +120,8 @@ class ZoneMinderMonitor( PeriodicMonitor, ZoneMinderMixin, SensorResponseMixin )
         )
         message = f'Processed {len(sensor_response_map)} ZoneMinder states.'
         self.record_healthy( message )
-        if self.zm_manager():
-            self.zm_manager().record_healthy( message )
+        # Manager picks up our status via add_subordinate_health_status_provider
+        # registration; no explicit push needed here.
         return
     
     async def _process_events(self):

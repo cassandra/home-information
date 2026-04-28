@@ -16,6 +16,7 @@ from hi.apps.config.views import ConfigPageView
 
 from .entity_operations import EntityIntegrationOperations
 from .enums import IntegrationDisableMode
+from .exceptions import IntegrationConnectionError
 from .integration_attribute_edit_context import IntegrationAttributeItemEditContext
 from .integration_manager import IntegrationManager
 from .models import IntegrationAttribute
@@ -219,7 +220,12 @@ class IntegrationResumeView( View, IntegrationViewMixin ):
         if not integration_data.integration.is_enabled:
             raise BadRequest( f'{integration_data.label} integration is not configured' )
 
-        IntegrationManager().resume_integration( integration_data = integration_data )
+        try:
+            IntegrationManager().resume_integration( integration_data = integration_data )
+        except IntegrationConnectionError as e:
+            raise BadRequest(
+                f'{integration_data.label} could not resume: {e}'
+            )
 
         redirect_url = reverse( 'integrations_manage',
                                 kwargs = { 'integration_id': integration_id } )

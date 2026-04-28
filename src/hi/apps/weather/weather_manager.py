@@ -275,7 +275,7 @@ class WeatherManager( Singleton, SettingsMixin, AlertMixin ):
                 alert_manager = await self.alert_manager_async()
                 if alert_manager:
                     for alarm in alarms:
-                        await alert_manager.add_alarm(alarm)
+                        await alert_manager.add_alarm_async(alarm)
                         logger.info(f'Added weather alarm to system: {alarm.signature}')
                 else:
                     logger.warning('Alert manager not available, weather alarms not created')

@@ -3,6 +3,7 @@ from typing import Dict, List
 from hi.apps.common.singleton import Singleton
 
 from .base_models import SimEntityDefinition, SimEntityFields, SimState
+from .enums import SimulatorFaultMode
 from .sim_entity import SimEntity
 
 
@@ -53,13 +54,36 @@ class Simulator( Singleton ):
     """
     
     def __init_singleton__( self ):
+        # Set BEFORE initialize() so that a SimProfile switch — which
+        # re-invokes initialize() to reload entity instances — does NOT
+        # reset the operator-selected fault mode.
+        self._fault_mode = SimulatorFaultMode.default()
         self.initialize()
         return
-    
+
     @property
     def id(self) -> str:
         """ A unique identifier for referencing this simulator implementation. """
         raise NotImplementedError('Subclasses must override this method.')
+
+    @property
+    def url_path_segment(self) -> str:
+        """
+        The URL segment under which this simulator's routes are mounted by
+        src/hi/simulator/urls.py:discover_urls() — derived from the
+        services-app directory name (e.g., 'homebox' for the simulator at
+        hi.simulator.services.homebox.simulator). Note this can differ
+        from `id` (e.g., id='hb' but url_path_segment='homebox').
+        """
+        return self.__class__.__module__.split('.')[-2]
+
+    @property
+    def fault_mode(self) -> SimulatorFaultMode:
+        return self._fault_mode
+
+    def set_fault_mode( self, fault_mode : SimulatorFaultMode ):
+        self._fault_mode = fault_mode
+        return
         
     @property
     def label(self) -> str:

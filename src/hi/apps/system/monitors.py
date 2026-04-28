@@ -1,6 +1,7 @@
 from asgiref.sync import sync_to_async
 import logging
 
+from hi.apps.alert.enums import AlarmLevel
 from hi.apps.common.history_table_manager import CleanupResultType
 from hi.apps.monitor.periodic_monitor import PeriodicMonitor
 from hi.apps.system.history_cleanup.manager import HistoryCleanupManager
@@ -36,6 +37,12 @@ class SystemMonitor( PeriodicMonitor ):
             description = 'Automated system maintenance tasks',
             expected_heartbeat_interval_secs = cls.SYSTEM_MAINTENANCE_INTERVAL_SECS,
         )
+
+    def alarm_ceiling(self):
+        # History cleanup is bookkeeping. Failures cause table growth
+        # over time but do not lose user-facing data. INFO-level
+        # visibility is sufficient.
+        return AlarmLevel.INFO
 
     async def do_work(self):
         logger.debug('Running system maintenance tasks')

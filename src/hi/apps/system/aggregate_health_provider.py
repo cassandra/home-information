@@ -39,40 +39,61 @@ class AggregateHealthProvider( HealthStatusProvider ):
             return
         super()._ensure_health_status_provider_setup()
         self._api_health_status_providers = []  # Track API health status providers
+        self._subordinate_health_status_providers = []  # Track subordinate HealthStatusProvider sources
         return
 
     @property
     def health_status(self) -> AggregateHealthStatus:
-        """Get aggregated health status (thread-safe, always fresh)."""
+        """Get aggregated health status (thread-safe, always fresh).
+
+        Subordinate registration must form a DAG. If a subordinate is
+        itself an AggregateHealthProvider whose subordinate set
+        transitively contains this aggregator, the cyclic refresh
+        below would recurse — and because each level reads its
+        subordinates outside its own lock, a cycle would manifest as
+        infinite recursion rather than deadlock. Today all subordinate
+        registrations are leaves (monitors → managers); preserve that
+        invariant when adding new subordinate types.
+        """
         self._ensure_health_status_provider_setup()
+        # Snapshot the registered source lists under our lock, then
+        # release before pulling each source's status. Reading another
+        # provider's health_status may acquire that provider's lock; if
+        # we held our own lock during those reads, a transitive
+        # subordinate-of-subordinate aggregator could deadlock against
+        # an unrelated lock-acquisition order. Snapshot-and-release
+        # avoids the lock-ordering question entirely.
         with self._health_lock:
-            # Always refresh from API owners before returning
-            self._refresh_aggregated_health()
+            api_providers = list( self._api_health_status_providers )
+            subordinate_providers = list( self._subordinate_health_status_providers )
+
+        api_snapshots = [
+            (p.get_api_provider_info(), p.api_health_status)
+            for p in api_providers
+        ]
+        subordinate_snapshots = [
+            (p.get_provider_info(), p.health_status)
+            for p in subordinate_providers
+        ]
+
+        with self._health_lock:
+            self._health_status.api_status_map.clear()
+            for provider_info, api_health_status in api_snapshots:
+                self._health_status.api_status_map[provider_info] = api_health_status
+
+            self._health_status.subordinate_status_map.clear()
+            for provider_info, subordinate_health_status in subordinate_snapshots:
+                self._health_status.subordinate_status_map[provider_info] = (
+                    subordinate_health_status
+                )
+
             return copy.deepcopy(self._health_status)
-        return
 
     def refresh_aggregated_health(self) -> None:
-        self._ensure_health_status_provider_setup()
-        with self._health_lock:
-            self._refresh_aggregated_health()
-    
-    def _refresh_aggregated_health(self) -> None:
-        """Refresh API status map from all tracked API health status providers.
-
-        Note: The aggregated health status is computed dynamically via the status property,
-        so this method only needs to update the API status map.
-        """
-        # Clear current sources
-        self._health_status.api_status_map.clear()
-
-        # Collect current health from all providers
-        for provider in self._api_health_status_providers:
-            provider_info = provider.get_api_provider_info()
-            api_health_status = provider.api_health_status
-            self._health_status.api_status_map[provider_info] = api_health_status
-
-        # Status is now computed dynamically via the status property in AggregateHealthStatus
-        # No need to manually update it here
+        # Public refresh — preserved for any external callers, though
+        # health_status now refreshes on every read. Implemented in
+        # terms of health_status to share the lock-ordering discipline.
+        _ = self.health_status
         return
 
     def _get_aggregation_rule(self) -> HealthAggregationRule:
@@ -82,14 +103,19 @@ class AggregateHealthProvider( HealthStatusProvider ):
     def add_api_health_status_provider(
             self,
             api_health_status_provider : ApiHealthStatusProvider ) -> None:
-        """Add an API health status provider to be tracked and aggregated."""
+        """Add an API health status provider to be tracked and aggregated.
+
+        Registration changes are picked up on the next health_status
+        read; no eager refresh inside the lock (which would force us
+        to read other providers' health_status while holding our own
+        lock — see health_status() for the lock-ordering rationale).
+        """
         self._ensure_health_status_provider_setup()
         with self._health_lock:
             if api_health_status_provider not in self._api_health_status_providers:
                 self._api_health_status_providers.append( api_health_status_provider )
-                self._refresh_aggregated_health()
         return
-    
+
     def add_api_health_status_provider_multi(
             self,
             api_health_status_provider_sequence : Sequence[ ApiHealthStatusProvider ]
@@ -101,9 +127,8 @@ class AggregateHealthProvider( HealthStatusProvider ):
                 if api_health_status_provider not in self._api_health_status_providers:
                     self._api_health_status_providers.append(api_health_status_provider)
                 continue
-            self._refresh_aggregated_health()
         return
-            
+
     def remove_api_health_status_provider(
             self,
             api_health_status_provider : ApiHealthStatusProvider
@@ -113,5 +138,38 @@ class AggregateHealthProvider( HealthStatusProvider ):
         with self._health_lock:
             if api_health_status_provider in self._api_health_status_providers:
                 self._api_health_status_providers.remove(api_health_status_provider)
-                self._refresh_aggregated_health()
+        return
+
+    def add_subordinate_health_status_provider(
+            self,
+            subordinate : HealthStatusProvider ) -> None:
+        """
+        Register a subordinate HealthStatusProvider whose status
+        contributes to this aggregator's overall status. The aggregator
+        pulls the subordinate's current status on each read of
+        self.health_status — mirroring how add_api_health_status_provider
+        treats its providers.
+
+        Use this for non-API sources that should not alias the parent's
+        own _base_status: e.g., a polling monitor that watches the same
+        subsystem the manager configures. A successful manager reload
+        setting _base_status=HEALTHY must not silently overwrite a
+        monitor still reporting ERROR — separate slots prevent that.
+
+        Subordinate registration must form a DAG; see health_status().
+        """
+        self._ensure_health_status_provider_setup()
+        with self._health_lock:
+            if subordinate not in self._subordinate_health_status_providers:
+                self._subordinate_health_status_providers.append( subordinate )
+        return
+
+    def remove_subordinate_health_status_provider(
+            self,
+            subordinate : HealthStatusProvider ) -> None:
+        """Remove a subordinate HealthStatusProvider from tracking."""
+        self._ensure_health_status_provider_setup()
+        with self._health_lock:
+            if subordinate in self._subordinate_health_status_providers:
+                self._subordinate_health_status_providers.remove( subordinate )
         return

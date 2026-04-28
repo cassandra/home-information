@@ -1,3 +1,4 @@
+from django.core.exceptions import BadRequest
 from django.http import HttpResponseRedirect
 from django.shortcuts import render
 from django.urls import reverse
@@ -5,6 +6,7 @@ from django.views.generic import View
 
 import hi.apps.common.antinode as antinode
 
+from .enums import SimulatorFaultMode
 from .exceptions import SimEntityValidationError
 from . import forms
 from .models import DbSimEntity
@@ -29,6 +31,7 @@ class HomeView( View, SimulatorViewMixin ):
             'current_sim_profile': current_sim_profile,
             'simulator_data_list': simulator_data_list,
             'current_simulator': current_simulator,
+            'fault_mode_choices': list( SimulatorFaultMode ),
         }
         return render( request, 'simulator/pages/home.html', context )
 
@@ -264,6 +267,38 @@ class SimEntityDeleteView( View, SimulatorViewMixin ):
             db_sim_entity = db_sim_entity,
         )
         return antinode.refresh_response()
+
+
+class SetSimulatorFaultModeView( View, SimulatorViewMixin ):
+    """
+    Operator-driven control to flip a simulator into a fault-injection
+    mode (or back to HEALTHY). Lives at a top-level URL — outside the
+    /services/<short_name>/ subtree — so the fault-injection middleware
+    never intercepts requests to it. This is the operator's escape hatch
+    when a simulator is in any non-HEALTHY mode.
+
+    Returns the fault-mode form HTML fragment so antinode.js can swap it
+    in place (data-async + data-mode=replace), avoiding a full page
+    reload on each toggle.
+    """
+
+    TEMPLATE_NAME = 'simulator/panes/fault_mode_form.html'
+
+    def post( self, request, *args, **kwargs ):
+        simulator = self.get_simulator_by_id(
+            simulator_id = kwargs.get('simulator_id'),
+        )
+        fault_mode_name = request.POST.get('fault_mode')
+        try:
+            fault_mode = SimulatorFaultMode[ fault_mode_name ]
+        except (KeyError, TypeError):
+            raise BadRequest( f'Invalid fault mode: {fault_mode_name}' )
+        simulator.set_fault_mode( fault_mode )
+        context = {
+            'simulator': simulator,
+            'fault_mode_choices': list( SimulatorFaultMode ),
+        }
+        return render( request, self.TEMPLATE_NAME, context )
 
 
 class SimStateSetView( View, SimulatorViewMixin ):

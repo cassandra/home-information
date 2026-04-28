@@ -1,6 +1,7 @@
 import logging
 
 import hi.apps.common.datetimeproxy as datetimeproxy
+from hi.apps.alert.enums import AlarmLevel
 from hi.apps.monitor.periodic_monitor import PeriodicMonitor
 from hi.apps.sense.sensor_response_manager import SensorResponseMixin
 from hi.apps.sense.transient_models import SensorResponse
@@ -29,12 +30,22 @@ class HassMonitor( PeriodicMonitor, HassMixin, SensorResponseMixin ):
     def get_api_timeout(self) -> float:
         return self.HASS_API_TIMEOUT_SECS
 
+    def alarm_ceiling(self):
+        # HA outage in the background masks security and home-automation
+        # state changes. Treat health failures here as serious.
+        return AlarmLevel.CRITICAL
+
     async def _initialize(self):
         hass_manager = await self.hass_manager_async()
         if not hass_manager:
             return
         _ = await self.sensor_response_manager_async()  # Allows async use of self.sensor_response_manager()
         hass_manager.register_change_listener( self.refresh )
+        # Register this monitor as a subordinate health source on the
+        # manager so the manager's aggregated health reflects monitor
+        # outcomes. The manager pulls our current status on each read of
+        # its health_status; we never push.
+        hass_manager.add_subordinate_health_status_provider( self )
         self._was_initialized = True
         return
     
@@ -100,6 +111,7 @@ class HassMonitor( PeriodicMonitor, HassMixin, SensorResponseMixin ):
 
         message = f'Processed {len(id_to_hass_state_map)} Home Assistant states.'
         self.record_healthy( message )
-        hass_manager.record_healthy( message )
+        # Manager picks up our status via add_subordinate_health_status_provider
+        # registration; no explicit push needed here.
         return
     

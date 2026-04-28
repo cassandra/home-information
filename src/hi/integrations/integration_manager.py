@@ -20,6 +20,7 @@ from hi.apps.system.health_status_provider import HealthStatusProvider
 
 from .entity_operations import EntityIntegrationOperations
 from .enums import IntegrationAttributeType, IntegrationDisableMode
+from .exceptions import IntegrationConnectionError
 from .integration_data import IntegrationData
 from .integration_gateway import IntegrationGateway
 from .transient_models import IntegrationKey
@@ -33,6 +34,13 @@ logger = logging.getLogger(__name__)
 class IntegrationManager( Singleton ):
 
     START_DELAY_INTERVAL_SECS = 2
+
+    # Bounded timeout (in seconds) used when an integration's gateway
+    # test_connection() probe is invoked synchronously during attribute-save
+    # validation or before relaunching monitors. Kept short for interactive
+    # save-time UX; can be promoted to a user-tunable setting later if
+    # demand emerges.
+    HEALTH_CHECK_TIMEOUT_SECS = 5
 
     def __new__(cls):
         return super().__new__(cls)
@@ -444,10 +452,48 @@ class IntegrationManager( Singleton ):
         failed launch can be retried by invoking resume again.
         _launch_integration_monitor_task is idempotent when the monitor is
         already running.
+
+        Probes upstream connectivity via the gateway's test_connection
+        before relaunching, so we fail fast (with a meaningful error to
+        the caller) rather than spinning up monitors that will immediately
+        error against an unreachable service. Raises
+        IntegrationConnectionError on probe failure.
+
+        The probe runs OUTSIDE the data lock — we don't want to hold the
+        lock for ~5 seconds while a network probe is in flight, since
+        that would block all other lifecycle operations on every
+        integration. The trade-off is a TOCTOU window between the
+        outside-lock is_enabled check and the inside-lock state write:
+        another caller could disable_integration() during the probe.
+        We close that window by re-checking is_enabled inside the lock
+        and aborting if the integration was disabled while we probed.
         """
         if not integration_data.integration.is_enabled:
             return
+
+        integration_attributes = list(
+            integration_data.integration.attributes.all()
+        )
+        test_result = integration_data.integration_gateway.test_connection(
+            integration_attributes = integration_attributes,
+            timeout_secs = self.HEALTH_CHECK_TIMEOUT_SECS,
+        )
+        if not test_result.is_success:
+            raise IntegrationConnectionError(
+                test_result.message or 'Connection test failed during resume.'
+            )
+
         with self._data_lock:
+            # Re-check is_enabled inside the lock to close the TOCTOU
+            # window opened by running the probe lock-free above. If
+            # another caller disabled the integration while we were
+            # probing, abandon the resume — surfacing the cause to the
+            # caller so the UI can communicate why nothing happened.
+            integration_data.integration.refresh_from_db()
+            if not integration_data.integration.is_enabled:
+                raise IntegrationConnectionError(
+                    'Integration was disabled while resume was probing upstream.'
+                )
             with transaction.atomic():
                 integration_data.integration.is_paused = False
                 integration_data.integration.save()

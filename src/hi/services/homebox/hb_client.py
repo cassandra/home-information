@@ -11,11 +11,11 @@ class HbClient:
     API_URL = 'apiurl'
     API_USER = 'user'
     API_PASSWORD = 'password'
-    
+
     DEFAULT_TIMEOUT = 25.0
     API_VERSION = 'v1'
 
-    def __init__(self, api_options: Dict[str, str]):
+    def __init__(self, api_options: Dict[str, str], timeout_secs: Optional[float] = None):
         self._api_url = api_options.get(self.API_URL)
         assert self._api_url is not None
         if self._api_url.endswith('/'):
@@ -26,8 +26,21 @@ class HbClient:
         self._password = api_options.get(self.API_PASSWORD)
         assert self._password is not None
 
+        # Per-instance timeout. Defaults to DEFAULT_TIMEOUT when not
+        # specified; the connection-test path passes a tighter bound for
+        # interactive save-time validation.
+        self._timeout_secs = timeout_secs if timeout_secs is not None else self.DEFAULT_TIMEOUT
+
         self._session = Session()
-        self._login()
+
+        # Login is deferred to first request rather than performed in
+        # __init__. This keeps client construction free of network I/O
+        # so that transient upstream problems do not leave the manager
+        # with a permanently-null client. _make_request lazily logs in
+        # on first use and re-logs in on a 401, so both the periodic
+        # monitor and operator-initiated sync naturally self-heal once
+        # the upstream recovers.
+        self._authenticated = False
 
     def _login(self):
         url = f"{self._api_url}/{self.API_VERSION}/users/login"
@@ -37,7 +50,7 @@ class HbClient:
             'stayLoggedIn': True
         }
         try:
-            response = self._session.post(url, json=data, timeout=self.DEFAULT_TIMEOUT)
+            response = self._session.post(url, json=data, timeout=self._timeout_secs)
         except Exception as e:
             raise ConnectionError(
                 f'Cannot connect to HomeBox at {self._api_url}. '
@@ -60,14 +73,24 @@ class HbClient:
         else:
             logger.warning("HomeBox login succeeded but response did not contain a token.")
 
+        self._authenticated = True
+
     def _make_request(self, method: str, url: str, **kwargs) -> Union[dict, Response]:
         """Helper to make requests with simple re-authentication."""
-        
-        kwargs.setdefault('timeout', self.DEFAULT_TIMEOUT)
-        
+
+        kwargs.setdefault('timeout', self._timeout_secs)
+
+        # Lazy first login. Failures (connection refused, NON_JSON
+        # upstream, etc.) propagate to the caller, who will retry on the
+        # next monitor cycle / sync attempt — naturally self-healing
+        # once the upstream comes back.
+        if not self._authenticated and self._user:
+            self._login()
+
         response = self._session.request(method, url, **kwargs)
-        
+
         if response.status_code == 401 and self._user:
+            self._authenticated = False
             self._login()
             response = self._session.request(method, url, **kwargs)
             
@@ -83,10 +106,23 @@ class HbClient:
         Fetches just the items summary list (one API call). Does not fetch
         per-item details. Suitable for lightweight reachability /
         health-check probes where only the count or IDs are needed.
+
+        The items endpoint is always JSON in HomeBox; if we got back a
+        raw Response (because _make_request fell through to the
+        binary-attachment path on a non-JSON content type), the
+        configured API URL is pointing at the wrong place. Surface that
+        as a clear ValueError instead of letting downstream callers
+        iterate the response as bytes.
         """
         url_list = f"{self._api_url}/{self.API_VERSION}/items"
         data = self._make_request('GET', url_list)
-        return data.get('items', []) if isinstance(data, dict) else data
+        if not isinstance(data, dict):
+            raise ValueError(
+                f'HomeBox API URL may be incorrect. Expected JSON response '
+                f'from {url_list} but did not receive one. Ensure the URL '
+                f'points at the HomeBox API root (e.g., http://host:port/api).'
+            )
+        return data.get('items', [])
 
     def get_items(self) -> List[HbItem]:
         """

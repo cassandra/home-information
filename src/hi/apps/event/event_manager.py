@@ -173,7 +173,7 @@ class EventManager( Singleton, AlertMixin, ControllerMixin, SecurityMixin ):
                 if alarm_action.security_level != current_security_level:
                     continue
                 alarm = event.to_alarm( alarm_action = alarm_action )
-                await alert_manager.add_alarm( alarm )
+                await alert_manager.add_alarm_async( alarm )
                 continue
             
             control_actions = await sync_to_async(list)(event.event_definition.control_actions.all())
