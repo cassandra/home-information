@@ -104,6 +104,29 @@ class IntegrationRemovalSummary:
 
 
 @dataclass
+class ConnectionTestResult:
+    """
+    Result from a live integration connection probe.
+
+    Distinct from IntegrationValidationResult, which represents schema-level
+    validation outcomes. ConnectionTestResult specifically reports whether
+    a network probe against the proposed configuration succeeded within a
+    bounded timeout.
+    """
+
+    is_success     : bool
+    message        : Optional[str] = None
+
+    @classmethod
+    def success(cls, message: Optional[str] = None) -> 'ConnectionTestResult':
+        return cls(is_success=True, message=message)
+
+    @classmethod
+    def failure(cls, message: str) -> 'ConnectionTestResult':
+        return cls(is_success=False, message=message)
+
+
+@dataclass
 class IntegrationValidationResult:
     """Result from integration configuration validation."""
 

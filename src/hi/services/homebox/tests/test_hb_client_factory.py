@@ -71,7 +71,8 @@ class TestHbClientFactory(TestCase):
             RealHbClient.API_USER: 'test_user',
             RealHbClient.API_PASSWORD: 'test_password',
         }
-        mock_client_class.assert_called_once_with(api_options=expected_options)
+        mock_client_class.assert_called_once_with(
+            api_options=expected_options, timeout_secs=None)
 
     def test_create_client_missing_required_attribute(self):
         """Test client creation fails with missing required attribute."""
@@ -96,9 +97,9 @@ class TestHbClientFactory(TestCase):
         self.assertIn('api_user', str(context.exception))
 
     def test_test_client_success(self):
-        """Test successful client connectivity testing."""
+        """test_client succeeds when the lightweight items-summary probe returns a list."""
         mock_client = Mock()
-        mock_client.get_items.return_value = []
+        mock_client.get_items_summary.return_value = []
 
         result = self.factory.test_client(mock_client)
 
@@ -107,42 +108,56 @@ class TestHbClientFactory(TestCase):
         self.assertEqual(result.status, HealthStatusType.HEALTHY)
         self.assertIsNone(result.error_message)
 
-        mock_client.get_items.assert_called_once()
+        # Probe must use the lightweight summary endpoint, not get_items
+        # (which fetches per-item details).
+        mock_client.get_items_summary.assert_called_once()
+        mock_client.get_items.assert_not_called()
 
     def test_test_client_connection_failure(self):
-        """Test client testing with connection failure."""
+        """Connection error from the probe surfaces with the connect category."""
         mock_client = Mock()
-        mock_client.get_items.side_effect = ConnectionError('Cannot connect to HomeBox')
+        mock_client.get_items_summary.side_effect = ConnectionError('Cannot connect to HomeBox')
 
         result = self.factory.test_client(mock_client)
 
-        self.assertIsInstance(result, IntegrationValidationResult)
         self.assertFalse(result.is_valid)
         self.assertEqual(result.status, HealthStatusType.ERROR)
         self.assertIn('Cannot connect to HomeBox', result.error_message)
 
     def test_test_client_authentication_failure(self):
-        """Test client testing with authentication failure."""
+        """Auth error from the probe surfaces with the auth category."""
         mock_client = Mock()
-        mock_client.get_items.side_effect = Exception('401 Unauthorized')
+        mock_client.get_items_summary.side_effect = Exception('401 Unauthorized')
 
         result = self.factory.test_client(mock_client)
 
-        self.assertIsInstance(result, IntegrationValidationResult)
         self.assertFalse(result.is_valid)
         self.assertEqual(result.status, HealthStatusType.ERROR)
         self.assertIn('Authentication failed', result.error_message)
 
     def test_test_client_returns_none_items(self):
-        """Test client testing when items call returns None."""
+        """A None response from the probe is treated as a probe failure."""
         mock_client = Mock()
-        mock_client.get_items.return_value = None
+        mock_client.get_items_summary.return_value = None
 
         result = self.factory.test_client(mock_client)
 
-        self.assertIsInstance(result, IntegrationValidationResult)
         self.assertFalse(result.is_valid)
         self.assertEqual(result.status, HealthStatusType.ERROR)
         self.assertIn('Failed to fetch items from HomeBox API', result.error_message)
 
-        mock_client.get_items.assert_called_once()
+        mock_client.get_items_summary.assert_called_once()
+
+    @patch('hi.services.homebox.hb_client_factory.HbClient')
+    def test_create_client_threads_timeout_to_client(self, mock_client_class):
+        """create_client passes timeout_secs through to the HbClient."""
+        from hi.services.homebox.hb_client import HbClient as RealHbClient
+        mock_client_class.API_URL = RealHbClient.API_URL
+        mock_client_class.API_USER = RealHbClient.API_USER
+        mock_client_class.API_PASSWORD = RealHbClient.API_PASSWORD
+
+        attributes = self._create_test_attributes()
+        self.factory.create_client(attributes, timeout_secs=2)
+
+        kwargs = mock_client_class.call_args.kwargs
+        self.assertEqual(kwargs.get('timeout_secs'), 2)

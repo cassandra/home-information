@@ -11,11 +11,11 @@ class HbClient:
     API_URL = 'apiurl'
     API_USER = 'user'
     API_PASSWORD = 'password'
-    
+
     DEFAULT_TIMEOUT = 25.0
     API_VERSION = 'v1'
 
-    def __init__(self, api_options: Dict[str, str]):
+    def __init__(self, api_options: Dict[str, str], timeout_secs: Optional[float] = None):
         self._api_url = api_options.get(self.API_URL)
         assert self._api_url is not None
         if self._api_url.endswith('/'):
@@ -25,6 +25,11 @@ class HbClient:
         assert self._user is not None
         self._password = api_options.get(self.API_PASSWORD)
         assert self._password is not None
+
+        # Per-instance timeout. Defaults to DEFAULT_TIMEOUT when not
+        # specified; the connection-test path passes a tighter bound for
+        # interactive save-time validation.
+        self._timeout_secs = timeout_secs if timeout_secs is not None else self.DEFAULT_TIMEOUT
 
         self._session = Session()
         self._login()
@@ -37,7 +42,7 @@ class HbClient:
             'stayLoggedIn': True
         }
         try:
-            response = self._session.post(url, json=data, timeout=self.DEFAULT_TIMEOUT)
+            response = self._session.post(url, json=data, timeout=self._timeout_secs)
         except Exception as e:
             raise ConnectionError(
                 f'Cannot connect to HomeBox at {self._api_url}. '
@@ -63,7 +68,7 @@ class HbClient:
     def _make_request(self, method: str, url: str, **kwargs) -> Union[dict, Response]:
         """Helper to make requests with simple re-authentication."""
         
-        kwargs.setdefault('timeout', self.DEFAULT_TIMEOUT)
+        kwargs.setdefault('timeout', self._timeout_secs)
         
         response = self._session.request(method, url, **kwargs)
         

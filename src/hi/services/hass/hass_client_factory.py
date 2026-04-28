@@ -21,7 +21,8 @@ class HassClientFactory:
 
     def create_client(
             self,
-            hass_attr_type_to_attribute: Dict[HassAttributeType, IntegrationAttribute]) -> HassClient:
+            hass_attr_type_to_attribute: Dict[HassAttributeType, IntegrationAttribute],
+            timeout_secs: float = None) -> HassClient:
         """
         Create a HassClient from integration attributes.
 
@@ -65,7 +66,7 @@ class HassClientFactory:
             api_options[options_key] = hass_attr.value
 
         logger.debug(f'Home Assistant client options: {api_options}')
-        return HassClient(api_options=api_options)
+        return HassClient(api_options=api_options, timeout_secs=timeout_secs)
 
     def test_client(self, client: HassClient) -> IntegrationValidationResult:
         """
@@ -78,16 +79,11 @@ class HassClientFactory:
             IntegrationValidationResult indicating success or failure with details
         """
         try:
-            # Test basic API connectivity
-            states = client.states()
-            if states is not None:
-                # Successful API call
-                return IntegrationValidationResult.success()
-            else:
-                return IntegrationValidationResult.error(
-                    status=HealthStatusType.ERROR,
-                    error_message='Failed to fetch states from Home Assistant API'
-                )
+            # Lightweight reachability probe — confirms the bearer token
+            # is valid and the server is responding without fetching the
+            # full states payload.
+            client.ping()
+            return IntegrationValidationResult.success()
 
         except Exception as e:
             error_msg = str(e).lower()

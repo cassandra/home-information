@@ -505,6 +505,62 @@ class TestHassClientCallServiceMethod(TestCase):
         self.assertEqual(second_data['entity_id'], 'climate.thermostat')
 
 
+class TestHassClientPingAndTimeout(TestCase):
+    """ping() probe and timeout_secs threading behavior."""
+
+    def setUp(self):
+        self.api_options = {
+            'api_base_url': 'https://test.homeassistant.io:8123',
+            'api_token': 'test_token_123456',
+        }
+
+    def test_default_timeout_used_when_not_specified(self):
+        client = HassClient(self.api_options)
+        self.assertEqual(client._timeout_secs, HassClient.DEFAULT_TIMEOUT)
+
+    def test_explicit_timeout_overrides_default(self):
+        client = HassClient(self.api_options, timeout_secs=2)
+        self.assertEqual(client._timeout_secs, 2)
+
+    @patch('hi.services.hass.hass_client.get')
+    def test_ping_calls_root_api_endpoint_with_configured_timeout(self, mock_get):
+        mock_response = Mock()
+        mock_response.status_code = 200
+        mock_get.return_value = mock_response
+
+        client = HassClient(self.api_options, timeout_secs=4)
+        client.ping()
+
+        mock_get.assert_called_once()
+        call_url = mock_get.call_args[0][0]
+        self.assertEqual(call_url, 'https://test.homeassistant.io:8123/api/')
+        # Verify the configured timeout was passed to the underlying request
+        # (no wall-clock waiting — just inspect the kwargs).
+        self.assertEqual(mock_get.call_args[1]['timeout'], 4)
+
+    @patch('hi.services.hass.hass_client.get')
+    def test_ping_accepts_200_and_201(self, mock_get):
+        client = HassClient(self.api_options)
+        for status_code in (200, 201):
+            mock_response = Mock()
+            mock_response.status_code = status_code
+            mock_get.return_value = mock_response
+            # Should not raise
+            client.ping()
+
+    @patch('hi.services.hass.hass_client.get')
+    def test_ping_raises_on_non_2xx(self, mock_get):
+        mock_response = Mock()
+        mock_response.status_code = 401
+        mock_response.text = 'Unauthorized'
+        mock_get.return_value = mock_response
+
+        client = HassClient(self.api_options)
+        with self.assertRaises(ValueError) as context:
+            client.ping()
+        self.assertIn('401', str(context.exception))
+
+
 class TestHassClientConstants(TestCase):
     """Test HassClient constants and class attributes"""
     

@@ -20,7 +20,8 @@ class HbClientFactory:
 
     def create_client(
             self,
-            hb_attr_type_to_attribute: Dict[HbAttributeType, IntegrationAttribute]) -> HbClient:
+            hb_attr_type_to_attribute: Dict[HbAttributeType, IntegrationAttribute],
+            timeout_secs: float = None) -> HbClient:
         """
         Create a HbClient client from integration attributes.
 
@@ -64,7 +65,7 @@ class HbClientFactory:
             options_key = attr_to_api_option_key[hb_attr_type]
             api_options[options_key] = hb_attr.value
 
-        return HbClient(api_options=api_options)
+        return HbClient(api_options=api_options, timeout_secs=timeout_secs)
 
     def test_client(self, client: HbClient) -> IntegrationValidationResult:
         """
@@ -77,8 +78,9 @@ class HbClientFactory:
             IntegrationValidationResult indicating success or failure with details
         """
         try:
-            # Test basic API connectivity by fetching items
-            items = client.get_items()
+            # Lightweight probe: items summary (one API call, no per-item
+            # detail fetches). Sufficient to verify auth + reachability.
+            items = client.get_items_summary()
             if items is not None:
                 # Successful API call
                 return IntegrationValidationResult.success()

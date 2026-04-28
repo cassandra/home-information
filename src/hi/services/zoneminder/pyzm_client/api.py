@@ -29,6 +29,9 @@ from .helpers import globals as g
 
 
 class ZMApi (Base):
+
+    DEFAULT_TIMEOUT = 25.0
+
     def __init__(self, options={}):
         '''
         Options is a dict with the following keys:
@@ -40,9 +43,12 @@ class ZMApi (Base):
             - disable_ssl_cert_check - if True will let you use self signed certs
             - basic_auth_user - basic auth username
             - basic_auth_password - basic auth password
+            - timeout - per-request HTTP timeout in seconds (defaults to DEFAULT_TIMEOUT)
             Note: you can connect your own customer logging class to the API in which case all modules will use your custom class. Your class will need to implement some methods for this to work. See :class:`pyzm.helpers.Base.SimpleLog` for method details.
         '''
-        
+
+        self._timeout_secs = options.get('timeout') or self.DEFAULT_TIMEOUT
+
         self.api_url = options.get('apiurl')
         self.portal_url = options.get('portalurl')
         if not self.portal_url and self.api_url.endswith('/api'):
@@ -181,12 +187,12 @@ class ZMApi (Base):
                 data = {}
                 url = self.api_url + '/host/getVersion.json'
                 
-            r = self.session.post(url, data=data, timeout=25.0)
+            r = self.session.post(url, data=data, timeout=self._timeout_secs)
             if r.status_code == 401 and self.options.get('token') and self.auth_enabled:
                 g.logger.Debug(1, 'Token auth with refresh failed. Likely revoked, doing u/p login')
                 self.options['token'] = None
                 data = {'user': self.options.get('user'), 'pass': self.options.get('password')}
-                r = self.session.post(url, data=data, timeout=25.0)
+                r = self.session.post(url, data=data, timeout=self._timeout_secs)
                 r.raise_for_status()
             else:
                 r.raise_for_status()
@@ -259,14 +265,14 @@ class ZMApi (Base):
         try:
             g.logger.Debug(3, 'make_request called with url={} payload={} type={} query={}'.format(url, payload, type, query))
             if type == 'get':
-                r = self.session.get(url, params=query, timeout=25.0)
+                r = self.session.get(url, params=query, timeout=self._timeout_secs)
 
             elif type == 'post':
-                r = self.session.post(url, data=payload, params=query, timeout=25.0)
+                r = self.session.post(url, data=payload, params=query, timeout=self._timeout_secs)
             elif type == 'put':
-                r = self.session.put(url, data=payload, params=query, timeout=25.0)
+                r = self.session.put(url, data=payload, params=query, timeout=self._timeout_secs)
             elif type == 'delete':
-                r = self.session.delete(url, data=payload, params=query, timeout=25.0)
+                r = self.session.delete(url, data=payload, params=query, timeout=self._timeout_secs)
             else:
                 g.logger.Error('Unsupported request type:{}'.format(type))
                 raise ValueError('Unsupported request type:{}'.format(type))

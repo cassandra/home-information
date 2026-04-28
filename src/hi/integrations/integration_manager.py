@@ -20,6 +20,7 @@ from hi.apps.system.health_status_provider import HealthStatusProvider
 
 from .entity_operations import EntityIntegrationOperations
 from .enums import IntegrationAttributeType, IntegrationDisableMode
+from .exceptions import IntegrationConnectionError
 from .integration_data import IntegrationData
 from .integration_gateway import IntegrationGateway
 from .transient_models import IntegrationKey
@@ -33,6 +34,13 @@ logger = logging.getLogger(__name__)
 class IntegrationManager( Singleton ):
 
     START_DELAY_INTERVAL_SECS = 2
+
+    # Bounded timeout (in seconds) used when an integration's gateway
+    # test_connection() probe is invoked synchronously during attribute-save
+    # validation or before relaunching monitors. Kept short for interactive
+    # save-time UX; can be promoted to a user-tunable setting later if
+    # demand emerges.
+    HEALTH_CHECK_TIMEOUT_SECS = 5
 
     def __new__(cls):
         return super().__new__(cls)
@@ -444,9 +452,28 @@ class IntegrationManager( Singleton ):
         failed launch can be retried by invoking resume again.
         _launch_integration_monitor_task is idempotent when the monitor is
         already running.
+
+        Probes upstream connectivity via the gateway's test_connection
+        before relaunching, so we fail fast (with a meaningful error to
+        the caller) rather than spinning up monitors that will immediately
+        error against an unreachable service. Raises
+        IntegrationConnectionError on probe failure.
         """
         if not integration_data.integration.is_enabled:
             return
+
+        integration_attributes = list(
+            integration_data.integration.attributes.all()
+        )
+        test_result = integration_data.integration_gateway.test_connection(
+            integration_attributes = integration_attributes,
+            timeout_secs = self.HEALTH_CHECK_TIMEOUT_SECS,
+        )
+        if not test_result.is_success:
+            raise IntegrationConnectionError(
+                test_result.message or 'Connection test failed during resume.'
+            )
+
         with self._data_lock:
             with transaction.atomic():
                 integration_data.integration.is_paused = False

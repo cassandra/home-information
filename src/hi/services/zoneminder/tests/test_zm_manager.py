@@ -351,7 +351,7 @@ class ZoneMinderManagerReloadTest(TransactionTestCase):
 
         # Register a callback to verify it gets called
         callback_called = []
-        
+
         def test_callback():
             callback_called.append(True)
 
@@ -362,4 +362,4 @@ class ZoneMinderManagerReloadTest(TransactionTestCase):
 
         # Callback should have been called
         self.assertEqual(len(callback_called), 1)
-        
+

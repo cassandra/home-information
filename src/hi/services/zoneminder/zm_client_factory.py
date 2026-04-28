@@ -20,12 +20,16 @@ class ZmClientFactory:
 
     def create_client(
             self,
-            zm_attr_type_to_attribute: Dict[ZmAttributeType, IntegrationAttribute]) -> ZMApi:
+            zm_attr_type_to_attribute: Dict[ZmAttributeType, IntegrationAttribute],
+            timeout_secs: float = None) -> ZMApi:
         """
         Create a ZMApi client from integration attributes.
 
         Args:
             zm_attr_type_to_attribute: Dictionary mapping attribute types to attribute objects
+            timeout_secs: Optional per-request HTTP timeout. When set, overrides the
+                          ZMApi default and is used for the synchronous save-time
+                          connection probe path.
 
         Returns:
             Configured ZMApi instance
@@ -37,6 +41,8 @@ class ZmClientFactory:
         api_options = {
             # 'disable_ssl_cert_check': True
         }
+        if timeout_secs is not None:
+            api_options['timeout'] = timeout_secs
 
         attr_to_api_option_key = {
             ZmAttributeType.API_URL: 'apiurl',
@@ -72,6 +78,12 @@ class ZmClientFactory:
         """
         Test API connectivity for a given client.
 
+        ZMApi performs login during construction, so a successfully
+        constructed client has already exercised auth and reachability.
+        This method confirms the authenticated flag was set — any failure
+        during construction will surface as an exception caught by the
+        caller.
+
         Args:
             client: ZMApi instance to test
 
@@ -79,16 +91,12 @@ class ZmClientFactory:
             IntegrationValidationResult indicating success or failure with details
         """
         try:
-            # Test basic API connectivity by fetching states
-            states = client.states().list()
-            if states is not None:
-                # Successful API call
+            if getattr(client, 'authenticated', False):
                 return IntegrationValidationResult.success()
-            else:
-                return IntegrationValidationResult.error(
-                    status=HealthStatusType.ERROR,
-                    error_message='Failed to fetch states from ZoneMinder API'
-                )
+            return IntegrationValidationResult.error(
+                status=HealthStatusType.ERROR,
+                error_message='ZoneMinder login did not authenticate'
+            )
 
         except Exception as e:
             error_msg = str(e).lower()

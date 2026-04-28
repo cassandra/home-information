@@ -96,60 +96,85 @@ class TestHassClientFactory(TestCase):
 
     @patch('hi.services.hass.hass_client.get')
     def test_test_client_success(self, mock_get):
-        """Test successful client connectivity testing."""
-        # Arrange
+        """test_client succeeds when the ping endpoint returns 200."""
         mock_response = Mock()
-        mock_response.text = '[{"entity_id": "sensor.test", "state": "on"}]'
+        mock_response.status_code = 200
+        mock_response.text = '{"message": "API running."}'
         mock_get.return_value = mock_response
 
         attributes = self._create_test_attributes()
         client = self.factory.create_client(attributes)
 
-        # Act
         result = self.factory.test_client(client)
 
-        # Assert - Test actual behavior
         self.assertIsInstance(result, IntegrationValidationResult)
         self.assertTrue(result.is_valid)
         self.assertEqual(result.status, HealthStatusType.HEALTHY)
         self.assertIsNone(result.error_message)
 
-        # Verify the client was actually tested
+        # Probe should hit the lightweight /api/ root, not /api/states.
         mock_get.assert_called_once()
+        call_url = mock_get.call_args[0][0]
+        self.assertTrue(call_url.endswith('/api/'))
+
+    @patch('hi.services.hass.hass_client.get')
+    def test_test_client_ping_non_2xx_status_fails(self, mock_get):
+        """test_client fails when the ping endpoint returns a non-2xx status."""
+        mock_response = Mock()
+        mock_response.status_code = 500
+        mock_response.text = 'Internal Server Error'
+        mock_get.return_value = mock_response
+
+        attributes = self._create_test_attributes()
+        client = self.factory.create_client(attributes)
+
+        result = self.factory.test_client(client)
+
+        self.assertFalse(result.is_valid)
+        # Status-code text doesn't match the auth/connect heuristics, so it
+        # falls through to the WARNING bucket.
+        self.assertEqual(result.status, HealthStatusType.WARNING)
+        self.assertIn('500', result.error_message)
 
     @patch('hi.services.hass.hass_client.get')
     def test_test_client_connection_failure(self, mock_get):
-        """Test client testing with connection failure."""
-        # Arrange
+        """test_client surfaces a connection error from the underlying request."""
         mock_get.side_effect = ConnectionError("Connection refused")
 
         attributes = self._create_test_attributes()
         client = self.factory.create_client(attributes)
 
-        # Act
         result = self.factory.test_client(client)
 
-        # Assert - Test error handling behavior
-        self.assertIsInstance(result, IntegrationValidationResult)
         self.assertFalse(result.is_valid)
         self.assertEqual(result.status, HealthStatusType.ERROR)
         self.assertIn('Cannot connect to Home Assistant', result.error_message)
 
     @patch('hi.services.hass.hass_client.get')
     def test_test_client_authentication_failure(self, mock_get):
-        """Test client testing with authentication failure."""
-        # Arrange
+        """test_client categorizes auth errors distinctly from connect errors."""
         mock_get.side_effect = Exception("401 Unauthorized - Invalid token")
 
         attributes = self._create_test_attributes()
         client = self.factory.create_client(attributes)
 
-        # Act
         result = self.factory.test_client(client)
 
-        # Assert - Test error categorization
-        self.assertIsInstance(result, IntegrationValidationResult)
         self.assertFalse(result.is_valid)
         self.assertEqual(result.status, HealthStatusType.ERROR)
         self.assertIn('Authentication failed', result.error_message)
-        
+
+    def test_create_client_threads_timeout_to_client(self):
+        """create_client passes timeout_secs through to the HassClient."""
+        attributes = self._create_test_attributes()
+
+        client = self.factory.create_client(attributes, timeout_secs=3)
+        self.assertEqual(client._timeout_secs, 3)
+
+    def test_create_client_uses_default_timeout_when_unset(self):
+        """create_client falls back to HassClient.DEFAULT_TIMEOUT when not provided."""
+        attributes = self._create_test_attributes()
+
+        client = self.factory.create_client(attributes)
+        self.assertEqual(client._timeout_secs, HassClient.DEFAULT_TIMEOUT)
+

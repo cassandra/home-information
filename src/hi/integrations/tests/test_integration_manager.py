@@ -11,11 +11,16 @@ from django.test import TestCase
 
 from hi.apps.attribute.enums import AttributeType, AttributeValueType
 from hi.apps.entity.models import Entity, EntityAttribute
+from hi.integrations.exceptions import IntegrationConnectionError
 from hi.integrations.integration_manager import IntegrationManager
 from hi.integrations.integration_data import IntegrationData
 from hi.integrations.integration_gateway import IntegrationGateway
 from hi.integrations.models import Integration, IntegrationAttribute
-from hi.integrations.transient_models import IntegrationMetaData, IntegrationKey
+from hi.integrations.transient_models import (
+    ConnectionTestResult,
+    IntegrationMetaData,
+    IntegrationKey,
+)
 from hi.integrations.enums import IntegrationAttributeType, IntegrationDisableMode
 
 logging.disable(logging.CRITICAL)
@@ -29,11 +34,18 @@ class MockIntegrationAttributeType(IntegrationAttributeType):
 
 class MockIntegrationGateway(IntegrationGateway):
     """Mock integration gateway for testing."""
-    
-    def __init__(self, integration_id='test_integration', label='Test Integration'):
+
+    def __init__(self, integration_id='test_integration', label='Test Integration',
+                 connection_test_result=None):
         self.integration_id = integration_id
         self.label = label
-    
+        # Default to a passing probe so existing resume/pause tests don't
+        # need to know about the new test_connection step.
+        self.connection_test_result = (
+            connection_test_result if connection_test_result is not None
+            else ConnectionTestResult.success()
+        )
+
     def get_metadata(self):
         return IntegrationMetaData(
             integration_id=self.integration_id,
@@ -41,15 +53,18 @@ class MockIntegrationGateway(IntegrationGateway):
             attribute_type=MockIntegrationAttributeType,
             allow_entity_deletion=True
         )
-    
+
     def get_manage_view_pane(self):
         return Mock()
-    
+
     def get_monitor(self):
         return Mock()
-    
+
     def get_controller(self):
         return Mock()
+
+    def test_connection(self, integration_attributes, timeout_secs):
+        return self.connection_test_result
 
 
 class IntegrationManagerTestCase(TestCase):
@@ -808,6 +823,62 @@ class IntegrationManagerTestCase(TestCase):
             manager.resume_integration(data)
 
             mock_launch.assert_called_once_with(integration_data=data)
+
+    def test_resume_integration_short_circuits_when_connection_test_fails(self):
+        """Resume must not relaunch monitors when the connection probe fails.
+
+        Without this short-circuit a paused integration could be resumed
+        against an unreachable upstream and silently fail in the background.
+        """
+        manager = IntegrationManager()
+        manager.reset_for_testing()
+
+        integration = Integration.objects.create(
+            integration_id='resume_probe_fail',
+            is_enabled=True,
+            is_paused=True,
+        )
+        gateway = MockIntegrationGateway(
+            'resume_probe_fail',
+            connection_test_result=ConnectionTestResult.failure(
+                'Cannot reach upstream'
+            ),
+        )
+        data = IntegrationData(integration_gateway=gateway, integration=integration)
+
+        with patch.object(manager, '_launch_integration_monitor_task') as mock_launch:
+            with self.assertRaises(IntegrationConnectionError) as context:
+                manager.resume_integration(data)
+
+            self.assertIn('Cannot reach upstream', str(context.exception))
+            mock_launch.assert_not_called()
+
+            # is_paused state must NOT have been flipped to False.
+            integration.refresh_from_db()
+            self.assertTrue(integration.is_paused)
+
+    def test_resume_integration_passes_bounded_timeout_to_gateway(self):
+        """Resume must invoke test_connection with the configured bounded timeout."""
+        manager = IntegrationManager()
+        manager.reset_for_testing()
+
+        integration = Integration.objects.create(
+            integration_id='resume_timeout_test',
+            is_enabled=True,
+            is_paused=True,
+        )
+        gateway = MockIntegrationGateway('resume_timeout_test')
+        data = IntegrationData(integration_gateway=gateway, integration=integration)
+
+        with patch.object(gateway, 'test_connection',
+                          return_value=ConnectionTestResult.success()) as mock_probe:
+            with patch.object(manager, '_launch_integration_monitor_task'):
+                manager.resume_integration(data)
+
+            mock_probe.assert_called_once()
+            kwargs = mock_probe.call_args.kwargs
+            self.assertEqual(kwargs['timeout_secs'],
+                             IntegrationManager.HEALTH_CHECK_TIMEOUT_SECS)
 
 
     def test_data_lock_thread_safety_during_attribute_creation(self):

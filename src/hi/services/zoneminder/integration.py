@@ -14,6 +14,7 @@ from hi.integrations.integration_gateway import IntegrationGateway
 from hi.integrations.integration_manage_view_pane import IntegrationManageViewPane
 from hi.integrations.models import IntegrationAttribute
 from hi.integrations.transient_models import (
+    ConnectionTestResult,
     IntegrationMetaData,
     IntegrationValidationResult,
 )
@@ -63,10 +64,7 @@ class ZoneMinderGateway( IntegrationGateway, ZoneMinderMixin ):
             self,
             integration_attributes: List[IntegrationAttribute]
     ) -> IntegrationValidationResult:
-        """Validate ZoneMinder integration configuration by testing API connectivity.
-
-        Delegates to ZoneMinderManager for configuration validation.
-        """
+        """Schema-only validation; delegates to ZoneMinderManager."""
         try:
             zm_manager = ZoneMinderManager()
             return zm_manager.validate_configuration(integration_attributes)
@@ -76,6 +74,22 @@ class ZoneMinderGateway( IntegrationGateway, ZoneMinderMixin ):
                 status=HealthStatusType.WARNING,
                 error_message=f'Configuration validation failed: {e}'
             )
+
+    def test_connection(
+            self,
+            integration_attributes: List[IntegrationAttribute],
+            timeout_secs: int,
+    ) -> ConnectionTestResult:
+        """Live connection probe; delegates to ZoneMinderManager."""
+        try:
+            zm_manager = ZoneMinderManager()
+            return zm_manager.test_connection(
+                integration_attributes=integration_attributes,
+                timeout_secs=timeout_secs,
+            )
+        except Exception as e:
+            logger.exception(f'Error in ZoneMinder connection test: {e}')
+            return ConnectionTestResult.failure(f'Connection test error: {e}')
     
     def get_entity_video_stream(self, entity: Entity) -> Optional[VideoStream]:
         """Get entity's primary video stream (typically live)"""

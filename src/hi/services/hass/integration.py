@@ -8,7 +8,11 @@ from hi.integrations.integration_controller import IntegrationController
 from hi.integrations.integration_gateway import IntegrationGateway
 from hi.integrations.integration_manage_view_pane import IntegrationManageViewPane
 from hi.integrations.models import IntegrationAttribute
-from hi.integrations.transient_models import IntegrationMetaData, IntegrationValidationResult
+from hi.integrations.transient_models import (
+    ConnectionTestResult,
+    IntegrationMetaData,
+    IntegrationValidationResult,
+)
 from hi.apps.monitor.periodic_monitor import PeriodicMonitor
 
 from .hass_controller import HassController
@@ -52,10 +56,7 @@ class HassGateway( IntegrationGateway ):
     def validate_configuration(
             self, integration_attributes: List[IntegrationAttribute]
     ) -> IntegrationValidationResult:
-        """Validate HASS integration configuration by testing API connectivity.
-
-        Delegates to HassManager for configuration validation.
-        """
+        """Schema-only validation; delegates to HassManager."""
         try:
             hass_manager = HassManager()
             return hass_manager.validate_configuration(integration_attributes)
@@ -65,3 +66,19 @@ class HassGateway( IntegrationGateway ):
                 status=HealthStatusType.WARNING,
                 error_message=f'Configuration validation failed: {e}'
             )
+
+    def test_connection(
+            self,
+            integration_attributes: List[IntegrationAttribute],
+            timeout_secs: int,
+    ) -> ConnectionTestResult:
+        """Live connection probe; delegates to HassManager."""
+        try:
+            hass_manager = HassManager()
+            return hass_manager.test_connection(
+                integration_attributes=integration_attributes,
+                timeout_secs=timeout_secs,
+            )
+        except Exception as e:
+            logger.exception(f'Error in HASS connection test: {e}')
+            return ConnectionTestResult.failure(f'Connection test error: {e}')

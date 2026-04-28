@@ -8,7 +8,11 @@ from hi.integrations.integration_controller import IntegrationController
 from hi.integrations.integration_gateway import IntegrationGateway
 from hi.integrations.integration_manage_view_pane import IntegrationManageViewPane
 from hi.integrations.models import IntegrationAttribute
-from hi.integrations.transient_models import IntegrationMetaData, IntegrationValidationResult
+from hi.integrations.transient_models import (
+    ConnectionTestResult,
+    IntegrationMetaData,
+    IntegrationValidationResult,
+)
 from hi.apps.monitor.periodic_monitor import PeriodicMonitor
 
 from .hb_controller import HomeBoxController
@@ -52,10 +56,7 @@ class HomeBoxGateway(IntegrationGateway):
             self,
             integration_attributes: List[IntegrationAttribute]
     ) -> IntegrationValidationResult:
-        """Validate HomeBox integration configuration by testing API connectivity.
-
-        Delegates to HomeBoxManager for configuration validation.
-        """
+        """Schema-only validation; delegates to HomeBoxManager."""
         try:
             hb_manager = HomeBoxManager()
             return hb_manager.validate_configuration(integration_attributes)
@@ -65,3 +66,19 @@ class HomeBoxGateway(IntegrationGateway):
                 status=HealthStatusType.WARNING,
                 error_message=f'Configuration validation failed: {e}'
             )
+
+    def test_connection(
+            self,
+            integration_attributes: List[IntegrationAttribute],
+            timeout_secs: int,
+    ) -> ConnectionTestResult:
+        """Live connection probe; delegates to HomeBoxManager."""
+        try:
+            hb_manager = HomeBoxManager()
+            return hb_manager.test_connection(
+                integration_attributes = integration_attributes,
+                timeout_secs = timeout_secs,
+            )
+        except Exception as e:
+            logger.exception(f'Error in HomeBox connection test: {e}')
+            return ConnectionTestResult.failure(f'Connection test error: {e}')

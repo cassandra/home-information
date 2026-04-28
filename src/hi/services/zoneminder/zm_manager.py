@@ -22,6 +22,7 @@ from hi.integrations.exceptions import (
     IntegrationDisabledError,
 )
 from hi.integrations.transient_models import (
+    ConnectionTestResult,
     IntegrationKey,
     IntegrationValidationResult,
 )
@@ -361,28 +362,6 @@ class ZoneMinderManager( SingletonManager, AggregateHealthProvider, ApiHealthSta
         timestamp = int(time.time())
         return f'{self.zm_client.portal_url}/cgi-bin/nph-zms?mode=jpeg&scale=100&rate=5&maxfps=5&replay=single&source=event&event={event_id}&_t={timestamp}'
         
-    def test_connection(self) -> bool:
-        """Test the connection to ZoneMinder API and update health status."""
-        try:
-            if not self.zm_client:
-                self.record_error( "ZoneMinder client not configured")
-                return False
-            
-            # Try to fetch states to test connection
-            states = self.get_zm_states(force_load=True)
-            if states:
-                self.record_healthy('OK')
-                return True
-            else:
-                self.record_error("Failed to fetch states from ZoneMinder API")
-                return False
-                
-        except Exception as e:
-            error_msg = f'Connection test failed: {e}'
-            logger.debug(error_msg)
-            self.record_error(f"Connection error: {error_msg}")
-            return False
-    
     def test_client_with_attributes(
             self,
             zm_attr_type_to_attribute: Dict[ZmAttributeType, IntegrationAttribute]
@@ -408,20 +387,62 @@ class ZoneMinderManager( SingletonManager, AggregateHealthProvider, ApiHealthSta
     def validate_configuration(
             self,
             integration_attributes: List[IntegrationAttribute]) -> IntegrationValidationResult:
+        """
+        Schema-only validation. Confirms required attributes are present
+        and structurally usable. Does NOT touch the network — for live
+        connection probing, see test_connection().
+        """
         try:
-            # Build attribute mapping without enforcing requirements (for validation testing)
-            zm_attr_type_to_attribute = self._build_zm_attr_type_to_attribute_map(
+            self._build_zm_attr_type_to_attribute_map(
                 integration_attributes=integration_attributes,
-                enforce_requirements=False
+                enforce_requirements=True,
             )
-            return self.test_client_with_attributes(zm_attr_type_to_attribute)
+            return IntegrationValidationResult.success()
 
+        except IntegrationAttributeError as e:
+            return IntegrationValidationResult.error(
+                status=HealthStatusType.ERROR,
+                error_message=str(e),
+            )
         except Exception as e:
             logger.exception(f'Error in ZoneMinder configuration validation: {e}')
             return IntegrationValidationResult.error(
                 status=HealthStatusType.WARNING,
                 error_message=f'Configuration validation failed: {e}'
             )
+
+    def test_connection(
+            self,
+            integration_attributes: List[IntegrationAttribute],
+            timeout_secs: int) -> ConnectionTestResult:
+        """
+        Live connection probe with bounded timeout. Builds a temporary
+        ZMApi client against the proposed attributes; the client's own
+        login flow exercises auth and reachability synchronously.
+        """
+        try:
+            zm_attr_type_to_attribute = self._build_zm_attr_type_to_attribute_map(
+                integration_attributes=integration_attributes,
+                enforce_requirements=True,
+            )
+            temp_client = self._client_factory.create_client(
+                zm_attr_type_to_attribute=zm_attr_type_to_attribute,
+                timeout_secs=timeout_secs,
+            )
+            validation_result = self._client_factory.test_client(temp_client)
+            if validation_result.is_valid:
+                return ConnectionTestResult.success()
+            return ConnectionTestResult.failure(
+                validation_result.error_message or 'Connection test failed'
+            )
+
+        except IntegrationAttributeError as e:
+            return ConnectionTestResult.failure(str(e))
+        except IntegrationError as e:
+            return ConnectionTestResult.failure(str(e))
+        except Exception as e:
+            logger.exception(f'Error in ZoneMinder connection test: {e}')
+            return ConnectionTestResult.failure(f'Connection test error: {e}')
     
     def _build_zm_attr_type_to_attribute_map(
             self, 
