@@ -40,7 +40,46 @@ class ZoneMinderSimulator( Simulator ):
             if sim_entity.sim_entity_definition.sim_entity_fields_class == ZmServerSimEntityFields:
                 return ZmSimServer( sim_entity = sim_entity )
             continue
-        raise ValueError( 'No ZM server entity has been created.' )
+
+        # Auto-create a default ZoneMinder Service entity. The
+        # integration's run-state queries — and therefore any sync —
+        # require a server entity; ZmServerSimEntityFields has no
+        # operator-configurable fields, so the only sensible operator
+        # action would be to click "Add ZoneMinder Service" and accept
+        # defaults. Elide that step so a fresh profile is functional out
+        # of the box.
+        self._auto_create_default_server_entity()
+        for sim_entity in self.sim_entities:
+            if sim_entity.sim_entity_definition.sim_entity_fields_class == ZmServerSimEntityFields:
+                return ZmSimServer( sim_entity = sim_entity )
+            continue
+        raise ValueError( 'Failed to auto-create ZM server entity.' )
+
+    def _auto_create_default_server_entity( self ):
+        # Imported locally to avoid a module-load-time cycle: the
+        # SimulatorManager imports the simulator subclasses at startup.
+        from hi.simulator.simulator_manager import SimulatorManager
+
+        server_definition = None
+        for definition in self.sim_entity_definition_list:
+            if definition.sim_entity_fields_class == ZmServerSimEntityFields:
+                server_definition = definition
+                break
+            continue
+        if server_definition is None:
+            raise ValueError( 'No ZmServerSimEntityFields definition registered.' )
+
+        try:
+            SimulatorManager().add_sim_entity(
+                simulator = self,
+                sim_entity_definition = server_definition,
+                sim_entity_fields = ZmServerSimEntityFields(),
+            )
+        except SimEntityValidationError:
+            # Concurrent request already auto-created it. Safe to ignore;
+            # the caller's re-scan of self.sim_entities will pick it up.
+            pass
+        return
 
     def get_zm_sim_run_state_list(self) -> List[ ZmSimRunState ]:
 
