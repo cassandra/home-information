@@ -22,16 +22,22 @@ UNKNOWN is intentionally not handled — initialization edge, transient.
 {% with status=health_status.status %}
 {% if status.is_critical %}
   <span class="hi-integration-indicator hi-integration-indicator-error"
-        title="{{ status.label }}: {{ health_status.last_message|default:'' }}">
+        role="img"
+        aria-label="{{ status.label }}{% if health_status.last_message %}: {{ health_status.last_message }}{% endif %}"
+        title="{{ status.label }}{% if health_status.last_message %}: {{ health_status.last_message }}{% endif %}">
     {% icon "warning" size="md" %}
   </span>
 {% elif status.is_warning %}
   <span class="hi-integration-indicator hi-integration-indicator-warning"
-        title="{{ status.label }}: {{ health_status.last_message|default:'' }}">
+        role="img"
+        aria-label="{{ status.label }}{% if health_status.last_message %}: {{ health_status.last_message }}{% endif %}"
+        title="{{ status.label }}{% if health_status.last_message %}: {{ health_status.last_message }}{% endif %}">
     {% icon "warning" size="sm" %}
   </span>
 {% elif is_paused %}
   <span class="hi-integration-indicator hi-integration-indicator-paused"
+        role="img"
+        aria-label="Paused — background monitor is suspended"
         title="Paused — background monitor is suspended">
     {% icon "pause" size="sm" %}
   </span>

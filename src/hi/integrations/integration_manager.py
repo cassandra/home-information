@@ -458,6 +458,15 @@ class IntegrationManager( Singleton ):
         the caller) rather than spinning up monitors that will immediately
         error against an unreachable service. Raises
         IntegrationConnectionError on probe failure.
+
+        The probe runs OUTSIDE the data lock — we don't want to hold the
+        lock for ~5 seconds while a network probe is in flight, since
+        that would block all other lifecycle operations on every
+        integration. The trade-off is a TOCTOU window between the
+        outside-lock is_enabled check and the inside-lock state write:
+        another caller could disable_integration() during the probe.
+        We close that window by re-checking is_enabled inside the lock
+        and aborting if the integration was disabled while we probed.
         """
         if not integration_data.integration.is_enabled:
             return
@@ -475,6 +484,16 @@ class IntegrationManager( Singleton ):
             )
 
         with self._data_lock:
+            # Re-check is_enabled inside the lock to close the TOCTOU
+            # window opened by running the probe lock-free above. If
+            # another caller disabled the integration while we were
+            # probing, abandon the resume — surfacing the cause to the
+            # caller so the UI can communicate why nothing happened.
+            integration_data.integration.refresh_from_db()
+            if not integration_data.integration.is_enabled:
+                raise IntegrationConnectionError(
+                    'Integration was disabled while resume was probing upstream.'
+                )
             with transaction.atomic():
                 integration_data.integration.is_paused = False
                 integration_data.integration.save()

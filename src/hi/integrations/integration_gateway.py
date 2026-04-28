@@ -59,7 +59,7 @@ class IntegrationGateway:
     def test_connection(
             self,
             integration_attributes: List[IntegrationAttribute],
-            timeout_secs: int,
+            timeout_secs: Optional[float],
     ) -> ConnectionTestResult:
         """
         Live connection probe against the proposed configuration. Must

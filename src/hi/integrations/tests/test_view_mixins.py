@@ -127,19 +127,26 @@ class ValidateAttributesExtraHelperTest(SimpleTestCase):
         self.assertEqual(len(formset._non_form_errors), 1)
         self.assertIn('Cannot connect to upstream', formset._non_form_errors[0])
 
-    def test_unexpected_exception_is_caught_and_surfaced(self):
-        """Unhandled errors from the gateway must not bubble out of the helper."""
+    def test_unexpected_gateway_exception_propagates(self):
+        """
+        validate_configuration / test_connection are required by their
+        contracts to convert internal exceptions into result objects
+        (IntegrationValidationResult.error / ConnectionTestResult.failure).
+        If a gateway impl is buggy and throws anyway, the helper does NOT
+        coerce that exception into a form-level error — it lets the
+        exception propagate so the bug surfaces through Django's error
+        pipeline rather than being silently masked as a connection
+        failure.
+        """
         gateway = Mock()
         gateway.validate_configuration.side_effect = RuntimeError('boom')
 
         formset = _build_formset([{'value': 'token'}])
         ctx = _build_attr_item_context(gateway)
 
-        self.mixin.validate_attributes_extra_helper(
-            attr_item_context=ctx,
-            regular_attributes_formset=formset,
-            error_title='Test',
-        )
-
-        self.assertEqual(len(formset._non_form_errors), 1)
-        self.assertIn('boom', formset._non_form_errors[0])
+        with self.assertRaises(RuntimeError):
+            self.mixin.validate_attributes_extra_helper(
+                attr_item_context=ctx,
+                regular_attributes_formset=formset,
+                error_title='Test',
+            )

@@ -47,7 +47,11 @@ class ZMApi (Base):
             Note: you can connect your own customer logging class to the API in which case all modules will use your custom class. Your class will need to implement some methods for this to work. See :class:`pyzm.helpers.Base.SimpleLog` for method details.
         '''
 
-        self._timeout_secs = options.get('timeout') or self.DEFAULT_TIMEOUT
+        # Explicit None-check rather than `... or DEFAULT_TIMEOUT`: a
+        # literal 0 timeout (no-wait probe) would silently revert to
+        # the default under truthiness, masking caller intent.
+        timeout_value = options.get('timeout')
+        self._timeout_secs = timeout_value if timeout_value is not None else self.DEFAULT_TIMEOUT
 
         self.api_url = options.get('apiurl')
         self.portal_url = options.get('portalurl')

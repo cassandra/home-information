@@ -36,7 +36,7 @@ class SecurityMonitor( PeriodicMonitor, SettingsMixin, SecurityMixin ):
             expected_heartbeat_interval_secs = cls.SECURITY_POLLING_INTERVAL_SECS,
         )
 
-    def alarm_max_level(self):
+    def alarm_ceiling(self):
         # The security monitor drives automatic DAY/NIGHT transitions.
         # If it fails, the home can be left in the wrong security mode,
         # which mis-gates alarm and notification delivery for ALL other

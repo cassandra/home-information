@@ -1,7 +1,7 @@
 """Factory for creating and testing Home Assistant API clients."""
 
 import logging
-from typing import Dict
+from typing import Dict, Optional
 
 from hi.apps.system.enums import HealthStatusType
 
@@ -22,7 +22,7 @@ class HassClientFactory:
     def create_client(
             self,
             hass_attr_type_to_attribute: Dict[HassAttributeType, IntegrationAttribute],
-            timeout_secs: float = None) -> HassClient:
+            timeout_secs: Optional[float] = None) -> HassClient:
         """
         Create a HassClient from integration attributes.
 

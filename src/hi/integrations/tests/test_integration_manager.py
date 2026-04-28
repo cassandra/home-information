@@ -880,6 +880,50 @@ class IntegrationManagerTestCase(TestCase):
             self.assertEqual(kwargs['timeout_secs'],
                              IntegrationManager.HEALTH_CHECK_TIMEOUT_SECS)
 
+    def test_resume_integration_aborts_when_disabled_during_probe(self):
+        """
+        TOCTOU close-out: if another caller disables the integration
+        while resume_integration is running its lock-free probe, the
+        post-probe state mutation must be abandoned (no monitor launch,
+        is_paused not flipped) and the caller must be told why.
+        """
+        manager = IntegrationManager()
+        manager.reset_for_testing()
+
+        integration = Integration.objects.create(
+            integration_id='resume_toctou_test',
+            is_enabled=True,
+            is_paused=True,
+        )
+        gateway = MockIntegrationGateway('resume_toctou_test')
+        data = IntegrationData(integration_gateway=gateway, integration=integration)
+
+        # Simulate a concurrent disable that lands BETWEEN the lock-free
+        # probe and the lock-acquired state mutation. test_connection's
+        # side_effect mutates the DB row to is_enabled=False right before
+        # returning success, then resume_integration's inside-lock
+        # refresh_from_db() picks that up.
+        def disable_during_probe(*args, **kwargs):
+            integration.is_enabled = False
+            integration.save()
+            return ConnectionTestResult.success()
+
+        with patch.object(gateway, 'test_connection',
+                          side_effect=disable_during_probe):
+            with patch.object(manager, '_launch_integration_monitor_task') as mock_launch:
+                with self.assertRaises(IntegrationConnectionError) as context:
+                    manager.resume_integration(data)
+
+                self.assertIn('disabled while resume was probing',
+                              str(context.exception))
+                mock_launch.assert_not_called()
+
+        # is_paused must NOT have been flipped — disable_integration is
+        # responsible for the disabled-state cleanup, not us.
+        integration.refresh_from_db()
+        self.assertTrue(integration.is_paused)
+        self.assertFalse(integration.is_enabled)
+
 
     def test_data_lock_thread_safety_during_attribute_creation(self):
         """Test thread safety of attribute creation operations."""

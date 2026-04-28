@@ -78,7 +78,7 @@ class ZoneMinderGateway( IntegrationGateway, ZoneMinderMixin ):
     def test_connection(
             self,
             integration_attributes: List[IntegrationAttribute],
-            timeout_secs: int,
+            timeout_secs: Optional[float],
     ) -> ConnectionTestResult:
         """Live connection probe; delegates to ZoneMinderManager."""
         try:

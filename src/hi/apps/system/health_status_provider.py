@@ -80,7 +80,7 @@ class HealthStatusProvider(ABC):
         logger.debug("Health heartbeat updated")
         return
     
-    def alarm_max_level( self ) -> Optional['AlarmLevel']:
+    def alarm_ceiling( self ) -> Optional['AlarmLevel']:
         """
         Maximum alarm level this provider is permitted to fire on
         state transitions. Return None to opt out of alarm dispatch
@@ -152,7 +152,7 @@ class HealthStatusProvider(ABC):
                                     timestamp ) -> None:
         """
         Map a state transition to an alarm and queue it via AlertManager
-        when the provider is opted in (alarm_max_level returns
+        when the provider is opted in (alarm_ceiling returns
         non-None). The framework calls into the alert subsystem
         directly — the dependency direction (apps/system -> apps/alert)
         is acceptable since alert is a more general-purpose facility.
@@ -161,7 +161,7 @@ class HealthStatusProvider(ABC):
         net, so subclass overrides do not need to defend against their
         own exceptions to preserve health bookkeeping.
         """
-        max_level = self.alarm_max_level()
+        max_level = self.alarm_ceiling()
         if max_level is None:
             return
 

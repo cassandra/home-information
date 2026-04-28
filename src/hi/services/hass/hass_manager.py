@@ -1,6 +1,6 @@
 import logging
 from asgiref.sync import sync_to_async
-from typing import Dict, List
+from typing import Dict, List, Optional
 
 from hi.apps.common.singleton_manager import SingletonManager
 from hi.apps.common.utils import str_to_bool
@@ -247,7 +247,7 @@ class HassManager( SingletonManager, AggregateHealthProvider, ApiHealthStatusPro
     def test_connection(
             self,
             integration_attributes: List[IntegrationAttribute],
-            timeout_secs: int) -> ConnectionTestResult:
+            timeout_secs: Optional[float]) -> ConnectionTestResult:
         """
         Live connection probe with bounded timeout. Builds a temporary
         HassClient against the proposed attributes and exercises the

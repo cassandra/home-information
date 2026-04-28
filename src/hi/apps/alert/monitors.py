@@ -32,7 +32,7 @@ class AlertMonitor( PeriodicMonitor, AlertMixin ):
             expected_heartbeat_interval_secs = cls.ALERT_POLLING_INTERVAL_SECS,
         )
 
-    def alarm_max_level(self):
+    def alarm_ceiling(self):
         # Alert queue maintenance failures cause stale/uncleaned alerts
         # but don't lose insertions — alarms still reach the user.
         # WARNING is appropriate.

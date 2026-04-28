@@ -32,7 +32,7 @@ class HomeBoxMonitor( PeriodicMonitor, HomeBoxMixin ):
     def get_api_timeout(self) -> float:
         return self.HOMEBOX_API_TIMEOUT_SECS
 
-    def alarm_max_level(self):
+    def alarm_ceiling(self):
         # HomeBox tracks inventory data — degraded availability is
         # informational, not safety-critical, so cap at INFO.
         return AlarmLevel.INFO

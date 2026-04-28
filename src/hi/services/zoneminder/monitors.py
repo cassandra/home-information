@@ -49,7 +49,7 @@ class ZoneMinderMonitor( PeriodicMonitor, ZoneMinderMixin, SensorResponseMixin )
     def get_api_timeout(self) -> float:
         return self.ZONEMINDER_API_TIMEOUT_SECS
 
-    def alarm_max_level(self):
+    def alarm_ceiling(self):
         # ZM outage in the background masks security camera events.
         # Treat health failures here as serious.
         return AlarmLevel.CRITICAL

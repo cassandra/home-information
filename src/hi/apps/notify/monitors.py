@@ -30,7 +30,7 @@ class NotificationMonitor( PeriodicMonitor, NotificationMixin ):
             expected_heartbeat_interval_secs = cls.NOTIFICATION_POLLING_INTERVAL_SECS,
         )
 
-    def alarm_max_level(self):
+    def alarm_ceiling(self):
         # Email/push delivery failures matter — but the in-app alert
         # queue is independent of notification delivery, so the alarm
         # still reaches the user. WARNING is appropriate.

@@ -1,7 +1,7 @@
 """Factory for creating and testing HomeBox API clients."""
 
 import logging
-from typing import Dict
+from typing import Dict, Optional
 
 from hi.apps.system.enums import HealthStatusType
 from hi.integrations.exceptions import IntegrationAttributeError
@@ -21,7 +21,7 @@ class HbClientFactory:
     def create_client(
             self,
             hb_attr_type_to_attribute: Dict[HbAttributeType, IntegrationAttribute],
-            timeout_secs: float = None) -> HbClient:
+            timeout_secs: Optional[float] = None) -> HbClient:
         """
         Create a HbClient client from integration attributes.
 

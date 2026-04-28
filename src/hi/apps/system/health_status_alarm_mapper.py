@@ -14,7 +14,7 @@ Design echoes WeatherAlertAlarmMapper:
   independently.
 
 Per-provider seriousness is expressed as a maximum alarm level (the
-"ceiling"), declared by the provider via HealthStatusProvider.alarm_max_level.
+"ceiling"), declared by the provider via HealthStatusProvider.alarm_ceiling.
 The mapper picks a "natural" alarm level for the transition class
 (ERROR=CRITICAL, WARNING=WARNING, recovery=INFO) and clamps to the
 provider's ceiling. This lets each provider declare relative importance

@@ -30,7 +30,7 @@ class HassMonitor( PeriodicMonitor, HassMixin, SensorResponseMixin ):
     def get_api_timeout(self) -> float:
         return self.HASS_API_TIMEOUT_SECS
 
-    def alarm_max_level(self):
+    def alarm_ceiling(self):
         # HA outage in the background masks security and home-automation
         # state changes. Treat health failures here as serious.
         return AlarmLevel.CRITICAL

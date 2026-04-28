@@ -38,7 +38,7 @@ class SystemMonitor( PeriodicMonitor ):
             expected_heartbeat_interval_secs = cls.SYSTEM_MAINTENANCE_INTERVAL_SECS,
         )
 
-    def alarm_max_level(self):
+    def alarm_ceiling(self):
         # History cleanup is bookkeeping. Failures cause table growth
         # over time but do not lose user-facing data. INFO-level
         # visibility is sufficient.

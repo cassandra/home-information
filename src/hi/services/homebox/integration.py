@@ -1,5 +1,5 @@
 import logging
-from typing import List
+from typing import List, Optional
 
 from hi.apps.system.enums import HealthStatusType
 from hi.apps.system.health_status_provider import HealthStatusProvider
@@ -70,7 +70,7 @@ class HomeBoxGateway(IntegrationGateway):
     def test_connection(
             self,
             integration_attributes: List[IntegrationAttribute],
-            timeout_secs: int,
+            timeout_secs: Optional[float],
     ) -> ConnectionTestResult:
         """Live connection probe; delegates to HomeBoxManager."""
         try:

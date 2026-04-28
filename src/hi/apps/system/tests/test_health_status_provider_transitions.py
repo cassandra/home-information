@@ -37,7 +37,7 @@ class _OptedInProvider(HealthStatusProvider):
             description='',
         )
 
-    def alarm_max_level(self):
+    def alarm_ceiling(self):
         return AlarmLevel.CRITICAL
 
 
@@ -66,7 +66,7 @@ class HealthStatusProviderTransitionDispatchTest(SimpleTestCase):
             self.assertEqual(kwargs['last_message'], 'broken')
 
     def test_opted_out_provider_skips_alarm_path(self):
-        """alarm_max_level() returning None must short-circuit dispatch."""
+        """alarm_ceiling() returning None must short-circuit dispatch."""
         provider = _OptedOutProvider()
         provider.update_health_status(HealthStatusType.HEALTHY, 'init')
 

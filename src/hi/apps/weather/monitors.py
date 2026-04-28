@@ -62,7 +62,7 @@ class WeatherMonitor( PeriodicMonitor, AlertMixin, SettingsMixin ):
             expected_heartbeat_interval_secs = cls.WEATHER_POLLING_INTERVAL_SECS,
         )
 
-    def alarm_max_level(self):
+    def alarm_ceiling(self):
         # Cap at INFO for two reasons:
         #   1. Weather staleness is informational — the user is not
         #      typically depending on a 150-second freshness window.
