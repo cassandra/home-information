@@ -111,14 +111,22 @@ class PeriodicMonitor( HealthStatusProvider ):
             # Emit a single-line summary at ERROR level and keep the
             # traceback available at DEBUG for when an operator is
             # actively investigating.
+            error_message = f"{type(e).__name__}: {e}"
             self._logger.error(
-                f"Query {self._query_counter} failed after {query_duration:.2f}s: "
-                f"{type(e).__name__}: {e}"
+                f"Query {self._query_counter} failed after"
+                f" {query_duration:.2f}s: {error_message}"
             )
             self._logger.debug(
                 f"Traceback for query {self._query_counter} failure:",
                 exc_info=True,
             )
+            # Update this monitor's own health status. Without this, the
+            # monitor's HealthStatus remains at its prior value (typically
+            # HEALTHY) even while every cycle is failing — which both
+            # misleads the System Info surface that reads it and
+            # suppresses the HealthStatusProvider transition-dispatch
+            # path that fires alarms on HEALTHY -> ERROR transitions.
+            self.record_error( error_message )
             # Don't re-raise - the monitor loop in start() will continue despite failures
         return
 

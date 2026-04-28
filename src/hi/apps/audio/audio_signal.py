@@ -64,15 +64,19 @@ class AudioSignal(LabeledEnum):
                 return cls.WEATHER_WARNING
             elif alarm_level == AlarmLevel.CRITICAL:
                 return cls.WEATHER_CRITICAL
-        
-        # All other alerts get event signals
-        else:
-            if alarm_level == AlarmLevel.INFO:
-                return cls.EVENT_INFO
-            elif alarm_level == AlarmLevel.WARNING:
-                return cls.EVENT_WARNING
-            elif alarm_level == AlarmLevel.CRITICAL:
-                return cls.EVENT_CRITICAL
-        
+
+        # Everything else (EVENT, HEALTH_STATUS, and any future system-
+        # level alarm sources) routes to the EVENT signals. EVENT is
+        # treated here as the generic "system event" bucket — health
+        # transitions are system events about the system's own ability
+        # to function, which fits this same audio surface without
+        # adding three more operator-tunable settings.
+        if alarm_level == AlarmLevel.INFO:
+            return cls.EVENT_INFO
+        elif alarm_level == AlarmLevel.WARNING:
+            return cls.EVENT_WARNING
+        elif alarm_level == AlarmLevel.CRITICAL:
+            return cls.EVENT_CRITICAL
+
         return None
 

@@ -197,10 +197,10 @@ class TestWeatherAlertIntegration(AsyncTaskTestCase):
         self.run_async(test_update())
         
         # Verify alert manager was called to add alarms
-        self.assertEqual(mock_alert_manager.add_alarm.call_count, 2)  # Only 2 should create alarms
+        self.assertEqual(mock_alert_manager.add_alarm_async.call_count, 2)  # Only 2 should create alarms
         
         # Verify the alarms that were created
-        call_args_list = mock_alert_manager.add_alarm.call_args_list
+        call_args_list = mock_alert_manager.add_alarm_async.call_args_list
         alarm1 = call_args_list[0][0][0]  # First alarm
         alarm2 = call_args_list[1][0][0]  # Second alarm
         

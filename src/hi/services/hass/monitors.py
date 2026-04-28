@@ -1,6 +1,7 @@
 import logging
 
 import hi.apps.common.datetimeproxy as datetimeproxy
+from hi.apps.alert.enums import AlarmLevel
 from hi.apps.monitor.periodic_monitor import PeriodicMonitor
 from hi.apps.sense.sensor_response_manager import SensorResponseMixin
 from hi.apps.sense.transient_models import SensorResponse
@@ -28,6 +29,11 @@ class HassMonitor( PeriodicMonitor, HassMixin, SensorResponseMixin ):
     
     def get_api_timeout(self) -> float:
         return self.HASS_API_TIMEOUT_SECS
+
+    def alarm_max_level(self):
+        # HA outage in the background masks security and home-automation
+        # state changes. Treat health failures here as serious.
+        return AlarmLevel.CRITICAL
 
     async def _initialize(self):
         hass_manager = await self.hass_manager_async()

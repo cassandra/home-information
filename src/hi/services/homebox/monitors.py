@@ -1,5 +1,6 @@
 import logging
 
+from hi.apps.alert.enums import AlarmLevel
 from hi.apps.monitor.periodic_monitor import PeriodicMonitor
 from hi.apps.system.provider_info import ProviderInfo
 
@@ -30,6 +31,11 @@ class HomeBoxMonitor( PeriodicMonitor, HomeBoxMixin ):
 
     def get_api_timeout(self) -> float:
         return self.HOMEBOX_API_TIMEOUT_SECS
+
+    def alarm_max_level(self):
+        # HomeBox tracks inventory data — degraded availability is
+        # informational, not safety-critical, so cap at INFO.
+        return AlarmLevel.INFO
 
     async def _initialize(self):
         hb_manager = await self.hb_manager_async()

@@ -4,6 +4,7 @@ import logging
 from .pyzm_client.helpers.Monitor import Monitor as ZmMonitor
 
 import hi.apps.common.datetimeproxy as datetimeproxy
+from hi.apps.alert.enums import AlarmLevel
 from hi.apps.entity.enums import EntityStateValue
 from hi.apps.monitor.periodic_monitor import PeriodicMonitor
 from hi.apps.sense.sensor_response_manager import SensorResponseMixin
@@ -47,6 +48,11 @@ class ZoneMinderMonitor( PeriodicMonitor, ZoneMinderMixin, SensorResponseMixin )
     
     def get_api_timeout(self) -> float:
         return self.ZONEMINDER_API_TIMEOUT_SECS
+
+    def alarm_max_level(self):
+        # ZM outage in the background masks security camera events.
+        # Treat health failures here as serious.
+        return AlarmLevel.CRITICAL
 
     async def _initialize(self):
         zm_manager = await self.zm_manager_async()  # Allows sync use elsewhere in module
