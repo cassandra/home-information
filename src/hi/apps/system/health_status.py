@@ -161,7 +161,7 @@ class HealthStatus:
         elif self.status.is_critical:
             return "border-error"
         elif self.status.is_error:
-            return "bordder-error"
+            return "border-error"
         else:  # UNKNOWN
             return "border-unknown"
         
