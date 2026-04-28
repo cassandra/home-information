@@ -6,12 +6,23 @@ from unittest.mock import MagicMock
 
 from hi.apps.system.aggregate_health_status import AggregateHealthStatus
 from hi.apps.system.api_health_status import ApiHealthStatus
+from hi.apps.system.health_status import HealthStatus
 from hi.apps.system.provider_info import ProviderInfo
 from hi.apps.system.enums import (
     HealthStatusType,
     ApiHealthStatusType,
     HealthAggregationRule
 )
+
+
+def _sub_health_status(provider_info: ProviderInfo, status: HealthStatusType) -> HealthStatus:
+    return HealthStatus(
+        provider_id=provider_info.provider_id,
+        provider_name=provider_info.provider_name,
+        status=status,
+        last_update=MagicMock(),
+        last_message=None,
+    )
 
 
 class TestAggregateHealthStatus(unittest.TestCase):
@@ -222,6 +233,72 @@ class TestAggregateHealthStatus(unittest.TestCase):
 
         result = self.base_status.status
         self.assertEqual(result, HealthStatusType.ERROR, "API FAILING should override base HEALTHY")
+
+    def test_subordinate_status_factors_into_overall(self):
+        """A registered subordinate's status must contribute to the
+        worst-of computation in the overall status property."""
+        sub_provider = ProviderInfo(
+            provider_id='sub.monitor',
+            provider_name='Sub Monitor',
+            description='',
+        )
+        # Base healthy; subordinate healthy → overall healthy.
+        self.base_status._base_status = HealthStatusType.HEALTHY
+        self.base_status.subordinate_status_map[sub_provider] = _sub_health_status(
+            sub_provider, HealthStatusType.HEALTHY)
+        self.assertEqual(self.base_status.status, HealthStatusType.HEALTHY)
+
+        # Subordinate flips to ERROR → overall ERROR even though base
+        # is HEALTHY. This is the aliasing case the slot was added to
+        # solve: a healthy reload must not mask a failing monitor.
+        self.base_status.subordinate_status_map[sub_provider] = _sub_health_status(
+            sub_provider, HealthStatusType.ERROR)
+        self.assertEqual(self.base_status.status, HealthStatusType.ERROR)
+
+    def test_subordinate_error_persists_across_base_healthy(self):
+        """Setting _base_status to HEALTHY must not clear a subordinate's
+        ERROR — separate slots are the whole point."""
+        sub_provider = ProviderInfo(
+            provider_id='sub.monitor',
+            provider_name='Sub Monitor',
+            description='',
+        )
+        self.base_status._base_status = HealthStatusType.WARNING
+        self.base_status.subordinate_status_map[sub_provider] = _sub_health_status(
+            sub_provider, HealthStatusType.ERROR)
+        self.assertEqual(self.base_status.status, HealthStatusType.ERROR)
+
+        # Simulate a successful manager reload setting base to HEALTHY.
+        self.base_status._base_status = HealthStatusType.HEALTHY
+        # Subordinate still ERROR → overall still ERROR.
+        self.assertEqual(self.base_status.status, HealthStatusType.ERROR)
+
+        # Only when subordinate also recovers does overall go HEALTHY.
+        self.base_status.subordinate_status_map[sub_provider] = _sub_health_status(
+            sub_provider, HealthStatusType.HEALTHY)
+        self.assertEqual(self.base_status.status, HealthStatusType.HEALTHY)
+
+    def test_subordinate_combines_with_api_sources(self):
+        """Worst-of must span base + API aggregate + subordinates."""
+        # Healthy API source.
+        api_pi, api_health = self._create_api_status('one', ApiHealthStatusType.HEALTHY)
+        self.base_status.api_status_map[api_pi] = api_health
+        self.base_status._base_status = HealthStatusType.HEALTHY
+
+        # Subordinate WARNING — overall must reflect WARNING.
+        sub_pi = ProviderInfo(
+            provider_id='sub.monitor',
+            provider_name='Sub Monitor',
+            description='',
+        )
+        self.base_status.subordinate_status_map[sub_pi] = _sub_health_status(
+            sub_pi, HealthStatusType.WARNING)
+        self.assertEqual(self.base_status.status, HealthStatusType.WARNING)
+
+        # API source flips to FAILING → ERROR. ERROR is worse than WARNING.
+        _, failing = self._create_api_status('one', ApiHealthStatusType.FAILING)
+        self.base_status.api_status_map[api_pi] = failing
+        self.assertEqual(self.base_status.status, HealthStatusType.ERROR)
 
     def test_disabled_sources_excluded(self):
         """Test comprehensive scenarios where DISABLED sources are properly excluded."""

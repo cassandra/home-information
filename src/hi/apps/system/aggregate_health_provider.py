@@ -39,6 +39,7 @@ class AggregateHealthProvider( HealthStatusProvider ):
             return
         super()._ensure_health_status_provider_setup()
         self._api_health_status_providers = []  # Track API health status providers
+        self._subordinate_health_status_providers = []  # Track subordinate HealthStatusProvider sources
         return
 
     @property
@@ -46,7 +47,7 @@ class AggregateHealthProvider( HealthStatusProvider ):
         """Get aggregated health status (thread-safe, always fresh)."""
         self._ensure_health_status_provider_setup()
         with self._health_lock:
-            # Always refresh from API owners before returning
+            # Always refresh from API owners and subordinates before returning
             self._refresh_aggregated_health()
             return copy.deepcopy(self._health_status)
         return
@@ -55,24 +56,34 @@ class AggregateHealthProvider( HealthStatusProvider ):
         self._ensure_health_status_provider_setup()
         with self._health_lock:
             self._refresh_aggregated_health()
-    
+
     def _refresh_aggregated_health(self) -> None:
-        """Refresh API status map from all tracked API health status providers.
+        """Refresh API status map and subordinate status map from all
+        tracked sources.
 
-        Note: The aggregated health status is computed dynamically via the status property,
-        so this method only needs to update the API status map.
+        Note: The aggregated health status is computed dynamically via
+        the AggregateHealthStatus.status property, so this method only
+        needs to update the per-source maps.
         """
-        # Clear current sources
+        # Refresh API source map.
         self._health_status.api_status_map.clear()
-
-        # Collect current health from all providers
         for provider in self._api_health_status_providers:
             provider_info = provider.get_api_provider_info()
             api_health_status = provider.api_health_status
             self._health_status.api_status_map[provider_info] = api_health_status
 
-        # Status is now computed dynamically via the status property in AggregateHealthStatus
-        # No need to manually update it here
+        # Refresh subordinate HealthStatusProvider map. Snapshot the
+        # full HealthStatus (not just the enum) so detail surfaces can
+        # render last_message, heartbeat, error_count, etc. — matches
+        # the api_status_map pattern, which also stores rich snapshots.
+        self._health_status.subordinate_status_map.clear()
+        for subordinate in self._subordinate_health_status_providers:
+            subordinate_provider_info = subordinate.get_provider_info()
+            subordinate_health_status = subordinate.health_status
+            self._health_status.subordinate_status_map[subordinate_provider_info] = (
+                subordinate_health_status
+            )
+
         return
 
     def _get_aggregation_rule(self) -> HealthAggregationRule:
@@ -113,5 +124,39 @@ class AggregateHealthProvider( HealthStatusProvider ):
         with self._health_lock:
             if api_health_status_provider in self._api_health_status_providers:
                 self._api_health_status_providers.remove(api_health_status_provider)
+                self._refresh_aggregated_health()
+        return
+
+    def add_subordinate_health_status_provider(
+            self,
+            subordinate : HealthStatusProvider ) -> None:
+        """
+        Register a subordinate HealthStatusProvider whose status
+        contributes to this aggregator's overall status. The aggregator
+        pulls the subordinate's current status on each read of
+        self.health_status — mirroring how add_api_health_status_provider
+        treats its providers.
+
+        Use this for non-API sources that should not alias the parent's
+        own _base_status: e.g., a polling monitor that watches the same
+        subsystem the manager configures. A successful manager reload
+        setting _base_status=HEALTHY must not silently overwrite a
+        monitor still reporting ERROR — separate slots prevent that.
+        """
+        self._ensure_health_status_provider_setup()
+        with self._health_lock:
+            if subordinate not in self._subordinate_health_status_providers:
+                self._subordinate_health_status_providers.append( subordinate )
+                self._refresh_aggregated_health()
+        return
+
+    def remove_subordinate_health_status_provider(
+            self,
+            subordinate : HealthStatusProvider ) -> None:
+        """Remove a subordinate HealthStatusProvider from tracking."""
+        self._ensure_health_status_provider_setup()
+        with self._health_lock:
+            if subordinate in self._subordinate_health_status_providers:
+                self._subordinate_health_status_providers.remove( subordinate )
                 self._refresh_aggregated_health()
         return

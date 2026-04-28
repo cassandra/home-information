@@ -41,6 +41,11 @@ class HassMonitor( PeriodicMonitor, HassMixin, SensorResponseMixin ):
             return
         _ = await self.sensor_response_manager_async()  # Allows async use of self.sensor_response_manager()
         hass_manager.register_change_listener( self.refresh )
+        # Register this monitor as a subordinate health source on the
+        # manager so the manager's aggregated health reflects monitor
+        # outcomes. The manager pulls our current status on each read of
+        # its health_status; we never push.
+        hass_manager.add_subordinate_health_status_provider( self )
         self._was_initialized = True
         return
     
@@ -106,6 +111,7 @@ class HassMonitor( PeriodicMonitor, HassMixin, SensorResponseMixin ):
 
         message = f'Processed {len(id_to_hass_state_map)} Home Assistant states.'
         self.record_healthy( message )
-        hass_manager.record_healthy( message )
+        # Manager picks up our status via add_subordinate_health_status_provider
+        # registration; no explicit push needed here.
         return
     

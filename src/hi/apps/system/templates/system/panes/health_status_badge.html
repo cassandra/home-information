@@ -1,0 +1,27 @@
+{% load icons %}
+{% comment %}
+Expanded health-status badge — button-style with state label.
+
+Parameters:
+  health_status   : HealthStatus instance (required).
+
+Renders all five HealthStatusType values with a state-appropriate icon
+and the canonical status.label as the displayed text.
+{% endcomment %}
+{% if health_status %}
+{% with status=health_status.status %}
+<button class="btn btn-sm hi-health-badge hi-health-badge-{{ status.name|lower }}">
+  {% if status.is_healthy %}
+    {% icon "check-circle" size="md" css_class="mr-1" %}{{ status.label }}
+  {% elif status.is_critical %}
+    {% icon "warning" size="md" css_class="mr-1" %}{{ status.label }}
+  {% elif status.is_warning %}
+    {% icon "warning" size="md" css_class="mr-1" %}{{ status.label }}
+  {% elif status.is_info %}
+    {% icon "info-circle" size="md" css_class="mr-1" %}{{ status.label }}
+  {% else %}
+    {% icon "question-circle" size="md" css_class="mr-1" %}{{ status.label }}
+  {% endif %}
+</button>
+{% endwith %}
+{% endif %}

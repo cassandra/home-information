@@ -1,0 +1,40 @@
+{% load icons %}
+{% comment %}
+Compact integration-status indicator — small icon + tooltip, no label.
+Composes HealthStatus and the integration's is_paused flag into a
+single attention-grabbing glyph for the sidebar nav-tab.
+
+Parameters:
+  health_status   : HealthStatus instance (required).
+  is_paused       : bool — integration's is_paused flag (required).
+
+Visual priority (worst-of):
+  ERROR   > WARNING  > paused
+HEALTHY-and-not-paused renders nothing — sidebar should be visually
+clean when there is nothing to draw the operator's attention to.
+
+DISABLED is intentionally not handled — disabled integrations are
+excluded from the sidebar tab list upstream.
+
+UNKNOWN is intentionally not handled — initialization edge, transient.
+{% endcomment %}
+{% if health_status %}
+{% with status=health_status.status %}
+{% if status.is_critical %}
+  <span class="hi-integration-indicator hi-integration-indicator-error"
+        title="{{ status.label }}: {{ health_status.last_message|default:'' }}">
+    {% icon "warning" size="md" %}
+  </span>
+{% elif status.is_warning %}
+  <span class="hi-integration-indicator hi-integration-indicator-warning"
+        title="{{ status.label }}: {{ health_status.last_message|default:'' }}">
+    {% icon "warning" size="sm" %}
+  </span>
+{% elif is_paused %}
+  <span class="hi-integration-indicator hi-integration-indicator-paused"
+        title="Paused — background monitor is suspended">
+    {% icon "pause" size="sm" %}
+  </span>
+{% endif %}
+{% endwith %}
+{% endif %}

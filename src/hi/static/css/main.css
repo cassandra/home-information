@@ -1233,6 +1233,56 @@ g[hover] {
     color: var(--on-error-color);
 }
 
+/*
+ * Health status badge — used by system/panes/health_status_badge.html
+ * for the expanded button view. One class per HealthStatusType value.
+ */
+.hi-health-badge-healthy {
+    background-color: var(--success-color);
+    color: var(--on-success-color);
+    border-color: var(--success-color);
+}
+.hi-health-badge-warning {
+    background-color: var(--warning-color);
+    color: var(--on-warning-color);
+    border-color: var(--warning-color);
+}
+.hi-health-badge-error {
+    background-color: var(--error-color);
+    color: var(--on-error-color);
+    border-color: var(--error-color);
+}
+.hi-health-badge-disabled {
+    background-color: var(--muted-color);
+    color: var(--on-muted-color, #fff);
+    border-color: var(--muted-color);
+}
+.hi-health-badge-unknown {
+    background-color: transparent;
+    color: var(--muted-color);
+    border-color: var(--muted-color);
+}
+
+/*
+ * Compact integration-status indicator — used by integrations/panes/
+ * integration_status_indicator.html for the sidebar nav-tab. Icon-only,
+ * color drawn from semantic CSS variables. paused is informational
+ * (muted), warning/error draw attention.
+ */
+.hi-integration-indicator {
+    margin-left: 0.4rem;
+    line-height: 1;
+}
+.hi-integration-indicator-error {
+    color: var(--error-color);
+}
+.hi-integration-indicator-warning {
+    color: var(--warning-color);
+}
+.hi-integration-indicator-paused {
+    color: var(--muted-color);
+}
+
 .text-success-custom {
     color: var(--success-color);
 }
