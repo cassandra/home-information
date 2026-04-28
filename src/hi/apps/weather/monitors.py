@@ -2,6 +2,7 @@ import asyncio
 import logging
 
 import hi.apps.common.datetimeproxy as datetimeproxy
+from hi.apps.alert.enums import AlarmLevel
 from hi.apps.monitor.periodic_monitor import PeriodicMonitor
 
 from hi.apps.alert.alert_mixins import AlertMixin
@@ -60,6 +61,15 @@ class WeatherMonitor( PeriodicMonitor, AlertMixin, SettingsMixin ):
             description = 'Weather data collection and monitoring',
             expected_heartbeat_interval_secs = cls.WEATHER_POLLING_INTERVAL_SECS,
         )
+
+    def alarm_max_level(self):
+        # Cap at INFO for two reasons:
+        #   1. Weather staleness is informational — the user is not
+        #      typically depending on a 150-second freshness window.
+        #   2. The monitor records WARNING during its 30-second startup-
+        #      safety window. Capping at INFO prevents that startup
+        #      transition from firing alarms on every server restart.
+        return AlarmLevel.INFO
 
     async def do_work(self):
 

@@ -4,6 +4,7 @@ from hi.apps.monitor.periodic_monitor import PeriodicMonitor
 from hi.apps.system.provider_info import ProviderInfo
 
 from .alert_mixins import AlertMixin
+from .enums import AlarmLevel
 
 logger = logging.getLogger(__name__)
 
@@ -30,6 +31,12 @@ class AlertMonitor( PeriodicMonitor, AlertMixin ):
             description = 'Alert processing and notification management',
             expected_heartbeat_interval_secs = cls.ALERT_POLLING_INTERVAL_SECS,
         )
+
+    def alarm_max_level(self):
+        # Alert queue maintenance failures cause stale/uncleaned alerts
+        # but don't lose insertions — alarms still reach the user.
+        # WARNING is appropriate.
+        return AlarmLevel.WARNING
 
     async def do_work(self):
         if self.TRACE:
