@@ -13,7 +13,6 @@ from hi.apps.model_helper import HiModelHelper
 
 from hi.integrations.integration_synchronizer import IntegrationSynchronizer
 from hi.integrations.transient_models import IntegrationKey
-from hi.integrations.sync_mixins import IntegrationSyncMixin
 
 from .zm_metadata import ZmMetaData
 from .zm_mixins import ZoneMinderMixin
@@ -21,7 +20,7 @@ from .zm_mixins import ZoneMinderMixin
 logger = logging.getLogger(__name__)
 
 
-class ZoneMinderSynchronizer( IntegrationSynchronizer, ZoneMinderMixin, IntegrationSyncMixin ):
+class ZoneMinderSynchronizer( IntegrationSynchronizer, ZoneMinderMixin ):
 
     RESULT_TITLE = 'ZM Import Result'
 

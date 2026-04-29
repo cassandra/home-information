@@ -1,27 +1,7 @@
-{% load static %}
-{% load icons %}
-<div class="d-flex justify-content-between">
-  <div class="h3 integration-title">
-    <img class="img-fluid"
-         src="{% static core.integration_data.integration_metadata.logo_static_path %}"
-         alt="{{ core.integration_data.integration_metadata.label }} Logo">
-    {{ core.integration_data.integration_metadata.label }}
-  </div>
-  <div class="d-flex">
-    {% include "integrations/panes/lifecycle_actions.html" %}
-    <a href="{% url 'integrations_pre_sync' integration_id=core.integration_data.integration_id %}"
-       class="btn btn-outline-secondary" role="button"
-       data-async="modal">
-      {% if has_entities %}
-      {% icon "sync" size="sm" css_class="hi-icon-left" %}REFRESH
-      {% else %}
-      {% icon "upload" size="sm" css_class="hi-icon-left" %}IMPORT
-      {% endif %}
-    </a>
-  </div>
-</div>
-{% if not has_entities %}
-<div class="alert alert-warning text-center">
-  Use the "IMPORT" button to add items from Home Assistant.
-</div>
-{% endif %}
+{% comment %}
+  Integration-specific custom content slot for the Home Assistant
+  manage page. The framework owns the page header (title/logo,
+  lifecycle actions, sync actions) and the attribute editor; this
+  template renders any HASS-specific UI between them. Currently empty
+  — kept as a documented extension point.
+{% endcomment %}

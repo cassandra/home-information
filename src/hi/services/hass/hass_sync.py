@@ -8,7 +8,6 @@ from hi.apps.entity.models import Entity
 
 from hi.integrations.integration_synchronizer import IntegrationSynchronizer
 from hi.integrations.transient_models import IntegrationKey
-from hi.integrations.sync_mixins import IntegrationSyncMixin
 
 from .hass_converter import HassConverter
 from .hass_models import HassDevice
@@ -18,7 +17,7 @@ from .hass_metadata import HassMetaData
 logger = logging.getLogger(__name__)
 
 
-class HassSynchronizer( IntegrationSynchronizer, HassMixin, IntegrationSyncMixin ):
+class HassSynchronizer( IntegrationSynchronizer, HassMixin ):
 
     RESULT_TITLE = 'Home Assistant Import Result'
 

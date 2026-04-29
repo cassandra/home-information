@@ -31,12 +31,9 @@ class TestHassSynchronizerInitialization(TestCase):
     def test_inherits_from_mixins(self):
         """Test that HassSynchronizer inherits from required mixins"""
         synchronizer = HassSynchronizer()
-        
+
         # Should inherit from HassMixin
         self.assertTrue(hasattr(synchronizer, 'hass_manager'))
-        
-        # Should inherit from IntegrationSyncMixin  
-        self.assertTrue(hasattr(synchronizer, '_remove_entity_intelligently'))
 
 
 class TestHassSynchronizerSyncMethod(TestCase):
@@ -283,24 +280,18 @@ class TestHassSynchronizerErrorScenarios(TestCase):
 
 
 class TestHassSynchronizerMixinIntegration(TestCase):
-    """Test integration with HassMixin and IntegrationSyncMixin"""
-    
+    """Test integration with HassMixin"""
+
     def setUp(self):
         self.synchronizer = HassSynchronizer()
-    
+
     @patch('hi.services.hass.hass_mixins.HassManager')
     def test_hass_mixin_integration(self, mock_manager_class):
         """Test HassMixin integration provides hass_manager access"""
         mock_manager_instance = Mock()
         mock_manager_class.return_value = mock_manager_instance
-        
+
         # Should be able to access hass_manager through mixin
         result = self.synchronizer.hass_manager()
-        
+
         self.assertEqual(result, mock_manager_instance)
-    
-    def test_integration_sync_mixin_methods_available(self):
-        """Test IntegrationSyncMixin methods are available"""
-        # Should have _remove_entity_intelligently method from mixin
-        self.assertTrue(hasattr(self.synchronizer, '_remove_entity_intelligently'))
-        self.assertTrue(callable(getattr(self.synchronizer, '_remove_entity_intelligently')))

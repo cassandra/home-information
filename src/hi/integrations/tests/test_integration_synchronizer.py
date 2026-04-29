@@ -1,5 +1,5 @@
 """
-Unit tests for IntegrationSyncMixin.
+Unit tests for IntegrationSynchronizer's intelligent entity-removal helper.
 """
 
 import logging
@@ -11,18 +11,25 @@ from hi.apps.entity.models import Entity, EntityAttribute, EntityState
 from hi.apps.sense.models import Sensor
 from hi.apps.control.models import Controller
 from hi.apps.common.processing_result import ProcessingResult
-from hi.integrations.sync_mixins import IntegrationSyncMixin
+from hi.integrations.integration_synchronizer import IntegrationSynchronizer
 
 logging.disable(logging.CRITICAL)
 
 
-class TestSynchronizer(IntegrationSyncMixin):
-    """Test class that uses the IntegrationSyncMixin."""
-    pass
+class TestSynchronizer(IntegrationSynchronizer):
+    """Concrete IntegrationSynchronizer used to exercise the
+    intelligent-removal helper. Stubs the abstract hooks so the class
+    can be instantiated; sync() itself is not exercised here."""
+
+    def get_result_title(self):
+        return 'Test Sync Result'
+
+    def _sync_impl(self):
+        return ProcessingResult(title=self.get_result_title())
 
 
-class IntegrationSyncMixinTestCase(TestCase):
-    """Test cases for IntegrationSyncMixin functionality."""
+class IntegrationSynchronizerRemovalTestCase(TestCase):
+    """Test cases for IntegrationSynchronizer's _remove_entity_intelligently."""
 
     def setUp(self):
         """Set up test data."""
@@ -622,8 +629,8 @@ class IntegrationSyncMixinTestCase(TestCase):
         self.assertEqual(self.result.message_list[1], 'Another message')
 
 
-class IntegrationSyncMixinTransactionTestCase(TransactionTestCase):
-    """Transaction-specific tests for IntegrationSyncMixin."""
+class IntegrationSynchronizerRemovalTransactionTestCase(TransactionTestCase):
+    """Transaction-specific tests for _remove_entity_intelligently."""
     
     def setUp(self):
         """Set up test data."""

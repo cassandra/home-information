@@ -17,6 +17,10 @@ from typing import Optional
 
 from hi.apps.common.database_lock import ExclusionLockContext
 from hi.apps.common.processing_result import ProcessingResult
+from hi.apps.entity.models import Entity
+
+from .entity_operations import EntityIntegrationOperations
+from .user_data_detector import EntityUserDataDetector
 
 logger = logging.getLogger(__name__)
 
@@ -90,3 +94,25 @@ class IntegrationSynchronizer:
         Called with the synchronization lock held.
         """
         raise NotImplementedError('Subclasses must override this method')
+
+    def _remove_entity_intelligently(self,
+                                     entity: Entity,
+                                     result: ProcessingResult,
+                                     integration_name: str):
+        """
+        Remove an entity that no longer exists in the integration.
+
+        If the entity has user-created attributes, preserve the entity but
+        disconnect it from the integration and remove only integration-related
+        components. Otherwise, perform complete deletion.
+        """
+        if EntityUserDataDetector.has_user_created_attributes(entity):
+            EntityIntegrationOperations.preserve_with_user_data(
+                entity = entity,
+                integration_name = integration_name,
+                result = result,
+            )
+        else:
+            # No user data, safe to delete completely
+            entity.delete()  # Deletion cascades to all related data
+            result.message_list.append(f'Removed stale {integration_name} entity: {entity}')

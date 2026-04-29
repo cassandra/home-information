@@ -8,7 +8,6 @@ from hi.apps.entity.models import Entity, EntityAttribute
 
 from hi.integrations.integration_synchronizer import IntegrationSynchronizer
 from hi.integrations.transient_models import IntegrationKey
-from hi.integrations.sync_mixins import IntegrationSyncMixin
 
 from .hb_converter import HbConverter
 from .hb_metadata import HbMetaData
@@ -18,7 +17,7 @@ from .hb_models import HbItem
 logger = logging.getLogger(__name__)
 
 
-class HomeBoxSynchronizer( IntegrationSynchronizer, HomeBoxMixin, IntegrationSyncMixin ):
+class HomeBoxSynchronizer( IntegrationSynchronizer, HomeBoxMixin ):
 
     RESULT_TITLE = 'HomeBox Import Result'
 

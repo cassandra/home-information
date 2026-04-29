@@ -417,6 +417,10 @@ class IntegrationManageView( ConfigPageView, IntegrationViewMixin, AttributeEdit
                 attr_item_context= attr_item_context,
             )
         )
+        has_entities = Entity.objects.filter(
+            integration_id = integration_data.integration_id,
+        ).exists()
+
         template_context.update({
             # Extra needed on initial view only for tabbed navigation. Not
             # needed for attribute edit operations.
@@ -428,6 +432,7 @@ class IntegrationManageView( ConfigPageView, IntegrationViewMixin, AttributeEdit
                 'integration_data': integration_data,
                 'manage_view_template_name': manage_template_name,
                 'health_status': health_status_provider.health_status,
+                'has_entities': has_entities,
             },
         })
         return template_context

@@ -34,10 +34,31 @@
     <div class="tab-content m-3">
 
       <!-- Root container for this attribute editing context -->
-      <div id="{{ attr_item_context.container_html_id }}" 
+      <div id="{{ attr_item_context.container_html_id }}"
            class="{{ DIVID.ATTR_V2_CONTAINER_CLASS }}" >
-        
+
         <div class=" border-bottom mb-2 pb-2">
+          {% comment %}
+            Framework-owned manage page header. Title/logo come from
+            integration metadata; lifecycle and sync actions are
+            rendered here unconditionally so individual integrations
+            can't accidentally omit them. The per-integration
+            template below is a content seam for any
+            integration-specific custom UI; for current
+            integrations it is empty.
+          {% endcomment %}
+          <div class="d-flex justify-content-between">
+            <div class="h3 integration-title">
+              <img class="img-fluid"
+                   src="{% static core.integration_data.integration_metadata.logo_static_path %}"
+                   alt="{{ core.integration_data.integration_metadata.label }} Logo">
+              {{ core.integration_data.integration_metadata.label }}
+            </div>
+            <div class="d-flex">
+              {% include "integrations/panes/lifecycle_actions.html" %}
+              {% include "integrations/panes/sync_actions.html" %}
+            </div>
+          </div>
           {% include core.manage_view_template_name %}
         </div>
 
