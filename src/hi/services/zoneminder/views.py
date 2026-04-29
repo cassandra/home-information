@@ -1,17 +1,10 @@
-from hi.hi_async_view import HiModalView
+"""
+Per-integration view extension point.
 
-from .zm_sync import ZoneMinderSynchronizer
+The framework owns lifecycle, configure, sync, and manage views for
+every integration (see hi/integrations/views.py). Define
+ZoneMinder-specific views here only when an integration genuinely
+needs UI the framework does not provide.
 
-
-class ZmSyncView( HiModalView ):
-
-    def get_template_name( self ) -> str:
-        return 'common/modals/processing_result.html'
-
-    def post(self, request, *args, **kwargs):
-
-        processing_result = ZoneMinderSynchronizer().sync()
-        context = {
-            'processing_result': processing_result,
-        }
-        return self.modal_response( request, context )
+Currently no integration-specific views are required.
+"""
