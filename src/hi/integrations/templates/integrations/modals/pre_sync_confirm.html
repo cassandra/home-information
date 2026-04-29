@@ -4,59 +4,108 @@
 {% comment %}
 Pre-sync confirmation modal for integrations.
 
-Shown as the last step of the Configure flow (first-time sync) and
-when the operator clicks the IMPORT / RE-SYNC button on the
-integration manage page (subsequent syncs). Surfaces the integration's
-current health snapshot and a sync description, then offers Sync /
-Not now actions.
+Shown as the last step of the Configure flow (first-time import) and
+when the operator clicks the IMPORT / REFRESH button on the
+integration manage page (subsequent refreshes). The modal confirms
+intent and explains what the operation will do; it does NOT surface
+integration health. Health is surfaced on the manage page itself, and
+an unhealthy integration's attempt will surface its failure inline
+with a useful error message.
+
+The first-time IMPORT and subsequent REFRESH paths are both rendered
+by this template. They differ in title, lead text, and primary action
+label, controlled by `is_initial_import`. The synchronizer's
+description copy is also import/refresh-aware.
+
+The REVIEW CONFIG action is rendered only on the first-time path: in
+that path the user just came from the Configure modal and may have
+breezed past secondary configuration that the synchronizer's
+description now calls out (e.g., HASS allowlist). REVIEW CONFIG
+re-opens the same Configure modal as a "back one step" affordance;
+saving from there returns to this modal. On the manage-page entry
+path, the user came from the manage page and the inherited CANCEL
+already takes them "back" to it.
 
 Context:
   integration_data        : IntegrationData (required) — for label, id.
-  health_status           : HealthStatus (required) — rendered via the
-                            shared health_status_badge.html partial.
+  is_initial_import       : bool (required) — True when no entities for
+                            this integration have been imported yet
+                            (initial IMPORT); False for subsequent
+                            REFRESH operations.
   sync_description        : Optional[str] — per-integration text from
-                            IntegrationGateway.get_sync_description.
-  sync_url                : str (required) — URL the Sync action posts to.
-  cancel_redirect_url     : str (required) — where Not now sends the user
-                            (manage page).
+                            IntegrationSynchronizer.get_description.
+  sync_url                : str (required) — URL the action posts to.
+  review_config_url       : str (required) — URL the REVIEW CONFIG
+                            action opens (the integrations_enable
+                            modal).
 {% endcomment %}
 
-{% block header_class %}bg-secondary{% endblock %}
+{% comment %}
+First-time path only: override the inherited dismiss-only CANCEL with
+one that triggers a full page reload. Reason: the operator's
+underlying page (typically integrations home) was rendered before the
+integration was enabled and is therefore stale; a plain dismiss would
+leave them on a pre-enable view. On the refresh path the underlying
+page is already current, so we keep the inherited dismiss behavior.
+{% endcomment %}
+{% block action_left %}
+{% if is_initial_import %}
+<a id="hi-modal-cancel" role="button"
+   class="btn btn-outline-tertiary"
+   href="#"
+   onclick="location.reload(); return false;">CANCEL</a>
+{% else %}{{ block.super }}{% endif %}
+{% endblock %}
 
 {% block title_text %}
-Sync {{ integration_data.label }}?
+{% if is_initial_import %}
+Import from {{ integration_data.label }}?
+{% else %}
+Refresh from {{ integration_data.label }}?
+{% endif %}
 {% endblock %}
 
 {% block body %}
-<div class="d-flex align-items-center mb-3">
-  {% include "system/panes/health_status_badge.html" with health_status=health_status %}
-</div>
-
+{% if is_initial_import %}
 <p>
-  Sync will import entities from <strong>{{ integration_data.label }}</strong>
-  into Home Information. Imported entities are placed in your views in
-  the next step.
+  Import will pull entities from <strong>{{ integration_data.label }}</strong>
+  into Home Information for the first time. Imported entities can be
+  placed into your views in the next step.
 </p>
+{% else %}
+<p>
+  Refresh checks <strong>{{ integration_data.label }}</strong> for any
+  changes since your last import: new entities are added, existing
+  entities are updated in place, and entities no longer present
+  upstream are removed.
+</p>
+{% endif %}
 
 {% if sync_description %}
 <p class="text-muted">{{ sync_description }}</p>
 {% endif %}
 {% endblock %}
 
-{% block action_left %}
-<a id="hi-modal-cancel" role="button"
-   class="btn btn-outline-tertiary"
-   href="{{ cancel_redirect_url }}"
-   data-async="true">
-  {% icon "cancel" size="sm" css_class="hi-icon-left" %}NOT NOW
+{% block action_center %}
+{% if is_initial_import %}
+<a href="{{ review_config_url }}"
+   role="button"
+   class="btn btn-outline-primary"
+   data-async="modal">
+  {% icon "settings" size="sm" css_class="hi-icon-left" %}REVIEW CONFIG
 </a>
+{% endif %}
 {% endblock %}
 
 {% block action_right %}
 <form action="{{ sync_url }}" method="post" class="form" data-async="modal">
   {% csrf_token %}
   <button type="submit" class="btn btn-primary">
-    {% icon "sync" size="sm" css_class="hi-icon-left" %}SYNC
+    {% if is_initial_import %}
+    {% icon "upload" size="sm" css_class="hi-icon-left" %}IMPORT
+    {% else %}
+    {% icon "sync" size="sm" css_class="hi-icon-left" %}REFRESH
+    {% endif %}
   </button>
 </form>
 {% endblock %}

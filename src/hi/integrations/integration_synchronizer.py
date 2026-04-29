@@ -43,12 +43,18 @@ class IntegrationSynchronizer:
     # docstring above for the rationale.
     SYNCHRONIZATION_LOCK_NAME = 'integrations_sync'
 
-    def get_description(self) -> Optional[str]:
+    def get_description(self, is_initial_import: bool) -> Optional[str]:
         """
         Optional copy describing what this integration's sync will do,
         surfaced to the operator in the framework's pre-sync
-        confirmation modal alongside a generic lead message. Return
-        None to render only the generic lead text.
+        confirmation modal alongside a generic lead message.
+
+        `is_initial_import` distinguishes the first-time IMPORT (no
+        entities have been imported yet) from subsequent REFRESH
+        operations. The two contexts mean different things to the
+        operator and integrations are encouraged to provide tailored
+        copy for each. Return None to render only the generic lead
+        text.
         """
         return None
 

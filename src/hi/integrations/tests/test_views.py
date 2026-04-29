@@ -203,7 +203,8 @@ class _SyncTestSynchronizer:
         self._description = description
         self.sync_called = False
 
-    def get_description(self):
+    def get_description(self, is_initial_import):
+        self.last_is_initial_import = is_initial_import
         return self._description
 
     def get_result_title(self):
@@ -286,9 +287,10 @@ class _SyncIncapableGateway(IntegrationGateway):
 
 class PreSyncViewTests(SyncViewTestCase):
     """
-    Framework pre-sync confirmation modal. Renders integration health,
-    synchronizer description, and Sync / Not now actions; 404s when
-    the integration does not provide a synchronizer.
+    Framework pre-sync confirmation modal. Renders the synchronizer
+    description plus IMPORT/REFRESH and (first-time only) REVIEW
+    CONFIG actions; 404s when the integration does not provide a
+    synchronizer.
     """
 
     INTEGRATION_ID = 'sync_view_test'
@@ -335,6 +337,36 @@ class PreSyncViewTests(SyncViewTestCase):
         )
         response = self.client.get(self._url())
         self.assertEqual(response.status_code, 404)
+
+    def test_review_config_action_present_on_initial_import(self):
+        """REVIEW CONFIG button is shown only on the first-time path.
+
+        With no entities for this integration, is_initial_import=True
+        and the REVIEW CONFIG affordance must appear so the user can
+        return to the configure step.
+        """
+        response = self.client.get(self._url())
+        self.assertSuccessResponse(response)
+        self.assertIn('REVIEW CONFIG', response.content.decode())
+
+    def test_review_config_action_absent_after_initial_import(self):
+        """REVIEW CONFIG is omitted on the manage-page entry path.
+
+        With at least one entity already imported, is_initial_import
+        is False; the user came from the manage page and CANCEL takes
+        them back, so REVIEW CONFIG is unnecessary.
+        """
+        from hi.apps.entity.enums import EntityType
+        from hi.apps.entity.models import Entity
+        Entity.objects.create(
+            integration_id=self.INTEGRATION_ID,
+            integration_name='already_imported',
+            name='Already Imported',
+            entity_type_str=EntityType.default_value(),
+        )
+        response = self.client.get(self._url())
+        self.assertSuccessResponse(response)
+        self.assertNotIn('REVIEW CONFIG', response.content.decode())
 
 
 class SyncViewTests(SyncViewTestCase):
@@ -383,3 +415,83 @@ class SyncViewTests(SyncViewTestCase):
         )
         response = self.client.post(self._url())
         self.assertEqual(response.status_code, 404)
+
+
+# --------------------------------------------------------------------------
+# IntegrationEnableView tests for the Review Config (post-enable) path
+# --------------------------------------------------------------------------
+
+
+class EnableViewReviewConfigTests(SyncViewTestCase):
+    """
+    IntegrationEnableView accepts both first-time Configure and Review
+    Config (post-enable). The button label switches with state, and
+    the post-enable GET no longer 400s.
+    """
+
+    INTEGRATION_ID = 'enable_review_view_test'
+
+    def setUp(self):
+        super().setUp()
+        IntegrationManager().reset_for_testing()
+        self.integration = Integration.objects.create(
+            integration_id=self.INTEGRATION_ID,
+            is_enabled=True,
+            is_paused=False,
+        )
+        self.gateway = _SyncCapableGateway(integration_id=self.INTEGRATION_ID)
+        IntegrationManager()._integration_data_map[self.INTEGRATION_ID] = IntegrationData(
+            integration_gateway=self.gateway,
+            integration=self.integration,
+        )
+
+    def _url(self):
+        return reverse(
+            'integrations_enable',
+            kwargs={'integration_id': self.INTEGRATION_ID},
+        )
+
+    def test_get_post_enable_does_not_400(self):
+        """Removed is_enabled BadRequest: GET on an enabled integration
+        must return 200 so Review Config can re-render the form."""
+        response = self.client.get(self._url())
+        self.assertSuccessResponse(response)
+
+    def test_get_post_enable_renders_update_button_label(self):
+        """Review-mode GET uses 'UPDATE' as the action label, not 'CONFIGURE'."""
+        response = self.client.get(self._url())
+        self.assertSuccessResponse(response)
+        body = response.content.decode()
+        self.assertIn('UPDATE', body)
+        self.assertNotIn('CONFIGURE', body)
+
+    def test_get_post_enable_renders_continue_action(self):
+        """Review-mode GET replaces the dismiss CANCEL with a CONTINUE
+        action that returns to the pre-sync modal. Without this swap a
+        user reviewing config with no changes has only SAVE (which
+        re-saves) or CANCEL (which aborts the whole sync flow) — both
+        wrong for the read-only review path."""
+        response = self.client.get(self._url())
+        self.assertSuccessResponse(response)
+        body = response.content.decode()
+        self.assertIn('CONTINUE', body)
+        # Cancel button has id="hi-modal-cancel"; its absence in review
+        # mode is what we're pinning here.
+        self.assertNotIn('hi-modal-cancel', body)
+        # The CONTINUE action must point at the pre-sync URL.
+        self.assertIn(
+            reverse('integrations_pre_sync', kwargs={'integration_id': self.INTEGRATION_ID}),
+            body,
+        )
+
+    def test_get_first_time_renders_configure_button_label(self):
+        """First-time GET (is_enabled=False) keeps the original
+        'CONFIGURE' label and the dismiss CANCEL."""
+        self.integration.is_enabled = False
+        self.integration.save()
+        response = self.client.get(self._url())
+        self.assertSuccessResponse(response)
+        body = response.content.decode()
+        self.assertIn('CONFIGURE', body)
+        self.assertIn('hi-modal-cancel', body)
+        self.assertNotIn('CONTINUE', body)

@@ -37,11 +37,18 @@ class ZoneMinderSynchronizer( IntegrationSynchronizer, ZoneMinderMixin, Integrat
     def get_result_title(self) -> str:
         return self.RESULT_TITLE
 
-    def get_description(self) -> Optional[str]:
+    def get_description(self, is_initial_import: bool) -> Optional[str]:
+        if is_initial_import:
+            return (
+                'Import will pull in each ZoneMinder monitor as a'
+                ' camera entity, along with derived motion and'
+                ' run-state sensors.'
+            )
         return (
-            'Sync imports each ZoneMinder monitor as a camera entity,'
-            ' along with derived motion and run-state sensors. Existing'
-            ' entities are updated in place where possible.'
+            'Refresh reconciles already-imported cameras with the'
+            ' current set of ZoneMinder monitors: new monitors are'
+            ' added, existing entities are updated in place, and'
+            ' monitors no longer present upstream are removed.'
         )
 
     def _sync_impl( self ) -> ProcessingResult:

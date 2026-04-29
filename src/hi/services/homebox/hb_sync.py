@@ -25,11 +25,18 @@ class HomeBoxSynchronizer( IntegrationSynchronizer, HomeBoxMixin, IntegrationSyn
     def get_result_title(self) -> str:
         return self.RESULT_TITLE
 
-    def get_description(self) -> Optional[str]:
+    def get_description(self, is_initial_import: bool) -> Optional[str]:
+        if is_initial_import:
+            return (
+                'Import will pull in every inventory item visible to'
+                ' the configured HomeBox account. There is no per-item'
+                ' filter on the HomeBox side at this time.'
+            )
         return (
-            'Sync imports every inventory item visible to the configured'
-            ' HomeBox account. There is no per-item filter on the HomeBox'
-            ' side at this time.'
+            'Refresh reconciles already-imported items with the current'
+            ' contents of your HomeBox inventory: new items are added,'
+            ' existing items are updated in place, and items no longer'
+            ' present upstream are removed.'
         )
 
     def _sync_impl( self ) -> ProcessingResult:

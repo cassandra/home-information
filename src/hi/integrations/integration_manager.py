@@ -358,8 +358,23 @@ class IntegrationManager( Singleton ):
         return
                 
     def enable_integration( self, integration_data : IntegrationData ):
+        """
+        Idempotent: enabling an already-enabled integration is a no-op.
+
+        The is_enabled re-read happens inside the data lock and atomic
+        transaction so the disabled→enabled transition (which also
+        un-pauses) cannot race with another caller. Callers can invoke
+        this unconditionally without first checking is_enabled, which
+        avoids a TOCTOU window between caller check and manager write.
+        """
         with self._data_lock:
             with transaction.atomic():
+                # Re-read fresh state inside the lock; another caller
+                # may have enabled the integration between the caller's
+                # check (if any) and our acquiring this lock.
+                integration_data.integration.refresh_from_db()
+                if integration_data.integration.is_enabled:
+                    return
                 integration_data.integration.is_enabled = True
                 integration_data.integration.is_paused = False
                 integration_data.integration.save()

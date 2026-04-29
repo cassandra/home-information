@@ -25,12 +25,20 @@ class HassSynchronizer( IntegrationSynchronizer, HassMixin, IntegrationSyncMixin
     def get_result_title(self) -> str:
         return self.RESULT_TITLE
 
-    def get_description(self) -> Optional[str]:
+    def get_description(self, is_initial_import: bool) -> Optional[str]:
+        if is_initial_import:
+            return (
+                'Import will pull in every entity from your Home'
+                ' Assistant instance whose domain is on your configured'
+                ' import allowlist. Entities outside the allowlist are'
+                ' skipped and will not appear here.'
+            )
         return (
-            'Sync honors your configured import allowlist. Only entities'
-            ' whose Home Assistant domain matches an allowlisted domain'
-            ' are imported; entities outside the allowlist are not'
-            ' imported and will not appear here.'
+            'Refresh reconciles already-imported entities with the'
+            ' current state of your Home Assistant instance: new'
+            ' entities (within the allowlist) are added, existing'
+            ' entities are updated in place, and entities no longer'
+            ' present upstream are removed.'
         )
 
     def _sync_impl( self ) -> ProcessingResult:

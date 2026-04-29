@@ -13,6 +13,7 @@ from hi.apps.attribute.response_helpers import AttributeRedirectResponse
 from hi.apps.attribute.view_mixins import AttributeEditViewMixin
 from hi.apps.config.enums import ConfigPageType
 from hi.apps.config.views import ConfigPageView
+from hi.apps.entity.models import Entity
 
 from .entity_operations import EntityIntegrationOperations
 from .enums import IntegrationDisableMode
@@ -75,11 +76,19 @@ class IntegrationHealthStatusView( HiModalView, IntegrationViewMixin ):
 
 class IntegrationPreSyncView( HiModalView, IntegrationViewMixin ):
     """
-    Pre-sync confirmation modal. Surfaces the integration's current
-    health and the synchronizer's description, then offers Sync / Not
-    now actions. Used as the last step of the Configure flow (first-time
-    sync) and from the IMPORT / RE-SYNC button on the integration manage
-    page (subsequent syncs).
+    Pre-sync confirmation modal. Surfaces the synchronizer's
+    description and offers Sync / Not now actions. Used as the last
+    step of the Configure flow (first-time sync) and from the IMPORT /
+    REFRESH button on the integration manage page (subsequent syncs).
+
+    The modal does not display integration health: an unhealthy
+    integration's sync attempt will surface its failure inline with a
+    useful error message, and rendering health here would also expose
+    the brief race window between IntegrationManager.enable_integration
+    flipping is_enabled in the DB and the manager singleton's
+    notify_settings_changed reload (driven by a 0.1s post-commit
+    delayed signal processor — deliberately deferred to avoid a
+    different, worse class of problems).
 
     404s when the integration does not provide a synchronizer (sync is
     opt-in capability — not every integration supports it).
@@ -93,27 +102,30 @@ class IntegrationPreSyncView( HiModalView, IntegrationViewMixin ):
         integration_data = self.get_integration_data(
             integration_id = integration_id,
         )
-        gateway = integration_data.integration_gateway
-        synchronizer = gateway.get_synchronizer()
+        synchronizer = integration_data.integration_gateway.get_synchronizer()
         if synchronizer is None:
             return page_not_found_response( request )
 
-        health_status = gateway.get_health_status_provider().health_status
+        is_initial_import = not Entity.objects.filter(
+            integration_id = integration_data.integration_id,
+        ).exists()
         sync_url = reverse(
             'integrations_sync',
             kwargs = { 'integration_id': integration_data.integration_id },
         )
-        cancel_redirect_url = reverse(
-            'integrations_manage',
+        review_config_url = reverse(
+            'integrations_enable',
             kwargs = { 'integration_id': integration_data.integration_id },
         )
 
         context = {
             'integration_data': integration_data,
-            'health_status': health_status,
-            'sync_description': synchronizer.get_description(),
+            'is_initial_import': is_initial_import,
+            'sync_description': synchronizer.get_description(
+                is_initial_import = is_initial_import,
+            ),
             'sync_url': sync_url,
-            'cancel_redirect_url': cancel_redirect_url,
+            'review_config_url': review_config_url,
         }
         return self.modal_response( request, context )
 
@@ -158,9 +170,18 @@ class IntegrationEnableView( HiModalView, IntegrationViewMixin, AttributeEditVie
         integration_data = self.get_integration_data(
             integration_id = integration_id,
         )
-            
-        if integration_data.integration.is_enabled:
-            raise BadRequest( f'{integration_data.label} is already configured' )
+
+        # Both first-time Configure (is_enabled=False) and Review Config
+        # from the pre-sync modal (is_enabled=True) land here. Review
+        # mode swaps CONFIGURE→UPDATE for the action button and replaces
+        # the dismiss-CANCEL with a CONTINUE that returns to pre-sync.
+        is_review_mode = integration_data.integration.is_enabled
+        pre_sync_url = (
+            reverse(
+                'integrations_pre_sync',
+                kwargs = { 'integration_id': integration_data.integration_id },
+            ) if is_review_mode else None
+        )
 
         integration_manager.ensure_all_attributes_exist(
             integration_metadata = integration_data.integration_metadata,
@@ -168,10 +189,11 @@ class IntegrationEnableView( HiModalView, IntegrationViewMixin, AttributeEditVie
         )
         attr_item_context = IntegrationAttributeItemEditContext(
             integration_data = integration_data,
-            update_button_label = 'CONFIGURE',
+            update_button_label = 'UPDATE' if is_review_mode else 'CONFIGURE',
             suppress_history = True,
             show_secrets = True,
-
+            is_review_mode = is_review_mode,
+            pre_sync_url = pre_sync_url,
         )
         template_context = self.create_initial_template_context(
             attr_item_context= attr_item_context,
@@ -184,14 +206,27 @@ class IntegrationEnableView( HiModalView, IntegrationViewMixin, AttributeEditVie
         integration_data = self.get_integration_data(
             integration_id = integration_id,
         )
-        if integration_data.integration.is_enabled:
-            raise BadRequest( f'{integration_data.label} is already configured' )
+
+        # Both first-time Configure (is_enabled=False) and Review Config
+        # from the pre-sync modal (is_enabled=True) post here. Review
+        # mode flags drive the button label and the cancel→continue
+        # swap on form-error rerenders. enable_integration is
+        # idempotent, so the call below is safe in both contexts.
+        is_review_mode = integration_data.integration.is_enabled
+        pre_sync_url = (
+            reverse(
+                'integrations_pre_sync',
+                kwargs = { 'integration_id': integration_data.integration_id },
+            ) if is_review_mode else None
+        )
 
         attr_item_context = IntegrationAttributeItemEditContext(
             integration_data = integration_data,
-            update_button_label = 'CONFIGURE',
+            update_button_label = 'UPDATE' if is_review_mode else 'CONFIGURE',
             suppress_history = True,
             show_secrets = True,
+            is_review_mode = is_review_mode,
+            pre_sync_url = pre_sync_url,
         )
         response = self.post_attribute_form(
             request = request,
@@ -215,24 +250,27 @@ class IntegrationEnableView( HiModalView, IntegrationViewMixin, AttributeEditVie
         # modal-to-modal transitions.
         synchronizer = integration_data.integration_gateway.get_synchronizer()
         if synchronizer is not None:
-            gateway = integration_data.integration_gateway
-            health_status = gateway.get_health_status_provider().health_status
+            is_initial_import = not Entity.objects.filter(
+                integration_id = integration_data.integration_id,
+            ).exists()
             sync_url = reverse(
                 'integrations_sync',
                 kwargs = { 'integration_id': integration_data.integration_id },
             )
-            cancel_redirect_url = reverse(
-                'integrations_manage',
+            review_config_url = reverse(
+                'integrations_enable',
                 kwargs = { 'integration_id': integration_data.integration_id },
             )
             return self.modal_response(
                 request,
                 context = {
                     'integration_data': integration_data,
-                    'health_status': health_status,
-                    'sync_description': synchronizer.get_description(),
+                    'is_initial_import': is_initial_import,
+                    'sync_description': synchronizer.get_description(
+                        is_initial_import = is_initial_import,
+                    ),
                     'sync_url': sync_url,
-                    'cancel_redirect_url': cancel_redirect_url,
+                    'review_config_url': review_config_url,
                 },
                 template_name = 'integrations/modals/pre_sync_confirm.html',
             )
