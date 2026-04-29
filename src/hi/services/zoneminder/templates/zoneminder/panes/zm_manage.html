@@ -10,18 +10,15 @@
   </div>
   <div class="d-flex">
     {% include "integrations/panes/lifecycle_actions.html" %}
-    <form action="{% url 'zm_sync' %}"
-        method="POST" role="form" data-async="">
-      {% csrf_token %}
-      <button type="submit" class="btn btn btn-outline-secondary" role="button"
-              name="action" value="sync" >
-        {% if has_entities %}
-        {% icon "sync" size="sm" css_class="hi-icon-left" %}RE-SYNC
-        {% else %}
-        {% icon "upload" size="sm" css_class="hi-icon-left" %}IMPORT
-        {% endif %}
-      </button>
-    </form>
+    <a href="{% url 'integrations_pre_sync' integration_id=core.integration_data.integration_id %}"
+       class="btn btn-outline-secondary" role="button"
+       data-async="modal">
+      {% if has_entities %}
+      {% icon "sync" size="sm" css_class="hi-icon-left" %}RE-SYNC
+      {% else %}
+      {% icon "upload" size="sm" css_class="hi-icon-left" %}IMPORT
+      {% endif %}
+    </a>
   </div>
 </div>
 {% if not has_entities %}

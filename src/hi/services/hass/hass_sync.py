@@ -1,12 +1,12 @@
 import logging
-from typing import Dict
+from typing import Dict, Optional
 
 from django.db import transaction
 
-from hi.apps.common.database_lock import ExclusionLockContext
 from hi.apps.common.processing_result import ProcessingResult
 from hi.apps.entity.models import Entity
 
+from hi.integrations.integration_synchronizer import IntegrationSynchronizer
 from hi.integrations.transient_models import IntegrationKey
 from hi.integrations.sync_mixins import IntegrationSyncMixin
 
@@ -18,30 +18,24 @@ from .hass_metadata import HassMetaData
 logger = logging.getLogger(__name__)
 
 
-class HassSynchronizer( HassMixin, IntegrationSyncMixin ):
+class HassSynchronizer( IntegrationSynchronizer, HassMixin, IntegrationSyncMixin ):
 
-    SYNCHRONIZATION_LOCK_NAME = 'hass_integration_sync'
+    RESULT_TITLE = 'Home Assistant Import Result'
 
-    def __init__(self):
-        return
-        
-    def sync( self ) -> ProcessingResult:
-        try:
-            with ExclusionLockContext( name = self.SYNCHRONIZATION_LOCK_NAME ):
-                logger.debug( 'HAss integration sync started.' )
-                return self._sync_helper()
-        except RuntimeError as e:
-            logger.exception( e )
-            return ProcessingResult(
-                title = 'Home Assistant Import Result',
-                error_list = [ str(e) ],
-            )
-        finally:
-            logger.debug( 'HAss integration sync ended.' )
-    
-    def _sync_helper( self ) -> ProcessingResult:
+    def get_result_title(self) -> str:
+        return self.RESULT_TITLE
+
+    def get_description(self) -> Optional[str]:
+        return (
+            'Sync honors your configured import allowlist. Only entities'
+            ' whose Home Assistant domain matches an allowlisted domain'
+            ' are imported; entities outside the allowlist are not'
+            ' imported and will not appear here.'
+        )
+
+    def _sync_impl( self ) -> ProcessingResult:
         hass_manager = self.hass_manager()
-        result = ProcessingResult( title = 'Home Assistant Import Result' )
+        result = ProcessingResult( title = self.RESULT_TITLE )
 
         hass_client = hass_manager.hass_client
         if not hass_client:

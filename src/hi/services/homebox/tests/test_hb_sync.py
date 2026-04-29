@@ -29,7 +29,7 @@ class TestHomeBoxSynchronizer(SimpleTestCase):
 
         with patch.object(synchronizer, 'hb_manager', return_value=manager), \
                 patch.object(synchronizer, '_sync_helper_entities') as sync_entities_mock:
-            result = synchronizer._sync_helper()
+            result = synchronizer._sync_impl()
 
         self.assertIsInstance(result, ProcessingResult)
         self.assertIn('Found 3 current HomeBox items.', result.message_list)

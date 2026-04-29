@@ -1,12 +1,12 @@
 import logging
-from typing import Dict, List
+from typing import Dict, List, Optional
 
 from django.db import transaction
 
-from hi.apps.common.database_lock import ExclusionLockContext
 from hi.apps.common.processing_result import ProcessingResult
 from hi.apps.entity.models import Entity, EntityAttribute
 
+from hi.integrations.integration_synchronizer import IntegrationSynchronizer
 from hi.integrations.transient_models import IntegrationKey
 from hi.integrations.sync_mixins import IntegrationSyncMixin
 
@@ -18,30 +18,23 @@ from .hb_models import HbItem
 logger = logging.getLogger(__name__)
 
 
-class HomeBoxSynchronizer( HomeBoxMixin, IntegrationSyncMixin ):
+class HomeBoxSynchronizer( IntegrationSynchronizer, HomeBoxMixin, IntegrationSyncMixin ):
 
-    SYNCHRONIZATION_LOCK_NAME = 'hb_integration_sync'
+    RESULT_TITLE = 'HomeBox Import Result'
 
-    def __init__(self):
-        return
+    def get_result_title(self) -> str:
+        return self.RESULT_TITLE
 
-    def sync( self ) -> ProcessingResult:
-        try:
-            with ExclusionLockContext( name = self.SYNCHRONIZATION_LOCK_NAME ):
-                logger.debug( 'HomeBox integration sync started.' )
-                return self._sync_helper()
-        except RuntimeError as e:
-            logger.exception( e )
-            return ProcessingResult(
-                title = 'HomeBox Import Result',
-                error_list = [ str(e) ],
-            )
-        finally:
-            logger.debug( 'HomeBox integration sync ended.' )
+    def get_description(self) -> Optional[str]:
+        return (
+            'Sync imports every inventory item visible to the configured'
+            ' HomeBox account. There is no per-item filter on the HomeBox'
+            ' side at this time.'
+        )
 
-    def _sync_helper( self ) -> ProcessingResult:
+    def _sync_impl( self ) -> ProcessingResult:
         hb_manager = self.hb_manager()
-        result = ProcessingResult( title = 'HomeBox Import Result' )
+        result = ProcessingResult( title = self.RESULT_TITLE )
 
         if not hb_manager.hb_client:
             health_status = hb_manager.health_status

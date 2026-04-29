@@ -22,7 +22,7 @@ class TestZoneMinderSynchronizerLockBehavior(TestCase):
     def setUp(self):
         self.synchronizer = ZoneMinderSynchronizer()
     
-    @patch('hi.services.zoneminder.zm_sync.ExclusionLockContext')
+    @patch('hi.integrations.integration_synchronizer.ExclusionLockContext')
     def test_sync_uses_exclusion_lock(self, mock_lock_context):
         """Test sync method uses exclusion lock and returns sync results"""
         # Mock a successful lock context
@@ -37,14 +37,14 @@ class TestZoneMinderSynchronizerLockBehavior(TestCase):
         result = self.synchronizer.sync()
         
         # Test lock usage
-        mock_lock_context.assert_called_once_with(name='zm_integration_sync')
+        mock_lock_context.assert_called_once_with(name='integrations_sync')
         
         # Test actual behavior: should return result with error when client disabled
         self.assertEqual(result.title, 'ZM Import Result')
         self.assertGreater(len(result.error_list), 0)
         self.assertIn('Sync problem. ZM integration disabled?', result.error_list[0])
     
-    @patch('hi.services.zoneminder.zm_sync.ExclusionLockContext')
+    @patch('hi.integrations.integration_synchronizer.ExclusionLockContext')
     def test_sync_handles_lock_runtime_error(self, mock_lock_context):
         """Test sync method handles RuntimeError from lock context and returns proper error result"""
         lock_error_msg = "Lock acquisition failed"
@@ -75,16 +75,16 @@ class TestZoneMinderSynchronizerSyncHelper(TestCase):
         self.mock_manager = Mock()
         self.synchronizer._zm_manager = self.mock_manager
     
-    def test_sync_helper_client_not_available(self):
+    def test_sync_impl_client_not_available(self):
         """Test sync helper handles missing ZM client gracefully"""
         self.mock_manager.zm_client = None
         
-        result = self.synchronizer._sync_helper()
+        result = self.synchronizer._sync_impl()
         
         self.assertEqual(result.title, 'ZM Import Result')
         self.assertIn('Sync problem. ZM integration disabled?', result.error_list[0])
     
-    def test_sync_helper_calls_both_sync_methods(self):
+    def test_sync_impl_calls_both_sync_methods(self):
         """Test sync helper coordinates state and monitor sync and aggregates their results"""
         self.mock_manager.zm_client = Mock()  # Client available
         
@@ -101,7 +101,7 @@ class TestZoneMinderSynchronizerSyncHelper(TestCase):
         with patch.object(self.synchronizer, '_sync_states', side_effect=mock_sync_states) as mock_sync_states, \
              patch.object(self.synchronizer, '_sync_monitors', side_effect=mock_sync_monitors) as mock_sync_monitors:
             
-            result = self.synchronizer._sync_helper()
+            result = self.synchronizer._sync_impl()
             
             # Test coordination: both methods called with same result
             mock_sync_states.assert_called_once()

@@ -12,6 +12,7 @@ from hi.apps.system.health_status_provider import HealthStatusProvider
 from hi.integrations.integration_controller import IntegrationController
 from hi.integrations.integration_gateway import IntegrationGateway
 from hi.integrations.integration_manage_view_pane import IntegrationManageViewPane
+from hi.integrations.integration_synchronizer import IntegrationSynchronizer
 from hi.integrations.models import IntegrationAttribute
 from hi.integrations.transient_models import (
     ConnectionTestResult,
@@ -25,6 +26,7 @@ from .zm_controller import ZoneMinderController
 from .zm_manage_view_pane import ZmManageViewPane
 from .zm_manager import ZoneMinderManager
 from .zm_metadata import ZmMetaData
+from .zm_sync import ZoneMinderSynchronizer
 from .monitors import ZoneMinderMonitor
 from .zm_mixins import ZoneMinderMixin
 
@@ -59,7 +61,10 @@ class ZoneMinderGateway( IntegrationGateway, ZoneMinderMixin ):
     
     def get_health_status_provider(self) -> HealthStatusProvider:
         return ZoneMinderManager()
-    
+
+    def get_synchronizer(self) -> IntegrationSynchronizer:
+        return ZoneMinderSynchronizer()
+
     def validate_configuration(
             self,
             integration_attributes: List[IntegrationAttribute]

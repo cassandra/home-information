@@ -73,6 +73,79 @@ class IntegrationHealthStatusView( HiModalView, IntegrationViewMixin ):
         return self.modal_response( request, context )
 
 
+class IntegrationPreSyncView( HiModalView, IntegrationViewMixin ):
+    """
+    Pre-sync confirmation modal. Surfaces the integration's current
+    health and the synchronizer's description, then offers Sync / Not
+    now actions. Used as the last step of the Configure flow (first-time
+    sync) and from the IMPORT / RE-SYNC button on the integration manage
+    page (subsequent syncs).
+
+    404s when the integration does not provide a synchronizer (sync is
+    opt-in capability — not every integration supports it).
+    """
+
+    def get_template_name( self ) -> str:
+        return 'integrations/modals/pre_sync_confirm.html'
+
+    def get( self, request, *args, **kwargs ):
+        integration_id = kwargs.get('integration_id')
+        integration_data = self.get_integration_data(
+            integration_id = integration_id,
+        )
+        gateway = integration_data.integration_gateway
+        synchronizer = gateway.get_synchronizer()
+        if synchronizer is None:
+            return page_not_found_response( request )
+
+        health_status = gateway.get_health_status_provider().health_status
+        sync_url = reverse(
+            'integrations_sync',
+            kwargs = { 'integration_id': integration_data.integration_id },
+        )
+        cancel_redirect_url = reverse(
+            'integrations_manage',
+            kwargs = { 'integration_id': integration_data.integration_id },
+        )
+
+        context = {
+            'integration_data': integration_data,
+            'health_status': health_status,
+            'sync_description': synchronizer.get_description(),
+            'sync_url': sync_url,
+            'cancel_redirect_url': cancel_redirect_url,
+        }
+        return self.modal_response( request, context )
+
+
+class IntegrationSyncView( HiModalView, IntegrationViewMixin ):
+    """
+    Framework sync execution view. Invokes the integration's
+    synchronizer and returns the result modal. The dispatcher modal
+    (post-sync entity placement, Phase 3) will replace the result
+    modal here once it lands; for now the framework returns the same
+    ProcessingResult-style modal the per-service sync views return.
+    """
+
+    def get_template_name( self ) -> str:
+        return 'common/modals/processing_result.html'
+
+    def post( self, request, *args, **kwargs ):
+        integration_id = kwargs.get('integration_id')
+        integration_data = self.get_integration_data(
+            integration_id = integration_id,
+        )
+        synchronizer = integration_data.integration_gateway.get_synchronizer()
+        if synchronizer is None:
+            return page_not_found_response( request )
+
+        processing_result = synchronizer.sync()
+        return self.modal_response(
+            request,
+            context = { 'processing_result': processing_result },
+        )
+
+
 class IntegrationEnableView( HiModalView, IntegrationViewMixin, AttributeEditViewMixin ):
 
     def get_template_name( self ) -> str:
@@ -132,6 +205,40 @@ class IntegrationEnableView( HiModalView, IntegrationViewMixin, AttributeEditVie
         integration_manager.enable_integration(
             integration_data = integration_data,
         )
+
+        # Configure flow last step: when the integration supports sync,
+        # transition directly into the pre-sync confirmation modal
+        # instead of redirecting to the manage page. attr.js's response
+        # handler (extended for `data.modal`) closes the Configure
+        # modal and opens the new modal in its place via antinode's
+        # AN.displayModal — same lifecycle antinode applies to its own
+        # modal-to-modal transitions.
+        synchronizer = integration_data.integration_gateway.get_synchronizer()
+        if synchronizer is not None:
+            gateway = integration_data.integration_gateway
+            health_status = gateway.get_health_status_provider().health_status
+            sync_url = reverse(
+                'integrations_sync',
+                kwargs = { 'integration_id': integration_data.integration_id },
+            )
+            cancel_redirect_url = reverse(
+                'integrations_manage',
+                kwargs = { 'integration_id': integration_data.integration_id },
+            )
+            return self.modal_response(
+                request,
+                context = {
+                    'integration_data': integration_data,
+                    'health_status': health_status,
+                    'sync_description': synchronizer.get_description(),
+                    'sync_url': sync_url,
+                    'cancel_redirect_url': cancel_redirect_url,
+                },
+                template_name = 'integrations/modals/pre_sync_confirm.html',
+            )
+
+        # Integrations without a synchronizer keep the original
+        # redirect-to-manage-page behavior.
         redirect_url = reverse( 'integrations_manage',
                                 kwargs = { 'integration_id': integration_id } )
         return AttributeRedirectResponse( url = redirect_url )

@@ -1,0 +1,62 @@
+{% extends "modals/action_2_with_cancel.html" %}
+{% load icons %}
+
+{% comment %}
+Pre-sync confirmation modal for integrations.
+
+Shown as the last step of the Configure flow (first-time sync) and
+when the operator clicks the IMPORT / RE-SYNC button on the
+integration manage page (subsequent syncs). Surfaces the integration's
+current health snapshot and a sync description, then offers Sync /
+Not now actions.
+
+Context:
+  integration_data        : IntegrationData (required) — for label, id.
+  health_status           : HealthStatus (required) — rendered via the
+                            shared health_status_badge.html partial.
+  sync_description        : Optional[str] — per-integration text from
+                            IntegrationGateway.get_sync_description.
+  sync_url                : str (required) — URL the Sync action posts to.
+  cancel_redirect_url     : str (required) — where Not now sends the user
+                            (manage page).
+{% endcomment %}
+
+{% block header_class %}bg-secondary{% endblock %}
+
+{% block title_text %}
+Sync {{ integration_data.label }}?
+{% endblock %}
+
+{% block body %}
+<div class="d-flex align-items-center mb-3">
+  {% include "system/panes/health_status_badge.html" with health_status=health_status %}
+</div>
+
+<p>
+  Sync will import entities from <strong>{{ integration_data.label }}</strong>
+  into Home Information. Imported entities are placed in your views in
+  the next step.
+</p>
+
+{% if sync_description %}
+<p class="text-muted">{{ sync_description }}</p>
+{% endif %}
+{% endblock %}
+
+{% block action_left %}
+<a id="hi-modal-cancel" role="button"
+   class="btn btn-outline-tertiary"
+   href="{{ cancel_redirect_url }}"
+   data-async="true">
+  {% icon "cancel" size="sm" css_class="hi-icon-left" %}NOT NOW
+</a>
+{% endblock %}
+
+{% block action_right %}
+<form action="{{ sync_url }}" method="post" class="form" data-async="modal">
+  {% csrf_token %}
+  <button type="submit" class="btn btn-primary">
+    {% icon "sync" size="sm" css_class="hi-icon-left" %}SYNC
+  </button>
+</form>
+{% endblock %}

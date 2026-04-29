@@ -1,10 +1,9 @@
 import logging
 from .pyzm_client.helpers.Monitor import Monitor as ZmMonitor
-from typing import Dict
+from typing import Dict, Optional
 
 from django.db import transaction
 
-from hi.apps.common.database_lock import ExclusionLockContext
 from hi.apps.common.processing_result import ProcessingResult
 from hi.apps.entity.enums import EntityType
 from hi.apps.entity.models import Entity
@@ -12,6 +11,7 @@ from hi.apps.sense.models import Sensor
 
 from hi.apps.model_helper import HiModelHelper
 
+from hi.integrations.integration_synchronizer import IntegrationSynchronizer
 from hi.integrations.transient_models import IntegrationKey
 from hi.integrations.sync_mixins import IntegrationSyncMixin
 
@@ -21,9 +21,9 @@ from .zm_mixins import ZoneMinderMixin
 logger = logging.getLogger(__name__)
 
 
-class ZoneMinderSynchronizer( ZoneMinderMixin, IntegrationSyncMixin ):
+class ZoneMinderSynchronizer( IntegrationSynchronizer, ZoneMinderMixin, IntegrationSyncMixin ):
 
-    SYNCHRONIZATION_LOCK_NAME = 'zm_integration_sync'
+    RESULT_TITLE = 'ZM Import Result'
 
     MONITOR_FUNCTION_NAME_LABEL_DICT = {
         'None': 'None',
@@ -33,25 +33,19 @@ class ZoneMinderSynchronizer( ZoneMinderMixin, IntegrationSyncMixin ):
         'Mocord': 'Mocord',
         'Nodect': 'Nodect',
     }
-    
-    def __init__(self):
-        return
-    
-    def sync( self ) -> ProcessingResult:
-        try:
-            with ExclusionLockContext( name = self.SYNCHRONIZATION_LOCK_NAME ):
-                logger.debug( 'ZoneMinder integration sync started.' )
-                return self._sync_helper()
-        except RuntimeError as e:
-            return ProcessingResult(
-                title = 'ZM Import Result',
-                error_list = [ str(e) ],
-            )
-        finally:
-            logger.debug( 'ZoneMinder integration sync ended.' )
-    
-    def _sync_helper( self ) -> ProcessingResult:
-        result = ProcessingResult( title = 'ZM Import Result' )
+
+    def get_result_title(self) -> str:
+        return self.RESULT_TITLE
+
+    def get_description(self) -> Optional[str]:
+        return (
+            'Sync imports each ZoneMinder monitor as a camera entity,'
+            ' along with derived motion and run-state sensors. Existing'
+            ' entities are updated in place where possible.'
+        )
+
+    def _sync_impl( self ) -> ProcessingResult:
+        result = ProcessingResult( title = self.RESULT_TITLE )
 
         if not self.zm_manager().zm_client:
             logger.debug( 'ZoneMinder client not created. ZM integration disabled?' )

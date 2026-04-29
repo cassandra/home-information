@@ -184,3 +184,202 @@ class RemoveViewTests(SyncViewTestCase):
 
         self.assertErrorResponse(response)
         mock_disable.assert_not_called()
+
+
+# --------------------------------------------------------------------------
+# Pre-sync confirmation modal + framework Sync view tests
+# --------------------------------------------------------------------------
+
+
+class _SyncTestSynchronizer:
+    """
+    Stand-in synchronizer for pre-sync / sync view tests. Stays
+    intentionally minimal (does NOT extend IntegrationSynchronizer) to
+    avoid acquiring the real lock or running framework retry logic in
+    unit tests; the views only need methods the framework actually
+    calls on it.
+    """
+    def __init__(self, description='Test integration sync description.'):
+        self._description = description
+        self.sync_called = False
+
+    def get_description(self):
+        return self._description
+
+    def get_result_title(self):
+        return 'Test Sync Result'
+
+    def sync(self):
+        from hi.apps.common.processing_result import ProcessingResult
+        self.sync_called = True
+        return ProcessingResult(
+            title='Test Sync Result',
+            message_list=['Synced.'],
+        )
+
+
+class _SyncTestHealthStatusProvider:
+    @property
+    def health_status(self):
+        # The pre-sync template renders the health badge partial; tests
+        # don't need a real provider, just a stand-in that returns
+        # something safe to traverse from a Django template.
+        return Mock(status=Mock(name='HEALTHY'), is_healthy=True)
+
+
+class _SyncCapableGateway(IntegrationGateway):
+    """Gateway that provides a synchronizer + health provider."""
+
+    def __init__(self, integration_id='sync_view_test', synchronizer=None):
+        self.integration_id = integration_id
+        self._synchronizer = (
+            synchronizer if synchronizer is not None else _SyncTestSynchronizer()
+        )
+
+    def get_metadata(self):
+        return IntegrationMetaData(
+            integration_id=self.integration_id,
+            label='Sync View Test Integration',
+            attribute_type=_PauseResumeTestAttributeType,
+            allow_entity_deletion=True,
+        )
+
+    def get_manage_view_pane(self):
+        return Mock()
+
+    def get_monitor(self):
+        return Mock()
+
+    def get_controller(self):
+        return Mock()
+
+    def get_synchronizer(self):
+        return self._synchronizer
+
+    def get_health_status_provider(self):
+        return _SyncTestHealthStatusProvider()
+
+
+class _SyncIncapableGateway(IntegrationGateway):
+    """Gateway whose integration does NOT support sync."""
+
+    def __init__(self, integration_id='no_sync_view_test'):
+        self.integration_id = integration_id
+
+    def get_metadata(self):
+        return IntegrationMetaData(
+            integration_id=self.integration_id,
+            label='No Sync Test Integration',
+            attribute_type=_PauseResumeTestAttributeType,
+            allow_entity_deletion=True,
+        )
+
+    def get_manage_view_pane(self):
+        return Mock()
+
+    def get_monitor(self):
+        return Mock()
+
+    def get_controller(self):
+        return Mock()
+
+
+class PreSyncViewTests(SyncViewTestCase):
+    """
+    Framework pre-sync confirmation modal. Renders integration health,
+    synchronizer description, and Sync / Not now actions; 404s when
+    the integration does not provide a synchronizer.
+    """
+
+    INTEGRATION_ID = 'sync_view_test'
+
+    def setUp(self):
+        super().setUp()
+        IntegrationManager().reset_for_testing()
+
+        self.integration = Integration.objects.create(
+            integration_id=self.INTEGRATION_ID,
+            is_enabled=True,
+            is_paused=False,
+        )
+        self.synchronizer = _SyncTestSynchronizer(
+            description='HASS-flavored fake description.'
+        )
+        self.gateway = _SyncCapableGateway(
+            integration_id=self.INTEGRATION_ID,
+            synchronizer=self.synchronizer,
+        )
+        IntegrationManager()._integration_data_map[self.INTEGRATION_ID] = IntegrationData(
+            integration_gateway=self.gateway,
+            integration=self.integration,
+        )
+
+    def _url(self):
+        return reverse(
+            'integrations_pre_sync',
+            kwargs={'integration_id': self.INTEGRATION_ID},
+        )
+
+    def test_get_returns_modal_with_description(self):
+        response = self.client.get(self._url())
+        self.assertSuccessResponse(response)
+        body = response.content.decode()
+        self.assertIn('HASS-flavored fake description.', body)
+
+    def test_get_404s_when_integration_has_no_synchronizer(self):
+        # Replace the integration_data with one whose gateway returns
+        # None from get_synchronizer.
+        IntegrationManager()._integration_data_map[self.INTEGRATION_ID] = IntegrationData(
+            integration_gateway=_SyncIncapableGateway(self.INTEGRATION_ID),
+            integration=self.integration,
+        )
+        response = self.client.get(self._url())
+        self.assertEqual(response.status_code, 404)
+
+
+class SyncViewTests(SyncViewTestCase):
+    """
+    Framework Sync view: POSTs invoke the synchronizer's sync() and
+    return the result modal. 404s when the integration does not
+    provide a synchronizer.
+    """
+
+    INTEGRATION_ID = 'sync_view_test'
+
+    def setUp(self):
+        super().setUp()
+        IntegrationManager().reset_for_testing()
+
+        self.integration = Integration.objects.create(
+            integration_id=self.INTEGRATION_ID,
+            is_enabled=True,
+            is_paused=False,
+        )
+        self.synchronizer = _SyncTestSynchronizer()
+        self.gateway = _SyncCapableGateway(
+            integration_id=self.INTEGRATION_ID,
+            synchronizer=self.synchronizer,
+        )
+        IntegrationManager()._integration_data_map[self.INTEGRATION_ID] = IntegrationData(
+            integration_gateway=self.gateway,
+            integration=self.integration,
+        )
+
+    def _url(self):
+        return reverse(
+            'integrations_sync',
+            kwargs={'integration_id': self.INTEGRATION_ID},
+        )
+
+    def test_post_invokes_synchronizer_sync(self):
+        response = self.client.post(self._url())
+        self.assertSuccessResponse(response)
+        self.assertTrue(self.synchronizer.sync_called)
+
+    def test_post_404s_when_integration_has_no_synchronizer(self):
+        IntegrationManager()._integration_data_map[self.INTEGRATION_ID] = IntegrationData(
+            integration_gateway=_SyncIncapableGateway(self.INTEGRATION_ID),
+            integration=self.integration,
+        )
+        response = self.client.post(self._url())
+        self.assertEqual(response.status_code, 404)
