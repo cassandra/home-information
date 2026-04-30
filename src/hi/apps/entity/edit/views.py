@@ -14,6 +14,7 @@ from hi.apps.collection.collection_manager import CollectionManager
 import hi.apps.common.antinode as antinode
 from hi.apps.entity.entity_manager import EntityManager
 from hi.apps.entity.entity_pairing_manager import EntityPairingManager, EntityPairingError
+from hi.apps.entity.entity_placement import EntityPlacer
 from hi.apps.entity.edit.entity_type_transition_handler import EntityTypeTransitionHandler
 from hi.apps.entity.forms import EntityAddForm, EntityForm
 from hi.apps.entity.models import (
@@ -126,7 +127,7 @@ class EntityAddView( HiModalView ):
         if request.view_parameters.view_type.is_location_view:
             try:
                 current_location_view = LocationManager().get_default_location_view( request = request )
-                EntityManager().add_entity_to_view(
+                EntityPlacer().place_entity_in_view(
                     entity = entity,
                     location_view = current_location_view,
                     bulk_grid_index = bulk_grid_index,
