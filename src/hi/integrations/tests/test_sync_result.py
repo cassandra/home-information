@@ -1,10 +1,11 @@
 """
 Tests for the IntegrationSyncResult shape.
 
-Sync-vocabulary fields: title, structured change counts
-(created/updated/removed), info_list / error_list / footer_message,
-plus the optional placement_input that bridges to the dispatcher
-modal when the sync produced new entities to place.
+Sync-vocabulary fields: title, per-category name lists
+(created_list / updated_list / removed_list), info_list /
+error_list / footer_message, plus the optional placement_input
+that bridges to the dispatcher modal when the sync produced new
+entities to place.
 
 Tests for the EntityPlacementInput / EntityPlacementItem /
 EntityPlacementGroup data shapes themselves live in
@@ -48,36 +49,38 @@ class IntegrationSyncResultTests(SimpleTestCase):
         self.assertEqual(b.error_list, [])
 
     def test_field_shape(self):
-        """title / info_list / error_list / footer_message and the
-        change counters all round-trip cleanly."""
+        """title / per-category lists / info_list / error_list /
+        footer_message round-trip cleanly. Counts in the modal are
+        derived from list lengths, so the lists are the source of
+        truth."""
         result = IntegrationSyncResult(
             title='Sync Done',
-            created_count=3,
-            updated_count=2,
-            removed_count=1,
+            created_list=['New A', 'New B', 'New C'],
+            updated_list=['Existing X', 'Existing Y'],
+            removed_list=['Stale Z'],
             info_list=['Found 50 upstream items'],
             error_list=['warning x'],
             footer_message='see settings',
         )
         self.assertEqual(result.title, 'Sync Done')
-        self.assertEqual(result.created_count, 3)
-        self.assertEqual(result.updated_count, 2)
-        self.assertEqual(result.removed_count, 1)
+        self.assertEqual(result.created_list, ['New A', 'New B', 'New C'])
+        self.assertEqual(result.updated_list, ['Existing X', 'Existing Y'])
+        self.assertEqual(result.removed_list, ['Stale Z'])
         self.assertEqual(result.info_list, ['Found 50 upstream items'])
         self.assertEqual(result.error_list, ['warning x'])
         self.assertEqual(result.footer_message, 'see settings')
 
-    def test_has_changes_true_when_any_count_nonzero(self):
+    def test_has_changes_true_when_any_list_nonempty(self):
         for kwargs in (
-            {'created_count': 1},
-            {'updated_count': 1},
-            {'removed_count': 1},
-            {'created_count': 1, 'updated_count': 1},
+            {'created_list': ['a']},
+            {'updated_list': ['a']},
+            {'removed_list': ['a']},
+            {'created_list': ['a'], 'updated_list': ['b']},
         ):
             result = IntegrationSyncResult(title='X', **kwargs)
             self.assertTrue(result.has_changes, kwargs)
 
-    def test_has_changes_false_when_all_counts_zero(self):
+    def test_has_changes_false_when_all_lists_empty(self):
         # Nothing-new refresh: no changes even if info_list has lines.
         result = IntegrationSyncResult(
             title='Empty',

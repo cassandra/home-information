@@ -83,10 +83,10 @@ class IntegrationSynchronizerRemovalTestCase(TestCase):
         # Entity should be completely deleted
         self.assertFalse(Entity.objects.filter(id=entity_id).exists())
 
-        # Hard delete bumps removed_count; no info_list entry —
-        # per-event detail is captured by the count, not by a
-        # narrative line.
-        self.assertEqual(self.result.removed_count, 1)
+        # Hard delete records the entity name in removed_list and
+        # adds nothing to info_list — the per-category list itself
+        # is what enumerates 'what was removed'.
+        self.assertEqual(self.result.removed_list, ['Test Entity'])
         self.assertEqual(self.result.info_list, [])
         
         # Verify complete cleanup - no orphaned attributes or states
@@ -169,10 +169,11 @@ class IntegrationSynchronizerRemovalTestCase(TestCase):
         # Entity state should be deleted (orphaned)
         self.assertFalse(EntityState.objects.filter(id=state_id).exists())
         
-        # Preservation bumps removed_count and surfaces a diagnostic
-        # info note (the operator wants to know an entity was
-        # disconnected and renamed, not just a count).
-        self.assertEqual(self.result.removed_count, 1)
+        # Preservation records the original name in removed_list
+        # (captured before the rename) and surfaces a diagnostic
+        # info note — the operator wants to know an entity was
+        # disconnected and renamed, not just see a name in a list.
+        self.assertEqual(self.result.removed_list, [original_name])
         self.assertEqual(len(self.result.info_list), 1)
         message = self.result.info_list[0]
         self.assertIn('Preserved TestIntegration entity', message)
@@ -352,9 +353,9 @@ class IntegrationSynchronizerRemovalTestCase(TestCase):
             self.entity, self.result, 'TestIntegration'
         )
         
-        # Entity should be completely deleted; removed_count bumped.
+        # Entity should be completely deleted; name recorded.
         self.assertFalse(Entity.objects.filter(id=entity_id).exists())
-        self.assertEqual(self.result.removed_count, 1)
+        self.assertEqual(self.result.removed_list, ['Test Entity'])
 
     def test_entity_with_integration_payload_preservation(self):
         """Test that integration_payload is preserved during entity preservation."""
@@ -594,8 +595,9 @@ class IntegrationSynchronizerRemovalTestCase(TestCase):
         self.assertFalse(Controller.objects.filter(id__in=component_ids).exists())
         self.assertFalse(EntityAttribute.objects.filter(id__in=attribute_ids).exists())
         
-        # Hard delete bumps removed_count; no narrative info entry.
-        self.assertEqual(self.result.removed_count, 1)
+        # Hard delete records the name in removed_list; no
+        # narrative info entry.
+        self.assertEqual(self.result.removed_list, ['Test Entity'])
         self.assertEqual(self.result.info_list, [])
 
     def test_result_info_list_accumulation(self):
@@ -622,8 +624,8 @@ class IntegrationSynchronizerRemovalTestCase(TestCase):
         self.assertIn('Preserved TestIntegration entity', self.result.info_list[2])
         self.assertEqual(self.result.info_list[0], 'Initial message')
         self.assertEqual(self.result.info_list[1], 'Another message')
-        # And removed_count was bumped exactly once.
-        self.assertEqual(self.result.removed_count, 1)
+        # And removed_list captured the name exactly once.
+        self.assertEqual(self.result.removed_list, ['Test Entity'])
 
 
 class IntegrationSynchronizerRemovalTransactionTestCase(TransactionTestCase):
@@ -746,13 +748,13 @@ class IntegrationSynchronizerRemovalTransactionTestCase(TransactionTestCase):
         self.assertEqual(remaining_attributes.count(), 1)
         self.assertEqual(remaining_attributes.first().name, 'User Note')
         
-        # Preservation diagnostic surfaces in info_list; count
-        # bumps exactly once.
+        # Preservation diagnostic surfaces in info_list; the
+        # original (pre-rename) name is captured in removed_list.
         self.assertEqual(len(self.result.info_list), 1)
         message = self.result.info_list[0]
         self.assertIn('Preserved TestIntegration entity', message)
         self.assertIn('disconnected from integration', message)
-        self.assertEqual(self.result.removed_count, 1)
+        self.assertEqual(self.result.removed_list, ['Test Entity'])
 
     def test_preservation_with_database_constraint_validation(self):
         """Test that preservation operations respect database constraints and maintain referential integrity."""

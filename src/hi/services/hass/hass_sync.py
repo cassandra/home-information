@@ -145,7 +145,7 @@ class HassSynchronizer( IntegrationSynchronizer, HassMixin ):
             hass_device = hass_device,
             add_alarm_events = self.hass_manager().should_add_alarm_events,
         )
-        result.created_count += 1
+        result.created_list.append( entity.name )
         return entity
 
     def _update_entity( self,
@@ -160,7 +160,7 @@ class HassSynchronizer( IntegrationSynchronizer, HassMixin ):
             hass_device = hass_device,
         )
         if change_messages:
-            result.updated_count += 1
+            result.updated_list.append( entity.name )
         return
 
     def _remove_entity( self,

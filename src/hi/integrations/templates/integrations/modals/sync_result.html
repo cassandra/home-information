@@ -6,15 +6,16 @@
 
   Reached when the sync produced no placement work to do (errors,
   no new entities, or 'no items left to place' from the GET
-  dispatcher). Renders a counts-driven lead summary, an actionable
-  footer hint when the synchronizer set one, and collapsible
-  Details / Errors sections for operators who want them.
+  dispatcher). Renders a hero headline, a stat-card row of change
+  counts, color-coded per-category enumerations of affected
+  entities, plus collapsible Errors / Details for operators who
+  want them.
 
-  The modal title bar keeps the generic HI logo + short
-  generic title ('Import Result' / 'Refresh Result'); the
-  integration's identity is surfaced as a body subtitle row
-  (logo + label) where the white background gives the
-  transparent integration logos predictable contrast.
+  The modal title bar keeps the generic HI logo + short generic
+  title ('Import Result' / 'Refresh Result'); the integration's
+  identity is surfaced as a body subtitle row (logo + label) where
+  the white background gives the transparent integration logos
+  predictable contrast.
 
   Context:
     sync_result      : IntegrationSyncResult (required)
@@ -31,43 +32,140 @@
 {% if integration_data %}
 <div class="d-flex align-items-center mb-3 pb-2 border-bottom">
   <img class="mr-2"
-       style="height: 28px; width: auto;"
+       style="height: 24px; width: auto;"
        src="{% static integration_data.integration_metadata.logo_static_path %}"
        alt="{{ integration_data.label }} Logo">
-  <h5 class="mb-0">{{ integration_data.label }}</h5>
+  <div class="text-muted small text-uppercase"
+       style="letter-spacing: 0.05em;">
+    {{ integration_data.label }}
+  </div>
 </div>
 {% endif %}
 
 {% comment %}
-  Lead summary — one sentence telling the operator the outcome
-  at a glance. Errors take precedence; otherwise counts drive
-  the message.
+  Hero headline — the operator's first read of the modal. Errors
+  take precedence; otherwise the change-count summary speaks.
+  Centered, with a leading status icon at display weight so this
+  zone clearly outranks the detail sections below.
 {% endcomment %}
 {% if sync_result.error_list and not sync_result.has_changes %}
-  <div class="alert alert-danger mb-3">
-    <strong>Sync failed.</strong>
-    {{ sync_result.error_list|length }} error{{ sync_result.error_list|length|pluralize }}.
+  <div class="text-center mb-4">
+    <div class="text-danger mb-1" style="font-size: 2.5rem; line-height: 1;">&#x26A0;</div>
+    <h3 class="text-danger mb-1">Sync failed</h3>
+    <div class="text-muted small">
+      {{ sync_result.error_list|length }} error{{ sync_result.error_list|length|pluralize }} — see details below.
+    </div>
   </div>
 {% elif sync_result.error_list %}
-  <div class="alert alert-warning mb-3">
-    <strong>Completed with errors.</strong>
-    {{ sync_result.error_list|length }} error{{ sync_result.error_list|length|pluralize }}.
+  <div class="text-center mb-4">
+    <div class="text-warning mb-1" style="font-size: 2.5rem; line-height: 1;">&#x26A0;</div>
+    <h3 class="text-warning mb-1">Completed with errors</h3>
+    <div class="text-muted small">
+      {{ sync_result.error_list|length }} error{{ sync_result.error_list|length|pluralize }} — see details below.
+    </div>
   </div>
 {% elif not sync_result.has_changes %}
-  <p class="text-muted mb-3"><em>Nothing new since the last sync.</em></p>
+  <div class="text-center mb-4">
+    <div class="text-muted mb-1" style="font-size: 2.5rem; line-height: 1;">&#x2014;</div>
+    <h3 class="text-muted mb-1">Nothing new</h3>
+    <div class="text-muted small">No changes since the last sync.</div>
+  </div>
 {% else %}
-  <p class="mb-3">
-    <strong class="text-success">Sync complete.</strong>
-    {% if sync_result.created_count %}
-      <span class="badge badge-success">{{ sync_result.created_count }} created</span>
+  <div class="text-center mb-3">
+    <div class="text-success mb-1" style="font-size: 2.5rem; line-height: 1;">&#x2713;</div>
+    <h3 class="text-success mb-1">Sync complete</h3>
+  </div>
+
+  {% comment %}
+    Stat-card row: big number + label per non-zero category.
+    Visually anchors the result so the operator's eye lands on
+    'what changed and how much' before scanning the per-category
+    item lists. Only non-zero categories render — symmetry is less
+    important than not implying a third stat that doesn't exist.
+  {% endcomment %}
+  <div class="d-flex justify-content-around text-center mb-4 pb-3 border-bottom">
+    {% if sync_result.created_list %}
+    <div class="px-3">
+      <div class="text-success font-weight-bold"
+           style="font-size: 2rem; line-height: 1;">
+        {{ sync_result.created_list|length }}
+      </div>
+      <div class="text-muted small text-uppercase"
+           style="letter-spacing: 0.05em;">Created</div>
+    </div>
     {% endif %}
-    {% if sync_result.updated_count %}
-      <span class="badge badge-info">{{ sync_result.updated_count }} updated</span>
+    {% if sync_result.updated_list %}
+    <div class="px-3">
+      <div class="text-info font-weight-bold"
+           style="font-size: 2rem; line-height: 1;">
+        {{ sync_result.updated_list|length }}
+      </div>
+      <div class="text-muted small text-uppercase"
+           style="letter-spacing: 0.05em;">Updated</div>
+    </div>
     {% endif %}
-    {% if sync_result.removed_count %}
-      <span class="badge badge-secondary">{{ sync_result.removed_count }} removed</span>
+    {% if sync_result.removed_list %}
+    <div class="px-3">
+      <div class="text-secondary font-weight-bold"
+           style="font-size: 2rem; line-height: 1;">
+        {{ sync_result.removed_list|length }}
+      </div>
+      <div class="text-muted small text-uppercase"
+           style="letter-spacing: 0.05em;">Removed</div>
+    </div>
     {% endif %}
-  </p>
+  </div>
+
+  {% comment %}
+    Per-category item enumeration — color-coded left border bars
+    matching the stat colors so the eye links each list back to
+    its stat card. Section header is small/uppercase to subordinate
+    the affordance to the entity names themselves.
+  {% endcomment %}
+  {% if sync_result.removed_list %}
+  <div class="mb-3 pl-3" style="border-left: 3px solid #6c757d;">
+    <div class="small text-secondary text-uppercase mb-1"
+         style="letter-spacing: 0.05em;">
+      Removed ({{ sync_result.removed_list|length }})
+    </div>
+    <ul class="list-unstyled small mb-0"
+        style="max-height: 160px; overflow-y: auto;">
+      {% for name in sync_result.removed_list %}
+      <li>{{ name }}</li>
+      {% endfor %}
+    </ul>
+  </div>
+  {% endif %}
+
+  {% if sync_result.updated_list %}
+  <div class="mb-3 pl-3" style="border-left: 3px solid #17a2b8;">
+    <div class="small text-info text-uppercase mb-1"
+         style="letter-spacing: 0.05em;">
+      Updated ({{ sync_result.updated_list|length }})
+    </div>
+    <ul class="list-unstyled small mb-0"
+        style="max-height: 160px; overflow-y: auto;">
+      {% for name in sync_result.updated_list %}
+      <li>{{ name }}</li>
+      {% endfor %}
+    </ul>
+  </div>
+  {% endif %}
+
+  {% if sync_result.created_list %}
+  <div class="mb-3 pl-3" style="border-left: 3px solid #28a745;">
+    <div class="small text-success text-uppercase mb-1"
+         style="letter-spacing: 0.05em;">
+      Created ({{ sync_result.created_list|length }})
+    </div>
+    <ul class="list-unstyled small mb-0"
+        style="max-height: 160px; overflow-y: auto;">
+      {% for name in sync_result.created_list %}
+      <li>{{ name }}</li>
+      {% endfor %}
+    </ul>
+  </div>
+  {% endif %}
 {% endif %}
 
 {% comment %}
@@ -82,14 +180,15 @@
 
 {% comment %}Errors detail — expanded by default when present.{% endcomment %}
 {% if sync_result.error_list %}
-<div class="mb-2">
-  <a class="text-danger small" data-toggle="collapse"
+<div class="mb-2 pl-3" style="border-left: 3px solid #dc3545;">
+  <a class="small text-danger text-uppercase" data-toggle="collapse"
      href="#hi-sync-result-errors" role="button"
-     aria-expanded="true" aria-controls="hi-sync-result-errors">
+     aria-expanded="true" aria-controls="hi-sync-result-errors"
+     style="letter-spacing: 0.05em;">
     Errors ({{ sync_result.error_list|length }})
   </a>
   <div class="collapse show" id="hi-sync-result-errors">
-    <ul class="small mt-1 mb-0">
+    <ul class="list-unstyled small mt-1 mb-0">
       {% for error_message in sync_result.error_list %}
       <li class="text-danger">{{ error_message }}</li>
       {% endfor %}

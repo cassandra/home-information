@@ -223,7 +223,7 @@ class ZoneMinderSynchronizer( IntegrationSynchronizer, ZoneMinderMixin ):
 
         # The singleton ZM service entity isn't a placement candidate
         # (already attached to the integration root) — surface as an
-        # info note rather than a created_count bump so it doesn't
+        # info note rather than as a created_list entry so it doesn't
         # inflate the count of placeable monitors.
         result.info_list.append( f'Created ZM service entity: {zm_entity}' )
         return zm_entity
@@ -275,7 +275,7 @@ class ZoneMinderSynchronizer( IntegrationSynchronizer, ZoneMinderMixin ):
                     ),
                 )
                 
-        result.created_count += 1
+        result.created_list.append( entity.name )
         return entity
 
     def _update_entity( self,
@@ -283,9 +283,11 @@ class ZoneMinderSynchronizer( IntegrationSynchronizer, ZoneMinderMixin ):
                         zm_monitor  : ZmMonitor,
                         result      : IntegrationSyncResult ):
         if entity.name != zm_monitor.name():
+            old_name = entity.name
             entity.name = zm_monitor.name()
             entity.save()
-            result.updated_count += 1
+            # Surface the rename so the operator sees both names.
+            result.updated_list.append( f'{old_name} → {entity.name}' )
         return
     
     def _remove_entity( self,

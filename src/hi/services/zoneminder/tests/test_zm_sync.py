@@ -682,10 +682,10 @@ class TestZoneMinderSynchronizerEntityUpdate(TestCase):
         self.assertEqual(mock_entity.can_user_delete, True)  # User delete flag unchanged
         self.assertEqual(mock_entity.integration_key, original_integration_key)  # Integration key unchanged
         
-        # Update bumps updated_count; per-event narrative is no
-        # longer surfaced (counts capture it).
+        # Rename surfaces the old → new transition in updated_list
+        # (operator can see both names at a glance).
         self.assertEqual(len(result.error_list), 0)
-        self.assertEqual(result.updated_count, 1)
+        self.assertEqual(result.updated_list, ['Old Name → New Name'])
 
     def test_update_entity_no_change_when_name_same(self):
         """Test _update_entity doesn't save when name unchanged and preserves all entity state"""
@@ -705,9 +705,9 @@ class TestZoneMinderSynchronizerEntityUpdate(TestCase):
         # Test no persistence when no changes.
         mock_entity.save.assert_not_called()
 
-        # No-change path bumps no count and surfaces nothing.
+        # No-change path appends nothing and surfaces nothing.
         self.assertEqual(len(result.error_list), 0)
-        self.assertEqual(result.updated_count, 0)
+        self.assertEqual(result.updated_list, [])
         self.assertEqual(result.info_list, [])
 
 
@@ -903,7 +903,7 @@ class TestZoneMinderSynchronizerWithRealData(TestCase):
         # Should update to real name from ZM API
         self.assertEqual(mock_entity.name, 'HighCamera')
         mock_entity.save.assert_called_once()
-        self.assertEqual(result.updated_count, 1)
+        self.assertEqual(result.updated_list, ['Camera_001 → HighCamera'])
     
     @patch.object(Entity.objects, 'filter')
     def test_get_existing_entities_with_real_monitor_id_patterns(self, mock_filter):
@@ -1014,8 +1014,8 @@ class TestZoneMinderSynchronizerWithRealData(TestCase):
                 # Should use transaction
                 mock_atomic.assert_called()
                 
-                # Creation bumps created_count.
-                self.assertEqual(result.created_count, 1)
+                # Creation records the entity name in created_list.
+                self.assertEqual(len(result.created_list), 1)
 
 
 class TestZoneMinderSynchronizerSyncResultGrouping(TestCase):

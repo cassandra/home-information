@@ -165,11 +165,12 @@ class IntegrationSynchronizer:
         disconnect it from the integration and remove only integration-
         related components. Otherwise, perform complete deletion.
 
-        Bumps ``result.removed_count`` regardless of which branch is
-        taken — both 'preserve with user data' and 'hard delete' are
+        Appends the entity's *current* name (captured before any
+        rename in the preserve path) to ``result.removed_list`` —
+        both 'preserve with user data' and 'hard delete' are
         operator-visible removals from the integration's perspective.
         """
-        result.removed_count += 1
+        result.removed_list.append(entity.name)
         if EntityUserDataDetector.has_user_created_attributes(entity):
             EntityIntegrationOperations.preserve_with_user_data(
                 entity = entity,

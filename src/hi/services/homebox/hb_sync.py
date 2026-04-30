@@ -144,7 +144,7 @@ class HomeBoxSynchronizer( IntegrationSynchronizer, HomeBoxMixin ):
                         item : HbItem,
                         result : IntegrationSyncResult ) -> Entity:
         entity = HbConverter.create_models_for_hb_item( hb_item = item )
-        result.created_count += 1
+        result.created_list.append( entity.name )
         return entity
 
     def _update_entity( self,
@@ -157,8 +157,8 @@ class HomeBoxSynchronizer( IntegrationSynchronizer, HomeBoxMixin ):
         change_messages = HbConverter.update_models_for_hb_item(
             entity = entity, hb_item = item,
         )
-        if change_messages:
-            result.updated_count += 1
+        if change_messages and entity.name not in result.updated_list:
+            result.updated_list.append( entity.name )
         return
 
     def _remove_entity( self,
@@ -260,11 +260,20 @@ class HomeBoxSynchronizer( IntegrationSynchronizer, HomeBoxMixin ):
                     del integration_key_to_attr[field_key]
                 continue
 
-        # Per-attribute change detail isn't operator-relevant in the
-        # result modal — counts of created/updated/removed entities
-        # answer 'what changed' at the right granularity. The
-        # local attribute_message_list above stays for any future
-        # audit-trail use; nothing surfaces in the sync result.
+        # An attribute-level change still means this entity was
+        # modified by the sync. Mark it in updated_list (with dedup
+        # against the entity-level path above) so the operator
+        # sees the entity name. Skip the mark when this entity was
+        # just created — its attributes are new because the entity
+        # is new, not because of a refresh-time update. Per-attribute
+        # detail itself stays internal — entity-name granularity is
+        # the contract.
+        if (
+            attribute_message_list
+            and entity.name not in result.created_list
+            and entity.name not in result.updated_list
+        ):
+            result.updated_list.append( entity.name )
         return
     
     def _get_existing_hb_attributes( self, entity: Entity ) -> Dict[ IntegrationKey, EntityAttribute ]:
