@@ -16,10 +16,10 @@ import logging
 from typing import Optional
 
 from hi.apps.common.database_lock import ExclusionLockContext
-from hi.apps.common.processing_result import ProcessingResult
 from hi.apps.entity.models import Entity
 
 from .entity_operations import EntityIntegrationOperations
+from .sync_result import IntegrationSyncResult
 from .user_data_detector import EntityUserDataDetector
 
 logger = logging.getLogger(__name__)
@@ -69,7 +69,7 @@ class IntegrationSynchronizer:
         """
         raise NotImplementedError('Subclasses must override this method')
 
-    def sync(self) -> ProcessingResult:
+    def sync(self) -> IntegrationSyncResult:
         """
         Public entry point used by the framework. Wraps `_sync_impl`
         with the sync lock and standard error handling. Subclasses
@@ -81,14 +81,14 @@ class IntegrationSynchronizer:
                 return self._sync_impl()
         except RuntimeError as e:
             logger.exception(e)
-            return ProcessingResult(
+            return IntegrationSyncResult(
                 title=self.get_result_title(),
                 error_list=[str(e)],
             )
         finally:
             logger.debug(f'{self.__class__.__name__} sync ended.')
 
-    def _sync_impl(self) -> ProcessingResult:
+    def _sync_impl(self) -> IntegrationSyncResult:
         """
         Integration-specific sync work. Subclasses must override.
         Called with the synchronization lock held.
@@ -97,7 +97,7 @@ class IntegrationSynchronizer:
 
     def _remove_entity_intelligently(self,
                                      entity: Entity,
-                                     result: ProcessingResult,
+                                     result: IntegrationSyncResult,
                                      integration_name: str):
         """
         Remove an entity that no longer exists in the integration.

@@ -3,10 +3,13 @@ from typing import Dict, List, Optional
 
 from django.db import transaction
 
-from hi.apps.common.processing_result import ProcessingResult
 from hi.apps.entity.models import Entity, EntityAttribute
 
 from hi.integrations.integration_synchronizer import IntegrationSynchronizer
+from hi.integrations.sync_result import (
+    IntegrationSyncResult,
+    SyncResultItem,
+)
 from hi.integrations.transient_models import IntegrationKey
 
 from .hb_converter import HbConverter
@@ -38,9 +41,9 @@ class HomeBoxSynchronizer( IntegrationSynchronizer, HomeBoxMixin ):
             ' present upstream are removed.'
         )
 
-    def _sync_impl( self ) -> ProcessingResult:
+    def _sync_impl( self ) -> IntegrationSyncResult:
         hb_manager = self.hb_manager()
-        result = ProcessingResult( title = self.RESULT_TITLE )
+        result = IntegrationSyncResult( title = self.RESULT_TITLE )
 
         if not hb_manager.hb_client:
             health_status = hb_manager.health_status
@@ -63,14 +66,32 @@ class HomeBoxSynchronizer( IntegrationSynchronizer, HomeBoxMixin ):
 
         result.message_list.append( f'Found {len(item_list)} current HomeBox items.' )
 
-        self._sync_helper_entities( item_list = item_list, result = result )
+        # HomeBox has no domain notion of grouping. Imported entities
+        # populate `ungrouped_items`; the framework's dispatcher modal
+        # decides how to surface ungrouped items in the UI.
+        imported_entities = self._sync_helper_entities( item_list = item_list, result = result )
+        for entity in imported_entities:
+            result.ungrouped_items.append(
+                SyncResultItem(
+                    key = self._sync_result_item_key( entity ),
+                    label = entity.name,
+                    entity = entity,
+                )
+            )
 
         return result
+
+    def _sync_result_item_key( self, entity : Entity ) -> str:
+        integration_key = entity.integration_key
+        if integration_key:
+            return f'{integration_key.integration_id}:{integration_key.integration_name}'
+        return f'entity:{entity.id}'
     
-    def _sync_helper_entities( self, 
-                               item_list: List[HbItem], 
-                               result: ProcessingResult ):
-        
+    def _sync_helper_entities( self,
+                               item_list: List[HbItem],
+                               result: IntegrationSyncResult ) -> List[Entity]:
+        """Sync HomeBox items and return imported (created or updated)
+        entities for the caller to add to ungrouped_items."""
         integration_key_to_item = dict()
         for item in item_list:
             try:
@@ -83,6 +104,7 @@ class HomeBoxSynchronizer( IntegrationSynchronizer, HomeBoxMixin ):
         integration_key_to_entity = self._get_existing_hb_entities( result = result )
         result.message_list.append( f'Found {len(integration_key_to_entity)} existing HomeBox entities.' )
 
+        imported_entities: List[Entity] = []
         with transaction.atomic():
             for integration_key, hb_item in integration_key_to_item.items():
                 entity = integration_key_to_entity.get( integration_key )
@@ -94,20 +116,22 @@ class HomeBoxSynchronizer( IntegrationSynchronizer, HomeBoxMixin ):
                     )
                 else:
                     entity = self._create_entity( item = hb_item, result = result )
-                    
-                self._sync_helper_entity_attributes( 
+
+                self._sync_helper_entity_attributes(
                     entity = entity,
                     hb_item = hb_item,
                     result = result,
                 )
+                imported_entities.append( entity )
                 continue
 
             for integration_key, entity in integration_key_to_entity.items():
                 if integration_key not in integration_key_to_item:
                     self._remove_entity( entity = entity, result = result )
                 continue
+        return imported_entities
 
-    def _get_existing_hb_entities( self, result : ProcessingResult ) -> Dict[ IntegrationKey, Entity ]:
+    def _get_existing_hb_entities( self, result : IntegrationSyncResult ) -> Dict[ IntegrationKey, Entity ]:
         logger.debug( 'Getting existing HomeBox entities.' )
         integration_key_to_entity = dict()
 
@@ -129,7 +153,7 @@ class HomeBoxSynchronizer( IntegrationSynchronizer, HomeBoxMixin ):
 
     def _create_entity( self,
                         item : HbItem,
-                        result : ProcessingResult ) -> Entity:
+                        result : IntegrationSyncResult ) -> Entity:
         entity = HbConverter.create_models_for_hb_item( hb_item = item )
 
         result.message_list.append( f'Created HomeBox entity: {entity}' )
@@ -138,7 +162,7 @@ class HomeBoxSynchronizer( IntegrationSynchronizer, HomeBoxMixin ):
     def _update_entity( self,
                         entity : Entity,
                         item : HbItem,
-                        result : ProcessingResult ):
+                        result : IntegrationSyncResult ):
         message_list = HbConverter.update_models_for_hb_item( entity = entity, hb_item = item )
 
         if message_list:
@@ -149,14 +173,14 @@ class HomeBoxSynchronizer( IntegrationSynchronizer, HomeBoxMixin ):
 
     def _remove_entity( self,
                         entity : Entity,
-                        result : ProcessingResult ):
+                        result : IntegrationSyncResult ):
         self._remove_entity_intelligently( entity, result, 'HomeBox' )
         return
 
     def _sync_helper_entity_attributes( self,
                                         entity: Entity,
                                         hb_item: HbItem,
-                                        result: ProcessingResult ):
+                                        result: IntegrationSyncResult ):
         attribute_message_list = list()
 
         integration_key_to_regular_field = dict()

@@ -4,7 +4,6 @@ from typing import Dict, Optional
 
 from django.db import transaction
 
-from hi.apps.common.processing_result import ProcessingResult
 from hi.apps.entity.enums import EntityType
 from hi.apps.entity.models import Entity
 from hi.apps.sense.models import Sensor
@@ -12,6 +11,11 @@ from hi.apps.sense.models import Sensor
 from hi.apps.model_helper import HiModelHelper
 
 from hi.integrations.integration_synchronizer import IntegrationSynchronizer
+from hi.integrations.sync_result import (
+    IntegrationSyncResult,
+    SyncResultItem,
+    SyncResultItemGroup,
+)
 from hi.integrations.transient_models import IntegrationKey
 
 from .zm_metadata import ZmMetaData
@@ -50,20 +54,43 @@ class ZoneMinderSynchronizer( IntegrationSynchronizer, ZoneMinderMixin ):
             ' monitors no longer present upstream are removed.'
         )
 
-    def _sync_impl( self ) -> ProcessingResult:
-        result = ProcessingResult( title = self.RESULT_TITLE )
+    def _sync_impl( self ) -> IntegrationSyncResult:
+        result = IntegrationSyncResult( title = self.RESULT_TITLE )
 
         if not self.zm_manager().zm_client:
             logger.debug( 'ZoneMinder client not created. ZM integration disabled?' )
             result.error_list.append( 'Sync problem. ZM integration disabled?' )
             return result
-        
+
         self._sync_states( result = result )
-        self._sync_monitors( result = result )
-            
+        monitor_entities = self._sync_monitors( result = result )
+
+        # Single "Monitors" group: ZM monitors typically share a view,
+        # and the operator's first instinct is "all cameras → same
+        # place." The dispatcher's drill-down still allows per-monitor
+        # placement when needed.
+        if monitor_entities:
+            items = [
+                SyncResultItem(
+                    key = self._sync_result_item_key( entity ),
+                    label = entity.name,
+                    entity = entity,
+                )
+                for entity in monitor_entities
+            ]
+            result.groups = [
+                SyncResultItemGroup( label = 'Monitors', items = items )
+            ]
+
         return result
 
-    def _sync_states( self, result : ProcessingResult ) -> ProcessingResult:
+    def _sync_result_item_key( self, entity : Entity ) -> str:
+        integration_key = entity.integration_key
+        if integration_key:
+            return f'{integration_key.integration_id}:{integration_key.integration_name}'
+        return f'entity:{entity.id}'
+
+    def _sync_states( self, result : IntegrationSyncResult ) -> IntegrationSyncResult:
         zm_manager = self.zm_manager()
         
         zm_run_state_list = zm_manager.get_zm_states( force_load = True )
@@ -99,14 +126,16 @@ class ZoneMinderSynchronizer( IntegrationSynchronizer, ZoneMinderMixin ):
 
         return
 
-    def _sync_monitors( self, result : ProcessingResult ) -> ProcessingResult:
-
+    def _sync_monitors( self, result : IntegrationSyncResult ):
+        """Sync monitors and return the list of imported (created or
+        updated) monitor entities for grouping by the caller."""
         integration_key_to_monitor = self._fetch_zm_monitors( result = result )
         result.message_list.append( f'Found {len(integration_key_to_monitor)} current ZM monitors.' )
-        
+
         integration_key_to_entity = self._get_existing_zm_monitor_entities( result = result )
         result.message_list.append( f'Found {len(integration_key_to_entity)} existing ZM entities.' )
 
+        monitor_entities = []
         for integration_key, zm_monitor in integration_key_to_monitor.items():
             entity = integration_key_to_entity.get( integration_key )
             if entity:
@@ -114,8 +143,9 @@ class ZoneMinderSynchronizer( IntegrationSynchronizer, ZoneMinderMixin ):
                                      zm_monitor = zm_monitor,
                                      result = result )
             else:
-                self._create_monitor_entity( zm_monitor = zm_monitor,
-                                             result = result )
+                entity = self._create_monitor_entity( zm_monitor = zm_monitor,
+                                                      result = result )
+            monitor_entities.append( entity )
             continue
 
         for integration_key, entity in integration_key_to_entity.items():
@@ -123,10 +153,10 @@ class ZoneMinderSynchronizer( IntegrationSynchronizer, ZoneMinderMixin ):
                 self._remove_entity( entity = entity,
                                      result = result )
             continue
-        
-        return
 
-    def _fetch_zm_monitors( self, result : ProcessingResult ) -> Dict[ IntegrationKey, ZmMonitor ]:
+        return monitor_entities
+
+    def _fetch_zm_monitors( self, result : IntegrationSyncResult ) -> Dict[ IntegrationKey, ZmMonitor ]:
         zm_manager = self.zm_manager()
         
         logger.debug( 'Getting current ZM monitors.' )
@@ -141,7 +171,7 @@ class ZoneMinderSynchronizer( IntegrationSynchronizer, ZoneMinderMixin ):
 
         return integration_key_to_monitor
     
-    def _get_existing_zm_monitor_entities( self, result : ProcessingResult ) -> Dict[IntegrationKey, Entity]:
+    def _get_existing_zm_monitor_entities( self, result : IntegrationSyncResult ) -> Dict[IntegrationKey, Entity]:
         logger.debug( 'Getting existing ZM entities.' )
         integration_key_to_entity = dict()
         
@@ -164,7 +194,7 @@ class ZoneMinderSynchronizer( IntegrationSynchronizer, ZoneMinderMixin ):
 
     def _create_zm_entity( self,
                            run_state_name_label_dict  : Dict[ str, str ],
-                           result                     : ProcessingResult ):
+                           result                     : IntegrationSyncResult ):
         zm_manager = self.zm_manager()
 
         with transaction.atomic():
@@ -188,7 +218,7 @@ class ZoneMinderSynchronizer( IntegrationSynchronizer, ZoneMinderMixin ):
             
     def _create_monitor_entity( self,
                                 zm_monitor  : ZmMonitor,
-                                result      : ProcessingResult ):
+                                result      : IntegrationSyncResult ) -> Entity:
         zm_manager = self.zm_manager()
 
         with transaction.atomic():
@@ -234,12 +264,12 @@ class ZoneMinderSynchronizer( IntegrationSynchronizer, ZoneMinderMixin ):
                 )
                 
         result.message_list.append( f'Create new camera entity: {entity}' )
-        return
+        return entity
     
     def _update_entity( self,
                         entity      : Entity,
                         zm_monitor  : ZmMonitor,
-                        result      : ProcessingResult ):
+                        result      : IntegrationSyncResult ):
 
         if entity.name != zm_monitor.name():
             result.message_list.append(f'Name changed for {entity}. Setting to "{zm_monitor.name()}"')
@@ -251,7 +281,7 @@ class ZoneMinderSynchronizer( IntegrationSynchronizer, ZoneMinderMixin ):
     
     def _remove_entity( self,
                         entity  : Entity,
-                        result  : ProcessingResult ):
+                        result  : IntegrationSyncResult ):
         """
         Remove an entity that no longer exists in the ZoneMinder integration.
         

@@ -4,8 +4,8 @@ import os
 from unittest.mock import Mock, patch
 from django.test import TestCase
 
-from hi.apps.common.processing_result import ProcessingResult
 from hi.apps.entity.models import Entity
+from hi.integrations.sync_result import IntegrationSyncResult
 from hi.integrations.transient_models import IntegrationKey
 
 from hi.services.hass.hass_sync import HassSynchronizer
@@ -271,7 +271,7 @@ class TestHassSynchronizerErrorScenarios(TestCase):
         # Mock database query failure
         mock_entity_objects.filter.side_effect = Exception("Database connection lost")
         
-        result = ProcessingResult(title='Test')
+        result = IntegrationSyncResult(title='Test')
         
         with self.assertRaises(Exception) as context:
             self.synchronizer._get_existing_hass_entities(result)
@@ -295,3 +295,62 @@ class TestHassSynchronizerMixinIntegration(TestCase):
         result = self.synchronizer.hass_manager()
 
         self.assertEqual(result, mock_manager_instance)
+
+
+class TestHassSynchronizerSyncResultGrouping(TestCase):
+    """Phase 2 grouping behavior: HASS-imported entities are grouped
+    by Hi-side entity_type_str. The /api/states endpoint exposes no
+    area metadata, so the synchronizer falls back to entity_type as
+    the meaningful, available signal."""
+
+    def setUp(self):
+        self.synchronizer = HassSynchronizer()
+
+    def _entity(self, name, entity_type_str, integration_name):
+        entity = Mock()
+        entity.name = name
+        entity.entity_type_str = entity_type_str
+        entity.integration_key = IntegrationKey(
+            integration_id='hass',
+            integration_name=integration_name,
+        )
+        entity.id = 0
+        return entity
+
+    def test_groups_built_by_entity_type_alphabetical(self):
+        """Group ordering is alphabetical for stable presentation."""
+        entities = [
+            self._entity('Kitchen Light', 'LIGHT', 'light.kitchen'),
+            self._entity('Hall Sensor', 'SENSOR', 'binary_sensor.hall'),
+            self._entity('Bedroom Light', 'LIGHT', 'light.bedroom'),
+        ]
+        groups = self.synchronizer._build_entity_type_groups(entities)
+
+        self.assertEqual([group.label for group in groups], ['LIGHT', 'SENSOR'])
+        self.assertEqual(
+            [item.label for item in groups[0].items],
+            ['Kitchen Light', 'Bedroom Light'],
+        )
+        self.assertEqual(
+            [item.label for item in groups[1].items],
+            ['Hall Sensor'],
+        )
+
+    def test_falls_back_to_other_when_entity_type_missing(self):
+        """Entities missing entity_type_str land in an 'Other' bucket
+        rather than dropping out of the result entirely."""
+        entity = self._entity('Mystery', '', 'sensor.mystery')
+        entity.entity_type_str = None
+        groups = self.synchronizer._build_entity_type_groups([entity])
+
+        self.assertEqual(len(groups), 1)
+        self.assertEqual(groups[0].label, 'Other')
+        self.assertEqual(groups[0].items[0].entity, entity)
+
+    def test_empty_input_yields_empty_groups(self):
+        self.assertEqual(self.synchronizer._build_entity_type_groups([]), [])
+
+    def test_item_key_uses_integration_key(self):
+        entity = self._entity('Front Camera', 'CAMERA', 'camera.front')
+        groups = self.synchronizer._build_entity_type_groups([entity])
+        self.assertEqual(groups[0].items[0].key, 'hass:camera.front')

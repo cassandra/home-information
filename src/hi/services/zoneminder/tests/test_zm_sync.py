@@ -4,10 +4,10 @@ import os
 from unittest.mock import Mock, patch, call
 from django.test import TestCase
 
-from hi.apps.common.processing_result import ProcessingResult
 from hi.apps.entity.models import Entity
 from hi.apps.sense.models import Sensor
 
+from hi.integrations.sync_result import IntegrationSyncResult
 from hi.integrations.transient_models import IntegrationKey
 
 from hi.services.zoneminder.zm_sync import ZoneMinderSynchronizer
@@ -88,14 +88,16 @@ class TestZoneMinderSynchronizerSyncHelper(TestCase):
         """Test sync helper coordinates state and monitor sync and aggregates their results"""
         self.mock_manager.zm_client = Mock()  # Client available
         
-        # Mock the sync methods to simulate successful operations
+        # Mock the sync methods to simulate successful operations.
+        # _sync_monitors now returns the list of imported entities so
+        # the caller can assemble the "Monitors" group.
         def mock_sync_states(result):
             result.message_list.append('States synced successfully')
             return result
-            
+
         def mock_sync_monitors(result):
             result.message_list.append('Monitors synced successfully')
-            return result
+            return []
         
         # Patch the methods to track their execution and simulate behavior
         with patch.object(self.synchronizer, '_sync_states', side_effect=mock_sync_states) as mock_sync_states, \
@@ -169,7 +171,7 @@ class TestZoneMinderSynchronizerStateSync(TestCase):
         mock_sensor.entity_state = mock_entity_state
         mock_sensor_filter.return_value.select_related.return_value.first.return_value = mock_sensor
         
-        result = ProcessingResult(title='Test')
+        result = IntegrationSyncResult(title='Test')
         self.synchronizer._sync_states(result)
         
         # Verify entity creation was called with correct parameters
@@ -200,7 +202,7 @@ class TestZoneMinderSynchronizerStateSync(TestCase):
         # No sensor found
         mock_sensor_filter.return_value.select_related.return_value.first.return_value = None
         
-        result = ProcessingResult(title='Test')
+        result = IntegrationSyncResult(title='Test')
         returned_result = self.synchronizer._sync_states(result)
         
         # Test behavior: function should handle error gracefully
@@ -236,7 +238,7 @@ class TestZoneMinderSynchronizerStateSync(TestCase):
         mock_sensor.name = 'ZM Run State'
         mock_sensor_filter.return_value.select_related.return_value.first.return_value = mock_sensor
         
-        result = ProcessingResult(title='Test')
+        result = IntegrationSyncResult(title='Test')
         self.synchronizer._sync_states(result)
         
         # Test actual state transformation
@@ -284,7 +286,7 @@ class TestZoneMinderSynchronizerStateSync(TestCase):
         mock_sensor.name = 'ZM Run State'
         mock_sensor_filter.return_value.select_related.return_value.first.return_value = mock_sensor
         
-        result = ProcessingResult(title='Test')
+        result = IntegrationSyncResult(title='Test')
         self.synchronizer._sync_states(result)
         
         # Test no persistence when no changes
@@ -340,7 +342,7 @@ class TestZoneMinderSynchronizerMonitorSync(TestCase):
              patch.object(self.synchronizer, '_update_entity') as mock_update, \
              patch.object(self.synchronizer, '_remove_entity') as mock_remove:
             
-            result = ProcessingResult(title='Test')
+            result = IntegrationSyncResult(title='Test')
             self.synchronizer._sync_monitors(result)
             
             # Test creation path was taken
@@ -370,7 +372,7 @@ class TestZoneMinderSynchronizerMonitorSync(TestCase):
         mock_fetch.return_value = {integration_key: mock_monitor}
         mock_get_existing.return_value = {integration_key: mock_entity}
         
-        result = ProcessingResult(title='Test')
+        result = IntegrationSyncResult(title='Test')
         self.synchronizer._sync_monitors(result)
         
         mock_update.assert_called_once_with(entity=mock_entity, zm_monitor=mock_monitor, result=result)
@@ -403,7 +405,7 @@ class TestZoneMinderSynchronizerMonitorSync(TestCase):
              patch.object(self.synchronizer, '_update_entity') as mock_update, \
              patch.object(self.synchronizer, '_remove_entity', side_effect=mock_remove_entity) as mock_remove:
             
-            result = ProcessingResult(title='Test')
+            result = IntegrationSyncResult(title='Test')
             self.synchronizer._sync_monitors(result)
             
             # Test removal path was taken
@@ -446,7 +448,7 @@ class TestZoneMinderSynchronizerFetchMonitors(TestCase):
         key2 = IntegrationKey(integration_id='zm', integration_name='monitor.456')
         self.mock_manager._to_integration_key.side_effect = [key1, key2]
         
-        result = ProcessingResult(title='Test')
+        result = IntegrationSyncResult(title='Test')
         result_dict = self.synchronizer._fetch_zm_monitors(result)
         
         # Should call integration key generation for each monitor
@@ -465,7 +467,7 @@ class TestZoneMinderSynchronizerFetchMonitors(TestCase):
         """Test _fetch_zm_monitors forces reload of monitor data"""
         self.mock_manager.get_zm_monitors.return_value = []
         
-        result = ProcessingResult(title='Test')
+        result = IntegrationSyncResult(title='Test')
         self.synchronizer._fetch_zm_monitors(result)
         
         self.mock_manager.get_zm_monitors.assert_called_once_with(force_load=True)
@@ -487,7 +489,7 @@ class TestZoneMinderSynchronizerExistingEntities(TestCase):
         """Test _get_existing_zm_monitor_entities filters by correct integration ID"""
         mock_filter.return_value = []
         
-        result = ProcessingResult(title='Test')
+        result = IntegrationSyncResult(title='Test')
         self.synchronizer._get_existing_zm_monitor_entities(result)
         
         mock_filter.assert_called_once_with(integration_id=ZmMetaData.integration_id)
@@ -501,7 +503,7 @@ class TestZoneMinderSynchronizerExistingEntities(TestCase):
         mock_entity.integration_key = None
         mock_filter.return_value = [mock_entity]
         
-        result = ProcessingResult(title='Test')
+        result = IntegrationSyncResult(title='Test')
         result_dict = self.synchronizer._get_existing_zm_monitor_entities(result)
         
         # Should add error message
@@ -524,7 +526,7 @@ class TestZoneMinderSynchronizerExistingEntities(TestCase):
         
         mock_filter.return_value = [mock_monitor_entity, mock_other_entity]
         
-        result = ProcessingResult(title='Test')
+        result = IntegrationSyncResult(title='Test')
         result_dict = self.synchronizer._get_existing_zm_monitor_entities(result)
         
         # Should only include monitor entity
@@ -563,7 +565,7 @@ class TestZoneMinderSynchronizerEntityCreation(TestCase):
             integration_id='zm', integration_name='run.state'
         )
         
-        result = ProcessingResult(title='Test')
+        result = IntegrationSyncResult(title='Test')
         self.synchronizer._create_zm_entity(run_state_dict, result)
         
         mock_atomic.assert_called_once()
@@ -600,7 +602,7 @@ class TestZoneMinderSynchronizerEntityCreation(TestCase):
         mock_movement_sensor.entity_state = Mock()
         mock_create_movement.return_value = mock_movement_sensor
         
-        result = ProcessingResult(title='Test')
+        result = IntegrationSyncResult(title='Test')
         self.synchronizer._create_monitor_entity(mock_monitor, result)
         
         # Should create all components
@@ -635,7 +637,7 @@ class TestZoneMinderSynchronizerEntityCreation(TestCase):
         mock_movement_sensor = Mock()
         mock_create_movement.return_value = mock_movement_sensor
         
-        result = ProcessingResult(title='Test')
+        result = IntegrationSyncResult(title='Test')
         self.synchronizer._create_monitor_entity(mock_monitor, result)
         
         # Should not create event
@@ -667,7 +669,7 @@ class TestZoneMinderSynchronizerEntityUpdate(TestCase):
         mock_monitor.name.return_value = 'New Name'
         mock_monitor.id.return_value = 456
         
-        result = ProcessingResult(title='Test')
+        result = IntegrationSyncResult(title='Test')
         self.synchronizer._update_entity(mock_entity, mock_monitor, result)
         
         # Test name update behavior
@@ -699,7 +701,7 @@ class TestZoneMinderSynchronizerEntityUpdate(TestCase):
         mock_monitor.name.return_value = 'Same Name'
         mock_monitor.id.return_value = 999
         
-        result = ProcessingResult(title='Test')
+        result = IntegrationSyncResult(title='Test')
         self.synchronizer._update_entity(mock_entity, mock_monitor, result)
         
         # Test no persistence when no changes
@@ -730,7 +732,7 @@ class TestZoneMinderSynchronizerEntityRemoval(TestCase):
     def test_remove_entity_calls_intelligent_deletion(self, mock_intelligent_removal):
         """Test _remove_entity calls intelligent deletion with correct parameters"""
         mock_entity = Mock()
-        result = ProcessingResult(title='Test')
+        result = IntegrationSyncResult(title='Test')
         
         self.synchronizer._remove_entity(mock_entity, result)
         
@@ -828,7 +830,7 @@ class TestZoneMinderSynchronizerWithRealData(TestCase):
             integration_id='zm', integration_name='run.state'
         )
         
-        result = ProcessingResult(title='Test')
+        result = IntegrationSyncResult(title='Test')
         self.synchronizer._sync_states(result)
         
         # Should update to real state names
@@ -858,7 +860,7 @@ class TestZoneMinderSynchronizerWithRealData(TestCase):
         mock_fetch.return_value = integration_key_to_monitor
         mock_get_existing.return_value = {}  # No existing entities
         
-        result = ProcessingResult(title='Test')
+        result = IntegrationSyncResult(title='Test')
         self.synchronizer._sync_monitors(result)
         
         # Should create entities for all real monitors
@@ -906,7 +908,7 @@ class TestZoneMinderSynchronizerWithRealData(TestCase):
         # Use real monitor data
         real_monitor = self.create_mock_monitors_from_real_data()[0]  # HighCamera
         
-        result = ProcessingResult(title='Test')
+        result = IntegrationSyncResult(title='Test')
         self.synchronizer._update_entity(mock_entity, real_monitor, result)
         
         # Should update to real name from ZM API
@@ -938,7 +940,7 @@ class TestZoneMinderSynchronizerWithRealData(TestCase):
         
         mock_filter.return_value = mock_entities
         
-        result = ProcessingResult(title='Test')
+        result = IntegrationSyncResult(title='Test')
         result_dict = self.synchronizer._get_existing_zm_monitor_entities(result)
         
         # Should find 4 valid monitor entities (broken entity is filtered out)
@@ -1009,7 +1011,7 @@ class TestZoneMinderSynchronizerWithRealData(TestCase):
                 mock_create_controller.reset_mock()
                 mock_create_event.reset_mock()
                 
-                result = ProcessingResult(title='Test')
+                result = IntegrationSyncResult(title='Test')
                 self.synchronizer._create_monitor_entity(monitor, result)
                 
                 # Should create all components for each monitor
@@ -1025,3 +1027,53 @@ class TestZoneMinderSynchronizerWithRealData(TestCase):
                 
                 # Should log creation
                 self.assertIn('Create new camera entity:', result.message_list[0])
+
+
+class TestZoneMinderSynchronizerSyncResultGrouping(TestCase):
+    """Phase 2 grouping behavior: every imported monitor entity goes
+    into a single 'Monitors' group on the IntegrationSyncResult.
+
+    The single-group choice reflects the typical ZM UX — operators
+    place all cameras into the same view — while the dispatcher's
+    drill-down still allows per-monitor placement when needed."""
+
+    def setUp(self):
+        self.synchronizer = ZoneMinderSynchronizer()
+        self.mock_manager = Mock()
+        self.mock_manager.zm_client = Mock()
+        self.synchronizer._zm_manager = self.mock_manager
+
+    def _imported_entity(self, name, integration_name):
+        entity = Mock()
+        entity.name = name
+        entity.integration_key = IntegrationKey(
+            integration_id='zm',
+            integration_name=integration_name,
+        )
+        entity.id = 0
+        return entity
+
+    def test_sync_impl_emits_single_monitors_group(self):
+        entity_a = self._imported_entity('Front Door', 'monitor.1')
+        entity_b = self._imported_entity('Driveway', 'monitor.2')
+        with patch.object(self.synchronizer, '_sync_states'), \
+             patch.object(self.synchronizer, '_sync_monitors',
+                          return_value=[entity_a, entity_b]):
+            result = self.synchronizer._sync_impl()
+
+        self.assertEqual(result.ungrouped_items, [])
+        self.assertEqual(len(result.groups), 1)
+        group = result.groups[0]
+        self.assertEqual(group.label, 'Monitors')
+        self.assertEqual([item.entity for item in group.items], [entity_a, entity_b])
+        # Stable per-item key built from the integration_key.
+        self.assertEqual(group.items[0].key, 'zm:monitor.1')
+        self.assertEqual(group.items[1].key, 'zm:monitor.2')
+
+    def test_sync_impl_emits_no_groups_when_no_monitors_imported(self):
+        with patch.object(self.synchronizer, '_sync_states'), \
+             patch.object(self.synchronizer, '_sync_monitors', return_value=[]):
+            result = self.synchronizer._sync_impl()
+
+        self.assertEqual(result.groups, [])
+        self.assertEqual(result.ungrouped_items, [])

@@ -12,11 +12,11 @@ from typing import Iterable, Optional, Set
 from django.db import transaction
 
 from hi.apps.attribute.enums import AttributeType
-from hi.apps.common.processing_result import ProcessingResult
 from hi.apps.entity.models import Entity, EntityState, EntityStateDelegation
 from hi.apps.sense.models import Sensor
 from hi.apps.control.models import Controller
 
+from .sync_result import IntegrationSyncResult
 from .transient_models import IntegrationRemovalSummary
 from .user_data_detector import EntityUserDataDetector
 
@@ -123,7 +123,7 @@ class EntityIntegrationOperations:
     @staticmethod
     def preserve_with_user_data( entity           : Entity,
                                  integration_name : str,
-                                 result           : Optional[ProcessingResult] = None ):
+                                 result           : Optional[IntegrationSyncResult] = None ):
         """
         Preserve an entity with user-created data by disconnecting it from
         its integration and removing only integration-related components
@@ -133,7 +133,8 @@ class EntityIntegrationOperations:
         Args:
             entity: The Entity to preserve.
             integration_name: Name of the integration (used in result messages).
-            result: Optional ProcessingResult to append a status message to.
+            result: Optional IntegrationSyncResult to append a status
+                message to.
         """
         original_name = entity.name
 

@@ -211,9 +211,9 @@ class _SyncTestSynchronizer:
         return 'Test Sync Result'
 
     def sync(self):
-        from hi.apps.common.processing_result import ProcessingResult
+        from hi.integrations.sync_result import IntegrationSyncResult
         self.sync_called = True
-        return ProcessingResult(
+        return IntegrationSyncResult(
             title='Test Sync Result',
             message_list=['Synced.'],
         )

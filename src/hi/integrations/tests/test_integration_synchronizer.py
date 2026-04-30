@@ -10,8 +10,8 @@ from hi.apps.attribute.enums import AttributeType
 from hi.apps.entity.models import Entity, EntityAttribute, EntityState
 from hi.apps.sense.models import Sensor
 from hi.apps.control.models import Controller
-from hi.apps.common.processing_result import ProcessingResult
 from hi.integrations.integration_synchronizer import IntegrationSynchronizer
+from hi.integrations.sync_result import IntegrationSyncResult
 
 logging.disable(logging.CRITICAL)
 
@@ -25,7 +25,7 @@ class TestSynchronizer(IntegrationSynchronizer):
         return 'Test Sync Result'
 
     def _sync_impl(self):
-        return ProcessingResult(title=self.get_result_title())
+        return IntegrationSyncResult(title=self.get_result_title())
 
 
 class IntegrationSynchronizerRemovalTestCase(TestCase):
@@ -34,7 +34,7 @@ class IntegrationSynchronizerRemovalTestCase(TestCase):
     def setUp(self):
         """Set up test data."""
         self.synchronizer = TestSynchronizer()
-        self.result = ProcessingResult(title='Test Import Result')
+        self.result = IntegrationSyncResult(title='Test Import Result')
         
         # Create a test entity
         self.entity = Entity.objects.create(
@@ -599,7 +599,7 @@ class IntegrationSynchronizerRemovalTestCase(TestCase):
         self.assertIn('Test Entity', message)
 
     def test_result_message_accumulation(self):
-        """Test that ProcessingResult properly accumulates messages from multiple operations."""
+        """Test that IntegrationSyncResult properly accumulates messages from multiple operations."""
         # Add some initial messages to result
         self.result.message_list.append('Initial message')
         self.result.message_list.append('Another message')
@@ -640,7 +640,7 @@ class IntegrationSynchronizerRemovalTransactionTestCase(TransactionTestCase):
         initializer.run(sender=None)
         
         self.synchronizer = TestSynchronizer()
-        self.result = ProcessingResult(title='Test Import Result')
+        self.result = IntegrationSyncResult(title='Test Import Result')
         
         # Create a test entity
         self.entity = Entity.objects.create(
@@ -1048,7 +1048,7 @@ class IntegrationSynchronizerRemovalTransactionTestCase(TransactionTestCase):
                 )
                 
                 # Create fresh result for each test
-                test_result = ProcessingResult(title='Test Result')
+                test_result = IntegrationSyncResult(title='Test Result')
                 
                 # Execute preservation
                 self.synchronizer._remove_entity_intelligently(

@@ -1,12 +1,16 @@
 import logging
-from typing import Dict, Optional
+from typing import Dict, List, Optional
 
 from django.db import transaction
 
-from hi.apps.common.processing_result import ProcessingResult
 from hi.apps.entity.models import Entity
 
 from hi.integrations.integration_synchronizer import IntegrationSynchronizer
+from hi.integrations.sync_result import (
+    IntegrationSyncResult,
+    SyncResultItem,
+    SyncResultItemGroup,
+)
 from hi.integrations.transient_models import IntegrationKey
 
 from .hass_converter import HassConverter
@@ -40,9 +44,9 @@ class HassSynchronizer( IntegrationSynchronizer, HassMixin ):
             ' present upstream are removed.'
         )
 
-    def _sync_impl( self ) -> ProcessingResult:
+    def _sync_impl( self ) -> IntegrationSyncResult:
         hass_manager = self.hass_manager()
-        result = ProcessingResult( title = self.RESULT_TITLE )
+        result = IntegrationSyncResult( title = self.RESULT_TITLE )
 
         hass_client = hass_manager.hass_client
         if not hass_client:
@@ -84,7 +88,15 @@ class HassSynchronizer( IntegrationSynchronizer, HassMixin ):
             HassConverter.hass_device_to_integration_key( hass_device ): hass_device
             for hass_device in hass_device_id_to_device.values()
         }
-    
+
+        # Imported entities collected here for the dispatcher's grouped
+        # placement step. Group by Hi-side entity_type_str — the user-
+        # facing classification (LIGHT, SENSOR, CAMERA, ...) — rather
+        # than by HA domain or area, since neither is reliably
+        # available from the /api/states endpoint this integration
+        # consumes.
+        imported_entities: List[Entity] = []
+
         with transaction.atomic():
             for integration_key, hass_device in integration_key_to_hass_device.items():
                 entity = integration_key_to_entity.get( integration_key )
@@ -93,8 +105,9 @@ class HassSynchronizer( IntegrationSynchronizer, HassMixin ):
                                          hass_device = hass_device,
                                          result = result )
                 else:
-                    self._create_entity( hass_device = hass_device,
-                                         result = result )
+                    entity = self._create_entity( hass_device = hass_device,
+                                                  result = result )
+                imported_entities.append( entity )
                 continue
 
             for integration_key, entity in integration_key_to_entity.items():
@@ -102,10 +115,11 @@ class HassSynchronizer( IntegrationSynchronizer, HassMixin ):
                     self._remove_entity( entity = entity,
                                          result = result )
                 continue
-        
+
+        result.groups = self._build_entity_type_groups( imported_entities )
         return result
 
-    def _get_existing_hass_entities( self, result : ProcessingResult ) -> Dict[ IntegrationKey, Entity ]:
+    def _get_existing_hass_entities( self, result : IntegrationSyncResult ) -> Dict[ IntegrationKey, Entity ]:
         logger.debug( 'Getting existing HAss entities.' )
         integration_key_to_entity = dict()
 
@@ -126,18 +140,18 @@ class HassSynchronizer( IntegrationSynchronizer, HassMixin ):
 
     def _create_entity( self,
                         hass_device  : HassDevice,
-                        result       : ProcessingResult ):
+                        result       : IntegrationSyncResult ) -> Entity:
         entity = HassConverter.create_models_for_hass_device(
             hass_device = hass_device,
             add_alarm_events = self.hass_manager().should_add_alarm_events,
         )
         result.message_list.append( f'Created Home Assistant entity: {entity}' )
-        return
-    
+        return entity
+
     def _update_entity( self,
                         entity       : Entity,
                         hass_device  : HassDevice,
-                        result       : ProcessingResult ):
+                        result       : IntegrationSyncResult ):
 
         message_list = HassConverter.update_models_for_hass_device(
             entity = entity,
@@ -147,16 +161,39 @@ class HassSynchronizer( IntegrationSynchronizer, HassMixin ):
             result.message_list.append( message )
             continue
         return
-    
+
     def _remove_entity( self,
                         entity   : Entity,
-                        result   : ProcessingResult ):
+                        result   : IntegrationSyncResult ):
         """
         Remove an entity that no longer exists in the HASS integration.
-        
+
         Uses intelligent deletion that preserves user-created data.
         """
         self._remove_entity_intelligently(entity, result, 'HASS')
         return
 
-    
+    def _build_entity_type_groups(
+            self, entities : List[Entity] ) -> List[SyncResultItemGroup]:
+        """Group imported entities by Hi-side entity_type_str.
+
+        Returns a list of SyncResultItemGroup ordered by group label
+        (alphabetical) for stable presentation. Empty input yields
+        an empty list.
+        """
+        type_to_items: Dict[str, List[SyncResultItem]] = {}
+        for entity in entities:
+            type_label = str( entity.entity_type_str or 'Other' )
+            integration_key = entity.integration_key
+            key = (
+                f'{integration_key.integration_id}:{integration_key.integration_name}'
+                if integration_key else f'entity:{entity.id}'
+            )
+            type_to_items.setdefault( type_label, [] ).append(
+                SyncResultItem( key = key, label = entity.name, entity = entity )
+            )
+            continue
+        return [
+            SyncResultItemGroup( label = label, items = type_to_items[label] )
+            for label in sorted( type_to_items.keys() )
+        ]

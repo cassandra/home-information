@@ -133,14 +133,14 @@ class IntegrationPreSyncView( HiModalView, IntegrationViewMixin ):
 class IntegrationSyncView( HiModalView, IntegrationViewMixin ):
     """
     Framework sync execution view. Invokes the integration's
-    synchronizer and returns the result modal. The dispatcher modal
-    (post-sync entity placement, Phase 3) will replace the result
-    modal here once it lands; for now the framework returns the same
-    ProcessingResult-style modal the per-service sync views return.
+    synchronizer and returns the sync result modal. The dispatcher
+    modal (post-sync entity placement, Phase 3) will consume
+    sync_result.groups / sync_result.ungrouped_items and replace
+    this result modal once it lands.
     """
 
     def get_template_name( self ) -> str:
-        return 'common/modals/processing_result.html'
+        return 'integrations/modals/sync_result.html'
 
     def post( self, request, *args, **kwargs ):
         integration_id = kwargs.get('integration_id')
@@ -151,10 +151,10 @@ class IntegrationSyncView( HiModalView, IntegrationViewMixin ):
         if synchronizer is None:
             return page_not_found_response( request )
 
-        processing_result = synchronizer.sync()
+        sync_result = synchronizer.sync()
         return self.modal_response(
             request,
-            context = { 'processing_result': processing_result },
+            context = { 'sync_result': sync_result },
         )
 
 

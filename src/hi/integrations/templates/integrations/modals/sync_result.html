@@ -1,0 +1,51 @@
+{% extends "modals/action_refresh.html" %}
+
+{% comment %}
+  Phase 2 sync result modal.
+
+  Renders the title and message/error lines from
+  IntegrationSyncResult. The grouped/ungrouped imported items
+  (sync_result.groups, sync_result.ungrouped_items) are NOT yet
+  surfaced here — Phase 3 introduces the dispatcher modal that
+  consumes those for entity placement. This template intentionally
+  preserves the legacy result modal UX for Phase 2.
+{% endcomment %}
+
+{% block modal_dialog_class %}hi-modal-dialog-600{% endblock %}
+
+{% block title_text %}
+{{ sync_result.title }}
+{% endblock %}
+
+{% block body %}
+<h5>{{ sync_result.title }}</h5>
+
+{% if sync_result.error_list %}
+<div class="alert alert-danger">
+  <h5>Errors</h5>:
+  <ul>
+    {% for error_message in sync_result.error_list %}
+    <li>{{ error_message }}</li>
+    {% endfor %}
+  </ul>
+</div>
+{% endif %}
+
+{% if sync_result.message_list %}
+<div class="text-primary">
+  <ul>
+    {% for message in sync_result.message_list %}
+    <li>{{ message }}</li>
+    {% endfor %}
+  </ul>
+</div>
+{% endif %}
+
+{% if not sync_result.error_list %}
+<div><em>No errors.</em></div>
+{% endif %}
+
+{% if sync_result.footer_message %}
+<div class="text-muted small mt-3 border-top pt-2">{{ sync_result.footer_message }}</div>
+{% endif %}
+{% endblock %}
