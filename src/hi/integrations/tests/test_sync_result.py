@@ -1,11 +1,10 @@
 """
 Tests for the IntegrationSyncResult shape.
 
-The legacy sync-vocabulary fields (title, message_list, error_list,
-footer_message) preserve the result-modal UX without depending on
-ProcessingResult. The placement_input field is the optional bridge
-to the dispatcher modal — populated when the sync produced new
-entities to place, None otherwise.
+Sync-vocabulary fields: title, structured change counts
+(created/updated/removed), info_list / error_list / footer_message,
+plus the optional placement_input that bridges to the dispatcher
+modal when the sync produced new entities to place.
 
 Tests for the EntityPlacementInput / EntityPlacementItem /
 EntityPlacementGroup data shapes themselves live in
@@ -42,26 +41,49 @@ class IntegrationSyncResultTests(SimpleTestCase):
         a = IntegrationSyncResult(title='A')
         b = IntegrationSyncResult(title='B')
 
-        a.message_list.append('msg-a')
+        a.info_list.append('msg-a')
         a.error_list.append('err-a')
 
-        self.assertEqual(b.message_list, [])
+        self.assertEqual(b.info_list, [])
         self.assertEqual(b.error_list, [])
 
-    def test_borrows_processing_result_shape(self):
-        """title/message_list/error_list/footer_message preserve the
-        legacy ProcessingResult UX so the result-modal template
-        renders without changes."""
+    def test_field_shape(self):
+        """title / info_list / error_list / footer_message and the
+        change counters all round-trip cleanly."""
         result = IntegrationSyncResult(
             title='Sync Done',
-            message_list=['imported 3'],
+            created_count=3,
+            updated_count=2,
+            removed_count=1,
+            info_list=['Found 50 upstream items'],
             error_list=['warning x'],
             footer_message='see settings',
         )
         self.assertEqual(result.title, 'Sync Done')
-        self.assertEqual(result.message_list, ['imported 3'])
+        self.assertEqual(result.created_count, 3)
+        self.assertEqual(result.updated_count, 2)
+        self.assertEqual(result.removed_count, 1)
+        self.assertEqual(result.info_list, ['Found 50 upstream items'])
         self.assertEqual(result.error_list, ['warning x'])
         self.assertEqual(result.footer_message, 'see settings')
+
+    def test_has_changes_true_when_any_count_nonzero(self):
+        for kwargs in (
+            {'created_count': 1},
+            {'updated_count': 1},
+            {'removed_count': 1},
+            {'created_count': 1, 'updated_count': 1},
+        ):
+            result = IntegrationSyncResult(title='X', **kwargs)
+            self.assertTrue(result.has_changes, kwargs)
+
+    def test_has_changes_false_when_all_counts_zero(self):
+        # Nothing-new refresh: no changes even if info_list has lines.
+        result = IntegrationSyncResult(
+            title='Empty',
+            info_list=['Found 12 upstream items'],
+        )
+        self.assertFalse(result.has_changes)
 
     def test_placement_input_default_is_none(self):
         """A bare sync result has no placement_input — that's the

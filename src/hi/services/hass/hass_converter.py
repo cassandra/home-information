@@ -634,8 +634,6 @@ class HassConverter:
                     controller.delete()
                 continue
 
-        if not messages:
-            messages.append( f'No changes found for {entity}.' )
         return messages
 
     @classmethod

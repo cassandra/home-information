@@ -176,7 +176,10 @@ class IntegrationSyncView( HiModalView, IntegrationViewMixin,
         if sync_result.error_list or sync_result.placement_input is None:
             return self.modal_response(
                 request,
-                context = { 'sync_result': sync_result },
+                context = {
+                    'sync_result': sync_result,
+                    'integration_data': integration_data,
+                },
                 template_name = 'integrations/modals/sync_result.html',
             )
 
@@ -292,6 +295,7 @@ class IntegrationDispatcherView( HiModalView, IntegrationViewMixin,
         if placement_input.is_empty():
             return self._render_empty(
                 request = request,
+                integration_data = integration_data,
                 synchronizer = synchronizer,
                 is_initial_import = is_initial_import,
             )
@@ -302,20 +306,25 @@ class IntegrationDispatcherView( HiModalView, IntegrationViewMixin,
             is_initial_import = is_initial_import,
         )
 
-    def _render_empty( self, request, synchronizer, is_initial_import : bool ):
-        """No-unplaced-items acknowledgement: render the legacy
-        result modal with a brief 'no items' message rather than
-        an empty dispatcher."""
+    def _render_empty( self, request, integration_data,
+                       synchronizer, is_initial_import : bool ):
+        """No-unplaced-items acknowledgement: render the result
+        modal with the integration's icon + a brief 'no items'
+        info note rather than an empty dispatcher. Counts stay
+        zero so the modal lead reads 'Nothing new.'"""
         from hi.integrations.sync_result import IntegrationSyncResult
         sync_result = IntegrationSyncResult(
             title = synchronizer.get_result_title(
                 is_initial_import = is_initial_import,
             ),
-            message_list = [ 'No items left to place.' ],
+            info_list = [ 'No items left to place.' ],
         )
         return self.modal_response(
             request,
-            context = { 'sync_result': sync_result },
+            context = {
+                'sync_result': sync_result,
+                'integration_data': integration_data,
+            },
             template_name = 'integrations/modals/sync_result.html',
         )
 

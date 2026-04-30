@@ -37,11 +37,6 @@ class ZoneMinderSynchronizer( IntegrationSynchronizer, ZoneMinderMixin ):
         'Nodect': 'Nodect',
     }
 
-    def get_result_title(self, is_initial_import: bool) -> str:
-        if is_initial_import:
-            return 'ZoneMinder Import Result'
-        return 'ZoneMinder Refresh Result'
-
     def get_description(self, is_initial_import: bool) -> Optional[str]:
         if is_initial_import:
             return (
@@ -131,7 +126,9 @@ class ZoneMinderSynchronizer( IntegrationSynchronizer, ZoneMinderMixin ):
         if existing_state_values != new_state_values:
             entity_state.value_range_dict = new_state_values_dict
             entity_state.save()
-            result.message_list.append( f'Updated ZM state values to: {new_state_values_dict}' )
+            result.info_list.append(
+                f'Updated ZM state values to: {new_state_values_dict}'
+            )
 
         return
 
@@ -141,10 +138,10 @@ class ZoneMinderSynchronizer( IntegrationSynchronizer, ZoneMinderMixin ):
         group_entities_for_placement). Updates to existing entities
         do not contribute — they don't need re-placement."""
         integration_key_to_monitor = self._fetch_zm_monitors( result = result )
-        result.message_list.append( f'Found {len(integration_key_to_monitor)} current ZM monitors.' )
+        result.info_list.append( f'Found {len(integration_key_to_monitor)} current ZM monitors.' )
 
         integration_key_to_entity = self._get_existing_zm_monitor_entities( result = result )
-        result.message_list.append( f'Found {len(integration_key_to_entity)} existing ZM entities.' )
+        result.info_list.append( f'Found {len(integration_key_to_entity)} existing ZM entities.' )
 
         created_entities = []
         for integration_key, zm_monitor in integration_key_to_monitor.items():
@@ -224,7 +221,11 @@ class ZoneMinderSynchronizer( IntegrationSynchronizer, ZoneMinderMixin ):
                 name_label_dict = run_state_name_label_dict,
             )
 
-        result.message_list.append( f'Created ZM entity: {zm_entity}' )
+        # The singleton ZM service entity isn't a placement candidate
+        # (already attached to the integration root) — surface as an
+        # info note rather than a created_count bump so it doesn't
+        # inflate the count of placeable monitors.
+        result.info_list.append( f'Created ZM service entity: {zm_entity}' )
         return zm_entity
             
     def _create_monitor_entity( self,
@@ -274,20 +275,17 @@ class ZoneMinderSynchronizer( IntegrationSynchronizer, ZoneMinderMixin ):
                     ),
                 )
                 
-        result.message_list.append( f'Create new camera entity: {entity}' )
+        result.created_count += 1
         return entity
-    
+
     def _update_entity( self,
                         entity      : Entity,
                         zm_monitor  : ZmMonitor,
                         result      : IntegrationSyncResult ):
-
         if entity.name != zm_monitor.name():
-            result.message_list.append(f'Name changed for {entity}. Setting to "{zm_monitor.name()}"')
             entity.name = zm_monitor.name()
             entity.save()
-        else:
-            result.message_list.append( f'No changes found for {entity}.' )
+            result.updated_count += 1
         return
     
     def _remove_entity( self,

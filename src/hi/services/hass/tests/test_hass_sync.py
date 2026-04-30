@@ -78,7 +78,7 @@ class TestHassSynchronizerSyncMethod(TestCase):
         # Verify actual error result structure and content
         self.assertEqual(len(result.error_list), 1)
         self.assertIn('Database connection failed', result.error_list[0])
-        self.assertEqual(len(result.message_list), 0)  # No success messages on error
+        self.assertEqual(len(result.info_list), 0)  # No success messages on error
 
 
 class TestHassSynchronizerSyncHelper(TestCase):

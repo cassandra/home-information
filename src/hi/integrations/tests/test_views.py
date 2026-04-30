@@ -215,7 +215,7 @@ class _SyncTestSynchronizer:
         self.sync_called = True
         return IntegrationSyncResult(
             title='Test Sync Result',
-            message_list=['Synced.'],
+            info_list=['Synced.'],
         )
 
 

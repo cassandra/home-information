@@ -68,13 +68,16 @@ class IntegrationSynchronizer:
 
     def get_result_title(self, is_initial_import: bool) -> str:
         """
-        Human-readable title for the sync result (used in the result
-        modal header). The same operator-intent flag that drives the
-        pre-sync description applies here so the result title reads
-        consistently with what they clicked. Subclasses must
-        override.
+        Short, generic header for the sync result modal: 'Import
+        Result' for the first-time path, 'Refresh Result' otherwise.
+        The integration's identity is surfaced in the modal body
+        (logo + label) rather than the title bar — keeps the title
+        bar contrast predictable regardless of integration. Override
+        only if a specific integration genuinely needs custom copy.
         """
-        raise NotImplementedError('Subclasses must override this method')
+        if is_initial_import:
+            return 'Import Result'
+        return 'Refresh Result'
 
     def sync(self, is_initial_import: bool) -> IntegrationSyncResult:
         """
@@ -159,9 +162,14 @@ class IntegrationSynchronizer:
         Remove an entity that no longer exists in the integration.
 
         If the entity has user-created attributes, preserve the entity but
-        disconnect it from the integration and remove only integration-related
-        components. Otherwise, perform complete deletion.
+        disconnect it from the integration and remove only integration-
+        related components. Otherwise, perform complete deletion.
+
+        Bumps ``result.removed_count`` regardless of which branch is
+        taken — both 'preserve with user data' and 'hard delete' are
+        operator-visible removals from the integration's perspective.
         """
+        result.removed_count += 1
         if EntityUserDataDetector.has_user_created_attributes(entity):
             EntityIntegrationOperations.preserve_with_user_data(
                 entity = entity,
@@ -169,6 +177,6 @@ class IntegrationSynchronizer:
                 result = result,
             )
         else:
-            # No user data, safe to delete completely
-            entity.delete()  # Deletion cascades to all related data
-            result.message_list.append(f'Removed stale {integration_name} entity: {entity}')
+            # No user data, safe to delete completely; deletion
+            # cascades to all related data.
+            entity.delete()

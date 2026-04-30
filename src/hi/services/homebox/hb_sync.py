@@ -19,11 +19,6 @@ logger = logging.getLogger(__name__)
 
 class HomeBoxSynchronizer( IntegrationSynchronizer, HomeBoxMixin ):
 
-    def get_result_title(self, is_initial_import: bool) -> str:
-        if is_initial_import:
-            return 'HomeBox Import Result'
-        return 'HomeBox Refresh Result'
-
     def get_description(self, is_initial_import: bool) -> Optional[str]:
         if is_initial_import:
             return (
@@ -63,7 +58,7 @@ class HomeBoxSynchronizer( IntegrationSynchronizer, HomeBoxMixin ):
             result.error_list.append( f'Cannot sync HomeBox: {e}' )
             return result
 
-        result.message_list.append( f'Found {len(item_list)} current HomeBox items.' )
+        result.info_list.append( f'Found {len(item_list)} current HomeBox items.' )
 
         # Existing-entity updates do not need re-placement; only
         # newly-created entities surface in the dispatcher.
@@ -96,7 +91,7 @@ class HomeBoxSynchronizer( IntegrationSynchronizer, HomeBoxMixin ):
             continue
 
         integration_key_to_entity = self._get_existing_hb_entities( result = result )
-        result.message_list.append( f'Found {len(integration_key_to_entity)} existing HomeBox entities.' )
+        result.info_list.append( f'Found {len(integration_key_to_entity)} existing HomeBox entities.' )
 
         created_entities: List[Entity] = []
         with transaction.atomic():
@@ -149,20 +144,21 @@ class HomeBoxSynchronizer( IntegrationSynchronizer, HomeBoxMixin ):
                         item : HbItem,
                         result : IntegrationSyncResult ) -> Entity:
         entity = HbConverter.create_models_for_hb_item( hb_item = item )
-
-        result.message_list.append( f'Created HomeBox entity: {entity}' )
+        result.created_count += 1
         return entity
 
     def _update_entity( self,
                         entity : Entity,
                         item : HbItem,
                         result : IntegrationSyncResult ):
-        message_list = HbConverter.update_models_for_hb_item( entity = entity, hb_item = item )
-
-        if message_list:
-            result.message_list.append( f'Updated HomeBox entity: {entity} ({", ".join(message_list)})' )
-        else:
-            result.message_list.append( f'No changes found for HomeBox entity: {entity}' )
+        # update_models_for_hb_item returns a list of change
+        # description strings — non-empty means at least one
+        # operator-visible change was made.
+        change_messages = HbConverter.update_models_for_hb_item(
+            entity = entity, hb_item = item,
+        )
+        if change_messages:
+            result.updated_count += 1
         return
 
     def _remove_entity( self,
@@ -264,12 +260,11 @@ class HomeBoxSynchronizer( IntegrationSynchronizer, HomeBoxMixin ):
                     del integration_key_to_attr[field_key]
                 continue
 
-        if attribute_message_list:
-            message = (
-                f'Updated HomeBox entity attributes: {entity} '
-                f'({", ".join(attribute_message_list)})'
-            )
-            result.message_list.append( message )
+        # Per-attribute change detail isn't operator-relevant in the
+        # result modal — counts of created/updated/removed entities
+        # answer 'what changed' at the right granularity. The
+        # local attribute_message_list above stays for any future
+        # audit-trail use; nothing surfaces in the sync result.
         return
     
     def _get_existing_hb_attributes( self, entity: Entity ) -> Dict[ IntegrationKey, EntityAttribute ]:

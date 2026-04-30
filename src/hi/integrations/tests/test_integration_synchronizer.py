@@ -82,12 +82,12 @@ class IntegrationSynchronizerRemovalTestCase(TestCase):
         
         # Entity should be completely deleted
         self.assertFalse(Entity.objects.filter(id=entity_id).exists())
-        
-        # Check result message content and quality
-        self.assertEqual(len(self.result.message_list), 1)
-        message = self.result.message_list[0]
-        self.assertIn('Removed stale TestIntegration entity', message)
-        self.assertIn('Test Entity', message)  # Should include entity name for debugging
+
+        # Hard delete bumps removed_count; no info_list entry —
+        # per-event detail is captured by the count, not by a
+        # narrative line.
+        self.assertEqual(self.result.removed_count, 1)
+        self.assertEqual(self.result.info_list, [])
         
         # Verify complete cleanup - no orphaned attributes or states
         self.assertEqual(EntityAttribute.objects.filter(entity_id=entity_id).count(), 0)
@@ -169,13 +169,16 @@ class IntegrationSynchronizerRemovalTestCase(TestCase):
         # Entity state should be deleted (orphaned)
         self.assertFalse(EntityState.objects.filter(id=state_id).exists())
         
-        # Check result message content and completeness
-        self.assertEqual(len(self.result.message_list), 1)
-        message = self.result.message_list[0]
+        # Preservation bumps removed_count and surfaces a diagnostic
+        # info note (the operator wants to know an entity was
+        # disconnected and renamed, not just a count).
+        self.assertEqual(self.result.removed_count, 1)
+        self.assertEqual(len(self.result.info_list), 1)
+        message = self.result.info_list[0]
         self.assertIn('Preserved TestIntegration entity', message)
         self.assertIn('disconnected from integration', message)
-        self.assertIn(original_name, message)  # Should reference original name
-        self.assertIn('[Disconnected]', message)  # Should show new name
+        self.assertIn(original_name, message)
+        self.assertIn('[Disconnected]', message)
         
         # Verify integration payload is cleared
         self.entity.refresh_from_db()
@@ -349,12 +352,9 @@ class IntegrationSynchronizerRemovalTestCase(TestCase):
             self.entity, self.result, 'TestIntegration'
         )
         
-        # Entity should be completely deleted
+        # Entity should be completely deleted; removed_count bumped.
         self.assertFalse(Entity.objects.filter(id=entity_id).exists())
-        
-        # Verify message indicates successful deletion
-        self.assertEqual(len(self.result.message_list), 1)
-        self.assertIn('Removed stale TestIntegration entity', self.result.message_list[0])
+        self.assertEqual(self.result.removed_count, 1)
 
     def test_entity_with_integration_payload_preservation(self):
         """Test that integration_payload is preserved during entity preservation."""
@@ -594,19 +594,17 @@ class IntegrationSynchronizerRemovalTestCase(TestCase):
         self.assertFalse(Controller.objects.filter(id__in=component_ids).exists())
         self.assertFalse(EntityAttribute.objects.filter(id__in=attribute_ids).exists())
         
-        # Verify message indicates successful deletion
-        self.assertEqual(len(self.result.message_list), 1)
-        message = self.result.message_list[0]
-        self.assertIn('Removed stale TestIntegration entity', message)
-        self.assertIn('Test Entity', message)
+        # Hard delete bumps removed_count; no narrative info entry.
+        self.assertEqual(self.result.removed_count, 1)
+        self.assertEqual(self.result.info_list, [])
 
-    def test_result_message_accumulation(self):
-        """Test that IntegrationSyncResult properly accumulates messages from multiple operations."""
-        # Add some initial messages to result
-        self.result.message_list.append('Initial message')
-        self.result.message_list.append('Another message')
-        
-        # Create user data to trigger preservation
+    def test_result_info_list_accumulation(self):
+        """Pre-existing info_list entries are preserved when the
+        preservation path appends its diagnostic note."""
+        self.result.info_list.append('Initial message')
+        self.result.info_list.append('Another message')
+
+        # Create user data to trigger preservation.
         EntityAttribute.objects.create(
             entity=self.entity,
             name='User Note',
@@ -614,21 +612,18 @@ class IntegrationSynchronizerRemovalTestCase(TestCase):
             value_type_str='TEXT',
             attribute_type_str=str(AttributeType.CUSTOM)
         )
-        
-        # Call the method
+
         self.synchronizer._remove_entity_intelligently(
             self.entity, self.result, 'TestIntegration'
         )
-        
-        # Should have 3 messages total (2 existing + 1 new)
-        self.assertEqual(len(self.result.message_list), 3)
-        
-        # New message should be last
-        self.assertIn('Preserved TestIntegration entity', self.result.message_list[2])
-        
-        # Original messages should be preserved
-        self.assertEqual(self.result.message_list[0], 'Initial message')
-        self.assertEqual(self.result.message_list[1], 'Another message')
+
+        # 3 entries: 2 pre-existing + 1 preservation note.
+        self.assertEqual(len(self.result.info_list), 3)
+        self.assertIn('Preserved TestIntegration entity', self.result.info_list[2])
+        self.assertEqual(self.result.info_list[0], 'Initial message')
+        self.assertEqual(self.result.info_list[1], 'Another message')
+        # And removed_count was bumped exactly once.
+        self.assertEqual(self.result.removed_count, 1)
 
 
 class IntegrationSynchronizerRemovalTransactionTestCase(TransactionTestCase):
@@ -751,12 +746,14 @@ class IntegrationSynchronizerRemovalTransactionTestCase(TransactionTestCase):
         self.assertEqual(remaining_attributes.count(), 1)
         self.assertEqual(remaining_attributes.first().name, 'User Note')
         
-        # Verify operation was logged
-        self.assertEqual(len(self.result.message_list), 1)
-        message = self.result.message_list[0]
+        # Preservation diagnostic surfaces in info_list; count
+        # bumps exactly once.
+        self.assertEqual(len(self.result.info_list), 1)
+        message = self.result.info_list[0]
         self.assertIn('Preserved TestIntegration entity', message)
         self.assertIn('disconnected from integration', message)
-    
+        self.assertEqual(self.result.removed_count, 1)
+
     def test_preservation_with_database_constraint_validation(self):
         """Test that preservation operations respect database constraints and maintain referential integrity."""
         # Create user attribute to trigger preservation
@@ -830,10 +827,10 @@ class IntegrationSynchronizerRemovalTransactionTestCase(TransactionTestCase):
         self.assertTrue(Sensor.objects.filter(id=user_sensor.id).exists())
         self.assertTrue(EntityAttribute.objects.filter(id=user_attr.id).exists())
         
-        # Verify message was added
-        self.assertEqual(len(self.result.message_list), 1)
-        self.assertIn('Preserved TestIntegration entity', self.result.message_list[0])
-        
+        # Preservation note surfaces in info_list.
+        self.assertEqual(len(self.result.info_list), 1)
+        self.assertIn('Preserved TestIntegration entity', self.result.info_list[0])
+
         # Verify database integrity: remaining state has valid relationships
         remaining_state = EntityState.objects.get(id=second_state_id)
         remaining_sensors = remaining_state.sensors.all()
@@ -1065,6 +1062,6 @@ class IntegrationSynchronizerRemovalTransactionTestCase(TransactionTestCase):
                 self.assertIsNone(entity.integration_id)
                 self.assertIsNone(entity.integration_name)
                 
-                # Verify result message was added
-                self.assertEqual(len(test_result.message_list), 1)
-                self.assertIn('Preserved TestIntegration entity', test_result.message_list[0])
+                # Preservation note surfaces in info_list.
+                self.assertEqual(len(test_result.info_list), 1)
+                self.assertIn('Preserved TestIntegration entity', test_result.info_list[0])

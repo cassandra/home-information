@@ -25,11 +25,6 @@ logger = logging.getLogger(__name__)
 
 class HassSynchronizer( IntegrationSynchronizer, HassMixin ):
 
-    def get_result_title(self, is_initial_import: bool) -> str:
-        if is_initial_import:
-            return 'Home Assistant Import Result'
-        return 'Home Assistant Refresh Result'
-
     def get_description(self, is_initial_import: bool) -> Optional[str]:
         if is_initial_import:
             return (
@@ -59,17 +54,17 @@ class HassSynchronizer( IntegrationSynchronizer, HassMixin ):
             return result
 
         hass_entity_id_to_state = hass_manager.fetch_hass_states_from_api()
-        result.message_list.append( f'Found {len(hass_entity_id_to_state)} current Home Assistant states.' )
+        result.info_list.append( f'Found {len(hass_entity_id_to_state)} current Home Assistant states.' )
 
         integration_key_to_entity = self._get_existing_hass_entities( result = result )
-        result.message_list.append( f'Found {len(integration_key_to_entity)} existing Home Assistant entities.' )
+        result.info_list.append( f'Found {len(integration_key_to_entity)} existing Home Assistant entities.' )
 
         import_allowlist = hass_manager.import_allowlist
         hass_device_id_to_device = HassConverter.hass_states_to_hass_devices(
             hass_entity_id_to_state = hass_entity_id_to_state,
             import_allowlist = import_allowlist,
         )
-        result.message_list.append( f'Found {len(hass_device_id_to_device)} current Home Assistant devices.' )
+        result.info_list.append( f'Found {len(hass_device_id_to_device)} current Home Assistant devices.' )
 
         if import_allowlist:
             total_states = len( hass_entity_id_to_state )
@@ -79,7 +74,7 @@ class HassSynchronizer( IntegrationSynchronizer, HassMixin ):
             )
             skipped_count = total_states - imported_states
             if skipped_count > 0:
-                result.message_list.append(
+                result.info_list.append(
                     f'Filtered {skipped_count} states not matching the Import Allowlist.'
                 )
                 result.footer_message = (
@@ -150,21 +145,22 @@ class HassSynchronizer( IntegrationSynchronizer, HassMixin ):
             hass_device = hass_device,
             add_alarm_events = self.hass_manager().should_add_alarm_events,
         )
-        result.message_list.append( f'Created Home Assistant entity: {entity}' )
+        result.created_count += 1
         return entity
 
     def _update_entity( self,
                         entity       : Entity,
                         hass_device  : HassDevice,
                         result       : IntegrationSyncResult ):
-
-        message_list = HassConverter.update_models_for_hass_device(
+        # update_models_for_hass_device returns a list of change
+        # description strings — non-empty means at least one
+        # operator-visible change was made.
+        change_messages = HassConverter.update_models_for_hass_device(
             entity = entity,
             hass_device = hass_device,
         )
-        for message in message_list:
-            result.message_list.append( message )
-            continue
+        if change_messages:
+            result.updated_count += 1
         return
 
     def _remove_entity( self,

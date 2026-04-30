@@ -210,7 +210,7 @@ class EntityIntegrationOperations:
             entity.save()
 
         if result is not None:
-            result.message_list.append(
+            result.info_list.append(
                 f'Preserved {integration_name} entity "{original_name}" with user data, '
                 f'disconnected from integration and renamed to "{entity.name}"'
             )

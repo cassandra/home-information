@@ -40,7 +40,7 @@ class TestZoneMinderSynchronizerLockBehavior(TestCase):
         mock_lock_context.assert_called_once_with(name='integrations_sync')
         
         # Test actual behavior: should return result with error when client disabled
-        self.assertEqual(result.title, 'ZoneMinder Import Result')
+        self.assertEqual(result.title, 'Import Result')
         self.assertGreater(len(result.error_list), 0)
         self.assertIn('Sync problem. ZM integration disabled?', result.error_list[0])
     
@@ -53,12 +53,12 @@ class TestZoneMinderSynchronizerLockBehavior(TestCase):
         result = self.synchronizer.sync(is_initial_import=True)
         
         # Test error handling behavior
-        self.assertEqual(result.title, 'ZoneMinder Import Result')
+        self.assertEqual(result.title, 'Import Result')
         self.assertEqual(len(result.error_list), 1)
         self.assertIn(lock_error_msg, result.error_list[0])
         
         # Test that no sync operations were attempted
-        self.assertEqual(len(result.message_list), 0)
+        self.assertEqual(len(result.info_list), 0)
         
         # Test that result is properly formed for error condition
         self.assertIsNotNone(result.title)
@@ -81,7 +81,7 @@ class TestZoneMinderSynchronizerSyncHelper(TestCase):
         
         result = self.synchronizer._sync_impl(is_initial_import=True)
         
-        self.assertEqual(result.title, 'ZoneMinder Import Result')
+        self.assertEqual(result.title, 'Import Result')
         self.assertIn('Sync problem. ZM integration disabled?', result.error_list[0])
     
     def test_sync_impl_calls_both_sync_methods(self):
@@ -92,11 +92,11 @@ class TestZoneMinderSynchronizerSyncHelper(TestCase):
         # _sync_monitors now returns the list of imported entities so
         # the caller can assemble the "Monitors" group.
         def mock_sync_states(result):
-            result.message_list.append('States synced successfully')
+            result.info_list.append('States synced successfully')
             return result
 
         def mock_sync_monitors(result):
-            result.message_list.append('Monitors synced successfully')
+            result.info_list.append('Monitors synced successfully')
             return []
         
         # Patch the methods to track their execution and simulate behavior
@@ -110,9 +110,9 @@ class TestZoneMinderSynchronizerSyncHelper(TestCase):
             mock_sync_monitors.assert_called_once()
             
             # Test result aggregation: messages from both operations
-            self.assertEqual(result.title, 'ZoneMinder Import Result')
-            self.assertIn('States synced successfully', result.message_list)
-            self.assertIn('Monitors synced successfully', result.message_list)
+            self.assertEqual(result.title, 'Import Result')
+            self.assertIn('States synced successfully', result.info_list)
+            self.assertIn('Monitors synced successfully', result.info_list)
             
             # Test that sync_states was called before sync_monitors
             self.assertEqual(mock_sync_states.call_args[1]['result'], result)
@@ -159,7 +159,7 @@ class TestZoneMinderSynchronizerStateSync(TestCase):
         
         # Simulate the actual behavior of _create_zm_entity
         def mock_create_behavior(run_state_name_label_dict, result):
-            result.message_list.append(f'Created ZM entity: {mock_created_entity}')
+            result.info_list.append(f'Created ZM entity: {mock_created_entity}')
             return mock_created_entity
         
         mock_create_entity.side_effect = mock_create_behavior
@@ -181,7 +181,7 @@ class TestZoneMinderSynchronizerStateSync(TestCase):
         self.assertEqual(call_args[1]['run_state_name_label_dict'], expected_dict)
         
         # Verify result contains creation information
-        self.assertGreater(len(result.message_list), 0)
+        self.assertGreater(len(result.info_list), 0)
         # Test behavior: should not have errors when successful
         self.assertEqual(len(result.error_list), 0)
     
@@ -211,7 +211,7 @@ class TestZoneMinderSynchronizerStateSync(TestCase):
         # Should return early without processing further
         self.assertIsNone(returned_result)
         # Should not have created any entities since sensor missing
-        self.assertEqual(len(result.message_list), 0)
+        self.assertEqual(len(result.info_list), 0)
     
     @patch.object(Entity.objects, 'filter_by_integration_key')
     @patch.object(Sensor.objects, 'filter_by_integration_key')
@@ -253,9 +253,9 @@ class TestZoneMinderSynchronizerStateSync(TestCase):
         
         # Test successful processing behavior
         self.assertEqual(len(result.error_list), 0)
-        self.assertGreater(len(result.message_list), 0)
+        self.assertGreater(len(result.info_list), 0)
         # Verify the state dict is included in the message for debugging
-        message = result.message_list[0]
+        message = result.info_list[0]
         self.assertIn('Updated ZM state values to:', message)
         self.assertIn('start', message)
         self.assertIn('pause', message)
@@ -299,7 +299,7 @@ class TestZoneMinderSynchronizerStateSync(TestCase):
         self.assertEqual(len(result.error_list), 0)
         
         # Test no update messages generated
-        update_messages = [msg for msg in result.message_list if 'Updated ZM state values' in msg]
+        update_messages = [msg for msg in result.info_list if 'Updated ZM state values' in msg]
         self.assertEqual(len(update_messages), 0)
 
 
@@ -325,15 +325,15 @@ class TestZoneMinderSynchronizerMonitorSync(TestCase):
         
         # Mock the individual sync methods to test coordination
         def mock_fetch_monitors(result):
-            result.message_list.append('Fetched 1 monitor from ZM')
+            result.info_list.append('Fetched 1 monitor from ZM')
             return {integration_key: mock_monitor}
             
         def mock_get_existing(result):
-            result.message_list.append('Found 0 existing entities')
+            result.info_list.append('Found 0 existing entities')
             return {}
             
         def mock_create_entity(zm_monitor, result):
-            result.message_list.append(f'Created entity for monitor {zm_monitor.name.return_value}')
+            result.info_list.append(f'Created entity for monitor {zm_monitor.name.return_value}')
             return Mock()
         
         with patch.object(self.synchronizer, '_fetch_zm_monitors', side_effect=mock_fetch_monitors), \
@@ -351,9 +351,9 @@ class TestZoneMinderSynchronizerMonitorSync(TestCase):
             mock_remove.assert_not_called()
             
             # Test result aggregation from all sync phases
-            self.assertIn('Fetched 1 monitor from ZM', result.message_list)
-            self.assertIn('Found 0 existing entities', result.message_list)
-            self.assertIn('Created entity for monitor Test Camera', result.message_list)
+            self.assertIn('Fetched 1 monitor from ZM', result.info_list)
+            self.assertIn('Found 0 existing entities', result.info_list)
+            self.assertIn('Created entity for monitor Test Camera', result.info_list)
             
             # Test no errors in successful creation scenario
             self.assertEqual(len(result.error_list), 0)
@@ -389,15 +389,15 @@ class TestZoneMinderSynchronizerMonitorSync(TestCase):
         
         # Mock the individual sync methods to test coordination
         def mock_fetch_monitors(result):
-            result.message_list.append('Fetched 0 monitors from ZM')
+            result.info_list.append('Fetched 0 monitors from ZM')
             return {}  # No current monitors
             
         def mock_get_existing(result):
-            result.message_list.append('Found 1 existing entity')
+            result.info_list.append('Found 1 existing entity')
             return {integration_key: mock_entity}
             
         def mock_remove_entity(entity, result):
-            result.message_list.append(f'Removed stale entity {entity.name}')
+            result.info_list.append(f'Removed stale entity {entity.name}')
         
         with patch.object(self.synchronizer, '_fetch_zm_monitors', side_effect=mock_fetch_monitors), \
              patch.object(self.synchronizer, '_get_existing_zm_monitor_entities', side_effect=mock_get_existing), \
@@ -414,9 +414,9 @@ class TestZoneMinderSynchronizerMonitorSync(TestCase):
             mock_update.assert_not_called()
             
             # Test result tracking for cleanup scenario
-            self.assertIn('Fetched 0 monitors from ZM', result.message_list)
-            self.assertIn('Found 1 existing entity', result.message_list)
-            self.assertIn('Removed stale entity Deleted Camera', result.message_list)
+            self.assertIn('Fetched 0 monitors from ZM', result.info_list)
+            self.assertIn('Found 1 existing entity', result.info_list)
+            self.assertIn('Removed stale entity Deleted Camera', result.info_list)
             
             # Test no errors in successful removal scenario
             self.assertEqual(len(result.error_list), 0)
@@ -682,13 +682,11 @@ class TestZoneMinderSynchronizerEntityUpdate(TestCase):
         self.assertEqual(mock_entity.can_user_delete, True)  # User delete flag unchanged
         self.assertEqual(mock_entity.integration_key, original_integration_key)  # Integration key unchanged
         
-        # Test result tracking
+        # Update bumps updated_count; per-event narrative is no
+        # longer surfaced (counts capture it).
         self.assertEqual(len(result.error_list), 0)
-        self.assertGreater(len(result.message_list), 0)
-        update_message = result.message_list[0]
-        self.assertIn('Name changed for', update_message)
-        self.assertIn('New Name', update_message)
-    
+        self.assertEqual(result.updated_count, 1)
+
     def test_update_entity_no_change_when_name_same(self):
         """Test _update_entity doesn't save when name unchanged and preserves all entity state"""
         mock_entity = Mock()
@@ -696,30 +694,21 @@ class TestZoneMinderSynchronizerEntityUpdate(TestCase):
         mock_entity.id = 789
         mock_entity.entity_type_str = 'CAMERA'
         mock_entity.save = Mock()
-        
+
         mock_monitor = Mock()
         mock_monitor.name.return_value = 'Same Name'
         mock_monitor.id.return_value = 999
-        
+
         result = IntegrationSyncResult(title='Test')
         self.synchronizer._update_entity(mock_entity, mock_monitor, result)
-        
-        # Test no persistence when no changes
+
+        # Test no persistence when no changes.
         mock_entity.save.assert_not_called()
-        
-        # Test complete state preservation
-        self.assertEqual(mock_entity.name, 'Same Name')  # Name unchanged
-        self.assertEqual(mock_entity.id, 789)  # ID unchanged
-        self.assertEqual(mock_entity.entity_type_str, 'CAMERA')  # Type unchanged
-        
-        # Test result tracking for no-change scenario
+
+        # No-change path bumps no count and surfaces nothing.
         self.assertEqual(len(result.error_list), 0)
-        self.assertGreater(len(result.message_list), 0)
-        no_change_message = result.message_list[0]
-        self.assertIn('No changes found for', no_change_message)
-        
-        # Test that the entity object itself is referenced in the message
-        self.assertIn(str(mock_entity), no_change_message)
+        self.assertEqual(result.updated_count, 0)
+        self.assertEqual(result.info_list, [])
 
 
 class TestZoneMinderSynchronizerEntityRemoval(TestCase):
@@ -837,7 +826,7 @@ class TestZoneMinderSynchronizerWithRealData(TestCase):
         expected_states = {'default': 'default', 'Away': 'Away', 'HomeDay': 'HomeDay', 'Disabled': 'Disabled'}
         self.assertEqual(mock_entity_state.value_range_dict, expected_states)
         mock_entity_state.save.assert_called_once()
-        self.assertIn('Updated ZM state values to:', result.message_list[0])
+        self.assertIn('Updated ZM state values to:', result.info_list[0])
     
     @patch.object(ZoneMinderSynchronizer, '_fetch_zm_monitors')
     @patch.object(ZoneMinderSynchronizer, '_get_existing_zm_monitor_entities')
@@ -914,7 +903,7 @@ class TestZoneMinderSynchronizerWithRealData(TestCase):
         # Should update to real name from ZM API
         self.assertEqual(mock_entity.name, 'HighCamera')
         mock_entity.save.assert_called_once()
-        self.assertIn('Name changed for', result.message_list[0])
+        self.assertEqual(result.updated_count, 1)
     
     @patch.object(Entity.objects, 'filter')
     def test_get_existing_entities_with_real_monitor_id_patterns(self, mock_filter):
@@ -1025,8 +1014,8 @@ class TestZoneMinderSynchronizerWithRealData(TestCase):
                 # Should use transaction
                 mock_atomic.assert_called()
                 
-                # Should log creation
-                self.assertIn('Create new camera entity:', result.message_list[0])
+                # Creation bumps created_count.
+                self.assertEqual(result.created_count, 1)
 
 
 class TestZoneMinderSynchronizerSyncResultGrouping(TestCase):

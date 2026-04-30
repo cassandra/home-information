@@ -1,14 +1,24 @@
 {% extends "modals/action_refresh.html" %}
+{% load static %}
 
 {% comment %}
-  Phase 2 sync result modal.
+  Integration sync result modal.
 
-  Renders the title and message/error lines from
-  IntegrationSyncResult. The grouped/ungrouped imported items
-  (sync_result.groups, sync_result.ungrouped_items) are NOT yet
-  surfaced here — Phase 3 introduces the dispatcher modal that
-  consumes those for entity placement. This template intentionally
-  preserves the legacy result modal UX for Phase 2.
+  Reached when the sync produced no placement work to do (errors,
+  no new entities, or 'no items left to place' from the GET
+  dispatcher). Renders a counts-driven lead summary, an actionable
+  footer hint when the synchronizer set one, and collapsible
+  Details / Errors sections for operators who want them.
+
+  The modal title bar keeps the generic HI logo + short
+  generic title ('Import Result' / 'Refresh Result'); the
+  integration's identity is surfaced as a body subtitle row
+  (logo + label) where the white background gives the
+  transparent integration logos predictable contrast.
+
+  Context:
+    sync_result      : IntegrationSyncResult (required)
+    integration_data : IntegrationData (required)
 {% endcomment %}
 
 {% block modal_dialog_class %}hi-modal-dialog-600{% endblock %}
@@ -18,34 +28,92 @@
 {% endblock %}
 
 {% block body %}
-<h5>{{ sync_result.title }}</h5>
-
-{% if sync_result.error_list %}
-<div class="alert alert-danger">
-  <h5>Errors</h5>:
-  <ul>
-    {% for error_message in sync_result.error_list %}
-    <li>{{ error_message }}</li>
-    {% endfor %}
-  </ul>
+{% if integration_data %}
+<div class="d-flex align-items-center mb-3 pb-2 border-bottom">
+  <img class="mr-2"
+       style="height: 28px; width: auto;"
+       src="{% static integration_data.integration_metadata.logo_static_path %}"
+       alt="{{ integration_data.label }} Logo">
+  <h5 class="mb-0">{{ integration_data.label }}</h5>
 </div>
 {% endif %}
 
-{% if sync_result.message_list %}
-<div class="text-primary">
-  <ul>
-    {% for message in sync_result.message_list %}
-    <li>{{ message }}</li>
-    {% endfor %}
-  </ul>
-</div>
+{% comment %}
+  Lead summary — one sentence telling the operator the outcome
+  at a glance. Errors take precedence; otherwise counts drive
+  the message.
+{% endcomment %}
+{% if sync_result.error_list and not sync_result.has_changes %}
+  <div class="alert alert-danger mb-3">
+    <strong>Sync failed.</strong>
+    {{ sync_result.error_list|length }} error{{ sync_result.error_list|length|pluralize }}.
+  </div>
+{% elif sync_result.error_list %}
+  <div class="alert alert-warning mb-3">
+    <strong>Completed with errors.</strong>
+    {{ sync_result.error_list|length }} error{{ sync_result.error_list|length|pluralize }}.
+  </div>
+{% elif not sync_result.has_changes %}
+  <p class="text-muted mb-3"><em>Nothing new since the last sync.</em></p>
+{% else %}
+  <p class="mb-3">
+    <strong class="text-success">Sync complete.</strong>
+    {% if sync_result.created_count %}
+      <span class="badge badge-success">{{ sync_result.created_count }} created</span>
+    {% endif %}
+    {% if sync_result.updated_count %}
+      <span class="badge badge-info">{{ sync_result.updated_count }} updated</span>
+    {% endif %}
+    {% if sync_result.removed_count %}
+      <span class="badge badge-secondary">{{ sync_result.removed_count }} removed</span>
+    {% endif %}
+  </p>
 {% endif %}
 
-{% if not sync_result.error_list %}
-<div><em>No errors.</em></div>
-{% endif %}
-
+{% comment %}
+  Actionable hint (e.g., HASS allowlist) — promoted from muted
+  footer text to a real callout.
+{% endcomment %}
 {% if sync_result.footer_message %}
-<div class="text-muted small mt-3 border-top pt-2">{{ sync_result.footer_message }}</div>
+  <div class="alert alert-info small mb-3">
+    {{ sync_result.footer_message }}
+  </div>
+{% endif %}
+
+{% comment %}Errors detail — expanded by default when present.{% endcomment %}
+{% if sync_result.error_list %}
+<div class="mb-2">
+  <a class="text-danger small" data-toggle="collapse"
+     href="#hi-sync-result-errors" role="button"
+     aria-expanded="true" aria-controls="hi-sync-result-errors">
+    Errors ({{ sync_result.error_list|length }})
+  </a>
+  <div class="collapse show" id="hi-sync-result-errors">
+    <ul class="small mt-1 mb-0">
+      {% for error_message in sync_result.error_list %}
+      <li class="text-danger">{{ error_message }}</li>
+      {% endfor %}
+    </ul>
+  </div>
+</div>
+{% endif %}
+
+{% comment %}Diagnostic notes — collapsed by default.{% endcomment %}
+{% if sync_result.info_list %}
+<div class="mt-2">
+  <a class="text-muted small" data-toggle="collapse"
+     href="#hi-sync-result-info" role="button"
+     aria-expanded="false" aria-controls="hi-sync-result-info">
+    Show details ({{ sync_result.info_list|length }})
+  </a>
+  <div class="collapse" id="hi-sync-result-info">
+    <ul class="small mt-1 mb-0 text-muted"
+        style="max-height: 200px; overflow-y: auto;">
+      {% for info_message in sync_result.info_list %}
+      <li>{{ info_message }}</li>
+      {% endfor %}
+    </ul>
+  </div>
+</div>
 {% endif %}
 {% endblock %}

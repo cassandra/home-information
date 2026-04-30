@@ -32,7 +32,7 @@ class TestHomeBoxSynchronizer(SimpleTestCase):
             result = synchronizer._sync_impl(is_initial_import=True)
 
         self.assertIsInstance(result, IntegrationSyncResult)
-        self.assertIn('Found 3 current HomeBox items.', result.message_list)
+        self.assertIn('Found 3 current HomeBox items.', result.info_list)
         sync_entities_mock.assert_called_once_with(
             item_list=manager.fetch_hb_items_from_api.return_value,
             result=result,
@@ -135,7 +135,7 @@ class TestHomeBoxSynchronizer(SimpleTestCase):
             item_existing,
         )
 
-        self.assertIn('Found 2 existing HomeBox entities.', result.message_list)
+        self.assertIn('Found 2 existing HomeBox entities.', result.info_list)
         self.assertTrue(any('Ignoring HomeBox item due to missing/invalid id' in message
                             for message in result.error_list))
 
@@ -287,11 +287,12 @@ class TestHomeBoxSynchronizer(SimpleTestCase):
         stale_attr.delete.assert_called_once()
         foreign_attr.delete.assert_not_called()
 
-        self.assertEqual(len(result.message_list), 1)
-        self.assertIn('Updated HomeBox entity attributes', result.message_list[0])
-        self.assertIn('Field attribute added: Field New', result.message_list[0])
-        self.assertIn('Attachment attribute added: Attachment New', result.message_list[0])
-        self.assertIn('Field attribute removed: Stale Field', result.message_list[0])
+        # Per-attribute change detail is no longer surfaced in the
+        # sync result (counts at the entity level capture the
+        # operator-relevant signal). The persistence behavior above
+        # — created/updated/deleted attribute records — remains the
+        # contract this test pins.
+        self.assertEqual(result.info_list, [])
 
 
 class TestHomeBoxSynchronizerSyncResultGrouping(SimpleTestCase):
