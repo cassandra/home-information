@@ -1,0 +1,159 @@
+{% extends "modals/action_2_with_cancel.html" %}
+{% load icons %}
+
+{% comment %}
+Post-sync entity placement dispatcher.
+
+Three-level inheritance: the operator picks a top-level default for
+all imported entities, may override per group, and may further
+override per entity via the drill-down. Empty selections at any
+level inherit from the level above; explicit "(skip)" at any level
+prevents placement for that branch.
+
+The top level alone offers a "+ Create new view" option, which
+creates one fresh LocationView (named after the integration,
+attached to the operator's current default Location) on Apply.
+Group/entity overrides to existing views remain in effect even when
+the top is "+ Create new view".
+
+Existing-view dropdowns are rendered as <optgroup>-per-Location
+across all dropdowns so multi-Location deployments can disambiguate
+views with shared names ("All", "Default", etc.).
+
+Context:
+  integration_data      : IntegrationData (required)
+  sync_result           : IntegrationSyncResult (required)
+  location_view_groups  : List[(Location, List[LocationView])] (required)
+  dispatch_url          : str (required)
+{% endcomment %}
+
+{% block header_class %}bg-secondary{% endblock %}
+
+{% block title_text %}
+Place imported entities in {{ integration_data.label }}
+{% endblock %}
+
+{% block body %}
+<form id="hi-dispatcher-form" method="post" action="{{ dispatch_url }}"
+      class="form" data-async="modal">
+  {% csrf_token %}
+  {% comment %}
+    Pre-sync intent threaded forward so the post-dispatch modal
+    titles itself consistently with what the operator clicked.
+  {% endcomment %}
+  <input type="hidden" name="is_initial_import"
+         value="{{ is_initial_import|yesno:'1,0' }}">
+
+  <div class="card mb-2 hi-dispatcher-top">
+    <div class="card-body py-2 d-flex align-items-center">
+      <div class="flex-grow-1">
+        <strong>Place all imported entities</strong>
+      </div>
+      <select name="top_view" class="form-control form-control-sm w-auto">
+        <option value="">(skip all)</option>
+        <option value="__new__">+ Create new view named "{{ integration_data.label }}"</option>
+        {% include "integrations/panes/_dispatcher_view_options.html" %}
+      </select>
+    </div>
+  </div>
+
+  {% if sync_result.groups or sync_result.ungrouped_items %}
+  <div class="text-muted small mb-2">
+    Groups and per-item drill-downs override the top choice. Each
+    placed entity will start at the center of its view; you can
+    refine positions afterwards.
+  </div>
+  {% endif %}
+
+  {% for group in sync_result.groups %}
+  {% with forloop.counter0 as group_index %}
+  <div class="card mb-2 hi-dispatcher-group">
+    <div class="card-body py-2">
+      <div class="d-flex align-items-center">
+        <div class="flex-grow-1">
+          <strong>{{ group.label }}</strong>
+          <span class="badge badge-light ml-1">{{ group.items|length }}</span>
+        </div>
+        <select name="group_view_{{ group_index }}" class="form-control form-control-sm w-auto">
+          <option value="">(use top)</option>
+          <option value="__skip__">(skip)</option>
+          {% include "integrations/panes/_dispatcher_view_options.html" %}
+        </select>
+        <a class="btn btn-sm btn-link" data-toggle="collapse"
+           href="#hi-drill-{{ group_index }}" role="button">
+          drill down
+        </a>
+      </div>
+      <div class="collapse mt-2" id="hi-drill-{{ group_index }}">
+        <div class="text-muted small mb-1">
+          Per-item view overrides the group choice for that item.
+        </div>
+        {% for item in group.items %}
+        <div class="d-flex align-items-center py-1">
+          <div class="flex-grow-1 small">{{ item.label }}</div>
+          <select name="group_{{ group_index }}_entity_{{ item.entity.id }}_view"
+                  class="form-control form-control-sm w-auto">
+            <option value="">(use group)</option>
+            <option value="__skip__">(skip)</option>
+            {% include "integrations/panes/_dispatcher_view_options.html" %}
+          </select>
+        </div>
+        {% endfor %}
+      </div>
+      {# Group membership for the POST regardless of drill-down. #}
+      {% for item in group.items %}
+      <input type="hidden" name="all_group_{{ group_index }}_entity_ids" value="{{ item.entity.id }}">
+      {% endfor %}
+    </div>
+  </div>
+  {% endwith %}
+  {% endfor %}
+
+  {% if sync_result.ungrouped_items %}
+  <div class="card mb-2 hi-dispatcher-ungrouped">
+    <div class="card-header py-2">
+      <strong>Ungrouped items</strong>
+      <span class="badge badge-light ml-1">{{ sync_result.ungrouped_items|length }}</span>
+    </div>
+    <div class="card-body py-2">
+      <div class="text-muted small mb-2">
+        These items have no domain grouping; choose a per-item view
+        or leave as "(use top)".
+      </div>
+      {% for item in sync_result.ungrouped_items %}
+      <div class="d-flex align-items-center py-1">
+        <div class="flex-grow-1 small">{{ item.label }}</div>
+        <input type="hidden" name="ungrouped_entity_ids" value="{{ item.entity.id }}">
+        <select name="ungrouped_entity_{{ item.entity.id }}_view"
+                class="form-control form-control-sm w-auto">
+          <option value="">(use top)</option>
+          <option value="__skip__">(skip)</option>
+          {% include "integrations/panes/_dispatcher_view_options.html" %}
+        </select>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+</form>
+{% endblock %}
+
+{% comment %}
+  CANCEL triggers a full page reload rather than a plain modal
+  dismiss. The sync that produced this modal has already created
+  new entities; the underlying integration manage page rendered
+  before the sync ran (entity counts, "no entities" alert, etc.)
+  is stale. Reload brings it back in sync with reality.
+{% endcomment %}
+{% block action_left %}
+<a id="hi-modal-cancel" role="button"
+   class="btn btn-outline-tertiary"
+   href="#"
+   onclick="location.reload(); return false;">CANCEL</a>
+{% endblock %}
+
+{% block action_right %}
+<button type="submit" form="hi-dispatcher-form" class="btn btn-primary">
+  {% icon "check-circle" size="sm" css_class="hi-icon-left" %}APPLY
+</button>
+{% endblock %}

@@ -1,0 +1,96 @@
+{% extends "modals/action_2_with_cancel.html" %}
+{% load icons %}
+
+{% comment %}
+Post-dispatch summary modal.
+
+Recap of the operator's placement decisions, plus the edit-mode
+notice + Refine button(s) so they can drag entities into their
+correct positions in each affected view.
+
+Multi-view layout: the primary "Refine" button targets the view
+with the most entities placed (ties broken by first-seen). Other
+affected views render as inline secondary links.
+
+Context:
+  integration_data       : IntegrationData (required)
+  outcome                : DispatcherOutcome (required)
+  primary_refine         : (ViewPlacementSummary, refine_url) | None
+  secondary_refine_list  : List[(ViewPlacementSummary, refine_url)]
+  is_initial_import      : bool (required)
+{% endcomment %}
+
+{% block header_class %}bg-secondary{% endblock %}
+
+{% block title_text %}
+{% if is_initial_import %}
+Import complete
+{% else %}
+Refresh complete
+{% endif %}
+{% endblock %}
+
+{% block body %}
+{% if outcome.summaries %}
+<ul class="list-unstyled">
+  {% for summary in outcome.summaries %}
+  <li>
+    <strong>{{ summary.placed_entity_count }}</strong>
+    {% if summary.placed_entity_count == 1 %}entity{% else %}entities{% endif %}
+    placed in <strong>{{ summary.location_view.name }}</strong>.
+  </li>
+  {% endfor %}
+</ul>
+{% if outcome.skipped_entity_count > 0 %}
+<p class="text-muted">
+  <strong>{{ outcome.skipped_entity_count }}</strong> left unplaced.
+  You can add them to views or collections later from edit mode.
+</p>
+{% endif %}
+<p>
+  Imported entities sit at the center of each view; use
+  <strong>Refine</strong> to drag them into position. Note:
+  integration management is not available in edit mode &mdash;
+  return here using the location view's mode toggle when you're
+  done.
+</p>
+{% else %}
+<p>
+  Nothing was placed. You can add these entities to views or
+  collections later from edit mode.
+</p>
+{% endif %}
+
+{% if secondary_refine_list %}
+<div class="mt-2 small">
+  Other affected views:
+  {% for summary, refine_url in secondary_refine_list %}
+  <a href="{{ refine_url }}" class="badge badge-light ml-1">{{ summary.location_view.name }}</a>
+  {% endfor %}
+</div>
+{% endif %}
+{% endblock %}
+
+{% comment %}
+  DONE triggers a full page reload rather than a plain modal
+  dismiss. The modal-to-modal flow that brought the operator here
+  (Configure → pre-sync → dispatcher → post-dispatch) never
+  refreshed the underlying integrations page; the entities just
+  imported and placed need to surface there. Reload makes the
+  background page consistent with the new state.
+{% endcomment %}
+{% block action_left %}
+<a id="hi-modal-cancel" role="button"
+   class="btn btn-outline-tertiary"
+   href="#"
+   onclick="location.reload(); return false;">DONE</a>
+{% endblock %}
+
+{% block action_right %}
+{% if primary_refine %}
+<a class="btn btn-primary" href="{{ primary_refine.1 }}">
+  {% icon "edit" size="sm" css_class="hi-icon-left" %}REFINE
+  {{ primary_refine.0.location_view.name }}
+</a>
+{% endif %}
+{% endblock %}

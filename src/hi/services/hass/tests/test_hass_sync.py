@@ -324,8 +324,9 @@ class TestHassSynchronizerSyncResultGrouping(TestCase):
             self._entity('Hall Sensor', 'SENSOR', 'binary_sensor.hall'),
             self._entity('Bedroom Light', 'LIGHT', 'light.bedroom'),
         ]
-        groups = self.synchronizer._build_entity_type_groups(entities)
+        groups, ungrouped = self.synchronizer.group_entities_for_placement(entities)
 
+        self.assertEqual(ungrouped, [])
         self.assertEqual([group.label for group in groups], ['LIGHT', 'SENSOR'])
         self.assertEqual(
             [item.label for item in groups[0].items],
@@ -341,16 +342,19 @@ class TestHassSynchronizerSyncResultGrouping(TestCase):
         rather than dropping out of the result entirely."""
         entity = self._entity('Mystery', '', 'sensor.mystery')
         entity.entity_type_str = None
-        groups = self.synchronizer._build_entity_type_groups([entity])
+        groups, ungrouped = self.synchronizer.group_entities_for_placement([entity])
 
+        self.assertEqual(ungrouped, [])
         self.assertEqual(len(groups), 1)
         self.assertEqual(groups[0].label, 'Other')
         self.assertEqual(groups[0].items[0].entity, entity)
 
     def test_empty_input_yields_empty_groups(self):
-        self.assertEqual(self.synchronizer._build_entity_type_groups([]), [])
+        groups, ungrouped = self.synchronizer.group_entities_for_placement([])
+        self.assertEqual(groups, [])
+        self.assertEqual(ungrouped, [])
 
     def test_item_key_uses_integration_key(self):
         entity = self._entity('Front Camera', 'CAMERA', 'camera.front')
-        groups = self.synchronizer._build_entity_type_groups([entity])
+        groups, _ = self.synchronizer.group_entities_for_placement([entity])
         self.assertEqual(groups[0].items[0].key, 'hass:camera.front')

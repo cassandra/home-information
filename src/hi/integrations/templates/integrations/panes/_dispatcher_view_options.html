@@ -1,0 +1,18 @@
+{% comment %}
+Reusable dropdown options for dispatcher view-selects.
+
+Renders the existing LocationViews as one <optgroup> per Location,
+ordered by Location.order_id, views within ordered by
+LocationView.order_id. Always uses optgroups even with a single
+Location — keeps the rendering uniform across deployments.
+
+Context:
+  location_view_groups : List[(Location, List[LocationView])]
+{% endcomment %}
+{% for location, views in location_view_groups %}
+<optgroup label="{{ location.name }}">
+  {% for view in views %}
+  <option value="{{ view.id }}">{{ view.name }}</option>
+  {% endfor %}
+</optgroup>
+{% endfor %}

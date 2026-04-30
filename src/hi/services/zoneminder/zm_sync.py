@@ -63,32 +63,33 @@ class ZoneMinderSynchronizer( IntegrationSynchronizer, ZoneMinderMixin ):
             return result
 
         self._sync_states( result = result )
-        monitor_entities = self._sync_monitors( result = result )
+        created_monitor_entities = self._sync_monitors( result = result )
 
-        # Single "Monitors" group: ZM monitors typically share a view,
-        # and the operator's first instinct is "all cameras → same
-        # place." The dispatcher's drill-down still allows per-monitor
-        # placement when needed.
-        if monitor_entities:
-            items = [
-                SyncResultItem(
-                    key = self._sync_result_item_key( entity ),
-                    label = entity.name,
-                    entity = entity,
-                )
-                for entity in monitor_entities
-            ]
-            result.groups = [
-                SyncResultItemGroup( label = 'Monitors', items = items )
-            ]
-
+        # Existing-entity updates do not need re-placement; only
+        # newly-created monitor entities surface in the dispatcher.
+        result.groups, result.ungrouped_items = (
+            self.group_entities_for_placement( entities = created_monitor_entities )
+        )
         return result
 
-    def _sync_result_item_key( self, entity : Entity ) -> str:
-        integration_key = entity.integration_key
-        if integration_key:
-            return f'{integration_key.integration_id}:{integration_key.integration_name}'
-        return f'entity:{entity.id}'
+    def group_entities_for_placement( self, entities ):
+        """Single 'Monitors' group: ZM monitors typically share a
+        view, and the operator's first instinct is 'all cameras →
+        same place.' The dispatcher's drill-down still allows
+        per-monitor placement when needed.
+
+        Empty input → empty groups (no dispatcher rendering)."""
+        if not entities:
+            return [], []
+        items = [
+            SyncResultItem(
+                key = self._sync_result_item_key( entity = entity ),
+                label = entity.name,
+                entity = entity,
+            )
+            for entity in entities
+        ]
+        return [ SyncResultItemGroup( label = 'Monitors', items = items ) ], []
 
     def _sync_states( self, result : IntegrationSyncResult ) -> IntegrationSyncResult:
         zm_manager = self.zm_manager()
@@ -127,15 +128,17 @@ class ZoneMinderSynchronizer( IntegrationSynchronizer, ZoneMinderMixin ):
         return
 
     def _sync_monitors( self, result : IntegrationSyncResult ):
-        """Sync monitors and return the list of imported (created or
-        updated) monitor entities for grouping by the caller."""
+        """Sync monitors and return the list of newly-created monitor
+        entities (for the caller to feed into
+        group_entities_for_placement). Updates to existing entities
+        do not contribute — they don't need re-placement."""
         integration_key_to_monitor = self._fetch_zm_monitors( result = result )
         result.message_list.append( f'Found {len(integration_key_to_monitor)} current ZM monitors.' )
 
         integration_key_to_entity = self._get_existing_zm_monitor_entities( result = result )
         result.message_list.append( f'Found {len(integration_key_to_entity)} existing ZM entities.' )
 
-        monitor_entities = []
+        created_entities = []
         for integration_key, zm_monitor in integration_key_to_monitor.items():
             entity = integration_key_to_entity.get( integration_key )
             if entity:
@@ -145,7 +148,7 @@ class ZoneMinderSynchronizer( IntegrationSynchronizer, ZoneMinderMixin ):
             else:
                 entity = self._create_monitor_entity( zm_monitor = zm_monitor,
                                                       result = result )
-            monitor_entities.append( entity )
+                created_entities.append( entity )
             continue
 
         for integration_key, entity in integration_key_to_entity.items():
@@ -154,7 +157,7 @@ class ZoneMinderSynchronizer( IntegrationSynchronizer, ZoneMinderMixin ):
                                      result = result )
             continue
 
-        return monitor_entities
+        return created_entities
 
     def _fetch_zm_monitors( self, result : IntegrationSyncResult ) -> Dict[ IntegrationKey, ZmMonitor ]:
         zm_manager = self.zm_manager()

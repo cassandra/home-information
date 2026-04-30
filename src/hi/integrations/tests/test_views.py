@@ -495,3 +495,382 @@ class EnableViewReviewConfigTests(SyncViewTestCase):
         self.assertIn('CONFIGURE', body)
         self.assertIn('hi-modal-cancel', body)
         self.assertNotIn('CONTINUE', body)
+
+
+# --------------------------------------------------------------------------
+# Dispatcher + post-dispatch + refine (Phase 3) tests
+# --------------------------------------------------------------------------
+
+
+class _DispatcherTestSynchronizer:
+    """Synchronizer stub that returns a populated IntegrationSyncResult.
+
+    Three entities placed across two groups + one ungrouped item:
+    enough to exercise group default, drill-down override, and
+    ungrouped per-item paths.
+    """
+    def __init__(self, sync_result):
+        self._sync_result = sync_result
+        self.sync_called = False
+
+    def get_description(self, is_initial_import):
+        return None
+
+    def get_result_title(self):
+        return 'Dispatcher Test'
+
+    def sync(self):
+        self.sync_called = True
+        return self._sync_result
+
+
+class _DispatcherTestGateway(IntegrationGateway):
+    """Dispatcher gateway with a synchronizer + minimal stubs."""
+
+    def __init__(self, integration_id, synchronizer):
+        self.integration_id = integration_id
+        self._synchronizer = synchronizer
+
+    def get_metadata(self):
+        return IntegrationMetaData(
+            integration_id=self.integration_id,
+            label='Dispatcher Test',
+            attribute_type=_PauseResumeTestAttributeType,
+            allow_entity_deletion=True,
+        )
+
+    def get_manage_view_pane(self):
+        return Mock()
+
+    def get_monitor(self):
+        return Mock()
+
+    def get_controller(self):
+        return Mock()
+
+    def get_synchronizer(self):
+        return self._synchronizer
+
+    def get_health_status_provider(self):
+        return Mock()
+
+
+class DispatcherFlowTests(SyncViewTestCase):
+    """End-to-end dispatcher flow: sync → dispatcher modal → apply →
+    post-dispatch modal."""
+
+    INTEGRATION_ID = 'dispatcher_test'
+
+    def setUp(self):
+        super().setUp()
+        IntegrationManager().reset_for_testing()
+
+        from hi.apps.entity.enums import EntityType
+        from hi.apps.entity.models import Entity
+        from hi.apps.location.models import Location, LocationView
+        from hi.integrations.sync_result import (
+            IntegrationSyncResult,
+            SyncResultItem,
+            SyncResultItemGroup,
+        )
+
+        self.integration = Integration.objects.create(
+            integration_id=self.INTEGRATION_ID,
+            is_enabled=True,
+            is_paused=False,
+        )
+        self.location = Location.objects.create(
+            name='Test Location',
+            svg_view_box_str='0 0 1000 1000',
+        )
+        self.view_a = LocationView.objects.create(
+            location=self.location, name='Kitchen', order_id=1,
+            svg_view_box_str='0 0 1000 1000',
+            svg_rotate=0, svg_style_name_str='COLOR',
+            location_view_type_str='DEFAULT',
+        )
+        self.view_b = LocationView.objects.create(
+            location=self.location, name='Living Room', order_id=2,
+            svg_view_box_str='0 0 1000 1000',
+            svg_rotate=0, svg_style_name_str='COLOR',
+            location_view_type_str='DEFAULT',
+        )
+
+        self.entity_a = Entity.objects.create(
+            name='Cam 1',
+            entity_type_str=str(EntityType.CAMERA),
+            integration_id=self.INTEGRATION_ID,
+            integration_name='cam_1',
+        )
+        self.entity_b = Entity.objects.create(
+            name='Cam 2',
+            entity_type_str=str(EntityType.CAMERA),
+            integration_id=self.INTEGRATION_ID,
+            integration_name='cam_2',
+        )
+        self.entity_c = Entity.objects.create(
+            name='Light 1',
+            entity_type_str=str(EntityType.LIGHT),
+            integration_id=self.INTEGRATION_ID,
+            integration_name='light_1',
+        )
+        self.ungrouped_entity = Entity.objects.create(
+            name='Ungrouped Thing',
+            entity_type_str=str(EntityType.OTHER),
+            integration_id=self.INTEGRATION_ID,
+            integration_name='thing_1',
+        )
+
+        self.sync_result = IntegrationSyncResult(
+            title='Dispatcher Test',
+            groups=[
+                SyncResultItemGroup(
+                    label='Cameras',
+                    items=[
+                        SyncResultItem(key='dispatcher_test:cam_1', label='Cam 1', entity=self.entity_a),
+                        SyncResultItem(key='dispatcher_test:cam_2', label='Cam 2', entity=self.entity_b),
+                    ],
+                ),
+                SyncResultItemGroup(
+                    label='Lights',
+                    items=[
+                        SyncResultItem(key='dispatcher_test:light_1', label='Light 1', entity=self.entity_c),
+                    ],
+                ),
+            ],
+            ungrouped_items=[
+                SyncResultItem(
+                    key='dispatcher_test:thing_1',
+                    label='Ungrouped Thing',
+                    entity=self.ungrouped_entity,
+                ),
+            ],
+        )
+
+        self.synchronizer = _DispatcherTestSynchronizer(sync_result=self.sync_result)
+        self.gateway = _DispatcherTestGateway(
+            integration_id=self.INTEGRATION_ID, synchronizer=self.synchronizer,
+        )
+        IntegrationManager()._integration_data_map[self.INTEGRATION_ID] = IntegrationData(
+            integration_gateway=self.gateway, integration=self.integration,
+        )
+
+    def _sync_url(self):
+        return reverse(
+            'integrations_sync', kwargs={'integration_id': self.INTEGRATION_ID},
+        )
+
+    def _dispatch_url(self):
+        return reverse(
+            'integrations_dispatch', kwargs={'integration_id': self.INTEGRATION_ID},
+        )
+
+    def test_sync_renders_dispatcher_modal_when_entities_present(self):
+        """Sync result with groups → dispatcher modal (not legacy result)."""
+        response = self.client.post(self._sync_url())
+        self.assertSuccessResponse(response)
+        body = response.content.decode()
+        # Group rows + ungrouped section + APPLY button.
+        self.assertIn('Cameras', body)
+        self.assertIn('Lights', body)
+        self.assertIn('Ungrouped', body)
+        self.assertIn('APPLY', body)
+        # Both views show up in the dropdown.
+        self.assertIn('Kitchen', body)
+        self.assertIn('Living Room', body)
+
+    def test_sync_renders_legacy_result_modal_when_empty(self):
+        """Empty sync result → legacy result modal, no dispatcher."""
+        from hi.integrations.sync_result import IntegrationSyncResult
+        self.synchronizer._sync_result = IntegrationSyncResult(title='Empty')
+        response = self.client.post(self._sync_url())
+        self.assertSuccessResponse(response)
+        body = response.content.decode()
+        self.assertNotIn('APPLY', body)
+
+    def test_dispatch_top_inherits_to_groups_and_entities(self):
+        """Top view chosen, groups + entities at default → every
+        entity goes to the top view."""
+        from hi.apps.entity.models import EntityView
+        response = self.client.post(self._dispatch_url(), {
+            'top_view': str(self.view_a.id),
+            'all_group_0_entity_ids': [str(self.entity_a.id), str(self.entity_b.id)],
+            'all_group_1_entity_ids': [str(self.entity_c.id)],
+            'ungrouped_entity_ids': [str(self.ungrouped_entity.id)],
+        })
+        self.assertSuccessResponse(response)
+        for entity in [self.entity_a, self.entity_b, self.entity_c, self.ungrouped_entity]:
+            self.assertTrue(EntityView.objects.filter(
+                entity=entity, location_view=self.view_a).exists())
+
+    def test_dispatch_group_overrides_top(self):
+        """Group view overrides top for entities in that group;
+        other groups still inherit top."""
+        from hi.apps.entity.models import EntityView
+        response = self.client.post(self._dispatch_url(), {
+            'top_view': str(self.view_a.id),
+            'all_group_0_entity_ids': [str(self.entity_a.id), str(self.entity_b.id)],
+            'all_group_1_entity_ids': [str(self.entity_c.id)],
+            'group_view_0': str(self.view_b.id),  # Cameras → view_b
+            # group_view_1 left blank → inherits view_a
+        })
+        self.assertSuccessResponse(response)
+        self.assertTrue(EntityView.objects.filter(
+            entity=self.entity_a, location_view=self.view_b).exists())
+        self.assertTrue(EntityView.objects.filter(
+            entity=self.entity_b, location_view=self.view_b).exists())
+        self.assertTrue(EntityView.objects.filter(
+            entity=self.entity_c, location_view=self.view_a).exists())
+
+    def test_dispatch_drill_down_override_wins(self):
+        """Per-entity override beats group default for that entity."""
+        from hi.apps.entity.models import EntityView
+        response = self.client.post(self._dispatch_url(), {
+            'top_view': str(self.view_a.id),
+            'all_group_0_entity_ids': [str(self.entity_a.id), str(self.entity_b.id)],
+            'group_view_0': str(self.view_a.id),
+            f'group_0_entity_{self.entity_b.id}_view': str(self.view_b.id),
+        })
+        self.assertSuccessResponse(response)
+        self.assertTrue(EntityView.objects.filter(
+            entity=self.entity_a, location_view=self.view_a).exists())
+        self.assertTrue(EntityView.objects.filter(
+            entity=self.entity_b, location_view=self.view_b).exists())
+        self.assertFalse(EntityView.objects.filter(
+            entity=self.entity_b, location_view=self.view_a).exists())
+
+    def test_dispatch_skip_at_top_skips_everything(self):
+        """top='' + groups inherit + entities inherit → all skipped."""
+        from hi.apps.entity.models import EntityView
+        response = self.client.post(self._dispatch_url(), {
+            'top_view': '',
+            'all_group_0_entity_ids': [str(self.entity_a.id)],
+        })
+        self.assertSuccessResponse(response)
+        self.assertFalse(EntityView.objects.filter(entity=self.entity_a).exists())
+
+    def test_dispatch_explicit_group_skip_overrides_top(self):
+        """Top view chosen, group explicitly skipped → those entities
+        don't get placed even though top has a view."""
+        from hi.apps.entity.models import EntityView
+        response = self.client.post(self._dispatch_url(), {
+            'top_view': str(self.view_a.id),
+            'all_group_0_entity_ids': [str(self.entity_a.id)],
+            'group_view_0': '__skip__',
+        })
+        self.assertSuccessResponse(response)
+        self.assertFalse(EntityView.objects.filter(entity=self.entity_a).exists())
+
+    def test_dispatch_explicit_entity_skip_overrides_group(self):
+        """Group inherits top, but specific entity is explicitly skipped."""
+        from hi.apps.entity.models import EntityView
+        response = self.client.post(self._dispatch_url(), {
+            'top_view': str(self.view_a.id),
+            'all_group_0_entity_ids': [str(self.entity_a.id), str(self.entity_b.id)],
+            f'group_0_entity_{self.entity_a.id}_view': '__skip__',
+        })
+        self.assertSuccessResponse(response)
+        self.assertFalse(EntityView.objects.filter(entity=self.entity_a).exists())
+        self.assertTrue(EntityView.objects.filter(
+            entity=self.entity_b, location_view=self.view_a).exists())
+
+    def test_dispatch_new_view_creates_view_and_places_inherited_entities(self):
+        """top='__new__' creates a fresh LocationView named after the
+        integration; entities at default inherit it; existing-view
+        overrides at group/entity levels still apply."""
+        from hi.apps.entity.models import EntityView
+        from hi.apps.location.models import LocationView
+        before_view_ids = set(LocationView.objects.values_list('id', flat=True))
+        response = self.client.post(self._dispatch_url(), {
+            'top_view': '__new__',
+            'all_group_0_entity_ids': [str(self.entity_a.id), str(self.entity_b.id)],
+            'all_group_1_entity_ids': [str(self.entity_c.id)],
+            'group_view_1': str(self.view_a.id),  # Lights → existing view
+        })
+        self.assertSuccessResponse(response)
+        new_view_ids = (
+            set(LocationView.objects.values_list('id', flat=True)) - before_view_ids
+        )
+        self.assertEqual(len(new_view_ids), 1)
+        new_view = LocationView.objects.get(id=new_view_ids.pop())
+        # Cameras inherited the new view.
+        self.assertTrue(EntityView.objects.filter(
+            entity=self.entity_a, location_view=new_view).exists())
+        self.assertTrue(EntityView.objects.filter(
+            entity=self.entity_b, location_view=new_view).exists())
+        # Lights took the explicit existing-view override.
+        self.assertTrue(EntityView.objects.filter(
+            entity=self.entity_c, location_view=self.view_a).exists())
+        # New view name = integration label.
+        self.assertEqual(new_view.name, 'Dispatcher Test')
+
+    def test_post_dispatch_modal_renders_refine_for_primary_view(self):
+        """The post-dispatch modal includes a REFINE button targeting
+        the affected view, plus the view's name in the summary."""
+        response = self.client.post(self._dispatch_url(), {
+            'top_view': str(self.view_a.id),
+            'all_group_0_entity_ids': [str(self.entity_a.id)],
+        })
+        self.assertSuccessResponse(response)
+        body = response.content.decode()
+        self.assertIn('REFINE', body)
+        self.assertIn('Kitchen', body)
+        self.assertIn(reverse(
+            'integrations_refine', kwargs={'location_view_id': self.view_a.id}
+        ), body)
+
+    def test_post_dispatch_primary_is_highest_count(self):
+        """When multiple views are affected, primary REFINE points at
+        the view with the most placed entities."""
+        # Cameras (2) → view_b; Light (1) → view_a. view_b wins.
+        response = self.client.post(self._dispatch_url(), {
+            'top_view': str(self.view_b.id),
+            'all_group_0_entity_ids': [str(self.entity_a.id), str(self.entity_b.id)],
+            'all_group_1_entity_ids': [str(self.entity_c.id)],
+            'group_view_1': str(self.view_a.id),  # Lights → view_a
+        })
+        self.assertSuccessResponse(response)
+        body = response.content.decode()
+        primary_refine_idx = body.find('REFINE')
+        self.assertGreaterEqual(primary_refine_idx, 0)
+        slice_after_refine = body[primary_refine_idx:primary_refine_idx + 200]
+        self.assertIn('Living Room', slice_after_refine)
+
+
+class RefineViewTests(SyncViewTestCase):
+    """The refine-edit-mode entry point flips view_mode and points the
+    session at the chosen LocationView."""
+
+    def setUp(self):
+        super().setUp()
+        from hi.apps.location.models import Location, LocationView
+        location = Location.objects.create(
+            name='Test', svg_view_box_str='0 0 100 100',
+        )
+        self.location_view = LocationView.objects.create(
+            location=location, name='Refine View', order_id=1,
+            svg_view_box_str='0 0 100 100',
+            svg_rotate=0, svg_style_name_str='COLOR',
+            location_view_type_str='DEFAULT',
+        )
+
+    def test_refine_redirects_to_location_view(self):
+        from hi.enums import ViewMode
+        response = self.client.get(reverse(
+            'integrations_refine',
+            kwargs={'location_view_id': self.location_view.id},
+        ))
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(
+            response.url,
+            reverse('location_view', kwargs={'location_view_id': self.location_view.id}),
+        )
+        # Session reflects edit mode + chosen view.
+        self.assertEqual(self.client.session.get('view_mode'), str(ViewMode.EDIT))
+        self.assertEqual(self.client.session.get('location_view_id'), self.location_view.id)
+
+    def test_refine_404s_for_unknown_view(self):
+        response = self.client.get(reverse(
+            'integrations_refine', kwargs={'location_view_id': 99999},
+        ))
+        self.assertEqual(response.status_code, 404)

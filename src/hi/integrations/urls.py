@@ -43,6 +43,14 @@ urlpatterns = [
              views.IntegrationSyncView.as_view(),
              name='integrations_sync' ),
 
+    re_path( r'^dispatch/(?P<integration_id>[\w\-]+)$',
+             views.IntegrationDispatcherView.as_view(),
+             name='integrations_dispatch' ),
+
+    re_path( r'^refine/(?P<location_view_id>\d+)$',
+             views.IntegrationRefineView.as_view(),
+             name='integrations_refine' ),
+
     re_path( r'^manage/(?P<integration_id>[\w\-]*)$', 
              views.IntegrationManageView.as_view(), 
              name='integrations_manage' ),

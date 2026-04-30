@@ -6,10 +6,7 @@ from django.db import transaction
 from hi.apps.entity.models import Entity, EntityAttribute
 
 from hi.integrations.integration_synchronizer import IntegrationSynchronizer
-from hi.integrations.sync_result import (
-    IntegrationSyncResult,
-    SyncResultItem,
-)
+from hi.integrations.sync_result import IntegrationSyncResult
 from hi.integrations.transient_models import IntegrationKey
 
 from .hb_converter import HbConverter
@@ -66,32 +63,26 @@ class HomeBoxSynchronizer( IntegrationSynchronizer, HomeBoxMixin ):
 
         result.message_list.append( f'Found {len(item_list)} current HomeBox items.' )
 
-        # HomeBox has no domain notion of grouping. Imported entities
-        # populate `ungrouped_items`; the framework's dispatcher modal
-        # decides how to surface ungrouped items in the UI.
-        imported_entities = self._sync_helper_entities( item_list = item_list, result = result )
-        for entity in imported_entities:
-            result.ungrouped_items.append(
-                SyncResultItem(
-                    key = self._sync_result_item_key( entity ),
-                    label = entity.name,
-                    entity = entity,
-                )
-            )
-
+        # Existing-entity updates do not need re-placement; only
+        # newly-created entities surface in the dispatcher.
+        created_entities = self._sync_helper_entities(
+            item_list = item_list, result = result )
+        result.groups, result.ungrouped_items = (
+            self.group_entities_for_placement( entities = created_entities )
+        )
         return result
 
-    def _sync_result_item_key( self, entity : Entity ) -> str:
-        integration_key = entity.integration_key
-        if integration_key:
-            return f'{integration_key.integration_id}:{integration_key.integration_name}'
-        return f'entity:{entity.id}'
-    
+    # group_entities_for_placement: HomeBox has no domain notion of
+    # grouping, so the base-class default (all-ungrouped) is exactly
+    # what we want. No override needed.
+
     def _sync_helper_entities( self,
                                item_list: List[HbItem],
                                result: IntegrationSyncResult ) -> List[Entity]:
-        """Sync HomeBox items and return imported (created or updated)
-        entities for the caller to add to ungrouped_items."""
+        """Sync HomeBox items and return newly-created entities (for
+        the caller to feed into group_entities_for_placement).
+        Existing-entity updates do not contribute — they don't need
+        re-placement."""
         integration_key_to_item = dict()
         for item in item_list:
             try:
@@ -104,7 +95,7 @@ class HomeBoxSynchronizer( IntegrationSynchronizer, HomeBoxMixin ):
         integration_key_to_entity = self._get_existing_hb_entities( result = result )
         result.message_list.append( f'Found {len(integration_key_to_entity)} existing HomeBox entities.' )
 
-        imported_entities: List[Entity] = []
+        created_entities: List[Entity] = []
         with transaction.atomic():
             for integration_key, hb_item in integration_key_to_item.items():
                 entity = integration_key_to_entity.get( integration_key )
@@ -116,20 +107,20 @@ class HomeBoxSynchronizer( IntegrationSynchronizer, HomeBoxMixin ):
                     )
                 else:
                     entity = self._create_entity( item = hb_item, result = result )
+                    created_entities.append( entity )
 
                 self._sync_helper_entity_attributes(
                     entity = entity,
                     hb_item = hb_item,
                     result = result,
                 )
-                imported_entities.append( entity )
                 continue
 
             for integration_key, entity in integration_key_to_entity.items():
                 if integration_key not in integration_key_to_item:
                     self._remove_entity( entity = entity, result = result )
                 continue
-        return imported_entities
+        return created_entities
 
     def _get_existing_hb_entities( self, result : IntegrationSyncResult ) -> Dict[ IntegrationKey, Entity ]:
         logger.debug( 'Getting existing HomeBox entities.' )

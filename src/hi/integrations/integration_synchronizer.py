@@ -13,13 +13,13 @@ Sync is opt-in: a gateway whose integration does not support sync
 returns None.
 """
 import logging
-from typing import Optional
+from typing import List, Optional, Tuple
 
 from hi.apps.common.database_lock import ExclusionLockContext
 from hi.apps.entity.models import Entity
 
 from .entity_operations import EntityIntegrationOperations
-from .sync_result import IntegrationSyncResult
+from .sync_result import IntegrationSyncResult, SyncResultItem, SyncResultItemGroup
 from .user_data_detector import EntityUserDataDetector
 
 logger = logging.getLogger(__name__)
@@ -94,6 +94,48 @@ class IntegrationSynchronizer:
         Called with the synchronization lock held.
         """
         raise NotImplementedError('Subclasses must override this method')
+
+    def group_entities_for_placement(
+            self, entities : List[Entity],
+    ) -> Tuple[ List[SyncResultItemGroup], List[SyncResultItem] ]:
+        """Partition a set of entities into ``(groups,
+        ungrouped_items)`` for the post-sync dispatcher modal.
+
+        Two callers:
+
+        * The sync flow passes in the entities just *created* during
+          this sync run (existing-entity updates do not need
+          re-placement).
+        * A future "place unplaced items" recovery feature will pass
+          in entities that already exist for the integration but have
+          no EntityView row.
+
+        Either caller produces the same dispatcher input shape; the
+        per-integration grouping logic lives in this method so both
+        callers agree on what "groups" means for this integration.
+
+        Default implementation: every entity is ungrouped. Subclasses
+        override to provide a meaningful domain grouping (e.g., HASS
+        by entity_type, ZM single "Monitors" group).
+        """
+        ungrouped = [
+            SyncResultItem(
+                key = self._sync_result_item_key( entity = entity ),
+                label = entity.name,
+                entity = entity,
+            )
+            for entity in entities
+        ]
+        return [], ungrouped
+
+    def _sync_result_item_key( self, entity : Entity ) -> str:
+        """Stable per-entity dispatcher key. Subclasses may override
+        for custom keying; the default uses the entity's
+        integration_key when available, falling back to the row id."""
+        integration_key = entity.integration_key
+        if integration_key:
+            return f'{integration_key.integration_id}:{integration_key.integration_name}'
+        return f'entity:{entity.id}'
 
     def _remove_entity_intelligently(self,
                                      entity: Entity,

@@ -89,13 +89,11 @@ class HassSynchronizer( IntegrationSynchronizer, HassMixin ):
             for hass_device in hass_device_id_to_device.values()
         }
 
-        # Imported entities collected here for the dispatcher's grouped
-        # placement step. Group by Hi-side entity_type_str — the user-
-        # facing classification (LIGHT, SENSOR, CAMERA, ...) — rather
-        # than by HA domain or area, since neither is reliably
-        # available from the /api/states endpoint this integration
-        # consumes.
-        imported_entities: List[Entity] = []
+        # Track newly-created entities only — existing-entity updates
+        # don't need re-placement and shouldn't surface in the
+        # dispatcher modal (refresh-with-no-new-items must produce
+        # an empty sync result).
+        created_entities: List[Entity] = []
 
         with transaction.atomic():
             for integration_key, hass_device in integration_key_to_hass_device.items():
@@ -107,7 +105,7 @@ class HassSynchronizer( IntegrationSynchronizer, HassMixin ):
                 else:
                     entity = self._create_entity( hass_device = hass_device,
                                                   result = result )
-                imported_entities.append( entity )
+                    created_entities.append( entity )
                 continue
 
             for integration_key, entity in integration_key_to_entity.items():
@@ -116,7 +114,9 @@ class HassSynchronizer( IntegrationSynchronizer, HassMixin ):
                                          result = result )
                 continue
 
-        result.groups = self._build_entity_type_groups( imported_entities )
+        result.groups, result.ungrouped_items = (
+            self.group_entities_for_placement( entities = created_entities )
+        )
         return result
 
     def _get_existing_hass_entities( self, result : IntegrationSyncResult ) -> Dict[ IntegrationKey, Entity ]:
@@ -173,27 +173,26 @@ class HassSynchronizer( IntegrationSynchronizer, HassMixin ):
         self._remove_entity_intelligently(entity, result, 'HASS')
         return
 
-    def _build_entity_type_groups(
-            self, entities : List[Entity] ) -> List[SyncResultItemGroup]:
-        """Group imported entities by Hi-side entity_type_str.
+    def group_entities_for_placement( self, entities ):
+        """Group HASS entities by Hi-side entity_type_str.
 
-        Returns a list of SyncResultItemGroup ordered by group label
-        (alphabetical) for stable presentation. Empty input yields
-        an empty list.
-        """
+        Returns ``(groups, [])`` — HASS uses no ungrouped bucket.
+        Groups are ordered by their label alphabetically for stable
+        presentation. Falls back to an 'Other' bucket for entities
+        without a recorded type."""
         type_to_items: Dict[str, List[SyncResultItem]] = {}
         for entity in entities:
             type_label = str( entity.entity_type_str or 'Other' )
-            integration_key = entity.integration_key
-            key = (
-                f'{integration_key.integration_id}:{integration_key.integration_name}'
-                if integration_key else f'entity:{entity.id}'
-            )
             type_to_items.setdefault( type_label, [] ).append(
-                SyncResultItem( key = key, label = entity.name, entity = entity )
+                SyncResultItem(
+                    key = self._sync_result_item_key( entity = entity ),
+                    label = entity.name,
+                    entity = entity,
+                )
             )
             continue
-        return [
+        groups = [
             SyncResultItemGroup( label = label, items = type_to_items[label] )
             for label in sorted( type_to_items.keys() )
         ]
+        return groups, []
