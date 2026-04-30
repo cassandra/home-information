@@ -21,11 +21,13 @@ class TestSynchronizer(IntegrationSynchronizer):
     intelligent-removal helper. Stubs the abstract hooks so the class
     can be instantiated; sync() itself is not exercised here."""
 
-    def get_result_title(self):
+    def get_result_title(self, is_initial_import=False):
         return 'Test Sync Result'
 
-    def _sync_impl(self):
-        return IntegrationSyncResult(title=self.get_result_title())
+    def _sync_impl(self, is_initial_import=False):
+        return IntegrationSyncResult(
+            title=self.get_result_title(is_initial_import=is_initial_import),
+        )
 
 
 class IntegrationSynchronizerRemovalTestCase(TestCase):

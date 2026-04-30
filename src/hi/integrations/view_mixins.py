@@ -1,4 +1,7 @@
 from django.http import Http404
+from django.urls import reverse
+
+from hi.apps.location.models import LocationView
 
 from .integration_manager import IntegrationManager
 
@@ -80,4 +83,116 @@ class IntegrationViewMixin:
         return
 
 
-    
+class IntegrationDispatcherViewMixin:
+    """Modal context builders shared across the dispatcher /
+    dismiss-confirm / post-dispatch views. Knows UI conventions
+    (URL routing for the integration dispatcher flow, location-view
+    dropdown shape) but no business logic.
+
+    Designed to be mixed into ``HiModalView`` subclasses so the
+    rendering methods can call ``self.modal_response(...)`` directly.
+    """
+
+    def render_dispatcher( self,
+                           request,
+                           integration_data,
+                           placement_input,
+                           is_initial_import : bool ):
+        """Render the dispatcher modal seeded with an
+        ``EntityPlacementInput``."""
+        location_view_groups = self._build_location_view_groups()
+        apply_url = reverse(
+            'integrations_apply_placements',
+            kwargs = { 'integration_id': integration_data.integration_id },
+        )
+        dismiss_url = reverse(
+            'integrations_dispatcher_dismiss',
+            kwargs = { 'integration_id': integration_data.integration_id },
+        )
+        return self.modal_response(
+            request,
+            context = {
+                'integration_data': integration_data,
+                'placement_input': placement_input,
+                'location_view_groups': location_view_groups,
+                'apply_url': apply_url,
+                'dismiss_url': dismiss_url,
+                'is_initial_import': is_initial_import,
+            },
+            template_name = 'integrations/modals/dispatcher.html',
+        )
+
+    def render_dismiss_confirm( self,
+                                request,
+                                integration_data,
+                                is_initial_import : bool ):
+        """Render the NOT NOW confirmation modal. GO BACK targets
+        the dispatcher GET endpoint, with is_initial_import threaded
+        through as a query parameter."""
+        dispatcher_url = reverse(
+            'integrations_dispatcher',
+            kwargs = { 'integration_id': integration_data.integration_id },
+        )
+        if is_initial_import:
+            dispatcher_url = f'{dispatcher_url}?is_initial_import=1'
+        return self.modal_response(
+            request,
+            context = {
+                'integration_data': integration_data,
+                'dispatcher_url': dispatcher_url,
+            },
+            template_name = 'integrations/modals/dispatcher_dismiss.html',
+        )
+
+    def render_post_dispatch( self,
+                              request,
+                              integration_data,
+                              outcome,
+                              is_initial_import : bool ):
+        """Render the post-dispatch summary modal from a
+        ``PlacementOutcome``. Builds the primary REFINE link and a
+        list of secondary view links, all pointing at
+        ``integrations_refine``."""
+        primary = outcome.primary_summary
+        primary_refine = None
+        secondary_refine_list = []
+        if primary is not None:
+            primary_refine = ( primary, self._refine_url( primary.location_view ) )
+            for summary in outcome.secondary_summaries:
+                secondary_refine_list.append(
+                    ( summary, self._refine_url( summary.location_view ) )
+                )
+        return self.modal_response(
+            request,
+            context = {
+                'integration_data': integration_data,
+                'outcome': outcome,
+                'is_initial_import': is_initial_import,
+                'primary_refine': primary_refine,
+                'secondary_refine_list': secondary_refine_list,
+            },
+            template_name = 'integrations/modals/post_dispatch.html',
+        )
+
+    def _build_location_view_groups( self ):
+        """Existing-views dropdown source: ``[(Location,
+        [LocationView])]`` ordered by Location.order_id, views by
+        LocationView.order_id within each. Always grouped (never
+        flat) so multi-Location deployments can disambiguate views
+        with shared names. Single SQL query joining LocationView ↔
+        Location; insertion-order in the dict preserves the sort
+        from the database. Empty Locations drop out, which is the
+        right behavior for a dropdown source."""
+        queryset = LocationView.objects.select_related('location').order_by(
+            'location__order_id', 'order_id',
+        )
+        groups : dict = {}
+        for view in queryset:
+            groups.setdefault( view.location, [] ).append( view )
+        return list( groups.items() )
+
+    def _refine_url( self, location_view : LocationView ) -> str:
+        return reverse(
+            'integrations_refine',
+            kwargs = { 'location_view_id': location_view.id },
+        )

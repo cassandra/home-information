@@ -34,13 +34,13 @@ class TestZoneMinderSynchronizerLockBehavior(TestCase):
         mock_manager.zm_client = None
         self.synchronizer._zm_manager = mock_manager
         
-        result = self.synchronizer.sync()
+        result = self.synchronizer.sync(is_initial_import=True)
         
         # Test lock usage
         mock_lock_context.assert_called_once_with(name='integrations_sync')
         
         # Test actual behavior: should return result with error when client disabled
-        self.assertEqual(result.title, 'ZM Import Result')
+        self.assertEqual(result.title, 'ZoneMinder Import Result')
         self.assertGreater(len(result.error_list), 0)
         self.assertIn('Sync problem. ZM integration disabled?', result.error_list[0])
     
@@ -50,10 +50,10 @@ class TestZoneMinderSynchronizerLockBehavior(TestCase):
         lock_error_msg = "Lock acquisition failed"
         mock_lock_context.side_effect = RuntimeError(lock_error_msg)
         
-        result = self.synchronizer.sync()
+        result = self.synchronizer.sync(is_initial_import=True)
         
         # Test error handling behavior
-        self.assertEqual(result.title, 'ZM Import Result')
+        self.assertEqual(result.title, 'ZoneMinder Import Result')
         self.assertEqual(len(result.error_list), 1)
         self.assertIn(lock_error_msg, result.error_list[0])
         
@@ -79,9 +79,9 @@ class TestZoneMinderSynchronizerSyncHelper(TestCase):
         """Test sync helper handles missing ZM client gracefully"""
         self.mock_manager.zm_client = None
         
-        result = self.synchronizer._sync_impl()
+        result = self.synchronizer._sync_impl(is_initial_import=True)
         
-        self.assertEqual(result.title, 'ZM Import Result')
+        self.assertEqual(result.title, 'ZoneMinder Import Result')
         self.assertIn('Sync problem. ZM integration disabled?', result.error_list[0])
     
     def test_sync_impl_calls_both_sync_methods(self):
@@ -103,14 +103,14 @@ class TestZoneMinderSynchronizerSyncHelper(TestCase):
         with patch.object(self.synchronizer, '_sync_states', side_effect=mock_sync_states) as mock_sync_states, \
              patch.object(self.synchronizer, '_sync_monitors', side_effect=mock_sync_monitors) as mock_sync_monitors:
             
-            result = self.synchronizer._sync_impl()
+            result = self.synchronizer._sync_impl(is_initial_import=True)
             
             # Test coordination: both methods called with same result
             mock_sync_states.assert_called_once()
             mock_sync_monitors.assert_called_once()
             
             # Test result aggregation: messages from both operations
-            self.assertEqual(result.title, 'ZM Import Result')
+            self.assertEqual(result.title, 'ZoneMinder Import Result')
             self.assertIn('States synced successfully', result.message_list)
             self.assertIn('Monitors synced successfully', result.message_list)
             
@@ -1059,21 +1059,23 @@ class TestZoneMinderSynchronizerSyncResultGrouping(TestCase):
         with patch.object(self.synchronizer, '_sync_states'), \
              patch.object(self.synchronizer, '_sync_monitors',
                           return_value=[entity_a, entity_b]):
-            result = self.synchronizer._sync_impl()
+            result = self.synchronizer._sync_impl(is_initial_import=True)
 
-        self.assertEqual(result.ungrouped_items, [])
-        self.assertEqual(len(result.groups), 1)
-        group = result.groups[0]
+        self.assertIsNotNone(result.placement_input)
+        self.assertEqual(result.placement_input.ungrouped_items, [])
+        self.assertEqual(len(result.placement_input.groups), 1)
+        group = result.placement_input.groups[0]
         self.assertEqual(group.label, 'Monitors')
         self.assertEqual([item.entity for item in group.items], [entity_a, entity_b])
         # Stable per-item key built from the integration_key.
         self.assertEqual(group.items[0].key, 'zm:monitor.1')
         self.assertEqual(group.items[1].key, 'zm:monitor.2')
 
-    def test_sync_impl_emits_no_groups_when_no_monitors_imported(self):
+    def test_sync_impl_emits_no_placement_input_when_no_monitors_imported(self):
         with patch.object(self.synchronizer, '_sync_states'), \
              patch.object(self.synchronizer, '_sync_monitors', return_value=[]):
-            result = self.synchronizer._sync_impl()
+            result = self.synchronizer._sync_impl(is_initial_import=True)
 
-        self.assertEqual(result.groups, [])
-        self.assertEqual(result.ungrouped_items, [])
+        # No newly-created entities → no placement input → dispatcher
+        # is not shown.
+        self.assertIsNone(result.placement_input)

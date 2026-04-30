@@ -55,7 +55,7 @@ class TestHassSynchronizerSyncMethod(TestCase):
         mock_context.__exit__ = Mock(return_value=False)
         mock_lock_context.return_value = mock_context
         
-        result = self.synchronizer.sync()
+        result = self.synchronizer.sync(is_initial_import=True)
         
         # Verify error handling
         self.assertIn('Database connection failed', result.error_list[0])
@@ -73,7 +73,7 @@ class TestHassSynchronizerSyncMethod(TestCase):
         mock_context.__exit__ = Mock(return_value=False)
         mock_lock_context.return_value = mock_context
         
-        result = self.synchronizer.sync()
+        result = self.synchronizer.sync(is_initial_import=True)
         
         # Verify actual error result structure and content
         self.assertEqual(len(result.error_list), 1)
@@ -167,7 +167,7 @@ class TestHassSynchronizerTransactionBehavior(TestCase):
                 mock_atomic.return_value.__enter__ = Mock()
                 mock_atomic.return_value.__exit__ = Mock()
                 
-                result = self.synchronizer._sync_impl()
+                result = self.synchronizer._sync_impl(is_initial_import=True)
                 
                 # Verify atomic transaction was used exactly once
                 mock_atomic.assert_called_once()
@@ -201,7 +201,7 @@ class TestHassSynchronizerTransactionBehavior(TestCase):
                 
                 # Transaction should propagate the exception (allowing rollback)
                 with self.assertRaises(Exception) as context:
-                    self.synchronizer._sync_impl()
+                    self.synchronizer._sync_impl(is_initial_import=True)
                 
                 self.assertEqual(str(context.exception), "Entity creation failed")
     
@@ -237,7 +237,7 @@ class TestHassSynchronizerErrorScenarios(TestCase):
         mock_hass_manager.return_value = mock_manager
         
         with self.assertRaises(Exception) as context:
-            self.synchronizer._sync_impl()
+            self.synchronizer._sync_impl(is_initial_import=True)
         
         self.assertEqual(str(context.exception), "API connection failed")
     
@@ -261,7 +261,7 @@ class TestHassSynchronizerErrorScenarios(TestCase):
         mock_states_to_devices.side_effect = ValueError("Invalid state data format")
         
         with self.assertRaises(ValueError) as context:
-            self.synchronizer._sync_impl()
+            self.synchronizer._sync_impl(is_initial_import=True)
         
         self.assertEqual(str(context.exception), "Invalid state data format")
     
@@ -324,16 +324,19 @@ class TestHassSynchronizerSyncResultGrouping(TestCase):
             self._entity('Hall Sensor', 'SENSOR', 'binary_sensor.hall'),
             self._entity('Bedroom Light', 'LIGHT', 'light.bedroom'),
         ]
-        groups, ungrouped = self.synchronizer.group_entities_for_placement(entities)
+        placement_input = self.synchronizer.group_entities_for_placement(entities)
 
-        self.assertEqual(ungrouped, [])
-        self.assertEqual([group.label for group in groups], ['LIGHT', 'SENSOR'])
+        self.assertEqual(placement_input.ungrouped_items, [])
         self.assertEqual(
-            [item.label for item in groups[0].items],
+            [group.label for group in placement_input.groups],
+            ['LIGHT', 'SENSOR'],
+        )
+        self.assertEqual(
+            [item.label for item in placement_input.groups[0].items],
             ['Kitchen Light', 'Bedroom Light'],
         )
         self.assertEqual(
-            [item.label for item in groups[1].items],
+            [item.label for item in placement_input.groups[1].items],
             ['Hall Sensor'],
         )
 
@@ -342,19 +345,20 @@ class TestHassSynchronizerSyncResultGrouping(TestCase):
         rather than dropping out of the result entirely."""
         entity = self._entity('Mystery', '', 'sensor.mystery')
         entity.entity_type_str = None
-        groups, ungrouped = self.synchronizer.group_entities_for_placement([entity])
+        placement_input = self.synchronizer.group_entities_for_placement([entity])
 
-        self.assertEqual(ungrouped, [])
-        self.assertEqual(len(groups), 1)
-        self.assertEqual(groups[0].label, 'Other')
-        self.assertEqual(groups[0].items[0].entity, entity)
+        self.assertEqual(placement_input.ungrouped_items, [])
+        self.assertEqual(len(placement_input.groups), 1)
+        self.assertEqual(placement_input.groups[0].label, 'Other')
+        self.assertEqual(placement_input.groups[0].items[0].entity, entity)
 
     def test_empty_input_yields_empty_groups(self):
-        groups, ungrouped = self.synchronizer.group_entities_for_placement([])
-        self.assertEqual(groups, [])
-        self.assertEqual(ungrouped, [])
+        placement_input = self.synchronizer.group_entities_for_placement([])
+        self.assertEqual(placement_input.groups, [])
+        self.assertEqual(placement_input.ungrouped_items, [])
+        self.assertTrue(placement_input.is_empty())
 
     def test_item_key_uses_integration_key(self):
         entity = self._entity('Front Camera', 'CAMERA', 'camera.front')
-        groups, _ = self.synchronizer.group_entities_for_placement([entity])
-        self.assertEqual(groups[0].items[0].key, 'hass:camera.front')
+        placement_input = self.synchronizer.group_entities_for_placement([entity])
+        self.assertEqual(placement_input.groups[0].items[0].key, 'hass:camera.front')

@@ -29,7 +29,7 @@ class TestHomeBoxSynchronizer(SimpleTestCase):
 
         with patch.object(synchronizer, 'hb_manager', return_value=manager), \
                 patch.object(synchronizer, '_sync_helper_entities', return_value=[]) as sync_entities_mock:
-            result = synchronizer._sync_impl()
+            result = synchronizer._sync_impl(is_initial_import=True)
 
         self.assertIsInstance(result, IntegrationSyncResult)
         self.assertIn('Found 3 current HomeBox items.', result.message_list)
@@ -324,13 +324,14 @@ class TestHomeBoxSynchronizerSyncResultGrouping(SimpleTestCase):
         with patch.object(synchronizer, 'hb_manager', return_value=manager), \
              patch.object(synchronizer, '_sync_helper_entities',
                           return_value=[entity_a, entity_b]):
-            result = synchronizer._sync_impl()
+            result = synchronizer._sync_impl(is_initial_import=True)
 
-        self.assertEqual(result.groups, [])
-        self.assertEqual(len(result.ungrouped_items), 2)
-        labels = [item.label for item in result.ungrouped_items]
+        self.assertIsNotNone(result.placement_input)
+        self.assertEqual(result.placement_input.groups, [])
+        self.assertEqual(len(result.placement_input.ungrouped_items), 2)
+        labels = [item.label for item in result.placement_input.ungrouped_items]
         self.assertEqual(labels, ['Cordless Drill', 'Stud Finder'])
-        keys = [item.key for item in result.ungrouped_items]
+        keys = [item.key for item in result.placement_input.ungrouped_items]
         self.assertEqual(
             keys,
             [
@@ -347,7 +348,7 @@ class TestHomeBoxSynchronizerSyncResultGrouping(SimpleTestCase):
 
         with patch.object(synchronizer, 'hb_manager', return_value=manager), \
                 patch.object(synchronizer, '_sync_helper_entities', return_value=[]):
-            result = synchronizer._sync_impl()
+            result = synchronizer._sync_impl(is_initial_import=True)
 
-        self.assertEqual(result.groups, [])
-        self.assertEqual(result.ungrouped_items, [])
+        # No newly-created entities → placement_input is None.
+        self.assertIsNone(result.placement_input)

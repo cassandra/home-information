@@ -207,10 +207,10 @@ class _SyncTestSynchronizer:
         self.last_is_initial_import = is_initial_import
         return self._description
 
-    def get_result_title(self):
+    def get_result_title(self, is_initial_import):
         return 'Test Sync Result'
 
-    def sync(self):
+    def sync(self, is_initial_import=False):
         from hi.integrations.sync_result import IntegrationSyncResult
         self.sync_called = True
         return IntegrationSyncResult(
@@ -516,10 +516,10 @@ class _DispatcherTestSynchronizer:
     def get_description(self, is_initial_import):
         return None
 
-    def get_result_title(self):
+    def get_result_title(self, is_initial_import):
         return 'Dispatcher Test'
 
-    def sync(self):
+    def sync(self, is_initial_import=False):
         self.sync_called = True
         return self._sync_result
 
@@ -565,14 +565,15 @@ class DispatcherFlowTests(SyncViewTestCase):
         super().setUp()
         IntegrationManager().reset_for_testing()
 
+        from hi.apps.entity.entity_placement import (
+            EntityPlacementGroup,
+            EntityPlacementInput,
+            EntityPlacementItem,
+        )
         from hi.apps.entity.enums import EntityType
         from hi.apps.entity.models import Entity
         from hi.apps.location.models import Location, LocationView
-        from hi.integrations.sync_result import (
-            IntegrationSyncResult,
-            SyncResultItem,
-            SyncResultItemGroup,
-        )
+        from hi.integrations.sync_result import IntegrationSyncResult
 
         self.integration = Integration.objects.create(
             integration_id=self.INTEGRATION_ID,
@@ -623,28 +624,30 @@ class DispatcherFlowTests(SyncViewTestCase):
 
         self.sync_result = IntegrationSyncResult(
             title='Dispatcher Test',
-            groups=[
-                SyncResultItemGroup(
-                    label='Cameras',
-                    items=[
-                        SyncResultItem(key='dispatcher_test:cam_1', label='Cam 1', entity=self.entity_a),
-                        SyncResultItem(key='dispatcher_test:cam_2', label='Cam 2', entity=self.entity_b),
-                    ],
-                ),
-                SyncResultItemGroup(
-                    label='Lights',
-                    items=[
-                        SyncResultItem(key='dispatcher_test:light_1', label='Light 1', entity=self.entity_c),
-                    ],
-                ),
-            ],
-            ungrouped_items=[
-                SyncResultItem(
-                    key='dispatcher_test:thing_1',
-                    label='Ungrouped Thing',
-                    entity=self.ungrouped_entity,
-                ),
-            ],
+            placement_input=EntityPlacementInput(
+                groups=[
+                    EntityPlacementGroup(
+                        label='Cameras',
+                        items=[
+                            EntityPlacementItem(key='dispatcher_test:cam_1', label='Cam 1', entity=self.entity_a),
+                            EntityPlacementItem(key='dispatcher_test:cam_2', label='Cam 2', entity=self.entity_b),
+                        ],
+                    ),
+                    EntityPlacementGroup(
+                        label='Lights',
+                        items=[
+                            EntityPlacementItem(key='dispatcher_test:light_1', label='Light 1', entity=self.entity_c),
+                        ],
+                    ),
+                ],
+                ungrouped_items=[
+                    EntityPlacementItem(
+                        key='dispatcher_test:thing_1',
+                        label='Ungrouped Thing',
+                        entity=self.ungrouped_entity,
+                    ),
+                ],
+            ),
         )
 
         self.synchronizer = _DispatcherTestSynchronizer(sync_result=self.sync_result)
@@ -662,7 +665,8 @@ class DispatcherFlowTests(SyncViewTestCase):
 
     def _dispatch_url(self):
         return reverse(
-            'integrations_dispatch', kwargs={'integration_id': self.INTEGRATION_ID},
+            'integrations_apply_placements',
+            kwargs={'integration_id': self.INTEGRATION_ID},
         )
 
     def test_sync_renders_dispatcher_modal_when_entities_present(self):
@@ -835,6 +839,147 @@ class DispatcherFlowTests(SyncViewTestCase):
         self.assertGreaterEqual(primary_refine_idx, 0)
         slice_after_refine = body[primary_refine_idx:primary_refine_idx + 200]
         self.assertIn('Living Room', slice_after_refine)
+
+
+class DispatcherDismissAndShowTests(SyncViewTestCase):
+    """NOT NOW → dismiss-confirm modal → GO BACK → dispatcher
+    modal re-renders. Round-trip covers the dismiss + show views
+    plus their hidden-input handshake."""
+
+    INTEGRATION_ID = 'dispatcher_test'
+
+    def setUp(self):
+        super().setUp()
+        IntegrationManager().reset_for_testing()
+
+        from hi.apps.entity.entity_placement import (
+            EntityPlacementGroup,
+            EntityPlacementInput,
+            EntityPlacementItem,
+        )
+        from hi.apps.entity.enums import EntityType
+        from hi.apps.entity.models import Entity
+        from hi.apps.location.models import Location, LocationView
+        from hi.integrations.sync_result import IntegrationSyncResult
+
+        self.integration = Integration.objects.create(
+            integration_id=self.INTEGRATION_ID,
+            is_enabled=True,
+            is_paused=False,
+        )
+        self.location = Location.objects.create(
+            name='Test Location', svg_view_box_str='0 0 100 100',
+        )
+        self.view_a = LocationView.objects.create(
+            location=self.location, name='Kitchen', order_id=1,
+            svg_view_box_str='0 0 100 100', svg_rotate=0,
+            svg_style_name_str='COLOR', location_view_type_str='DEFAULT',
+        )
+        self.entity_a = Entity.objects.create(
+            name='Cam 1', entity_type_str=str(EntityType.CAMERA),
+            integration_id=self.INTEGRATION_ID, integration_name='cam_1',
+        )
+        self.entity_b = Entity.objects.create(
+            name='Cam 2', entity_type_str=str(EntityType.CAMERA),
+            integration_id=self.INTEGRATION_ID, integration_name='cam_2',
+        )
+
+        self.sync_result = IntegrationSyncResult(
+            title='Dispatcher Test',
+            placement_input=EntityPlacementInput(
+                groups=[
+                    EntityPlacementGroup(
+                        label='Cameras',
+                        items=[
+                            EntityPlacementItem(key='dispatcher_test:cam_1', label='Cam 1', entity=self.entity_a),
+                            EntityPlacementItem(key='dispatcher_test:cam_2', label='Cam 2', entity=self.entity_b),
+                        ],
+                    ),
+                ],
+            ),
+        )
+        self.synchronizer = _DispatcherTestSynchronizer(sync_result=self.sync_result)
+        # Stub group_entities_for_placement so the GET dispatcher can
+        # rebuild from unplaced entities.
+
+        def group_for_placement(entities):
+            items = [
+                EntityPlacementItem(
+                    key=f'dispatcher_test:{e.integration_name}',
+                    label=e.name, entity=e,
+                )
+                for e in entities
+            ]
+            if not items:
+                return EntityPlacementInput()
+            return EntityPlacementInput(
+                groups=[EntityPlacementGroup(label='Cameras', items=items)],
+            )
+        self.synchronizer.group_entities_for_placement = group_for_placement
+
+        self.gateway = _DispatcherTestGateway(
+            integration_id=self.INTEGRATION_ID, synchronizer=self.synchronizer,
+        )
+        IntegrationManager()._integration_data_map[self.INTEGRATION_ID] = IntegrationData(
+            integration_gateway=self.gateway, integration=self.integration,
+        )
+
+    def _dismiss_url(self):
+        return reverse(
+            'integrations_dispatcher_dismiss',
+            kwargs={'integration_id': self.INTEGRATION_ID},
+        )
+
+    def _dispatcher_url(self):
+        return reverse(
+            'integrations_dispatcher',
+            kwargs={'integration_id': self.INTEGRATION_ID},
+        )
+
+    def test_dismiss_renders_confirmation_with_dispatcher_link(self):
+        """The dismiss endpoint renders the confirmation modal with a
+        GO BACK link pointing at the dispatcher GET endpoint. The
+        carried is_initial_import flag flows through the URL query
+        string."""
+        response = self.client.post(self._dismiss_url(), {
+            'is_initial_import': '1',
+        })
+        self.assertSuccessResponse(response)
+        body = response.content.decode()
+        # Confirmation copy.
+        self.assertIn('Items left unplaced', body)
+        self.assertIn('GO BACK', body)
+        self.assertIn('LATER, IN EDIT MODE', body)
+        # GO BACK targets the dispatcher GET with is_initial_import=1.
+        self.assertIn(self._dispatcher_url() + '?is_initial_import=1', body)
+
+    def test_dispatcher_get_renders_from_unplaced_entities(self):
+        """The GET dispatcher queries entities for the integration
+        that have no EntityView row, runs them through the
+        synchronizer's group_entities_for_placement, and renders the
+        dispatcher modal."""
+        response = self.client.get(self._dispatcher_url())
+        self.assertSuccessResponse(response)
+        body = response.content.decode()
+        # Dispatcher rendered (APPLY button + entity ids in form).
+        self.assertIn('APPLY', body)
+        self.assertIn('Cameras', body)
+        self.assertIn(f'value="{self.entity_a.id}"', body)
+        self.assertIn(f'value="{self.entity_b.id}"', body)
+
+    def test_dispatcher_get_renders_acknowledgement_when_no_unplaced(self):
+        """When every entity for the integration is already placed,
+        the GET dispatcher renders the legacy result modal with
+        a brief 'no items' message rather than an empty dispatcher."""
+        from hi.apps.entity.models import EntityView
+        EntityView.objects.create(entity=self.entity_a, location_view=self.view_a)
+        EntityView.objects.create(entity=self.entity_b, location_view=self.view_a)
+
+        response = self.client.get(self._dispatcher_url())
+        self.assertSuccessResponse(response)
+        body = response.content.decode()
+        self.assertNotIn('APPLY', body)
+        self.assertIn('No items left to place.', body)
 
 
 class RefineViewTests(SyncViewTestCase):

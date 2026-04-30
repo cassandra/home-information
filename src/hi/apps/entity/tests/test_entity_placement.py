@@ -218,3 +218,161 @@ class TestEntityPlacerSetEntityPath(BaseTestCase):
             EntityPath.objects.filter(entity=entity, location=location).count(),
             1,
         )
+
+
+class PlacementOutcomeTests(BaseTestCase):
+    """PlacementOutcome shape: primary/secondary helpers, total
+    counts, tie-breaking. Pure data, no DB."""
+
+    def _named_view(self, name):
+        from unittest.mock import Mock
+        view = Mock()
+        view.name = name
+        view.id = 0
+        return view
+
+    def _summary(self, name, count):
+        from hi.apps.entity.entity_placement import ViewPlacementSummary
+        return ViewPlacementSummary(
+            location_view=self._named_view(name), placed_entity_count=count,
+        )
+
+    def test_empty_outcome_has_no_primary(self):
+        from hi.apps.entity.entity_placement import PlacementOutcome
+        outcome = PlacementOutcome()
+        self.assertIsNone(outcome.primary_summary)
+        self.assertEqual(outcome.secondary_summaries, [])
+        self.assertEqual(outcome.total_placed, 0)
+        self.assertEqual(outcome.affected_views, [])
+
+    def test_primary_picks_highest_count(self):
+        from hi.apps.entity.entity_placement import PlacementOutcome
+        a = self._summary('A', 1)
+        b = self._summary('B', 5)
+        c = self._summary('C', 3)
+        outcome = PlacementOutcome(summaries=[a, b, c])
+        self.assertIs(outcome.primary_summary, b)
+        self.assertEqual(outcome.secondary_summaries, [a, c])
+
+    def test_primary_breaks_ties_by_first_seen(self):
+        from hi.apps.entity.entity_placement import PlacementOutcome
+        first = self._summary('First', 4)
+        second = self._summary('Second', 4)
+        outcome = PlacementOutcome(summaries=[first, second])
+        self.assertIs(outcome.primary_summary, first)
+        self.assertEqual(outcome.secondary_summaries, [second])
+
+    def test_total_placed_sums_counts(self):
+        from hi.apps.entity.entity_placement import PlacementOutcome
+        outcome = PlacementOutcome(summaries=[
+            self._summary('A', 2),
+            self._summary('B', 5),
+        ])
+        self.assertEqual(outcome.total_placed, 7)
+
+    def test_skipped_count_is_independent_of_summaries(self):
+        from hi.apps.entity.entity_placement import PlacementOutcome
+        outcome = PlacementOutcome(
+            summaries=[self._summary('A', 1)],
+            skipped_entity_count=3,
+        )
+        self.assertEqual(outcome.skipped_entity_count, 3)
+        self.assertEqual(outcome.total_placed, 1)
+
+
+class EntityPlacementServiceTests(BaseTestCase):
+    """EntityPlacementService: query candidates and apply decisions."""
+
+    def setUp(self):
+        from hi.apps.common.svg_models import SvgViewBox
+        from hi.apps.entity.enums import EntityType
+        from hi.apps.entity.models import Entity, EntityView
+        from hi.apps.location.models import Location, LocationView
+
+        self.location = Location.objects.create(
+            name='Test Location', svg_view_box_str='0 0 100 100',
+        )
+        self.view_a = LocationView.objects.create(
+            location=self.location, name='Kitchen', order_id=1,
+            svg_view_box_str='0 0 100 100', svg_rotate=0,
+            svg_style_name_str='COLOR', location_view_type_str='DEFAULT',
+        )
+        self.view_b = LocationView.objects.create(
+            location=self.location, name='Living Room', order_id=2,
+            svg_view_box_str='0 0 100 100', svg_rotate=0,
+            svg_style_name_str='COLOR', location_view_type_str='DEFAULT',
+        )
+
+        # Two unplaced for 'svc_a', one already placed; one unplaced
+        # for 'svc_b' (cross-integration filter test).
+        self.unplaced_a1 = Entity.objects.create(
+            name='A1', entity_type_str=str(EntityType.CAMERA),
+            integration_id='svc_a', integration_name='a1',
+        )
+        self.unplaced_a2 = Entity.objects.create(
+            name='A2', entity_type_str=str(EntityType.CAMERA),
+            integration_id='svc_a', integration_name='a2',
+        )
+        already_placed = Entity.objects.create(
+            name='Placed', entity_type_str=str(EntityType.CAMERA),
+            integration_id='svc_a', integration_name='placed',
+        )
+        EntityView.objects.create(
+            entity=already_placed, location_view=self.view_a,
+        )
+        self.unplaced_b = Entity.objects.create(
+            name='B1', entity_type_str=str(EntityType.CAMERA),
+            integration_id='svc_b', integration_name='b1',
+        )
+        # Reference SvgViewBox to avoid lint noise; the helper above
+        # is exercised indirectly through LocationView's str field.
+        _ = SvgViewBox
+
+    def test_query_unplaced_entities_filters_to_integration(self):
+        from hi.apps.entity.entity_placement import EntityPlacementService
+        result = EntityPlacementService.query_unplaced_entities(
+            integration_id='svc_a',
+        )
+        result_ids = {e.id for e in result}
+        self.assertEqual(
+            result_ids,
+            {self.unplaced_a1.id, self.unplaced_a2.id},
+        )
+
+    def test_query_unplaced_entities_with_no_filter_returns_all(self):
+        from hi.apps.entity.entity_placement import EntityPlacementService
+        result = EntityPlacementService.query_unplaced_entities()
+        result_ids = {e.id for e in result}
+        self.assertEqual(
+            result_ids,
+            {self.unplaced_a1.id, self.unplaced_a2.id, self.unplaced_b.id},
+        )
+
+    def test_apply_decisions_partitions_by_view_and_skips_none(self):
+        from hi.apps.entity.entity_placement import (
+            EntityPlacementService, PlacementDecision,
+        )
+        decisions = [
+            PlacementDecision(entity=self.unplaced_a1, location_view=self.view_a),
+            PlacementDecision(entity=self.unplaced_a2, location_view=self.view_a),
+            PlacementDecision(entity=self.unplaced_b, location_view=self.view_b),
+            # Skip decision contributes to skipped_entity_count.
+            PlacementDecision(
+                entity=Entity.objects.create(
+                    name='Skipped',
+                    entity_type_str='CAMERA',
+                    integration_id='svc_a',
+                    integration_name='skipped',
+                ),
+                location_view=None,
+            ),
+        ]
+        outcome = EntityPlacementService.apply_decisions(decisions=decisions)
+        self.assertEqual(outcome.skipped_entity_count, 1)
+        self.assertEqual(outcome.total_placed, 3)
+        # Two summaries, in input order: view_a (2), view_b (1).
+        self.assertEqual(len(outcome.summaries), 2)
+        self.assertEqual(outcome.summaries[0].location_view, self.view_a)
+        self.assertEqual(outcome.summaries[0].placed_entity_count, 2)
+        self.assertEqual(outcome.summaries[1].location_view, self.view_b)
+        self.assertEqual(outcome.summaries[1].placed_entity_count, 1)

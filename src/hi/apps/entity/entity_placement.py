@@ -28,7 +28,7 @@ without any spread. Multiple delegates therefore overlap. Phase 3
 inherits this behavior; revisit when it bites.
 """
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from decimal import Decimal
 import logging
 from typing import List, Optional, Tuple, Union
@@ -68,6 +68,173 @@ class PlacementPath:
 
 
 PlacementShape = Union[PlacementPoint, PlacementPath]
+
+
+@dataclass
+class EntityPlacementItem:
+    """A single entity destined for placement.
+
+    ``key`` is a stable identifier the dispatcher modal uses to
+    address this item across form turns; suppliers typically derive
+    it from a per-entity integration_key, but the placement layer
+    only requires uniqueness within a placement input.
+    """
+    key: str
+    label: str
+    entity: Entity
+
+
+@dataclass
+class EntityPlacementGroup:
+    """A supplier-defined grouping of items for the dispatcher modal.
+
+    Suppliers create groups when their domain has a meaningful
+    grouping notion (HASS by entity_type, ZM monitors). The
+    dispatcher presents groups verbatim.
+    """
+    label: str
+    items: List[EntityPlacementItem] = field(default_factory=list)
+
+
+@dataclass
+class EntityPlacementInput:
+    """The shape the dispatcher modal needs: groups and ungrouped
+    items to choose placements for.
+
+    Producible from any source — a freshly-run integration sync, a
+    "place unplaced items" recovery feature, or any future bulk-
+    placement flow. The placement layer does not know what produced
+    its input; suppliers do not know how the dispatcher renders or
+    applies the result.
+    """
+    groups: List[EntityPlacementGroup] = field(default_factory=list)
+    ungrouped_items: List[EntityPlacementItem] = field(default_factory=list)
+
+    def is_empty(self) -> bool:
+        if self.ungrouped_items:
+            return False
+        return not any( group.items for group in self.groups )
+
+
+@dataclass(frozen=True)
+class PlacementDecision:
+    """One entity → location_view assignment chosen by the operator.
+
+    ``location_view`` is None when the operator chose to skip
+    placement for this entity. Skipped decisions are filtered out
+    before placement and counted toward the placement outcome's
+    ``skipped_entity_count``.
+    """
+    entity: Entity
+    location_view: Optional[LocationView]
+
+
+@dataclass(frozen=True)
+class ViewPlacementSummary:
+    """One affected LocationView + how many principal entities the
+    bulk placer placed into it."""
+    location_view: LocationView
+    placed_entity_count: int
+
+
+@dataclass
+class PlacementOutcome:
+    """Result of one bulk placement. Drives the post-dispatch modal:
+    per-view summary lines, primary 'Refine' button selection, the
+    skipped count when present.
+
+    Lives in the placement layer rather than an integration layer
+    because the shape is supplier-agnostic — any future bulk-
+    placement flow that accepts placement decisions and applies
+    them produces this outcome.
+    """
+    summaries: List[ViewPlacementSummary] = field(default_factory=list)
+    skipped_entity_count: int = 0
+
+    @property
+    def affected_views(self) -> List[LocationView]:
+        return [s.location_view for s in self.summaries]
+
+    @property
+    def total_placed(self) -> int:
+        return sum(s.placed_entity_count for s in self.summaries)
+
+    @property
+    def primary_summary(self) -> Optional[ViewPlacementSummary]:
+        """Highest-count summary; ties broken by first-seen (stable
+        max). None when no entity was placed."""
+        if not self.summaries:
+            return None
+        # `max` with key returns the first occurrence on ties.
+        return max(self.summaries, key=lambda s: s.placed_entity_count)
+
+    @property
+    def secondary_summaries(self) -> List[ViewPlacementSummary]:
+        """All summaries except the primary, in input order."""
+        primary = self.primary_summary
+        if primary is None:
+            return []
+        result = []
+        skipped = False
+        for summary in self.summaries:
+            if not skipped and summary is primary:
+                skipped = True
+                continue
+            result.append(summary)
+        return result
+
+
+class EntityPlacementService:
+    """Bulk-placement operations: query candidate entities and apply
+    a list of operator placement decisions. Supplier-agnostic; the
+    integration sync flow and any future bulk-placement entry point
+    (e.g., a 'place unplaced items' recovery feature) call into this.
+    """
+
+    @classmethod
+    def query_unplaced_entities( cls,
+                                 integration_id : Optional[str] = None,
+                                 ) -> 'List[Entity]':
+        """Entities that have no EntityView row, optionally filtered
+        to a single integration. Used by the dispatcher GET
+        endpoint to seed the modal with what's left to place."""
+        queryset = Entity.objects.filter( entity_views__isnull = True )
+        if integration_id is not None:
+            queryset = queryset.filter( integration_id = integration_id )
+        return list( queryset.distinct() )
+
+    @classmethod
+    def apply_decisions(
+            cls,
+            decisions : 'List[PlacementDecision]',
+    ) -> PlacementOutcome:
+        """Partition decisions by location_view (preserving first-seen
+        order so the post-dispatch summary lists views in the order
+        the operator's choices produced them), call EntityPlacer
+        once per view, and aggregate per-view counts into a
+        PlacementOutcome."""
+        from collections import OrderedDict
+
+        outcome = PlacementOutcome()
+        by_view = OrderedDict()
+        for decision in decisions:
+            if decision.location_view is None:
+                outcome.skipped_entity_count += 1
+                continue
+            by_view.setdefault( decision.location_view.id, [] ).append( decision )
+            continue
+        for view_id, decision_list in by_view.items():
+            location_view = decision_list[0].location_view
+            entities = [ d.entity for d in decision_list ]
+            EntityPlacer().place_entities_in_view(
+                entities = entities, location_view = location_view,
+            )
+            outcome.summaries.append( ViewPlacementSummary(
+                location_view = location_view,
+                placed_entity_count = len( entities ),
+            ) )
+            continue
+        return outcome
 
 
 class EntityPlacementCalculator:

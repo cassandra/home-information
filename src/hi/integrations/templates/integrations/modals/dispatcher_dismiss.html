@@ -1,0 +1,51 @@
+{% extends "modals/action_2_with_cancel.html" %}
+{% load icons %}
+
+{% comment %}
+Confirmation shown when the operator clicks NOT NOW on the
+dispatcher modal. Names the consequences explicitly so the
+operator doesn't dismiss accidentally.
+
+Two paths forward:
+
+* GO BACK navigates to the integration's dispatcher GET endpoint,
+  which renders the dispatcher again seeded with the integration's
+  currently-unplaced entities. (After a fresh sync nothing has
+  been placed yet, so the operator gets back the same set.)
+* LATER, IN EDIT MODE confirms dismissal: page reloads so the
+  background integrations page reflects the newly-imported
+  entities, and the operator can address them later from edit
+  mode.
+
+Context:
+  integration_data    : IntegrationData (required)
+  dispatcher_url      : str (required) — GO BACK target
+{% endcomment %}
+
+{% block header_class %}bg-secondary{% endblock %}
+
+{% block title_text %}
+Items left unplaced
+{% endblock %}
+
+{% block body %}
+<p>
+  The new items from <strong>{{ integration_data.label }}</strong>
+  are imported but won't appear in any view yet. You can add them
+  to views and collections at any time from edit mode.
+</p>
+{% endblock %}
+
+{% block action_left %}
+<a class="btn btn-outline-tertiary" role="button"
+   href="{{ dispatcher_url }}" data-async="modal">
+  {% icon "chevron-left" size="sm" css_class="hi-icon-left" %}GO BACK
+</a>
+{% endblock %}
+
+{% block action_right %}
+<a id="hi-modal-cancel" role="button"
+   class="btn btn-primary"
+   href="#"
+   onclick="location.reload(); return false;">LATER, IN EDIT MODE</a>
+{% endblock %}

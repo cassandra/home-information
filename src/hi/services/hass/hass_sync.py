@@ -5,12 +5,14 @@ from django.db import transaction
 
 from hi.apps.entity.models import Entity
 
-from hi.integrations.integration_synchronizer import IntegrationSynchronizer
-from hi.integrations.sync_result import (
-    IntegrationSyncResult,
-    SyncResultItem,
-    SyncResultItemGroup,
+from hi.apps.entity.entity_placement import (
+    EntityPlacementInput,
+    EntityPlacementItem,
+    EntityPlacementGroup,
 )
+
+from hi.integrations.integration_synchronizer import IntegrationSynchronizer
+from hi.integrations.sync_result import IntegrationSyncResult
 from hi.integrations.transient_models import IntegrationKey
 
 from .hass_converter import HassConverter
@@ -23,10 +25,10 @@ logger = logging.getLogger(__name__)
 
 class HassSynchronizer( IntegrationSynchronizer, HassMixin ):
 
-    RESULT_TITLE = 'Home Assistant Import Result'
-
-    def get_result_title(self) -> str:
-        return self.RESULT_TITLE
+    def get_result_title(self, is_initial_import: bool) -> str:
+        if is_initial_import:
+            return 'Home Assistant Import Result'
+        return 'Home Assistant Refresh Result'
 
     def get_description(self, is_initial_import: bool) -> Optional[str]:
         if is_initial_import:
@@ -44,9 +46,11 @@ class HassSynchronizer( IntegrationSynchronizer, HassMixin ):
             ' present upstream are removed.'
         )
 
-    def _sync_impl( self ) -> IntegrationSyncResult:
+    def _sync_impl( self, is_initial_import: bool ) -> IntegrationSyncResult:
         hass_manager = self.hass_manager()
-        result = IntegrationSyncResult( title = self.RESULT_TITLE )
+        result = IntegrationSyncResult(
+            title = self.get_result_title( is_initial_import = is_initial_import ),
+        )
 
         hass_client = hass_manager.hass_client
         if not hass_client:
@@ -114,9 +118,10 @@ class HassSynchronizer( IntegrationSynchronizer, HassMixin ):
                                          result = result )
                 continue
 
-        result.groups, result.ungrouped_items = (
-            self.group_entities_for_placement( entities = created_entities )
-        )
+        if created_entities:
+            result.placement_input = self.group_entities_for_placement(
+                entities = created_entities,
+            )
         return result
 
     def _get_existing_hass_entities( self, result : IntegrationSyncResult ) -> Dict[ IntegrationKey, Entity ]:
@@ -173,26 +178,26 @@ class HassSynchronizer( IntegrationSynchronizer, HassMixin ):
         self._remove_entity_intelligently(entity, result, 'HASS')
         return
 
-    def group_entities_for_placement( self, entities ):
+    def group_entities_for_placement( self, entities ) -> EntityPlacementInput:
         """Group HASS entities by Hi-side entity_type_str.
 
-        Returns ``(groups, [])`` — HASS uses no ungrouped bucket.
+        HASS uses no ungrouped bucket — every entity has a type.
         Groups are ordered by their label alphabetically for stable
         presentation. Falls back to an 'Other' bucket for entities
         without a recorded type."""
-        type_to_items: Dict[str, List[SyncResultItem]] = {}
+        type_to_items: Dict[str, List[EntityPlacementItem]] = {}
         for entity in entities:
             type_label = str( entity.entity_type_str or 'Other' )
             type_to_items.setdefault( type_label, [] ).append(
-                SyncResultItem(
-                    key = self._sync_result_item_key( entity = entity ),
+                EntityPlacementItem(
+                    key = self._placement_item_key( entity = entity ),
                     label = entity.name,
                     entity = entity,
                 )
             )
             continue
         groups = [
-            SyncResultItemGroup( label = label, items = type_to_items[label] )
+            EntityPlacementGroup( label = label, items = type_to_items[label] )
             for label in sorted( type_to_items.keys() )
         ]
-        return groups, []
+        return EntityPlacementInput( groups = groups )

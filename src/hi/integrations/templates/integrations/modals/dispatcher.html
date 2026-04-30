@@ -4,37 +4,38 @@
 {% comment %}
 Post-sync entity placement dispatcher.
 
-Three-level inheritance: the operator picks a top-level default for
-all imported entities, may override per group, and may further
-override per entity via the drill-down. Empty selections at any
-level inherit from the level above; explicit "(skip)" at any level
-prevents placement for that branch.
+Three-level inheritance: top default → group default → per-item.
+Empty selections at any level inherit from the level above; explicit
+"Don't add" at any level prevents placement for that branch.
 
-The top level alone offers a "+ Create new view" option, which
-creates one fresh LocationView (named after the integration,
-attached to the operator's current default Location) on Apply.
-Group/entity overrides to existing views remain in effect even when
-the top is "+ Create new view".
+The top level alone offers a "+ New view" option, which creates one
+fresh LocationView (named after the integration, attached to the
+operator's current default Location) on Apply. Group/entity
+overrides to existing views remain in effect even when the top is
+"+ New view".
 
-Existing-view dropdowns are rendered as <optgroup>-per-Location
-across all dropdowns so multi-Location deployments can disambiguate
-views with shared names ("All", "Default", etc.).
+Existing-view dropdowns are rendered as <optgroup>-per-Location so
+multi-Location deployments can disambiguate views with shared names
+("All", "Default", etc.).
 
 Context:
   integration_data      : IntegrationData (required)
-  sync_result           : IntegrationSyncResult (required)
+  placement_input       : EntityPlacementInput (required)
   location_view_groups  : List[(Location, List[LocationView])] (required)
-  dispatch_url          : str (required)
+  apply_url             : str (required) — APPLY form target
+  dismiss_url           : str (required) — NOT NOW form target
+  dismiss_url           : str (required)
+  is_initial_import     : bool (required)
 {% endcomment %}
 
 {% block header_class %}bg-secondary{% endblock %}
 
 {% block title_text %}
-Place imported entities in {{ integration_data.label }}
+Add to views
 {% endblock %}
 
 {% block body %}
-<form id="hi-dispatcher-form" method="post" action="{{ dispatch_url }}"
+<form id="hi-dispatcher-form" method="post" action="{{ apply_url }}"
       class="form" data-async="modal">
   {% csrf_token %}
   {% comment %}
@@ -47,25 +48,24 @@ Place imported entities in {{ integration_data.label }}
   <div class="card mb-2 hi-dispatcher-top">
     <div class="card-body py-2 d-flex align-items-center">
       <div class="flex-grow-1">
-        <strong>Place all imported entities</strong>
+        <strong>Add all new items to</strong>
       </div>
       <select name="top_view" class="form-control form-control-sm w-auto">
-        <option value="">(skip all)</option>
-        <option value="__new__">+ Create new view named "{{ integration_data.label }}"</option>
+        <option value="">Don't add</option>
+        <option value="__new__">+ New view: "{{ integration_data.label }}"</option>
         {% include "integrations/panes/_dispatcher_view_options.html" %}
       </select>
     </div>
   </div>
 
-  {% if sync_result.groups or sync_result.ungrouped_items %}
+  {% if placement_input.groups or placement_input.ungrouped_items %}
   <div class="text-muted small mb-2">
-    Groups and per-item drill-downs override the top choice. Each
-    placed entity will start at the center of its view; you can
-    refine positions afterwards.
+    Each new item starts at the center of its view; you can move
+    them into position afterwards.
   </div>
   {% endif %}
 
-  {% for group in sync_result.groups %}
+  {% for group in placement_input.groups %}
   {% with forloop.counter0 as group_index %}
   <div class="card mb-2 hi-dispatcher-group">
     <div class="card-body py-2">
@@ -75,26 +75,27 @@ Place imported entities in {{ integration_data.label }}
           <span class="badge badge-light ml-1">{{ group.items|length }}</span>
         </div>
         <select name="group_view_{{ group_index }}" class="form-control form-control-sm w-auto">
-          <option value="">(use top)</option>
-          <option value="__skip__">(skip)</option>
+          <option value="">Use top choice</option>
+          <option value="__skip__">Don't add</option>
           {% include "integrations/panes/_dispatcher_view_options.html" %}
         </select>
         <a class="btn btn-sm btn-link" data-toggle="collapse"
-           href="#hi-drill-{{ group_index }}" role="button">
-          drill down
+           href="#hi-drill-{{ group_index }}" role="button"
+           aria-expanded="false" aria-controls="hi-drill-{{ group_index }}">
+          Choose per item
         </a>
       </div>
       <div class="collapse mt-2" id="hi-drill-{{ group_index }}">
         <div class="text-muted small mb-1">
-          Per-item view overrides the group choice for that item.
+          Choosing per item overrides the group's choice.
         </div>
         {% for item in group.items %}
         <div class="d-flex align-items-center py-1">
           <div class="flex-grow-1 small">{{ item.label }}</div>
           <select name="group_{{ group_index }}_entity_{{ item.entity.id }}_view"
                   class="form-control form-control-sm w-auto">
-            <option value="">(use group)</option>
-            <option value="__skip__">(skip)</option>
+            <option value="">Use group choice</option>
+            <option value="__skip__">Don't add</option>
             {% include "integrations/panes/_dispatcher_view_options.html" %}
           </select>
         </div>
@@ -109,25 +110,25 @@ Place imported entities in {{ integration_data.label }}
   {% endwith %}
   {% endfor %}
 
-  {% if sync_result.ungrouped_items %}
+  {% if placement_input.ungrouped_items %}
   <div class="card mb-2 hi-dispatcher-ungrouped">
     <div class="card-header py-2">
-      <strong>Ungrouped items</strong>
-      <span class="badge badge-light ml-1">{{ sync_result.ungrouped_items|length }}</span>
+      <strong>Other items</strong>
+      <span class="badge badge-light ml-1">{{ placement_input.ungrouped_items|length }}</span>
     </div>
     <div class="card-body py-2">
       <div class="text-muted small mb-2">
-        These items have no domain grouping; choose a per-item view
-        or leave as "(use top)".
+        These items don't have a natural group; choose where each
+        one goes or use the top choice.
       </div>
-      {% for item in sync_result.ungrouped_items %}
+      {% for item in placement_input.ungrouped_items %}
       <div class="d-flex align-items-center py-1">
         <div class="flex-grow-1 small">{{ item.label }}</div>
         <input type="hidden" name="ungrouped_entity_ids" value="{{ item.entity.id }}">
         <select name="ungrouped_entity_{{ item.entity.id }}_view"
                 class="form-control form-control-sm w-auto">
-          <option value="">(use top)</option>
-          <option value="__skip__">(skip)</option>
+          <option value="">Use top choice</option>
+          <option value="__skip__">Don't add</option>
           {% include "integrations/panes/_dispatcher_view_options.html" %}
         </select>
       </div>
@@ -139,17 +140,15 @@ Place imported entities in {{ integration_data.label }}
 {% endblock %}
 
 {% comment %}
-  CANCEL triggers a full page reload rather than a plain modal
-  dismiss. The sync that produced this modal has already created
-  new entities; the underlying integration manage page rendered
-  before the sync ran (entity counts, "no entities" alert, etc.)
-  is stale. Reload brings it back in sync with reality.
+  NOT NOW submits the same dispatcher form to the dismiss-confirm
+  endpoint via HTML5 formaction. Carrying the form data forward
+  lets the confirmation modal's GO BACK button re-render the
+  dispatcher with the same set of entities.
 {% endcomment %}
 {% block action_left %}
-<a id="hi-modal-cancel" role="button"
-   class="btn btn-outline-tertiary"
-   href="#"
-   onclick="location.reload(); return false;">CANCEL</a>
+<button type="submit" form="hi-dispatcher-form"
+        formaction="{{ dismiss_url }}" formmethod="post"
+        class="btn btn-outline-tertiary">NOT NOW</button>
 {% endblock %}
 
 {% block action_right %}

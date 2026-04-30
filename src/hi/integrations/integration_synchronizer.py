@@ -13,13 +13,17 @@ Sync is opt-in: a gateway whose integration does not support sync
 returns None.
 """
 import logging
-from typing import List, Optional, Tuple
+from typing import List, Optional
 
 from hi.apps.common.database_lock import ExclusionLockContext
+from hi.apps.entity.entity_placement import (
+    EntityPlacementInput,
+    EntityPlacementItem,
+)
 from hi.apps.entity.models import Entity
 
 from .entity_operations import EntityIntegrationOperations
-from .sync_result import IntegrationSyncResult, SyncResultItem, SyncResultItemGroup
+from .sync_result import IntegrationSyncResult
 from .user_data_detector import EntityUserDataDetector
 
 logger = logging.getLogger(__name__)
@@ -62,33 +66,41 @@ class IntegrationSynchronizer:
         """
         return None
 
-    def get_result_title(self) -> str:
+    def get_result_title(self, is_initial_import: bool) -> str:
         """
         Human-readable title for the sync result (used in the result
-        modal header). Subclasses must override.
+        modal header). The same operator-intent flag that drives the
+        pre-sync description applies here so the result title reads
+        consistently with what they clicked. Subclasses must
+        override.
         """
         raise NotImplementedError('Subclasses must override this method')
 
-    def sync(self) -> IntegrationSyncResult:
+    def sync(self, is_initial_import: bool) -> IntegrationSyncResult:
         """
         Public entry point used by the framework. Wraps `_sync_impl`
         with the sync lock and standard error handling. Subclasses
         override `_sync_impl` rather than this method.
+
+        ``is_initial_import`` is the operator-intent flag from the
+        sync flow (Import for first-time, Refresh otherwise);
+        threaded down so each subclass can title its result
+        consistently.
         """
         try:
             with ExclusionLockContext(name=self.SYNCHRONIZATION_LOCK_NAME):
                 logger.debug(f'{self.__class__.__name__} sync started.')
-                return self._sync_impl()
+                return self._sync_impl(is_initial_import=is_initial_import)
         except RuntimeError as e:
             logger.exception(e)
             return IntegrationSyncResult(
-                title=self.get_result_title(),
+                title=self.get_result_title(is_initial_import=is_initial_import),
                 error_list=[str(e)],
             )
         finally:
             logger.debug(f'{self.__class__.__name__} sync ended.')
 
-    def _sync_impl(self) -> IntegrationSyncResult:
+    def _sync_impl(self, is_initial_import: bool) -> IntegrationSyncResult:
         """
         Integration-specific sync work. Subclasses must override.
         Called with the synchronization lock held.
@@ -97,9 +109,10 @@ class IntegrationSynchronizer:
 
     def group_entities_for_placement(
             self, entities : List[Entity],
-    ) -> Tuple[ List[SyncResultItemGroup], List[SyncResultItem] ]:
-        """Partition a set of entities into ``(groups,
-        ungrouped_items)`` for the post-sync dispatcher modal.
+    ) -> EntityPlacementInput:
+        """Partition a set of entities into the
+        ``EntityPlacementInput`` shape consumed by the dispatcher
+        modal.
 
         Two callers:
 
@@ -110,25 +123,26 @@ class IntegrationSynchronizer:
           in entities that already exist for the integration but have
           no EntityView row.
 
-        Either caller produces the same dispatcher input shape; the
-        per-integration grouping logic lives in this method so both
-        callers agree on what "groups" means for this integration.
+        Either caller receives the same shape; the per-integration
+        grouping logic lives in this method so both callers agree
+        on what "groups" means for this integration.
 
         Default implementation: every entity is ungrouped. Subclasses
         override to provide a meaningful domain grouping (e.g., HASS
         by entity_type, ZM single "Monitors" group).
         """
-        ungrouped = [
-            SyncResultItem(
-                key = self._sync_result_item_key( entity = entity ),
-                label = entity.name,
-                entity = entity,
-            )
-            for entity in entities
-        ]
-        return [], ungrouped
+        return EntityPlacementInput(
+            ungrouped_items = [
+                EntityPlacementItem(
+                    key = self._placement_item_key( entity = entity ),
+                    label = entity.name,
+                    entity = entity,
+                )
+                for entity in entities
+            ],
+        )
 
-    def _sync_result_item_key( self, entity : Entity ) -> str:
+    def _placement_item_key( self, entity : Entity ) -> str:
         """Stable per-entity dispatcher key. Subclasses may override
         for custom keying; the default uses the entity's
         integration_key when available, falling back to the row id."""

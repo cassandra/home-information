@@ -10,12 +10,14 @@ from hi.apps.sense.models import Sensor
 
 from hi.apps.model_helper import HiModelHelper
 
-from hi.integrations.integration_synchronizer import IntegrationSynchronizer
-from hi.integrations.sync_result import (
-    IntegrationSyncResult,
-    SyncResultItem,
-    SyncResultItemGroup,
+from hi.apps.entity.entity_placement import (
+    EntityPlacementInput,
+    EntityPlacementItem,
+    EntityPlacementGroup,
 )
+
+from hi.integrations.integration_synchronizer import IntegrationSynchronizer
+from hi.integrations.sync_result import IntegrationSyncResult
 from hi.integrations.transient_models import IntegrationKey
 
 from .zm_metadata import ZmMetaData
@@ -26,8 +28,6 @@ logger = logging.getLogger(__name__)
 
 class ZoneMinderSynchronizer( IntegrationSynchronizer, ZoneMinderMixin ):
 
-    RESULT_TITLE = 'ZM Import Result'
-
     MONITOR_FUNCTION_NAME_LABEL_DICT = {
         'None': 'None',
         'Monitor': 'Monitor',
@@ -37,8 +37,10 @@ class ZoneMinderSynchronizer( IntegrationSynchronizer, ZoneMinderMixin ):
         'Nodect': 'Nodect',
     }
 
-    def get_result_title(self) -> str:
-        return self.RESULT_TITLE
+    def get_result_title(self, is_initial_import: bool) -> str:
+        if is_initial_import:
+            return 'ZoneMinder Import Result'
+        return 'ZoneMinder Refresh Result'
 
     def get_description(self, is_initial_import: bool) -> Optional[str]:
         if is_initial_import:
@@ -54,8 +56,10 @@ class ZoneMinderSynchronizer( IntegrationSynchronizer, ZoneMinderMixin ):
             ' monitors no longer present upstream are removed.'
         )
 
-    def _sync_impl( self ) -> IntegrationSyncResult:
-        result = IntegrationSyncResult( title = self.RESULT_TITLE )
+    def _sync_impl( self, is_initial_import: bool ) -> IntegrationSyncResult:
+        result = IntegrationSyncResult(
+            title = self.get_result_title( is_initial_import = is_initial_import ),
+        )
 
         if not self.zm_manager().zm_client:
             logger.debug( 'ZoneMinder client not created. ZM integration disabled?' )
@@ -67,29 +71,33 @@ class ZoneMinderSynchronizer( IntegrationSynchronizer, ZoneMinderMixin ):
 
         # Existing-entity updates do not need re-placement; only
         # newly-created monitor entities surface in the dispatcher.
-        result.groups, result.ungrouped_items = (
-            self.group_entities_for_placement( entities = created_monitor_entities )
-        )
+        if created_monitor_entities:
+            result.placement_input = self.group_entities_for_placement(
+                entities = created_monitor_entities,
+            )
         return result
 
-    def group_entities_for_placement( self, entities ):
+    def group_entities_for_placement( self, entities ) -> EntityPlacementInput:
         """Single 'Monitors' group: ZM monitors typically share a
         view, and the operator's first instinct is 'all cameras →
         same place.' The dispatcher's drill-down still allows
         per-monitor placement when needed.
 
-        Empty input → empty groups (no dispatcher rendering)."""
+        Empty input → empty placement input (no dispatcher
+        rendering)."""
         if not entities:
-            return [], []
+            return EntityPlacementInput()
         items = [
-            SyncResultItem(
-                key = self._sync_result_item_key( entity = entity ),
+            EntityPlacementItem(
+                key = self._placement_item_key( entity = entity ),
                 label = entity.name,
                 entity = entity,
             )
             for entity in entities
         ]
-        return [ SyncResultItemGroup( label = 'Monitors', items = items ) ], []
+        return EntityPlacementInput(
+            groups = [ EntityPlacementGroup( label = 'Monitors', items = items ) ],
+        )
 
     def _sync_states( self, result : IntegrationSyncResult ) -> IntegrationSyncResult:
         zm_manager = self.zm_manager()

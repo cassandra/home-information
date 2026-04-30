@@ -1,5 +1,4 @@
 import logging
-from collections import OrderedDict
 
 from django.core.exceptions import BadRequest
 from django.shortcuts import redirect
@@ -16,24 +15,18 @@ from hi.apps.attribute.response_helpers import AttributeRedirectResponse
 from hi.apps.attribute.view_mixins import AttributeEditViewMixin
 from hi.apps.config.enums import ConfigPageType
 from hi.apps.config.views import ConfigPageView
-from hi.apps.entity.entity_placement import EntityPlacer
+from hi.apps.entity.entity_placement import EntityPlacementService
 from hi.apps.entity.models import Entity
 from hi.apps.location.models import LocationView
 
+from .dispatcher_form import DispatcherFormParser
 from .entity_operations import EntityIntegrationOperations
 from .enums import IntegrationDisableMode
 from .exceptions import IntegrationConnectionError
 from .integration_attribute_edit_context import IntegrationAttributeItemEditContext
 from .integration_manager import IntegrationManager
 from .models import IntegrationAttribute
-from .sync_dispatch import (
-    DispatcherOutcome,
-    FORM_VALUE_NEW_VIEW,
-    FORM_VALUE_SKIP,
-    PlacementDecision,
-    ViewPlacementSummary,
-)
-from .view_mixins import IntegrationViewMixin
+from .view_mixins import IntegrationDispatcherViewMixin, IntegrationViewMixin
 
 logger = logging.getLogger(__name__)
 
@@ -142,13 +135,14 @@ class IntegrationPreSyncView( HiModalView, IntegrationViewMixin ):
         return self.modal_response( request, context )
 
 
-class IntegrationSyncView( HiModalView, IntegrationViewMixin ):
+class IntegrationSyncView( HiModalView, IntegrationViewMixin,
+                           IntegrationDispatcherViewMixin ):
     """
     Framework sync execution view. Invokes the integration's
     synchronizer; on success transitions into the dispatcher modal
-    (Phase 3) for post-sync entity placement. Errors and empty
-    results fall back to the legacy result modal so the operator
-    sees what happened either way.
+    for post-sync entity placement. Errors and empty results fall
+    back to the legacy result modal so the operator sees what
+    happened either way.
     """
 
     def get_template_name( self ) -> str:
@@ -173,70 +167,38 @@ class IntegrationSyncView( HiModalView, IntegrationViewMixin ):
             integration_id = integration_data.integration_id,
         ).exists()
 
-        sync_result = synchronizer.sync()
+        sync_result = synchronizer.sync( is_initial_import = is_initial_import )
 
         # Errors or no new entities → render the legacy result modal.
         # Refresh-with-no-new-items lands here naturally because each
-        # synchronizer only populates groups/ungrouped_items from
-        # newly-created entities, not from updates.
-        if sync_result.error_list or not _sync_result_has_entities( sync_result ):
+        # synchronizer only populates placement_input from newly-
+        # created entities, not from updates.
+        if sync_result.error_list or sync_result.placement_input is None:
             return self.modal_response(
                 request,
                 context = { 'sync_result': sync_result },
                 template_name = 'integrations/modals/sync_result.html',
             )
 
-        location_view_groups = _build_location_view_groups()
-        dispatch_url = reverse(
-            'integrations_dispatch',
-            kwargs = { 'integration_id': integration_data.integration_id },
-        )
-        return self.modal_response(
-            request,
-            context = {
-                'integration_data': integration_data,
-                'sync_result': sync_result,
-                'location_view_groups': location_view_groups,
-                'dispatch_url': dispatch_url,
-                'is_initial_import': is_initial_import,
-            },
+        return self.render_dispatcher(
+            request = request,
+            integration_data = integration_data,
+            placement_input = sync_result.placement_input,
+            is_initial_import = is_initial_import,
         )
 
 
-def _sync_result_has_entities( sync_result ) -> bool:
-    if sync_result.ungrouped_items:
-        return True
-    return any( group.items for group in sync_result.groups )
-
-
-def _build_location_view_groups():
-    """Build the dispatcher's existing-views dropdown source: a list
-    of (Location, [LocationView]) tuples ordered by Location.order_id
-    with views ordered by LocationView.order_id within each. Always
-    grouped (never flat) so multi-Location deployments can
-    disambiguate views with shared names.
-
-    Single SQL query joining LocationView ↔ Location; insertion-order
-    in the dict preserves the (location.order_id, view.order_id) sort
-    that came from the database. Empty Locations (no views) drop
-    out, which is the right behavior for a dropdown source.
-    """
-    queryset = LocationView.objects.select_related('location').order_by(
-        'location__order_id', 'order_id',
-    )
-    groups : dict = {}
-    for view in queryset:
-        groups.setdefault( view.location, [] ).append( view )
-    return list( groups.items() )
-
-
-class IntegrationDispatcherView( HiModalView, IntegrationViewMixin ):
+class IntegrationApplyPlacementsView( HiModalView, IntegrationViewMixin,
+                                      IntegrationDispatcherViewMixin ):
     """
     Applies operator placement choices from the dispatcher modal.
-    Reads form input (group view + per-item drill-down + ungrouped),
-    expands to per-entity ``PlacementDecision`` values, places
-    entities into their chosen views via ``EntityPlacer``, and
-    returns the post-dispatch summary modal.
+    Delegates form parsing to ``DispatcherFormParser`` and placement
+    application to ``EntityPlacementService``; the view itself is
+    HTTP entry/exit only.
+
+    POST-only — this is the form processor, not the dispatcher
+    renderer. The dispatcher modal itself is rendered by
+    ``IntegrationDispatcherView`` (GET).
     """
 
     def get_template_name( self ) -> str:
@@ -247,217 +209,114 @@ class IntegrationDispatcherView( HiModalView, IntegrationViewMixin ):
         integration_data = self.get_integration_data(
             integration_id = integration_id,
         )
-
-        decisions = self._build_decisions(
-            request = request, integration_data = integration_data )
+        decisions = DispatcherFormParser.parse(
+            request = request, integration_data = integration_data,
+        )
+        outcome = EntityPlacementService.apply_decisions( decisions = decisions )
         # Carried forward from the sync flow's pre-sync state — see
         # IntegrationSyncView.post. No DB query here; the form field
         # is the authoritative signal of operator intent.
         is_initial_import = ( request.POST.get('is_initial_import') == '1' )
+        return self.render_post_dispatch(
+            request = request,
+            integration_data = integration_data,
+            outcome = outcome,
+            is_initial_import = is_initial_import,
+        )
 
-        outcome = self._apply_decisions( decisions = decisions )
 
-        primary = outcome.primary_summary
-        primary_refine = None
-        secondary_refine_list = []
-        if primary is not None:
-            primary_refine = ( primary, self._refine_url( primary.location_view ) )
-            for summary in outcome.secondary_summaries:
-                secondary_refine_list.append(
-                    ( summary, self._refine_url( summary.location_view ) )
-                )
+class IntegrationDispatcherDismissView( HiModalView, IntegrationViewMixin,
+                                        IntegrationDispatcherViewMixin ):
+    """Confirmation shown when the operator clicks NOT NOW on the
+    dispatcher modal. Names the consequences explicitly so the
+    operator doesn't dismiss accidentally.
 
+    GO BACK on the confirmation goes to ``IntegrationDispatcherView``
+    (GET) which renders the dispatcher for the integration's
+    currently-unplaced entities."""
+
+    def get_template_name( self ) -> str:
+        return 'integrations/modals/dispatcher_dismiss.html'
+
+    def post( self, request, *args, **kwargs ):
+        integration_id = kwargs.get('integration_id')
+        integration_data = self.get_integration_data(
+            integration_id = integration_id,
+        )
+        is_initial_import = ( request.POST.get('is_initial_import') == '1' )
+        return self.render_dismiss_confirm(
+            request = request,
+            integration_data = integration_data,
+            is_initial_import = is_initial_import,
+        )
+
+
+class IntegrationDispatcherView( HiModalView, IntegrationViewMixin,
+                                 IntegrationDispatcherViewMixin ):
+    """Renders the dispatcher modal from an integration's
+    currently-unplaced entities.
+
+    GET-based — the input shape (an integration id, optional
+    ``is_initial_import`` flag) fits in URL parameters. Used by
+    the dispatcher-dismiss modal's GO BACK button and (in a future
+    enhancement) by a manage-page "Place unplaced items" entry
+    point.
+
+    The view queries entities for the integration that have no
+    EntityView row (via ``EntityPlacementService``), runs them
+    through the synchronizer's ``group_entities_for_placement`` to
+    rebuild the ``EntityPlacementInput`` shape, and renders the
+    dispatcher modal with that input. Empty result (nothing left
+    unplaced) falls back to a brief acknowledgement modal so the
+    operator isn't dropped onto an empty dispatcher."""
+
+    def get_template_name( self ) -> str:
+        return 'integrations/modals/dispatcher.html'
+
+    def get( self, request, *args, **kwargs ):
+        integration_id = kwargs.get('integration_id')
+        integration_data = self.get_integration_data(
+            integration_id = integration_id,
+        )
+        synchronizer = integration_data.integration_gateway.get_synchronizer()
+        if synchronizer is None:
+            return page_not_found_response( request )
+
+        is_initial_import = ( request.GET.get('is_initial_import') == '1' )
+        entities = EntityPlacementService.query_unplaced_entities(
+            integration_id = integration_data.integration_id,
+        )
+        placement_input = synchronizer.group_entities_for_placement(
+            entities = entities,
+        )
+        if placement_input.is_empty():
+            return self._render_empty(
+                request = request,
+                synchronizer = synchronizer,
+                is_initial_import = is_initial_import,
+            )
+        return self.render_dispatcher(
+            request = request,
+            integration_data = integration_data,
+            placement_input = placement_input,
+            is_initial_import = is_initial_import,
+        )
+
+    def _render_empty( self, request, synchronizer, is_initial_import : bool ):
+        """No-unplaced-items acknowledgement: render the legacy
+        result modal with a brief 'no items' message rather than
+        an empty dispatcher."""
+        from hi.integrations.sync_result import IntegrationSyncResult
+        sync_result = IntegrationSyncResult(
+            title = synchronizer.get_result_title(
+                is_initial_import = is_initial_import,
+            ),
+            message_list = [ 'No items left to place.' ],
+        )
         return self.modal_response(
             request,
-            context = {
-                'integration_data': integration_data,
-                'outcome': outcome,
-                'is_initial_import': is_initial_import,
-                'primary_refine': primary_refine,
-                'secondary_refine_list': secondary_refine_list,
-            },
-        )
-
-    def _build_decisions( self, request, integration_data ) -> list:
-        """Parse form input into a list of PlacementDecision values
-        applying three-level inheritance (top → group → entity).
-
-        Form-input contract (matches dispatcher.html):
-
-        * ``top_view`` — top-level default for every imported entity.
-          Values: '' (skip all), '__new__' (create a fresh view),
-          or '<view_id>' (existing view).
-        * For each group i:
-            - ``all_group_{i}_entity_ids`` lists every entity id.
-            - ``group_view_{i}`` is the group choice. Values: ''
-              (use top), '__skip__' (explicit skip), '<view_id>'.
-            - ``group_{i}_entity_{E}_view`` is the per-entity
-              override. Values: '' (use group), '__skip__', '<view_id>'.
-        * For ungrouped:
-            - ``ungrouped_entity_ids`` lists every entity.
-            - ``ungrouped_entity_{E}_view`` is the per-entity choice
-              against the top default. Values: '' (use top),
-              '__skip__', '<view_id>'.
-
-        New-view creation: when ``top_view == FORM_VALUE_NEW_VIEW``,
-        a fresh LocationView is created (named after the integration
-        label) and used as the top-level resolved view. Group/entity
-        overrides to other existing views still apply.
-        """
-        decisions = []
-        view_lookup = self._build_view_lookup()
-
-        top_value = request.POST.get('top_view', '').strip()
-        top_view = self._resolve_top_view(
-            request = request,
-            top_value = top_value,
-            view_lookup = view_lookup,
-            integration_data = integration_data,
-        )
-
-        # Discover group indices by scanning POST keys.
-        group_indices = sorted({
-            int(k.split('_')[2])
-            for k in request.POST.keys()
-            if k.startswith('all_group_') and k.endswith('_entity_ids')
-        })
-        for group_index in group_indices:
-            group_value = request.POST.get(
-                f'group_view_{group_index}', '' ).strip()
-            group_choice = self._resolve_child_choice(
-                form_value = group_value,
-                parent_view = top_view,
-                view_lookup = view_lookup,
-            )
-            entity_id_list = request.POST.getlist(
-                f'all_group_{group_index}_entity_ids' )
-            entities = list( Entity.objects.filter(
-                id__in = [int(e) for e in entity_id_list]
-            ) )
-            entity_by_id = { e.id: e for e in entities }
-            for entity_id_str in entity_id_list:
-                entity = entity_by_id.get( int(entity_id_str) )
-                if entity is None:
-                    continue
-                entity_value = request.POST.get(
-                    f'group_{group_index}_entity_{entity.id}_view', '' ).strip()
-                entity_choice = self._resolve_child_choice(
-                    form_value = entity_value,
-                    parent_view = group_choice,
-                    view_lookup = view_lookup,
-                )
-                decisions.append( PlacementDecision(
-                    entity = entity, location_view = entity_choice,
-                ) )
-
-        # Ungrouped items: no group level — entity inherits from top.
-        ungrouped_ids = request.POST.getlist( 'ungrouped_entity_ids' )
-        if ungrouped_ids:
-            ungrouped = list( Entity.objects.filter(
-                id__in = [int(e) for e in ungrouped_ids]
-            ) )
-            ungrouped_by_id = { e.id: e for e in ungrouped }
-            for entity_id_str in ungrouped_ids:
-                entity = ungrouped_by_id.get( int(entity_id_str) )
-                if entity is None:
-                    continue
-                entity_value = request.POST.get(
-                    f'ungrouped_entity_{entity.id}_view', '' ).strip()
-                entity_choice = self._resolve_child_choice(
-                    form_value = entity_value,
-                    parent_view = top_view,
-                    view_lookup = view_lookup,
-                )
-                decisions.append( PlacementDecision(
-                    entity = entity, location_view = entity_choice,
-                ) )
-
-        return decisions
-
-    def _resolve_top_view( self,
-                           request,
-                           top_value        : str,
-                           view_lookup      : dict,
-                           integration_data ):
-        """Top-level form value → resolved LocationView (or None for skip).
-
-        Three valid top values: ''=skip-all, '__new__'=create fresh
-        view, '<id>'=existing view. Creation of the new view is the
-        side effect of '__new__'; the new view becomes the top
-        default for everything else.
-        """
-        if top_value == FORM_VALUE_NEW_VIEW:
-            return self._create_new_view(
-                request = request, integration_data = integration_data )
-        if top_value == '':
-            return None
-        return view_lookup.get( top_value )
-
-    def _resolve_child_choice( self,
-                               form_value   : str,
-                               parent_view,
-                               view_lookup  : dict ):
-        """Group/entity form value → resolved LocationView (or None
-        for skip). Empty inherits from parent; '__skip__' is an
-        explicit no-op that overrides any inherited parent value;
-        otherwise it's an explicit existing-view id."""
-        if form_value == '':
-            return parent_view
-        if form_value == FORM_VALUE_SKIP:
-            return None
-        return view_lookup.get( form_value )
-
-    def _create_new_view( self, request, integration_data ):
-        """Create a single LocationView named after the integration
-        label, attached to the operator's current default Location
-        (per session view_parameters). LocationManager's
-        get_default_location handles the session-first lookup with a
-        DB-order fallback when nothing is set."""
-        from hi.apps.location.location_manager import LocationManager
-        from hi.apps.location.models import Location
-        try:
-            location = LocationManager().get_default_location( request = request )
-        except Location.DoesNotExist:
-            raise BadRequest(
-                'Cannot create a new view: no Location is configured.'
-            )
-        return LocationManager().create_location_view(
-            location = location,
-            name = integration_data.label,
-        )
-
-    def _build_view_lookup(self) -> dict:
-        return { str(v.id): v for v in LocationView.objects.all() }
-
-    def _apply_decisions( self, decisions : list ) -> DispatcherOutcome:
-        outcome = DispatcherOutcome()
-        # Group decisions by location_view (preserving first-seen
-        # order so the post-dispatch summary lists views in the
-        # order the operator's groups produced them).
-        by_view = OrderedDict()
-        for decision in decisions:
-            if decision.location_view is None:
-                outcome.skipped_entity_count += 1
-                continue
-            by_view.setdefault( decision.location_view.id, [] ).append( decision )
-            continue
-        for view_id, decision_list in by_view.items():
-            location_view = decision_list[0].location_view
-            entities = [ d.entity for d in decision_list ]
-            EntityPlacer().place_entities_in_view(
-                entities = entities, location_view = location_view,
-            )
-            outcome.summaries.append( ViewPlacementSummary(
-                location_view = location_view,
-                placed_entity_count = len( entities ),
-            ) )
-            continue
-        return outcome
-
-    def _refine_url( self, location_view : LocationView ) -> str:
-        return reverse(
-            'integrations_refine',
-            kwargs = { 'location_view_id': location_view.id },
+            context = { 'sync_result': sync_result },
+            template_name = 'integrations/modals/sync_result.html',
         )
 
 

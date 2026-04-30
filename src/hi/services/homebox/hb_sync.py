@@ -19,10 +19,10 @@ logger = logging.getLogger(__name__)
 
 class HomeBoxSynchronizer( IntegrationSynchronizer, HomeBoxMixin ):
 
-    RESULT_TITLE = 'HomeBox Import Result'
-
-    def get_result_title(self) -> str:
-        return self.RESULT_TITLE
+    def get_result_title(self, is_initial_import: bool) -> str:
+        if is_initial_import:
+            return 'HomeBox Import Result'
+        return 'HomeBox Refresh Result'
 
     def get_description(self, is_initial_import: bool) -> Optional[str]:
         if is_initial_import:
@@ -38,9 +38,11 @@ class HomeBoxSynchronizer( IntegrationSynchronizer, HomeBoxMixin ):
             ' present upstream are removed.'
         )
 
-    def _sync_impl( self ) -> IntegrationSyncResult:
+    def _sync_impl( self, is_initial_import: bool ) -> IntegrationSyncResult:
         hb_manager = self.hb_manager()
-        result = IntegrationSyncResult( title = self.RESULT_TITLE )
+        result = IntegrationSyncResult(
+            title = self.get_result_title( is_initial_import = is_initial_import ),
+        )
 
         if not hb_manager.hb_client:
             health_status = hb_manager.health_status
@@ -67,9 +69,10 @@ class HomeBoxSynchronizer( IntegrationSynchronizer, HomeBoxMixin ):
         # newly-created entities surface in the dispatcher.
         created_entities = self._sync_helper_entities(
             item_list = item_list, result = result )
-        result.groups, result.ungrouped_items = (
-            self.group_entities_for_placement( entities = created_entities )
-        )
+        if created_entities:
+            result.placement_input = self.group_entities_for_placement(
+                entities = created_entities,
+            )
         return result
 
     # group_entities_for_placement: HomeBox has no domain notion of
