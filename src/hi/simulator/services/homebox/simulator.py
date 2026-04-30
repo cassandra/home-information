@@ -26,9 +26,17 @@ class HomeBoxSimulator( Simulator ):
 
     def get_sim_entity_pairs(self):
         """
-        Iterate (sim_entity_id, fields, archived_state) tuples for every
-        configured HomeBox inventory item in the active profile. Used by
-        the API views to build item responses.
+        Iterate (sim_entity_id, fields, archived_state, created_at,
+        updated_at) tuples for every configured HomeBox inventory
+        item in the active profile. Used by the API views to build
+        item responses.
+
+        The two timestamps come from the persisted ``DbSimEntity``
+        — stable across reads, only ticking when the operator
+        actually edits the row. This matches real HomeBox behavior
+        and prevents the converter's payload-equality change
+        detection from flagging untouched items as 'updated' on
+        every refresh.
         """
         for sim_entity in self._sim_entity_map.values():
             fields = sim_entity.sim_entity_fields
@@ -37,4 +45,11 @@ class HomeBoxSimulator( Simulator ):
             archived_state = sim_entity._sim_state_map.get( 'archived' )
             if not isinstance( archived_state, HomeBoxItemArchivedState ):
                 continue
-            yield ( sim_entity.id, fields, archived_state )
+            db_row = sim_entity.db_sim_entity
+            yield (
+                sim_entity.id,
+                fields,
+                archived_state,
+                db_row.created_datetime,
+                db_row.updated_datetime,
+            )

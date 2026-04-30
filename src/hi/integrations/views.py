@@ -135,18 +135,26 @@ class IntegrationPreSyncView( HiModalView, IntegrationViewMixin ):
         return self.modal_response( request, context )
 
 
-class IntegrationSyncView( HiModalView, IntegrationViewMixin,
-                           IntegrationDispatcherViewMixin ):
+class IntegrationSyncView( HiModalView, IntegrationViewMixin ):
     """
     Framework sync execution view. Invokes the integration's
-    synchronizer; on success transitions into the dispatcher modal
-    for post-sync entity placement. Errors and empty results fall
-    back to the legacy result modal so the operator sees what
-    happened either way.
+    synchronizer and always renders the sync result modal — the
+    operator's single end-of-sync surface. When the sync produced
+    new entities to place, the result modal exposes a primary
+    'Place N new items' CTA that navigates (via antinode modal-to-
+    modal) to the dispatcher GET endpoint where the operator picks
+    targets. When there are no new entities (refresh-with-updates,
+    refresh-with-removes, errors, or nothing-new), the result modal
+    shows just a dismissal action.
+
+    This shape was chosen so updates and removes are never silently
+    swallowed by an automatic transition to the dispatcher: the
+    operator always sees what changed, and only opts into placement
+    when there's actually something to place.
     """
 
     def get_template_name( self ) -> str:
-        return 'integrations/modals/dispatcher.html'
+        return 'integrations/modals/sync_result.html'
 
     def post( self, request, *args, **kwargs ):
         integration_id = kwargs.get('integration_id')
@@ -160,34 +168,31 @@ class IntegrationSyncView( HiModalView, IntegrationViewMixin,
         # Compute the operator-flow flag BEFORE running sync so the
         # entities the sync is about to create don't change the
         # answer. is_initial_import = "no entities for this
-        # integration before this sync ran"; the value is threaded
-        # through the dispatcher form so the post-dispatch modal
-        # can title itself consistently with the pre-sync intent.
+        # integration before this sync ran"; threaded through to the
+        # dispatcher GET URL so a downstream Place-items click
+        # carries the same operator intent.
         is_initial_import = not Entity.objects.filter(
             integration_id = integration_data.integration_id,
         ).exists()
 
         sync_result = synchronizer.sync( is_initial_import = is_initial_import )
 
-        # Errors or no new entities → render the legacy result modal.
-        # Refresh-with-no-new-items lands here naturally because each
-        # synchronizer only populates placement_input from newly-
-        # created entities, not from updates.
-        if sync_result.error_list or sync_result.placement_input is None:
-            return self.modal_response(
-                request,
-                context = {
-                    'sync_result': sync_result,
-                    'integration_data': integration_data,
-                },
-                template_name = 'integrations/modals/sync_result.html',
-            )
+        dispatcher_url = reverse(
+            'integrations_dispatcher',
+            kwargs = { 'integration_id': integration_data.integration_id },
+        )
+        if is_initial_import:
+            dispatcher_url = f'{dispatcher_url}?is_initial_import=1'
 
-        return self.render_dispatcher(
-            request = request,
-            integration_data = integration_data,
-            placement_input = sync_result.placement_input,
-            is_initial_import = is_initial_import,
+        return self.modal_response(
+            request,
+            context = {
+                'sync_result': sync_result,
+                'integration_data': integration_data,
+                'is_initial_import': is_initial_import,
+                'dispatcher_url': dispatcher_url,
+            },
+            template_name = 'integrations/modals/sync_result.html',
         )
 
 

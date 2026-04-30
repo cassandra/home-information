@@ -624,6 +624,7 @@ class DispatcherFlowTests(SyncViewTestCase):
 
         self.sync_result = IntegrationSyncResult(
             title='Dispatcher Test',
+            created_list=['Cam 1', 'Cam 2', 'Light 1', 'Ungrouped Thing'],
             placement_input=EntityPlacementInput(
                 groups=[
                     EntityPlacementGroup(
@@ -669,28 +670,64 @@ class DispatcherFlowTests(SyncViewTestCase):
             kwargs={'integration_id': self.INTEGRATION_ID},
         )
 
-    def test_sync_renders_dispatcher_modal_when_entities_present(self):
-        """Sync result with groups → dispatcher modal (not legacy result)."""
+    def _dispatcher_url(self):
+        return reverse(
+            'integrations_dispatcher',
+            kwargs={'integration_id': self.INTEGRATION_ID},
+        )
+
+    def test_sync_renders_result_modal_with_place_items_cta(self):
+        """Sync that produced new entities → sync result modal with
+        a primary 'Place N items' CTA pointing at the dispatcher
+        GET endpoint. The dispatcher is no longer rendered directly
+        from the sync POST response — placement is opt-in."""
         response = self.client.post(self._sync_url())
         self.assertSuccessResponse(response)
         body = response.content.decode()
-        # Group rows + ungrouped section + APPLY button.
-        self.assertIn('Cameras', body)
-        self.assertIn('Lights', body)
-        self.assertIn('Ungrouped', body)
-        self.assertIn('APPLY', body)
-        # Both views show up in the dropdown.
-        self.assertIn('Kitchen', body)
-        self.assertIn('Living Room', body)
+        # Result-modal markers (NOT dispatcher markers).
+        self.assertIn('Sync complete', body)
+        self.assertIn('CLOSE', body)
+        # CTA carries the actual count and links to dispatcher GET.
+        self.assertIn('Place 4 new items', body)
+        self.assertIn(self._dispatcher_url(), body)
+        # No dispatcher artifacts in the response — operator must
+        # click the CTA to reach the dispatcher.
+        self.assertNotIn('APPLY', body)
 
-    def test_sync_renders_legacy_result_modal_when_empty(self):
-        """Empty sync result → legacy result modal, no dispatcher."""
+    def test_sync_renders_result_modal_without_cta_when_no_creates(self):
+        """Sync result with no created entities → result modal with
+        no 'Place items' CTA. CLOSE is the only footer action."""
         from hi.integrations.sync_result import IntegrationSyncResult
         self.synchronizer._sync_result = IntegrationSyncResult(title='Empty')
         response = self.client.post(self._sync_url())
         self.assertSuccessResponse(response)
         body = response.content.decode()
+        self.assertIn('CLOSE', body)
+        self.assertNotIn('Place ', body)
         self.assertNotIn('APPLY', body)
+
+    def test_sync_renders_result_modal_with_updates_and_removes_visible(self):
+        """Update/remove signal is no longer swallowed by the
+        dispatcher when there are also creates — every change kind
+        is enumerated in the result modal even though the modal
+        ultimately routes the operator to placement."""
+        from hi.integrations.sync_result import IntegrationSyncResult
+        self.synchronizer._sync_result = IntegrationSyncResult(
+            title='Mixed Result',
+            created_list=['Brand New Light'],
+            updated_list=['Old Name → New Name'],
+            removed_list=['Stale Sensor'],
+            placement_input=self.sync_result.placement_input,
+        )
+        response = self.client.post(self._sync_url())
+        self.assertSuccessResponse(response)
+        body = response.content.decode()
+        # All three categories visible in the result.
+        self.assertIn('Brand New Light', body)
+        self.assertIn('Old Name → New Name', body)
+        self.assertIn('Stale Sensor', body)
+        # And the CTA still routes to the dispatcher.
+        self.assertIn('Place 1 new item', body)
 
     def test_dispatch_top_inherits_to_groups_and_entities(self):
         """Top view chosen, groups + entities at default → every
