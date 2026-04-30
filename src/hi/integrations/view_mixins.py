@@ -1,6 +1,7 @@
 from django.http import Http404
 from django.urls import reverse
 
+from hi.apps.collection.models import Collection
 from hi.apps.location.models import LocationView
 
 from .integration_manager import IntegrationManager
@@ -99,8 +100,11 @@ class IntegrationDispatcherViewMixin:
                            placement_input,
                            is_initial_import : bool ):
         """Render the dispatcher modal seeded with an
-        ``EntityPlacementInput``."""
+        ``EntityPlacementInput``. Dropdowns offer both LocationView
+        and Collection targets; the top dropdown additionally offers
+        '+ New view' and '+ New collection' sentinels."""
         location_view_groups = self._build_location_view_groups()
+        collection_list = self._build_collection_list()
         apply_url = reverse(
             'integrations_apply_placements',
             kwargs = { 'integration_id': integration_data.integration_id },
@@ -115,6 +119,7 @@ class IntegrationDispatcherViewMixin:
                 'integration_data': integration_data,
                 'placement_input': placement_input,
                 'location_view_groups': location_view_groups,
+                'collection_list': collection_list,
                 'apply_url': apply_url,
                 'dismiss_url': dismiss_url,
                 'is_initial_import': is_initial_import,
@@ -150,17 +155,24 @@ class IntegrationDispatcherViewMixin:
                               outcome,
                               is_initial_import : bool ):
         """Render the post-dispatch summary modal from a
-        ``PlacementOutcome``. Builds the primary REFINE link and a
-        list of secondary view links, all pointing at
-        ``integrations_refine``."""
+        ``PlacementOutcome``.
+
+        The primary action button is REFINE for view-targeted
+        primary summaries (drag entities into spatial position) and
+        REVIEW for collection-targeted primary summaries (no spatial
+        refinement; the link just lands on the collection's view
+        page). ``PlacementOutcome.primary_summary`` already prefers
+        view-targeted summaries when any exist, so the REFINE path
+        is taken whenever the operator placed at least one entity
+        into a LocationView."""
         primary = outcome.primary_summary
-        primary_refine = None
-        secondary_refine_list = []
+        primary_action = None
+        secondary_action_list = []
         if primary is not None:
-            primary_refine = ( primary, self._refine_url( primary.location_view ) )
+            primary_action = ( primary, self._summary_url( primary ) )
             for summary in outcome.secondary_summaries:
-                secondary_refine_list.append(
-                    ( summary, self._refine_url( summary.location_view ) )
+                secondary_action_list.append(
+                    ( summary, self._summary_url( summary ) )
                 )
         return self.modal_response(
             request,
@@ -168,8 +180,8 @@ class IntegrationDispatcherViewMixin:
                 'integration_data': integration_data,
                 'outcome': outcome,
                 'is_initial_import': is_initial_import,
-                'primary_refine': primary_refine,
-                'secondary_refine_list': secondary_refine_list,
+                'primary_action': primary_action,
+                'secondary_action_list': secondary_action_list,
             },
             template_name = 'integrations/modals/post_dispatch.html',
         )
@@ -191,8 +203,23 @@ class IntegrationDispatcherViewMixin:
             groups.setdefault( view.location, [] ).append( view )
         return list( groups.items() )
 
-    def _refine_url( self, location_view : LocationView ) -> str:
+    def _build_collection_list( self ):
+        """Existing-collections dropdown source for the dispatcher
+        modal. Single optgroup keyed by 'Collections'; ordered by
+        Collection.order_id."""
+        return list( Collection.objects.order_by('order_id').all() )
+
+    def _summary_url( self, summary ) -> str:
+        """URL for the post-dispatch modal's per-summary action.
+        Views go through ``integrations_refine`` (which lands the
+        operator in edit mode for that view); collections link to
+        the read-only ``collection_view`` page."""
+        if summary.is_view:
+            return reverse(
+                'integrations_refine',
+                kwargs = { 'location_view_id': summary.location_view.id },
+            )
         return reverse(
-            'integrations_refine',
-            kwargs = { 'location_view_id': location_view.id },
+            'collection_view',
+            kwargs = { 'collection_id': summary.collection.id },
         )

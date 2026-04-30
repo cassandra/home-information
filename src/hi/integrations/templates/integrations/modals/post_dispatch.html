@@ -4,19 +4,24 @@
 {% comment %}
 Post-dispatch summary modal.
 
-Recap of the operator's placement decisions, plus the edit-mode
-notice + Refine button(s) so they can drag entities into their
-correct positions in each affected view.
+Recap of the operator's placement decisions, plus a primary action
+button that lands them on whatever needs follow-up:
 
-Multi-view layout: the primary "Refine" button targets the view
-with the most entities placed (ties broken by first-seen). Other
-affected views render as inline secondary links.
+* If any placement targeted a LocationView, the primary action is
+  REFINE on the highest-count view (drag entities into spatial
+  position via edit mode).
+* If every placement targeted a Collection, the primary action is
+  REVIEW on the highest-count collection (read-only collection page;
+  collections need no spatial refinement).
+
+Secondary affected targets render as inline links: views go to
+their REFINE URL, collections to their read-only view URL.
 
 Context:
   integration_data       : IntegrationData (required)
-  outcome                : DispatcherOutcome (required)
-  primary_refine         : (ViewPlacementSummary, refine_url) | None
-  secondary_refine_list  : List[(ViewPlacementSummary, refine_url)]
+  outcome                : PlacementOutcome (required)
+  primary_action         : (PlacementSummary, url) | None
+  secondary_action_list  : List[(PlacementSummary, url)]
   is_initial_import      : bool (required)
 {% endcomment %}
 
@@ -37,7 +42,8 @@ Refresh complete
   <li>
     <strong>{{ summary.placed_entity_count }}</strong>
     {% if summary.placed_entity_count == 1 %}entity{% else %}entities{% endif %}
-    placed in <strong>{{ summary.location_view.name }}</strong>.
+    {% if summary.is_view %}placed in{% else %}added to{% endif %}
+    <strong>{{ summary.target_name }}</strong>.
   </li>
   {% endfor %}
 </ul>
@@ -47,10 +53,12 @@ Refresh complete
   You can add them to views or collections later from edit mode.
 </p>
 {% endif %}
+{% if primary_action and primary_action.0.is_view %}
 <p>
   Imported entities start at a default position in each view;
   use <strong>Refine</strong> to drag them into place.
 </p>
+{% endif %}
 {% else %}
 <p>
   Nothing was placed. You can add these entities to views or
@@ -58,11 +66,11 @@ Refresh complete
 </p>
 {% endif %}
 
-{% if secondary_refine_list %}
+{% if secondary_action_list %}
 <div class="mt-2 small">
-  Other affected views:
-  {% for summary, refine_url in secondary_refine_list %}
-  <a href="{{ refine_url }}" class="badge badge-light ml-1">{{ summary.location_view.name }}</a>
+  Other affected:
+  {% for summary, action_url in secondary_action_list %}
+  <a href="{{ action_url }}" class="badge badge-light ml-1">{{ summary.target_name }}</a>
   {% endfor %}
 </div>
 {% endif %}
@@ -84,10 +92,14 @@ Refresh complete
 {% endblock %}
 
 {% block action_right %}
-{% if primary_refine %}
-<a class="btn btn-primary" href="{{ primary_refine.1 }}">
+{% if primary_action %}
+<a class="btn btn-primary" href="{{ primary_action.1 }}">
+  {% if primary_action.0.is_view %}
   {% icon "edit" size="sm" css_class="hi-icon-left" %}REFINE
-  {{ primary_refine.0.location_view.name }}
+  {% else %}
+  {% icon "view" size="sm" css_class="hi-icon-left" %}REVIEW
+  {% endif %}
+  {{ primary_action.0.target_name }}
 </a>
 {% endif %}
 {% endblock %}

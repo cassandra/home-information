@@ -697,7 +697,7 @@ class DispatcherFlowTests(SyncViewTestCase):
         entity goes to the top view."""
         from hi.apps.entity.models import EntityView
         response = self.client.post(self._dispatch_url(), {
-            'top_view': str(self.view_a.id),
+            'top_view': f'view:{self.view_a.id}',
             'all_group_0_entity_ids': [str(self.entity_a.id), str(self.entity_b.id)],
             'all_group_1_entity_ids': [str(self.entity_c.id)],
             'ungrouped_entity_ids': [str(self.ungrouped_entity.id)],
@@ -712,10 +712,10 @@ class DispatcherFlowTests(SyncViewTestCase):
         other groups still inherit top."""
         from hi.apps.entity.models import EntityView
         response = self.client.post(self._dispatch_url(), {
-            'top_view': str(self.view_a.id),
+            'top_view': f'view:{self.view_a.id}',
             'all_group_0_entity_ids': [str(self.entity_a.id), str(self.entity_b.id)],
             'all_group_1_entity_ids': [str(self.entity_c.id)],
-            'group_view_0': str(self.view_b.id),  # Cameras → view_b
+            'group_view_0': f'view:{self.view_b.id}',  # Cameras → view_b
             # group_view_1 left blank → inherits view_a
         })
         self.assertSuccessResponse(response)
@@ -730,10 +730,10 @@ class DispatcherFlowTests(SyncViewTestCase):
         """Per-entity override beats group default for that entity."""
         from hi.apps.entity.models import EntityView
         response = self.client.post(self._dispatch_url(), {
-            'top_view': str(self.view_a.id),
+            'top_view': f'view:{self.view_a.id}',
             'all_group_0_entity_ids': [str(self.entity_a.id), str(self.entity_b.id)],
-            'group_view_0': str(self.view_a.id),
-            f'group_0_entity_{self.entity_b.id}_view': str(self.view_b.id),
+            'group_view_0': f'view:{self.view_a.id}',
+            f'group_0_entity_{self.entity_b.id}_view': f'view:{self.view_b.id}',
         })
         self.assertSuccessResponse(response)
         self.assertTrue(EntityView.objects.filter(
@@ -758,7 +758,7 @@ class DispatcherFlowTests(SyncViewTestCase):
         don't get placed even though top has a view."""
         from hi.apps.entity.models import EntityView
         response = self.client.post(self._dispatch_url(), {
-            'top_view': str(self.view_a.id),
+            'top_view': f'view:{self.view_a.id}',
             'all_group_0_entity_ids': [str(self.entity_a.id)],
             'group_view_0': '__skip__',
         })
@@ -769,7 +769,7 @@ class DispatcherFlowTests(SyncViewTestCase):
         """Group inherits top, but specific entity is explicitly skipped."""
         from hi.apps.entity.models import EntityView
         response = self.client.post(self._dispatch_url(), {
-            'top_view': str(self.view_a.id),
+            'top_view': f'view:{self.view_a.id}',
             'all_group_0_entity_ids': [str(self.entity_a.id), str(self.entity_b.id)],
             f'group_0_entity_{self.entity_a.id}_view': '__skip__',
         })
@@ -786,10 +786,10 @@ class DispatcherFlowTests(SyncViewTestCase):
         from hi.apps.location.models import LocationView
         before_view_ids = set(LocationView.objects.values_list('id', flat=True))
         response = self.client.post(self._dispatch_url(), {
-            'top_view': '__new__',
+            'top_view': '__new_view__',
             'all_group_0_entity_ids': [str(self.entity_a.id), str(self.entity_b.id)],
             'all_group_1_entity_ids': [str(self.entity_c.id)],
-            'group_view_1': str(self.view_a.id),  # Lights → existing view
+            'group_view_1': f'view:{self.view_a.id}',  # Lights → existing view
         })
         self.assertSuccessResponse(response)
         new_view_ids = (
@@ -812,7 +812,7 @@ class DispatcherFlowTests(SyncViewTestCase):
         """The post-dispatch modal includes a REFINE button targeting
         the affected view, plus the view's name in the summary."""
         response = self.client.post(self._dispatch_url(), {
-            'top_view': str(self.view_a.id),
+            'top_view': f'view:{self.view_a.id}',
             'all_group_0_entity_ids': [str(self.entity_a.id)],
         })
         self.assertSuccessResponse(response)
@@ -828,10 +828,10 @@ class DispatcherFlowTests(SyncViewTestCase):
         the view with the most placed entities."""
         # Cameras (2) → view_b; Light (1) → view_a. view_b wins.
         response = self.client.post(self._dispatch_url(), {
-            'top_view': str(self.view_b.id),
+            'top_view': f'view:{self.view_b.id}',
             'all_group_0_entity_ids': [str(self.entity_a.id), str(self.entity_b.id)],
             'all_group_1_entity_ids': [str(self.entity_c.id)],
-            'group_view_1': str(self.view_a.id),  # Lights → view_a
+            'group_view_1': f'view:{self.view_a.id}',  # Lights → view_a
         })
         self.assertSuccessResponse(response)
         body = response.content.decode()

@@ -80,7 +80,7 @@ class DispatcherFormParserTests(TestCase):
 
     def test_top_inherits_to_groups_and_entities(self):
         request = self._post(
-            top_view=str(self.view_a.id),
+            top_view=f'view:{self.view_a.id}',
             all_group_0_entity_ids=[str(self.entity_a.id), str(self.entity_b.id)],
         )
         decisions = DispatcherFormParser.parse(
@@ -92,9 +92,9 @@ class DispatcherFormParserTests(TestCase):
 
     def test_group_overrides_top(self):
         request = self._post(**{
-            'top_view': str(self.view_a.id),
+            'top_view': f'view:{self.view_a.id}',
             'all_group_0_entity_ids': [str(self.entity_a.id)],
-            'group_view_0': str(self.view_b.id),
+            'group_view_0': f'view:{self.view_b.id}',
         })
         decisions = DispatcherFormParser.parse(
             request=request, integration_data=self.integration_data,
@@ -103,10 +103,10 @@ class DispatcherFormParserTests(TestCase):
 
     def test_entity_overrides_group(self):
         request = self._post(**{
-            'top_view': str(self.view_a.id),
+            'top_view': f'view:{self.view_a.id}',
             'all_group_0_entity_ids': [str(self.entity_a.id), str(self.entity_b.id)],
-            'group_view_0': str(self.view_a.id),
-            f'group_0_entity_{self.entity_b.id}_view': str(self.view_b.id),
+            'group_view_0': f'view:{self.view_a.id}',
+            f'group_0_entity_{self.entity_b.id}_view': f'view:{self.view_b.id}',
         })
         decisions = DispatcherFormParser.parse(
             request=request, integration_data=self.integration_data,
@@ -117,7 +117,7 @@ class DispatcherFormParserTests(TestCase):
 
     def test_explicit_skip_at_group_overrides_top(self):
         request = self._post(**{
-            'top_view': str(self.view_a.id),
+            'top_view': f'view:{self.view_a.id}',
             'all_group_0_entity_ids': [str(self.entity_a.id)],
             'group_view_0': '__skip__',
         })
@@ -128,7 +128,7 @@ class DispatcherFormParserTests(TestCase):
 
     def test_explicit_skip_at_entity_overrides_group(self):
         request = self._post(**{
-            'top_view': str(self.view_a.id),
+            'top_view': f'view:{self.view_a.id}',
             'all_group_0_entity_ids': [str(self.entity_a.id), str(self.entity_b.id)],
             f'group_0_entity_{self.entity_a.id}_view': '__skip__',
         })
@@ -151,7 +151,7 @@ class DispatcherFormParserTests(TestCase):
 
     def test_ungrouped_inherits_from_top(self):
         request = self._post(
-            top_view=str(self.view_a.id),
+            top_view=f'view:{self.view_a.id}',
             ungrouped_entity_ids=[str(self.ungrouped_entity.id)],
         )
         decisions = DispatcherFormParser.parse(
@@ -162,19 +162,88 @@ class DispatcherFormParserTests(TestCase):
 
     def test_ungrouped_entity_override_wins(self):
         request = self._post(**{
-            'top_view': str(self.view_a.id),
+            'top_view': f'view:{self.view_a.id}',
             'ungrouped_entity_ids': [str(self.ungrouped_entity.id)],
-            f'ungrouped_entity_{self.ungrouped_entity.id}_view': str(self.view_b.id),
+            f'ungrouped_entity_{self.ungrouped_entity.id}_view': f'view:{self.view_b.id}',
         })
         decisions = DispatcherFormParser.parse(
             request=request, integration_data=self.integration_data,
         )
         self.assertEqual(decisions[0].location_view, self.view_b)
 
+    def test_collection_target_via_top(self):
+        """Top dropdown's existing-collection option routes inherited
+        entities to that Collection, not a LocationView."""
+        from hi.apps.collection.enums import CollectionType, CollectionViewType
+        from hi.apps.collection.models import Collection
+        collection = Collection(
+            name='Tools', order_id=0,
+        )
+        collection.collection_type = CollectionType.default()
+        collection.collection_view_type = CollectionViewType.default()
+        collection.save()
+
+        request = self._post(
+            top_view=f'collection:{collection.id}',
+            all_group_0_entity_ids=[str(self.entity_a.id)],
+        )
+        decisions = DispatcherFormParser.parse(
+            request=request, integration_data=self.integration_data,
+        )
+        self.assertIsNone(decisions[0].location_view)
+        self.assertEqual(decisions[0].collection, collection)
+
+    def test_mixed_view_and_collection_targets(self):
+        """One group routes to a LocationView; another routes to a
+        Collection — both targets coexist in the same submission."""
+        from hi.apps.collection.enums import CollectionType, CollectionViewType
+        from hi.apps.collection.models import Collection
+        collection = Collection(name='Tools', order_id=0)
+        collection.collection_type = CollectionType.default()
+        collection.collection_view_type = CollectionViewType.default()
+        collection.save()
+
+        request = self._post(**{
+            'top_view': '',
+            'all_group_0_entity_ids': [str(self.entity_a.id)],
+            'group_view_0': f'view:{self.view_a.id}',
+            'all_group_1_entity_ids': [str(self.entity_b.id)],
+            'group_view_1': f'collection:{collection.id}',
+        })
+        decisions = DispatcherFormParser.parse(
+            request=request, integration_data=self.integration_data,
+        )
+        by_entity = {d.entity.id: d for d in decisions}
+        self.assertEqual(by_entity[self.entity_a.id].location_view, self.view_a)
+        self.assertIsNone(by_entity[self.entity_a.id].collection)
+        self.assertEqual(by_entity[self.entity_b.id].collection, collection)
+        self.assertIsNone(by_entity[self.entity_b.id].location_view)
+
+    def test_new_collection_creates_collection_and_inherits_to_entities(self):
+        """top='__new_collection__' creates a fresh Collection named
+        after the integration label; entities inherit that target."""
+        from hi.apps.collection.models import Collection
+        before_ids = set(Collection.objects.values_list('id', flat=True))
+        request = self._post(
+            top_view='__new_collection__',
+            all_group_0_entity_ids=[str(self.entity_a.id)],
+        )
+        decisions = DispatcherFormParser.parse(
+            request=request, integration_data=self.integration_data,
+        )
+        new_ids = (
+            set(Collection.objects.values_list('id', flat=True)) - before_ids
+        )
+        self.assertEqual(len(new_ids), 1)
+        new_collection = Collection.objects.get(id=new_ids.pop())
+        self.assertEqual(new_collection.name, 'Parser Test')
+        self.assertEqual(decisions[0].collection, new_collection)
+        self.assertIsNone(decisions[0].location_view)
+
     def test_new_view_creates_view_and_inherits_to_entities(self):
         from unittest.mock import patch
         request = self._post(
-            top_view='__new__',
+            top_view='__new_view__',
             all_group_0_entity_ids=[str(self.entity_a.id)],
         )
         # _create_new_view ultimately calls

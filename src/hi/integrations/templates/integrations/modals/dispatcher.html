@@ -22,9 +22,9 @@ Context:
   integration_data      : IntegrationData (required)
   placement_input       : EntityPlacementInput (required)
   location_view_groups  : List[(Location, List[LocationView])] (required)
+  collection_list       : List[Collection] (required)
   apply_url             : str (required) — APPLY form target
   dismiss_url           : str (required) — NOT NOW form target
-  dismiss_url           : str (required)
   is_initial_import     : bool (required)
 {% endcomment %}
 
@@ -52,16 +52,18 @@ Add to views
       </div>
       <select name="top_view" class="form-control form-control-sm w-auto">
         <option value="">Don't add</option>
-        <option value="__new__">+ New view: "{{ integration_data.label }}"</option>
-        {% include "integrations/panes/_dispatcher_view_options.html" %}
+        <option value="__new_view__">+ New view: "{{ integration_data.label }}"</option>
+        <option value="__new_collection__">+ New collection: "{{ integration_data.label }}"</option>
+        {% include "integrations/panes/dispatcher_target_options.html" %}
       </select>
     </div>
   </div>
 
   {% if placement_input.groups or placement_input.ungrouped_items %}
   <div class="text-muted small mb-2">
-    New items are added to their chosen view at a default
-    position; you can move them into place afterwards.
+    New items are added to their chosen target. Items placed in
+    a view start at a default position; you can move them into
+    place afterwards.
   </div>
   {% endif %}
 
@@ -77,7 +79,7 @@ Add to views
         <select name="group_view_{{ group_index }}" class="form-control form-control-sm w-auto">
           <option value="">Use top choice</option>
           <option value="__skip__">Don't add</option>
-          {% include "integrations/panes/_dispatcher_view_options.html" %}
+          {% include "integrations/panes/dispatcher_target_options.html" %}
         </select>
         <a class="btn btn-sm btn-link" data-toggle="collapse"
            href="#hi-drill-{{ group_index }}" role="button"
@@ -96,7 +98,7 @@ Add to views
                   class="form-control form-control-sm w-auto">
             <option value="">Use group choice</option>
             <option value="__skip__">Don't add</option>
-            {% include "integrations/panes/_dispatcher_view_options.html" %}
+            {% include "integrations/panes/dispatcher_target_options.html" %}
           </select>
         </div>
         {% endfor %}
@@ -129,7 +131,7 @@ Add to views
                 class="form-control form-control-sm w-auto">
           <option value="">Use top choice</option>
           <option value="__skip__">Don't add</option>
-          {% include "integrations/panes/_dispatcher_view_options.html" %}
+          {% include "integrations/panes/dispatcher_target_options.html" %}
         </select>
       </div>
       {% endfor %}

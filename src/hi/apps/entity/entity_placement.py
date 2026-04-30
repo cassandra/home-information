@@ -118,58 +118,92 @@ class EntityPlacementInput:
 
 @dataclass(frozen=True)
 class PlacementDecision:
-    """One entity → location_view assignment chosen by the operator.
+    """One entity → placement-target assignment chosen by the operator.
 
-    ``location_view`` is None when the operator chose to skip
-    placement for this entity. Skipped decisions are filtered out
+    Targets are mutually exclusive: at most one of ``location_view``
+    and ``collection`` is set. Both None means the operator skipped
+    placement for this entity; skipped decisions are filtered out
     before placement and counted toward the placement outcome's
     ``skipped_entity_count``.
     """
     entity: Entity
-    location_view: Optional[LocationView]
+    location_view: Optional[LocationView] = None
+    collection: 'Optional[object]' = None  # Collection; forward-decl
+
+    @property
+    def is_skip(self) -> bool:
+        return self.location_view is None and self.collection is None
+
+    @property
+    def is_view(self) -> bool:
+        return self.location_view is not None
+
+    @property
+    def is_collection(self) -> bool:
+        return self.collection is not None
 
 
 @dataclass(frozen=True)
-class ViewPlacementSummary:
-    """One affected LocationView + how many principal entities the
-    bulk placer placed into it."""
-    location_view: LocationView
+class PlacementSummary:
+    """One affected target + how many entities the bulk placer
+    placed into it. Targets are mutually exclusive: exactly one of
+    ``location_view`` or ``collection`` is set."""
     placed_entity_count: int
+    location_view: Optional[LocationView] = None
+    collection: 'Optional[object]' = None  # Collection; forward-decl
+
+    @property
+    def is_view(self) -> bool:
+        return self.location_view is not None
+
+    @property
+    def is_collection(self) -> bool:
+        return self.collection is not None
+
+    @property
+    def target_name(self) -> str:
+        if self.location_view is not None:
+            return self.location_view.name
+        return self.collection.name
 
 
 @dataclass
 class PlacementOutcome:
     """Result of one bulk placement. Drives the post-dispatch modal:
-    per-view summary lines, primary 'Refine' button selection, the
-    skipped count when present.
+    per-target summary lines, primary 'Refine'/'Review' button
+    selection, the skipped count when present.
 
     Lives in the placement layer rather than an integration layer
     because the shape is supplier-agnostic — any future bulk-
     placement flow that accepts placement decisions and applies
     them produces this outcome.
     """
-    summaries: List[ViewPlacementSummary] = field(default_factory=list)
+    summaries: List[PlacementSummary] = field(default_factory=list)
     skipped_entity_count: int = 0
-
-    @property
-    def affected_views(self) -> List[LocationView]:
-        return [s.location_view for s in self.summaries]
 
     @property
     def total_placed(self) -> int:
         return sum(s.placed_entity_count for s in self.summaries)
 
     @property
-    def primary_summary(self) -> Optional[ViewPlacementSummary]:
-        """Highest-count summary; ties broken by first-seen (stable
-        max). None when no entity was placed."""
-        if not self.summaries:
-            return None
-        # `max` with key returns the first occurrence on ties.
-        return max(self.summaries, key=lambda s: s.placed_entity_count)
+    def primary_summary(self) -> Optional[PlacementSummary]:
+        """Highest-count summary, with view-targeted summaries
+        preferred over collection-targeted ones. The post-dispatch
+        modal's primary action is REFINE for views (drag entities
+        into spatial position) — meaningless for collections — so
+        when any view target was used, that's the primary slot.
+        Only when every placement landed in a Collection does the
+        primary become a Collection (with a REVIEW link instead of
+        REFINE)."""
+        view_summaries = [s for s in self.summaries if s.is_view]
+        if view_summaries:
+            return max(view_summaries, key=lambda s: s.placed_entity_count)
+        if self.summaries:
+            return max(self.summaries, key=lambda s: s.placed_entity_count)
+        return None
 
     @property
-    def secondary_summaries(self) -> List[ViewPlacementSummary]:
+    def secondary_summaries(self) -> List[PlacementSummary]:
         """All summaries except the primary, in input order."""
         primary = self.primary_summary
         if primary is None:
@@ -195,10 +229,14 @@ class EntityPlacementService:
     def query_unplaced_entities( cls,
                                  integration_id : Optional[str] = None,
                                  ) -> 'List[Entity]':
-        """Entities that have no EntityView row, optionally filtered
-        to a single integration. Used by the dispatcher GET
-        endpoint to seed the modal with what's left to place."""
-        queryset = Entity.objects.filter( entity_views__isnull = True )
+        """Entities that have neither an EntityView nor a
+        CollectionEntity row — fully unplaced in the app. Optionally
+        filtered to a single integration. Used by the dispatcher
+        GET endpoint to seed the modal with what's left to place."""
+        queryset = Entity.objects.filter(
+            entity_views__isnull = True,
+            collections__isnull = True,
+        )
         if integration_id is not None:
             queryset = queryset.filter( integration_id = integration_id )
         return list( queryset.distinct() )
@@ -208,31 +246,53 @@ class EntityPlacementService:
             cls,
             decisions : 'List[PlacementDecision]',
     ) -> PlacementOutcome:
-        """Partition decisions by location_view (preserving first-seen
-        order so the post-dispatch summary lists views in the order
-        the operator's choices produced them), call EntityPlacer
-        once per view, and aggregate per-view counts into a
-        PlacementOutcome."""
+        """Partition decisions by target (preserving first-seen
+        order so the post-dispatch summary lists targets in the
+        order the operator's choices produced them), invoke the
+        right placement op per target type, and aggregate per-
+        target counts into a PlacementOutcome.
+
+        View targets go through ``EntityPlacer.place_entities_in_view``;
+        Collection targets go through
+        ``CollectionManager.add_entity_to_collection``."""
         from collections import OrderedDict
+        from hi.apps.collection.collection_manager import CollectionManager
 
         outcome = PlacementOutcome()
-        by_view = OrderedDict()
+        # Key by (kind, id) so views and collections occupy distinct
+        # buckets even if their numeric ids overlap.
+        by_target = OrderedDict()
         for decision in decisions:
-            if decision.location_view is None:
+            if decision.is_skip:
                 outcome.skipped_entity_count += 1
                 continue
-            by_view.setdefault( decision.location_view.id, [] ).append( decision )
+            if decision.is_view:
+                key = ('view', decision.location_view.id)
+            else:
+                key = ('collection', decision.collection.id)
+            by_target.setdefault( key, [] ).append( decision )
             continue
-        for view_id, decision_list in by_view.items():
-            location_view = decision_list[0].location_view
+        for (kind, _target_id), decision_list in by_target.items():
             entities = [ d.entity for d in decision_list ]
-            EntityPlacer().place_entities_in_view(
-                entities = entities, location_view = location_view,
-            )
-            outcome.summaries.append( ViewPlacementSummary(
-                location_view = location_view,
-                placed_entity_count = len( entities ),
-            ) )
+            if kind == 'view':
+                location_view = decision_list[0].location_view
+                EntityPlacer().place_entities_in_view(
+                    entities = entities, location_view = location_view,
+                )
+                outcome.summaries.append( PlacementSummary(
+                    placed_entity_count = len( entities ),
+                    location_view = location_view,
+                ) )
+            else:  # collection
+                collection = decision_list[0].collection
+                for entity in entities:
+                    CollectionManager().add_entity_to_collection(
+                        entity = entity, collection = collection,
+                    )
+                outcome.summaries.append( PlacementSummary(
+                    placed_entity_count = len( entities ),
+                    collection = collection,
+                ) )
             continue
         return outcome
 

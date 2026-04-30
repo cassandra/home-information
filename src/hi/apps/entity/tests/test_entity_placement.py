@@ -232,8 +232,8 @@ class PlacementOutcomeTests(BaseTestCase):
         return view
 
     def _summary(self, name, count):
-        from hi.apps.entity.entity_placement import ViewPlacementSummary
-        return ViewPlacementSummary(
+        from hi.apps.entity.entity_placement import PlacementSummary
+        return PlacementSummary(
             location_view=self._named_view(name), placed_entity_count=count,
         )
 
@@ -243,7 +243,7 @@ class PlacementOutcomeTests(BaseTestCase):
         self.assertIsNone(outcome.primary_summary)
         self.assertEqual(outcome.secondary_summaries, [])
         self.assertEqual(outcome.total_placed, 0)
-        self.assertEqual(outcome.affected_views, [])
+        self.assertEqual(outcome.summaries, [])
 
     def test_primary_picks_highest_count(self):
         from hi.apps.entity.entity_placement import PlacementOutcome
@@ -364,7 +364,6 @@ class EntityPlacementServiceTests(BaseTestCase):
                     integration_id='svc_a',
                     integration_name='skipped',
                 ),
-                location_view=None,
             ),
         ]
         outcome = EntityPlacementService.apply_decisions(decisions=decisions)
@@ -376,3 +375,77 @@ class EntityPlacementServiceTests(BaseTestCase):
         self.assertEqual(outcome.summaries[0].placed_entity_count, 2)
         self.assertEqual(outcome.summaries[1].location_view, self.view_b)
         self.assertEqual(outcome.summaries[1].placed_entity_count, 1)
+
+    def test_apply_decisions_handles_collection_targets(self):
+        """Collection-targeted decisions go through CollectionManager
+        and produce a collection-flavored PlacementSummary. The
+        outcome's primary_summary still prefers the view-targeted
+        summary when one exists."""
+        from hi.apps.collection.enums import CollectionType, CollectionViewType
+        from hi.apps.collection.models import Collection, CollectionEntity
+        from hi.apps.entity.entity_placement import (
+            EntityPlacementService, PlacementDecision,
+        )
+        collection = Collection(name='Tools', order_id=0)
+        collection.collection_type = CollectionType.default()
+        collection.collection_view_type = CollectionViewType.default()
+        collection.save()
+
+        decisions = [
+            # 2 view-targeted, 1 collection-targeted.
+            PlacementDecision(entity=self.unplaced_a1, location_view=self.view_a),
+            PlacementDecision(entity=self.unplaced_a2, location_view=self.view_a),
+            PlacementDecision(entity=self.unplaced_b, collection=collection),
+        ]
+        outcome = EntityPlacementService.apply_decisions(decisions=decisions)
+        self.assertEqual(outcome.skipped_entity_count, 0)
+        self.assertEqual(outcome.total_placed, 3)
+        self.assertEqual(len(outcome.summaries), 2)
+
+        # View summary first, collection summary second (input order).
+        view_summary, collection_summary = outcome.summaries
+        self.assertTrue(view_summary.is_view)
+        self.assertEqual(view_summary.placed_entity_count, 2)
+        self.assertTrue(collection_summary.is_collection)
+        self.assertEqual(collection_summary.collection, collection)
+        self.assertEqual(collection_summary.placed_entity_count, 1)
+
+        # Primary prefers view-targeted summaries.
+        self.assertIs(outcome.primary_summary, view_summary)
+
+        # The collection placement actually persisted as a CollectionEntity.
+        self.assertEqual(
+            CollectionEntity.objects.filter(
+                collection=collection, entity=self.unplaced_b,
+            ).count(),
+            1,
+        )
+
+    def test_apply_decisions_all_collections_promotes_collection_to_primary(self):
+        """When every placement targets a Collection, the highest-
+        count collection is the primary summary (the post-dispatch
+        modal renders REVIEW for it instead of REFINE)."""
+        from hi.apps.collection.enums import CollectionType, CollectionViewType
+        from hi.apps.collection.models import Collection
+        from hi.apps.entity.entity_placement import (
+            EntityPlacementService, PlacementDecision,
+        )
+        tools = Collection(name='Tools', order_id=0)
+        tools.collection_type = CollectionType.default()
+        tools.collection_view_type = CollectionViewType.default()
+        tools.save()
+        recipes = Collection(name='Recipes', order_id=1)
+        recipes.collection_type = CollectionType.default()
+        recipes.collection_view_type = CollectionViewType.default()
+        recipes.save()
+
+        decisions = [
+            PlacementDecision(entity=self.unplaced_a1, collection=tools),
+            PlacementDecision(entity=self.unplaced_a2, collection=tools),
+            PlacementDecision(entity=self.unplaced_b, collection=recipes),
+        ]
+        outcome = EntityPlacementService.apply_decisions(decisions=decisions)
+        self.assertEqual(len(outcome.summaries), 2)
+        self.assertTrue(outcome.primary_summary.is_collection)
+        # Highest-count is Tools (2 entities).
+        self.assertEqual(outcome.primary_summary.collection, tools)

@@ -1,0 +1,28 @@
+{% comment %}
+Reusable dropdown options for dispatcher target-selects (LocationViews
++ Collections).
+
+Renders LocationViews first as one <optgroup> per Location (ordered
+by Location.order_id, views within by LocationView.order_id), then
+a single 'Collections' <optgroup>. Option values are *tagged* —
+``view:<id>`` or ``collection:<id>`` — so views and collections can
+share the same select element without colliding on numeric ids.
+
+Context:
+  location_view_groups : List[(Location, List[LocationView])]
+  collection_list      : List[Collection]
+{% endcomment %}
+{% for location, views in location_view_groups %}
+<optgroup label="{{ location.name }} (Views)">
+  {% for view in views %}
+  <option value="view:{{ view.id }}">🗺 {{ view.name }}</option>
+  {% endfor %}
+</optgroup>
+{% endfor %}
+{% if collection_list %}
+<optgroup label="Collections">
+  {% for collection in collection_list %}
+  <option value="collection:{{ collection.id }}">📋 {{ collection.name }}</option>
+  {% endfor %}
+</optgroup>
+{% endif %}

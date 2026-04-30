@@ -4,22 +4,34 @@ Dispatcher modal form parser.
 The dispatcher modal carries a three-level inheritance: top default
 → group default → per-entity. Empty selections at any level inherit
 from the parent; explicit ``__skip__`` overrides inheritance with
-"don't place this entity"; a top-level ``__new__`` value creates one
-fresh ``LocationView`` named after the integration and uses it as
-the resolved top default. Group/entity overrides to existing views
-remain in effect even when the top is ``__new__``.
+"don't place this entity"; a top-level ``__new_view__`` value
+creates one fresh ``LocationView`` named after the integration; a
+top-level ``__new_collection__`` value creates one fresh
+``Collection`` named after the integration. Group/entity overrides
+to existing views or collections remain in effect even when the top
+is one of the new-* sentinels.
+
+Form values for the dropdowns are *tagged* so views and collections
+can share the same select element without colliding on numeric ids:
+
+  ``view:<id>``        — existing LocationView
+  ``collection:<id>``  — existing Collection
+  ``__new_view__``     — create one fresh LocationView (top only)
+  ``__new_collection__`` — create one fresh Collection (top only)
+  ``__skip__``         — explicit no-op overriding parent
+  ``''``               — inherit from parent (top → skip-all)
 
 This module owns that translation logic. The view layer hands a
 request + integration_data to ``DispatcherFormParser.parse(...)``
-and gets back a list of ``PlacementDecision`` values; the parser
-doesn't know HTTP, and the view doesn't know form-key conventions
-or sentinel strings.
+and gets back a list of ``PlacementDecision`` values.
 """
 import logging
-from typing import List, Optional
+from typing import List, Optional, Tuple
 
 from django.core.exceptions import BadRequest
 
+from hi.apps.collection.collection_manager import CollectionManager
+from hi.apps.collection.models import Collection
 from hi.apps.entity.entity_placement import PlacementDecision
 from hi.apps.entity.models import Entity
 from hi.apps.location.location_manager import LocationManager
@@ -31,43 +43,24 @@ logger = logging.getLogger(__name__)
 class DispatcherFormParser:
     """Translates dispatcher modal form input into a list of
     ``PlacementDecision`` values, applying three-level inheritance
-    and the skip / new-view sentinels.
+    and the skip / new-view / new-collection sentinels."""
 
-    Form-input contract (matches dispatcher.html):
-
-    * ``top_view`` — top-level default for every imported entity.
-      Values: '' (skip all), '__new__' (create a fresh view),
-      or '<view_id>' (existing view).
-    * For each group i:
-        - ``all_group_{i}_entity_ids`` lists every entity id.
-        - ``group_view_{i}`` is the group choice. Values: ''
-          (use top), '__skip__' (explicit skip), '<view_id>'.
-        - ``group_{i}_entity_{E}_view`` is the per-entity
-          override. Values: '' (use group), '__skip__', '<view_id>'.
-    * For ungrouped:
-        - ``ungrouped_entity_ids`` lists every entity.
-        - ``ungrouped_entity_{E}_view`` is the per-entity choice
-          against the top default. Values: '' (use top),
-          '__skip__', '<view_id>'.
-    """
-
-    # An empty string in any of the three slots means "inherit from
-    # parent level"; FORM_VALUE_SKIP is an explicit no-op overriding
-    # inheritance; FORM_VALUE_NEW_VIEW is offered only at the top
-    # level and triggers fresh-LocationView creation.
     FORM_VALUE_SKIP = '__skip__'
-    FORM_VALUE_NEW_VIEW = '__new__'
+    FORM_VALUE_NEW_VIEW = '__new_view__'
+    FORM_VALUE_NEW_COLLECTION = '__new_collection__'
 
     @classmethod
     def parse( cls, request, integration_data ) -> List[PlacementDecision]:
         decisions = []
         view_lookup = cls._build_view_lookup()
+        collection_lookup = cls._build_collection_lookup()
 
         top_value = request.POST.get('top_view', '').strip()
-        top_view = cls._resolve_top_view(
+        top_target = cls._resolve_top_target(
             request = request,
             top_value = top_value,
             view_lookup = view_lookup,
+            collection_lookup = collection_lookup,
             integration_data = integration_data,
         )
 
@@ -80,10 +73,11 @@ class DispatcherFormParser:
         for group_index in group_indices:
             group_value = request.POST.get(
                 f'group_view_{group_index}', '' ).strip()
-            group_choice = cls._resolve_child_choice(
+            group_target = cls._resolve_child_choice(
                 form_value = group_value,
-                parent_view = top_view,
+                parent_target = top_target,
                 view_lookup = view_lookup,
+                collection_lookup = collection_lookup,
             )
             entity_id_list = request.POST.getlist(
                 f'all_group_{group_index}_entity_ids' )
@@ -97,13 +91,14 @@ class DispatcherFormParser:
                     continue
                 entity_value = request.POST.get(
                     f'group_{group_index}_entity_{entity.id}_view', '' ).strip()
-                entity_choice = cls._resolve_child_choice(
+                entity_target = cls._resolve_child_choice(
                     form_value = entity_value,
-                    parent_view = group_choice,
+                    parent_target = group_target,
                     view_lookup = view_lookup,
+                    collection_lookup = collection_lookup,
                 )
-                decisions.append( PlacementDecision(
-                    entity = entity, location_view = entity_choice,
+                decisions.append( cls._make_decision(
+                    entity = entity, target = entity_target,
                 ) )
 
         # Ungrouped items: no group level — entity inherits from top.
@@ -119,59 +114,111 @@ class DispatcherFormParser:
                     continue
                 entity_value = request.POST.get(
                     f'ungrouped_entity_{entity.id}_view', '' ).strip()
-                entity_choice = cls._resolve_child_choice(
+                entity_target = cls._resolve_child_choice(
                     form_value = entity_value,
-                    parent_view = top_view,
+                    parent_target = top_target,
                     view_lookup = view_lookup,
+                    collection_lookup = collection_lookup,
                 )
-                decisions.append( PlacementDecision(
-                    entity = entity, location_view = entity_choice,
+                decisions.append( cls._make_decision(
+                    entity = entity, target = entity_target,
                 ) )
 
         return decisions
 
     @classmethod
-    def _resolve_top_view( cls,
-                           request,
-                           top_value        : str,
-                           view_lookup      : dict,
-                           integration_data ) -> Optional[LocationView]:
-        """Top-level form value → resolved LocationView (or None for skip).
+    def _make_decision( cls, entity, target ) -> PlacementDecision:
+        """target is a 2-tuple (location_view, collection) where at
+        most one is non-None, or (None, None) for skip."""
+        location_view, collection = target
+        return PlacementDecision(
+            entity = entity,
+            location_view = location_view,
+            collection = collection,
+        )
 
-        Three valid top values: ''=skip-all, '__new__'=create fresh
-        view, '<id>'=existing view. Creation of the new view is the
-        side effect of '__new__'; the new view becomes the top
-        default for everything else.
+    @classmethod
+    def _resolve_top_target( cls,
+                             request,
+                             top_value         : str,
+                             view_lookup       : dict,
+                             collection_lookup : dict,
+                             integration_data,
+                             ) -> Tuple[Optional[LocationView], Optional[Collection]]:
+        """Top-level form value → (location_view, collection) target.
+
+        Top values: ''=skip-all, '__new_view__'=create fresh view,
+        '__new_collection__'=create fresh collection,
+        'view:<id>'=existing view, 'collection:<id>'=existing
+        collection. Creating a new view/collection is the side
+        effect of the corresponding sentinel; the new object
+        becomes the top default for everything else.
         """
         if top_value == cls.FORM_VALUE_NEW_VIEW:
             return cls._create_new_view(
-                request = request, integration_data = integration_data )
+                request = request, integration_data = integration_data,
+            ), None
+        if top_value == cls.FORM_VALUE_NEW_COLLECTION:
+            return None, cls._create_new_collection(
+                integration_data = integration_data,
+            )
         if top_value == '':
-            return None
-        return view_lookup.get( top_value )
+            return None, None
+        return cls._lookup_tagged_target(
+            tagged_value = top_value,
+            view_lookup = view_lookup,
+            collection_lookup = collection_lookup,
+        )
 
     @classmethod
-    def _resolve_child_choice( cls,
-                               form_value   : str,
-                               parent_view  : Optional[LocationView],
-                               view_lookup  : dict ) -> Optional[LocationView]:
-        """Group/entity form value → resolved LocationView (or None
-        for skip). Empty inherits from parent; '__skip__' is an
-        explicit no-op that overrides any inherited parent value;
-        otherwise it's an explicit existing-view id."""
+    def _resolve_child_choice(
+            cls,
+            form_value         : str,
+            parent_target      : Tuple[Optional[LocationView], Optional[Collection]],
+            view_lookup        : dict,
+            collection_lookup  : dict,
+    ) -> Tuple[Optional[LocationView], Optional[Collection]]:
+        """Group/entity form value → (location_view, collection)
+        target. Empty inherits from parent; '__skip__' overrides
+        any inherited parent value with skip; otherwise it's a
+        tagged existing-target id ('view:<id>' or 'collection:<id>').
+        Group/entity dropdowns do not offer the new-* sentinels —
+        only the top level can create a new target."""
         if form_value == '':
-            return parent_view
+            return parent_target
         if form_value == cls.FORM_VALUE_SKIP:
-            return None
-        return view_lookup.get( form_value )
+            return None, None
+        return cls._lookup_tagged_target(
+            tagged_value = form_value,
+            view_lookup = view_lookup,
+            collection_lookup = collection_lookup,
+        )
+
+    @classmethod
+    def _lookup_tagged_target(
+            cls,
+            tagged_value       : str,
+            view_lookup        : dict,
+            collection_lookup  : dict,
+    ) -> Tuple[Optional[LocationView], Optional[Collection]]:
+        """Parse 'view:<id>' or 'collection:<id>' into a
+        (location_view, collection) tuple. Unknown tag prefix or
+        missing id resolves to skip."""
+        if ':' not in tagged_value:
+            return None, None
+        kind, _, raw_id = tagged_value.partition(':')
+        if kind == 'view':
+            return view_lookup.get( raw_id ), None
+        if kind == 'collection':
+            return None, collection_lookup.get( raw_id )
+        return None, None
 
     @classmethod
     def _create_new_view( cls, request, integration_data ) -> LocationView:
         """Create a single LocationView named after the integration
-        label, attached to the operator's current default Location
-        (per session view_parameters). LocationManager's
-        get_default_location handles the session-first lookup with
-        a DB-order fallback when nothing is set."""
+        label, attached to the operator's current default Location.
+        ``LocationManager.create_location_view`` handles name
+        collisions via its built-in disambiguation."""
         try:
             location = LocationManager().get_default_location( request = request )
         except Location.DoesNotExist:
@@ -184,5 +231,18 @@ class DispatcherFormParser:
         )
 
     @classmethod
+    def _create_new_collection( cls, integration_data ) -> Collection:
+        """Create a single Collection named after the integration
+        label. ``CollectionManager.create_collection`` handles name
+        collisions via its built-in disambiguation."""
+        return CollectionManager().create_collection(
+            name = integration_data.label,
+        )
+
+    @classmethod
     def _build_view_lookup( cls ) -> dict:
         return { str(v.id): v for v in LocationView.objects.all() }
+
+    @classmethod
+    def _build_collection_lookup( cls ) -> dict:
+        return { str(c.id): c for c in Collection.objects.all() }

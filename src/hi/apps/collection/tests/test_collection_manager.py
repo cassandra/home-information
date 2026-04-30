@@ -656,3 +656,30 @@ class TestCollectionManager(BaseTestCase):
 
         return
 
+
+class TestCollectionManagerCreateCollection(BaseTestCase):
+    """create_collection auto-disambiguates duplicate names. Used by
+    the dispatcher's '+ New collection: "<integration label>"'
+    option (when the operator already has a Collection with that
+    name)."""
+
+    def test_unique_name_passes_through_unchanged(self):
+        collection = CollectionManager().create_collection(name='Tools')
+        self.assertEqual(collection.name, 'Tools')
+        self.assertIsNotNone(collection.collection_type)
+        self.assertIsNotNone(collection.collection_view_type)
+
+    def test_first_collision_gets_suffix_2(self):
+        manager = CollectionManager()
+        first = manager.create_collection(name='HomeBox')
+        second = manager.create_collection(name='HomeBox')
+        self.assertEqual(first.name, 'HomeBox')
+        self.assertEqual(second.name, 'HomeBox (2)')
+
+    def test_subsequent_collisions_increment_suffix(self):
+        manager = CollectionManager()
+        manager.create_collection(name='Inventory')
+        manager.create_collection(name='Inventory')
+        third = manager.create_collection(name='Inventory')
+        self.assertEqual(third.name, 'Inventory (3)')
+
