@@ -685,7 +685,10 @@ class DispatcherFlowTests(SyncViewTestCase):
         self.assertSuccessResponse(response)
         body = response.content.decode()
         # Result-modal markers (NOT dispatcher markers).
-        self.assertIn('Sync complete', body)
+        # Hero copy is is_initial_import-aware. Test setup leaves
+        # Entity rows in the DB so the sync view sees this as a
+        # Refresh, not an Initial Import.
+        self.assertIn('Refresh complete', body)
         self.assertIn('CLOSE', body)
         # CTA carries the actual count and links to dispatcher GET.
         self.assertIn('Place 4 new items', body)
