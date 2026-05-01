@@ -1,0 +1,42 @@
+{% extends "modals/action_with_cancel.html" %}
+{% load icons %}
+
+{% comment %}
+  Clone the source profile into a new profile with operator-chosen
+  name. The form is pre-filled with '<source> (copy)' (or the next
+  free numeric variant), but the operator can edit before submit.
+
+  Context:
+    source_profile   : SimProfile (required) — the profile being cloned
+    sim_profile_form : SimProfileForm (required) — name input
+{% endcomment %}
+
+{% block preamble %}
+<form action="{% url 'simulator_profile_clone' profile_id=source_profile.id %}" method="post"
+      class="form" data-async="modal">
+  {% csrf_token %}
+{% endblock %}
+
+{% block title_text %}
+Clone Simulator Profile
+{% endblock %}
+
+{% block body %}
+<p>
+  Cloning <strong>{{ source_profile.name }}</strong>. The new
+  profile will contain a copy of every simulated entity from
+  the source. Choose a name for the new profile:
+</p>
+{% include "simulator/panes/sim_profile_form.html" %}
+{% endblock %}
+
+{% block action_right %}
+<button id="hi-simulator-profile-clone-submit" type="submit" class="btn btn-primary"
+        name="action" value="clone">
+  {% icon "plus" size="sm" css_class="hi-icon-left" %}CLONE
+</button>
+{% endblock %}
+
+{% block postamble %}
+</form>
+{% endblock %}

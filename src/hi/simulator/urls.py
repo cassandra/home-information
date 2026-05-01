@@ -29,6 +29,10 @@ urlpatterns = [
     re_path( r'^profile/delete/(?P<profile_id>\d+)$',
              views.ProfileDeleteView.as_view(),
              name = 'simulator_profile_delete' ),
+
+    re_path( r'^profile/clone/(?P<profile_id>\d+)$',
+             views.ProfileCloneView.as_view(),
+             name = 'simulator_profile_clone' ),
     
     re_path( r'^profile/switch/(?P<profile_id>\d+)$',
              views.ProfileSwitchView.as_view(),

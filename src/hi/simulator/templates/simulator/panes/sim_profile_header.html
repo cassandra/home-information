@@ -16,6 +16,13 @@
     </a>
   </div>
   <div class="">
+    <a role="button" class="btn btn-secondary"
+       href="{% url 'simulator_profile_clone' profile_id=current_sim_profile.id %}"
+       data-async="modal">
+      CLONE: {{ current_sim_profile.name }}
+    </a>
+  </div>
+  <div class="">
     <a role="button" class="btn btn-danger"
        href="{% url 'simulator_profile_delete' profile_id=current_sim_profile.id %}"
        data-async="modal">
