@@ -329,6 +329,7 @@ class IntegrationDispatcherView( HiModalView, IntegrationViewMixin,
             context = {
                 'sync_result': sync_result,
                 'integration_data': integration_data,
+                'is_initial_import': is_initial_import,
             },
             template_name = 'integrations/modals/sync_result.html',
         )

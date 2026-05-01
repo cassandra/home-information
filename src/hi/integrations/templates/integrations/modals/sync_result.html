@@ -60,7 +60,9 @@
 {% if sync_result.error_list and not sync_result.has_changes %}
   <div class="text-center mb-4">
     <div class="text-danger mb-1" style="font-size: 2.5rem; line-height: 1;">&#x26A0;</div>
-    <h3 class="text-danger mb-1">Sync failed</h3>
+    <h3 class="text-danger mb-1">
+      {% if is_initial_import %}Import failed{% else %}Refresh failed{% endif %}
+    </h3>
     <div class="text-muted small">
       {{ sync_result.error_list|length }} error{{ sync_result.error_list|length|pluralize }} — see details below.
     </div>
@@ -68,7 +70,9 @@
 {% elif sync_result.error_list %}
   <div class="text-center mb-4">
     <div class="text-warning mb-1" style="font-size: 2.5rem; line-height: 1;">&#x26A0;</div>
-    <h3 class="text-warning mb-1">Completed with errors</h3>
+    <h3 class="text-warning mb-1">
+      {% if is_initial_import %}Import completed with errors{% else %}Refresh completed with errors{% endif %}
+    </h3>
     <div class="text-muted small">
       {{ sync_result.error_list|length }} error{{ sync_result.error_list|length|pluralize }} — see details below.
     </div>
@@ -76,13 +80,23 @@
 {% elif not sync_result.has_changes %}
   <div class="text-center mb-4">
     <div class="text-muted mb-1" style="font-size: 2.5rem; line-height: 1;">&#x2014;</div>
-    <h3 class="text-muted mb-1">Nothing new</h3>
-    <div class="text-muted small">No changes since the last sync.</div>
+    <h3 class="text-muted mb-1">
+      {% if is_initial_import %}Nothing to import{% else %}Nothing new{% endif %}
+    </h3>
+    <div class="text-muted small">
+      {% if is_initial_import %}
+      No items found upstream.
+      {% else %}
+      No changes since the last refresh.
+      {% endif %}
+    </div>
   </div>
 {% else %}
   <div class="text-center mb-3">
     <div class="text-success mb-1" style="font-size: 2.5rem; line-height: 1;">&#x2713;</div>
-    <h3 class="text-success mb-1">Sync complete</h3>
+    <h3 class="text-success mb-1">
+      {% if is_initial_import %}Import complete{% else %}Refresh complete{% endif %}
+    </h3>
   </div>
 
   {% comment %}
