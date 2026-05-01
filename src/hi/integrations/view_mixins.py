@@ -1,7 +1,9 @@
+from django.db.models import Count
 from django.http import Http404
 from django.urls import reverse
 
-from hi.apps.collection.models import Collection
+from hi.apps.collection.models import Collection, CollectionEntity
+from hi.apps.entity.models import EntityView
 from hi.apps.location.models import LocationView
 
 from .integration_manager import IntegrationManager
@@ -102,9 +104,32 @@ class IntegrationDispatcherViewMixin:
         """Render the dispatcher modal seeded with an
         ``EntityPlacementInput``. Dropdowns offer both LocationView
         and Collection targets; the top dropdown additionally offers
-        '+ New view' and '+ New collection' sentinels."""
+        '+ New view' and '+ New collection' sentinels.
+
+        Computes two presentation aids in the view rather than the
+        template: a smart default for the top dropdown
+        (``top_default_value``) and an inventory preview line shown
+        beneath it (``inventory_preview``). The template is then a
+        thin renderer of these and the placement_input itself.
+        """
         location_view_groups = self._build_location_view_groups()
         collection_list = self._build_collection_list()
+        top_default_value = self._compute_top_default_value(
+            integration_id = integration_data.integration_id,
+            is_initial_import = is_initial_import,
+        )
+        # Decompose the tagged value into per-kind ids so the
+        # template can do direct integer comparisons in the
+        # existing-view / existing-collection option loops.
+        top_default_view_id = None
+        top_default_collection_id = None
+        if top_default_value.startswith( 'view:' ):
+            top_default_view_id = int( top_default_value[ len('view:') : ] )
+        elif top_default_value.startswith( 'collection:' ):
+            top_default_collection_id = int( top_default_value[ len('collection:') : ] )
+        inventory_preview = self._build_inventory_preview(
+            placement_input = placement_input,
+        )
         apply_url = reverse(
             'integrations_apply_placements',
             kwargs = { 'integration_id': integration_data.integration_id },
@@ -120,6 +145,10 @@ class IntegrationDispatcherViewMixin:
                 'placement_input': placement_input,
                 'location_view_groups': location_view_groups,
                 'collection_list': collection_list,
+                'top_default_value': top_default_value,
+                'top_default_view_id': top_default_view_id,
+                'top_default_collection_id': top_default_collection_id,
+                'inventory_preview': inventory_preview,
                 'apply_url': apply_url,
                 'dismiss_url': dismiss_url,
                 'is_initial_import': is_initial_import,
@@ -223,3 +252,77 @@ class IntegrationDispatcherViewMixin:
             'collection_view',
             kwargs = { 'collection_id': summary.collection.id },
         )
+
+    def _compute_top_default_value( self,
+                                    integration_id    : str,
+                                    is_initial_import : bool ) -> str:
+        """Smart default for the dispatcher's top dropdown.
+
+        On Initial Import the operator has no existing target — pre-
+        select '+ New view' so they can click APPLY without further
+        input.
+
+        On Refresh, prefer whichever existing target (LocationView
+        OR Collection) currently holds the most entities for this
+        integration. Ties broken by id ascending (deterministic).
+        Falls back to '' (Don't add) when no existing target holds
+        any of this integration's entities — operator picks.
+        """
+        if is_initial_import:
+            return '__new_view__'
+
+        view_counts = list(
+            EntityView.objects
+            .filter( entity__integration_id = integration_id )
+            .values( 'location_view_id' )
+            .annotate( count = Count( 'id' ) )
+            .order_by( '-count', 'location_view_id' )
+        )
+        collection_counts = list(
+            CollectionEntity.objects
+            .filter( entity__integration_id = integration_id )
+            .values( 'collection_id' )
+            .annotate( count = Count( 'id' ) )
+            .order_by( '-count', 'collection_id' )
+        )
+
+        top_view = view_counts[0] if view_counts else None
+        top_collection = collection_counts[0] if collection_counts else None
+
+        if top_view and top_collection:
+            view_count = top_view['count']
+            collection_count = top_collection['count']
+            if view_count > collection_count:
+                return f'view:{top_view["location_view_id"]}'
+            if collection_count > view_count:
+                return f'collection:{top_collection["collection_id"]}'
+            # Equal counts — prefer lower target type ordinal. Views
+            # before collections is an arbitrary but deterministic
+            # tiebreak; the operator's own count was already a true
+            # tie so either answer is fine.
+            return f'view:{top_view["location_view_id"]}'
+
+        if top_view:
+            return f'view:{top_view["location_view_id"]}'
+        if top_collection:
+            return f'collection:{top_collection["collection_id"]}'
+        return ''
+
+    def _build_inventory_preview( self, placement_input ) -> list:
+        """Compact label/count summary of what's about to be placed.
+
+        Used as a single-line preview beneath the top dropdown when
+        the operator has the group rows collapsed — preserves the
+        'free preview of what's about to be imported' signal that
+        the always-visible group cards previously provided.
+
+        Returns an empty list for the all-ungrouped case (HomeBox-
+        style). Callers should hide the preview entirely in that
+        case, since restating the count is just noise.
+        """
+        if not placement_input.groups:
+            return []
+        return [
+            { 'label': group.label, 'count': len( group.items ) }
+            for group in placement_input.groups
+        ]

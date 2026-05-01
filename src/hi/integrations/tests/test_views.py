@@ -1021,6 +1021,60 @@ class DispatcherDismissAndShowTests(SyncViewTestCase):
         self.assertNotIn('APPLY', body)
         self.assertIn('No items left to place.', body)
 
+    def test_dispatcher_get_smart_default_picks_most_occupied_existing_view(self):
+        """Refresh path: top dropdown is pre-selected to whichever
+        existing target (view OR collection) holds the most entities
+        for this integration. Entities in view_a outnumber any
+        collection placement → top default = view_a."""
+        from hi.apps.entity.models import EntityView
+        from hi.apps.entity.models import Entity
+        from hi.apps.entity.enums import EntityType
+        # Place several entities (not from this dispatcher's
+        # placement_input — pre-existing 'placed' state is what
+        # the smart default queries against).
+        for index in range(3):
+            placed = Entity.objects.create(
+                name=f'Already Placed {index}',
+                entity_type_str=str(EntityType.CAMERA),
+                integration_id=self.INTEGRATION_ID,
+                integration_name=f'placed_{index}',
+            )
+            EntityView.objects.create(
+                entity=placed, location_view=self.view_a,
+            )
+
+        response = self.client.get(self._dispatcher_url())
+        self.assertSuccessResponse(response)
+        body = response.content.decode()
+        # Top dropdown is pre-selected to view_a.
+        self.assertIn(
+            f'value="view:{self.view_a.id}" selected', body,
+        )
+
+    def test_dispatcher_get_smart_default_falls_back_to_dont_add_when_no_history(self):
+        """Refresh path with no prior placements for this integration
+        → top dropdown defaults to 'Don't add' (operator picks)."""
+        response = self.client.get(self._dispatcher_url())
+        self.assertSuccessResponse(response)
+        body = response.content.decode()
+        # 'Don't add' option carries the selected attribute.
+        self.assertIn('value="" selected', body)
+
+    def test_dispatcher_get_inventory_preview_shows_group_counts(self):
+        """When the placement_input has groups, the modal renders
+        a single-line preview of label/count tuples beneath the
+        top dropdown."""
+        response = self.client.get(self._dispatcher_url())
+        self.assertSuccessResponse(response)
+        body = response.content.decode()
+        # The DispatcherGetFlow fixture builds a single 'Cameras'
+        # group with 2 items; the preview line lower-cases the
+        # label and shows the count.
+        self.assertIn('2 cameras', body)
+        # Group rows are behind the disclosure (collapsed by
+        # default) — the disclosure affordance is rendered.
+        self.assertIn('Place differently by group or item', body)
+
 
 class RefineViewTests(SyncViewTestCase):
     """The refine-edit-mode entry point flips view_mode and points the

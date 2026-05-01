@@ -4,9 +4,17 @@
 {% comment %}
 Post-sync entity placement dispatcher.
 
-Three-level inheritance: top default → group default → per-item.
-Empty selections at any level inherit from the level above; explicit
-"Don't add" at any level prevents placement for that branch.
+Progressive disclosure: by default only the top-level decision is
+visible ("Add all new items to [target]") with an inventory preview
+underneath ("5 lights · 3 outlets · ..."). The group rows and per-
+item rows are hidden behind a "Place differently by group or item"
+disclosure. Inside the disclosure, group rows are single-line and
+each carries its own per-item drill-down disclosure.
+
+Three-level inheritance under the hood is unchanged: top default →
+group default → per-item. Empty selections at any level inherit
+from the level above; explicit "Don't add" at any level prevents
+placement for that branch.
 
 The top level alone offers a "+ New view" option, which creates one
 fresh LocationView (named after the integration, attached to the
@@ -23,6 +31,13 @@ Context:
   placement_input       : EntityPlacementInput (required)
   location_view_groups  : List[(Location, List[LocationView])] (required)
   collection_list       : List[Collection] (required)
+  top_default_value     : str (required) — pre-selected value for
+                          the top dropdown ('__new_view__',
+                          'view:<id>', 'collection:<id>', or '')
+  inventory_preview     : List[{'label', 'count'}] (required) —
+                          group label + count tuples for the
+                          summary line; empty for all-ungrouped
+                          inputs (preview hidden in that case)
   apply_url             : str (required) — APPLY form target
   dismiss_url           : str (required) — NOT NOW form target
   is_initial_import     : bool (required)
@@ -45,32 +60,43 @@ Add to views
   <input type="hidden" name="is_initial_import"
          value="{{ is_initial_import|yesno:'1,0' }}">
 
-  <div class="card mb-2 hi-dispatcher-top">
-    <div class="card-body py-2 d-flex align-items-center">
-      <div class="flex-grow-1">
-        <strong>Add all new items to</strong>
-      </div>
-      <select name="top_view" class="form-control form-control-sm w-auto">
-        <option value="">Don't add</option>
-        <option value="__new_view__">+ New view: "{{ integration_data.label }}"</option>
-        <option value="__new_collection__">+ New collection: "{{ integration_data.label }}"</option>
-        {% include "integrations/panes/dispatcher_target_options.html" %}
-      </select>
+  <div class="d-flex align-items-center mb-2 hi-dispatcher-top">
+    <div class="flex-grow-1">
+      <strong>Add all new items to</strong>
     </div>
+    <select name="top_view" class="form-control form-control-sm w-auto">
+      <option value="" {% if top_default_value == "" %}selected{% endif %}>Don't add</option>
+      <option value="__new_view__" {% if top_default_value == "__new_view__" %}selected{% endif %}>+ New view: "{{ integration_data.label }}"</option>
+      <option value="__new_collection__" {% if top_default_value == "__new_collection__" %}selected{% endif %}>+ New collection: "{{ integration_data.label }}"</option>
+      {% include "integrations/panes/dispatcher_target_options.html" with selected_view_id=top_default_view_id selected_collection_id=top_default_collection_id %}
+    </select>
   </div>
 
-  {% if placement_input.groups or placement_input.ungrouped_items %}
-  <div class="text-muted small mb-2">
-    New items are added to their chosen target. Items placed in
-    a view start at a default position; you can move them into
-    place afterwards.
+  {% if inventory_preview %}
+  <div class="text-muted small mb-3 hi-dispatcher-preview">
+    {% for entry in inventory_preview %}{{ entry.count }} {{ entry.label|lower }}{% if not forloop.last %} · {% endif %}{% endfor %}
   </div>
   {% endif %}
 
-  {% for group in placement_input.groups %}
-  {% with forloop.counter0 as group_index %}
-  <div class="card mb-2 hi-dispatcher-group">
-    <div class="card-body py-2">
+  {% if placement_input.groups or placement_input.ungrouped_items %}
+  <div class="mb-2">
+    <a class="text-muted small" data-toggle="collapse"
+       href="#hi-dispatcher-overrides" role="button"
+       aria-expanded="false" aria-controls="hi-dispatcher-overrides">
+      Place differently by group or item ▾
+    </a>
+  </div>
+
+  <div class="collapse" id="hi-dispatcher-overrides">
+    <div class="text-muted small mb-2">
+      Override the top choice per group, or drill into a group
+      for per-item placement. Empty selections inherit from the
+      level above.
+    </div>
+
+    {% for group in placement_input.groups %}
+    {% with forloop.counter0 as group_index %}
+    <div class="hi-dispatcher-group border-bottom py-2">
       <div class="d-flex align-items-center">
         <div class="flex-grow-1">
           <strong>{{ group.label }}</strong>
@@ -84,13 +110,10 @@ Add to views
         <a class="btn btn-sm btn-link" data-toggle="collapse"
            href="#hi-drill-{{ group_index }}" role="button"
            aria-expanded="false" aria-controls="hi-drill-{{ group_index }}">
-          Choose per item
+          Per item ▸
         </a>
       </div>
-      <div class="collapse mt-2" id="hi-drill-{{ group_index }}">
-        <div class="text-muted small mb-1">
-          Choosing per item overrides the group's choice.
-        </div>
+      <div class="collapse mt-2 pl-3" id="hi-drill-{{ group_index }}">
         {% for item in group.items %}
         <div class="d-flex align-items-center py-1">
           <div class="flex-grow-1 small">{{ item.label }}</div>
@@ -103,41 +126,53 @@ Add to views
         </div>
         {% endfor %}
       </div>
-      {# Group membership for the POST regardless of drill-down. #}
-      {% for item in group.items %}
-      <input type="hidden" name="all_group_{{ group_index }}_entity_ids" value="{{ item.entity.id }}">
-      {% endfor %}
     </div>
-  </div>
-  {% endwith %}
-  {% endfor %}
+    {% endwith %}
+    {% endfor %}
 
-  {% if placement_input.ungrouped_items %}
-  <div class="card mb-2 hi-dispatcher-ungrouped">
-    <div class="card-header py-2">
-      <strong>Other items</strong>
-      <span class="badge badge-light ml-1">{{ placement_input.ungrouped_items|length }}</span>
-    </div>
-    <div class="card-body py-2">
-      <div class="text-muted small mb-2">
-        These items don't have a natural group; choose where each
-        one goes or use the top choice.
+    {% if placement_input.ungrouped_items %}
+    <div class="hi-dispatcher-ungrouped py-2">
+      <div class="d-flex align-items-center mb-1">
+        <div class="flex-grow-1">
+          <strong>Other items</strong>
+          <span class="badge badge-light ml-1">{{ placement_input.ungrouped_items|length }}</span>
+        </div>
       </div>
-      {% for item in placement_input.ungrouped_items %}
-      <div class="d-flex align-items-center py-1">
-        <div class="flex-grow-1 small">{{ item.label }}</div>
-        <input type="hidden" name="ungrouped_entity_ids" value="{{ item.entity.id }}">
-        <select name="ungrouped_entity_{{ item.entity.id }}_view"
-                class="form-control form-control-sm w-auto">
-          <option value="">Use top choice</option>
-          <option value="__skip__">Don't add</option>
-          {% include "integrations/panes/dispatcher_target_options.html" %}
-        </select>
+      <div class="pl-3">
+        {% for item in placement_input.ungrouped_items %}
+        <div class="d-flex align-items-center py-1">
+          <div class="flex-grow-1 small">{{ item.label }}</div>
+          <select name="ungrouped_entity_{{ item.entity.id }}_view"
+                  class="form-control form-control-sm w-auto">
+            <option value="">Use top choice</option>
+            <option value="__skip__">Don't add</option>
+            {% include "integrations/panes/dispatcher_target_options.html" %}
+          </select>
+        </div>
+        {% endfor %}
       </div>
-      {% endfor %}
     </div>
+    {% endif %}
   </div>
   {% endif %}
+
+  {% comment %}
+    Hidden POST membership for groups/ungrouped: the dispatcher
+    form parser needs to know which entities belong to which
+    group/ungrouped bucket regardless of whether the operator
+    opened any drill-down. Kept outside the disclosure so they
+    POST whether or not the operator expanded the override section.
+  {% endcomment %}
+  {% for group in placement_input.groups %}
+  {% with forloop.counter0 as group_index %}
+  {% for item in group.items %}
+  <input type="hidden" name="all_group_{{ group_index }}_entity_ids" value="{{ item.entity.id }}">
+  {% endfor %}
+  {% endwith %}
+  {% endfor %}
+  {% for item in placement_input.ungrouped_items %}
+  <input type="hidden" name="ungrouped_entity_ids" value="{{ item.entity.id }}">
+  {% endfor %}
 </form>
 {% endblock %}
 
