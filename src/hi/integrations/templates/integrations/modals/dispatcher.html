@@ -5,15 +5,15 @@
 Post-sync entity placement dispatcher.
 
 Progressive disclosure: by default only the top-level decision is
-visible ("Add all new items to [target]") with an inventory preview
-underneath ("5 lights · 3 outlets · ..."). The group rows and per-
-item rows are hidden behind a "Place differently by group or item"
+visible ("Place all new items in [target]") with an inventory
+preview underneath ("5 lights · 3 outlets · ..."). The group rows
+and per-item rows are hidden behind a "Place differently"
 disclosure. Inside the disclosure, group rows are single-line and
 each carries its own per-item drill-down disclosure.
 
 Three-level inheritance under the hood is unchanged: top default →
 group default → per-item. Empty selections at any level inherit
-from the level above; explicit "Don't add" at any level prevents
+from the level above; explicit "Don't place" at any level prevents
 placement for that branch.
 
 The top level alone offers a "+ New view" option, which creates one
@@ -34,6 +34,14 @@ Context:
   top_default_value     : str (required) — pre-selected value for
                           the top dropdown ('__new_view__',
                           'view:<id>', 'collection:<id>', or '')
+  new_view_name         : str (required) — pre-disambiguated name
+                          shown in the '+ New view: "X"' option
+                          label; matches what the apply path will
+                          actually create.
+  new_collection_name   : str (required) — pre-disambiguated name
+                          shown in the '+ New collection: "X"'
+                          option label; matches what the apply
+                          path will actually create.
   inventory_preview     : List[{'label', 'count'}] (required) —
                           group label + count tuples for the
                           summary line; empty for all-ungrouped
@@ -43,10 +51,8 @@ Context:
   is_initial_import     : bool (required)
 {% endcomment %}
 
-{% block header_class %}bg-secondary{% endblock %}
-
 {% block title_text %}
-Add to views
+Place new items
 {% endblock %}
 
 {% block body %}
@@ -62,12 +68,12 @@ Add to views
 
   <div class="d-flex align-items-center mb-2 hi-dispatcher-top">
     <div class="flex-grow-1">
-      <strong>Add all new items to</strong>
+      <strong>Place all new items in</strong>
     </div>
     <select name="top_view" class="form-control form-control-sm w-auto">
-      <option value="" {% if top_default_value == "" %}selected{% endif %}>Don't add</option>
-      <option value="__new_view__" {% if top_default_value == "__new_view__" %}selected{% endif %}>+ New view: "{{ integration_data.label }}"</option>
-      <option value="__new_collection__" {% if top_default_value == "__new_collection__" %}selected{% endif %}>+ New collection: "{{ integration_data.label }}"</option>
+      <option value="" {% if top_default_value == "" %}selected{% endif %}>Don't place</option>
+      <option value="__new_view__" {% if top_default_value == "__new_view__" %}selected{% endif %}>+ New view: "{{ new_view_name }}"</option>
+      <option value="__new_collection__" {% if top_default_value == "__new_collection__" %}selected{% endif %}>+ New collection: "{{ new_collection_name }}"</option>
       {% include "integrations/panes/dispatcher_target_options.html" with selected_view_id=top_default_view_id selected_collection_id=top_default_collection_id %}
     </select>
   </div>
@@ -80,10 +86,10 @@ Add to views
 
   {% if placement_input.groups or placement_input.ungrouped_items %}
   <div class="mb-2">
-    <a class="text-muted small" data-toggle="collapse"
+    <a class="btn btn-sm btn-outline-primary" data-toggle="collapse"
        href="#hi-dispatcher-overrides" role="button"
        aria-expanded="false" aria-controls="hi-dispatcher-overrides">
-      Place differently by group or item ▾
+      {% icon "chevron-right" size="sm" css_class="hi-icon-left" %}Place differently
     </a>
   </div>
 
@@ -104,7 +110,7 @@ Add to views
         </div>
         <select name="group_view_{{ group_index }}" class="form-control form-control-sm w-auto">
           <option value="">Use top choice</option>
-          <option value="__skip__">Don't add</option>
+          <option value="__skip__">Don't place</option>
           {% include "integrations/panes/dispatcher_target_options.html" %}
         </select>
         <a class="btn btn-sm btn-link" data-toggle="collapse"
@@ -120,7 +126,7 @@ Add to views
           <select name="group_{{ group_index }}_entity_{{ item.entity.id }}_view"
                   class="form-control form-control-sm w-auto">
             <option value="">Use group choice</option>
-            <option value="__skip__">Don't add</option>
+            <option value="__skip__">Don't place</option>
             {% include "integrations/panes/dispatcher_target_options.html" %}
           </select>
         </div>
@@ -145,7 +151,7 @@ Add to views
           <select name="ungrouped_entity_{{ item.entity.id }}_view"
                   class="form-control form-control-sm w-auto">
             <option value="">Use top choice</option>
-            <option value="__skip__">Don't add</option>
+            <option value="__skip__">Don't place</option>
             {% include "integrations/panes/dispatcher_target_options.html" %}
           </select>
         </div>

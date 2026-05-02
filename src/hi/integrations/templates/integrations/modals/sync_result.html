@@ -241,21 +241,38 @@
 {% endblock %}
 
 {% comment %}
-  Footer: dismissal on the left; Place-items CTA on the right
-  when the sync produced new entities. CLOSE reloads the page so
-  the integration manage page reflects any changes the sync made
-  (renames, removes, possibly even unplaced creates the operator
-  is dismissing).
+  Footer:
+    * Two-button layout when the sync produced new entities to
+      place. Left = NOT NOW (matches the dispatcher modal's same-
+      named affordance for "skip placement, come back later").
+      Right = the Place-items CTA, antinode modal-swap to the
+      dispatcher GET endpoint.
+    * Single centered OK button otherwise (errors, nothing-new,
+      refresh-with-no-creates, empty-no-items-left). Centered
+      in the action_3 layout via the action_center slot — using
+      a side slot would look left/right-skewed compared to other
+      single-button modals across the app.
 
-  The CTA uses ``data-async="modal"`` for antinode modal-to-modal
-  swap to the dispatcher GET endpoint, which re-queries unplaced
-  entities and renders the dispatcher seeded with them.
+  Either button reloads the page on dismiss so the integration
+  manage page reflects any changes the sync made (renames,
+  removes, or unplaced creates the operator chose to defer).
 {% endcomment %}
 {% block action_left %}
+{% if sync_result.created_list and dispatcher_url %}
 <a id="hi-modal-cancel" role="button"
    class="btn btn-outline-tertiary"
    href="#"
-   onclick="location.reload(); return false;">CLOSE</a>
+   onclick="location.reload(); return false;">NOT NOW</a>
+{% endif %}
+{% endblock %}
+
+{% block action_center %}
+{% if not sync_result.created_list or not dispatcher_url %}
+<a id="hi-modal-ok" role="button"
+   class="btn btn-primary"
+   href="#"
+   onclick="location.reload(); return false;">OK</a>
+{% endif %}
 {% endblock %}
 
 {% block action_right %}

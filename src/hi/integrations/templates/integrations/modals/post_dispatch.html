@@ -1,4 +1,4 @@
-{% extends "modals/action_2_with_cancel.html" %}
+{% extends "modals/action_3.html" %}
 {% load icons %}
 
 {% comment %}
@@ -25,8 +25,6 @@ Context:
   is_initial_import      : bool (required)
 {% endcomment %}
 
-{% block header_class %}bg-secondary{% endblock %}
-
 {% block title_text %}
 {% if is_initial_import %}
 Import complete
@@ -42,7 +40,7 @@ Refresh complete
   <li>
     <strong>{{ summary.placed_entity_count }}</strong>
     {% if summary.placed_entity_count == 1 %}entity{% else %}entities{% endif %}
-    {% if summary.is_view %}placed in{% else %}added to{% endif %}
+    placed in
     <strong>{{ summary.target_name }}</strong>.
   </li>
   {% endfor %}
@@ -50,7 +48,7 @@ Refresh complete
 {% if outcome.skipped_entity_count > 0 %}
 <p class="text-muted">
   <strong>{{ outcome.skipped_entity_count }}</strong> left unplaced.
-  You can add them to views or collections later from edit mode.
+  You can place them in views or collections later from edit mode.
 </p>
 {% endif %}
 {% if primary_action and primary_action.0.is_view %}
@@ -61,7 +59,7 @@ Refresh complete
 {% endif %}
 {% else %}
 <p>
-  Nothing was placed. You can add these entities to views or
+  Nothing was placed. You can place these entities in views or
   collections later from edit mode.
 </p>
 {% endif %}
@@ -77,18 +75,41 @@ Refresh complete
 {% endblock %}
 
 {% comment %}
-  DONE triggers a full page reload rather than a plain modal
-  dismiss. The modal-to-modal flow that brought the operator here
-  (Configure → pre-sync → dispatcher → post-dispatch) never
-  refreshed the underlying integrations page; the entities just
-  imported and placed need to surface there. Reload makes the
-  background page consistent with the new state.
+  Footer:
+    * Two-button layout when there's a primary REFINE/REVIEW
+      action to offer. Left = DONE (operator finished placing;
+      refinement is optional polish). Right = REFINE/REVIEW on
+      the highest-occupied target.
+    * Single centered OK button when nothing was placed (operator
+      chose 'Don't place' everywhere) — no real action was
+      completed, so OK ('acknowledge info, dismiss') is more
+      accurate than DONE ('action completed'). Centered via the
+      action_3 layout's action_center slot — using a side slot
+      would look skewed compared to other single-button modals
+      across the app.
+
+  Either button reloads the page on dismiss. The modal-to-modal
+  flow that brought the operator here (Configure → pre-sync →
+  result → dispatcher → post-dispatch) never refreshed the
+  underlying integrations page; the entities just imported and
+  placed need to surface there.
 {% endcomment %}
 {% block action_left %}
+{% if primary_action %}
 <a id="hi-modal-cancel" role="button"
    class="btn btn-outline-tertiary"
    href="#"
    onclick="location.reload(); return false;">DONE</a>
+{% endif %}
+{% endblock %}
+
+{% block action_center %}
+{% if not primary_action %}
+<a id="hi-modal-ok" role="button"
+   class="btn btn-primary"
+   href="#"
+   onclick="location.reload(); return false;">OK</a>
+{% endif %}
 {% endblock %}
 
 {% block action_right %}

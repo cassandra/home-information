@@ -689,7 +689,10 @@ class DispatcherFlowTests(SyncViewTestCase):
         # Entity rows in the DB so the sync view sees this as a
         # Refresh, not an Initial Import.
         self.assertIn('Refresh complete', body)
-        self.assertIn('CLOSE', body)
+        # Two-button footer: NOT NOW (skip placement, dismiss) +
+        # primary CTA. Matches the dispatcher modal's same-named
+        # affordance for consistency across the placement flow.
+        self.assertIn('NOT NOW', body)
         # CTA carries the actual count and links to dispatcher GET.
         self.assertIn('Place 4 new items', body)
         self.assertIn(self._dispatcher_url(), body)
@@ -699,13 +702,16 @@ class DispatcherFlowTests(SyncViewTestCase):
 
     def test_sync_renders_result_modal_without_cta_when_no_creates(self):
         """Sync result with no created entities → result modal with
-        no 'Place items' CTA. CLOSE is the only footer action."""
+        no 'Place items' CTA. Single centered OK is the only footer
+        action (matches the project's 'acknowledge info, dismiss'
+        single-button convention)."""
         from hi.integrations.sync_result import IntegrationSyncResult
         self.synchronizer._sync_result = IntegrationSyncResult(title='Empty')
         response = self.client.post(self._sync_url())
         self.assertSuccessResponse(response)
         body = response.content.decode()
-        self.assertIn('CLOSE', body)
+        self.assertIn('hi-modal-ok', body)
+        self.assertNotIn('NOT NOW', body)
         self.assertNotIn('Place ', body)
         self.assertNotIn('APPLY', body)
 
@@ -1053,12 +1059,36 @@ class DispatcherDismissAndShowTests(SyncViewTestCase):
 
     def test_dispatcher_get_smart_default_falls_back_to_dont_add_when_no_history(self):
         """Refresh path with no prior placements for this integration
-        → top dropdown defaults to 'Don't add' (operator picks)."""
+        → top dropdown defaults to 'Don't place' (operator picks)."""
         response = self.client.get(self._dispatcher_url())
         self.assertSuccessResponse(response)
         body = response.content.decode()
-        # 'Don't add' option carries the selected attribute.
+        # 'Don't place' option carries the selected attribute.
         self.assertIn('value="" selected', body)
+
+    def test_dispatcher_get_disambiguates_new_view_name_when_collision_exists(self):
+        """When a LocationView already exists in the default Location
+        with the integration's label, the '+ New view' option label
+        shows the disambiguated name '(2)' so the operator's
+        expectation matches the apply-time outcome."""
+        from hi.apps.location.models import Location, LocationView
+        # The DispatcherDismissAndShowTests fixture builds a Location
+        # named 'Test Location' with one view 'Kitchen'. Add a view
+        # named 'Dispatcher Test' (matching INTEGRATION_LABEL) to
+        # collide with the new-view default.
+        location = Location.objects.first()
+        LocationView.objects.create(
+            location=location, name='Dispatcher Test', order_id=99,
+            svg_view_box_str='0 0 100 100', svg_rotate=0,
+            svg_style_name_str='COLOR', location_view_type_str='DEFAULT',
+        )
+
+        response = self.client.get(self._dispatcher_url())
+        self.assertSuccessResponse(response)
+        body = response.content.decode()
+        # New-view option label reflects disambiguation, not the raw
+        # integration label.
+        self.assertIn('+ New view: "Dispatcher Test (2)"', body)
 
     def test_dispatcher_get_inventory_preview_shows_group_counts(self):
         """When the placement_input has groups, the modal renders
@@ -1073,7 +1103,7 @@ class DispatcherDismissAndShowTests(SyncViewTestCase):
         self.assertIn('2 cameras', body)
         # Group rows are behind the disclosure (collapsed by
         # default) — the disclosure affordance is rendered.
-        self.assertIn('Place differently by group or item', body)
+        self.assertIn('Place differently', body)
 
 
 class RefineViewTests(SyncViewTestCase):

@@ -2,9 +2,11 @@ from django.db.models import Count
 from django.http import Http404
 from django.urls import reverse
 
+from hi.apps.collection.collection_manager import CollectionManager
 from hi.apps.collection.models import Collection, CollectionEntity
 from hi.apps.entity.models import EntityView
-from hi.apps.location.models import LocationView
+from hi.apps.location.location_manager import LocationManager
+from hi.apps.location.models import Location, LocationView
 
 from .integration_manager import IntegrationManager
 
@@ -114,6 +116,10 @@ class IntegrationDispatcherViewMixin:
         """
         location_view_groups = self._build_location_view_groups()
         collection_list = self._build_collection_list()
+        new_view_name, new_collection_name = self._derive_new_target_names(
+            request = request,
+            integration_label = integration_data.label,
+        )
         top_default_value = self._compute_top_default_value(
             integration_id = integration_data.integration_id,
             is_initial_import = is_initial_import,
@@ -148,6 +154,8 @@ class IntegrationDispatcherViewMixin:
                 'top_default_value': top_default_value,
                 'top_default_view_id': top_default_view_id,
                 'top_default_collection_id': top_default_collection_id,
+                'new_view_name': new_view_name,
+                'new_collection_name': new_collection_name,
                 'inventory_preview': inventory_preview,
                 'apply_url': apply_url,
                 'dismiss_url': dismiss_url,
@@ -265,7 +273,7 @@ class IntegrationDispatcherViewMixin:
         On Refresh, prefer whichever existing target (LocationView
         OR Collection) currently holds the most entities for this
         integration. Ties broken by id ascending (deterministic).
-        Falls back to '' (Don't add) when no existing target holds
+        Falls back to '' (Don't place) when no existing target holds
         any of this integration's entities — operator picks.
         """
         if is_initial_import:
@@ -307,6 +315,42 @@ class IntegrationDispatcherViewMixin:
         if top_collection:
             return f'collection:{top_collection["collection_id"]}'
         return ''
+
+    def _derive_new_target_names( self, request, integration_label : str ) -> tuple:
+        """Pre-resolve the names that the '+ New view' / '+ New
+        collection' options would actually produce on Apply, so the
+        dropdown labels match the operator's eventual reality.
+
+        Without this, an operator who already has a view named
+        'Home Assistant' would see the option 'New view: "Home
+        Assistant"' but get a view named 'Home Assistant (2)' on
+        save — confusing.
+
+        Returns ``(new_view_name, new_collection_name)``. Falls
+        back to ``integration_label`` for the view name when no
+        default Location is configured (the apply path will raise
+        BadRequest in that case anyway; the modal label just shows
+        the un-disambiguated label).
+
+        Race-condition note: another operator could create a same-
+        named view/collection between render and submit, in which
+        case the apply-time disambiguation produces a different
+        suffix than the modal advertised. This is an extremely rare
+        case and the apply-time logic always picks a free name, so
+        no special handling is needed.
+        """
+        try:
+            location = LocationManager().get_default_location( request = request )
+            new_view_name = LocationManager().resolve_unique_view_name(
+                location = location,
+                requested_name = integration_label,
+            )
+        except Location.DoesNotExist:
+            new_view_name = integration_label
+        new_collection_name = CollectionManager().resolve_unique_collection_name(
+            requested_name = integration_label,
+        )
+        return new_view_name, new_collection_name
 
     def _build_inventory_preview( self, placement_input ) -> list:
         """Compact label/count summary of what's about to be placed.

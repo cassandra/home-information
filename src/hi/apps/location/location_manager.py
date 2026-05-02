@@ -216,7 +216,7 @@ class LocationManager(Singleton):
         else:
             order_id = 0
 
-        resolved_name = self._resolve_unique_view_name(
+        resolved_name = self.resolve_unique_view_name(
             location = location, requested_name = name,
         )
 
@@ -230,9 +230,9 @@ class LocationManager(Singleton):
             order_id = order_id,
         )
 
-    def _resolve_unique_view_name( self,
-                                   location        : Location,
-                                   requested_name  : str ) -> str:
+    def resolve_unique_view_name( self,
+                                  location        : Location,
+                                  requested_name  : str ) -> str:
         """Return ``requested_name`` if no LocationView in this
         Location uses it; otherwise append ``(2)``, ``(3)``, ... until
         a free name is found.

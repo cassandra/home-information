@@ -87,7 +87,7 @@ class CollectionManager(Singleton):
         else:
             order_id = 0
 
-        resolved_name = self._resolve_unique_collection_name(
+        resolved_name = self.resolve_unique_collection_name(
             requested_name = name,
         )
 
@@ -100,7 +100,7 @@ class CollectionManager(Singleton):
         collection.save()
         return collection
 
-    def _resolve_unique_collection_name( self, requested_name : str ) -> str:
+    def resolve_unique_collection_name( self, requested_name : str ) -> str:
         """Return ``requested_name`` if no Collection uses it;
         otherwise append ``(2)``, ``(3)``, ... until a free name is
         found. Collection names are global (unlike LocationView
