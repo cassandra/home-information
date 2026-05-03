@@ -689,11 +689,7 @@ class DispatcherFlowTests(SyncViewTestCase):
         # Entity rows in the DB so the sync view sees this as a
         # Refresh, not an Initial Import.
         self.assertIn('Refresh complete', body)
-        # Two-button footer: NOT NOW (skip placement, dismiss) +
-        # primary CTA. Matches the dispatcher modal's same-named
-        # affordance for consistency across the placement flow.
-        self.assertIn('NOT NOW', body)
-        # CTA carries the actual count and links to dispatcher GET.
+        self.assertIn('Place Later', body)
         self.assertIn('Place 4 new items', body)
         self.assertIn(self._dispatcher_url(), body)
         # No dispatcher artifacts in the response — operator must
@@ -711,7 +707,6 @@ class DispatcherFlowTests(SyncViewTestCase):
         self.assertSuccessResponse(response)
         body = response.content.decode()
         self.assertIn('hi-modal-ok', body)
-        self.assertNotIn('NOT NOW', body)
         self.assertNotIn('Place ', body)
         self.assertNotIn('APPLY', body)
 

@@ -241,28 +241,23 @@
 {% endblock %}
 
 {% comment %}
-  Footer:
-    * Two-button layout when the sync produced new entities to
-      place. Left = NOT NOW (matches the dispatcher modal's same-
-      named affordance for "skip placement, come back later").
-      Right = the Place-items CTA, antinode modal-swap to the
-      dispatcher GET endpoint.
-    * Single centered OK button otherwise (errors, nothing-new,
-      refresh-with-no-creates, empty-no-items-left). Centered
-      in the action_3 layout via the action_center slot — using
-      a side slot would look left/right-skewed compared to other
-      single-button modals across the app.
+  Each footer block is declared unconditionally; the {% if %} is
+  inside the block content, not around the {% block %} tag.
+  Django parses block declarations regardless of enclosing if-
+  conditions, so wrapping the declarations would render both
+  branches simultaneously.
 
-  Either button reloads the page on dismiss so the integration
-  manage page reflects any changes the sync made (renames,
-  removes, or unplaced creates the operator chose to defer).
+  Page-reload onclick on the dismiss buttons: the modal-to-modal
+  flow that lands here never refreshed the underlying integrations
+  page, so a plain dismiss leaves a stale background. Reload makes
+  the background page consistent with anything the sync changed.
 {% endcomment %}
 {% block action_left %}
 {% if sync_result.created_list and dispatcher_url %}
 <a id="hi-modal-cancel" role="button"
    class="btn btn-outline-tertiary"
    href="#"
-   onclick="location.reload(); return false;">NOT NOW</a>
+   onclick="location.reload(); return false;">{% icon "close" size="sm" css_class="hi-icon-left" %}Place Later</a>
 {% endif %}
 {% endblock %}
 

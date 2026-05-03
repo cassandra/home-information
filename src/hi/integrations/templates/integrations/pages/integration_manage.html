@@ -5,11 +5,10 @@
 <div id="hi-integration-settings" class="d-flex">
   <nav class="nav flex-column hi-vertical-nav">
     <div class="hi-vertical-nav-header">
-      <h6 class="text-muted mb-2">INTEGRATIONS</h6>
-      <a class="btn btn-sm btn-outline-secondary w-100" role="button"
+      <a class="btn btn-outline-primary w-100" role="button"
          href="{% url 'integrations_select' %}"
          data-async="modal">
-        {% icon "settings" size="sm" css_class="hi-icon-left" %}Manage
+        {% icon "settings" size="sm" css_class="hi-icon-left" %}INTEGRATIONS
       </a>
     </div>
     {% for integration_data in core.integration_data_list %}

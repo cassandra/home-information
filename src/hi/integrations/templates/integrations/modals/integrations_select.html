@@ -1,10 +1,10 @@
-{% extends "modals/action_done.html" %}
+{% extends "modals/action_ok.html" %}
 {% load icons static %}
 
-{% block modal_dialog_class %}hi-modal-dialog-600{% endblock %}
+{% block modal_dialog_class %}hi-modal-dialog-700{% endblock %}
 
 {% block title_text %}
-Select Integrations
+All Integrations
 {% endblock %}
 
 {% block body %}
@@ -38,12 +38,12 @@ Select Integrations
     {% if integration_data.integration.is_enabled %}
     <a href="{% url 'integrations_disable' integration_id=integration_data.integration.integration_id %}"
        role="button" class="btn btn-danger btn-control" data-async="modal">
-      {% icon "delete" size="sm" css_class="hi-icon-left" %}REMOVE
+      {% icon "delete" size="sm" css_class="hi-icon-left" %}DISABLE
     </a>
     {% else %}
     <a href="{% url 'integrations_enable' integration_id=integration_data.integration.integration_id %}"
        class="btn btn-primary btn-control" role="button" data-async="modal">
-      {% icon "plug" size="sm" css_class="hi-icon-left" %}CONFIGURE
+      {% icon "settings" size="sm" css_class="hi-icon-left" %}CONFIGURE
     </a>
     {% endif %}
   </div>

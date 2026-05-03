@@ -28,10 +28,10 @@ class HassSynchronizer( IntegrationSynchronizer, HassMixin ):
     def get_description(self, is_initial_import: bool) -> Optional[str]:
         if is_initial_import:
             return (
-                'Import will pull in every entity from your Home'
-                ' Assistant instance whose domain is on your configured'
+                'Import will pull in items from your Home'
+                ' Assistant instance whose domain matches your configured'
                 ' import allowlist. Entities outside the allowlist are'
-                ' skipped and will not appear here.'
+                ' skipped and will not be imported.'
             )
         return (
             'Refresh reconciles already-imported entities with the'
