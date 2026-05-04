@@ -156,3 +156,4 @@ class IntegrationValidationResult:
             status=status,
             error_message=error_message
         )
+

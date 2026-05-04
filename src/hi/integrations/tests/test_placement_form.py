@@ -1,9 +1,9 @@
 """
-Tests for DispatcherFormParser.
+Tests for PlacementFormParser.
 
 Three-level inheritance (top → group → entity) and skip / new-view
 sentinel resolution. Drives the parser directly with a request
-factory; doesn't touch the dispatcher view or modal rendering.
+factory; doesn't touch the placement view or modal rendering.
 """
 import logging
 
@@ -13,13 +13,13 @@ from django.test import TestCase
 from hi.apps.entity.enums import EntityType
 from hi.apps.entity.models import Entity
 from hi.apps.location.models import Location, LocationView
-from hi.integrations.dispatcher_form import DispatcherFormParser
+from hi.integrations.placement_request import PlacementFormParser
 
 logging.disable(logging.CRITICAL)
 
 
 class _FakeIntegrationData:
-    """Stand-in carrying the only field DispatcherFormParser reads."""
+    """Stand-in carrying the only field PlacementFormParser reads."""
     def __init__(self, label):
         self.label = label
         self.integration_id = 'parser_test'
@@ -39,7 +39,7 @@ class _RequestStub:
         raise AttributeError('view_parameters not available in stub')
 
 
-class DispatcherFormParserTests(TestCase):
+class PlacementFormParserTests(TestCase):
 
     def setUp(self):
         self.location = Location.objects.create(
@@ -83,7 +83,7 @@ class DispatcherFormParserTests(TestCase):
             top_view=f'view:{self.view_a.id}',
             all_group_0_entity_ids=[str(self.entity_a.id), str(self.entity_b.id)],
         )
-        decisions = DispatcherFormParser.parse(
+        decisions = PlacementFormParser.parse(
             request=request, integration_data=self.integration_data,
         )
         self.assertEqual(len(decisions), 2)
@@ -96,7 +96,7 @@ class DispatcherFormParserTests(TestCase):
             'all_group_0_entity_ids': [str(self.entity_a.id)],
             'group_view_0': f'view:{self.view_b.id}',
         })
-        decisions = DispatcherFormParser.parse(
+        decisions = PlacementFormParser.parse(
             request=request, integration_data=self.integration_data,
         )
         self.assertEqual(decisions[0].location_view, self.view_b)
@@ -108,7 +108,7 @@ class DispatcherFormParserTests(TestCase):
             'group_view_0': f'view:{self.view_a.id}',
             f'group_0_entity_{self.entity_b.id}_view': f'view:{self.view_b.id}',
         })
-        decisions = DispatcherFormParser.parse(
+        decisions = PlacementFormParser.parse(
             request=request, integration_data=self.integration_data,
         )
         by_entity = {d.entity.id: d.location_view for d in decisions}
@@ -121,7 +121,7 @@ class DispatcherFormParserTests(TestCase):
             'all_group_0_entity_ids': [str(self.entity_a.id)],
             'group_view_0': '__skip__',
         })
-        decisions = DispatcherFormParser.parse(
+        decisions = PlacementFormParser.parse(
             request=request, integration_data=self.integration_data,
         )
         self.assertIsNone(decisions[0].location_view)
@@ -132,7 +132,7 @@ class DispatcherFormParserTests(TestCase):
             'all_group_0_entity_ids': [str(self.entity_a.id), str(self.entity_b.id)],
             f'group_0_entity_{self.entity_a.id}_view': '__skip__',
         })
-        decisions = DispatcherFormParser.parse(
+        decisions = PlacementFormParser.parse(
             request=request, integration_data=self.integration_data,
         )
         by_entity = {d.entity.id: d.location_view for d in decisions}
@@ -144,7 +144,7 @@ class DispatcherFormParserTests(TestCase):
             top_view='',
             all_group_0_entity_ids=[str(self.entity_a.id)],
         )
-        decisions = DispatcherFormParser.parse(
+        decisions = PlacementFormParser.parse(
             request=request, integration_data=self.integration_data,
         )
         self.assertIsNone(decisions[0].location_view)
@@ -154,7 +154,7 @@ class DispatcherFormParserTests(TestCase):
             top_view=f'view:{self.view_a.id}',
             ungrouped_entity_ids=[str(self.ungrouped_entity.id)],
         )
-        decisions = DispatcherFormParser.parse(
+        decisions = PlacementFormParser.parse(
             request=request, integration_data=self.integration_data,
         )
         self.assertEqual(decisions[0].entity, self.ungrouped_entity)
@@ -166,7 +166,7 @@ class DispatcherFormParserTests(TestCase):
             'ungrouped_entity_ids': [str(self.ungrouped_entity.id)],
             f'ungrouped_entity_{self.ungrouped_entity.id}_view': f'view:{self.view_b.id}',
         })
-        decisions = DispatcherFormParser.parse(
+        decisions = PlacementFormParser.parse(
             request=request, integration_data=self.integration_data,
         )
         self.assertEqual(decisions[0].location_view, self.view_b)
@@ -187,7 +187,7 @@ class DispatcherFormParserTests(TestCase):
             top_view=f'collection:{collection.id}',
             all_group_0_entity_ids=[str(self.entity_a.id)],
         )
-        decisions = DispatcherFormParser.parse(
+        decisions = PlacementFormParser.parse(
             request=request, integration_data=self.integration_data,
         )
         self.assertIsNone(decisions[0].location_view)
@@ -210,7 +210,7 @@ class DispatcherFormParserTests(TestCase):
             'all_group_1_entity_ids': [str(self.entity_b.id)],
             'group_view_1': f'collection:{collection.id}',
         })
-        decisions = DispatcherFormParser.parse(
+        decisions = PlacementFormParser.parse(
             request=request, integration_data=self.integration_data,
         )
         by_entity = {d.entity.id: d for d in decisions}
@@ -228,7 +228,7 @@ class DispatcherFormParserTests(TestCase):
             top_view='__new_collection__',
             all_group_0_entity_ids=[str(self.entity_a.id)],
         )
-        decisions = DispatcherFormParser.parse(
+        decisions = PlacementFormParser.parse(
             request=request, integration_data=self.integration_data,
         )
         new_ids = (
@@ -252,7 +252,7 @@ class DispatcherFormParserTests(TestCase):
         # state. The patched return is the test's existing Location;
         # the parser then creates a real LocationView attached to it.
         with patch(
-            'hi.integrations.dispatcher_form.LocationManager',
+            'hi.integrations.placement_request.LocationManager',
         ) as mock_manager_cls:
             instance = mock_manager_cls.return_value
             instance.get_default_location.return_value = self.location
@@ -263,7 +263,7 @@ class DispatcherFormParserTests(TestCase):
             )
             instance.create_location_view.return_value = new_view
 
-            decisions = DispatcherFormParser.parse(
+            decisions = PlacementFormParser.parse(
                 request=request, integration_data=self.integration_data,
             )
 

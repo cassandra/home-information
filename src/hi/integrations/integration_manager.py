@@ -118,6 +118,18 @@ class IntegrationManager( Singleton ):
     def get_health_status_providers(self) -> List[HealthStatusProvider]:
         with self._data_lock:
             return list( self._monitor_map.values() )
+
+    def get_health_status_provider_map(self) -> Dict[str, HealthStatusProvider]:
+        """Snapshot of running monitors keyed by integration_id.
+
+        Callers that want to pair every configured integration with
+        its monitor (when present) — e.g., the system-info page —
+        use this alongside ``get_integration_data_list``. A missing
+        key for a configured integration means no live monitor
+        (the integration is paused or its monitor failed to start).
+        """
+        with self._data_lock:
+            return dict( self._monitor_map )
         
     async def initialize( self, event_loop ) -> None:
         """

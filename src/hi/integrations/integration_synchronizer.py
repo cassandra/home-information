@@ -2,7 +2,7 @@
 Per-integration synchronizer base class.
 
 The general integration framework owns the sync workflow (pre-sync
-confirmation modal, sync execution view, post-sync dispatcher modal).
+confirmation modal, sync execution view, post-sync placement modal).
 The synchronizer is the per-integration participant that the framework
 hands off to for the integration-specific work plus a small amount of
 peripheral metadata the framework surfaces alongside.
@@ -114,7 +114,7 @@ class IntegrationSynchronizer:
             self, entities : List[Entity],
     ) -> EntityPlacementInput:
         """Partition a set of entities into the
-        ``EntityPlacementInput`` shape consumed by the dispatcher
+        ``EntityPlacementInput`` shape consumed by the placement
         modal.
 
         Two callers:
@@ -146,7 +146,7 @@ class IntegrationSynchronizer:
         )
 
     def _placement_item_key( self, entity : Entity ) -> str:
-        """Stable per-entity dispatcher key. Subclasses may override
+        """Stable per-entity placement key. Subclasses may override
         for custom keying; the default uses the entity's
         integration_key when available, falling back to the row id."""
         integration_key = entity.integration_key

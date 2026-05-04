@@ -3,23 +3,23 @@
 
 {% comment %}
 Confirmation shown when the operator clicks NOT NOW on the
-dispatcher modal. Names the consequences explicitly so the
+placement modal. Names the consequences explicitly so the
 operator doesn't dismiss accidentally.
 
 Two paths forward:
 
-* GO BACK navigates to the integration's dispatcher GET endpoint,
-  which renders the dispatcher again seeded with the integration's
+* GO BACK navigates to the integration's placement GET endpoint,
+  which renders the placement again seeded with the integration's
   currently-unplaced entities. (After a fresh sync nothing has
   been placed yet, so the operator gets back the same set.)
-* LATER, IN EDIT MODE confirms dismissal: page reloads so the
+* OK, PLACE LATER confirms dismissal: page reloads so the
   background integrations page reflects the newly-imported
   entities, and the operator can address them later from edit
   mode.
 
 Context:
   integration_data    : IntegrationData (required)
-  dispatcher_url      : str (required) — GO BACK target
+  placement_url      : str (required) — GO BACK target
 {% endcomment %}
 
 {% block header_class %}bg-secondary{% endblock %}
@@ -38,14 +38,14 @@ Items left unplaced
 
 {% block action_left %}
 <a class="btn btn-outline-tertiary" role="button"
-   href="{{ dispatcher_url }}" data-async="modal">
+   href="{{ placement_url }}" data-async="modal">
   {% icon "chevron-left" size="sm" css_class="hi-icon-left" %}GO BACK
 </a>
 {% endblock %}
 
 {% block action_right %}
 <a id="hi-modal-cancel" role="button"
-   class="btn btn-primary"
+   class="btn btn-secondary"
    href="#"
-   onclick="location.reload(); return false;">LATER, IN EDIT MODE</a>
+   onclick="location.reload(); return false;">OK, PLACE LATER</a>
 {% endblock %}

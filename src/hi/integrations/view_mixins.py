@@ -9,6 +9,7 @@ from hi.apps.location.location_manager import LocationManager
 from hi.apps.location.models import Location, LocationView
 
 from .integration_manager import IntegrationManager
+from .placement_request import PlacementUrlParams
 
 
 class IntegrationViewMixin:
@@ -88,22 +89,23 @@ class IntegrationViewMixin:
         return
 
 
-class IntegrationDispatcherViewMixin:
-    """Modal context builders shared across the dispatcher /
+class IntegrationPlacementViewMixin:
+    """Modal context builders shared across the placement /
     dismiss-confirm / post-dispatch views. Knows UI conventions
-    (URL routing for the integration dispatcher flow, location-view
+    (URL routing for the integration placement flow, location-view
     dropdown shape) but no business logic.
 
     Designed to be mixed into ``HiModalView`` subclasses so the
     rendering methods can call ``self.modal_response(...)`` directly.
     """
 
-    def render_dispatcher( self,
-                           request,
-                           integration_data,
-                           placement_input,
-                           is_initial_import : bool ):
-        """Render the dispatcher modal seeded with an
+    def render_placement( self,
+                          request,
+                          integration_data,
+                          placement_input,
+                          is_initial_import : bool,
+                          entity_id_filter = None ):
+        """Render the placement modal seeded with an
         ``EntityPlacementInput``. Dropdowns offer both LocationView
         and Collection targets; the top dropdown additionally offers
         '+ New view' and '+ New collection' sentinels.
@@ -136,12 +138,10 @@ class IntegrationDispatcherViewMixin:
         inventory_preview = self._build_inventory_preview(
             placement_input = placement_input,
         )
-        apply_url = reverse(
-            'integrations_apply_placements',
-            kwargs = { 'integration_id': integration_data.integration_id },
-        )
-        dismiss_url = reverse(
-            'integrations_dispatcher_dismiss',
+        # The form posts back to the same URL that rendered the
+        # modal — single CBV, GET renders / POST processes.
+        placement_url = reverse(
+            'integrations_placement',
             kwargs = { 'integration_id': integration_data.integration_id },
         )
         return self.modal_response(
@@ -157,40 +157,43 @@ class IntegrationDispatcherViewMixin:
                 'new_view_name': new_view_name,
                 'new_collection_name': new_collection_name,
                 'inventory_preview': inventory_preview,
-                'apply_url': apply_url,
-                'dismiss_url': dismiss_url,
+                'placement_url': placement_url,
                 'is_initial_import': is_initial_import,
             },
-            template_name = 'integrations/modals/dispatcher.html',
+            template_name = 'integrations/modals/placement.html',
         )
 
     def render_dismiss_confirm( self,
                                 request,
                                 integration_data,
-                                is_initial_import : bool ):
+                                is_initial_import : bool,
+                                entity_ids = None ):
         """Render the NOT NOW confirmation modal. GO BACK targets
-        the dispatcher GET endpoint, with is_initial_import threaded
-        through as a query parameter."""
-        dispatcher_url = reverse(
-            'integrations_dispatcher',
+        the placement GET endpoint, with is_initial_import and
+        (when present) the entity-id scope threaded through as
+        query parameters so the operator returns to the same set
+        they were viewing."""
+        placement_url = PlacementUrlParams(
+            is_initial_import = is_initial_import,
+            entity_ids = list( entity_ids ) if entity_ids else [],
+        ).append_to_url( reverse(
+            'integrations_placement',
             kwargs = { 'integration_id': integration_data.integration_id },
-        )
-        if is_initial_import:
-            dispatcher_url = f'{dispatcher_url}?is_initial_import=1'
+        ) )
         return self.modal_response(
             request,
             context = {
                 'integration_data': integration_data,
-                'dispatcher_url': dispatcher_url,
+                'placement_url': placement_url,
             },
-            template_name = 'integrations/modals/dispatcher_dismiss.html',
+            template_name = 'integrations/modals/placement_dismiss.html',
         )
 
-    def render_post_dispatch( self,
-                              request,
-                              integration_data,
-                              outcome,
-                              is_initial_import : bool ):
+    def render_post_placement( self,
+                               request,
+                               integration_data,
+                               outcome,
+                               is_initial_import : bool ):
         """Render the post-dispatch summary modal from a
         ``PlacementOutcome``.
 
@@ -220,7 +223,7 @@ class IntegrationDispatcherViewMixin:
                 'primary_action': primary_action,
                 'secondary_action_list': secondary_action_list,
             },
-            template_name = 'integrations/modals/post_dispatch.html',
+            template_name = 'integrations/modals/post_placement.html',
         )
 
     def _build_location_view_groups( self ):
@@ -241,7 +244,7 @@ class IntegrationDispatcherViewMixin:
         return list( groups.items() )
 
     def _build_collection_list( self ):
-        """Existing-collections dropdown source for the dispatcher
+        """Existing-collections dropdown source for the placement
         modal. Single optgroup keyed by 'Collections'; ordered by
         Collection.order_id."""
         return list( Collection.objects.order_by('order_id').all() )
@@ -264,7 +267,7 @@ class IntegrationDispatcherViewMixin:
     def _compute_top_default_value( self,
                                     integration_id    : str,
                                     is_initial_import : bool ) -> str:
-        """Smart default for the dispatcher's top dropdown.
+        """Smart default for the placement's top dropdown.
 
         On Initial Import the operator has no existing target — pre-
         select '+ New view' so they can click APPLY without further

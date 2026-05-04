@@ -2,11 +2,11 @@
 Transient data shapes returned by integration sync operations.
 
 The framework owns the sync workflow (pre-sync modal, sync view,
-post-sync dispatcher modal). Each integration's
+post-sync placement modal). Each integration's
 ``IntegrationSynchronizer.sync()`` returns an
 ``IntegrationSyncResult`` describing what happened during sync —
 title, structured change counts, info/error notes — plus an
-optional ``EntityPlacementInput`` that drives the dispatcher modal
+optional ``EntityPlacementInput`` that drives the placement modal
 when the sync produced new entities to place.
 
 The placement input shape lives in ``hi.apps.entity.entity_placement``
@@ -36,10 +36,10 @@ class IntegrationSyncResult:
 
     ``placement_input`` is None when the sync produced no new
     entities to place (the typical refresh-with-no-new-items case);
-    populated when there's something for the dispatcher modal to
+    populated when there's something for the placement modal to
     show. The framework uses presence/absence of placement_input —
     not emptiness checks against groups/ungrouped_items — to decide
-    whether to show the dispatcher.
+    whether to show the placement.
 
     ``created_list`` / ``updated_list`` / ``removed_list`` hold the
     *names* of entities affected by this sync run, populated by the

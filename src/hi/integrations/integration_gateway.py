@@ -50,7 +50,7 @@ class IntegrationGateway:
         Return the integration's synchronizer when it supports sync;
         None otherwise. Sync is an opt-in capability — not every
         integration requires one. The framework owns the sync workflow
-        (pre-sync confirmation, sync execution, post-sync dispatcher);
+        (pre-sync confirmation, sync execution, post-sync placement);
         the synchronizer participates by providing the integration-
         specific work plus a small amount of peripheral metadata.
         """

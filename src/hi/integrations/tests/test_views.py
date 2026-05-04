@@ -498,11 +498,11 @@ class EnableViewReviewConfigTests(SyncViewTestCase):
 
 
 # --------------------------------------------------------------------------
-# Dispatcher + post-dispatch + refine (Phase 3) tests
+# Placement + post-dispatch + refine (Phase 3) tests
 # --------------------------------------------------------------------------
 
 
-class _DispatcherTestSynchronizer:
+class _PlacementTestSynchronizer:
     """Synchronizer stub that returns a populated IntegrationSyncResult.
 
     Three entities placed across two groups + one ungrouped item:
@@ -517,15 +517,15 @@ class _DispatcherTestSynchronizer:
         return None
 
     def get_result_title(self, is_initial_import):
-        return 'Dispatcher Test'
+        return 'Placement Test'
 
     def sync(self, is_initial_import=False):
         self.sync_called = True
         return self._sync_result
 
 
-class _DispatcherTestGateway(IntegrationGateway):
-    """Dispatcher gateway with a synchronizer + minimal stubs."""
+class _PlacementTestGateway(IntegrationGateway):
+    """Placement gateway with a synchronizer + minimal stubs."""
 
     def __init__(self, integration_id, synchronizer):
         self.integration_id = integration_id
@@ -534,7 +534,7 @@ class _DispatcherTestGateway(IntegrationGateway):
     def get_metadata(self):
         return IntegrationMetaData(
             integration_id=self.integration_id,
-            label='Dispatcher Test',
+            label='Placement Test',
             attribute_type=_PauseResumeTestAttributeType,
             allow_entity_deletion=True,
         )
@@ -555,11 +555,11 @@ class _DispatcherTestGateway(IntegrationGateway):
         return Mock()
 
 
-class DispatcherFlowTests(SyncViewTestCase):
-    """End-to-end dispatcher flow: sync → dispatcher modal → apply →
+class PlacementFlowTests(SyncViewTestCase):
+    """End-to-end placement flow: sync → placement modal → apply →
     post-dispatch modal."""
 
-    INTEGRATION_ID = 'dispatcher_test'
+    INTEGRATION_ID = 'placement_test'
 
     def setUp(self):
         super().setUp()
@@ -623,27 +623,27 @@ class DispatcherFlowTests(SyncViewTestCase):
         )
 
         self.sync_result = IntegrationSyncResult(
-            title='Dispatcher Test',
+            title='Placement Test',
             created_list=['Cam 1', 'Cam 2', 'Light 1', 'Ungrouped Thing'],
             placement_input=EntityPlacementInput(
                 groups=[
                     EntityPlacementGroup(
                         label='Cameras',
                         items=[
-                            EntityPlacementItem(key='dispatcher_test:cam_1', label='Cam 1', entity=self.entity_a),
-                            EntityPlacementItem(key='dispatcher_test:cam_2', label='Cam 2', entity=self.entity_b),
+                            EntityPlacementItem(key='placement_test:cam_1', label='Cam 1', entity=self.entity_a),
+                            EntityPlacementItem(key='placement_test:cam_2', label='Cam 2', entity=self.entity_b),
                         ],
                     ),
                     EntityPlacementGroup(
                         label='Lights',
                         items=[
-                            EntityPlacementItem(key='dispatcher_test:light_1', label='Light 1', entity=self.entity_c),
+                            EntityPlacementItem(key='placement_test:light_1', label='Light 1', entity=self.entity_c),
                         ],
                     ),
                 ],
                 ungrouped_items=[
                     EntityPlacementItem(
-                        key='dispatcher_test:thing_1',
+                        key='placement_test:thing_1',
                         label='Ungrouped Thing',
                         entity=self.ungrouped_entity,
                     ),
@@ -651,8 +651,8 @@ class DispatcherFlowTests(SyncViewTestCase):
             ),
         )
 
-        self.synchronizer = _DispatcherTestSynchronizer(sync_result=self.sync_result)
-        self.gateway = _DispatcherTestGateway(
+        self.synchronizer = _PlacementTestSynchronizer(sync_result=self.sync_result)
+        self.gateway = _PlacementTestGateway(
             integration_id=self.INTEGRATION_ID, synchronizer=self.synchronizer,
         )
         IntegrationManager()._integration_data_map[self.INTEGRATION_ID] = IntegrationData(
@@ -665,35 +665,37 @@ class DispatcherFlowTests(SyncViewTestCase):
         )
 
     def _dispatch_url(self):
+        # GET renders / POST processes — same URL after the
+        # GET+POST view consolidation.
         return reverse(
-            'integrations_apply_placements',
+            'integrations_placement',
             kwargs={'integration_id': self.INTEGRATION_ID},
         )
 
-    def _dispatcher_url(self):
+    def _placement_url(self):
         return reverse(
-            'integrations_dispatcher',
+            'integrations_placement',
             kwargs={'integration_id': self.INTEGRATION_ID},
         )
 
     def test_sync_renders_result_modal_with_place_items_cta(self):
         """Sync that produced new entities → sync result modal with
-        a primary 'Place N items' CTA pointing at the dispatcher
-        GET endpoint. The dispatcher is no longer rendered directly
+        a primary 'Place N items' CTA pointing at the placement
+        GET endpoint. The placement is no longer rendered directly
         from the sync POST response — placement is opt-in."""
         response = self.client.post(self._sync_url())
         self.assertSuccessResponse(response)
         body = response.content.decode()
-        # Result-modal markers (NOT dispatcher markers).
+        # Result-modal markers (NOT placement markers).
         # Hero copy is is_initial_import-aware. Test setup leaves
         # Entity rows in the DB so the sync view sees this as a
         # Refresh, not an Initial Import.
         self.assertIn('Refresh complete', body)
         self.assertIn('Place Later', body)
         self.assertIn('Place 4 new items', body)
-        self.assertIn(self._dispatcher_url(), body)
-        # No dispatcher artifacts in the response — operator must
-        # click the CTA to reach the dispatcher.
+        self.assertIn(self._placement_url(), body)
+        # No placement artifacts in the response — operator must
+        # click the CTA to reach the placement.
         self.assertNotIn('APPLY', body)
 
     def test_sync_renders_result_modal_without_cta_when_no_creates(self):
@@ -712,7 +714,7 @@ class DispatcherFlowTests(SyncViewTestCase):
 
     def test_sync_renders_result_modal_with_updates_and_removes_visible(self):
         """Update/remove signal is no longer swallowed by the
-        dispatcher when there are also creates — every change kind
+        placement when there are also creates — every change kind
         is enumerated in the result modal even though the modal
         ultimately routes the operator to placement."""
         from hi.integrations.sync_result import IntegrationSyncResult
@@ -730,7 +732,7 @@ class DispatcherFlowTests(SyncViewTestCase):
         self.assertIn('Brand New Light', body)
         self.assertIn('Old Name → New Name', body)
         self.assertIn('Stale Sensor', body)
-        # And the CTA still routes to the dispatcher.
+        # And the CTA still routes to the placement.
         self.assertIn('Place 1 new item', body)
 
     def test_dispatch_top_inherits_to_groups_and_entities(self):
@@ -847,7 +849,7 @@ class DispatcherFlowTests(SyncViewTestCase):
         self.assertTrue(EntityView.objects.filter(
             entity=self.entity_c, location_view=self.view_a).exists())
         # New view name = integration label.
-        self.assertEqual(new_view.name, 'Dispatcher Test')
+        self.assertEqual(new_view.name, 'Placement Test')
 
     def test_post_dispatch_modal_renders_refine_for_primary_view(self):
         """The post-dispatch modal includes a REFINE button targeting
@@ -882,12 +884,12 @@ class DispatcherFlowTests(SyncViewTestCase):
         self.assertIn('Living Room', slice_after_refine)
 
 
-class DispatcherDismissAndShowTests(SyncViewTestCase):
-    """NOT NOW → dismiss-confirm modal → GO BACK → dispatcher
+class PlacementDismissAndShowTests(SyncViewTestCase):
+    """NOT NOW → dismiss-confirm modal → GO BACK → placement
     modal re-renders. Round-trip covers the dismiss + show views
     plus their hidden-input handshake."""
 
-    INTEGRATION_ID = 'dispatcher_test'
+    INTEGRATION_ID = 'placement_test'
 
     def setUp(self):
         super().setUp()
@@ -926,27 +928,27 @@ class DispatcherDismissAndShowTests(SyncViewTestCase):
         )
 
         self.sync_result = IntegrationSyncResult(
-            title='Dispatcher Test',
+            title='Placement Test',
             placement_input=EntityPlacementInput(
                 groups=[
                     EntityPlacementGroup(
                         label='Cameras',
                         items=[
-                            EntityPlacementItem(key='dispatcher_test:cam_1', label='Cam 1', entity=self.entity_a),
-                            EntityPlacementItem(key='dispatcher_test:cam_2', label='Cam 2', entity=self.entity_b),
+                            EntityPlacementItem(key='placement_test:cam_1', label='Cam 1', entity=self.entity_a),
+                            EntityPlacementItem(key='placement_test:cam_2', label='Cam 2', entity=self.entity_b),
                         ],
                     ),
                 ],
             ),
         )
-        self.synchronizer = _DispatcherTestSynchronizer(sync_result=self.sync_result)
-        # Stub group_entities_for_placement so the GET dispatcher can
+        self.synchronizer = _PlacementTestSynchronizer(sync_result=self.sync_result)
+        # Stub group_entities_for_placement so the GET placement can
         # rebuild from unplaced entities.
 
         def group_for_placement(entities):
             items = [
                 EntityPlacementItem(
-                    key=f'dispatcher_test:{e.integration_name}',
+                    key=f'placement_test:{e.integration_name}',
                     label=e.name, entity=e,
                 )
                 for e in entities
@@ -958,31 +960,27 @@ class DispatcherDismissAndShowTests(SyncViewTestCase):
             )
         self.synchronizer.group_entities_for_placement = group_for_placement
 
-        self.gateway = _DispatcherTestGateway(
+        self.gateway = _PlacementTestGateway(
             integration_id=self.INTEGRATION_ID, synchronizer=self.synchronizer,
         )
         IntegrationManager()._integration_data_map[self.INTEGRATION_ID] = IntegrationData(
             integration_gateway=self.gateway, integration=self.integration,
         )
 
-    def _dismiss_url(self):
+    def _placement_url(self):
         return reverse(
-            'integrations_dispatcher_dismiss',
+            'integrations_placement',
             kwargs={'integration_id': self.INTEGRATION_ID},
         )
 
-    def _dispatcher_url(self):
-        return reverse(
-            'integrations_dispatcher',
-            kwargs={'integration_id': self.INTEGRATION_ID},
-        )
-
-    def test_dismiss_renders_confirmation_with_dispatcher_link(self):
-        """The dismiss endpoint renders the confirmation modal with a
-        GO BACK link pointing at the dispatcher GET endpoint. The
-        carried is_initial_import flag flows through the URL query
-        string."""
-        response = self.client.post(self._dismiss_url(), {
+    def test_dismiss_renders_confirmation_with_placement_link(self):
+        """The placement form's NOT NOW button (action=dismiss)
+        routes back to the same placement URL where the view's
+        POST handler renders the confirmation modal. GO BACK links
+        to the placement GET with is_initial_import threaded
+        through."""
+        response = self.client.post(self._placement_url(), {
+            'action': 'dismiss',
             'is_initial_import': '1',
         })
         self.assertSuccessResponse(response)
@@ -990,39 +988,74 @@ class DispatcherDismissAndShowTests(SyncViewTestCase):
         # Confirmation copy.
         self.assertIn('Items left unplaced', body)
         self.assertIn('GO BACK', body)
-        self.assertIn('LATER, IN EDIT MODE', body)
-        # GO BACK targets the dispatcher GET with is_initial_import=1.
-        self.assertIn(self._dispatcher_url() + '?is_initial_import=1', body)
+        self.assertIn('OK, PLACE LATER', body)
+        # GO BACK targets the placement GET with is_initial_import=1.
+        self.assertIn(self._placement_url() + '?is_initial_import=1', body)
 
-    def test_dispatcher_get_renders_from_unplaced_entities(self):
-        """The GET dispatcher queries entities for the integration
+    def test_placement_get_renders_from_unplaced_entities(self):
+        """The GET placement queries entities for the integration
         that have no EntityView row, runs them through the
         synchronizer's group_entities_for_placement, and renders the
-        dispatcher modal."""
-        response = self.client.get(self._dispatcher_url())
+        placement modal."""
+        response = self.client.get(self._placement_url())
         self.assertSuccessResponse(response)
         body = response.content.decode()
-        # Dispatcher rendered (APPLY button + entity ids in form).
+        # Placement rendered (APPLY button + entity ids in form).
         self.assertIn('APPLY', body)
         self.assertIn('Cameras', body)
         self.assertIn(f'value="{self.entity_a.id}"', body)
         self.assertIn(f'value="{self.entity_b.id}"', body)
 
-    def test_dispatcher_get_renders_acknowledgement_when_no_unplaced(self):
+    def test_placement_get_scopes_to_entity_ids_url_param(self):
+        """When the URL carries ``entity_ids=...``, the placement
+        filters the unplaced set to those ids — protects the sync-
+        result CTA from showing pre-existing unplaced entities the
+        operator didn't just import."""
+        from hi.apps.entity.models import Entity
+        from hi.apps.entity.enums import EntityType
+        # Add a pre-existing unplaced entity that would otherwise
+        # show up alongside cam_a/cam_b under the all-unplaced query.
+        prior_unplaced = Entity.objects.create(
+            name='Prior Unplaced Cam',
+            entity_type_str=str(EntityType.CAMERA),
+            integration_id=self.INTEGRATION_ID,
+            integration_name='prior_unplaced',
+        )
+        # CTA URL targets only the two newly-imported cameras.
+        scoped_url = (
+            self._placement_url()
+            + f'?entity_ids={self.entity_a.id},{self.entity_b.id}'
+        )
+        response = self.client.get(scoped_url)
+        self.assertSuccessResponse(response)
+        body = response.content.decode()
+        self.assertIn(f'value="{self.entity_a.id}"', body)
+        self.assertIn(f'value="{self.entity_b.id}"', body)
+        # Pre-existing unplaced entity must NOT appear.
+        self.assertNotIn(f'value="{prior_unplaced.id}"', body)
+        self.assertNotIn('Prior Unplaced Cam', body)
+
+    def test_placement_get_invalid_entity_ids_param_400s(self):
+        """Tampered or malformed ``entity_ids`` fails loudly."""
+        bad_url = self._placement_url() + '?entity_ids=1,abc'
+        response = self.client.get(bad_url)
+        self.assertEqual(response.status_code, 400)
+
+    def test_placement_get_renders_acknowledgement_when_no_unplaced(self):
         """When every entity for the integration is already placed,
-        the GET dispatcher renders the legacy result modal with
-        a brief 'no items' message rather than an empty dispatcher."""
+        the GET placement renders the legacy result modal with
+        a brief 'no items' message rather than an empty placement."""
         from hi.apps.entity.models import EntityView
         EntityView.objects.create(entity=self.entity_a, location_view=self.view_a)
         EntityView.objects.create(entity=self.entity_b, location_view=self.view_a)
 
-        response = self.client.get(self._dispatcher_url())
+        response = self.client.get(self._placement_url())
         self.assertSuccessResponse(response)
         body = response.content.decode()
         self.assertNotIn('APPLY', body)
         self.assertIn('No items left to place.', body)
 
-    def test_dispatcher_get_smart_default_picks_most_occupied_existing_view(self):
+    def test_placement_get_smart_default_picks_most_occupied_existing_view(self):
         """Refresh path: top dropdown is pre-selected to whichever
         existing target (view OR collection) holds the most entities
         for this integration. Entities in view_a outnumber any
@@ -1030,7 +1063,7 @@ class DispatcherDismissAndShowTests(SyncViewTestCase):
         from hi.apps.entity.models import EntityView
         from hi.apps.entity.models import Entity
         from hi.apps.entity.enums import EntityType
-        # Place several entities (not from this dispatcher's
+        # Place several entities (not from this placement's
         # placement_input — pre-existing 'placed' state is what
         # the smart default queries against).
         for index in range(3):
@@ -1044,7 +1077,7 @@ class DispatcherDismissAndShowTests(SyncViewTestCase):
                 entity=placed, location_view=self.view_a,
             )
 
-        response = self.client.get(self._dispatcher_url())
+        response = self.client.get(self._placement_url())
         self.assertSuccessResponse(response)
         body = response.content.decode()
         # Top dropdown is pre-selected to view_a.
@@ -1052,47 +1085,47 @@ class DispatcherDismissAndShowTests(SyncViewTestCase):
             f'value="view:{self.view_a.id}" selected', body,
         )
 
-    def test_dispatcher_get_smart_default_falls_back_to_dont_add_when_no_history(self):
+    def test_placement_get_smart_default_falls_back_to_dont_add_when_no_history(self):
         """Refresh path with no prior placements for this integration
         → top dropdown defaults to 'Don't place' (operator picks)."""
-        response = self.client.get(self._dispatcher_url())
+        response = self.client.get(self._placement_url())
         self.assertSuccessResponse(response)
         body = response.content.decode()
         # 'Don't place' option carries the selected attribute.
         self.assertIn('value="" selected', body)
 
-    def test_dispatcher_get_disambiguates_new_view_name_when_collision_exists(self):
+    def test_placement_get_disambiguates_new_view_name_when_collision_exists(self):
         """When a LocationView already exists in the default Location
         with the integration's label, the '+ New view' option label
         shows the disambiguated name '(2)' so the operator's
         expectation matches the apply-time outcome."""
         from hi.apps.location.models import Location, LocationView
-        # The DispatcherDismissAndShowTests fixture builds a Location
+        # The PlacementDismissAndShowTests fixture builds a Location
         # named 'Test Location' with one view 'Kitchen'. Add a view
-        # named 'Dispatcher Test' (matching INTEGRATION_LABEL) to
+        # named 'Placement Test' (matching INTEGRATION_LABEL) to
         # collide with the new-view default.
         location = Location.objects.first()
         LocationView.objects.create(
-            location=location, name='Dispatcher Test', order_id=99,
+            location=location, name='Placement Test', order_id=99,
             svg_view_box_str='0 0 100 100', svg_rotate=0,
             svg_style_name_str='COLOR', location_view_type_str='DEFAULT',
         )
 
-        response = self.client.get(self._dispatcher_url())
+        response = self.client.get(self._placement_url())
         self.assertSuccessResponse(response)
         body = response.content.decode()
         # New-view option label reflects disambiguation, not the raw
         # integration label.
-        self.assertIn('+ New view: "Dispatcher Test (2)"', body)
+        self.assertIn('+ New view: "Placement Test (2)"', body)
 
-    def test_dispatcher_get_inventory_preview_shows_group_counts(self):
+    def test_placement_get_inventory_preview_shows_group_counts(self):
         """When the placement_input has groups, the modal renders
         a single-line preview of label/count tuples beneath the
         top dropdown."""
-        response = self.client.get(self._dispatcher_url())
+        response = self.client.get(self._placement_url())
         self.assertSuccessResponse(response)
         body = response.content.decode()
-        # The DispatcherGetFlow fixture builds a single 'Cameras'
+        # The PlacementGetFlow fixture builds a single 'Cameras'
         # group with 2 items; the preview line lower-cases the
         # label and shows the count.
         self.assertIn('2 cameras', body)

@@ -1,37 +1,50 @@
 """
-Dispatcher modal form parser.
+Placement view request shape — parsing the inputs, encoding the
+outputs.
 
-The dispatcher modal carries a three-level inheritance: top default
-→ group default → per-entity. Empty selections at any level inherit
-from the parent; explicit ``__skip__`` overrides inheritance with
-"don't place this entity"; a top-level ``__new_view__`` value
-creates one fresh ``LocationView`` named after the integration; a
-top-level ``__new_collection__`` value creates one fresh
-``Collection`` named after the integration. Group/entity overrides
-to existing views or collections remain in effect even when the top
-is one of the new-* sentinels.
+The placement modal carries two related concerns that this module
+owns:
 
-Form values for the dropdowns are *tagged* so views and collections
-can share the same select element without colliding on numeric ids:
+* ``PlacementUrlParams`` — the URL/form-param contract
+  (``is_initial_import``, ``entity_ids``). Single source of truth
+  for key names and value encodings; build URLs and parse requests
+  via this class rather than handling raw strings.
 
-  ``view:<id>``        — existing LocationView
-  ``collection:<id>``  — existing Collection
-  ``__new_view__``     — create one fresh LocationView (top only)
-  ``__new_collection__`` — create one fresh Collection (top only)
-  ``__skip__``         — explicit no-op overriding parent
-  ``''``               — inherit from parent (top → skip-all)
+* ``PlacementFormParser`` — the placement-form-body parser. The
+  placement modal carries a three-level inheritance: top default
+  → group default → per-entity. Empty selections at any level
+  inherit from the parent; explicit ``__skip__`` overrides
+  inheritance with "don't place this entity"; a top-level
+  ``__new_view__`` value creates one fresh ``LocationView`` named
+  after the integration; a top-level ``__new_collection__`` value
+  creates one fresh ``Collection``. Group/entity overrides to
+  existing views or collections remain in effect even when the
+  top is one of the new-* sentinels.
 
-This module owns that translation logic. The view layer hands a
-request + integration_data to ``DispatcherFormParser.parse(...)``
-and gets back a list of ``PlacementDecision`` values.
+  Form values for the dropdowns are *tagged* so views and
+  collections can share the same select element without colliding
+  on numeric ids:
+
+    ``view:<id>``        — existing LocationView
+    ``collection:<id>``  — existing Collection
+    ``__new_view__``     — create one fresh LocationView (top only)
+    ``__new_collection__`` — create one fresh Collection (top only)
+    ``__skip__``         — explicit no-op overriding parent
+    ``''``               — inherit from parent (top → skip-all)
+
+  ``parse(request, integration_data)`` returns a list of
+  ``PlacementDecision`` values for the placement service to apply.
 """
 import logging
-from typing import List, Optional, Tuple
+from dataclasses import dataclass, field
+from typing import Dict, List, Optional, Tuple
 
 from django.core.exceptions import BadRequest
+from django.utils.http import urlencode
 
 from hi.apps.collection.collection_manager import CollectionManager
 from hi.apps.collection.models import Collection
+from hi.apps.common.utils import str_to_bool
 from hi.apps.entity.entity_placement import PlacementDecision
 from hi.apps.entity.models import Entity
 from hi.apps.location.location_manager import LocationManager
@@ -40,8 +53,79 @@ from hi.apps.location.models import Location, LocationView
 logger = logging.getLogger(__name__)
 
 
-class DispatcherFormParser:
-    """Translates dispatcher modal form input into a list of
+@dataclass(frozen=True)
+class PlacementUrlParams:
+    """Encoded contract for the placement view's URL/form params.
+
+    Single source of truth for key names, value encodings, and
+    list separators — callers build URLs and parse requests via
+    this class rather than handling raw strings. Renaming a key
+    or changing an encoding happens in exactly one place.
+
+    Scope: the URL query params (``?is_initial_import=…&entity_ids=…``)
+    and the matching hidden form fields the placement modal POSTs
+    back. Does *not* cover the per-entity / per-group form fields
+    consumed by ``PlacementFormParser`` — those have their own
+    contract owned by that parser.
+    """
+
+    KEY_IS_INITIAL_IMPORT = 'is_initial_import'
+    KEY_ENTITY_IDS = 'entity_ids'
+    ENTITY_IDS_SEP = ','
+    TRUE_VALUE = '1'
+    FALSE_VALUE = '0'
+
+    is_initial_import : bool        = False
+    entity_ids        : List[int]   = field(default_factory=list)
+
+    def to_query_dict(self) -> Dict[str, str]:
+        """Sparse query dict — keys are omitted when their value
+        is the default, keeping URLs free of redundant
+        ``?is_initial_import=0`` cruft."""
+        result : Dict[str, str] = {}
+        if self.is_initial_import:
+            result[self.KEY_IS_INITIAL_IMPORT] = self.TRUE_VALUE
+        if self.entity_ids:
+            result[self.KEY_ENTITY_IDS] = self.ENTITY_IDS_SEP.join(
+                str(i) for i in self.entity_ids
+            )
+        return result
+
+    def append_to_url( self, base_url : str ) -> str:
+        """Return ``base_url`` with these params encoded as a
+        query string. Empty params produce no '?' suffix."""
+        qd = self.to_query_dict()
+        return f'{base_url}?{urlencode(qd)}' if qd else base_url
+
+    def is_initial_import_form_value(self) -> str:
+        """The hidden-form-field encoding of ``is_initial_import``
+        for templates that need to round-trip the flag through a
+        POST."""
+        return self.TRUE_VALUE if self.is_initial_import else self.FALSE_VALUE
+
+    @classmethod
+    def from_data(cls, data) -> 'PlacementUrlParams':
+        """Parse from ``request.GET`` or ``request.POST`` (or any
+        QueryDict-like). Malformed ``entity_ids`` raises BadRequest
+        so a tampered request fails loudly rather than silently
+        widening scope."""
+        is_initial = str_to_bool( data.get( cls.KEY_IS_INITIAL_IMPORT, '' ) )
+        raw = ( data.get( cls.KEY_ENTITY_IDS, '' ) or '' ).strip()
+        entity_ids : List[int] = []
+        if raw:
+            try:
+                entity_ids = [
+                    int( piece )
+                    for piece in raw.split( cls.ENTITY_IDS_SEP )
+                    if piece.strip()
+                ]
+            except ValueError:
+                raise BadRequest( f'Invalid {cls.KEY_ENTITY_IDS} parameter.' )
+        return cls( is_initial_import = is_initial, entity_ids = entity_ids )
+
+
+class PlacementFormParser:
+    """Translates placement modal form input into a list of
     ``PlacementDecision`` values, applying three-level inheritance
     and the skip / new-view / new-collection sentinels."""
 

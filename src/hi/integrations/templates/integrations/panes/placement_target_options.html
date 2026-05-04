@@ -1,5 +1,5 @@
 {% comment %}
-Reusable dropdown options for dispatcher target-selects (LocationViews
+Reusable dropdown options for placement target-selects (LocationViews
 + Collections).
 
 Renders LocationViews first as one <optgroup> per Location (ordered
@@ -10,7 +10,7 @@ share the same select element without colliding on numeric ids.
 
 Optionally honors ``selected_view_id`` / ``selected_collection_id``
 (passed via ``include … with …``) by adding the ``selected``
-attribute to the matching option. Used by the dispatcher's top
+attribute to the matching option. Used by the placement's top
 dropdown so the smart-default sticks; group/entity dropdowns don't
 pass them.
 

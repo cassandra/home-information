@@ -19,14 +19,14 @@ from hi.apps.entity.entity_placement import EntityPlacementService
 from hi.apps.entity.models import Entity
 from hi.apps.location.models import LocationView
 
-from .dispatcher_form import DispatcherFormParser
+from .placement_request import PlacementFormParser, PlacementUrlParams
 from .entity_operations import EntityIntegrationOperations
 from .enums import IntegrationDisableMode
 from .exceptions import IntegrationConnectionError
 from .integration_attribute_edit_context import IntegrationAttributeItemEditContext
 from .integration_manager import IntegrationManager
 from .models import IntegrationAttribute
-from .view_mixins import IntegrationDispatcherViewMixin, IntegrationViewMixin
+from .view_mixins import IntegrationPlacementViewMixin, IntegrationViewMixin
 
 logger = logging.getLogger(__name__)
 
@@ -142,13 +142,13 @@ class IntegrationSyncView( HiModalView, IntegrationViewMixin ):
     operator's single end-of-sync surface. When the sync produced
     new entities to place, the result modal exposes a primary
     'Place N new items' CTA that navigates (via antinode modal-to-
-    modal) to the dispatcher GET endpoint where the operator picks
+    modal) to the placement GET endpoint where the operator picks
     targets. When there are no new entities (refresh-with-updates,
     refresh-with-removes, errors, or nothing-new), the result modal
     shows just a dismissal action.
 
     This shape was chosen so updates and removes are never silently
-    swallowed by an automatic transition to the dispatcher: the
+    swallowed by an automatic transition to the placement: the
     operator always sees what changed, and only opts into placement
     when there's actually something to place.
     """
@@ -169,7 +169,7 @@ class IntegrationSyncView( HiModalView, IntegrationViewMixin ):
         # entities the sync is about to create don't change the
         # answer. is_initial_import = "no entities for this
         # integration before this sync ran"; threaded through to the
-        # dispatcher GET URL so a downstream Place-items click
+        # placement GET URL so a downstream Place-items click
         # carries the same operator intent.
         is_initial_import = not Entity.objects.filter(
             integration_id = integration_data.integration_id,
@@ -177,12 +177,21 @@ class IntegrationSyncView( HiModalView, IntegrationViewMixin ):
 
         sync_result = synchronizer.sync( is_initial_import = is_initial_import )
 
-        dispatcher_url = reverse(
-            'integrations_dispatcher',
-            kwargs = { 'integration_id': integration_data.integration_id },
+        # Scope the placement to just the entities this sync created.
+        # Without scoping, the placement's GET endpoint queries every
+        # unplaced entity for the integration, including pre-existing
+        # ones from prior incomplete placements.
+        new_entity_ids = (
+            sync_result.placement_input.all_entity_ids()
+            if sync_result.placement_input is not None else []
         )
-        if is_initial_import:
-            dispatcher_url = f'{dispatcher_url}?is_initial_import=1'
+        placement_url = PlacementUrlParams(
+            is_initial_import = is_initial_import,
+            entity_ids = new_entity_ids,
+        ).append_to_url( reverse(
+            'integrations_placement',
+            kwargs = { 'integration_id': integration_data.integration_id },
+        ) )
 
         return self.modal_response(
             request,
@@ -190,96 +199,35 @@ class IntegrationSyncView( HiModalView, IntegrationViewMixin ):
                 'sync_result': sync_result,
                 'integration_data': integration_data,
                 'is_initial_import': is_initial_import,
-                'dispatcher_url': dispatcher_url,
+                'placement_url': placement_url,
             },
             template_name = 'integrations/modals/sync_result.html',
         )
 
 
-class IntegrationApplyPlacementsView( HiModalView, IntegrationViewMixin,
-                                      IntegrationDispatcherViewMixin ):
+class IntegrationPlacementView( HiModalView, IntegrationViewMixin,
+                                IntegrationPlacementViewMixin ):
+    """Placement modal — single CBV handling both the GET (render)
+    and POST (form submission) paths on one URL.
+
+    GET queries currently-unplaced entities for the integration
+    (optionally scoped by ``entity_ids`` URL param), runs them
+    through the synchronizer's ``group_entities_for_placement``,
+    and renders the placement modal. Empty result falls back to
+    a brief acknowledgement modal so the operator isn't dropped
+    onto an empty placement.
+
+    POST processes the placement form. The form has two submit
+    buttons — APPLY and NOT NOW — sharing ``name="action"`` with
+    distinct values; this view branches on the value to render
+    either the post-dispatch summary modal (apply path) or the
+    dismiss-confirm modal (not-now path).
     """
-    Applies operator placement choices from the dispatcher modal.
-    Delegates form parsing to ``DispatcherFormParser`` and placement
-    application to ``EntityPlacementService``; the view itself is
-    HTTP entry/exit only.
 
-    POST-only — this is the form processor, not the dispatcher
-    renderer. The dispatcher modal itself is rendered by
-    ``IntegrationDispatcherView`` (GET).
-    """
+    DISMISS_ACTION_VALUE = 'dismiss'
 
     def get_template_name( self ) -> str:
-        return 'integrations/modals/post_dispatch.html'
-
-    def post( self, request, *args, **kwargs ):
-        integration_id = kwargs.get('integration_id')
-        integration_data = self.get_integration_data(
-            integration_id = integration_id,
-        )
-        decisions = DispatcherFormParser.parse(
-            request = request, integration_data = integration_data,
-        )
-        outcome = EntityPlacementService.apply_decisions( decisions = decisions )
-        # Carried forward from the sync flow's pre-sync state — see
-        # IntegrationSyncView.post. No DB query here; the form field
-        # is the authoritative signal of operator intent.
-        is_initial_import = ( request.POST.get('is_initial_import') == '1' )
-        return self.render_post_dispatch(
-            request = request,
-            integration_data = integration_data,
-            outcome = outcome,
-            is_initial_import = is_initial_import,
-        )
-
-
-class IntegrationDispatcherDismissView( HiModalView, IntegrationViewMixin,
-                                        IntegrationDispatcherViewMixin ):
-    """Confirmation shown when the operator clicks NOT NOW on the
-    dispatcher modal. Names the consequences explicitly so the
-    operator doesn't dismiss accidentally.
-
-    GO BACK on the confirmation goes to ``IntegrationDispatcherView``
-    (GET) which renders the dispatcher for the integration's
-    currently-unplaced entities."""
-
-    def get_template_name( self ) -> str:
-        return 'integrations/modals/dispatcher_dismiss.html'
-
-    def post( self, request, *args, **kwargs ):
-        integration_id = kwargs.get('integration_id')
-        integration_data = self.get_integration_data(
-            integration_id = integration_id,
-        )
-        is_initial_import = ( request.POST.get('is_initial_import') == '1' )
-        return self.render_dismiss_confirm(
-            request = request,
-            integration_data = integration_data,
-            is_initial_import = is_initial_import,
-        )
-
-
-class IntegrationDispatcherView( HiModalView, IntegrationViewMixin,
-                                 IntegrationDispatcherViewMixin ):
-    """Renders the dispatcher modal from an integration's
-    currently-unplaced entities.
-
-    GET-based — the input shape (an integration id, optional
-    ``is_initial_import`` flag) fits in URL parameters. Used by
-    the dispatcher-dismiss modal's GO BACK button and (in a future
-    enhancement) by a manage-page "Place unplaced items" entry
-    point.
-
-    The view queries entities for the integration that have no
-    EntityView row (via ``EntityPlacementService``), runs them
-    through the synchronizer's ``group_entities_for_placement`` to
-    rebuild the ``EntityPlacementInput`` shape, and renders the
-    dispatcher modal with that input. Empty result (nothing left
-    unplaced) falls back to a brief acknowledgement modal so the
-    operator isn't dropped onto an empty dispatcher."""
-
-    def get_template_name( self ) -> str:
-        return 'integrations/modals/dispatcher.html'
+        return 'integrations/modals/placement.html'
 
     def get( self, request, *args, **kwargs ):
         integration_id = kwargs.get('integration_id')
@@ -290,10 +238,20 @@ class IntegrationDispatcherView( HiModalView, IntegrationViewMixin,
         if synchronizer is None:
             return page_not_found_response( request )
 
-        is_initial_import = ( request.GET.get('is_initial_import') == '1' )
+        url_params = PlacementUrlParams.from_data( request.GET )
+        is_initial_import = url_params.is_initial_import
+        entity_id_filter = set( url_params.entity_ids ) if url_params.entity_ids else None
+
         entities = EntityPlacementService.query_unplaced_entities(
             integration_id = integration_data.integration_id,
         )
+        # When the caller scoped the URL to specific entity ids
+        # (sync-result CTA), narrow the unplaced set to those.
+        # Without scoping, the placement operates on the full
+        # unplaced set for the integration (recovery flow).
+        if entity_id_filter is not None:
+            entities = [ e for e in entities if e.id in entity_id_filter ]
+
         placement_input = synchronizer.group_entities_for_placement(
             entities = entities,
         )
@@ -304,18 +262,67 @@ class IntegrationDispatcherView( HiModalView, IntegrationViewMixin,
                 synchronizer = synchronizer,
                 is_initial_import = is_initial_import,
             )
-        return self.render_dispatcher(
+        return self.render_placement(
             request = request,
             integration_data = integration_data,
             placement_input = placement_input,
             is_initial_import = is_initial_import,
+            entity_id_filter = entity_id_filter,
         )
+
+    def post( self, request, *args, **kwargs ):
+        integration_id = kwargs.get('integration_id')
+        integration_data = self.get_integration_data(
+            integration_id = integration_id,
+        )
+        url_params = PlacementUrlParams.from_data( request.POST )
+        is_initial_import = url_params.is_initial_import
+
+        if request.POST.get('action') == self.DISMISS_ACTION_VALUE:
+            entity_ids = self._extract_placement_entity_ids( request )
+            return self.render_dismiss_confirm(
+                request = request,
+                integration_data = integration_data,
+                entity_ids = entity_ids,
+                is_initial_import = is_initial_import,
+            )
+
+        decisions = PlacementFormParser.parse(
+            request = request, integration_data = integration_data,
+        )
+        outcome = EntityPlacementService.apply_decisions( decisions = decisions )
+        return self.render_post_placement(
+            request = request,
+            integration_data = integration_data,
+            outcome = outcome,
+            is_initial_import = is_initial_import,
+        )
+
+    @staticmethod
+    def _extract_placement_entity_ids( request ):
+        """Pull the entity ids the placement form just posted.
+        The placement renders ``all_group_<i>_entity_ids`` per
+        group plus a single ``ungrouped_entity_ids`` field — both
+        carry the entity ids regardless of whether the operator
+        opened any drill-down."""
+        ids = []
+        for key, values in request.POST.lists():
+            if key == 'ungrouped_entity_ids' or (
+                key.startswith( 'all_group_' )
+                and key.endswith( '_entity_ids' )
+            ):
+                for value in values:
+                    try:
+                        ids.append( int(value) )
+                    except (TypeError, ValueError):
+                        continue
+        return ids
 
     def _render_empty( self, request, integration_data,
                        synchronizer, is_initial_import : bool ):
         """No-unplaced-items acknowledgement: render the result
         modal with the integration's icon + a brief 'no items'
-        info note rather than an empty dispatcher. Counts stay
+        info note rather than an empty placement. Counts stay
         zero so the modal lead reads 'Nothing new.'"""
         from hi.integrations.sync_result import IntegrationSyncResult
         sync_result = IntegrationSyncResult(

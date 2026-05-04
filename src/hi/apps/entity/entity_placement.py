@@ -115,6 +115,21 @@ class EntityPlacementInput:
             return False
         return not any( group.items for group in self.groups )
 
+    def all_entity_ids(self) -> 'List[int]':
+        """Flatten the entity ids from groups + ungrouped items.
+        Used by callers that need to thread the placement scope
+        through a URL or session — e.g., the sync-result CTA
+        passing the just-imported entity ids to the dispatcher
+        view so it scopes to those entities rather than all
+        unplaced ones for the integration."""
+        ids = []
+        for group in self.groups:
+            for item in group.items:
+                ids.append( item.entity.id )
+        for item in self.ungrouped_items:
+            ids.append( item.entity.id )
+        return ids
+
 
 @dataclass(frozen=True)
 class PlacementDecision:

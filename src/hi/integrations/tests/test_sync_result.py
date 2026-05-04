@@ -4,7 +4,7 @@ Tests for the IntegrationSyncResult shape.
 Sync-vocabulary fields: title, per-category name lists
 (created_list / updated_list / removed_list), info_list /
 error_list / footer_message, plus the optional placement_input
-that bridges to the dispatcher modal when the sync produced new
+that bridges to the placement modal when the sync produced new
 entities to place.
 
 Tests for the EntityPlacementInput / EntityPlacementItem /
@@ -91,12 +91,12 @@ class IntegrationSyncResultTests(SimpleTestCase):
     def test_placement_input_default_is_none(self):
         """A bare sync result has no placement_input — that's the
         signal the framework uses to decide whether to show the
-        dispatcher modal."""
+        placement modal."""
         result = IntegrationSyncResult(title='Empty')
         self.assertIsNone(result.placement_input)
 
     def test_placement_input_carries_groups_and_ungrouped(self):
-        """placement_input wires sync results to the dispatcher: the
+        """placement_input wires sync results to the placement: the
         synchronizer populates groups/ungrouped via
         group_entities_for_placement and stashes the input on the
         result."""
