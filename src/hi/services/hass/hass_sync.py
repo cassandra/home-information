@@ -27,19 +27,8 @@ class HassSynchronizer( IntegrationSynchronizer, HassMixin ):
 
     def get_description(self, is_initial_import: bool) -> Optional[str]:
         if is_initial_import:
-            return (
-                'Import will pull in items from your Home'
-                ' Assistant instance whose domain matches your configured'
-                ' import allowlist. Entities outside the allowlist are'
-                ' skipped and will not be imported.'
-            )
-        return (
-            'Refresh reconciles already-imported entities with the'
-            ' current state of your Home Assistant instance: new'
-            ' entities (within the allowlist) are added, existing'
-            ' entities are updated in place, and entities no longer'
-            ' present upstream are removed.'
-        )
+            return 'Only items matching your Allowed Item Types setting will be imported.'
+        return 'Only items matching your Allowed Item Types setting are compared.'
 
     def _sync_impl( self, is_initial_import: bool ) -> IntegrationSyncResult:
         hass_manager = self.hass_manager()
@@ -57,7 +46,7 @@ class HassSynchronizer( IntegrationSynchronizer, HassMixin ):
         result.info_list.append( f'Found {len(hass_entity_id_to_state)} current Home Assistant states.' )
 
         integration_key_to_entity = self._get_existing_hass_entities( result = result )
-        result.info_list.append( f'Found {len(integration_key_to_entity)} existing Home Assistant entities.' )
+        result.info_list.append( f'Found {len(integration_key_to_entity)} existing Home Assistant items.' )
 
         import_allowlist = hass_manager.import_allowlist
         hass_device_id_to_device = HassConverter.hass_states_to_hass_devices(
@@ -75,11 +64,11 @@ class HassSynchronizer( IntegrationSynchronizer, HassMixin ):
             skipped_count = total_states - imported_states
             if skipped_count > 0:
                 result.info_list.append(
-                    f'Filtered {skipped_count} states not matching the Import Allowlist.'
+                    f'Filtered {skipped_count} states not matching the Allowed Item Types.'
                 )
                 result.footer_message = (
                     'Not seeing all your Home Assistant items? '
-                    'Check the "Import Allowlist" in the Home Assistant '
+                    'Check the "Allowed Item Types" in the Home Assistant '
                     'integration settings to add more domains or device classes.'
                 )
 
@@ -127,7 +116,7 @@ class HassSynchronizer( IntegrationSynchronizer, HassMixin ):
         for entity in entity_queryset:
             integration_key = entity.integration_key
             if not integration_key:
-                result.error_list.append( f'Entity found without valid Home Assistant Id: {entity}' )
+                result.error_list.append( f'Item found without valid Home Assistant Id: {entity}' )
                 mock_hass_device_id = 1000000 + entity.id  # We need a (unique) placeholder for removals
                 integration_key = IntegrationKey(
                     integration_id = HassMetaData.integration_id,

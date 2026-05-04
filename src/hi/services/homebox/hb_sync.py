@@ -20,17 +20,9 @@ logger = logging.getLogger(__name__)
 class HomeBoxSynchronizer( IntegrationSynchronizer, HomeBoxMixin ):
 
     def get_description(self, is_initial_import: bool) -> Optional[str]:
-        if is_initial_import:
-            return (
-                'Import will pull in every inventory item visible to'
-                ' the configured HomeBox account. There is no per-item'
-                ' filter on the HomeBox side at this time.'
-            )
         return (
-            'Refresh reconciles already-imported items with the current'
-            ' contents of your HomeBox inventory: new items are added,'
-            ' existing items are updated in place, and items no longer'
-            ' present upstream are removed.'
+            'HomeBox Labels and Locations are kept as metadata on '
+            'each item, not as separate organizational concepts in HI.'
         )
 
     def _sync_impl( self, is_initial_import: bool ) -> IntegrationSyncResult:
@@ -91,7 +83,7 @@ class HomeBoxSynchronizer( IntegrationSynchronizer, HomeBoxMixin ):
             continue
 
         integration_key_to_entity = self._get_existing_hb_entities( result = result )
-        result.info_list.append( f'Found {len(integration_key_to_entity)} existing HomeBox entities.' )
+        result.info_list.append( f'Found {len(integration_key_to_entity)} existing HomeBox items.' )
 
         created_entities: List[Entity] = []
         with transaction.atomic():
@@ -128,7 +120,7 @@ class HomeBoxSynchronizer( IntegrationSynchronizer, HomeBoxMixin ):
         for entity in entity_queryset:
             integration_key = entity.integration_key
             if not integration_key:
-                result.error_list.append( f'Entity found without valid HomeBox Id: {entity}' )
+                result.error_list.append( f'Item found without valid HomeBox Id: {entity}' )
                 mock_hb_device_id = 1000000 + entity.id  # We need a (unique) placeholder for removals
                 integration_key = IntegrationKey(
                     integration_id = HbMetaData.integration_id,

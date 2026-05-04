@@ -460,7 +460,7 @@ class LocationViewEntityToggleView( View, LocationViewMixin ):
         try:
             entity_id = int( kwargs.get('entity_id'))
         except (TypeError, ValueError):
-            raise BadRequest( 'Invalid entity id.' )
+            raise BadRequest( 'Invalid item id.' )
         try:
             entity = Entity.objects.get( id = entity_id )
         except Entity.DoesNotExist:

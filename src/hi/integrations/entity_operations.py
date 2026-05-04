@@ -211,6 +211,6 @@ class EntityIntegrationOperations:
 
         if result is not None:
             result.info_list.append(
-                f'Preserved {integration_name} entity "{original_name}" with user data, '
+                f'Preserved {integration_name} item "{original_name}" with user data, '
                 f'disconnected from integration and renamed to "{entity.name}"'
             )

@@ -570,13 +570,15 @@ class IntegrationManagerTestCase(TestCase):
         
         # Call method
         manager.ensure_all_attributes_exist(metadata, integration)
-        
+
         # Verify no new attributes were created
         self.assertEqual(integration.attributes.count(), 1)
-        
-        # Verify existing attribute was not modified
+
+        # Existing attribute keeps the operator's value but the name
+        # is reconciled to the code-side label so future label
+        # renames propagate on next sync.
         attr = integration.attributes.first()
-        self.assertEqual(attr.name, 'Existing Attribute')
+        self.assertEqual(attr.name, MockIntegrationAttributeType.TEST_ATTR.label)
         self.assertEqual(attr.value, 'existing_value')
 
     def test_disable_integration_database_transaction(self):

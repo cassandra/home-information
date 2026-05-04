@@ -135,7 +135,7 @@ class TestHomeBoxSynchronizer(SimpleTestCase):
             item_existing,
         )
 
-        self.assertIn('Found 2 existing HomeBox entities.', result.info_list)
+        self.assertIn('Found 2 existing HomeBox items.', result.info_list)
         self.assertTrue(any('Ignoring HomeBox item due to missing/invalid id' in message
                             for message in result.error_list))
 

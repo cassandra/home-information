@@ -316,6 +316,12 @@ class IntegrationManager( Singleton ):
                     new_attribute_types.append( attribute_type )
                 else:
                     existing_attr = existing_attributes[integration_key]
+                    if existing_attr.name != attribute_type.label:
+                        existing_attr.name = attribute_type.label
+                        existing_attr.save(
+                            update_fields = ['name'],
+                            track_history = False,
+                        )
                     description = attribute_type.description or ''
                     if existing_attr.description != description:
                         existing_attr.description = description

@@ -329,7 +329,7 @@ class TestZoneMinderSynchronizerMonitorSync(TestCase):
             return {integration_key: mock_monitor}
             
         def mock_get_existing(result):
-            result.info_list.append('Found 0 existing entities')
+            result.info_list.append('Found 0 existing items')
             return {}
             
         def mock_create_entity(zm_monitor, result):
@@ -352,7 +352,7 @@ class TestZoneMinderSynchronizerMonitorSync(TestCase):
             
             # Test result aggregation from all sync phases
             self.assertIn('Fetched 1 monitor from ZM', result.info_list)
-            self.assertIn('Found 0 existing entities', result.info_list)
+            self.assertIn('Found 0 existing items', result.info_list)
             self.assertIn('Created entity for monitor Test Camera', result.info_list)
             
             # Test no errors in successful creation scenario
@@ -393,7 +393,7 @@ class TestZoneMinderSynchronizerMonitorSync(TestCase):
             return {}  # No current monitors
             
         def mock_get_existing(result):
-            result.info_list.append('Found 1 existing entity')
+            result.info_list.append('Found 1 existing item')
             return {integration_key: mock_entity}
             
         def mock_remove_entity(entity, result):
@@ -415,7 +415,7 @@ class TestZoneMinderSynchronizerMonitorSync(TestCase):
             
             # Test result tracking for cleanup scenario
             self.assertIn('Fetched 0 monitors from ZM', result.info_list)
-            self.assertIn('Found 1 existing entity', result.info_list)
+            self.assertIn('Found 1 existing item', result.info_list)
             self.assertIn('Removed stale entity Deleted Camera', result.info_list)
             
             # Test no errors in successful removal scenario
@@ -507,7 +507,7 @@ class TestZoneMinderSynchronizerExistingEntities(TestCase):
         result_dict = self.synchronizer._get_existing_zm_monitor_entities(result)
         
         # Should add error message
-        self.assertIn('ZM entity found without integration name', result.error_list[0])
+        self.assertIn('ZM item found without integration name', result.error_list[0])
         
         # Should NOT include entity in result (mock key doesn't start with 'monitor' prefix)
         self.assertEqual(len(result_dict), 0)
@@ -936,7 +936,7 @@ class TestZoneMinderSynchronizerWithRealData(TestCase):
         self.assertEqual(len(result_dict), 4)
         
         # Should have error message for broken entity
-        self.assertIn('ZM entity found without integration name', result.error_list[0])
+        self.assertIn('ZM item found without integration name', result.error_list[0])
         
         # Should include all real monitor integration keys
         integration_names = [key.integration_name for key in result_dict.keys()]

@@ -39,7 +39,7 @@ Refresh complete
   {% for summary in outcome.summaries %}
   <li>
     <strong>{{ summary.placed_entity_count }}</strong>
-    {% if summary.placed_entity_count == 1 %}entity{% else %}entities{% endif %}
+    {% if summary.placed_entity_count == 1 %}item{% else %}items{% endif %}
     placed in
     <strong>{{ summary.target_name }}</strong>.
   </li>
@@ -53,13 +53,13 @@ Refresh complete
 {% endif %}
 {% if primary_action and primary_action.0.is_view %}
 <p>
-  Imported entities start at a default position in each view;
+  Imported items start at a default position in each view;
   use <strong>Refine</strong> to drag them into place.
 </p>
 {% endif %}
 {% else %}
 <p>
-  Nothing was placed. You can place these entities in views or
+  Nothing was placed. You can place these items in views or
   collections later from edit mode.
 </p>
 {% endif %}

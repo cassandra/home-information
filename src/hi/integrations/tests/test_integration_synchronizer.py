@@ -176,7 +176,7 @@ class IntegrationSynchronizerRemovalTestCase(TestCase):
         self.assertEqual(self.result.removed_list, [original_name])
         self.assertEqual(len(self.result.info_list), 1)
         message = self.result.info_list[0]
-        self.assertIn('Preserved TestIntegration entity', message)
+        self.assertIn('Preserved TestIntegration item', message)
         self.assertIn('disconnected from integration', message)
         self.assertIn(original_name, message)
         self.assertIn('[Disconnected]', message)
@@ -621,7 +621,7 @@ class IntegrationSynchronizerRemovalTestCase(TestCase):
 
         # 3 entries: 2 pre-existing + 1 preservation note.
         self.assertEqual(len(self.result.info_list), 3)
-        self.assertIn('Preserved TestIntegration entity', self.result.info_list[2])
+        self.assertIn('Preserved TestIntegration item', self.result.info_list[2])
         self.assertEqual(self.result.info_list[0], 'Initial message')
         self.assertEqual(self.result.info_list[1], 'Another message')
         # And removed_list captured the name exactly once.
@@ -752,7 +752,7 @@ class IntegrationSynchronizerRemovalTransactionTestCase(TransactionTestCase):
         # original (pre-rename) name is captured in removed_list.
         self.assertEqual(len(self.result.info_list), 1)
         message = self.result.info_list[0]
-        self.assertIn('Preserved TestIntegration entity', message)
+        self.assertIn('Preserved TestIntegration item', message)
         self.assertIn('disconnected from integration', message)
         self.assertEqual(self.result.removed_list, ['Test Entity'])
 
@@ -831,7 +831,7 @@ class IntegrationSynchronizerRemovalTransactionTestCase(TransactionTestCase):
         
         # Preservation note surfaces in info_list.
         self.assertEqual(len(self.result.info_list), 1)
-        self.assertIn('Preserved TestIntegration entity', self.result.info_list[0])
+        self.assertIn('Preserved TestIntegration item', self.result.info_list[0])
 
         # Verify database integrity: remaining state has valid relationships
         remaining_state = EntityState.objects.get(id=second_state_id)
@@ -1066,4 +1066,4 @@ class IntegrationSynchronizerRemovalTransactionTestCase(TransactionTestCase):
                 
                 # Preservation note surfaces in info_list.
                 self.assertEqual(len(test_result.info_list), 1)
-                self.assertIn('Preserved TestIntegration entity', test_result.info_list[0])
+                self.assertIn('Preserved TestIntegration item', test_result.info_list[0])

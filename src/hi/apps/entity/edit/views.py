@@ -162,7 +162,7 @@ class EntityDeleteView( HiModalView, EntityViewMixin ):
         entity = self.get_entity( request, *args, **kwargs )
 
         if not entity.can_user_delete:
-            raise PermissionDenied( 'This entity cannot be deleted.' )
+            raise PermissionDenied( 'This item cannot be deleted.' )
         
         context = {
             'entity': entity,
@@ -177,7 +177,7 @@ class EntityDeleteView( HiModalView, EntityViewMixin ):
             raise BadRequest( 'Missing confirmation value.' )
 
         if not entity.can_user_delete:
-            raise PermissionDenied( 'This entity cannot be deleted.' )
+            raise PermissionDenied( 'This item cannot be deleted.' )
                 
         entity.delete()
 
@@ -345,7 +345,7 @@ class EntityArchiveView( HiModalView, EntityViewMixin ):
         entity = self.get_entity( request, *args, **kwargs )
 
         if entity.integration_id:
-            raise PermissionDenied( 'Integration entities cannot be archived.' )
+            raise PermissionDenied( 'Integration items cannot be archived.' )
 
         context = {
             'entity': entity,
@@ -360,7 +360,7 @@ class EntityArchiveView( HiModalView, EntityViewMixin ):
             raise BadRequest( 'Missing confirmation value.' )
 
         if entity.integration_id:
-            raise PermissionDenied( 'Integration entities cannot be archived.' )
+            raise PermissionDenied( 'Integration items cannot be archived.' )
 
         with transaction.atomic():
             archived_entity = ArchivedEntity.objects.create(
@@ -417,7 +417,7 @@ class EntityArchiveDetailView( HiModalView ):
         try:
             archived_entity = ArchivedEntity.objects.get( pk = archived_entity_id )
         except ArchivedEntity.DoesNotExist:
-            raise Http404( 'Archived entity not found.' )
+            raise Http404( 'Archived item not found.' )
 
         context = {
             'archived_entity': archived_entity,

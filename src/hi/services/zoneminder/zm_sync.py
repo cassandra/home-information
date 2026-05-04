@@ -40,16 +40,10 @@ class ZoneMinderSynchronizer( IntegrationSynchronizer, ZoneMinderMixin ):
     def get_description(self, is_initial_import: bool) -> Optional[str]:
         if is_initial_import:
             return (
-                'Import will pull in each ZoneMinder monitor as a'
-                ' camera entity, along with derived motion and'
+                'Each monitor becomes a camera with motion and'
                 ' run-state sensors.'
             )
-        return (
-            'Refresh reconciles already-imported cameras with the'
-            ' current set of ZoneMinder monitors: new monitors are'
-            ' added, existing entities are updated in place, and'
-            ' monitors no longer present upstream are removed.'
-        )
+        return None
 
     def _sync_impl( self, is_initial_import: bool ) -> IntegrationSyncResult:
         result = IntegrationSyncResult(
@@ -141,7 +135,7 @@ class ZoneMinderSynchronizer( IntegrationSynchronizer, ZoneMinderMixin ):
         result.info_list.append( f'Found {len(integration_key_to_monitor)} current ZM monitors.' )
 
         integration_key_to_entity = self._get_existing_zm_monitor_entities( result = result )
-        result.info_list.append( f'Found {len(integration_key_to_entity)} existing ZM entities.' )
+        result.info_list.append( f'Found {len(integration_key_to_entity)} existing ZM items.' )
 
         created_entities = []
         for integration_key, zm_monitor in integration_key_to_monitor.items():
@@ -187,7 +181,7 @@ class ZoneMinderSynchronizer( IntegrationSynchronizer, ZoneMinderMixin ):
         for entity in entity_queryset:
             integration_key = entity.integration_key
             if not integration_key:
-                result.error_list.append( f'ZM entity found without integration name: {entity}' )
+                result.error_list.append( f'ZM item found without integration name: {entity}' )
                 mock_monitor_id = 1000000 + entity.id  # We need a (unique) placeholder (will remove later)
                 integration_key = IntegrationKey(
                     integration_id = ZmMetaData.integration_id,
@@ -225,7 +219,7 @@ class ZoneMinderSynchronizer( IntegrationSynchronizer, ZoneMinderMixin ):
         # (already attached to the integration root) — surface as an
         # info note rather than as a created_list entry so it doesn't
         # inflate the count of placeable monitors.
-        result.info_list.append( f'Created ZM service entity: {zm_entity}' )
+        result.info_list.append( f'Created ZM service item: {zm_entity}' )
         return zm_entity
             
     def _create_monitor_entity( self,

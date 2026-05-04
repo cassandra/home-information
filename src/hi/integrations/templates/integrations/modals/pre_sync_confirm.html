@@ -68,16 +68,14 @@ Refresh from {{ integration_data.label }}?
 {% block body %}
 {% if is_initial_import %}
 <p>
-  Import will pull entities from <strong>{{ integration_data.label }}</strong>
-  into Home Information for the first time. Imported entities can be
+  Import will pull items from <strong>{{ integration_data.label }}</strong>
+  into Home Information for the first time. Imported items can be
   placed into your views in the next step.
 </p>
 {% else %}
 <p>
-  Refresh checks <strong>{{ integration_data.label }}</strong> for any
-  changes since your last import: new entities are added, existing
-  entities are updated in place, and entities no longer present
-  upstream are removed.
+  Refresh adds new items from <strong>{{ integration_data.label }}</strong>,
+  updates ones that have changed, and removes ones no longer present.
 </p>
 {% endif %}
 
