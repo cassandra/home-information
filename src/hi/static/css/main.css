@@ -23,6 +23,7 @@
   --error-color: #721817;
   --on-error-color: #ffffff;
   --error-highlight-color: #a01111;
+  --danger-color: var(--error-color);
   --muted-color: #7e7e81;
   --on-muted-color: #ffffff;
   --line-color: #cccccc;
@@ -2088,4 +2089,66 @@ g[hover] {
     font-weight: 600;
     text-align: center;
     margin-top: 0.25rem;
+}
+
+/* ==================== */
+/* Integration Sync Result Modal */
+/* ==================== */
+
+.hi-integration-logo {
+    max-height: 24px;
+    /* max-width clamps SVGs that lack intrinsic width/height
+       attributes (browsers default unsized SVGs to ~300x150,
+       which would distort the row layout). */
+    max-width: 24px;
+    width: auto;
+    height: auto;
+}
+
+.hi-uppercase-label {
+    letter-spacing: 0.05em;
+}
+
+.hi-sync-result-hero-icon {
+    font-size: 2.5rem;
+    line-height: 1;
+}
+
+.hi-sync-result-stat-number {
+    font-size: 2rem;
+    line-height: 1;
+}
+
+/* Color-coded category section borders. The modifier names mirror
+   Bootstrap's text-* utility vocabulary so callers pick the right
+   color by semantic name, but the actual color values come from the
+   project's brand theme variables for consistency with the
+   project-overridden text utilities (e.g. .text-secondary renders
+   --secondary-color, not Bootstrap grey). */
+.hi-category-section {
+    border-left: 3px solid var(--secondary-color);
+}
+.hi-category-section--secondary {
+    border-left-color: var(--secondary-color);
+}
+.hi-category-section--info {
+    border-left-color: var(--info-color);
+}
+.hi-category-section--success {
+    border-left-color: var(--success-color);
+}
+.hi-category-section--danger {
+    border-left-color: var(--danger-color);
+}
+
+.hi-sync-result-item-list {
+    max-height: 160px;
+    overflow-y: auto;
+}
+
+/* Diagnostic-notes list is taller than the per-category item lists
+   because info messages tend to be longer and more numerous. */
+.hi-sync-result-info-list {
+    max-height: 200px;
+    overflow-y: auto;
 }

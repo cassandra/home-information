@@ -14,8 +14,7 @@ All Integrations
   <div class="col-6 d-flex align-items-center">
     <img src="{% static integration_data.integration_metadata.logo_static_path %}"
          alt="{{ integration_data.integration_metadata.label }}"
-         class="img-fluid mr-2"
-         style="max-height: 24px; width: auto;">
+         class="img-fluid mr-2 hi-integration-logo">
     {{ integration_data.integration_metadata.label }}
   </div>
   <div class="col-3">
@@ -24,7 +23,7 @@ All Integrations
       {% icon "disabled" size="sm" css_class="hi-icon-left" %}Not configured
     </span>
     {% elif integration_data.integration.is_paused %}
-    <span class="font-weight-bold text-warning">
+    <span class="font-weight-bold text-secondary">
       {% icon "pause" size="sm" css_class="hi-icon-left" %}Paused
     </span>
     {% else %}

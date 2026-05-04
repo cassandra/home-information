@@ -40,12 +40,10 @@
 {% block body %}
 {% if integration_data %}
 <div class="d-flex align-items-center mb-3 pb-2 border-bottom">
-  <img class="mr-2"
-       style="height: 24px; width: auto;"
+  <img class="mr-2 hi-integration-logo"
        src="{% static integration_data.integration_metadata.logo_static_path %}"
        alt="{{ integration_data.label }} Logo">
-  <div class="text-muted small text-uppercase"
-       style="letter-spacing: 0.05em;">
+  <div class="text-muted small text-uppercase hi-uppercase-label">
     {{ integration_data.label }}
   </div>
 </div>
@@ -59,7 +57,7 @@
 {% endcomment %}
 {% if sync_result.error_list and not sync_result.has_changes %}
   <div class="text-center mb-4">
-    <div class="text-danger mb-1" style="font-size: 2.5rem; line-height: 1;">&#x26A0;</div>
+    <div class="text-danger mb-1 hi-sync-result-hero-icon">&#x26A0;</div>
     <h3 class="text-danger mb-1">
       {% if is_initial_import %}Import failed{% else %}Refresh failed{% endif %}
     </h3>
@@ -69,7 +67,7 @@
   </div>
 {% elif sync_result.error_list %}
   <div class="text-center mb-4">
-    <div class="text-warning mb-1" style="font-size: 2.5rem; line-height: 1;">&#x26A0;</div>
+    <div class="text-warning mb-1 hi-sync-result-hero-icon">&#x26A0;</div>
     <h3 class="text-warning mb-1">
       {% if is_initial_import %}Import completed with errors{% else %}Refresh completed with errors{% endif %}
     </h3>
@@ -79,7 +77,7 @@
   </div>
 {% elif not sync_result.has_changes %}
   <div class="text-center mb-4">
-    <div class="text-muted mb-1" style="font-size: 2.5rem; line-height: 1;">&#x2014;</div>
+    <div class="text-muted mb-1 hi-sync-result-hero-icon">&#x2014;</div>
     <h3 class="text-muted mb-1">
       {% if is_initial_import %}Nothing to import{% else %}Nothing new{% endif %}
     </h3>
@@ -93,7 +91,7 @@
   </div>
 {% else %}
   <div class="text-center mb-3">
-    <div class="text-success mb-1" style="font-size: 2.5rem; line-height: 1;">&#x2713;</div>
+    <div class="text-success mb-1 hi-sync-result-hero-icon">&#x2713;</div>
     <h3 class="text-success mb-1">
       {% if is_initial_import %}Import complete{% else %}Refresh complete{% endif %}
     </h3>
@@ -109,32 +107,26 @@
   <div class="d-flex justify-content-around text-center mb-4 pb-3 border-bottom">
     {% if sync_result.created_list %}
     <div class="px-3">
-      <div class="text-success font-weight-bold"
-           style="font-size: 2rem; line-height: 1;">
+      <div class="text-success font-weight-bold hi-sync-result-stat-number">
         {{ sync_result.created_list|length }}
       </div>
-      <div class="text-muted small text-uppercase"
-           style="letter-spacing: 0.05em;">Created</div>
+      <div class="text-muted small text-uppercase hi-uppercase-label">Created</div>
     </div>
     {% endif %}
     {% if sync_result.updated_list %}
     <div class="px-3">
-      <div class="text-info font-weight-bold"
-           style="font-size: 2rem; line-height: 1;">
+      <div class="text-info font-weight-bold hi-sync-result-stat-number">
         {{ sync_result.updated_list|length }}
       </div>
-      <div class="text-muted small text-uppercase"
-           style="letter-spacing: 0.05em;">Updated</div>
+      <div class="text-muted small text-uppercase hi-uppercase-label">Updated</div>
     </div>
     {% endif %}
     {% if sync_result.removed_list %}
     <div class="px-3">
-      <div class="text-secondary font-weight-bold"
-           style="font-size: 2rem; line-height: 1;">
+      <div class="text-secondary font-weight-bold hi-sync-result-stat-number">
         {{ sync_result.removed_list|length }}
       </div>
-      <div class="text-muted small text-uppercase"
-           style="letter-spacing: 0.05em;">Removed</div>
+      <div class="text-muted small text-uppercase hi-uppercase-label">Removed</div>
     </div>
     {% endif %}
   </div>
@@ -146,13 +138,11 @@
     the affordance to the entity names themselves.
   {% endcomment %}
   {% if sync_result.removed_list %}
-  <div class="mb-3 pl-3" style="border-left: 3px solid #6c757d;">
-    <div class="small text-secondary text-uppercase mb-1"
-         style="letter-spacing: 0.05em;">
+  <div class="mb-3 pl-3 hi-category-section hi-category-section--secondary">
+    <div class="small text-secondary text-uppercase mb-1 hi-uppercase-label">
       Removed ({{ sync_result.removed_list|length }})
     </div>
-    <ul class="list-unstyled small mb-0"
-        style="max-height: 160px; overflow-y: auto;">
+    <ul class="list-unstyled small mb-0 hi-sync-result-item-list">
       {% for name in sync_result.removed_list %}
       <li>{{ name }}</li>
       {% endfor %}
@@ -161,13 +151,11 @@
   {% endif %}
 
   {% if sync_result.updated_list %}
-  <div class="mb-3 pl-3" style="border-left: 3px solid #17a2b8;">
-    <div class="small text-info text-uppercase mb-1"
-         style="letter-spacing: 0.05em;">
+  <div class="mb-3 pl-3 hi-category-section hi-category-section--info">
+    <div class="small text-info text-uppercase mb-1 hi-uppercase-label">
       Updated ({{ sync_result.updated_list|length }})
     </div>
-    <ul class="list-unstyled small mb-0"
-        style="max-height: 160px; overflow-y: auto;">
+    <ul class="list-unstyled small mb-0 hi-sync-result-item-list">
       {% for name in sync_result.updated_list %}
       <li>{{ name }}</li>
       {% endfor %}
@@ -176,13 +164,11 @@
   {% endif %}
 
   {% if sync_result.created_list %}
-  <div class="mb-3 pl-3" style="border-left: 3px solid #28a745;">
-    <div class="small text-success text-uppercase mb-1"
-         style="letter-spacing: 0.05em;">
+  <div class="mb-3 pl-3 hi-category-section hi-category-section--success">
+    <div class="small text-success text-uppercase mb-1 hi-uppercase-label">
       Created ({{ sync_result.created_list|length }})
     </div>
-    <ul class="list-unstyled small mb-0"
-        style="max-height: 160px; overflow-y: auto;">
+    <ul class="list-unstyled small mb-0 hi-sync-result-item-list">
       {% for name in sync_result.created_list %}
       <li>{{ name }}</li>
       {% endfor %}
@@ -203,11 +189,10 @@
 
 {% comment %}Errors detail — expanded by default when present.{% endcomment %}
 {% if sync_result.error_list %}
-<div class="mb-2 pl-3" style="border-left: 3px solid #dc3545;">
-  <a class="small text-danger text-uppercase" data-toggle="collapse"
+<div class="mb-2 pl-3 hi-category-section hi-category-section--danger">
+  <a class="small text-danger text-uppercase hi-uppercase-label" data-toggle="collapse"
      href="#hi-sync-result-errors" role="button"
-     aria-expanded="true" aria-controls="hi-sync-result-errors"
-     style="letter-spacing: 0.05em;">
+     aria-expanded="true" aria-controls="hi-sync-result-errors">
     Errors ({{ sync_result.error_list|length }})
   </a>
   <div class="collapse show" id="hi-sync-result-errors">
@@ -229,8 +214,7 @@
     Show details ({{ sync_result.info_list|length }})
   </a>
   <div class="collapse" id="hi-sync-result-info">
-    <ul class="small mt-1 mb-0 text-muted"
-        style="max-height: 200px; overflow-y: auto;">
+    <ul class="small mt-1 mb-0 text-muted hi-sync-result-info-list">
       {% for info_message in sync_result.info_list %}
       <li>{{ info_message }}</li>
       {% endfor %}
