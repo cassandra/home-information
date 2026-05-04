@@ -1067,3 +1067,145 @@ class IntegrationSynchronizerRemovalTransactionTestCase(TransactionTestCase):
                 # Preservation note surfaces in info_list.
                 self.assertEqual(len(test_result.info_list), 1)
                 self.assertIn('Preserved TestIntegration item', test_result.info_list[0])
+
+
+
+class IntegrationSynchronizerOrphanDelegateTestCase(TestCase):
+    """Refresh-time entity removal must clean up delegate entities
+    (e.g., the Area auto-created when a camera/motion-detector was
+    placed in a view) that become orphaned by the removal — the same
+    closure the integration-disable path uses."""
+
+    def setUp(self):
+        from hi.apps.entity.models import EntityStateDelegation
+
+        self.synchronizer = TestSynchronizer()
+        self.result = IntegrationSyncResult(title='Test')
+        self.EntityStateDelegation = EntityStateDelegation
+
+        # Camera entity (integration-owned).
+        self.camera = Entity.objects.create(
+            name='Cam 1',
+            entity_type_str='CAMERA',
+            integration_id='test_integration',
+            integration_name='cam_1',
+        )
+        self.camera_state = EntityState.objects.create(
+            entity=self.camera,
+            entity_state_type_str='MOVEMENT',
+            name='Motion',
+        )
+
+        # Area entity (delegate, Hi-side, no integration_id).
+        self.area = Entity.objects.create(
+            name='Cam 1 Area',
+            entity_type_str='AREA',
+        )
+        self.EntityStateDelegation.objects.create(
+            entity_state=self.camera_state,
+            delegate_entity=self.area,
+        )
+
+    def test_orphan_delegate_area_is_deleted_when_only_principal_removed(self):
+        """Camera removed → Area has no remaining principal → Area
+        is part of the closure and gets deleted."""
+        camera_id = self.camera.id
+        area_id = self.area.id
+
+        self.synchronizer._remove_entity_intelligently(
+            self.camera, self.result, 'TestIntegration',
+        )
+
+        self.assertFalse(Entity.objects.filter(id=camera_id).exists())
+        self.assertFalse(Entity.objects.filter(id=area_id).exists())
+        # Both names surface in the result's removed_list.
+        self.assertIn('Cam 1', self.result.removed_list)
+        self.assertIn('Cam 1 Area', self.result.removed_list)
+
+    def test_shared_delegate_area_survives_when_other_principals_remain(self):
+        """Camera A removed; Area still serves Camera B → Area stays."""
+        camera_b = Entity.objects.create(
+            name='Cam 2',
+            entity_type_str='CAMERA',
+            integration_id='test_integration',
+            integration_name='cam_2',
+        )
+        camera_b_state = EntityState.objects.create(
+            entity=camera_b,
+            entity_state_type_str='MOVEMENT',
+            name='Motion',
+        )
+        # Area also delegates from Camera B's state — shared delegate.
+        self.EntityStateDelegation.objects.create(
+            entity_state=camera_b_state,
+            delegate_entity=self.area,
+        )
+
+        camera_id = self.camera.id
+        area_id = self.area.id
+
+        self.synchronizer._remove_entity_intelligently(
+            self.camera, self.result, 'TestIntegration',
+        )
+
+        self.assertFalse(Entity.objects.filter(id=camera_id).exists())
+        # Area must remain — Camera B still uses it.
+        self.assertTrue(Entity.objects.filter(id=area_id).exists())
+        # Result reports only Cam 1's removal.
+        self.assertEqual(self.result.removed_list, ['Cam 1'])
+
+    def test_orphan_delegate_with_user_data_is_preserved_not_deleted(self):
+        """Operator added a custom attribute to the auto-created
+        Area → Area is preserved (disconnected/renamed) rather than
+        hard-deleted, even though it became an orphan."""
+        EntityAttribute.objects.create(
+            entity=self.area,
+            name='Floor Plan Note',
+            value='Has skylight on east side',
+            value_type_str='TEXT',
+            attribute_type_str=str(AttributeType.CUSTOM),
+        )
+
+        camera_id = self.camera.id
+        area_id = self.area.id
+
+        self.synchronizer._remove_entity_intelligently(
+            self.camera, self.result, 'TestIntegration',
+        )
+
+        self.assertFalse(Entity.objects.filter(id=camera_id).exists())
+        # Area persists with operator-added data.
+        self.assertTrue(Entity.objects.filter(id=area_id).exists())
+        self.area.refresh_from_db()
+        self.assertTrue(self.area.name.startswith('[Disconnected]'))
+
+    def test_orphan_delegate_deleted_when_only_principal_has_user_data(self):
+        """Camera carries user data so it is preserved (kept as
+        [Disconnected]); Area carries none. Even though the
+        principal survives in name, the Area is correctly hard-
+        deleted — see the rationale documented on
+        ``EntityIntegrationOperations.remove_entities_with_closure``.
+        Pinning this case prevents a well-intentioned future
+        refactor from flipping it back to preservation."""
+        EntityAttribute.objects.create(
+            entity=self.camera,
+            name='Lens Notes',
+            value='Wide-angle, dome housing',
+            value_type_str='TEXT',
+            attribute_type_str=str(AttributeType.CUSTOM),
+        )
+
+        camera_id = self.camera.id
+        area_id = self.area.id
+
+        self.synchronizer._remove_entity_intelligently(
+            self.camera, self.result, 'TestIntegration',
+        )
+
+        # Camera kept with [Disconnected] rename (user data).
+        self.assertTrue(Entity.objects.filter(id=camera_id).exists())
+        self.camera.refresh_from_db()
+        self.assertTrue(self.camera.name.startswith('[Disconnected]'))
+        # Area is gone — its display purpose is negated once the
+        # principal's integration-derived state is removed.
+        self.assertFalse(Entity.objects.filter(id=area_id).exists())

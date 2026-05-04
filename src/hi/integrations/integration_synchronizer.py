@@ -24,7 +24,6 @@ from hi.apps.entity.models import Entity
 
 from .entity_operations import EntityIntegrationOperations
 from .sync_result import IntegrationSyncResult
-from .user_data_detector import EntityUserDataDetector
 
 logger = logging.getLogger(__name__)
 
@@ -161,23 +160,18 @@ class IntegrationSynchronizer:
         """
         Remove an entity that no longer exists in the integration.
 
-        If the entity has user-created attributes, preserve the entity but
-        disconnect it from the integration and remove only integration-
-        related components. Otherwise, perform complete deletion.
-
-        Appends the entity's *current* name (captured before any
-        rename in the preserve path) to ``result.removed_list`` —
-        both 'preserve with user data' and 'hard delete' are
-        operator-visible removals from the integration's perspective.
+        Delegates to ``EntityIntegrationOperations.remove_entities_with_closure``
+        — the same path the integration-disable SAFE flow uses. The
+        closure walk picks up delegate entities (e.g., the Area
+        auto-created when a camera was placed in a view) when their
+        only remaining principal is being removed. Operator-added
+        attributes on any closure entity trigger the
+        ``[Disconnected]`` preserve path; otherwise the entity is
+        hard-deleted.
         """
-        result.removed_list.append(entity.name)
-        if EntityUserDataDetector.has_user_created_attributes(entity):
-            EntityIntegrationOperations.preserve_with_user_data(
-                entity = entity,
-                integration_name = integration_name,
-                result = result,
-            )
-        else:
-            # No user data, safe to delete completely; deletion
-            # cascades to all related data.
-            entity.delete()
+        EntityIntegrationOperations.remove_entities_with_closure(
+            seed_entity_ids = { entity.id },
+            integration_name = integration_name,
+            preserve_user_data = True,
+            result = result,
+        )

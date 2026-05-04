@@ -26,7 +26,6 @@ from .integration_gateway import IntegrationGateway
 from .transient_models import IntegrationKey
 from .models import Integration, IntegrationAttribute
 from .transient_models import IntegrationMetaData
-from .user_data_detector import EntityUserDataDetector
 
 logger = logging.getLogger(__name__)
 
@@ -432,26 +431,21 @@ class IntegrationManager( Singleton ):
             integration_id = integration_data.integration_id
 
             with transaction.atomic():
-                # Targeted entity set includes the integration's own entities
-                # plus any delegate entities that would be orphaned by their
-                # removal (e.g., the Area entity auto-created when a motion
-                # sensor was added to a view).
-                target_ids = EntityIntegrationOperations.get_removal_entity_ids(
-                    integration_id = integration_id,
+                # Seed: every entity attached to this integration. The
+                # closure walk inside the helper picks up delegate
+                # entities (e.g., Area entities auto-created when a
+                # motion sensor was placed in a view) that would be
+                # orphaned by the removal.
+                seed_entity_ids = list(
+                    Entity.objects
+                    .filter( integration_id = integration_id )
+                    .values_list( 'id', flat = True )
                 )
-                entities = list( Entity.objects.filter( id__in = target_ids ) )
-                if mode == IntegrationDisableMode.ALL:
-                    for entity in entities:
-                        entity.delete()
-                else:  # SAFE
-                    for entity in entities:
-                        if EntityUserDataDetector.has_user_created_attributes( entity ):
-                            EntityIntegrationOperations.preserve_with_user_data(
-                                entity = entity,
-                                integration_name = integration_id,
-                            )
-                        else:
-                            entity.delete()
+                EntityIntegrationOperations.remove_entities_with_closure(
+                    seed_entity_ids = seed_entity_ids,
+                    integration_name = integration_id,
+                    preserve_user_data = ( mode != IntegrationDisableMode.ALL ),
+                )
 
                 integration_data.integration.is_enabled = False
                 integration_data.integration.is_paused = False

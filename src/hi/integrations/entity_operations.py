@@ -98,6 +98,57 @@ class EntityIntegrationOperations:
         )
         return EntityIntegrationOperations.collect_removal_closure( seed )
 
+    @classmethod
+    def remove_entities_with_closure(
+            cls,
+            seed_entity_ids    : Iterable[int],
+            integration_name   : str,
+            preserve_user_data : bool                              = True,
+            result             : Optional[IntegrationSyncResult]   = None ):
+        """Canonical removal for integration-owned entities.
+
+        Walks ``collect_removal_closure(seed_entity_ids)`` so every
+        delegate entity that would be orphaned by the removal (e.g.,
+        the Area auto-created when a camera was placed in a view) is
+        included. Each entity in the closure is then handled the
+        same way:
+
+          * ``preserve_user_data=True`` (the SAFE pattern, used by
+            DELETE SAFE on disable and by sync-time refresh
+            removals): entities carrying operator-added attributes
+            are preserved via ``[Disconnected]`` rename; others are
+            hard-deleted.
+
+          * ``preserve_user_data=False`` (the DELETE ALL pattern):
+            every entity in the closure is hard-deleted, including
+            those with user-added data.
+
+        ``result`` is optional. When provided, each closure entity's
+        name is appended to ``result.removed_list``; the preserve
+        path also adds its diagnostic note to ``result.info_list``.
+
+        Each entity in the closure is classified by its *own* user
+        data, independent of the seed's classification. This
+        produces the right outcome in the camera-preserved /
+        Area-no-user-data corner: an auto-created Area's display
+        purpose depends on the principal's live state, which the
+        preserve path removes — so deleting the now-purposeless
+        Area is correct even when its principal is being kept.
+        """
+        closure_ids = cls.collect_removal_closure( seed_entity_ids )
+        for entity in Entity.objects.filter( id__in = closure_ids ):
+            if result is not None:
+                result.removed_list.append( entity.name )
+            if preserve_user_data and EntityUserDataDetector.has_user_created_attributes( entity ):
+                cls.preserve_with_user_data(
+                    entity = entity,
+                    integration_name = integration_name,
+                    result = result,
+                )
+            else:
+                entity.delete()
+        return
+
     @staticmethod
     def summarize_for_removal( integration_id : str ) -> IntegrationRemovalSummary:
         """
