@@ -1023,8 +1023,8 @@ class TestZoneMinderSynchronizerSyncResultGrouping(TestCase):
     into a single 'Monitors' group on the IntegrationSyncResult.
 
     The single-group choice reflects the typical ZM UX — operators
-    place all cameras into the same view — while the dispatcher's
-    drill-down still allows per-monitor placement when needed."""
+    place all cameras into the same view — while the placement
+    modal's drill-down still allows per-monitor placement when needed."""
 
     def setUp(self):
         self.synchronizer = ZoneMinderSynchronizer()
@@ -1065,6 +1065,6 @@ class TestZoneMinderSynchronizerSyncResultGrouping(TestCase):
              patch.object(self.synchronizer, '_sync_monitors', return_value=[]):
             result = self.synchronizer._sync_impl(is_initial_import=True)
 
-        # No newly-created entities → no placement input → dispatcher
-        # is not shown.
+        # No newly-created entities → no placement input → placement
+        # modal is not shown.
         self.assertIsNone(result.placement_input)

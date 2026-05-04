@@ -23,14 +23,14 @@ Context:
 {% for location, views in location_view_groups %}
 <optgroup label="{{ location.name }} (Views)">
   {% for view in views %}
-  <option value="view:{{ view.id }}"{% if selected_view_id == view.id %} selected{% endif %}>🗺 {{ view.name }}</option>
+  <option value="view:{{ view.id }}"{% if selected_view_id == view.id %} selected{% endif %}>{{ view.name }}</option>
   {% endfor %}
 </optgroup>
 {% endfor %}
 {% if collection_list %}
 <optgroup label="Collections">
   {% for collection in collection_list %}
-  <option value="collection:{{ collection.id }}"{% if selected_collection_id == collection.id %} selected{% endif %}>📋 {{ collection.name }}</option>
+  <option value="collection:{{ collection.id }}"{% if selected_collection_id == collection.id %} selected{% endif %}>{{ collection.name }}</option>
   {% endfor %}
 </optgroup>
 {% endif %}

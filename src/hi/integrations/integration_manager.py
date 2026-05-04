@@ -428,28 +428,44 @@ class IntegrationManager( Singleton ):
             # in-flight sync work.
             self._stop_integration_monitor( integration_data = integration_data )
 
-            integration_id = integration_data.integration_id
+        integration_id = integration_data.integration_id
 
-            with transaction.atomic():
-                # Seed: every entity attached to this integration. The
-                # closure walk inside the helper picks up delegate
-                # entities (e.g., Area entities auto-created when a
-                # motion sensor was placed in a view) that would be
-                # orphaned by the removal.
-                seed_entity_ids = list(
-                    Entity.objects
-                    .filter( integration_id = integration_id )
-                    .values_list( 'id', flat = True )
-                )
-                EntityIntegrationOperations.remove_entities_with_closure(
-                    seed_entity_ids = seed_entity_ids,
-                    integration_name = integration_id,
-                    preserve_user_data = ( mode != IntegrationDisableMode.ALL ),
-                )
+        # DB-level entity removal does not need the manager's data
+        # lock — it operates on rows, not on the in-memory monitor
+        # map, and transaction.atomic() handles row-level
+        # concurrency. Holding _data_lock across the closure walk
+        # and cascading deletes would block all other lifecycle
+        # calls on every integration for the duration of a wide
+        # removal.
+        with transaction.atomic():
+            # Seed: every entity attached to this integration. The
+            # closure walk inside the helper picks up delegate
+            # entities (e.g., Area entities auto-created when a
+            # motion sensor was placed in a view) that would be
+            # orphaned by the removal.
+            seed_entity_ids = list(
+                Entity.objects
+                .filter( integration_id = integration_id )
+                .values_list( 'id', flat = True )
+            )
+            EntityIntegrationOperations.remove_entities_with_closure(
+                seed_entity_ids = seed_entity_ids,
+                integration_name = integration_id,
+                preserve_user_data = ( mode != IntegrationDisableMode.ALL ),
+            )
 
-                integration_data.integration.is_enabled = False
-                integration_data.integration.is_paused = False
-                integration_data.integration.save()
+        with self._data_lock:
+            # Re-read inside the lock: a concurrent lifecycle call
+            # may have touched the row while we were doing the
+            # lock-free DB removal. The disable intent still wins
+            # (entities are gone), so we unconditionally flip both
+            # flags to the disabled state — but refresh first so
+            # we don't clobber unrelated fields a concurrent caller
+            # may have written.
+            integration_data.integration.refresh_from_db()
+            integration_data.integration.is_enabled = False
+            integration_data.integration.is_paused = False
+            integration_data.integration.save()
         return
 
     def pause_integration( self, integration_data : IntegrationData ):

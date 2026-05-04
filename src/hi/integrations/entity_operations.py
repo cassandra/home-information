@@ -7,7 +7,7 @@ are distinct from the read-only analytical methods on EntityUserDataDetector.
 """
 
 import logging
-from typing import Iterable, Optional, Set
+from typing import Dict, Iterable, Optional, Set
 
 from django.db import transaction
 
@@ -69,15 +69,20 @@ class EntityIntegrationOperations:
             if not candidate_ids:
                 break
 
-            added_this_pass : Set[int] = set()
-            for candidate_id in candidate_ids:
-                principal_ids = set(
-                    EntityStateDelegation.objects.filter(
-                        delegate_entity_id = candidate_id,
-                    ).values_list( 'entity_state__entity_id', flat = True )
-                )
-                if principal_ids and principal_ids.issubset( closure ):
-                    added_this_pass.add( candidate_id )
+            # Single bulk query for every candidate's full principal
+            # set, then group in Python — replaces a per-candidate
+            # query that was O(passes × candidates) on the DB.
+            principals_by_candidate : Dict[int, Set[int]] = {}
+            for delegate_id, principal_id in EntityStateDelegation.objects.filter(
+                    delegate_entity_id__in = candidate_ids,
+            ).values_list( 'delegate_entity_id', 'entity_state__entity_id' ):
+                principals_by_candidate.setdefault( delegate_id, set() ).add( principal_id )
+
+            added_this_pass = {
+                candidate_id
+                for candidate_id, principal_ids in principals_by_candidate.items()
+                if principal_ids and principal_ids.issubset( closure )
+            }
 
             if not added_this_pass:
                 break

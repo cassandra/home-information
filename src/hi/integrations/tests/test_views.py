@@ -498,7 +498,7 @@ class EnableViewReviewConfigTests(SyncViewTestCase):
 
 
 # --------------------------------------------------------------------------
-# Placement + post-dispatch + refine (Phase 3) tests
+# Placement + post-placement + refine (Phase 3) tests
 # --------------------------------------------------------------------------
 
 
@@ -557,7 +557,7 @@ class _PlacementTestGateway(IntegrationGateway):
 
 class PlacementFlowTests(SyncViewTestCase):
     """End-to-end placement flow: sync → placement modal → apply →
-    post-dispatch modal."""
+    post-placement modal."""
 
     INTEGRATION_ID = 'placement_test'
 
@@ -664,15 +664,9 @@ class PlacementFlowTests(SyncViewTestCase):
             'integrations_sync', kwargs={'integration_id': self.INTEGRATION_ID},
         )
 
-    def _dispatch_url(self):
+    def _placement_url(self):
         # GET renders / POST processes — same URL after the
         # GET+POST view consolidation.
-        return reverse(
-            'integrations_placement',
-            kwargs={'integration_id': self.INTEGRATION_ID},
-        )
-
-    def _placement_url(self):
         return reverse(
             'integrations_placement',
             kwargs={'integration_id': self.INTEGRATION_ID},
@@ -735,11 +729,11 @@ class PlacementFlowTests(SyncViewTestCase):
         # And the CTA still routes to the placement.
         self.assertIn('Place 1 new item', body)
 
-    def test_dispatch_top_inherits_to_groups_and_entities(self):
+    def test_placement_top_inherits_to_groups_and_entities(self):
         """Top view chosen, groups + entities at default → every
         entity goes to the top view."""
         from hi.apps.entity.models import EntityView
-        response = self.client.post(self._dispatch_url(), {
+        response = self.client.post(self._placement_url(), {
             'top_view': f'view:{self.view_a.id}',
             'all_group_0_entity_ids': [str(self.entity_a.id), str(self.entity_b.id)],
             'all_group_1_entity_ids': [str(self.entity_c.id)],
@@ -750,11 +744,11 @@ class PlacementFlowTests(SyncViewTestCase):
             self.assertTrue(EntityView.objects.filter(
                 entity=entity, location_view=self.view_a).exists())
 
-    def test_dispatch_group_overrides_top(self):
+    def test_placement_group_overrides_top(self):
         """Group view overrides top for entities in that group;
         other groups still inherit top."""
         from hi.apps.entity.models import EntityView
-        response = self.client.post(self._dispatch_url(), {
+        response = self.client.post(self._placement_url(), {
             'top_view': f'view:{self.view_a.id}',
             'all_group_0_entity_ids': [str(self.entity_a.id), str(self.entity_b.id)],
             'all_group_1_entity_ids': [str(self.entity_c.id)],
@@ -769,10 +763,10 @@ class PlacementFlowTests(SyncViewTestCase):
         self.assertTrue(EntityView.objects.filter(
             entity=self.entity_c, location_view=self.view_a).exists())
 
-    def test_dispatch_drill_down_override_wins(self):
+    def test_placement_drill_down_override_wins(self):
         """Per-entity override beats group default for that entity."""
         from hi.apps.entity.models import EntityView
-        response = self.client.post(self._dispatch_url(), {
+        response = self.client.post(self._placement_url(), {
             'top_view': f'view:{self.view_a.id}',
             'all_group_0_entity_ids': [str(self.entity_a.id), str(self.entity_b.id)],
             'group_view_0': f'view:{self.view_a.id}',
@@ -786,21 +780,21 @@ class PlacementFlowTests(SyncViewTestCase):
         self.assertFalse(EntityView.objects.filter(
             entity=self.entity_b, location_view=self.view_a).exists())
 
-    def test_dispatch_skip_at_top_skips_everything(self):
+    def test_placement_skip_at_top_skips_everything(self):
         """top='' + groups inherit + entities inherit → all skipped."""
         from hi.apps.entity.models import EntityView
-        response = self.client.post(self._dispatch_url(), {
+        response = self.client.post(self._placement_url(), {
             'top_view': '',
             'all_group_0_entity_ids': [str(self.entity_a.id)],
         })
         self.assertSuccessResponse(response)
         self.assertFalse(EntityView.objects.filter(entity=self.entity_a).exists())
 
-    def test_dispatch_explicit_group_skip_overrides_top(self):
+    def test_placement_explicit_group_skip_overrides_top(self):
         """Top view chosen, group explicitly skipped → those entities
         don't get placed even though top has a view."""
         from hi.apps.entity.models import EntityView
-        response = self.client.post(self._dispatch_url(), {
+        response = self.client.post(self._placement_url(), {
             'top_view': f'view:{self.view_a.id}',
             'all_group_0_entity_ids': [str(self.entity_a.id)],
             'group_view_0': '__skip__',
@@ -808,10 +802,10 @@ class PlacementFlowTests(SyncViewTestCase):
         self.assertSuccessResponse(response)
         self.assertFalse(EntityView.objects.filter(entity=self.entity_a).exists())
 
-    def test_dispatch_explicit_entity_skip_overrides_group(self):
+    def test_placement_explicit_entity_skip_overrides_group(self):
         """Group inherits top, but specific entity is explicitly skipped."""
         from hi.apps.entity.models import EntityView
-        response = self.client.post(self._dispatch_url(), {
+        response = self.client.post(self._placement_url(), {
             'top_view': f'view:{self.view_a.id}',
             'all_group_0_entity_ids': [str(self.entity_a.id), str(self.entity_b.id)],
             f'group_0_entity_{self.entity_a.id}_view': '__skip__',
@@ -821,14 +815,14 @@ class PlacementFlowTests(SyncViewTestCase):
         self.assertTrue(EntityView.objects.filter(
             entity=self.entity_b, location_view=self.view_a).exists())
 
-    def test_dispatch_new_view_creates_view_and_places_inherited_entities(self):
+    def test_placement_new_view_creates_view_and_places_inherited_entities(self):
         """top='__new__' creates a fresh LocationView named after the
         integration; entities at default inherit it; existing-view
         overrides at group/entity levels still apply."""
         from hi.apps.entity.models import EntityView
         from hi.apps.location.models import LocationView
         before_view_ids = set(LocationView.objects.values_list('id', flat=True))
-        response = self.client.post(self._dispatch_url(), {
+        response = self.client.post(self._placement_url(), {
             'top_view': '__new_view__',
             'all_group_0_entity_ids': [str(self.entity_a.id), str(self.entity_b.id)],
             'all_group_1_entity_ids': [str(self.entity_c.id)],
@@ -851,10 +845,10 @@ class PlacementFlowTests(SyncViewTestCase):
         # New view name = integration label.
         self.assertEqual(new_view.name, 'Placement Test')
 
-    def test_post_dispatch_modal_renders_refine_for_primary_view(self):
-        """The post-dispatch modal includes a REFINE button targeting
+    def test_post_placement_modal_renders_refine_for_primary_view(self):
+        """The post-placement modal includes a REFINE button targeting
         the affected view, plus the view's name in the summary."""
-        response = self.client.post(self._dispatch_url(), {
+        response = self.client.post(self._placement_url(), {
             'top_view': f'view:{self.view_a.id}',
             'all_group_0_entity_ids': [str(self.entity_a.id)],
         })
@@ -866,11 +860,11 @@ class PlacementFlowTests(SyncViewTestCase):
             'integrations_refine', kwargs={'location_view_id': self.view_a.id}
         ), body)
 
-    def test_post_dispatch_primary_is_highest_count(self):
+    def test_post_placement_primary_is_highest_count(self):
         """When multiple views are affected, primary REFINE points at
         the view with the most placed entities."""
         # Cameras (2) → view_b; Light (1) → view_a. view_b wins.
-        response = self.client.post(self._dispatch_url(), {
+        response = self.client.post(self._placement_url(), {
             'top_view': f'view:{self.view_b.id}',
             'all_group_0_entity_ids': [str(self.entity_a.id), str(self.entity_b.id)],
             'all_group_1_entity_ids': [str(self.entity_c.id)],

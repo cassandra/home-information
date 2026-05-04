@@ -298,7 +298,7 @@ class TestHomeBoxSynchronizer(SimpleTestCase):
 class TestHomeBoxSynchronizerSyncResultGrouping(SimpleTestCase):
     """Phase 2 grouping behavior: HomeBox has no domain notion of
     grouping, so every imported item lands in `ungrouped_items`.
-    `groups` stays empty. The framework's dispatcher modal decides
+    `groups` stays empty. The framework's placement modal decides
     how to surface ungrouped items at render time."""
 
     def test_sync_impl_populates_ungrouped_items_only(self):
