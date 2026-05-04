@@ -6,7 +6,6 @@ from django.test import SimpleTestCase
 from requests import Response
 
 from hi.services.homebox.hb_client import HbClient
-from hi.services.homebox.hb_models import HbItem
 
 
 logging.disable(logging.CRITICAL)
@@ -131,24 +130,45 @@ class TestHbClient(SimpleTestCase):
             client.get_items_summary()
         self.assertIn('URL may be incorrect', str(context.exception))
 
-    def test_get_items_fetches_detail_and_skips_invalid_or_failed_items(self):
+    def test_get_items_fetches_detail_for_each_item(self):
+        """Happy path: each summary entry fans out to a detail
+        fetch and the detail responses are wrapped as HbItems.
+        Items with no id are skipped (still safe — the summary
+        is the only signal)."""
         with patch.object(HbClient, '_login'):
             client = HbClient(api_options=self._api_options())
 
         client._make_request = Mock(side_effect=[
             {'items': [{'id': 'item-1'}, {'id': 'item-2'}, {}, {'id': 'item-3'}]},
             {'id': 'item-1', 'name': 'One'},
-            Exception('detail request failed'),
+            {'id': 'item-2', 'name': 'Two'},
             {'id': 'item-3', 'name': 'Three'},
         ])
 
         items = client.get_items()
 
-        self.assertEqual(len(items), 2)
-        self.assertIsInstance(items[0], HbItem)
-        self.assertIsInstance(items[1], HbItem)
-        self.assertEqual(items[0].id, 'item-1')
-        self.assertEqual(items[1].id, 'item-3')
+        self.assertEqual(len(items), 3)
+        self.assertEqual([i.id for i in items], ['item-1', 'item-2', 'item-3'])
+
+    def test_get_items_propagates_detail_fetch_failures(self):
+        """A failed detail fetch propagates rather than being
+        silently dropped: a partial-success outcome here is
+        misinterpreted by the sync layer as upstream removals or a
+        clean 'nothing to import,' which masks real upstream
+        problems. The sync flow's outer try/except converts the
+        propagated error into an ``error_list`` entry."""
+        with patch.object(HbClient, '_login'):
+            client = HbClient(api_options=self._api_options())
+
+        client._make_request = Mock(side_effect=[
+            {'items': [{'id': 'item-1'}, {'id': 'item-2'}]},
+            {'id': 'item-1', 'name': 'One'},
+            Exception('detail request failed'),
+        ])
+
+        with self.assertRaises(Exception) as context:
+            client.get_items()
+        self.assertIn('detail request failed', str(context.exception))
 
     def test_download_attachment_returns_none_when_request_is_not_response(self):
         with patch.object(HbClient, '_login'):

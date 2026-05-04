@@ -114,12 +114,17 @@ class HbConverter:
 
     @classmethod
     def hb_item_to_entity_payload( cls, hb_item: HbItem ) -> Dict:
+        # Timestamps (createdAt / updatedAt) are deliberately excluded.
+        # They are metadata about *when* a change happened, not the
+        # content of the change — and real HomeBox can tick updatedAt
+        # for housekeeping events (label re-associations, internal
+        # caches) the operator doesn't care about. Including them
+        # would make payload-equality change detection report
+        # spurious updates on every refresh.
         payload: Dict = {
             'quantity': hb_item.quantity,
             'insured': hb_item.insured,
             'archived': hb_item.archived,
-            'created_at': hb_item.created_at,
-            'updated_at': hb_item.updated_at,
             'purchase_price': hb_item.purchase_price,
             'asset_id': hb_item.asset_id,
             'sync_child_items_locations': hb_item.sync_child_items_locations,

@@ -30,7 +30,7 @@ class HassAttributeType( IntegrationAttributeType ):
         True,
     )
     IMPORT_ALLOWLIST = (
-        'Import Allowlist',
+        'Allowed Item Types',
         'HA domains and device classes to import (one per line). '
         'Use "domain" for all classes, or "domain:class" for specific ones.',
         AttributeValueType.TEXT,

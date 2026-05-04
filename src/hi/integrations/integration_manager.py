@@ -26,7 +26,6 @@ from .integration_gateway import IntegrationGateway
 from .transient_models import IntegrationKey
 from .models import Integration, IntegrationAttribute
 from .transient_models import IntegrationMetaData
-from .user_data_detector import EntityUserDataDetector
 
 logger = logging.getLogger(__name__)
 
@@ -118,6 +117,18 @@ class IntegrationManager( Singleton ):
     def get_health_status_providers(self) -> List[HealthStatusProvider]:
         with self._data_lock:
             return list( self._monitor_map.values() )
+
+    def get_health_status_provider_map(self) -> Dict[str, HealthStatusProvider]:
+        """Snapshot of running monitors keyed by integration_id.
+
+        Callers that want to pair every configured integration with
+        its monitor (when present) — e.g., the system-info page —
+        use this alongside ``get_integration_data_list``. A missing
+        key for a configured integration means no live monitor
+        (the integration is paused or its monitor failed to start).
+        """
+        with self._data_lock:
+            return dict( self._monitor_map )
         
     async def initialize( self, event_loop ) -> None:
         """
@@ -316,6 +327,12 @@ class IntegrationManager( Singleton ):
                     new_attribute_types.append( attribute_type )
                 else:
                     existing_attr = existing_attributes[integration_key]
+                    if existing_attr.name != attribute_type.label:
+                        existing_attr.name = attribute_type.label
+                        existing_attr.save(
+                            update_fields = ['name'],
+                            track_history = False,
+                        )
                     description = attribute_type.description or ''
                     if existing_attr.description != description:
                         existing_attr.description = description
@@ -358,8 +375,23 @@ class IntegrationManager( Singleton ):
         return
                 
     def enable_integration( self, integration_data : IntegrationData ):
+        """
+        Idempotent: enabling an already-enabled integration is a no-op.
+
+        The is_enabled re-read happens inside the data lock and atomic
+        transaction so the disabled→enabled transition (which also
+        un-pauses) cannot race with another caller. Callers can invoke
+        this unconditionally without first checking is_enabled, which
+        avoids a TOCTOU window between caller check and manager write.
+        """
         with self._data_lock:
             with transaction.atomic():
+                # Re-read fresh state inside the lock; another caller
+                # may have enabled the integration between the caller's
+                # check (if any) and our acquiring this lock.
+                integration_data.integration.refresh_from_db()
+                if integration_data.integration.is_enabled:
+                    return
                 integration_data.integration.is_enabled = True
                 integration_data.integration.is_paused = False
                 integration_data.integration.save()
@@ -396,33 +428,44 @@ class IntegrationManager( Singleton ):
             # in-flight sync work.
             self._stop_integration_monitor( integration_data = integration_data )
 
-            integration_id = integration_data.integration_id
+        integration_id = integration_data.integration_id
 
-            with transaction.atomic():
-                # Targeted entity set includes the integration's own entities
-                # plus any delegate entities that would be orphaned by their
-                # removal (e.g., the Area entity auto-created when a motion
-                # sensor was added to a view).
-                target_ids = EntityIntegrationOperations.get_removal_entity_ids(
-                    integration_id = integration_id,
-                )
-                entities = list( Entity.objects.filter( id__in = target_ids ) )
-                if mode == IntegrationDisableMode.ALL:
-                    for entity in entities:
-                        entity.delete()
-                else:  # SAFE
-                    for entity in entities:
-                        if EntityUserDataDetector.has_user_created_attributes( entity ):
-                            EntityIntegrationOperations.preserve_with_user_data(
-                                entity = entity,
-                                integration_name = integration_id,
-                            )
-                        else:
-                            entity.delete()
+        # DB-level entity removal does not need the manager's data
+        # lock — it operates on rows, not on the in-memory monitor
+        # map, and transaction.atomic() handles row-level
+        # concurrency. Holding _data_lock across the closure walk
+        # and cascading deletes would block all other lifecycle
+        # calls on every integration for the duration of a wide
+        # removal.
+        with transaction.atomic():
+            # Seed: every entity attached to this integration. The
+            # closure walk inside the helper picks up delegate
+            # entities (e.g., Area entities auto-created when a
+            # motion sensor was placed in a view) that would be
+            # orphaned by the removal.
+            seed_entity_ids = list(
+                Entity.objects
+                .filter( integration_id = integration_id )
+                .values_list( 'id', flat = True )
+            )
+            EntityIntegrationOperations.remove_entities_with_closure(
+                seed_entity_ids = seed_entity_ids,
+                integration_name = integration_id,
+                preserve_user_data = ( mode != IntegrationDisableMode.ALL ),
+            )
 
-                integration_data.integration.is_enabled = False
-                integration_data.integration.is_paused = False
-                integration_data.integration.save()
+        with self._data_lock:
+            # Re-read inside the lock: a concurrent lifecycle call
+            # may have touched the row while we were doing the
+            # lock-free DB removal. The disable intent still wins
+            # (entities are gone), so we unconditionally flip both
+            # flags to the disabled state — but refresh first so
+            # we don't clobber unrelated fields a concurrent caller
+            # may have written.
+            integration_data.integration.refresh_from_db()
+            integration_data.integration.is_enabled = False
+            integration_data.integration.is_paused = False
+            integration_data.integration.save()
         return
 
     def pause_integration( self, integration_data : IntegrationData ):

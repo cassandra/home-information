@@ -215,3 +215,93 @@ class TestLocationManagerDraftSvgHelpers(BaseTestCase):
             with default_storage.open(self.location.svg_fragment_filename, 'r') as f:
                 live_content = f.read()
             self.assertEqual(live_content, self.live_svg_content)
+
+
+class TestLocationManagerCreateLocationView(BaseTestCase):
+    """create_location_view auto-disambiguates duplicate names within
+    a Location by appending a numeric suffix. Used both by the
+    dispatcher's '+ New view: "<integration label>"' option (when
+    the operator already has a view with that name) and by the
+    manage-page Add View form (when the operator types a
+    duplicate)."""
+
+    def setUp(self):
+        super().setUp()
+        from hi.apps.location.models import Location
+        self.location = Location.objects.create(
+            name='Test Location', svg_view_box_str='0 0 100 100',
+        )
+        self.manager = LocationManager()
+
+    def test_unique_name_passes_through_unchanged(self):
+        view = self.manager.create_location_view(
+            location=self.location, name='Kitchen',
+        )
+        self.assertEqual(view.name, 'Kitchen')
+
+    def test_first_collision_gets_suffix_2(self):
+        first = self.manager.create_location_view(
+            location=self.location, name='Home Assistant',
+        )
+        second = self.manager.create_location_view(
+            location=self.location, name='Home Assistant',
+        )
+        self.assertEqual(first.name, 'Home Assistant')
+        self.assertEqual(second.name, 'Home Assistant (2)')
+
+    def test_subsequent_collisions_increment_suffix(self):
+        self.manager.create_location_view(
+            location=self.location, name='Cameras',
+        )
+        self.manager.create_location_view(
+            location=self.location, name='Cameras',
+        )
+        third = self.manager.create_location_view(
+            location=self.location, name='Cameras',
+        )
+        fourth = self.manager.create_location_view(
+            location=self.location, name='Cameras',
+        )
+        self.assertEqual(third.name, 'Cameras (3)')
+        self.assertEqual(fourth.name, 'Cameras (4)')
+
+    def test_collision_isolated_per_location(self):
+        """Disambiguation looks at views in the *same* location only;
+        a different location with the same view name does not affect
+        suffix selection."""
+        from hi.apps.location.models import Location
+        other_location = Location.objects.create(
+            name='Other', svg_view_box_str='0 0 100 100',
+        )
+        self.manager.create_location_view(
+            location=other_location, name='Home Assistant',
+        )
+        # First call here is unique relative to self.location.
+        view = self.manager.create_location_view(
+            location=self.location, name='Home Assistant',
+        )
+        self.assertEqual(view.name, 'Home Assistant')
+
+    def test_skips_taken_suffix_in_sequence(self):
+        """Pre-existing '(2)' name still leaves room for an unsuffixed
+        first creation, then suffix-2 collision should advance to
+        suffix 3."""
+        from hi.apps.location.models import LocationView
+        # Pre-create a manually-named '(2)' to simulate a deployment
+        # where someone already used that exact name.
+        LocationView.objects.create(
+            location=self.location, name='Lights (2)', order_id=0,
+            svg_view_box_str='0 0 100 100', svg_rotate=0,
+            svg_style_name_str='COLOR', location_view_type_str='DEFAULT',
+        )
+        # First 'Lights' creation is unique.
+        first = self.manager.create_location_view(
+            location=self.location, name='Lights',
+        )
+        self.assertEqual(first.name, 'Lights')
+        # Second collides with both 'Lights' and 'Lights (2)' →
+        # advances to (3).
+        second = self.manager.create_location_view(
+            location=self.location, name='Lights',
+        )
+        self.assertEqual(second.name, 'Lights (3)')

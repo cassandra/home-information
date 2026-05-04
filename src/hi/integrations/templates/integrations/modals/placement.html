@@ -1,0 +1,202 @@
+{% extends "modals/action_2_with_cancel.html" %}
+{% load icons %}
+
+{% comment %}
+Post-sync entity placement placement.
+
+Progressive disclosure: by default only the top-level decision is
+visible ("Place all new items in [target]") with an inventory
+preview underneath ("5 lights · 3 outlets · ..."). The group rows
+and per-item rows are hidden behind a "Place differently"
+disclosure. Inside the disclosure, group rows are single-line and
+each carries its own per-item drill-down disclosure.
+
+Three-level inheritance under the hood is unchanged: top default →
+group default → per-item. Empty selections at any level inherit
+from the level above; explicit "Don't place" at any level prevents
+placement for that branch.
+
+The top level alone offers a "+ New view" option, which creates one
+fresh LocationView (named after the integration, attached to the
+operator's current default Location) on Apply. Group/entity
+overrides to existing views remain in effect even when the top is
+"+ New view".
+
+Existing-view dropdowns are rendered as <optgroup>-per-Location so
+multi-Location deployments can disambiguate views with shared names
+("All", "Default", etc.).
+
+Context:
+  integration_data      : IntegrationData (required)
+  placement_input       : EntityPlacementInput (required)
+  location_view_groups  : List[(Location, List[LocationView])] (required)
+  collection_list       : List[Collection] (required)
+  top_default_value     : str (required) — pre-selected value for
+                          the top dropdown ('__new_view__',
+                          'view:<id>', 'collection:<id>', or '')
+  new_view_name         : str (required) — pre-disambiguated name
+                          shown in the '+ New view: "X"' option
+                          label; matches what the apply path will
+                          actually create.
+  new_collection_name   : str (required) — pre-disambiguated name
+                          shown in the '+ New collection: "X"'
+                          option label; matches what the apply
+                          path will actually create.
+  inventory_preview     : List[{'label', 'count'}] (required) —
+                          group label + count tuples for the
+                          summary line; empty for all-ungrouped
+                          inputs (preview hidden in that case)
+  placement_url        : str (required) — same URL that rendered
+                          this modal; the form POSTs back to it
+                          and the view branches on the submitted
+                          ``action`` value.
+  is_initial_import     : bool (required)
+{% endcomment %}
+
+{% block title_text %}
+Place new items
+{% endblock %}
+
+{% block preamble %}
+<form id="hi-placement-form" method="post" action="{{ placement_url }}"
+      class="form" data-async="modal">
+  {% csrf_token %}
+  {% comment %}
+    Pre-sync intent threaded forward so the post-dispatch modal
+    titles itself consistently with what the operator clicked.
+  {% endcomment %}
+  <input type="hidden" name="is_initial_import"
+         value="{{ is_initial_import|yesno:'1,0' }}">
+{% endblock %}
+
+{% block body %}
+
+  <div class="d-flex align-items-center mb-2 hi-placement-top">
+    <div class="flex-grow-1">
+      <strong>Place all new items in</strong>
+    </div>
+    <select name="top_view" class="form-control form-control-sm w-auto">
+      <option value="" {% if top_default_value == "" %}selected{% endif %}>Don't place</option>
+      <option value="__new_view__" {% if top_default_value == "__new_view__" %}selected{% endif %}>+ New view: "{{ new_view_name }}"</option>
+      <option value="__new_collection__" {% if top_default_value == "__new_collection__" %}selected{% endif %}>+ New collection: "{{ new_collection_name }}"</option>
+      {% include "integrations/panes/placement_target_options.html" with selected_view_id=top_default_view_id selected_collection_id=top_default_collection_id %}
+    </select>
+  </div>
+
+  {% if inventory_preview %}
+  <div class="text-muted small mb-3 hi-placement-preview">
+    {% for entry in inventory_preview %}{{ entry.count }} {{ entry.label|lower }}{% if not forloop.last %} · {% endif %}{% endfor %}
+  </div>
+  {% endif %}
+
+  {% if placement_input.groups or placement_input.ungrouped_items %}
+  <div class="mb-2">
+    <a class="btn btn-sm btn-outline-primary" data-toggle="collapse"
+       href="#hi-placement-overrides" role="button"
+       aria-expanded="false" aria-controls="hi-placement-overrides">
+      {% icon "chevron-down" size="sm" css_class="hi-icon-left" %}Place differently
+    </a>
+  </div>
+
+  <div class="collapse" id="hi-placement-overrides">
+    <div class="text-muted small mb-2">
+      Override the top choice per group, or drill into a group
+      for per-item placement. Empty selections inherit from the
+      level above.
+    </div>
+
+    {% for group in placement_input.groups %}
+    {% with forloop.counter0 as group_index %}
+    <div class="hi-placement-group border-bottom py-2">
+      <div class="d-flex align-items-center">
+        <div class="flex-grow-1">
+          <strong>{{ group.label }}</strong>
+          <span class="badge badge-light ml-1">{{ group.items|length }}</span>
+        </div>
+        <select name="group_view_{{ group_index }}" class="form-control form-control-sm w-auto">
+          <option value="">Use top choice</option>
+          <option value="__skip__">Don't place</option>
+          {% include "integrations/panes/placement_target_options.html" %}
+        </select>
+        <a class="btn btn-sm btn-link" data-toggle="collapse"
+           href="#hi-drill-{{ group_index }}" role="button"
+           aria-expanded="false" aria-controls="hi-drill-{{ group_index }}">
+          Per item ▸
+        </a>
+      </div>
+      <div class="collapse mt-2 pl-3" id="hi-drill-{{ group_index }}">
+        {% for item in group.items %}
+        <div class="d-flex align-items-center py-1">
+          <div class="flex-grow-1 small">{{ item.label }}</div>
+          <select name="group_{{ group_index }}_entity_{{ item.entity.id }}_view"
+                  class="form-control form-control-sm w-auto">
+            <option value="">Use group choice</option>
+            <option value="__skip__">Don't place</option>
+            {% include "integrations/panes/placement_target_options.html" %}
+          </select>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+    {% endwith %}
+    {% endfor %}
+
+    {% if placement_input.ungrouped_items %}
+    <div class="hi-placement-ungrouped py-2">
+      <div class="d-flex align-items-center mb-1">
+        <div class="flex-grow-1">
+          <strong>Other items</strong>
+          <span class="badge badge-light ml-1">{{ placement_input.ungrouped_items|length }}</span>
+        </div>
+      </div>
+      <div class="pl-3">
+        {% for item in placement_input.ungrouped_items %}
+        <div class="d-flex align-items-center py-1">
+          <div class="flex-grow-1 small">{{ item.label }}</div>
+          <select name="ungrouped_entity_{{ item.entity.id }}_view"
+                  class="form-control form-control-sm w-auto">
+            <option value="">Use top choice</option>
+            <option value="__skip__">Don't place</option>
+            {% include "integrations/panes/placement_target_options.html" %}
+          </select>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+    {% endif %}
+  </div>
+  {% endif %}
+
+  {% comment %}
+    Hidden POST membership for groups/ungrouped: the placement
+    form parser needs to know which entities belong to which
+    group/ungrouped bucket regardless of whether the operator
+    opened any drill-down. Kept outside the disclosure so they
+    POST whether or not the operator expanded the override section.
+  {% endcomment %}
+  {% for group in placement_input.groups %}
+  {% with forloop.counter0 as group_index %}
+  {% for item in group.items %}
+  <input type="hidden" name="all_group_{{ group_index }}_entity_ids" value="{{ item.entity.id }}">
+  {% endfor %}
+  {% endwith %}
+  {% endfor %}
+  {% for item in placement_input.ungrouped_items %}
+  <input type="hidden" name="ungrouped_entity_ids" value="{{ item.entity.id }}">
+  {% endfor %}
+{% endblock %}
+
+{% block action_left %}
+<button type="submit" name="action" value="dismiss"
+        class="btn btn-outline-tertiary">NOT NOW</button>
+{% endblock %}
+
+{% block action_right %}
+<button type="submit" name="action" value="apply" class="btn btn-primary">
+  {% icon "check-circle" size="sm" css_class="hi-icon-left" %}APPLY
+</button>
+{% endblock %}
+
+{% block postamble %}
+</form>
+{% endblock %}

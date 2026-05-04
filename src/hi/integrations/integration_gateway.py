@@ -8,6 +8,7 @@ from hi.apps.system.health_status_provider import HealthStatusProvider
 
 from .integration_controller import IntegrationController
 from .integration_manage_view_pane import IntegrationManageViewPane
+from .integration_synchronizer import IntegrationSynchronizer
 from .models import IntegrationAttribute
 from .transient_models import (
     ConnectionTestResult,
@@ -43,6 +44,17 @@ class IntegrationGateway:
 
     def get_health_status_provider(self) -> HealthStatusProvider:
         raise NotImplementedError('Subclasses must override this method')
+
+    def get_synchronizer(self) -> Optional[IntegrationSynchronizer]:
+        """
+        Return the integration's synchronizer when it supports sync;
+        None otherwise. Sync is an opt-in capability — not every
+        integration requires one. The framework owns the sync workflow
+        (pre-sync confirmation, sync execution, post-sync placement);
+        the synchronizer participates by providing the integration-
+        specific work plus a small amount of peripheral metadata.
+        """
+        return None
 
     def validate_configuration(
             self,

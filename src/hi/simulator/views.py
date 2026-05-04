@@ -1,4 +1,5 @@
 from django.core.exceptions import BadRequest
+from django.db import transaction
 from django.http import HttpResponseRedirect
 from django.shortcuts import render
 from django.urls import reverse
@@ -9,7 +10,7 @@ import hi.apps.common.antinode as antinode
 from .enums import SimulatorFaultMode
 from .exceptions import SimEntityValidationError
 from . import forms
-from .models import DbSimEntity
+from .models import DbSimEntity, SimProfile
 from .simulator_manager import SimulatorManager
 from .sim_entity import SimEntity
 from .view_mixins import SimulatorViewMixin
@@ -88,6 +89,73 @@ class ProfileEditView( View, SimulatorViewMixin ):
         return antinode.refresh_response()
         
     
+class ProfileCloneView( View, SimulatorViewMixin ):
+    """
+    Clone the current profile into a new profile with operator-
+    chosen name. The clone copies the profile row and every
+    DbSimEntity row beneath it; SimState values are not persisted
+    (rebuilt from class defaults on every profile load), so the
+    clone naturally gets fresh state semantics with no extra work.
+
+    The new profile becomes the active profile after creation —
+    matches the Create flow's behavior and gives the operator
+    immediate visual confirmation in the simulator UI.
+    """
+
+    MODAL_TEMPLATE_NAME = 'simulator/modals/sim_profile_clone.html'
+
+    def get(self, request, *args, **kwargs):
+        source_profile = self.get_sim_profile( request, *args, **kwargs )
+        suggested_name = self._suggest_name( source_profile.name )
+        sim_profile_form = forms.SimProfileForm(
+            initial = { 'name': suggested_name },
+        )
+        context = {
+            'source_profile': source_profile,
+            'sim_profile_form': sim_profile_form,
+        }
+        return render( request, self.MODAL_TEMPLATE_NAME, context )
+
+    def post(self, request, *args, **kwargs):
+        source_profile = self.get_sim_profile( request, *args, **kwargs )
+        sim_profile_form = forms.SimProfileForm( request.POST )
+        if not sim_profile_form.is_valid():
+            context = {
+                'source_profile': source_profile,
+                'sim_profile_form': sim_profile_form,
+            }
+            return render( request, self.MODAL_TEMPLATE_NAME, context )
+
+        new_name = sim_profile_form.cleaned_data['name']
+        with transaction.atomic():
+            new_profile = SimulatorManager.clone_sim_profile(
+                source_profile = source_profile,
+                new_name = new_name,
+            )
+        SimulatorManager().set_sim_profile( sim_profile = new_profile )
+        return antinode.refresh_response()
+
+    @staticmethod
+    def _suggest_name( source_name : str ) -> str:
+        """Default new-name suggestion: '<source> (copy)'.
+
+        If that name is already taken, append a numeric suffix
+        ('<source> (copy 2)', '(copy 3)', ...) until a free name
+        is found. Bounded probe — no DB-side lock — because the
+        unique-name constraint at submit time is the actual
+        guard; this is just a friendly default, and a race here
+        means the operator sees a 'name already exists' on submit
+        and edits the field, which is acceptable."""
+        candidate = f'{source_name} (copy)'
+        if not SimProfile.objects.filter( name = candidate ).exists():
+            return candidate
+        for index in range( 2, 100 ):
+            candidate = f'{source_name} (copy {index})'
+            if not SimProfile.objects.filter( name = candidate ).exists():
+                return candidate
+        return f'{source_name} (copy)'
+
+
 class ProfileSwitchView( View, SimulatorViewMixin ):
 
     def get(self, request, *args, **kwargs):

@@ -7,6 +7,7 @@ from hi.apps.system.health_status_provider import HealthStatusProvider
 from hi.integrations.integration_controller import IntegrationController
 from hi.integrations.integration_gateway import IntegrationGateway
 from hi.integrations.integration_manage_view_pane import IntegrationManageViewPane
+from hi.integrations.integration_synchronizer import IntegrationSynchronizer
 from hi.integrations.models import IntegrationAttribute
 from hi.integrations.transient_models import (
     ConnectionTestResult,
@@ -19,6 +20,7 @@ from .hb_controller import HomeBoxController
 from .hb_manage_view_pane import HbManageViewPane
 from .hb_manager import HomeBoxManager
 from .hb_metadata import HbMetaData
+from .hb_sync import HomeBoxSynchronizer
 from .monitors import HomeBoxMonitor
 
 logger = logging.getLogger(__name__)
@@ -51,6 +53,9 @@ class HomeBoxGateway(IntegrationGateway):
 
     def get_health_status_provider(self) -> HealthStatusProvider:
         return HomeBoxManager()
+
+    def get_synchronizer(self) -> IntegrationSynchronizer:
+        return HomeBoxSynchronizer()
 
     def validate_configuration(
             self,

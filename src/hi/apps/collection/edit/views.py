@@ -273,7 +273,7 @@ class CollectionReorderEntitiesView( View, CollectionViewMixin ):
             raise BadRequest( str(e) )
 
         if not entity_id_list:
-            raise BadRequest( 'Missing entity ids.' )
+            raise BadRequest( 'Missing item ids.' )
 
         CollectionManager().set_collection_entity_order(
             collection = collection,

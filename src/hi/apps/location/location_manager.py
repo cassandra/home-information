@@ -209,22 +209,51 @@ class LocationManager(Singleton):
             location_view_type = LocationViewType.default()
         if svg_style_name is None:
             svg_style_name = SvgStyleName.default()
-            
+
         last_location_view = location.views.order_by( '-order_id' ).first()
         if last_location_view:
             order_id = last_location_view.order_id + 1
         else:
             order_id = 0
-        
+
+        resolved_name = self.resolve_unique_view_name(
+            location = location, requested_name = name,
+        )
+
         return LocationView.objects.create(
             location = location,
             location_view_type_str = str(location_view_type),
-            name = name,
+            name = resolved_name,
             svg_style_name_str = str( svg_style_name ),
             svg_view_box_str = str( location.svg_view_box ),
             svg_rotate = Decimal( 0.0 ),
             order_id = order_id,
         )
+
+    def resolve_unique_view_name( self,
+                                  location        : Location,
+                                  requested_name  : str ) -> str:
+        """Return ``requested_name`` if no LocationView in this
+        Location uses it; otherwise append ``(2)``, ``(3)``, ... until
+        a free name is found.
+
+        LocationView.name is not unique-per-location at the DB level —
+        anyone could create duplicates by direct ORM use — so this
+        helper is the single point that all callers go through to
+        avoid surprise duplicates. Used by the dispatcher's
+        ``+ New view: "<integration label>"`` option (where the
+        operator already has a view with that name) and by the
+        manage-page Add View form (where the operator typed a
+        duplicate by accident)."""
+        existing_names = set( location.views.values_list('name', flat=True) )
+        if requested_name not in existing_names:
+            return requested_name
+        suffix = 2
+        while True:
+            candidate = f'{requested_name} ({suffix})'
+            if candidate not in existing_names:
+                return candidate
+            suffix += 1
     
     def get_location_view( self, request : HttpRequest, location_view_id : int ) -> LocationView:
         """

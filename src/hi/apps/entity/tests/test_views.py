@@ -370,7 +370,7 @@ class TestEntityEditView(DualModeViewTestCase):
         self.assertFalse(self.entity.attributes.filter(name='blocked_property').exists())
 
         content = response.content.decode('utf-8')
-        self.assertIn('New attributes cannot be added for this entity because attributes are managed externally.', content)
+        self.assertIn('New attributes cannot be added for this item because attributes are managed externally.', content)
 
     def test_entity_with_complex_attribute_mix(self):
         """Test editing entity with mixed attribute types (text, file, secret)."""

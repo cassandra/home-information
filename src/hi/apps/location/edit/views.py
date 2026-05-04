@@ -20,6 +20,7 @@ import hi.apps.common.antinode as antinode
 from hi.apps.common.svg_models import SvgViewBox
 from hi.apps.entity.edit.views import EntityPositionEditView
 from hi.apps.entity.entity_manager import EntityManager
+from hi.apps.entity.entity_placement import EntityPlacer
 from hi.apps.entity.models import Entity
 from hi.apps.location.location_manager import LocationManager
 from hi.apps.location.models import Location
@@ -459,13 +460,13 @@ class LocationViewEntityToggleView( View, LocationViewMixin ):
         try:
             entity_id = int( kwargs.get('entity_id'))
         except (TypeError, ValueError):
-            raise BadRequest( 'Invalid entity id.' )
+            raise BadRequest( 'Invalid item id.' )
         try:
             entity = Entity.objects.get( id = entity_id )
         except Entity.DoesNotExist:
             raise Http404( request )
 
-        exists_in_view = EntityManager().toggle_entity_in_view(
+        exists_in_view = EntityPlacer().toggle_entity_in_view(
             entity = entity,
             location_view = location_view,
         )
@@ -591,7 +592,7 @@ class LocationItemPathView( View ):
         
         location = LocationManager().get_default_location( request = request )
         if item_type == ItemType.ENTITY:
-            EntityManager().set_entity_path(
+            EntityPlacer().set_entity_path(
                 entity_id = item_id,
                 location = location,
                 svg_path_str = svg_path_str,

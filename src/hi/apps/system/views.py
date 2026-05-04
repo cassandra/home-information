@@ -31,13 +31,28 @@ class SystemInfoView( ConfigPageView ):
             AppMonitorManager().get_health_status_providers(),
             key = lambda m: m.get_provider_info().provider_name
         )
-        integration_providers = sorted(
-            IntegrationManager().get_health_status_providers(),
-            key = lambda m: m.get_provider_info().provider_name
+        # Pair every configured integration with its running monitor
+        # (when present). A missing monitor for a configured
+        # integration → placeholder rendered in the template (paused
+        # or otherwise not running). Surface only configured
+        # integrations; unconfigured ones don't appear here.
+        integration_manager = IntegrationManager()
+        configured_integration_data_list = integration_manager.get_integration_data_list(
+            enabled_only = True,
         )
+        provider_by_integration_id = integration_manager.get_health_status_provider_map()
+        integration_health_items = [
+            { 'integration_data': integration_data,
+              'health_status_provider':
+                  provider_by_integration_id.get( integration_data.integration_id ) }
+            for integration_data in sorted(
+                configured_integration_data_list,
+                key = lambda data: data.integration_metadata.label,
+            )
+        ]
         return {
             'app_monitor_providers': app_monitor_providers,
-            'integration_providers': integration_providers,
+            'integration_health_items': integration_health_items,
             'weather_provider': WeatherSourceManager(),
             'background_task_provider': AsyncioHealthStatusProvider(),
         }

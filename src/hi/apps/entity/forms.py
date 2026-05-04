@@ -75,7 +75,7 @@ class EntityAttributeRegularFormSet(RegularAttributeBaseFormSet):
             )
             if has_new_data:
                 raise forms.ValidationError(
-                    'New attributes cannot be added for this entity because attributes are managed externally.'
+                    'New attributes cannot be added for this item because attributes are managed externally.'
                 )
 
 

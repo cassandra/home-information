@@ -5,11 +5,10 @@
 <div id="hi-integration-settings" class="d-flex">
   <nav class="nav flex-column hi-vertical-nav">
     <div class="hi-vertical-nav-header">
-      <h6 class="text-muted mb-2">INTEGRATIONS</h6>
-      <a class="btn btn-sm btn-outline-secondary w-100" role="button"
+      <a class="btn btn-outline-primary w-100" role="button"
          href="{% url 'integrations_select' %}"
          data-async="modal">
-        {% icon "settings" size="sm" css_class="hi-icon-left" %}Manage
+        {% icon "settings" size="sm" css_class="hi-icon-left" %}INTEGRATIONS
       </a>
     </div>
     {% for integration_data in core.integration_data_list %}
@@ -34,10 +33,31 @@
     <div class="tab-content m-3">
 
       <!-- Root container for this attribute editing context -->
-      <div id="{{ attr_item_context.container_html_id }}" 
+      <div id="{{ attr_item_context.container_html_id }}"
            class="{{ DIVID.ATTR_V2_CONTAINER_CLASS }}" >
-        
+
         <div class=" border-bottom mb-2 pb-2">
+          {% comment %}
+            Framework-owned manage page header. Title/logo come from
+            integration metadata; lifecycle and sync actions are
+            rendered here unconditionally so individual integrations
+            can't accidentally omit them. The per-integration
+            template below is a content seam for any
+            integration-specific custom UI; for current
+            integrations it is empty.
+          {% endcomment %}
+          <div class="d-flex justify-content-between">
+            <div class="h3 integration-title">
+              <img class="img-fluid"
+                   src="{% static core.integration_data.integration_metadata.logo_static_path %}"
+                   alt="{{ core.integration_data.integration_metadata.label }} Logo">
+              {{ core.integration_data.integration_metadata.label }}
+            </div>
+            <div class="d-flex align-items-center">
+              {% include "integrations/panes/lifecycle_actions.html" %}
+              {% include "integrations/panes/sync_actions.html" %}
+            </div>
+          </div>
           {% include core.manage_view_template_name %}
         </div>
 

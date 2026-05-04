@@ -15,12 +15,12 @@
       data-async="true">
   {% csrf_token %}
   {% if core.integration_data.is_paused %}
-  <button type="submit" class="btn btn-outline-primary">
-    {% icon "play" size="sm" css_class="hi-icon-left" %}RESUME
+  <button type="submit" class="btn btn-primary">
+    {% icon "play" size="lg" css_class="hi-icon-left" %}RESUME
   </button>
   {% else %}
   <button type="submit" class="btn btn-outline-secondary">
-    {% icon "pause" size="sm" css_class="hi-icon-left" %}PAUSE
+    {% icon "pause" size="lg" css_class="hi-icon-left" %}PAUSE
   </button>
   {% endif %}
 </form>

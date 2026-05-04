@@ -1,0 +1,278 @@
+{% extends "modals/action_3.html" %}
+{% load icons %}
+{% load static %}
+
+{% comment %}
+  Integration sync result modal.
+
+  The single end-of-sync surface: always rendered after sync
+  completes, regardless of what changed. Updates and removes are
+  surfaced here in their own right rather than being silently
+  swallowed by an automatic transition to the placement.
+
+  Renders a hero headline, a stat-card row of change counts,
+  color-coded per-category enumerations of affected entities, and
+  collapsible Errors / Details sections. When the sync produced
+  newly-created entities, the footer's primary CTA navigates to
+  the placement modal (via antinode modal-to-modal); otherwise
+  the footer is a single dismissal button.
+
+  The modal title bar keeps the generic HI logo + short generic
+  title ('Import Result' / 'Refresh Result'); the integration's
+  identity is surfaced as a body subtitle row (logo + label) where
+  the white background gives the transparent integration logos
+  predictable contrast.
+
+  Context:
+    sync_result      : IntegrationSyncResult (required)
+    integration_data : IntegrationData (required)
+    placement_url   : str (optional) — target of the 'Place N items'
+                       CTA. Required when sync_result.created_list is
+                       non-empty; ignored otherwise.
+{% endcomment %}
+
+{% block modal_dialog_class %}hi-modal-dialog-600{% endblock %}
+
+{% block title_text %}
+{{ sync_result.title }}
+{% endblock %}
+
+{% block body %}
+{% if integration_data %}
+<div class="d-flex align-items-center mb-3 pb-2 border-bottom">
+  <img class="mr-2"
+       style="height: 24px; width: auto;"
+       src="{% static integration_data.integration_metadata.logo_static_path %}"
+       alt="{{ integration_data.label }} Logo">
+  <div class="text-muted small text-uppercase"
+       style="letter-spacing: 0.05em;">
+    {{ integration_data.label }}
+  </div>
+</div>
+{% endif %}
+
+{% comment %}
+  Hero headline — the operator's first read of the modal. Errors
+  take precedence; otherwise the change-count summary speaks.
+  Centered, with a leading status icon at display weight so this
+  zone clearly outranks the detail sections below.
+{% endcomment %}
+{% if sync_result.error_list and not sync_result.has_changes %}
+  <div class="text-center mb-4">
+    <div class="text-danger mb-1" style="font-size: 2.5rem; line-height: 1;">&#x26A0;</div>
+    <h3 class="text-danger mb-1">
+      {% if is_initial_import %}Import failed{% else %}Refresh failed{% endif %}
+    </h3>
+    <div class="text-muted small">
+      {{ sync_result.error_list|length }} error{{ sync_result.error_list|length|pluralize }} — see details below.
+    </div>
+  </div>
+{% elif sync_result.error_list %}
+  <div class="text-center mb-4">
+    <div class="text-warning mb-1" style="font-size: 2.5rem; line-height: 1;">&#x26A0;</div>
+    <h3 class="text-warning mb-1">
+      {% if is_initial_import %}Import completed with errors{% else %}Refresh completed with errors{% endif %}
+    </h3>
+    <div class="text-muted small">
+      {{ sync_result.error_list|length }} error{{ sync_result.error_list|length|pluralize }} — see details below.
+    </div>
+  </div>
+{% elif not sync_result.has_changes %}
+  <div class="text-center mb-4">
+    <div class="text-muted mb-1" style="font-size: 2.5rem; line-height: 1;">&#x2014;</div>
+    <h3 class="text-muted mb-1">
+      {% if is_initial_import %}Nothing to import{% else %}Nothing new{% endif %}
+    </h3>
+    <div class="text-muted small">
+      {% if is_initial_import %}
+      No items found upstream.
+      {% else %}
+      No changes since the last refresh.
+      {% endif %}
+    </div>
+  </div>
+{% else %}
+  <div class="text-center mb-3">
+    <div class="text-success mb-1" style="font-size: 2.5rem; line-height: 1;">&#x2713;</div>
+    <h3 class="text-success mb-1">
+      {% if is_initial_import %}Import complete{% else %}Refresh complete{% endif %}
+    </h3>
+  </div>
+
+  {% comment %}
+    Stat-card row: big number + label per non-zero category.
+    Visually anchors the result so the operator's eye lands on
+    'what changed and how much' before scanning the per-category
+    item lists. Only non-zero categories render — symmetry is less
+    important than not implying a third stat that doesn't exist.
+  {% endcomment %}
+  <div class="d-flex justify-content-around text-center mb-4 pb-3 border-bottom">
+    {% if sync_result.created_list %}
+    <div class="px-3">
+      <div class="text-success font-weight-bold"
+           style="font-size: 2rem; line-height: 1;">
+        {{ sync_result.created_list|length }}
+      </div>
+      <div class="text-muted small text-uppercase"
+           style="letter-spacing: 0.05em;">Created</div>
+    </div>
+    {% endif %}
+    {% if sync_result.updated_list %}
+    <div class="px-3">
+      <div class="text-info font-weight-bold"
+           style="font-size: 2rem; line-height: 1;">
+        {{ sync_result.updated_list|length }}
+      </div>
+      <div class="text-muted small text-uppercase"
+           style="letter-spacing: 0.05em;">Updated</div>
+    </div>
+    {% endif %}
+    {% if sync_result.removed_list %}
+    <div class="px-3">
+      <div class="text-secondary font-weight-bold"
+           style="font-size: 2rem; line-height: 1;">
+        {{ sync_result.removed_list|length }}
+      </div>
+      <div class="text-muted small text-uppercase"
+           style="letter-spacing: 0.05em;">Removed</div>
+    </div>
+    {% endif %}
+  </div>
+
+  {% comment %}
+    Per-category item enumeration — color-coded left border bars
+    matching the stat colors so the eye links each list back to
+    its stat card. Section header is small/uppercase to subordinate
+    the affordance to the entity names themselves.
+  {% endcomment %}
+  {% if sync_result.removed_list %}
+  <div class="mb-3 pl-3" style="border-left: 3px solid #6c757d;">
+    <div class="small text-secondary text-uppercase mb-1"
+         style="letter-spacing: 0.05em;">
+      Removed ({{ sync_result.removed_list|length }})
+    </div>
+    <ul class="list-unstyled small mb-0"
+        style="max-height: 160px; overflow-y: auto;">
+      {% for name in sync_result.removed_list %}
+      <li>{{ name }}</li>
+      {% endfor %}
+    </ul>
+  </div>
+  {% endif %}
+
+  {% if sync_result.updated_list %}
+  <div class="mb-3 pl-3" style="border-left: 3px solid #17a2b8;">
+    <div class="small text-info text-uppercase mb-1"
+         style="letter-spacing: 0.05em;">
+      Updated ({{ sync_result.updated_list|length }})
+    </div>
+    <ul class="list-unstyled small mb-0"
+        style="max-height: 160px; overflow-y: auto;">
+      {% for name in sync_result.updated_list %}
+      <li>{{ name }}</li>
+      {% endfor %}
+    </ul>
+  </div>
+  {% endif %}
+
+  {% if sync_result.created_list %}
+  <div class="mb-3 pl-3" style="border-left: 3px solid #28a745;">
+    <div class="small text-success text-uppercase mb-1"
+         style="letter-spacing: 0.05em;">
+      Created ({{ sync_result.created_list|length }})
+    </div>
+    <ul class="list-unstyled small mb-0"
+        style="max-height: 160px; overflow-y: auto;">
+      {% for name in sync_result.created_list %}
+      <li>{{ name }}</li>
+      {% endfor %}
+    </ul>
+  </div>
+  {% endif %}
+{% endif %}
+
+{% comment %}
+  Actionable hint (e.g., HASS allowlist) — promoted from muted
+  footer text to a real callout.
+{% endcomment %}
+{% if sync_result.footer_message %}
+  <div class="alert alert-info small mb-3">
+    {{ sync_result.footer_message }}
+  </div>
+{% endif %}
+
+{% comment %}Errors detail — expanded by default when present.{% endcomment %}
+{% if sync_result.error_list %}
+<div class="mb-2 pl-3" style="border-left: 3px solid #dc3545;">
+  <a class="small text-danger text-uppercase" data-toggle="collapse"
+     href="#hi-sync-result-errors" role="button"
+     aria-expanded="true" aria-controls="hi-sync-result-errors"
+     style="letter-spacing: 0.05em;">
+    Errors ({{ sync_result.error_list|length }})
+  </a>
+  <div class="collapse show" id="hi-sync-result-errors">
+    <ul class="list-unstyled small mt-1 mb-0">
+      {% for error_message in sync_result.error_list %}
+      <li class="text-danger">{{ error_message }}</li>
+      {% endfor %}
+    </ul>
+  </div>
+</div>
+{% endif %}
+
+{% comment %}Diagnostic notes — collapsed by default.{% endcomment %}
+{% if sync_result.info_list %}
+<div class="mt-2">
+  <a class="text-muted small" data-toggle="collapse"
+     href="#hi-sync-result-info" role="button"
+     aria-expanded="false" aria-controls="hi-sync-result-info">
+    Show details ({{ sync_result.info_list|length }})
+  </a>
+  <div class="collapse" id="hi-sync-result-info">
+    <ul class="small mt-1 mb-0 text-muted"
+        style="max-height: 200px; overflow-y: auto;">
+      {% for info_message in sync_result.info_list %}
+      <li>{{ info_message }}</li>
+      {% endfor %}
+    </ul>
+  </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% comment %}
+  Each footer block is declared unconditionally; the {% if %} is
+  inside the block content, not around the {% block %} tag.
+  Django parses block declarations regardless of enclosing if-
+  conditions, so wrapping the declarations would render both
+  branches simultaneously.
+
+  Page-reload onclick on the dismiss buttons: the modal-to-modal
+  flow that lands here never refreshed the underlying integrations
+  page, so a plain dismiss leaves a stale background. Reload makes
+  the background page consistent with anything the sync changed.
+{% endcomment %}
+{% block action_left %}
+{% if sync_result.created_list and placement_url %}
+<a id="hi-modal-cancel" role="button"
+   class="btn btn-outline-tertiary"
+   href="#"
+   onclick="location.reload(); return false;">{% icon "close" size="sm" css_class="hi-icon-left" %}Place Later</a>
+{% endif %}
+{% endblock %}
+
+{% block action_center %}
+{% if not sync_result.created_list or not placement_url %}
+<a id="hi-modal-ok" role="button"
+   class="btn btn-primary"
+   href="#"
+   onclick="location.reload(); return false;">OK</a>
+{% endif %}
+{% endblock %}
+
+{% block action_right %}
+{% if sync_result.created_list and placement_url %}
+<a class="btn btn-primary" role="button"
+   href="{{ placement_url }}" data-async="modal">Place {{ sync_result.created_list|length }} new item{{ sync_result.created_list|length|pluralize }} {% icon "chevron-right" size="sm" css_class="hi-icon-right" %}</a>
+{% endif %}
+{% endblock %}

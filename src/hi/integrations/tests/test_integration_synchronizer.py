@@ -1,5 +1,5 @@
 """
-Unit tests for IntegrationSyncMixin.
+Unit tests for IntegrationSynchronizer's intelligent entity-removal helper.
 """
 
 import logging
@@ -10,24 +10,33 @@ from hi.apps.attribute.enums import AttributeType
 from hi.apps.entity.models import Entity, EntityAttribute, EntityState
 from hi.apps.sense.models import Sensor
 from hi.apps.control.models import Controller
-from hi.apps.common.processing_result import ProcessingResult
-from hi.integrations.sync_mixins import IntegrationSyncMixin
+from hi.integrations.integration_synchronizer import IntegrationSynchronizer
+from hi.integrations.sync_result import IntegrationSyncResult
 
 logging.disable(logging.CRITICAL)
 
 
-class TestSynchronizer(IntegrationSyncMixin):
-    """Test class that uses the IntegrationSyncMixin."""
-    pass
+class TestSynchronizer(IntegrationSynchronizer):
+    """Concrete IntegrationSynchronizer used to exercise the
+    intelligent-removal helper. Stubs the abstract hooks so the class
+    can be instantiated; sync() itself is not exercised here."""
+
+    def get_result_title(self, is_initial_import=False):
+        return 'Test Sync Result'
+
+    def _sync_impl(self, is_initial_import=False):
+        return IntegrationSyncResult(
+            title=self.get_result_title(is_initial_import=is_initial_import),
+        )
 
 
-class IntegrationSyncMixinTestCase(TestCase):
-    """Test cases for IntegrationSyncMixin functionality."""
+class IntegrationSynchronizerRemovalTestCase(TestCase):
+    """Test cases for IntegrationSynchronizer's _remove_entity_intelligently."""
 
     def setUp(self):
         """Set up test data."""
         self.synchronizer = TestSynchronizer()
-        self.result = ProcessingResult(title='Test Import Result')
+        self.result = IntegrationSyncResult(title='Test Import Result')
         
         # Create a test entity
         self.entity = Entity.objects.create(
@@ -73,12 +82,12 @@ class IntegrationSyncMixinTestCase(TestCase):
         
         # Entity should be completely deleted
         self.assertFalse(Entity.objects.filter(id=entity_id).exists())
-        
-        # Check result message content and quality
-        self.assertEqual(len(self.result.message_list), 1)
-        message = self.result.message_list[0]
-        self.assertIn('Removed stale TestIntegration entity', message)
-        self.assertIn('Test Entity', message)  # Should include entity name for debugging
+
+        # Hard delete records the entity name in removed_list and
+        # adds nothing to info_list — the per-category list itself
+        # is what enumerates 'what was removed'.
+        self.assertEqual(self.result.removed_list, ['Test Entity'])
+        self.assertEqual(self.result.info_list, [])
         
         # Verify complete cleanup - no orphaned attributes or states
         self.assertEqual(EntityAttribute.objects.filter(entity_id=entity_id).count(), 0)
@@ -160,13 +169,17 @@ class IntegrationSyncMixinTestCase(TestCase):
         # Entity state should be deleted (orphaned)
         self.assertFalse(EntityState.objects.filter(id=state_id).exists())
         
-        # Check result message content and completeness
-        self.assertEqual(len(self.result.message_list), 1)
-        message = self.result.message_list[0]
-        self.assertIn('Preserved TestIntegration entity', message)
+        # Preservation records the original name in removed_list
+        # (captured before the rename) and surfaces a diagnostic
+        # info note — the operator wants to know an entity was
+        # disconnected and renamed, not just see a name in a list.
+        self.assertEqual(self.result.removed_list, [original_name])
+        self.assertEqual(len(self.result.info_list), 1)
+        message = self.result.info_list[0]
+        self.assertIn('Preserved TestIntegration item', message)
         self.assertIn('disconnected from integration', message)
-        self.assertIn(original_name, message)  # Should reference original name
-        self.assertIn('[Disconnected]', message)  # Should show new name
+        self.assertIn(original_name, message)
+        self.assertIn('[Disconnected]', message)
         
         # Verify integration payload is cleared
         self.entity.refresh_from_db()
@@ -340,12 +353,9 @@ class IntegrationSyncMixinTestCase(TestCase):
             self.entity, self.result, 'TestIntegration'
         )
         
-        # Entity should be completely deleted
+        # Entity should be completely deleted; name recorded.
         self.assertFalse(Entity.objects.filter(id=entity_id).exists())
-        
-        # Verify message indicates successful deletion
-        self.assertEqual(len(self.result.message_list), 1)
-        self.assertIn('Removed stale TestIntegration entity', self.result.message_list[0])
+        self.assertEqual(self.result.removed_list, ['Test Entity'])
 
     def test_entity_with_integration_payload_preservation(self):
         """Test that integration_payload is preserved during entity preservation."""
@@ -585,19 +595,18 @@ class IntegrationSyncMixinTestCase(TestCase):
         self.assertFalse(Controller.objects.filter(id__in=component_ids).exists())
         self.assertFalse(EntityAttribute.objects.filter(id__in=attribute_ids).exists())
         
-        # Verify message indicates successful deletion
-        self.assertEqual(len(self.result.message_list), 1)
-        message = self.result.message_list[0]
-        self.assertIn('Removed stale TestIntegration entity', message)
-        self.assertIn('Test Entity', message)
+        # Hard delete records the name in removed_list; no
+        # narrative info entry.
+        self.assertEqual(self.result.removed_list, ['Test Entity'])
+        self.assertEqual(self.result.info_list, [])
 
-    def test_result_message_accumulation(self):
-        """Test that ProcessingResult properly accumulates messages from multiple operations."""
-        # Add some initial messages to result
-        self.result.message_list.append('Initial message')
-        self.result.message_list.append('Another message')
-        
-        # Create user data to trigger preservation
+    def test_result_info_list_accumulation(self):
+        """Pre-existing info_list entries are preserved when the
+        preservation path appends its diagnostic note."""
+        self.result.info_list.append('Initial message')
+        self.result.info_list.append('Another message')
+
+        # Create user data to trigger preservation.
         EntityAttribute.objects.create(
             entity=self.entity,
             name='User Note',
@@ -605,25 +614,22 @@ class IntegrationSyncMixinTestCase(TestCase):
             value_type_str='TEXT',
             attribute_type_str=str(AttributeType.CUSTOM)
         )
-        
-        # Call the method
+
         self.synchronizer._remove_entity_intelligently(
             self.entity, self.result, 'TestIntegration'
         )
-        
-        # Should have 3 messages total (2 existing + 1 new)
-        self.assertEqual(len(self.result.message_list), 3)
-        
-        # New message should be last
-        self.assertIn('Preserved TestIntegration entity', self.result.message_list[2])
-        
-        # Original messages should be preserved
-        self.assertEqual(self.result.message_list[0], 'Initial message')
-        self.assertEqual(self.result.message_list[1], 'Another message')
+
+        # 3 entries: 2 pre-existing + 1 preservation note.
+        self.assertEqual(len(self.result.info_list), 3)
+        self.assertIn('Preserved TestIntegration item', self.result.info_list[2])
+        self.assertEqual(self.result.info_list[0], 'Initial message')
+        self.assertEqual(self.result.info_list[1], 'Another message')
+        # And removed_list captured the name exactly once.
+        self.assertEqual(self.result.removed_list, ['Test Entity'])
 
 
-class IntegrationSyncMixinTransactionTestCase(TransactionTestCase):
-    """Transaction-specific tests for IntegrationSyncMixin."""
+class IntegrationSynchronizerRemovalTransactionTestCase(TransactionTestCase):
+    """Transaction-specific tests for _remove_entity_intelligently."""
     
     def setUp(self):
         """Set up test data."""
@@ -633,7 +639,7 @@ class IntegrationSyncMixinTransactionTestCase(TransactionTestCase):
         initializer.run(sender=None)
         
         self.synchronizer = TestSynchronizer()
-        self.result = ProcessingResult(title='Test Import Result')
+        self.result = IntegrationSyncResult(title='Test Import Result')
         
         # Create a test entity
         self.entity = Entity.objects.create(
@@ -742,12 +748,14 @@ class IntegrationSyncMixinTransactionTestCase(TransactionTestCase):
         self.assertEqual(remaining_attributes.count(), 1)
         self.assertEqual(remaining_attributes.first().name, 'User Note')
         
-        # Verify operation was logged
-        self.assertEqual(len(self.result.message_list), 1)
-        message = self.result.message_list[0]
-        self.assertIn('Preserved TestIntegration entity', message)
+        # Preservation diagnostic surfaces in info_list; the
+        # original (pre-rename) name is captured in removed_list.
+        self.assertEqual(len(self.result.info_list), 1)
+        message = self.result.info_list[0]
+        self.assertIn('Preserved TestIntegration item', message)
         self.assertIn('disconnected from integration', message)
-    
+        self.assertEqual(self.result.removed_list, ['Test Entity'])
+
     def test_preservation_with_database_constraint_validation(self):
         """Test that preservation operations respect database constraints and maintain referential integrity."""
         # Create user attribute to trigger preservation
@@ -821,10 +829,10 @@ class IntegrationSyncMixinTransactionTestCase(TransactionTestCase):
         self.assertTrue(Sensor.objects.filter(id=user_sensor.id).exists())
         self.assertTrue(EntityAttribute.objects.filter(id=user_attr.id).exists())
         
-        # Verify message was added
-        self.assertEqual(len(self.result.message_list), 1)
-        self.assertIn('Preserved TestIntegration entity', self.result.message_list[0])
-        
+        # Preservation note surfaces in info_list.
+        self.assertEqual(len(self.result.info_list), 1)
+        self.assertIn('Preserved TestIntegration item', self.result.info_list[0])
+
         # Verify database integrity: remaining state has valid relationships
         remaining_state = EntityState.objects.get(id=second_state_id)
         remaining_sensors = remaining_state.sensors.all()
@@ -1041,7 +1049,7 @@ class IntegrationSyncMixinTransactionTestCase(TransactionTestCase):
                 )
                 
                 # Create fresh result for each test
-                test_result = ProcessingResult(title='Test Result')
+                test_result = IntegrationSyncResult(title='Test Result')
                 
                 # Execute preservation
                 self.synchronizer._remove_entity_intelligently(
@@ -1056,6 +1064,148 @@ class IntegrationSyncMixinTransactionTestCase(TransactionTestCase):
                 self.assertIsNone(entity.integration_id)
                 self.assertIsNone(entity.integration_name)
                 
-                # Verify result message was added
-                self.assertEqual(len(test_result.message_list), 1)
-                self.assertIn('Preserved TestIntegration entity', test_result.message_list[0])
+                # Preservation note surfaces in info_list.
+                self.assertEqual(len(test_result.info_list), 1)
+                self.assertIn('Preserved TestIntegration item', test_result.info_list[0])
+
+
+
+class IntegrationSynchronizerOrphanDelegateTestCase(TestCase):
+    """Refresh-time entity removal must clean up delegate entities
+    (e.g., the Area auto-created when a camera/motion-detector was
+    placed in a view) that become orphaned by the removal — the same
+    closure the integration-disable path uses."""
+
+    def setUp(self):
+        from hi.apps.entity.models import EntityStateDelegation
+
+        self.synchronizer = TestSynchronizer()
+        self.result = IntegrationSyncResult(title='Test')
+        self.EntityStateDelegation = EntityStateDelegation
+
+        # Camera entity (integration-owned).
+        self.camera = Entity.objects.create(
+            name='Cam 1',
+            entity_type_str='CAMERA',
+            integration_id='test_integration',
+            integration_name='cam_1',
+        )
+        self.camera_state = EntityState.objects.create(
+            entity=self.camera,
+            entity_state_type_str='MOVEMENT',
+            name='Motion',
+        )
+
+        # Area entity (delegate, Hi-side, no integration_id).
+        self.area = Entity.objects.create(
+            name='Cam 1 Area',
+            entity_type_str='AREA',
+        )
+        self.EntityStateDelegation.objects.create(
+            entity_state=self.camera_state,
+            delegate_entity=self.area,
+        )
+
+    def test_orphan_delegate_area_is_deleted_when_only_principal_removed(self):
+        """Camera removed → Area has no remaining principal → Area
+        is part of the closure and gets deleted."""
+        camera_id = self.camera.id
+        area_id = self.area.id
+
+        self.synchronizer._remove_entity_intelligently(
+            self.camera, self.result, 'TestIntegration',
+        )
+
+        self.assertFalse(Entity.objects.filter(id=camera_id).exists())
+        self.assertFalse(Entity.objects.filter(id=area_id).exists())
+        # Both names surface in the result's removed_list.
+        self.assertIn('Cam 1', self.result.removed_list)
+        self.assertIn('Cam 1 Area', self.result.removed_list)
+
+    def test_shared_delegate_area_survives_when_other_principals_remain(self):
+        """Camera A removed; Area still serves Camera B → Area stays."""
+        camera_b = Entity.objects.create(
+            name='Cam 2',
+            entity_type_str='CAMERA',
+            integration_id='test_integration',
+            integration_name='cam_2',
+        )
+        camera_b_state = EntityState.objects.create(
+            entity=camera_b,
+            entity_state_type_str='MOVEMENT',
+            name='Motion',
+        )
+        # Area also delegates from Camera B's state — shared delegate.
+        self.EntityStateDelegation.objects.create(
+            entity_state=camera_b_state,
+            delegate_entity=self.area,
+        )
+
+        camera_id = self.camera.id
+        area_id = self.area.id
+
+        self.synchronizer._remove_entity_intelligently(
+            self.camera, self.result, 'TestIntegration',
+        )
+
+        self.assertFalse(Entity.objects.filter(id=camera_id).exists())
+        # Area must remain — Camera B still uses it.
+        self.assertTrue(Entity.objects.filter(id=area_id).exists())
+        # Result reports only Cam 1's removal.
+        self.assertEqual(self.result.removed_list, ['Cam 1'])
+
+    def test_orphan_delegate_with_user_data_is_preserved_not_deleted(self):
+        """Operator added a custom attribute to the auto-created
+        Area → Area is preserved (disconnected/renamed) rather than
+        hard-deleted, even though it became an orphan."""
+        EntityAttribute.objects.create(
+            entity=self.area,
+            name='Floor Plan Note',
+            value='Has skylight on east side',
+            value_type_str='TEXT',
+            attribute_type_str=str(AttributeType.CUSTOM),
+        )
+
+        camera_id = self.camera.id
+        area_id = self.area.id
+
+        self.synchronizer._remove_entity_intelligently(
+            self.camera, self.result, 'TestIntegration',
+        )
+
+        self.assertFalse(Entity.objects.filter(id=camera_id).exists())
+        # Area persists with operator-added data.
+        self.assertTrue(Entity.objects.filter(id=area_id).exists())
+        self.area.refresh_from_db()
+        self.assertTrue(self.area.name.startswith('[Disconnected]'))
+
+    def test_orphan_delegate_deleted_when_only_principal_has_user_data(self):
+        """Camera carries user data so it is preserved (kept as
+        [Disconnected]); Area carries none. Even though the
+        principal survives in name, the Area is correctly hard-
+        deleted — see the rationale documented on
+        ``EntityIntegrationOperations.remove_entities_with_closure``.
+        Pinning this case prevents a well-intentioned future
+        refactor from flipping it back to preservation."""
+        EntityAttribute.objects.create(
+            entity=self.camera,
+            name='Lens Notes',
+            value='Wide-angle, dome housing',
+            value_type_str='TEXT',
+            attribute_type_str=str(AttributeType.CUSTOM),
+        )
+
+        camera_id = self.camera.id
+        area_id = self.area.id
+
+        self.synchronizer._remove_entity_intelligently(
+            self.camera, self.result, 'TestIntegration',
+        )
+
+        # Camera kept with [Disconnected] rename (user data).
+        self.assertTrue(Entity.objects.filter(id=camera_id).exists())
+        self.camera.refresh_from_db()
+        self.assertTrue(self.camera.name.startswith('[Disconnected]'))
+        # Area is gone — its display purpose is negated once the
+        # principal's integration-derived state is removed.
+        self.assertFalse(Entity.objects.filter(id=area_id).exists())

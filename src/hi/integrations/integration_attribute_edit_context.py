@@ -33,12 +33,17 @@ class IntegrationAttributeItemEditContext(AttributeItemEditContext):
                   update_button_label  : str               = 'UPDATE',
                   suppress_history     : bool              = False,
                   show_secrets         : bool              = False,
+                  is_review_mode       : bool              = False,
+                  pre_sync_url         : Optional[str]     = None,
                   ) -> None:
         """
         Initialize context for Integration attribute editing.
-        
-        Args:
-            integration: The Integration instance that owns the attributes
+
+        Review-mode flags (`is_review_mode` + `pre_sync_url`) drive the
+        Review Config back-from-pre-sync flow: when set, the modal's
+        cancel slot becomes a CONTINUE action that returns to the
+        pre-sync modal instead of dismissing. First-time Configure
+        leaves them unset and keeps the CANCEL/dismiss behavior.
         """
         super().__init__( owner_type = 'integration', owner = integration_data.integration )
         self.integration_data = integration_data
@@ -46,7 +51,9 @@ class IntegrationAttributeItemEditContext(AttributeItemEditContext):
         self._update_button_label = update_button_label
         self._suppress_history = suppress_history
         self._show_secrets = show_secrets
-        
+        self._is_review_mode = is_review_mode
+        self._pre_sync_url = pre_sync_url
+
         return
     
     @property
@@ -106,5 +113,7 @@ class IntegrationAttributeItemEditContext(AttributeItemEditContext):
         template_context.update({
             'integration_data': self.integration_data,
             'health_status': self._health_status,
+            'is_review_mode': self._is_review_mode,
+            'pre_sync_url': self._pre_sync_url,
         })
         return template_context

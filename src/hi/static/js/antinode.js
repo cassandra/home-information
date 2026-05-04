@@ -299,6 +299,16 @@
             let targetObj = getNewModal();
             targetObj.append( modalContent );
             showModal( targetObj );
+        },
+
+        // Close the modal that contains the given DOM node, if any.
+        // Mirrors the close-source-modal step antinode itself runs in
+        // beforeAsyncCall before issuing async requests. Exposed so
+        // outside form handlers (notably attr.js) can defer modal
+        // lifecycle to antinode rather than reaching into Bootstrap
+        // directly.
+        hideModalIfNeeded: function( eventObj ) {
+            hideModalIfNeeded( eventObj );
         }
     }
     

@@ -7,16 +7,16 @@ are distinct from the read-only analytical methods on EntityUserDataDetector.
 """
 
 import logging
-from typing import Iterable, Optional, Set
+from typing import Dict, Iterable, Optional, Set
 
 from django.db import transaction
 
 from hi.apps.attribute.enums import AttributeType
-from hi.apps.common.processing_result import ProcessingResult
 from hi.apps.entity.models import Entity, EntityState, EntityStateDelegation
 from hi.apps.sense.models import Sensor
 from hi.apps.control.models import Controller
 
+from .sync_result import IntegrationSyncResult
 from .transient_models import IntegrationRemovalSummary
 from .user_data_detector import EntityUserDataDetector
 
@@ -69,15 +69,20 @@ class EntityIntegrationOperations:
             if not candidate_ids:
                 break
 
-            added_this_pass : Set[int] = set()
-            for candidate_id in candidate_ids:
-                principal_ids = set(
-                    EntityStateDelegation.objects.filter(
-                        delegate_entity_id = candidate_id,
-                    ).values_list( 'entity_state__entity_id', flat = True )
-                )
-                if principal_ids and principal_ids.issubset( closure ):
-                    added_this_pass.add( candidate_id )
+            # Single bulk query for every candidate's full principal
+            # set, then group in Python — replaces a per-candidate
+            # query that was O(passes × candidates) on the DB.
+            principals_by_candidate : Dict[int, Set[int]] = {}
+            for delegate_id, principal_id in EntityStateDelegation.objects.filter(
+                    delegate_entity_id__in = candidate_ids,
+            ).values_list( 'delegate_entity_id', 'entity_state__entity_id' ):
+                principals_by_candidate.setdefault( delegate_id, set() ).add( principal_id )
+
+            added_this_pass = {
+                candidate_id
+                for candidate_id, principal_ids in principals_by_candidate.items()
+                if principal_ids and principal_ids.issubset( closure )
+            }
 
             if not added_this_pass:
                 break
@@ -97,6 +102,57 @@ class EntityIntegrationOperations:
                           .values_list( 'id', flat = True )
         )
         return EntityIntegrationOperations.collect_removal_closure( seed )
+
+    @classmethod
+    def remove_entities_with_closure(
+            cls,
+            seed_entity_ids    : Iterable[int],
+            integration_name   : str,
+            preserve_user_data : bool                              = True,
+            result             : Optional[IntegrationSyncResult]   = None ):
+        """Canonical removal for integration-owned entities.
+
+        Walks ``collect_removal_closure(seed_entity_ids)`` so every
+        delegate entity that would be orphaned by the removal (e.g.,
+        the Area auto-created when a camera was placed in a view) is
+        included. Each entity in the closure is then handled the
+        same way:
+
+          * ``preserve_user_data=True`` (the SAFE pattern, used by
+            DELETE SAFE on disable and by sync-time refresh
+            removals): entities carrying operator-added attributes
+            are preserved via ``[Disconnected]`` rename; others are
+            hard-deleted.
+
+          * ``preserve_user_data=False`` (the DELETE ALL pattern):
+            every entity in the closure is hard-deleted, including
+            those with user-added data.
+
+        ``result`` is optional. When provided, each closure entity's
+        name is appended to ``result.removed_list``; the preserve
+        path also adds its diagnostic note to ``result.info_list``.
+
+        Each entity in the closure is classified by its *own* user
+        data, independent of the seed's classification. This
+        produces the right outcome in the camera-preserved /
+        Area-no-user-data corner: an auto-created Area's display
+        purpose depends on the principal's live state, which the
+        preserve path removes — so deleting the now-purposeless
+        Area is correct even when its principal is being kept.
+        """
+        closure_ids = cls.collect_removal_closure( seed_entity_ids )
+        for entity in Entity.objects.filter( id__in = closure_ids ):
+            if result is not None:
+                result.removed_list.append( entity.name )
+            if preserve_user_data and EntityUserDataDetector.has_user_created_attributes( entity ):
+                cls.preserve_with_user_data(
+                    entity = entity,
+                    integration_name = integration_name,
+                    result = result,
+                )
+            else:
+                entity.delete()
+        return
 
     @staticmethod
     def summarize_for_removal( integration_id : str ) -> IntegrationRemovalSummary:
@@ -123,7 +179,7 @@ class EntityIntegrationOperations:
     @staticmethod
     def preserve_with_user_data( entity           : Entity,
                                  integration_name : str,
-                                 result           : Optional[ProcessingResult] = None ):
+                                 result           : Optional[IntegrationSyncResult] = None ):
         """
         Preserve an entity with user-created data by disconnecting it from
         its integration and removing only integration-related components
@@ -133,7 +189,8 @@ class EntityIntegrationOperations:
         Args:
             entity: The Entity to preserve.
             integration_name: Name of the integration (used in result messages).
-            result: Optional ProcessingResult to append a status message to.
+            result: Optional IntegrationSyncResult to append a status
+                message to.
         """
         original_name = entity.name
 
@@ -209,7 +266,7 @@ class EntityIntegrationOperations:
             entity.save()
 
         if result is not None:
-            result.message_list.append(
-                f'Preserved {integration_name} entity "{original_name}" with user data, '
+            result.info_list.append(
+                f'Preserved {integration_name} item "{original_name}" with user data, '
                 f'disconnected from integration and renamed to "{entity.name}"'
             )

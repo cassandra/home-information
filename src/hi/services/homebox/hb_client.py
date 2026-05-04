@@ -128,6 +128,14 @@ class HbClient:
         """
         Fetches the list of items and, for each one, fetches the full details.
         Returns a list of fully populated HbItem objects.
+
+        A failed detail fetch propagates rather than being swallowed
+        per-item: a partial-success outcome here is more dangerous
+        than a clean failure (it silently drops items, which the
+        sync layer then misinterprets as upstream removals or a
+        clean 'nothing to import'). The sync flow's outer try/except
+        converts the propagated error into an operator-visible
+        ``error_list`` entry with the underlying message.
         """
         items_summary = self.get_items_summary()
 
@@ -135,12 +143,9 @@ class HbClient:
         for summary in items_summary:
             item_id = summary.get('id')
             if item_id:
-                try:
-                    url_detail = f"{self._api_url}/{self.API_VERSION}/items/{item_id}"
-                    item_detail = self._make_request('GET', url_detail)
-                    full_items.append(HbItem(api_dict=item_detail, client=self))
-                except Exception as e:
-                    logger.error(f"Error fetching details for item {item_id}: {e}")
+                url_detail = f"{self._api_url}/{self.API_VERSION}/items/{item_id}"
+                item_detail = self._make_request('GET', url_detail)
+                full_items.append(HbItem(api_dict=item_detail, client=self))
 
         return full_items
 

@@ -1,0 +1,114 @@
+{% extends "modals/action_2_with_cancel.html" %}
+{% load icons %}
+
+{% comment %}
+Pre-sync confirmation modal for integrations.
+
+Shown as the last step of the Configure flow (first-time import) and
+when the operator clicks the IMPORT / REFRESH button on the
+integration manage page (subsequent refreshes). The modal confirms
+intent and explains what the operation will do; it does NOT surface
+integration health. Health is surfaced on the manage page itself, and
+an unhealthy integration's attempt will surface its failure inline
+with a useful error message.
+
+The first-time IMPORT and subsequent REFRESH paths are both rendered
+by this template. They differ in title, lead text, and primary action
+label, controlled by `is_initial_import`. The synchronizer's
+description copy is also import/refresh-aware.
+
+The REVIEW CONFIG action is rendered only on the first-time path: in
+that path the user just came from the Configure modal and may have
+breezed past secondary configuration that the synchronizer's
+description now calls out (e.g., HASS allowlist). REVIEW CONFIG
+re-opens the same Configure modal as a "back one step" affordance;
+saving from there returns to this modal. On the manage-page entry
+path, the user came from the manage page and the inherited CANCEL
+already takes them "back" to it.
+
+Context:
+  integration_data        : IntegrationData (required) — for label, id.
+  is_initial_import       : bool (required) — True when no entities for
+                            this integration have been imported yet
+                            (initial IMPORT); False for subsequent
+                            REFRESH operations.
+  sync_description        : Optional[str] — per-integration text from
+                            IntegrationSynchronizer.get_description.
+  sync_url                : str (required) — URL the action posts to.
+  review_config_url       : str (required) — URL the REVIEW CONFIG
+                            action opens (the integrations_enable
+                            modal).
+{% endcomment %}
+
+{% comment %}
+First-time path only: override the inherited dismiss-only CANCEL with
+one that triggers a full page reload. Reason: the operator's
+underlying page (typically integrations home) was rendered before the
+integration was enabled and is therefore stale; a plain dismiss would
+leave them on a pre-enable view. On the refresh path the underlying
+page is already current, so we keep the inherited dismiss behavior.
+{% endcomment %}
+
+{% block title_text %}
+{% if is_initial_import %}
+Import from {{ integration_data.label }}?
+{% else %}
+Refresh from {{ integration_data.label }}?
+{% endif %}
+{% endblock %}
+
+{% block body %}
+{% if is_initial_import %}
+<p>
+  Import will pull items from <strong>{{ integration_data.label }}</strong>
+  into Home Information for the first time. Imported items can be
+  placed into your views in the next step.
+</p>
+{% else %}
+<p>
+  Refresh adds new items from <strong>{{ integration_data.label }}</strong>,
+  updates ones that have changed, and removes ones no longer present.
+</p>
+{% endif %}
+
+{% if sync_description %}
+<p class="text-muted">{{ sync_description }}</p>
+{% endif %}
+{% endblock %}
+
+{% block action_left %}
+{% if is_initial_import %}
+<a id="hi-modal-cancel" role="button"
+   class="btn btn-outline-tertiary"
+   href="#"
+   onclick="location.reload(); return false;">
+  {% icon "close" size="lg" css_class="hi-icon-left" %}SKIP
+</a>
+{% else %}
+{{ block.super }}
+{% endif %}
+{% endblock %}
+
+{% block action_center %}
+{% if is_initial_import %}
+<a href="{{ review_config_url }}"
+   role="button"
+   class="btn btn-outline-primary"
+   data-async="modal">
+  {% icon "settings" size="lg" css_class="hi-icon-left" %}REVIEW CONFIG
+</a>
+{% endif %}
+{% endblock %}
+
+{% block action_right %}
+<form action="{{ sync_url }}" method="post" class="form" data-async="modal">
+  {% csrf_token %}
+  <button type="submit" class="btn btn-primary">
+    {% if is_initial_import %}
+    {% icon "upload" size="lg" css_class="hi-icon-left" %}IMPORT
+    {% else %}
+    {% icon "sync" size="lg" css_class="hi-icon-left" %}REFRESH
+    {% endif %}
+  </button>
+</form>
+{% endblock %}

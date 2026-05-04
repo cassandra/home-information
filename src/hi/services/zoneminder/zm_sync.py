@@ -1,19 +1,24 @@
 import logging
 from .pyzm_client.helpers.Monitor import Monitor as ZmMonitor
-from typing import Dict
+from typing import Dict, Optional
 
 from django.db import transaction
 
-from hi.apps.common.database_lock import ExclusionLockContext
-from hi.apps.common.processing_result import ProcessingResult
 from hi.apps.entity.enums import EntityType
 from hi.apps.entity.models import Entity
 from hi.apps.sense.models import Sensor
 
 from hi.apps.model_helper import HiModelHelper
 
+from hi.apps.entity.entity_placement import (
+    EntityPlacementInput,
+    EntityPlacementItem,
+    EntityPlacementGroup,
+)
+
+from hi.integrations.integration_synchronizer import IntegrationSynchronizer
+from hi.integrations.sync_result import IntegrationSyncResult
 from hi.integrations.transient_models import IntegrationKey
-from hi.integrations.sync_mixins import IntegrationSyncMixin
 
 from .zm_metadata import ZmMetaData
 from .zm_mixins import ZoneMinderMixin
@@ -21,9 +26,7 @@ from .zm_mixins import ZoneMinderMixin
 logger = logging.getLogger(__name__)
 
 
-class ZoneMinderSynchronizer( ZoneMinderMixin, IntegrationSyncMixin ):
-
-    SYNCHRONIZATION_LOCK_NAME = 'zm_integration_sync'
+class ZoneMinderSynchronizer( IntegrationSynchronizer, ZoneMinderMixin ):
 
     MONITOR_FUNCTION_NAME_LABEL_DICT = {
         'None': 'None',
@@ -33,37 +36,59 @@ class ZoneMinderSynchronizer( ZoneMinderMixin, IntegrationSyncMixin ):
         'Mocord': 'Mocord',
         'Nodect': 'Nodect',
     }
-    
-    def __init__(self):
-        return
-    
-    def sync( self ) -> ProcessingResult:
-        try:
-            with ExclusionLockContext( name = self.SYNCHRONIZATION_LOCK_NAME ):
-                logger.debug( 'ZoneMinder integration sync started.' )
-                return self._sync_helper()
-        except RuntimeError as e:
-            return ProcessingResult(
-                title = 'ZM Import Result',
-                error_list = [ str(e) ],
+
+    def get_description(self, is_initial_import: bool) -> Optional[str]:
+        if is_initial_import:
+            return (
+                'Each monitor becomes a camera with motion and'
+                ' run-state sensors.'
             )
-        finally:
-            logger.debug( 'ZoneMinder integration sync ended.' )
-    
-    def _sync_helper( self ) -> ProcessingResult:
-        result = ProcessingResult( title = 'ZM Import Result' )
+        return None
+
+    def _sync_impl( self, is_initial_import: bool ) -> IntegrationSyncResult:
+        result = IntegrationSyncResult(
+            title = self.get_result_title( is_initial_import = is_initial_import ),
+        )
 
         if not self.zm_manager().zm_client:
             logger.debug( 'ZoneMinder client not created. ZM integration disabled?' )
             result.error_list.append( 'Sync problem. ZM integration disabled?' )
             return result
-        
+
         self._sync_states( result = result )
-        self._sync_monitors( result = result )
-            
+        created_monitor_entities = self._sync_monitors( result = result )
+
+        # Existing-entity updates do not need re-placement; only
+        # newly-created monitor entities surface in the dispatcher.
+        if created_monitor_entities:
+            result.placement_input = self.group_entities_for_placement(
+                entities = created_monitor_entities,
+            )
         return result
 
-    def _sync_states( self, result : ProcessingResult ) -> ProcessingResult:
+    def group_entities_for_placement( self, entities ) -> EntityPlacementInput:
+        """Single 'Monitors' group: ZM monitors typically share a
+        view, and the operator's first instinct is 'all cameras →
+        same place.' The dispatcher's drill-down still allows
+        per-monitor placement when needed.
+
+        Empty input → empty placement input (no dispatcher
+        rendering)."""
+        if not entities:
+            return EntityPlacementInput()
+        items = [
+            EntityPlacementItem(
+                key = self._placement_item_key( entity = entity ),
+                label = entity.name,
+                entity = entity,
+            )
+            for entity in entities
+        ]
+        return EntityPlacementInput(
+            groups = [ EntityPlacementGroup( label = 'Monitors', items = items ) ],
+        )
+
+    def _sync_states( self, result : IntegrationSyncResult ) -> IntegrationSyncResult:
         zm_manager = self.zm_manager()
         
         zm_run_state_list = zm_manager.get_zm_states( force_load = True )
@@ -95,18 +120,24 @@ class ZoneMinderSynchronizer( ZoneMinderMixin, IntegrationSyncMixin ):
         if existing_state_values != new_state_values:
             entity_state.value_range_dict = new_state_values_dict
             entity_state.save()
-            result.message_list.append( f'Updated ZM state values to: {new_state_values_dict}' )
+            result.info_list.append(
+                f'Updated ZM state values to: {new_state_values_dict}'
+            )
 
         return
 
-    def _sync_monitors( self, result : ProcessingResult ) -> ProcessingResult:
-
+    def _sync_monitors( self, result : IntegrationSyncResult ):
+        """Sync monitors and return the list of newly-created monitor
+        entities (for the caller to feed into
+        group_entities_for_placement). Updates to existing entities
+        do not contribute — they don't need re-placement."""
         integration_key_to_monitor = self._fetch_zm_monitors( result = result )
-        result.message_list.append( f'Found {len(integration_key_to_monitor)} current ZM monitors.' )
-        
-        integration_key_to_entity = self._get_existing_zm_monitor_entities( result = result )
-        result.message_list.append( f'Found {len(integration_key_to_entity)} existing ZM entities.' )
+        result.info_list.append( f'Found {len(integration_key_to_monitor)} current ZM monitors.' )
 
+        integration_key_to_entity = self._get_existing_zm_monitor_entities( result = result )
+        result.info_list.append( f'Found {len(integration_key_to_entity)} existing ZM items.' )
+
+        created_entities = []
         for integration_key, zm_monitor in integration_key_to_monitor.items():
             entity = integration_key_to_entity.get( integration_key )
             if entity:
@@ -114,8 +145,9 @@ class ZoneMinderSynchronizer( ZoneMinderMixin, IntegrationSyncMixin ):
                                      zm_monitor = zm_monitor,
                                      result = result )
             else:
-                self._create_monitor_entity( zm_monitor = zm_monitor,
-                                             result = result )
+                entity = self._create_monitor_entity( zm_monitor = zm_monitor,
+                                                      result = result )
+                created_entities.append( entity )
             continue
 
         for integration_key, entity in integration_key_to_entity.items():
@@ -123,10 +155,10 @@ class ZoneMinderSynchronizer( ZoneMinderMixin, IntegrationSyncMixin ):
                 self._remove_entity( entity = entity,
                                      result = result )
             continue
-        
-        return
 
-    def _fetch_zm_monitors( self, result : ProcessingResult ) -> Dict[ IntegrationKey, ZmMonitor ]:
+        return created_entities
+
+    def _fetch_zm_monitors( self, result : IntegrationSyncResult ) -> Dict[ IntegrationKey, ZmMonitor ]:
         zm_manager = self.zm_manager()
         
         logger.debug( 'Getting current ZM monitors.' )
@@ -141,7 +173,7 @@ class ZoneMinderSynchronizer( ZoneMinderMixin, IntegrationSyncMixin ):
 
         return integration_key_to_monitor
     
-    def _get_existing_zm_monitor_entities( self, result : ProcessingResult ) -> Dict[IntegrationKey, Entity]:
+    def _get_existing_zm_monitor_entities( self, result : IntegrationSyncResult ) -> Dict[IntegrationKey, Entity]:
         logger.debug( 'Getting existing ZM entities.' )
         integration_key_to_entity = dict()
         
@@ -149,7 +181,7 @@ class ZoneMinderSynchronizer( ZoneMinderMixin, IntegrationSyncMixin ):
         for entity in entity_queryset:
             integration_key = entity.integration_key
             if not integration_key:
-                result.error_list.append( f'ZM entity found without integration name: {entity}' )
+                result.error_list.append( f'ZM item found without integration name: {entity}' )
                 mock_monitor_id = 1000000 + entity.id  # We need a (unique) placeholder (will remove later)
                 integration_key = IntegrationKey(
                     integration_id = ZmMetaData.integration_id,
@@ -164,7 +196,7 @@ class ZoneMinderSynchronizer( ZoneMinderMixin, IntegrationSyncMixin ):
 
     def _create_zm_entity( self,
                            run_state_name_label_dict  : Dict[ str, str ],
-                           result                     : ProcessingResult ):
+                           result                     : IntegrationSyncResult ):
         zm_manager = self.zm_manager()
 
         with transaction.atomic():
@@ -183,12 +215,16 @@ class ZoneMinderSynchronizer( ZoneMinderMixin, IntegrationSyncMixin ):
                 name_label_dict = run_state_name_label_dict,
             )
 
-        result.message_list.append( f'Created ZM entity: {zm_entity}' )
+        # The singleton ZM service entity isn't a placement candidate
+        # (already attached to the integration root) — surface as an
+        # info note rather than as a created_list entry so it doesn't
+        # inflate the count of placeable monitors.
+        result.info_list.append( f'Created ZM service item: {zm_entity}' )
         return zm_entity
             
     def _create_monitor_entity( self,
                                 zm_monitor  : ZmMonitor,
-                                result      : ProcessingResult ):
+                                result      : IntegrationSyncResult ) -> Entity:
         zm_manager = self.zm_manager()
 
         with transaction.atomic():
@@ -233,25 +269,24 @@ class ZoneMinderSynchronizer( ZoneMinderMixin, IntegrationSyncMixin ):
                     ),
                 )
                 
-        result.message_list.append( f'Create new camera entity: {entity}' )
-        return
-    
+        result.created_list.append( entity.name )
+        return entity
+
     def _update_entity( self,
                         entity      : Entity,
                         zm_monitor  : ZmMonitor,
-                        result      : ProcessingResult ):
-
+                        result      : IntegrationSyncResult ):
         if entity.name != zm_monitor.name():
-            result.message_list.append(f'Name changed for {entity}. Setting to "{zm_monitor.name()}"')
+            old_name = entity.name
             entity.name = zm_monitor.name()
             entity.save()
-        else:
-            result.message_list.append( f'No changes found for {entity}.' )
+            # Surface the rename so the operator sees both names.
+            result.updated_list.append( f'{old_name} → {entity.name}' )
         return
     
     def _remove_entity( self,
                         entity  : Entity,
-                        result  : ProcessingResult ):
+                        result  : IntegrationSyncResult ):
         """
         Remove an entity that no longer exists in the ZoneMinder integration.
         

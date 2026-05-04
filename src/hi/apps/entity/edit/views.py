@@ -14,6 +14,7 @@ from hi.apps.collection.collection_manager import CollectionManager
 import hi.apps.common.antinode as antinode
 from hi.apps.entity.entity_manager import EntityManager
 from hi.apps.entity.entity_pairing_manager import EntityPairingManager, EntityPairingError
+from hi.apps.entity.entity_placement import EntityPlacer
 from hi.apps.entity.edit.entity_type_transition_handler import EntityTypeTransitionHandler
 from hi.apps.entity.forms import EntityAddForm, EntityForm
 from hi.apps.entity.models import (
@@ -126,7 +127,7 @@ class EntityAddView( HiModalView ):
         if request.view_parameters.view_type.is_location_view:
             try:
                 current_location_view = LocationManager().get_default_location_view( request = request )
-                EntityManager().add_entity_to_view(
+                EntityPlacer().place_entity_in_view(
                     entity = entity,
                     location_view = current_location_view,
                     bulk_grid_index = bulk_grid_index,
@@ -161,7 +162,7 @@ class EntityDeleteView( HiModalView, EntityViewMixin ):
         entity = self.get_entity( request, *args, **kwargs )
 
         if not entity.can_user_delete:
-            raise PermissionDenied( 'This entity cannot be deleted.' )
+            raise PermissionDenied( 'This item cannot be deleted.' )
         
         context = {
             'entity': entity,
@@ -176,7 +177,7 @@ class EntityDeleteView( HiModalView, EntityViewMixin ):
             raise BadRequest( 'Missing confirmation value.' )
 
         if not entity.can_user_delete:
-            raise PermissionDenied( 'This entity cannot be deleted.' )
+            raise PermissionDenied( 'This item cannot be deleted.' )
                 
         entity.delete()
 
@@ -344,7 +345,7 @@ class EntityArchiveView( HiModalView, EntityViewMixin ):
         entity = self.get_entity( request, *args, **kwargs )
 
         if entity.integration_id:
-            raise PermissionDenied( 'Integration entities cannot be archived.' )
+            raise PermissionDenied( 'Integration items cannot be archived.' )
 
         context = {
             'entity': entity,
@@ -359,7 +360,7 @@ class EntityArchiveView( HiModalView, EntityViewMixin ):
             raise BadRequest( 'Missing confirmation value.' )
 
         if entity.integration_id:
-            raise PermissionDenied( 'Integration entities cannot be archived.' )
+            raise PermissionDenied( 'Integration items cannot be archived.' )
 
         with transaction.atomic():
             archived_entity = ArchivedEntity.objects.create(
@@ -416,7 +417,7 @@ class EntityArchiveDetailView( HiModalView ):
         try:
             archived_entity = ArchivedEntity.objects.get( pk = archived_entity_id )
         except ArchivedEntity.DoesNotExist:
-            raise Http404( 'Archived entity not found.' )
+            raise Http404( 'Archived item not found.' )
 
         context = {
             'archived_entity': archived_entity,

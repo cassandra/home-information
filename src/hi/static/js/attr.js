@@ -336,6 +336,25 @@
                 window.location.href = data.redirect;
                 return;
             }
+
+            // Modal-to-modal transition. The current modal hosting the
+            // submitted form is dismissed and a new modal containing
+            // the server-supplied HTML is opened in its place. Used by
+            // multi-step flows that stay in modal context (e.g.
+            // Configure -> pre-sync confirmation). Modal lifecycle is
+            // delegated to antinode (close + open) so attribute forms
+            // and antinode-handled forms share the same behavior.
+            if (data.modal) {
+                if (typeof AN !== 'undefined') {
+                    if (typeof AN.hideModalIfNeeded === 'function') {
+                        AN.hideModalIfNeeded($form);
+                    }
+                    if (typeof AN.displayModal === 'function') {
+                        AN.displayModal(data.modal);
+                    }
+                }
+                return;
+            }
             
             // Process DOM updates first (works for both success and error)
             const lastAppendTarget = this.processDOMUpdates(data, options);

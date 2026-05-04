@@ -32,8 +32,24 @@ urlpatterns = [
              name='integrations_resume' ),
 
     re_path( r'^health/(?P<integration_id>[\w\-]+)$',
-             views.IntegrationHealthStatusView.as_view(), 
+             views.IntegrationHealthStatusView.as_view(),
              name='integrations_health_status' ),
+
+    re_path( r'^pre-sync/(?P<integration_id>[\w\-]+)$',
+             views.IntegrationPreSyncView.as_view(),
+             name='integrations_pre_sync' ),
+
+    re_path( r'^sync/(?P<integration_id>[\w\-]+)$',
+             views.IntegrationSyncView.as_view(),
+             name='integrations_sync' ),
+
+    re_path( r'^placement/(?P<integration_id>[\w\-]+)$',
+             views.IntegrationPlacementView.as_view(),
+             name='integrations_placement' ),
+
+    re_path( r'^refine/(?P<location_view_id>\d+)$',
+             views.IntegrationRefineView.as_view(),
+             name='integrations_refine' ),
 
     re_path( r'^manage/(?P<integration_id>[\w\-]*)$', 
              views.IntegrationManageView.as_view(), 

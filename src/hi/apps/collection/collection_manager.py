@@ -72,6 +72,50 @@ class CollectionManager(Singleton):
             entity_status_data_list = entity_status_data_list,
         )
 
+    def create_collection( self, name : str ) -> Collection:
+        """Create a new ``Collection`` with sensible defaults
+        (default collection_type, default collection_view_type,
+        next available order_id). The ``name`` is auto-disambiguated
+        against existing collections by appending ``(2)``, ``(3)``,
+        etc. — same pattern as ``LocationManager.create_location_view``.
+        Used by the dispatcher's '+ New collection' option."""
+        from .enums import CollectionType, CollectionViewType
+
+        last_collection = Collection.objects.order_by( '-order_id' ).first()
+        if last_collection:
+            order_id = last_collection.order_id + 1
+        else:
+            order_id = 0
+
+        resolved_name = self.resolve_unique_collection_name(
+            requested_name = name,
+        )
+
+        collection = Collection(
+            name = resolved_name,
+            order_id = order_id,
+        )
+        collection.collection_type = CollectionType.default()
+        collection.collection_view_type = CollectionViewType.default()
+        collection.save()
+        return collection
+
+    def resolve_unique_collection_name( self, requested_name : str ) -> str:
+        """Return ``requested_name`` if no Collection uses it;
+        otherwise append ``(2)``, ``(3)``, ... until a free name is
+        found. Collection names are global (unlike LocationView
+        names which are per-Location), so the namespace is the full
+        ``Collection.objects.all()`` set."""
+        existing_names = set( Collection.objects.values_list('name', flat=True) )
+        if requested_name not in existing_names:
+            return requested_name
+        suffix = 2
+        while True:
+            candidate = f'{requested_name} ({suffix})'
+            if candidate not in existing_names:
+                return candidate
+            suffix += 1
+
     def create_collection_entity( self,
                                   entity      : Entity,
                                   collection  : Collection ) -> CollectionEntity:

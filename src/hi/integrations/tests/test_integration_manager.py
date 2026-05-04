@@ -570,13 +570,15 @@ class IntegrationManagerTestCase(TestCase):
         
         # Call method
         manager.ensure_all_attributes_exist(metadata, integration)
-        
+
         # Verify no new attributes were created
         self.assertEqual(integration.attributes.count(), 1)
-        
-        # Verify existing attribute was not modified
+
+        # Existing attribute keeps the operator's value but the name
+        # is reconciled to the code-side label so future label
+        # renames propagate on next sync.
         attr = integration.attributes.first()
-        self.assertEqual(attr.name, 'Existing Attribute')
+        self.assertEqual(attr.name, MockIntegrationAttributeType.TEST_ATTR.label)
         self.assertEqual(attr.value, 'existing_value')
 
     def test_disable_integration_database_transaction(self):
@@ -1014,7 +1016,68 @@ class IntegrationManagerTestCase(TestCase):
         manager._monitor_map['test_integration'] = mock_monitor2
         
         manager._stop_integration_monitor(data)
-        
+
         # Verify stop was not called on already stopped monitor
         mock_monitor2.stop.assert_not_called()
         self.assertNotIn('test_integration', manager._monitor_map)
+
+    def test_enable_integration_is_idempotent_and_preserves_pause(self):
+        """Calling enable_integration on an already-enabled integration is a no-op.
+
+        The Review Config flow re-posts the same configure form on an
+        already-enabled integration. Without idempotency the
+        unconditional is_paused=False inside enable_integration would
+        un-pause a paused integration as a side effect of saving its
+        config. This test pins that contract.
+        """
+        manager = IntegrationManager()
+        manager.reset_for_testing()
+
+        integration = Integration.objects.create(
+            integration_id='enable_idempotent_test',
+            is_enabled=True,
+            is_paused=True,
+        )
+        gateway = MockIntegrationGateway('enable_idempotent_test')
+        data = IntegrationData(integration_gateway=gateway, integration=integration)
+
+        with patch.object(manager, '_launch_integration_monitor_task') as mock_launch:
+            with patch.object(manager, 'refresh_integrations_from_db') as mock_refresh:
+                manager.enable_integration(data)
+
+                mock_launch.assert_not_called()
+                mock_refresh.assert_not_called()
+
+        integration.refresh_from_db()
+        self.assertTrue(integration.is_enabled)
+        # The critical assertion: is_paused was NOT clobbered to False.
+        self.assertTrue(integration.is_paused)
+
+    def test_enable_integration_first_time_enables_and_unpauses(self):
+        """First-time enable transitions disabled→enabled and unpauses.
+
+        Regression guard: even after the idempotency change, the
+        first-time-enable path must still flip is_enabled to True,
+        clear is_paused, refresh from db, and launch the monitor.
+        """
+        manager = IntegrationManager()
+        manager.reset_for_testing()
+
+        integration = Integration.objects.create(
+            integration_id='enable_first_time_test',
+            is_enabled=False,
+            is_paused=False,
+        )
+        gateway = MockIntegrationGateway('enable_first_time_test')
+        data = IntegrationData(integration_gateway=gateway, integration=integration)
+
+        with patch.object(manager, '_launch_integration_monitor_task') as mock_launch:
+            with patch.object(manager, 'refresh_integrations_from_db') as mock_refresh:
+                manager.enable_integration(data)
+
+                mock_launch.assert_called_once_with(integration_data=data)
+                mock_refresh.assert_called_once()
+
+        integration.refresh_from_db()
+        self.assertTrue(integration.is_enabled)
+        self.assertFalse(integration.is_paused)

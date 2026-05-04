@@ -15,14 +15,14 @@
 {% endblock %}
 
 {% block body %}
-<h4>Remove {{ integration_data.label }} Integration?</h4>
+<h4>Disable {{ integration_data.label }} Integration?</h4>
 
 {% if removal_summary.total_count == 0 %}
-<p>This integration has no attached entities.</p>
+<p>This integration has no attached items.</p>
 {% elif removal_summary.has_mixed_state %}
 <p>
   This integration has <strong>{{ removal_summary.total_count }}</strong>
-  {% if removal_summary.total_count == 1 %}entity{% else %}entities{% endif %}.
+  {% if removal_summary.total_count == 1 %}item{% else %}items{% endif %}.
   <strong>{{ removal_summary.user_data_count }}</strong> of
   {% if removal_summary.user_data_count == 1 %}them has{% else %}them have{% endif %}
   custom data you've added.
@@ -30,14 +30,14 @@
 <ul>
   <li>
     <strong>DELETE SAFE</strong> — delete the {{ removal_summary.deletable_count }}
-    {% if removal_summary.deletable_count == 1 %}entity{% else %}entities{% endif %}
+    {% if removal_summary.deletable_count == 1 %}item{% else %}items{% endif %}
     without custom data, and preserve the {{ removal_summary.user_data_count }} with custom
     data (disconnected from this integration, prefixed with
     <code>[Disconnected]</code>, custom attributes and layout retained).
   </li>
   <li>
     <strong>DELETE ALL</strong> — delete all {{ removal_summary.total_count }}
-    {% if removal_summary.total_count == 1 %}entity{% else %}entities{% endif %}
+    {% if removal_summary.total_count == 1 %}item{% else %}items{% endif %}
     and all the custom data associated with these items.
     You will not be able to recover the deleted custom data.
   </li>
@@ -45,14 +45,14 @@
 {% else %}
 <p>
   This integration has <strong>{{ removal_summary.total_count }}</strong>
-  {% if removal_summary.total_count == 1 %}entity{% else %}entities{% endif %}.
+  {% if removal_summary.total_count == 1 %}item{% else %}items{% endif %}.
   None have custom data you've added, so all will be deleted.
 </p>
 {% endif %}
 
 <p class="text-muted small">
   Configuration values are retained. If you re-configure this integration
-  later, it will start fresh without reconnecting to any preserved entities.
+  later, it will start fresh without reconnecting to any preserved items.
 </p>
 {% endblock %}
 

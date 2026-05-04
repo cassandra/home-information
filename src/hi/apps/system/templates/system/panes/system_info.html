@@ -37,12 +37,16 @@
   </div>
 
   <div class="row">
-    {% for integration_provider in integration_providers %}
+    {% for item in integration_health_items %}
     <div class="col-lg-6 col-md-12 mb-3">
-      {% include "system/panes/health_status_card.html" with health_status_provider=integration_provider %}
+      {% if item.health_status_provider %}
+        {% include "system/panes/health_status_card.html" with health_status_provider=item.health_status_provider %}
+      {% else %}
+        {% include "system/panes/integration_paused_card.html" with integration_data=item.integration_data %}
+      {% endif %}
     </div>
     {% empty %}
-    <div class="col-12 text-secondary"><em>No integrations enabled.</em></div>
+    <div class="col-12 text-secondary"><em>No integrations configured.</em></div>
     {% endfor %}
   </div>
 

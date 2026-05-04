@@ -4,7 +4,7 @@ from unittest.mock import ANY, Mock, patch
 
 from django.test import SimpleTestCase
 
-from hi.apps.common.processing_result import ProcessingResult
+from hi.integrations.sync_result import IntegrationSyncResult
 from hi.integrations.transient_models import IntegrationKey
 from hi.services.homebox.hb_metadata import HbMetaData
 from hi.services.homebox.hb_sync import HomeBoxSynchronizer
@@ -28,11 +28,11 @@ class TestHomeBoxSynchronizer(SimpleTestCase):
         manager.fetch_hb_items_from_api.return_value = [Mock(), Mock(), Mock()]
 
         with patch.object(synchronizer, 'hb_manager', return_value=manager), \
-                patch.object(synchronizer, '_sync_helper_entities') as sync_entities_mock:
-            result = synchronizer._sync_helper()
+                patch.object(synchronizer, '_sync_helper_entities', return_value=[]) as sync_entities_mock:
+            result = synchronizer._sync_impl(is_initial_import=True)
 
-        self.assertIsInstance(result, ProcessingResult)
-        self.assertIn('Found 3 current HomeBox items.', result.message_list)
+        self.assertIsInstance(result, IntegrationSyncResult)
+        self.assertIn('Found 3 current HomeBox items.', result.info_list)
         sync_entities_mock.assert_called_once_with(
             item_list=manager.fetch_hb_items_from_api.return_value,
             result=result,
@@ -40,7 +40,7 @@ class TestHomeBoxSynchronizer(SimpleTestCase):
 
     def test_sync_helper_entities_create_update_remove_entities(self):
         synchronizer = HomeBoxSynchronizer()
-        result = ProcessingResult(title='HomeBox Import Result')
+        result = IntegrationSyncResult(title='HomeBox Import Result')
 
         item_new = Mock(name='item_new')
         item_existing = Mock(name='item_existing')
@@ -135,13 +135,13 @@ class TestHomeBoxSynchronizer(SimpleTestCase):
             item_existing,
         )
 
-        self.assertIn('Found 2 existing HomeBox entities.', result.message_list)
+        self.assertIn('Found 2 existing HomeBox items.', result.info_list)
         self.assertTrue(any('Ignoring HomeBox item due to missing/invalid id' in message
                             for message in result.error_list))
 
     def test_sync_helper_entity_attributes_create_update_remove_fields_and_attachments(self):
         synchronizer = HomeBoxSynchronizer()
-        result = ProcessingResult(title='HomeBox Import Result')
+        result = IntegrationSyncResult(title='HomeBox Import Result')
 
         entity = Mock(name='entity')
         entity.id = 10
@@ -287,8 +287,69 @@ class TestHomeBoxSynchronizer(SimpleTestCase):
         stale_attr.delete.assert_called_once()
         foreign_attr.delete.assert_not_called()
 
-        self.assertEqual(len(result.message_list), 1)
-        self.assertIn('Updated HomeBox entity attributes', result.message_list[0])
-        self.assertIn('Field attribute added: Field New', result.message_list[0])
-        self.assertIn('Attachment attribute added: Attachment New', result.message_list[0])
-        self.assertIn('Field attribute removed: Stale Field', result.message_list[0])
+        # Per-attribute change detail is no longer surfaced in the
+        # sync result (counts at the entity level capture the
+        # operator-relevant signal). The persistence behavior above
+        # — created/updated/deleted attribute records — remains the
+        # contract this test pins.
+        self.assertEqual(result.info_list, [])
+
+
+class TestHomeBoxSynchronizerSyncResultGrouping(SimpleTestCase):
+    """Phase 2 grouping behavior: HomeBox has no domain notion of
+    grouping, so every imported item lands in `ungrouped_items`.
+    `groups` stays empty. The framework's placement modal decides
+    how to surface ungrouped items at render time."""
+
+    def test_sync_impl_populates_ungrouped_items_only(self):
+        synchronizer = HomeBoxSynchronizer()
+        manager = Mock()
+        manager.hb_client = object()
+        manager.fetch_hb_items_from_api.return_value = [Mock(), Mock()]
+
+        entity_a = Mock()
+        entity_a.name = 'Cordless Drill'
+        entity_a.integration_key = IntegrationKey(
+            integration_id=HbMetaData.integration_id,
+            integration_name='item.42',
+        )
+        entity_a.id = 0
+        entity_b = Mock()
+        entity_b.name = 'Stud Finder'
+        entity_b.integration_key = IntegrationKey(
+            integration_id=HbMetaData.integration_id,
+            integration_name='item.43',
+        )
+        entity_b.id = 0
+
+        with patch.object(synchronizer, 'hb_manager', return_value=manager), \
+             patch.object(synchronizer, '_sync_helper_entities',
+                          return_value=[entity_a, entity_b]):
+            result = synchronizer._sync_impl(is_initial_import=True)
+
+        self.assertIsNotNone(result.placement_input)
+        self.assertEqual(result.placement_input.groups, [])
+        self.assertEqual(len(result.placement_input.ungrouped_items), 2)
+        labels = [item.label for item in result.placement_input.ungrouped_items]
+        self.assertEqual(labels, ['Cordless Drill', 'Stud Finder'])
+        keys = [item.key for item in result.placement_input.ungrouped_items]
+        self.assertEqual(
+            keys,
+            [
+                f'{HbMetaData.integration_id}:item.42',
+                f'{HbMetaData.integration_id}:item.43',
+            ],
+        )
+
+    def test_sync_impl_emits_empty_when_no_items_imported(self):
+        synchronizer = HomeBoxSynchronizer()
+        manager = Mock()
+        manager.hb_client = object()
+        manager.fetch_hb_items_from_api.return_value = []
+
+        with patch.object(synchronizer, 'hb_manager', return_value=manager), \
+                patch.object(synchronizer, '_sync_helper_entities', return_value=[]):
+            result = synchronizer._sync_impl(is_initial_import=True)
+
+        # No newly-created entities → placement_input is None.
+        self.assertIsNone(result.placement_input)

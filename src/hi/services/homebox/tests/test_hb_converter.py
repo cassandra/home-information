@@ -162,3 +162,56 @@ class TestHbConverter(TestCase):
         created_attribute.refresh_from_db()
         self.assertEqual(created_attribute.order_id, 1)
         self.assertEqual(created_attribute.file_value.name, original_name)
+
+
+
+class TestHbConverterPayloadTimestampOmission(TestCase):
+    """Regression coverage for the timestamp-omission contract on
+    ``hb_item_to_entity_payload``.
+
+    Timestamps are deliberately excluded from the payload — they
+    are metadata about *when* a change happened, not *what*
+    changed. Including them caused spurious 'updated' reports on
+    every refresh because real HomeBox can tick ``updatedAt`` for
+    housekeeping events the operator doesn't care about. These
+    tests pin the contract so a future re-add (e.g., 'for
+    completeness') silently re-introducing the bug fails loudly."""
+
+    def _mock_item(self, **api_overrides):
+        api_dict = {
+            'id': 'item-1',
+            'name': 'Item 1',
+            'description': 'desc',
+            'quantity': 1,
+            'createdAt': '2026-01-01T00:00:00+00:00',
+            'updatedAt': '2026-01-01T00:00:00+00:00',
+            'location': {'id': 'loc-1', 'name': 'Garage'},
+            'labels': [{'id': 'lab-1', 'name': 'Tools'}],
+            'fields': [],
+            'attachments': [],
+        }
+        api_dict.update(api_overrides)
+        return HbItem(api_dict=api_dict, client=Mock())
+
+    def test_payload_excludes_timestamp_keys(self):
+        item = self._mock_item()
+        payload = HbConverter.hb_item_to_entity_payload(hb_item=item)
+        self.assertNotIn('created_at', payload)
+        self.assertNotIn('updated_at', payload)
+
+    def test_payloads_compare_equal_when_only_timestamps_differ(self):
+        """The change-detection signal: two payloads identical
+        except for timestamps must compare equal so a refresh
+        against unchanged upstream content reports zero updates."""
+        earlier = self._mock_item(
+            createdAt='2026-01-01T00:00:00+00:00',
+            updatedAt='2026-01-01T00:00:00+00:00',
+        )
+        later = self._mock_item(
+            createdAt='2026-04-15T12:34:56+00:00',
+            updatedAt='2026-05-04T08:00:00+00:00',
+        )
+        self.assertEqual(
+            HbConverter.hb_item_to_entity_payload(hb_item=earlier),
+            HbConverter.hb_item_to_entity_payload(hb_item=later),
+        )

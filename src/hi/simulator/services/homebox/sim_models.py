@@ -13,7 +13,6 @@ The to_api_dict helper builds the JSON shape the integration's HbItem parser
 from dataclasses import dataclass
 from typing import Any, Dict, List
 
-import hi.apps.common.datetimeproxy as datetimeproxy
 from hi.apps.common.utils import str_to_bool
 
 from hi.simulator.base_models import SimEntityFields, SimState, SimEntityDefinition
@@ -22,8 +21,18 @@ from hi.simulator.enums import SimEntityType, SimStateType
 
 @dataclass( frozen = True )
 class HomeBoxInventoryItemFields( SimEntityFields ):
-    """ User-editable metadata for a simulated HomeBox inventory item. """
+    """ User-editable metadata for a simulated HomeBox inventory item.
 
+    ``item_id`` is the identity the simulator's API emits as the
+    item's ``id``. Stable across profiles when the operator sets a
+    matching value in two profiles (e.g. baseline + baseline-changed
+    sharing 'cordless-drill'); when left empty the simulator falls
+    back to the row's auto-assigned ``DbSimEntity`` PK, which keeps
+    historical UI-created items working but means the same logical
+    item in two different profiles ends up with different ids.
+    """
+
+    item_id        : str  = ''
     description    : str  = ''
     serial_number  : str  = ''
     model_number   : str  = ''
@@ -70,19 +79,25 @@ HOMEBOX_SIM_ENTITY_DEFINITION_LIST: List[SimEntityDefinition] = [
 
 def build_item_api_dict( sim_entity_id    : int,
                          fields           : HomeBoxInventoryItemFields,
-                         archived_state   : HomeBoxItemArchivedState ) -> Dict[ str, Any ]:
+                         archived_state   : HomeBoxItemArchivedState,
+                         created_at,
+                         updated_at ) -> Dict[ str, Any ]:
     """
     Build the HomeBox item JSON shape returned by the simulator's API,
     matching the fields the integration's HbItem parser consumes.
 
     Fields not in the simulator's scope (custom fields, attachments,
-    location, labels) are emitted as empty/null. Timestamps are emitted
-    as the current time on every call; the integration uses them only
-    for change detection.
+    location, labels) are emitted as empty/null. Timestamps come
+    from the persisted ``DbSimEntity`` so they're stable across
+    reads — change only when the operator actually edits the row,
+    matching real HomeBox behavior.
     """
-    now_iso = datetimeproxy.now().isoformat()
+    # Prefer the operator-supplied stable id; fall back to the
+    # auto-assigned PK for items that don't set one (legacy and
+    # UI-created profiles).
+    item_id = fields.item_id or str(sim_entity_id)
     return {
-        'id'             : str(sim_entity_id),
+        'id'             : item_id,
         'name'           : fields.name,
         'description'    : fields.description,
         'serialNumber'   : fields.serial_number,
@@ -95,6 +110,6 @@ def build_item_api_dict( sim_entity_id    : int,
         'attachments'    : [],
         'location'       : None,
         'labels'         : [],
-        'createdAt'      : now_iso,
-        'updatedAt'      : now_iso,
+        'createdAt'      : created_at.isoformat(),
+        'updatedAt'      : updated_at.isoformat(),
     }

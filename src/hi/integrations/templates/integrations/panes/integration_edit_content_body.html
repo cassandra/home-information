@@ -6,10 +6,18 @@
 
 {% block additional_actions %}
 {% if show_modal_cancel %}
+{% if is_review_mode %}
+<a role="button" {% if autofocus %}autofocus="autofocus"{% endif %}
+   class="btn btn-outline-tertiary" href="{{ pre_sync_url }}"
+   data-async="modal">
+  CONTINUE {% icon "chevron-right" size="sm" css_class="hi-icon-right" %}
+</a>
+{% else %}
 <a id="hi-modal-cancel" role="button" {% if autofocus %}autofocus="autofocus"{% endif %}
    class="btn btn-outline-tertiary" href="#" data-dismiss="modal">
   {% icon "cancel" size="sm" css_class="hi-icon-left" %}CANCEL
 </a>
+{% endif %}
 {% endif %}
 
 <!-- Integration Health Status Display -->
