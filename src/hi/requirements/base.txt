@@ -18,7 +18,7 @@ pillow==12.2.0
 Pint==0.25
 psutil==6.0.0
 python-dateutil==2.9.0.post0
-python-dotenv==1.1.1
+python-dotenv==1.1.2
 python-utils==3.9.1
 pytz==2025.2
 redis==5.2.0
