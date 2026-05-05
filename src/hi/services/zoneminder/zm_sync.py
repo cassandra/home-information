@@ -28,6 +28,9 @@ logger = logging.getLogger(__name__)
 
 class ZoneMinderSynchronizer( IntegrationSynchronizer, ZoneMinderMixin ):
 
+    def get_integration_metadata(self):
+        return ZmMetaData
+
     MONITOR_FUNCTION_NAME_LABEL_DICT = {
         'None': 'None',
         'Monitor': 'Monitor',
@@ -144,8 +147,6 @@ class ZoneMinderSynchronizer( IntegrationSynchronizer, ZoneMinderMixin ):
         # below treats it as primary-matched without any
         # reconnect-aware branching.
         self.reconnect_disconnected_items(
-            integration_id = ZmMetaData.integration_id,
-            integration_label = ZmMetaData.label,
             integration_key_to_upstream = integration_key_to_monitor,
             integration_key_to_entity = integration_key_to_entity,
             result = result,
@@ -339,5 +340,5 @@ class ZoneMinderSynchronizer( IntegrationSynchronizer, ZoneMinderMixin ):
         
         TODO: Should we remove the EventDefinitions that were auto-created (with integration key)?
         """
-        self._remove_entity_intelligently(entity, result, 'ZoneMinder')
+        self._remove_entity_intelligently(entity, result)
         return

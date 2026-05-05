@@ -536,119 +536,6 @@ class TestZoneMinderSynchronizerExistingEntities(TestCase):
         self.assertNotIn(other_key, result_dict)
 
 
-class TestZoneMinderSynchronizerEntityCreation(TestCase):
-    """Test entity creation with database transactions"""
-    
-    def setUp(self):
-        self.synchronizer = ZoneMinderSynchronizer()
-        
-        # Mock the zm_manager
-        self.mock_manager = Mock()
-        self.mock_manager.ZM_ENTITY_NAME = 'ZoneMinder'
-        self.mock_manager.ZM_MONITOR_INTEGRATION_NAME_PREFIX = 'monitor'
-        self.mock_manager.VIDEO_STREAM_SENSOR_PREFIX = 'monitor.video_stream'
-        self.mock_manager.MOVEMENT_SENSOR_PREFIX = 'monitor.motion'
-        self.mock_manager.MONITOR_FUNCTION_SENSOR_PREFIX = 'monitor.function'
-        self.mock_manager.MOVEMENT_EVENT_PREFIX = 'monitor.motion'
-        self.mock_manager.should_add_alarm_events = True
-        self.synchronizer._zm_manager = self.mock_manager
-    
-    @patch('hi.services.zoneminder.zm_sync.transaction.atomic')
-    @patch('hi.services.zoneminder.zm_sync.HiModelHelper.create_discrete_controller')
-    @patch.object(Entity, 'save')
-    def test_create_zm_entity_uses_transaction(self, mock_save, mock_create_controller, mock_atomic):
-        """Test _create_zm_entity uses database transaction"""
-        run_state_dict = {'start': 'start', 'stop': 'stop'}
-        
-        mock_integration_key = IntegrationKey(integration_id='zm', integration_name='system')
-        self.mock_manager._zm_integration_key.return_value = mock_integration_key
-        self.mock_manager._zm_run_state_integration_key.return_value = IntegrationKey(
-            integration_id='zm', integration_name='run.state'
-        )
-        
-        result = IntegrationSyncResult(title='Test')
-        self.synchronizer._create_zm_entity(run_state_dict, result)
-        
-        mock_atomic.assert_called_once()
-        mock_save.assert_called_once()
-        mock_create_controller.assert_called_once()
-    
-    @patch('hi.services.zoneminder.zm_sync.transaction.atomic')
-    @patch('hi.services.zoneminder.zm_sync.HiModelHelper.create_movement_sensor')
-    @patch('hi.services.zoneminder.zm_sync.HiModelHelper.create_discrete_controller')
-    @patch('hi.services.zoneminder.zm_sync.HiModelHelper.create_movement_event_definition')
-    @patch.object(Entity, 'save')
-    def test_create_monitor_entity_creates_all_components(self, mock_save, mock_create_event,
-                                                          mock_create_controller, mock_create_movement,
-                                                          mock_atomic):
-        """Test _create_monitor_entity creates all required sensors and controllers"""
-        # Mock monitor
-        mock_monitor = Mock()
-        mock_monitor.id.return_value = 123
-        mock_monitor.name.return_value = 'Front Door'
-        
-        # Mock integration key generation
-        entity_key = IntegrationKey(integration_id='zm', integration_name='monitor.123')
-        movement_key = IntegrationKey(integration_id='zm', integration_name='monitor.motion.123')
-        function_key = IntegrationKey(integration_id='zm', integration_name='monitor.function.123')
-        event_key = IntegrationKey(integration_id='zm', integration_name='monitor.motion.123')
-        
-        self.mock_manager._to_integration_key.side_effect = [
-            entity_key, movement_key, function_key, event_key
-        ]
-        
-        # Mock movement sensor for event creation
-        mock_movement_sensor = Mock()
-        mock_movement_sensor.name = 'Front Door Motion'
-        mock_movement_sensor.entity_state = Mock()
-        mock_create_movement.return_value = mock_movement_sensor
-        
-        result = IntegrationSyncResult(title='Test')
-        self.synchronizer._create_monitor_entity(mock_monitor, result)
-        
-        # Should create all components
-        mock_create_movement.assert_called_once()
-        mock_create_controller.assert_called_once()
-        mock_create_event.assert_called_once()
-        
-        # Should use transaction
-        mock_atomic.assert_called_once()
-        mock_save.assert_called_once()
-    
-    @patch('hi.services.zoneminder.zm_sync.transaction.atomic')
-    @patch('hi.services.zoneminder.zm_sync.HiModelHelper.create_movement_sensor')
-    @patch('hi.services.zoneminder.zm_sync.HiModelHelper.create_discrete_controller')
-    @patch('hi.services.zoneminder.zm_sync.HiModelHelper.create_movement_event_definition')
-    @patch.object(Entity, 'save')
-    def test_create_monitor_entity_skips_events_when_disabled(self, mock_save, mock_create_event,
-                                                              mock_create_controller, mock_create_movement,
-                                                              mock_atomic):
-        """Test _create_monitor_entity skips event creation when alarm events disabled"""
-        self.mock_manager.should_add_alarm_events = False
-        
-        mock_monitor = Mock()
-        mock_monitor.id.return_value = 123
-        mock_monitor.name.return_value = 'Front Door'
-        
-        # Mock integration key generation
-        self.mock_manager._to_integration_key.side_effect = [
-            Mock(), Mock(), Mock(), Mock()  # entity, video, movement, function keys
-        ]
-        
-        mock_movement_sensor = Mock()
-        mock_create_movement.return_value = mock_movement_sensor
-        
-        result = IntegrationSyncResult(title='Test')
-        self.synchronizer._create_monitor_entity(mock_monitor, result)
-        
-        # Should not create event
-        mock_create_event.assert_not_called()
-        
-        # Should still create other components
-        mock_create_movement.assert_called_once()
-        mock_create_controller.assert_called_once()
-
-
 class TestZoneMinderSynchronizerEntityUpdate(TestCase):
     """Test entity update logic"""
     
@@ -726,7 +613,7 @@ class TestZoneMinderSynchronizerEntityRemoval(TestCase):
         
         self.synchronizer._remove_entity(mock_entity, result)
         
-        mock_intelligent_removal.assert_called_once_with(mock_entity, result, 'ZoneMinder')
+        mock_intelligent_removal.assert_called_once_with(mock_entity, result)
 
 
 class TestZoneMinderSynchronizerFunctionConstants(TestCase):
@@ -1124,8 +1011,10 @@ class CreateMonitorEntityCreateNewContractTests(TestCase):
             result=result,
         )
 
+        from hi.apps.entity.enums import EntityType
         self.assertIsInstance(entity, Entity)
         self.assertEqual(entity.name, 'Driveway')
+        self.assertEqual(entity.entity_type, EntityType.CAMERA)
         self.assertEqual(entity.integration_id, ZmMetaData.integration_id)
         self.assertEqual(entity.integration_name, 'monitor.42')
         self.assertTrue(entity.has_video_stream)

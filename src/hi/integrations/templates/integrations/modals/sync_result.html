@@ -123,7 +123,7 @@
     {% endif %}
     {% if sync_result.reconnected_list %}
     <div class="px-3">
-      <div class="text-success font-weight-bold hi-sync-result-stat-number">
+      <div class="text-info font-weight-bold hi-sync-result-stat-number">
         {{ sync_result.reconnected_list|length }}
       </div>
       <div class="text-muted small text-uppercase hi-uppercase-label">Reconnected</div>
@@ -193,8 +193,8 @@
   {% endif %}
 
   {% if sync_result.reconnected_list %}
-  <div class="mb-3 pl-3 hi-category-section hi-category-section--success">
-    <div class="small text-success text-uppercase mb-1 hi-uppercase-label">
+  <div class="mb-3 pl-3 hi-category-section hi-category-section--info">
+    <div class="small text-info text-uppercase mb-1 hi-uppercase-label">
       Reconnected ({{ sync_result.reconnected_list|length }})
     </div>
     <ul class="list-unstyled small mb-0 hi-sync-result-item-list">

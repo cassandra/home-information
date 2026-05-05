@@ -19,6 +19,9 @@ logger = logging.getLogger(__name__)
 
 class HomeBoxSynchronizer( IntegrationSynchronizer, HomeBoxMixin ):
 
+    def get_integration_metadata(self):
+        return HbMetaData
+
     def get_description(self, is_initial_import: bool) -> Optional[str]:
         return (
             'HomeBox Labels and Locations are kept as metadata on '
@@ -91,8 +94,6 @@ class HomeBoxSynchronizer( IntegrationSynchronizer, HomeBoxMixin ):
         # to integration_key_to_entity, so the main loop below treats
         # it as primary-matched without any reconnect-aware branching.
         self.reconnect_disconnected_items(
-            integration_id = HbMetaData.integration_id,
-            integration_label = HbMetaData.label,
             integration_key_to_upstream = integration_key_to_item,
             integration_key_to_entity = integration_key_to_entity,
             result = result,
@@ -183,7 +184,7 @@ class HomeBoxSynchronizer( IntegrationSynchronizer, HomeBoxMixin ):
     def _remove_entity( self,
                         entity : Entity,
                         result : IntegrationSyncResult ):
-        self._remove_entity_intelligently( entity, result, 'HomeBox' )
+        self._remove_entity_intelligently( entity, result )
         return
 
     def _sync_helper_entity_attributes( self,

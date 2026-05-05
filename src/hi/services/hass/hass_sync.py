@@ -25,6 +25,9 @@ logger = logging.getLogger(__name__)
 
 class HassSynchronizer( IntegrationSynchronizer, HassMixin ):
 
+    def get_integration_metadata(self):
+        return HassMetaData
+
     def get_description(self, is_initial_import: bool) -> Optional[str]:
         if is_initial_import:
             return 'Only items matching your Allowed Item Types setting will be imported.'
@@ -84,8 +87,6 @@ class HassSynchronizer( IntegrationSynchronizer, HassMixin ):
         # treats it as primary-matched without any reconnect-aware
         # branching.
         self.reconnect_disconnected_items(
-            integration_id = HassMetaData.integration_id,
-            integration_label = HassMetaData.label,
             integration_key_to_upstream = integration_key_to_hass_device,
             integration_key_to_entity = integration_key_to_entity,
             result = result,
@@ -191,7 +192,7 @@ class HassSynchronizer( IntegrationSynchronizer, HassMixin ):
 
         Uses intelligent deletion that preserves user-created data.
         """
-        self._remove_entity_intelligently(entity, result, 'HASS')
+        self._remove_entity_intelligently(entity, result)
         return
 
     def group_entities_for_placement( self, entities ) -> EntityPlacementInput:

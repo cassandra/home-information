@@ -149,6 +149,16 @@ class IntegrationDetailsModel( models.Model ):
             return
         self.integration_id = integration_key.integration_id
         self.integration_name = integration_key.integration_name
+        # Re-attaching to an active integration invalidates any
+        # prior detached-state record. Clearing here is defensive
+        # against future call sites that set integration_key
+        # without going through reconnect_disconnected_items: a
+        # stale previous_integration_* pair on an active entity
+        # would mis-trigger the "Detached from" UI badge and
+        # confuse any future query that filters disconnected
+        # entities by previous_integration_id alone.
+        self.previous_integration_id = None
+        self.previous_integration_name = None
         return
 
     @property

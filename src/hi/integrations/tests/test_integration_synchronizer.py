@@ -1,5 +1,21 @@
 """
-Unit tests for IntegrationSynchronizer's intelligent entity-removal helper.
+Unit tests for IntegrationSynchronizer framework helpers.
+
+Covers the framework-owned policies that all per-integration
+synchronizers share:
+
+  * ``_remove_entity_intelligently`` — sync-time entity removal /
+    preservation (delegates to
+    ``EntityIntegrationOperations.remove_entities_with_closure``).
+  * ``reconnect_disconnected_items`` — Issue #281 auto-reconnect
+    pre-pass.
+  * ``_rebuild_integration_components`` — abstract subclass hook
+    used by reconnect.
+
+End-to-end cycle coverage (sync → detach → reconnect across multiple
+sync passes) lives in ``IntegrationSynchronizerReconnectCycleTests``
+at the bottom of this module; the per-integration converter
+contracts live in each ``services/<integration>/tests/`` directory.
 """
 
 import logging
@@ -16,10 +32,22 @@ from hi.integrations.sync_result import IntegrationSyncResult
 logging.disable(logging.CRITICAL)
 
 
+def _stub_integration_metadata(integration_id='test_integration', label='TestIntegration'):
+    """Lightweight metadata stub for tests that exercise the
+    framework's integration-id-aware code paths without standing up a
+    full IntegrationGateway."""
+    from types import SimpleNamespace
+    return SimpleNamespace(integration_id=integration_id, label=label)
+
+
 class TestSynchronizer(IntegrationSynchronizer):
     """Concrete IntegrationSynchronizer used to exercise the
-    intelligent-removal helper. Stubs the abstract hooks so the class
-    can be instantiated; sync() itself is not exercised here."""
+    intelligent-removal and reconnect framework helpers. Stubs the
+    abstract hooks so the class can be instantiated; sync() itself
+    is not exercised here."""
+
+    def get_integration_metadata(self):
+        return _stub_integration_metadata()
 
     def get_result_title(self, is_initial_import=False):
         return 'Test Sync Result'
@@ -77,7 +105,7 @@ class IntegrationSynchronizerRemovalTestCase(TestCase):
         
         # Call the method
         self.synchronizer._remove_entity_intelligently(
-            self.entity, self.result, 'TestIntegration'
+            self.entity, self.result
         )
         
         # Entity should be completely deleted
@@ -140,7 +168,7 @@ class IntegrationSynchronizerRemovalTestCase(TestCase):
         
         # Call the method
         self.synchronizer._remove_entity_intelligently(
-            self.entity, self.result, 'TestIntegration'
+            self.entity, self.result
         )
         
         # Entity should still exist but be disconnected
@@ -233,7 +261,7 @@ class IntegrationSynchronizerRemovalTestCase(TestCase):
         
         # Call the method
         self.synchronizer._remove_entity_intelligently(
-            self.entity, self.result, 'TestIntegration'
+            self.entity, self.result
         )
         
         # Entity state should still exist (has user sensor)
@@ -292,7 +320,7 @@ class IntegrationSynchronizerRemovalTestCase(TestCase):
         
         # Call the method
         self.synchronizer._remove_entity_intelligently(
-            self.entity, self.result, 'TestIntegration'
+            self.entity, self.result
         )
         
         # First state should be deleted (orphaned)
@@ -327,7 +355,7 @@ class IntegrationSynchronizerRemovalTestCase(TestCase):
         
         # Call the method
         self.synchronizer._remove_entity_intelligently(
-            self.entity, self.result, 'TestIntegration'
+            self.entity, self.result
         )
         
         # Entity should be completely deleted; name recorded.
@@ -356,7 +384,7 @@ class IntegrationSynchronizerRemovalTestCase(TestCase):
         
         # Call the method
         self.synchronizer._remove_entity_intelligently(
-            self.entity, self.result, 'TestIntegration'
+            self.entity, self.result
         )
         
         # Verify entity is preserved and integration fields are cleared
@@ -392,7 +420,7 @@ class IntegrationSynchronizerRemovalTestCase(TestCase):
         
         # Call the method
         self.synchronizer._remove_entity_intelligently(
-            self.entity, self.result, 'TestIntegration'
+            self.entity, self.result
         )
         
         # All integration attributes should be deleted
@@ -473,7 +501,7 @@ class IntegrationSynchronizerRemovalTestCase(TestCase):
         
         # Call the method
         self.synchronizer._remove_entity_intelligently(
-            self.entity, self.result, 'TestIntegration'
+            self.entity, self.result
         )
         
         # Verify entity is preserved
@@ -562,7 +590,7 @@ class IntegrationSynchronizerRemovalTestCase(TestCase):
         
         # Call deletion (no user data, should delete completely)
         self.synchronizer._remove_entity_intelligently(
-            self.entity, self.result, 'TestIntegration'
+            self.entity, self.result
         )
         
         # Verify complete cascade deletion
@@ -593,7 +621,7 @@ class IntegrationSynchronizerRemovalTestCase(TestCase):
         )
 
         self.synchronizer._remove_entity_intelligently(
-            self.entity, self.result, 'TestIntegration'
+            self.entity, self.result
         )
 
         # 3 entries: 2 pre-existing + 1 preservation note.
@@ -690,7 +718,7 @@ class IntegrationSynchronizerRemovalTransactionTestCase(TransactionTestCase):
         
         # Execute preservation operation
         self.synchronizer._remove_entity_intelligently(
-            self.entity, self.result, 'TestIntegration'
+            self.entity, self.result
         )
         
         # Verify entity preservation and disconnection
@@ -786,7 +814,7 @@ class IntegrationSynchronizerRemovalTransactionTestCase(TransactionTestCase):
         
         # Execute preservation
         self.synchronizer._remove_entity_intelligently(
-            self.entity, self.result, 'TestIntegration'
+            self.entity, self.result
         )
         
         # Verify our entity was preserved and disconnected
@@ -845,7 +873,7 @@ class IntegrationSynchronizerRemovalTransactionTestCase(TransactionTestCase):
         entity_id = integration_only_entity.id
         
         self.synchronizer._remove_entity_intelligently(
-            integration_only_entity, self.result, 'TestIntegration'
+            integration_only_entity, self.result
         )
         
         # Should be completely deleted
@@ -880,7 +908,7 @@ class IntegrationSynchronizerRemovalTransactionTestCase(TransactionTestCase):
         )
         
         self.synchronizer._remove_entity_intelligently(
-            mixed_entity, self.result, 'TestIntegration'
+            mixed_entity, self.result
         )
         
         # Should be preserved and disconnected
@@ -952,7 +980,7 @@ class IntegrationSynchronizerRemovalTransactionTestCase(TransactionTestCase):
         
         # Execute preservation
         self.synchronizer._remove_entity_intelligently(
-            self.entity, self.result, 'TestIntegration'
+            self.entity, self.result
         )
         
         # Our entity should be preserved and disconnected
@@ -1029,7 +1057,7 @@ class IntegrationSynchronizerOrphanDelegateTestCase(TestCase):
         area_id = self.area.id
 
         self.synchronizer._remove_entity_intelligently(
-            self.camera, self.result, 'TestIntegration',
+            self.camera, self.result,
         )
 
         self.assertFalse(Entity.objects.filter(id=camera_id).exists())
@@ -1061,7 +1089,7 @@ class IntegrationSynchronizerOrphanDelegateTestCase(TestCase):
         area_id = self.area.id
 
         self.synchronizer._remove_entity_intelligently(
-            self.camera, self.result, 'TestIntegration',
+            self.camera, self.result,
         )
 
         self.assertFalse(Entity.objects.filter(id=camera_id).exists())
@@ -1086,7 +1114,7 @@ class IntegrationSynchronizerOrphanDelegateTestCase(TestCase):
         area_id = self.area.id
 
         self.synchronizer._remove_entity_intelligently(
-            self.camera, self.result, 'TestIntegration',
+            self.camera, self.result,
         )
 
         self.assertFalse(Entity.objects.filter(id=camera_id).exists())
@@ -1122,7 +1150,7 @@ class IntegrationSynchronizerOrphanDelegateTestCase(TestCase):
         area_id = self.area.id
 
         self.synchronizer._remove_entity_intelligently(
-            self.camera, self.result, 'TestIntegration',
+            self.camera, self.result,
         )
 
         # Camera detached and preserved (user data).
@@ -1161,7 +1189,15 @@ class ReconnectDisconnectedItemsFrameworkTests(TestCase):
         captured = []
         integration_id = self.INTEGRATION_ID
 
+        integration_label = self.INTEGRATION_LABEL
+
         class RecordingSynchronizer(IntegrationSynchronizer):
+            def get_integration_metadata(self):
+                return _stub_integration_metadata(
+                    integration_id=integration_id,
+                    label=integration_label,
+                )
+
             def _rebuild_integration_components(self, entity, upstream, result):
                 captured.append((entity.id, upstream))
                 entity.integration_key = IntegrationKey(
@@ -1207,8 +1243,6 @@ class ReconnectDisconnectedItemsFrameworkTests(TestCase):
         integration_key_to_entity = {}
 
         synchronizer.reconnect_disconnected_items(
-            integration_id=self.INTEGRATION_ID,
-            integration_label=self.INTEGRATION_LABEL,
             integration_key_to_upstream={upstream_key: upstream_payload},
             integration_key_to_entity=integration_key_to_entity,
             result=result,
@@ -1242,8 +1276,6 @@ class ReconnectDisconnectedItemsFrameworkTests(TestCase):
         integration_key_to_entity = {existing_key: existing_entity}
 
         synchronizer.reconnect_disconnected_items(
-            integration_id=self.INTEGRATION_ID,
-            integration_label=self.INTEGRATION_LABEL,
             integration_key_to_upstream={existing_key: {'name': 'light.existing'}},
             integration_key_to_entity=integration_key_to_entity,
             result=result,
@@ -1263,15 +1295,21 @@ class ReconnectDisconnectedItemsFrameworkTests(TestCase):
         upstream_key = self._make_upstream_key('foo')
 
         class IncompleteSynchronizer(IntegrationSynchronizer):
-            pass
+            # Metadata is provided so the framework reaches the
+            # _rebuild_integration_components hook (the missing
+            # override under test) rather than tripping on the
+            # earlier metadata abstract-hook check.
+            def get_integration_metadata(_self):
+                return _stub_integration_metadata(
+                    integration_id=self.INTEGRATION_ID,
+                    label=self.INTEGRATION_LABEL,
+                )
 
         synchronizer = IncompleteSynchronizer()
         result = IntegrationSyncResult(title='Test')
 
         with self.assertRaises(NotImplementedError) as cm:
             synchronizer.reconnect_disconnected_items(
-                integration_id=self.INTEGRATION_ID,
-                integration_label=self.INTEGRATION_LABEL,
                 integration_key_to_upstream={upstream_key: {'name': 'foo'}},
                 integration_key_to_entity={},
                 result=result,
@@ -1317,6 +1355,12 @@ class IntegrationSynchronizerReconnectCycleTests(TestCase):
         integration_label = self.INTEGRATION_LABEL
 
         class TestE2ESynchronizer(IntegrationSynchronizer):
+            def get_integration_metadata(self):
+                return _stub_integration_metadata(
+                    integration_id=integration_id,
+                    label=integration_label,
+                )
+
             def _rebuild_integration_components(self, entity, upstream, result):
                 entity.integration_key = IntegrationKey(
                     integration_id=integration_id,
@@ -1341,8 +1385,6 @@ class IntegrationSynchronizerReconnectCycleTests(TestCase):
                 }
 
                 self.reconnect_disconnected_items(
-                    integration_id=integration_id,
-                    integration_label=integration_label,
                     integration_key_to_upstream=upstream_map,
                     integration_key_to_entity=integration_key_to_entity,
                     result=result,
@@ -1532,6 +1574,46 @@ class IntegrationSynchronizerReconnectCycleTests(TestCase):
         # Operator-visible breadcrumb in result.info_list.
         self.assertTrue(any('share that previous identity' in note
                             for note in result.info_list))
+
+    def test_single_sync_can_simultaneously_reconnect_and_detach(self):
+        """A single sync pass can produce both reconnects and detaches
+        in the same run when upstream simultaneously re-adds one
+        previously-detached item and drops a different active one.
+        Pins the mutual-exclusivity claim in IntegrationSyncResult's
+        docstring: the two lists are mutually exclusive *per entity*,
+        not per sync run — both fields can be populated in one
+        result object."""
+        synchronizer = self._build_synchronizer()
+        result_pass1 = IntegrationSyncResult(title='Initial')
+
+        # Pass 1: import two entities, both gain user data.
+        synchronizer.run_sync_cycle(['light.kitchen', 'light.lounge'], result_pass1)
+        for ent in Entity.objects.filter(integration_id=self.INTEGRATION_ID):
+            self._user_attribute(ent)
+
+        # Pass 2: drop kitchen → detached.
+        result_pass2 = IntegrationSyncResult(title='Drop kitchen')
+        synchronizer.run_sync_cycle(['light.lounge'], result_pass2)
+        # Confirm precondition: kitchen is detached, lounge is active.
+        kitchen = Entity.objects.get(previous_integration_name='light.kitchen')
+        self.assertIsNone(kitchen.integration_id)
+
+        # Pass 3: re-add kitchen AND drop lounge — both transitions
+        # in the same sync pass.
+        result_mixed = IntegrationSyncResult(title='Mixed')
+        synchronizer.run_sync_cycle(['light.kitchen'], result_mixed)
+
+        kitchen.refresh_from_db()
+        lounge = Entity.objects.get(previous_integration_name='light.lounge')
+
+        # Kitchen reconnected, lounge detached, both in the same result.
+        self.assertEqual(kitchen.integration_id, self.INTEGRATION_ID)
+        self.assertIsNone(lounge.integration_id)
+        self.assertEqual(lounge.previous_integration_id, self.INTEGRATION_ID)
+        self.assertEqual(result_mixed.reconnected_list, [kitchen.name])
+        self.assertEqual(result_mixed.detached_list, [lounge.name])
+        self.assertEqual(result_mixed.removed_list, [])
+        self.assertEqual(result_mixed.created_list, [])
 
     def test_legacy_disconnected_entity_does_not_reconnect(self):
         """An entity disconnected before this feature landed has NO

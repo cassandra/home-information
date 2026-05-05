@@ -399,6 +399,52 @@ class FindReconnectCandidatesTests(TestCase):
         self.assertTrue(any('share that previous identity' in note
                             for note in result.info_list))
 
+    def test_mixed_unique_ambiguous_and_unmatched_in_one_call(self):
+        """Each upstream-key match decision is independent: a unique
+        match is returned, an ambiguous one is dropped (with an
+        info_list breadcrumb), and a no-match is silently absent.
+        Pins that the per-name branches in find_reconnect_candidates
+        don't cross-contaminate within a single call."""
+        self._disconnected_entity(
+            name='[Disconnected] Unique Light',
+            previous_integration_name='light.unique',
+        )
+        self._disconnected_entity(
+            name='[Disconnected] Ambiguous A',
+            previous_integration_name='light.ambiguous',
+        )
+        self._disconnected_entity(
+            name='[Disconnected] Ambiguous B',
+            previous_integration_name='light.ambiguous',
+        )
+
+        unique_key = self._make_upstream_key('light.unique')
+        ambiguous_key = self._make_upstream_key('light.ambiguous')
+        unmatched_key = self._make_upstream_key('light.never_existed')
+
+        from hi.integrations.sync_result import IntegrationSyncResult
+        result = IntegrationSyncResult(title='Mixed')
+
+        candidates = EntityIntegrationOperations.find_reconnect_candidates(
+            integration_id=self.INTEGRATION_ID,
+            upstream_keys=[unique_key, ambiguous_key, unmatched_key],
+            result=result,
+        )
+
+        # Unique key is in the result; ambiguous and unmatched are not.
+        self.assertEqual(set(candidates.keys()), {unique_key})
+        self.assertEqual(candidates[unique_key].name, '[Disconnected] Unique Light')
+        # Ambiguity breadcrumb references the ambiguous name specifically.
+        ambiguous_notes = [
+            note for note in result.info_list
+            if 'share that previous identity' in note
+        ]
+        self.assertEqual(len(ambiguous_notes), 1)
+        self.assertIn('light.ambiguous', ambiguous_notes[0])
+        # No spurious breadcrumb for the unmatched or unique keys.
+        self.assertNotIn('light.unique', ambiguous_notes[0])
+        self.assertNotIn('light.never_existed', ambiguous_notes[0])
+
     def test_does_not_match_across_integrations(self):
         """An entity disconnected from HASS must not match an upstream
         key from ZM, even if the integration_name coincides."""
