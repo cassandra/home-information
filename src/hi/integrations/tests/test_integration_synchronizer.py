@@ -173,10 +173,12 @@ class IntegrationSynchronizerRemovalTestCase(TestCase):
         # Entity state should be deleted (orphaned)
         self.assertFalse(EntityState.objects.filter(id=state_id).exists())
         
-        # Preservation records the original name in removed_list
-        # and surfaces a diagnostic info note — the operator wants
-        # to know an entity was detached, not just see a name in a list.
-        self.assertEqual(self.result.removed_list, [original_name])
+        # Preservation records the entity name in detached_list (the
+        # operator-visible "Detached" tile) and surfaces a diagnostic
+        # info note in info_list. The hard-delete branch was not
+        # taken for this entity, so removed_list stays empty.
+        self.assertEqual(self.result.detached_list, [original_name])
+        self.assertEqual(self.result.removed_list, [])
         self.assertEqual(len(self.result.info_list), 1)
         message = self.result.info_list[0]
         self.assertIn('Preserved TestIntegration item', message)
@@ -599,8 +601,9 @@ class IntegrationSynchronizerRemovalTestCase(TestCase):
         self.assertIn('Preserved TestIntegration item', self.result.info_list[2])
         self.assertEqual(self.result.info_list[0], 'Initial message')
         self.assertEqual(self.result.info_list[1], 'Another message')
-        # And removed_list captured the name exactly once.
-        self.assertEqual(self.result.removed_list, ['Test Entity'])
+        # detached_list (not removed_list) captures preserved entities.
+        self.assertEqual(self.result.detached_list, ['Test Entity'])
+        self.assertEqual(self.result.removed_list, [])
 
 
 class IntegrationSynchronizerRemovalTransactionTestCase(TransactionTestCase):
@@ -724,12 +727,14 @@ class IntegrationSynchronizerRemovalTransactionTestCase(TransactionTestCase):
         self.assertEqual(remaining_attributes.first().name, 'User Note')
         
         # Preservation diagnostic surfaces in info_list; the entity
-        # name is captured in removed_list.
+        # name is captured in detached_list (preserved entities go
+        # there, not in removed_list).
         self.assertEqual(len(self.result.info_list), 1)
         message = self.result.info_list[0]
         self.assertIn('Preserved TestIntegration item', message)
         self.assertIn('detached from integration', message)
-        self.assertEqual(self.result.removed_list, ['Test Entity'])
+        self.assertEqual(self.result.detached_list, ['Test Entity'])
+        self.assertEqual(self.result.removed_list, [])
 
     def test_preservation_with_database_constraint_validation(self):
         """Test that preservation operations respect database constraints and maintain referential integrity."""
@@ -1378,23 +1383,30 @@ class IntegrationSynchronizerReconnectCycleTests(TestCase):
         """The headline cycle: an entity is imported, drops from
         upstream (disconnect via sync-time preservation), reappears
         (reconnect via the secondary-match path). Total entity
-        count returns to 1 — no duplicate is created."""
+        count returns to 1 — no duplicate is created. The
+        operator-visible result modal shows the right tile each
+        pass: Created on import, Detached on drop, Reconnected on
+        re-add."""
         synchronizer = self._build_synchronizer()
-        result = IntegrationSyncResult(title='Cycle')
+        result_pass1 = IntegrationSyncResult(title='Cycle 1')
 
         # Pass 1: upstream introduces the entity.
-        synchronizer.run_sync_cycle(['light.kitchen'], result)
+        synchronizer.run_sync_cycle(['light.kitchen'], result_pass1)
         self.assertEqual(Entity.objects.count(), 1)
         original = Entity.objects.get(integration_name='light.kitchen')
         self._user_attribute(original)
         original_id = original.id
 
-        # Pass 2: upstream drops the entity → preserved (disconnected).
-        synchronizer.run_sync_cycle([], result)
+        # Pass 2: upstream drops the entity → detached.
+        result_pass2 = IntegrationSyncResult(title='Cycle 2')
+        synchronizer.run_sync_cycle([], result_pass2)
         original.refresh_from_db()
         self.assertIsNone(original.integration_id)
         self.assertEqual(original.previous_integration_id, self.INTEGRATION_ID)
         self.assertEqual(original.previous_integration_name, 'light.kitchen')
+        # The entity is on the Detached tile, NOT the Removed tile.
+        self.assertEqual(result_pass2.detached_list, [original.name])
+        self.assertEqual(result_pass2.removed_list, [])
 
         # Pass 3: upstream re-adds → reconnected (NOT duplicated).
         result_pass3 = IntegrationSyncResult(title='Cycle 3')
@@ -1403,6 +1415,10 @@ class IntegrationSynchronizerReconnectCycleTests(TestCase):
         reconnected = Entity.objects.get(id=original_id)
         self.assertEqual(reconnected.integration_id, self.INTEGRATION_ID)
         self.assertIsNone(reconnected.previous_integration_id)
+        # The entity is on the Reconnected tile.
+        self.assertEqual(result_pass3.reconnected_list, [reconnected.name])
+        self.assertEqual(result_pass3.created_list, [])
+        # And the diagnostic info note is also captured.
         self.assertTrue(any('Auto-reconnected' in note
                             for note in result_pass3.info_list))
 
@@ -1439,6 +1455,8 @@ class IntegrationSynchronizerReconnectCycleTests(TestCase):
         reconnected = Entity.objects.get(id=entity_id)
         self.assertEqual(reconnected.integration_id, self.INTEGRATION_ID)
         self.assertIsNone(reconnected.previous_integration_id)
+        # The entity surfaces on the Reconnected tile.
+        self.assertEqual(result_resync.reconnected_list, [reconnected.name])
 
     def test_primary_match_shadows_secondary_so_no_false_reconnect(self):
         """A live entity matches the primary scan; an unrelated

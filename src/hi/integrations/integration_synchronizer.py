@@ -178,7 +178,10 @@ class IntegrationSynchronizer:
           * dispatches to ``_rebuild_integration_components()`` so the
             integration's converter repopulates the integration-owned
             components on the existing entity,
-          * appends an "Auto-reconnected ..." note to ``result.info_list``,
+          * appends the entity name to ``result.reconnected_list``
+            (which drives the "Reconnected" tile + per-category list
+            in the sync result modal) and to ``result.info_list``
+            (the diagnostic Details section),
           * inserts the reconnected entity into
             ``integration_key_to_entity`` so the synchronizer's main
             loop sees it as primary-matched and gives it the standard
@@ -218,6 +221,12 @@ class IntegrationSynchronizer:
                 upstream = integration_key_to_upstream[ upstream_key ],
                 result = result,
             )
+            # reconnected_list drives the operator-visible
+            # "Reconnected" tile + per-category list in the sync
+            # result modal; info_list keeps the same name in the
+            # diagnostic Details section so the operator sees a
+            # consistent record across both surfaces.
+            result.reconnected_list.append( entity.name )
             result.info_list.append(
                 f'Auto-reconnected {integration_label} item "{entity.name}"'
             )

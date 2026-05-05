@@ -130,8 +130,10 @@ class EntityIntegrationOperations:
             those with user-added data.
 
         ``result`` is optional. When provided, each closure entity's
-        name is appended to ``result.removed_list``; the preserve
-        path also adds its diagnostic note to ``result.info_list``.
+        name is appended to either ``result.removed_list`` (the
+        hard-delete branch) or ``result.detached_list`` (the
+        preserve branch) — never both. The preserve branch also
+        adds its diagnostic note to ``result.info_list``.
 
         Each entity in the closure is classified by its *own* user
         data, independent of the seed's classification. This
@@ -143,15 +145,17 @@ class EntityIntegrationOperations:
         """
         closure_ids = cls.collect_removal_closure( seed_entity_ids )
         for entity in Entity.objects.filter( id__in = closure_ids ):
-            if result is not None:
-                result.removed_list.append( entity.name )
             if preserve_user_data and EntityUserDataDetector.has_user_created_attributes( entity ):
+                # preserve_with_user_data appends to result.detached_list
+                # itself; nothing to record here on this branch.
                 cls.preserve_with_user_data(
                     entity = entity,
                     integration_name = integration_name,
                     result = result,
                 )
             else:
+                if result is not None:
+                    result.removed_list.append( entity.name )
                 entity.delete()
         return
 
@@ -356,6 +360,11 @@ class EntityIntegrationOperations:
             entity.save()
 
         if result is not None:
+            # detached_list drives the operator-visible "Detached"
+            # tile + per-category list in the sync result modal;
+            # info_list keeps the diagnostic note for the collapsed
+            # Details section.
+            result.detached_list.append( entity.name )
             result.info_list.append(
                 f'Preserved {integration_name} item "{original_name}" with user data; '
                 f'detached from integration.'

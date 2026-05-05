@@ -41,23 +41,43 @@ class IntegrationSyncResult:
     not emptiness checks against groups/ungrouped_items — to decide
     whether to show the placement.
 
-    ``created_list`` / ``updated_list`` / ``removed_list`` hold the
-    *names* of entities affected by this sync run, populated by the
-    per-integration synchronizer as it walks upstream items. The
-    result modal uses list length for the count badges and the
-    list contents for per-category "Show items" disclosures so the
-    operator can see which entities were touched. Names only —
-    per-attribute change detail is intentionally not surfaced.
+    ``created_list`` / ``updated_list`` / ``reconnected_list`` /
+    ``detached_list`` / ``removed_list`` hold the *names* of entities
+    affected by this sync run, populated by the per-integration
+    synchronizer as it walks upstream items. The result modal uses
+    list length for the count badges and the list contents for
+    per-category "Show items" disclosures so the operator can see
+    which entities were touched. Names only — per-attribute change
+    detail is intentionally not surfaced.
+
+    The five categories are mutually exclusive for any given entity
+    in a single sync run:
+      * ``created_list``      — brand new entities this sync.
+      * ``updated_list``      — existing primary-matched entities
+                                whose payload changed.
+      * ``reconnected_list``  — previously-detached entities that
+                                were re-attached this sync (Issue
+                                #281 auto-reconnect).
+      * ``detached_list``     — entities preserved with user data on
+                                this sync (sync-time preservation
+                                or Disable-SAFE). They retain their
+                                custom attributes / layout / etc.
+                                and surface in the UI as "Detached
+                                from <integration>".
+      * ``removed_list``      — entities hard-deleted this sync.
 
     ``info_list`` carries diagnostic notes — "Found N upstream
-    items", "Filtered N by allowlist" — that the per-item lists
-    can't express. Rendered as a collapsible Details section in
-    the result modal. ``error_list`` is the parallel for failures.
+    items", "Filtered N by allowlist", ambiguous-reconnect
+    breadcrumbs — that the per-item lists can't express. Rendered
+    as a collapsible Details section in the result modal.
+    ``error_list`` is the parallel for failures.
     """
     title: str
     placement_input: Optional[EntityPlacementInput] = None
     created_list: List[str] = field(default_factory=list)
     updated_list: List[str] = field(default_factory=list)
+    reconnected_list: List[str] = field(default_factory=list)
+    detached_list: List[str] = field(default_factory=list)
     removed_list: List[str] = field(default_factory=list)
     info_list: List[str] = field(default_factory=list)
     error_list: List[str] = field(default_factory=list)
@@ -70,5 +90,7 @@ class IntegrationSyncResult:
         return bool(
             self.created_list
             or self.updated_list
+            or self.reconnected_list
+            or self.detached_list
             or self.removed_list
         )
