@@ -18,6 +18,14 @@
     From: <strong>{% integration_display_name entity %}</strong>
   </div>
 </div>
+{% elif entity.previous_integration_id %}
+<div class="my-2">
+  <div class="text-muted font-italic">
+    {% previous_integration_logo_path entity as prev_logo_path %}
+    {% if prev_logo_path %}<img src="{% static prev_logo_path %}" alt="" style="max-height: 18px; width: auto; margin-right: 4px; opacity: 0.6;">{% endif %}
+    Detached from: <strong>{% previous_integration_display_name entity %}</strong>
+  </div>
+</div>
 {% endif %}
 
 <div id="{{ DIVID.ENTITY_PROPERTIES_PANE }}">

@@ -77,10 +77,26 @@ class HassSynchronizer( IntegrationSynchronizer, HassMixin ):
             for hass_device in hass_device_id_to_device.values()
         }
 
+        # Issue #281 reconnect pre-pass (framework-level). Any
+        # disconnected entity whose previous identity matches an
+        # unmatched upstream device is reconnected in place and
+        # added to integration_key_to_entity, so the main loop below
+        # treats it as primary-matched without any reconnect-aware
+        # branching.
+        self.reconnect_disconnected_items(
+            integration_id = HassMetaData.integration_id,
+            integration_label = HassMetaData.label,
+            integration_key_to_upstream = integration_key_to_hass_device,
+            integration_key_to_entity = integration_key_to_entity,
+            result = result,
+        )
+
         # Track newly-created entities only — existing-entity updates
         # don't need re-placement and shouldn't surface in the
-        # dispatcher modal (refresh-with-no-new-items must produce
-        # an empty sync result).
+        # placement modal (refresh-with-no-new-items must produce
+        # an empty sync result). Reconnected entities are also
+        # excluded: their layout/collection memberships are preserved
+        # by reconnect (Part 3 contract) so they don't need placement.
         created_entities: List[Entity] = []
 
         with transaction.atomic():
@@ -107,6 +123,21 @@ class HassSynchronizer( IntegrationSynchronizer, HassMixin ):
                 entities = created_entities,
             )
         return result
+
+    def _rebuild_integration_components( self,
+                                         entity   : Entity,
+                                         upstream : HassDevice,
+                                         result   : IntegrationSyncResult ):
+        """Issue #281: dispatch to the HASS converter with the
+        existing-entity parameter set, so the converter repopulates
+        integration-owned components on the previously-disconnected
+        entity rather than creating a fresh one."""
+        HassConverter.create_models_for_hass_device(
+            hass_device = upstream,
+            add_alarm_events = self.hass_manager().should_add_alarm_events,
+            entity = entity,
+        )
+        return
 
     def _get_existing_hass_entities( self, result : IntegrationSyncResult ) -> Dict[ IntegrationKey, Entity ]:
         logger.debug( 'Getting existing HAss entities.' )

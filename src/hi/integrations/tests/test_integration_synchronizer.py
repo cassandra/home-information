@@ -149,10 +149,14 @@ class IntegrationSynchronizerRemovalTestCase(TestCase):
         # Reload entity
         self.entity.refresh_from_db()
         
-        # Check entity is disconnected
+        # Check entity is detached: active integration identity is
+        # cleared, previous identity is recorded, and the entity name
+        # is preserved verbatim (the detached state is signaled
+        # structurally, not by mutating the name).
         self.assertIsNone(self.entity.integration_id)
         self.assertIsNone(self.entity.integration_name)
-        self.assertEqual(self.entity.name, f'[Disconnected] {original_name}')
+        self.assertEqual(self.entity.previous_integration_id, 'test_integration')
+        self.assertEqual(self.entity.name, original_name)
         
         # User attribute should still exist
         self.assertTrue(EntityAttribute.objects.filter(id=user_attr.id).exists())
@@ -170,16 +174,14 @@ class IntegrationSynchronizerRemovalTestCase(TestCase):
         self.assertFalse(EntityState.objects.filter(id=state_id).exists())
         
         # Preservation records the original name in removed_list
-        # (captured before the rename) and surfaces a diagnostic
-        # info note — the operator wants to know an entity was
-        # disconnected and renamed, not just see a name in a list.
+        # and surfaces a diagnostic info note — the operator wants
+        # to know an entity was detached, not just see a name in a list.
         self.assertEqual(self.result.removed_list, [original_name])
         self.assertEqual(len(self.result.info_list), 1)
         message = self.result.info_list[0]
         self.assertIn('Preserved TestIntegration item', message)
-        self.assertIn('disconnected from integration', message)
+        self.assertIn('detached from integration', message)
         self.assertIn(original_name, message)
-        self.assertIn('[Disconnected]', message)
         
         # Verify integration payload is cleared
         self.entity.refresh_from_db()
@@ -240,33 +242,6 @@ class IntegrationSynchronizerRemovalTestCase(TestCase):
         
         # Integration sensor should be deleted
         self.assertFalse(Sensor.objects.filter(id=integration_sensor.id).exists())
-
-    def test_disconnected_name_not_duplicated(self):
-        """Test that [Disconnected] prefix is not added if already present."""
-        # Set entity name to already have disconnected prefix
-        self.entity.name = '[Disconnected] Already Disconnected'
-        self.entity.save()
-        
-        # Create user data
-        EntityAttribute.objects.create(
-            entity=self.entity,
-            name='User Note',
-            value='User note',
-            value_type_str='TEXT',
-            attribute_type_str=str(AttributeType.CUSTOM)
-        )
-        
-        # Call the method
-        self.synchronizer._remove_entity_intelligently(
-            self.entity, self.result, 'TestIntegration'
-        )
-        
-        # Reload entity
-        self.entity.refresh_from_db()
-        
-        # Name should not have duplicate prefix
-        self.assertEqual(self.entity.name, '[Disconnected] Already Disconnected')
-        self.assertNotIn('[Disconnected] [Disconnected]', self.entity.name)
 
     def test_multiple_entity_states_mixed_preservation(self):
         """Test handling of multiple entity states with different preservation needs."""
@@ -717,7 +692,7 @@ class IntegrationSynchronizerRemovalTransactionTestCase(TransactionTestCase):
         
         # Verify entity preservation and disconnection
         self.entity.refresh_from_db()
-        self.assertTrue(self.entity.name.startswith('[Disconnected]'))
+        self.assertIsNotNone(self.entity.previous_integration_id)
         self.assertIsNone(self.entity.integration_id)
         self.assertIsNone(self.entity.integration_name)
         
@@ -748,12 +723,12 @@ class IntegrationSynchronizerRemovalTransactionTestCase(TransactionTestCase):
         self.assertEqual(remaining_attributes.count(), 1)
         self.assertEqual(remaining_attributes.first().name, 'User Note')
         
-        # Preservation diagnostic surfaces in info_list; the
-        # original (pre-rename) name is captured in removed_list.
+        # Preservation diagnostic surfaces in info_list; the entity
+        # name is captured in removed_list.
         self.assertEqual(len(self.result.info_list), 1)
         message = self.result.info_list[0]
         self.assertIn('Preserved TestIntegration item', message)
-        self.assertIn('disconnected from integration', message)
+        self.assertIn('detached from integration', message)
         self.assertEqual(self.result.removed_list, ['Test Entity'])
 
     def test_preservation_with_database_constraint_validation(self):
@@ -811,7 +786,7 @@ class IntegrationSynchronizerRemovalTransactionTestCase(TransactionTestCase):
         
         # Verify our entity was preserved and disconnected
         self.entity.refresh_from_db()
-        self.assertTrue(self.entity.name.startswith('[Disconnected]'))
+        self.assertIsNotNone(self.entity.previous_integration_id)
         self.assertIsNone(self.entity.integration_id)
         self.assertIsNone(self.entity.integration_name)
         
@@ -905,7 +880,7 @@ class IntegrationSynchronizerRemovalTransactionTestCase(TransactionTestCase):
         
         # Should be preserved and disconnected
         mixed_entity.refresh_from_db()
-        self.assertTrue(mixed_entity.name.startswith('[Disconnected]'))
+        self.assertIsNotNone(mixed_entity.previous_integration_id)
         self.assertIsNone(mixed_entity.integration_id)
         self.assertIsNone(mixed_entity.integration_name)
         
@@ -977,7 +952,7 @@ class IntegrationSynchronizerRemovalTransactionTestCase(TransactionTestCase):
         
         # Our entity should be preserved and disconnected
         self.entity.refresh_from_db()
-        self.assertTrue(self.entity.name.startswith('[Disconnected]'))
+        self.assertIsNotNone(self.entity.previous_integration_id)
         self.assertIsNone(self.entity.integration_id)
         
         # Integration components should be deleted
@@ -1003,70 +978,6 @@ class IntegrationSynchronizerRemovalTransactionTestCase(TransactionTestCase):
         self.assertEqual(remaining_state.sensors.count(), 1)
         self.assertEqual(remaining_state.controllers.count(), 0)
         self.assertEqual(remaining_state.sensors.first().name, 'User Sensor')
-
-    def test_complex_disconnection_name_handling(self):
-        """Test various edge cases in disconnection name handling."""
-        test_cases = [
-            {
-                'name': 'Simple Entity Name',
-                'expected': '[Disconnected] Simple Entity Name'
-            },
-            {
-                'name': '[Already Disconnected] Entity',
-                'expected': '[Disconnected] [Already Disconnected] Entity'  # Should not duplicate if different format
-            },
-            {
-                'name': '[Disconnected] Already Prefixed',
-                'expected': '[Disconnected] Already Prefixed'  # Should not duplicate exact match
-            },
-            {
-                'name': '   Whitespace Padded   ',
-                'expected': '[Disconnected]    Whitespace Padded   '  # Should preserve exact spacing
-            },
-            {
-                'name': '',
-                'expected': '[Disconnected] '  # Should handle empty name
-            }
-        ]
-        
-        for i, test_case in enumerate(test_cases):
-            with self.subTest(test_case=test_case):
-                # Create entity for this test
-                entity = Entity.objects.create(
-                    name=test_case['name'],
-                    entity_type_str='LIGHT',
-                    integration_id='test_integration',
-                    integration_name=f'device_{i}'
-                )
-                
-                # Add user data to trigger preservation
-                EntityAttribute.objects.create(
-                    entity=entity,
-                    name='User Data',
-                    value='User value',
-                    value_type_str='TEXT',
-                    attribute_type_str=str(AttributeType.CUSTOM)
-                )
-                
-                # Create fresh result for each test
-                test_result = IntegrationSyncResult(title='Test Result')
-                
-                # Execute preservation
-                self.synchronizer._remove_entity_intelligently(
-                    entity, test_result, 'TestIntegration'
-                )
-                
-                # Verify name transformation
-                entity.refresh_from_db()
-                self.assertEqual(entity.name, test_case['expected'])
-                
-                # Verify disconnection
-                self.assertIsNone(entity.integration_id)
-                self.assertIsNone(entity.integration_name)
-                
-                # Preservation note surfaces in info_list.
-                self.assertEqual(len(test_result.info_list), 1)
-                self.assertIn('Preserved TestIntegration item', test_result.info_list[0])
 
 
 
@@ -1174,16 +1085,23 @@ class IntegrationSynchronizerOrphanDelegateTestCase(TestCase):
         )
 
         self.assertFalse(Entity.objects.filter(id=camera_id).exists())
-        # Area persists with operator-added data.
+        # Area persists with operator-added data and is now in
+        # the user-managed state (preserve_with_user_data flips
+        # is_disabled=True and can_user_delete=True). The Area
+        # never had an active integration identity of its own — it
+        # was an auto-created delegate of the camera — so the
+        # previous_integration_* columns remain NULL on it; the
+        # is_disabled gate is the durable detached signal here.
         self.assertTrue(Entity.objects.filter(id=area_id).exists())
         self.area.refresh_from_db()
-        self.assertTrue(self.area.name.startswith('[Disconnected]'))
+        self.assertTrue(self.area.is_disabled)
+        self.assertTrue(self.area.can_user_delete)
 
     def test_orphan_delegate_deleted_when_only_principal_has_user_data(self):
-        """Camera carries user data so it is preserved (kept as
-        [Disconnected]); Area carries none. Even though the
-        principal survives in name, the Area is correctly hard-
-        deleted — see the rationale documented on
+        """Camera carries user data so it is detached and preserved;
+        Area carries none. Even though the principal survives, the
+        Area is correctly hard-deleted — see the rationale
+        documented on
         ``EntityIntegrationOperations.remove_entities_with_closure``.
         Pinning this case prevents a well-intentioned future
         refactor from flipping it back to preservation."""
@@ -1202,10 +1120,427 @@ class IntegrationSynchronizerOrphanDelegateTestCase(TestCase):
             self.camera, self.result, 'TestIntegration',
         )
 
-        # Camera kept with [Disconnected] rename (user data).
+        # Camera detached and preserved (user data).
         self.assertTrue(Entity.objects.filter(id=camera_id).exists())
         self.camera.refresh_from_db()
-        self.assertTrue(self.camera.name.startswith('[Disconnected]'))
+        self.assertIsNotNone(self.camera.previous_integration_id)
         # Area is gone — its display purpose is negated once the
         # principal's integration-derived state is removed.
         self.assertFalse(Entity.objects.filter(id=area_id).exists())
+
+
+class ReconnectDisconnectedItemsFrameworkTests(TestCase):
+    """
+    Issue #281: framework-level reconnect lives on the
+    IntegrationSynchronizer base class, symmetric to disconnect
+    (preserve_with_user_data) which lives on EntityIntegrationOperations.
+    Each integration only contributes a thin
+    ``_rebuild_integration_components`` override; all the boilerplate
+    (find candidates, strip prefix, clear previous identity, append
+    info_list note, update entity-map) lives here in the base.
+
+    These tests exercise the base method directly with a recording
+    subclass, so the per-integration sync tests don't need to
+    re-verify the boilerplate.
+    """
+
+    INTEGRATION_ID = 'hass'
+    INTEGRATION_LABEL = 'Home Assistant'
+
+    def _make_synchronizer(self):
+        """Concrete synchronizer that records each
+        _rebuild_integration_components dispatch + simulates the
+        per-integration converter's effect (sets integration_key)."""
+        from hi.integrations.transient_models import IntegrationKey
+
+        captured = []
+        integration_id = self.INTEGRATION_ID
+
+        class RecordingSynchronizer(IntegrationSynchronizer):
+            def _rebuild_integration_components(self, entity, upstream, result):
+                captured.append((entity.id, upstream))
+                entity.integration_key = IntegrationKey(
+                    integration_id=integration_id,
+                    integration_name=upstream['name'],
+                )
+                entity.save()
+
+        return RecordingSynchronizer(), captured
+
+    def _disconnected_entity(self, name, previous_integration_name):
+        return Entity.objects.create(
+            name=name,
+            entity_type_str='LIGHT',
+            previous_integration_id=self.INTEGRATION_ID,
+            previous_integration_name=previous_integration_name,
+        )
+
+    def _make_upstream_key(self, integration_name):
+        from hi.integrations.transient_models import IntegrationKey
+        return IntegrationKey(
+            integration_id=self.INTEGRATION_ID,
+            integration_name=integration_name,
+        )
+
+    def test_reconnect_clears_previous_identity_and_inserts_to_entity_map(self):
+        """Single secondary match → entity is reconnected end-to-end:
+        previous identity cleared (which removes the "Detached from"
+        UI badge), converter dispatched, info_list note added, entity
+        inserted into the entity-map so the caller's main loop sees
+        it as matched. The entity name is preserved verbatim — the
+        user's name is not the place we encode connection state."""
+        user_edited_name = 'Kitchen Light (user-edited)'
+        entity = self._disconnected_entity(
+            name=user_edited_name,
+            previous_integration_name='light.kitchen',
+        )
+        upstream_key = self._make_upstream_key('light.kitchen')
+        upstream_payload = {'name': 'light.kitchen', 'flavor': 'demo'}
+
+        synchronizer, captured = self._make_synchronizer()
+        result = IntegrationSyncResult(title='Test')
+        integration_key_to_entity = {}
+
+        synchronizer.reconnect_disconnected_items(
+            integration_id=self.INTEGRATION_ID,
+            integration_label=self.INTEGRATION_LABEL,
+            integration_key_to_upstream={upstream_key: upstream_payload},
+            integration_key_to_entity=integration_key_to_entity,
+            result=result,
+        )
+
+        self.assertEqual(captured, [(entity.id, upstream_payload)])
+        entity.refresh_from_db()
+        # Name is preserved verbatim — reconnect does not touch it.
+        self.assertEqual(entity.name, user_edited_name)
+        self.assertIsNone(entity.previous_integration_id)
+        self.assertEqual(entity.integration_id, self.INTEGRATION_ID)
+        self.assertEqual(integration_key_to_entity, {upstream_key: entity})
+        self.assertTrue(any(
+            f'Auto-reconnected {self.INTEGRATION_LABEL} item' in note
+            for note in result.info_list
+        ))
+
+    def test_no_unmatched_short_circuits_without_dispatch(self):
+        """All upstream keys already primary-matched →
+        _rebuild_integration_components is never invoked."""
+        existing_key = self._make_upstream_key('light.existing')
+        existing_entity = Entity.objects.create(
+            name='Already Connected',
+            entity_type_str='LIGHT',
+            integration_id=self.INTEGRATION_ID,
+            integration_name='light.existing',
+        )
+
+        synchronizer, captured = self._make_synchronizer()
+        result = IntegrationSyncResult(title='Test')
+        integration_key_to_entity = {existing_key: existing_entity}
+
+        synchronizer.reconnect_disconnected_items(
+            integration_id=self.INTEGRATION_ID,
+            integration_label=self.INTEGRATION_LABEL,
+            integration_key_to_upstream={existing_key: {'name': 'light.existing'}},
+            integration_key_to_entity=integration_key_to_entity,
+            result=result,
+        )
+
+        self.assertEqual(captured, [])
+
+    def test_subclass_without_override_raises_clear_error_when_match_found(self):
+        """A subclass that doesn't override
+        _rebuild_integration_components but whose sync flow has a
+        reconnect candidate hits NotImplementedError with a
+        diagnostic message — fail loud, not silent."""
+        self._disconnected_entity(
+            name='[Disconnected] foo',
+            previous_integration_name='foo',
+        )
+        upstream_key = self._make_upstream_key('foo')
+
+        class IncompleteSynchronizer(IntegrationSynchronizer):
+            pass
+
+        synchronizer = IncompleteSynchronizer()
+        result = IntegrationSyncResult(title='Test')
+
+        with self.assertRaises(NotImplementedError) as cm:
+            synchronizer.reconnect_disconnected_items(
+                integration_id=self.INTEGRATION_ID,
+                integration_label=self.INTEGRATION_LABEL,
+                integration_key_to_upstream={upstream_key: {'name': 'foo'}},
+                integration_key_to_entity={},
+                result=result,
+            )
+        self.assertIn('_rebuild_integration_components', str(cm.exception))
+
+
+class IntegrationSynchronizerReconnectCycleTests(TestCase):
+    """
+    Issue #281 end-to-end cycle tests. Exercise the full
+    sync → disconnect → re-add upstream → sync → reconnect cycle
+    against a self-contained test synchronizer that mimics the real
+    per-integration sync pattern (primary-match lookup, framework
+    reconnect pre-pass, create-new for the remainder, disconnect
+    for upstream-orphans). The shared synchronizer fixture means
+    these tests are integration-agnostic — they exercise the
+    framework path that all integrations now share.
+
+    Phase 6 of #281's plan; the per-converter unit-level coverage
+    lives in services/<integration>/tests/test_*.
+    """
+
+    INTEGRATION_ID = 'test_e2e'
+    INTEGRATION_LABEL = 'Test E2E'
+
+    def _make_upstream_key(self, integration_name):
+        from hi.integrations.transient_models import IntegrationKey
+        return IntegrationKey(
+            integration_id=self.INTEGRATION_ID,
+            integration_name=integration_name,
+        )
+
+    def _build_synchronizer(self):
+        """Test-only synchronizer that drives a complete sync cycle
+        against an in-memory upstream-key list. The
+        ``_rebuild_integration_components`` override mirrors what a
+        real integration converter does: set integration_key on the
+        existing entity and save."""
+        from hi.integrations.entity_operations import EntityIntegrationOperations
+        from hi.integrations.transient_models import IntegrationKey
+
+        integration_id = self.INTEGRATION_ID
+        integration_label = self.INTEGRATION_LABEL
+
+        class TestE2ESynchronizer(IntegrationSynchronizer):
+            def _rebuild_integration_components(self, entity, upstream, result):
+                entity.integration_key = IntegrationKey(
+                    integration_id=integration_id,
+                    integration_name=upstream['name'],
+                )
+                entity.save()
+
+            def run_sync_cycle(self, upstream_keys, result):
+                """Run one full sync pass: primary-match → framework
+                reconnect pre-pass → create-new for the remainder →
+                disconnect upstream-orphans. Mirrors the real
+                per-integration sync structure."""
+                upstream_map = {
+                    IntegrationKey(integration_id=integration_id,
+                                   integration_name=name): {'name': name}
+                    for name in upstream_keys
+                }
+                existing_qs = Entity.objects.filter(integration_id=integration_id)
+                integration_key_to_entity = {
+                    e.integration_key: e for e in existing_qs
+                    if e.integration_key is not None
+                }
+
+                self.reconnect_disconnected_items(
+                    integration_id=integration_id,
+                    integration_label=integration_label,
+                    integration_key_to_upstream=upstream_map,
+                    integration_key_to_entity=integration_key_to_entity,
+                    result=result,
+                )
+
+                for upstream_key, payload in upstream_map.items():
+                    if upstream_key in integration_key_to_entity:
+                        continue
+                    Entity.objects.create(
+                        name=payload['name'],
+                        entity_type_str='LIGHT',
+                        integration_id=integration_id,
+                        integration_name=upstream_key.integration_name,
+                    )
+
+                for upstream_key, entity in list(integration_key_to_entity.items()):
+                    if upstream_key not in upstream_map:
+                        EntityIntegrationOperations.preserve_with_user_data(
+                            entity=entity,
+                            integration_name=integration_id,
+                            result=result,
+                        )
+
+        return TestE2ESynchronizer()
+
+    def _user_attribute(self, entity, name='Custom Note', value='retain me'):
+        """Anchor an entity for sync-time preservation by attaching
+        user-created custom data."""
+        EntityAttribute.objects.create(
+            entity=entity,
+            name=name,
+            value=value,
+            value_type_str='TEXT',
+            attribute_type_str=str(AttributeType.CUSTOM),
+        )
+
+    def test_sync_disconnect_then_reconnect_does_not_create_duplicate(self):
+        """The headline cycle: an entity is imported, drops from
+        upstream (disconnect via sync-time preservation), reappears
+        (reconnect via the secondary-match path). Total entity
+        count returns to 1 — no duplicate is created."""
+        synchronizer = self._build_synchronizer()
+        result = IntegrationSyncResult(title='Cycle')
+
+        # Pass 1: upstream introduces the entity.
+        synchronizer.run_sync_cycle(['light.kitchen'], result)
+        self.assertEqual(Entity.objects.count(), 1)
+        original = Entity.objects.get(integration_name='light.kitchen')
+        self._user_attribute(original)
+        original_id = original.id
+
+        # Pass 2: upstream drops the entity → preserved (disconnected).
+        synchronizer.run_sync_cycle([], result)
+        original.refresh_from_db()
+        self.assertIsNone(original.integration_id)
+        self.assertEqual(original.previous_integration_id, self.INTEGRATION_ID)
+        self.assertEqual(original.previous_integration_name, 'light.kitchen')
+
+        # Pass 3: upstream re-adds → reconnected (NOT duplicated).
+        result_pass3 = IntegrationSyncResult(title='Cycle 3')
+        synchronizer.run_sync_cycle(['light.kitchen'], result_pass3)
+        self.assertEqual(Entity.objects.count(), 1)
+        reconnected = Entity.objects.get(id=original_id)
+        self.assertEqual(reconnected.integration_id, self.INTEGRATION_ID)
+        self.assertIsNone(reconnected.previous_integration_id)
+        self.assertTrue(any('Auto-reconnected' in note
+                            for note in result_pass3.info_list))
+
+    def test_disable_safe_then_resync_reconnects_preserved_entity(self):
+        """Operator-initiated disable (SAFE mode) preserves entities
+        with user data via the same code path as sync-time
+        preservation, so reconnect must work for those too. Pinned
+        in the corrected #281 issue's edge-cases section."""
+        from hi.integrations.entity_operations import EntityIntegrationOperations
+
+        synchronizer = self._build_synchronizer()
+        result = IntegrationSyncResult(title='Disable Cycle')
+
+        synchronizer.run_sync_cycle(['light.lounge'], result)
+        entity = Entity.objects.get(integration_name='light.lounge')
+        self._user_attribute(entity)
+        entity_id = entity.id
+
+        # Disable-SAFE: this is the exact call the integration_manager
+        # makes for SAFE-mode disable on entities with user data.
+        EntityIntegrationOperations.preserve_with_user_data(
+            entity=entity,
+            integration_name=self.INTEGRATION_ID,
+            result=result,
+        )
+        entity.refresh_from_db()
+        self.assertIsNone(entity.integration_id)
+        self.assertEqual(entity.previous_integration_id, self.INTEGRATION_ID)
+
+        # Re-Configure + sync re-imports the upstream item → reconnect.
+        result_resync = IntegrationSyncResult(title='Resync')
+        synchronizer.run_sync_cycle(['light.lounge'], result_resync)
+        self.assertEqual(Entity.objects.count(), 1)
+        reconnected = Entity.objects.get(id=entity_id)
+        self.assertEqual(reconnected.integration_id, self.INTEGRATION_ID)
+        self.assertIsNone(reconnected.previous_integration_id)
+
+    def test_primary_match_shadows_secondary_so_no_false_reconnect(self):
+        """A live entity matches the primary scan; an unrelated
+        disconnected entity happens to share the previous_integration_name
+        of an unrelated upstream key. The primary-match wins and the
+        secondary scan only operates on the unmatched residual —
+        the disconnected entity is NOT silently re-attached to the
+        wrong upstream item."""
+        synchronizer = self._build_synchronizer()
+        result = IntegrationSyncResult(title='Shadow')
+
+        # A primary-matched entity for 'light.bath'.
+        Entity.objects.create(
+            name='light.bath',
+            entity_type_str='LIGHT',
+            integration_id=self.INTEGRATION_ID,
+            integration_name='light.bath',
+        )
+        # An unrelated disconnected entity whose previous identity
+        # is for 'light.attic' — different upstream key entirely.
+        Entity.objects.create(
+            name='[Disconnected] light.attic',
+            entity_type_str='LIGHT',
+            previous_integration_id=self.INTEGRATION_ID,
+            previous_integration_name='light.attic',
+        )
+
+        # Sync sees only 'light.bath' upstream — light.attic is NOT
+        # in upstream, so no reconnect attempt for it.
+        synchronizer.run_sync_cycle(['light.bath'], result)
+
+        # The disconnected entity is unchanged: still disconnected,
+        # not reconnected to light.bath.
+        attic = Entity.objects.get(name__contains='attic')
+        self.assertIsNone(attic.integration_id)
+        self.assertEqual(attic.previous_integration_name, 'light.attic')
+
+    def test_ambiguous_secondary_creates_fresh_entity_with_info_list_note(self):
+        """Two disconnected entities share the same
+        previous_integration_id + previous_integration_name. When
+        upstream re-adds that key, the system has no basis to pick
+        one — so it skips reconnect, creates a fresh entity, and
+        leaves the duplicates for the user to resolve via merge."""
+        synchronizer = self._build_synchronizer()
+
+        Entity.objects.create(
+            name='[Detached A] light.foo',
+            entity_type_str='LIGHT',
+            previous_integration_id=self.INTEGRATION_ID,
+            previous_integration_name='light.foo',
+        )
+        Entity.objects.create(
+            name='[Detached B] light.foo',
+            entity_type_str='LIGHT',
+            previous_integration_id=self.INTEGRATION_ID,
+            previous_integration_name='light.foo',
+        )
+
+        result = IntegrationSyncResult(title='Ambiguous')
+        synchronizer.run_sync_cycle(['light.foo'], result)
+
+        # Three rows now: the two disconnected stragglers + a fresh entity.
+        self.assertEqual(Entity.objects.count(), 3)
+        # Fresh entity has the active integration_id; previous-identity NULL.
+        fresh = Entity.objects.get(integration_id=self.INTEGRATION_ID)
+        self.assertEqual(fresh.integration_name, 'light.foo')
+        self.assertIsNone(fresh.previous_integration_id)
+        # The two disconnected entities are unchanged.
+        disconnected = Entity.objects.filter(
+            previous_integration_id=self.INTEGRATION_ID,
+        )
+        self.assertEqual(disconnected.count(), 2)
+        # Operator-visible breadcrumb in result.info_list.
+        self.assertTrue(any('share that previous identity' in note
+                            for note in result.info_list))
+
+    def test_legacy_disconnected_entity_does_not_reconnect(self):
+        """An entity disconnected before this feature landed has NO
+        previous_integration_id (the column was NULL by default). It
+        cannot be auto-reconnected — the system has no signal to use.
+        Fresh entity is created instead; user resolves via merge.
+        Pinned in the issue's 'Legacy disconnected entities' edge case."""
+        synchronizer = self._build_synchronizer()
+        result = IntegrationSyncResult(title='Legacy')
+
+        Entity.objects.create(
+            name='[Disconnected] light.cellar',
+            entity_type_str='LIGHT',
+            integration_id=None,
+            integration_name=None,
+            previous_integration_id=None,
+            previous_integration_name=None,
+        )
+
+        synchronizer.run_sync_cycle(['light.cellar'], result)
+
+        # Two rows: the legacy one (untouched) + a fresh import.
+        self.assertEqual(Entity.objects.count(), 2)
+        fresh = Entity.objects.get(integration_id=self.INTEGRATION_ID)
+        self.assertEqual(fresh.integration_name, 'light.cellar')
+        # Legacy entity is unchanged.
+        legacy = Entity.objects.exclude(id=fresh.id).get()
+        self.assertEqual(legacy.name, '[Disconnected] light.cellar')
+        self.assertIsNone(legacy.integration_id)
+        self.assertIsNone(legacy.previous_integration_id)

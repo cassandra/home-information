@@ -85,6 +85,19 @@ class HomeBoxSynchronizer( IntegrationSynchronizer, HomeBoxMixin ):
         integration_key_to_entity = self._get_existing_hb_entities( result = result )
         result.info_list.append( f'Found {len(integration_key_to_entity)} existing HomeBox items.' )
 
+        # Issue #281 reconnect pre-pass (framework-level). Any
+        # disconnected entity whose previous identity matches an
+        # unmatched upstream item is reconnected in place and added
+        # to integration_key_to_entity, so the main loop below treats
+        # it as primary-matched without any reconnect-aware branching.
+        self.reconnect_disconnected_items(
+            integration_id = HbMetaData.integration_id,
+            integration_label = HbMetaData.label,
+            integration_key_to_upstream = integration_key_to_item,
+            integration_key_to_entity = integration_key_to_entity,
+            result = result,
+        )
+
         created_entities: List[Entity] = []
         with transaction.atomic():
             for integration_key, hb_item in integration_key_to_item.items():
@@ -111,6 +124,20 @@ class HomeBoxSynchronizer( IntegrationSynchronizer, HomeBoxMixin ):
                     self._remove_entity( entity = entity, result = result )
                 continue
         return created_entities
+
+    def _rebuild_integration_components( self,
+                                         entity   : Entity,
+                                         upstream : HbItem,
+                                         result   : IntegrationSyncResult ):
+        """Issue #281: dispatch to the HomeBox converter with the
+        existing-entity parameter set, so the converter repopulates
+        integration-owned components on the previously-disconnected
+        entity rather than creating a fresh one."""
+        HbConverter.create_models_for_hb_item(
+            hb_item = upstream,
+            entity = entity,
+        )
+        return
 
     def _get_existing_hb_entities( self, result : IntegrationSyncResult ) -> Dict[ IntegrationKey, Entity ]:
         logger.debug( 'Getting existing HomeBox entities.' )

@@ -292,3 +292,198 @@ class PreserveWithUserDataFlagTests(TestCase):
         entity.refresh_from_db()
         self.assertFalse(entity.has_video_stream)
         self.assertTrue(entity.is_disabled)
+
+    def test_preserve_records_previous_integration_identity(self):
+        """
+        On disconnect via preservation, the entity's pre-disconnect
+        integration identity is captured into previous_integration_id /
+        previous_integration_name. This is the signal the
+        auto-reconnect path (Issue #281) reads to recognize
+        previously-disconnected entities when the same upstream key
+        reappears later.
+        """
+        entity = Entity.objects.create(
+            name='Reconnectable',
+            entity_type_str='LIGHT',
+            integration_id='hass',
+            integration_name='light.kitchen',
+        )
+        EntityAttribute.objects.create(
+            entity=entity,
+            name='User Note',
+            value='keep me',
+            value_type_str=str(AttributeValueType.TEXT),
+            attribute_type_str=str(AttributeType.CUSTOM),
+        )
+
+        EntityIntegrationOperations.preserve_with_user_data(
+            entity=entity,
+            integration_name='hass',
+        )
+
+        entity.refresh_from_db()
+        # Active identity is cleared (existing contract).
+        self.assertIsNone(entity.integration_id)
+        self.assertIsNone(entity.integration_name)
+        # Previous identity captures what was cleared (new contract).
+        self.assertEqual(entity.previous_integration_id, 'hass')
+        self.assertEqual(entity.previous_integration_name, 'light.kitchen')
+
+
+class FindReconnectCandidatesTests(TestCase):
+    """
+    find_reconnect_candidates (Issue #281): given the upstream
+    IntegrationKeys the synchronizer's primary-match step did not
+    match, return a map of upstream_key → matching disconnected
+    entity for every key with a unique previous-identity match.
+    Ambiguous matches are dropped and noted via result.info_list.
+    """
+
+    INTEGRATION_ID = 'hass'
+
+    def _disconnected_entity(self, name, previous_integration_name):
+        """Create an entity in the disconnected state — active
+        integration_id NULL, previous_integration_id populated."""
+        return Entity.objects.create(
+            name = name,
+            entity_type_str = 'LIGHT',
+            previous_integration_id = self.INTEGRATION_ID,
+            previous_integration_name = previous_integration_name,
+        )
+
+    def _make_upstream_key(self, integration_name, integration_id=None):
+        from hi.integrations.transient_models import IntegrationKey
+        return IntegrationKey(
+            integration_id = integration_id or self.INTEGRATION_ID,
+            integration_name = integration_name,
+        )
+
+    def test_returns_match_for_unique_secondary(self):
+        entity = self._disconnected_entity(
+            name = '[Disconnected] Kitchen Light',
+            previous_integration_name = 'light.kitchen',
+        )
+        upstream_key = self._make_upstream_key('light.kitchen')
+
+        candidates = EntityIntegrationOperations.find_reconnect_candidates(
+            integration_id = self.INTEGRATION_ID,
+            upstream_keys = [ upstream_key ],
+        )
+
+        self.assertEqual(candidates, {upstream_key: entity})
+
+    def test_ambiguous_match_is_dropped_and_noted(self):
+        """Two disconnected entities sharing the same previous
+        identity → upstream_key absent from result map; operator
+        breadcrumb in result.info_list."""
+        self._disconnected_entity(
+            name = '[Disconnected] Kitchen Light A',
+            previous_integration_name = 'light.kitchen',
+        )
+        self._disconnected_entity(
+            name = '[Disconnected] Kitchen Light B',
+            previous_integration_name = 'light.kitchen',
+        )
+        upstream_key = self._make_upstream_key('light.kitchen')
+
+        from hi.integrations.sync_result import IntegrationSyncResult
+        result = IntegrationSyncResult(title='Test')
+
+        candidates = EntityIntegrationOperations.find_reconnect_candidates(
+            integration_id = self.INTEGRATION_ID,
+            upstream_keys = [ upstream_key ],
+            result = result,
+        )
+
+        self.assertEqual(candidates, {})
+        self.assertTrue(any('share that previous identity' in note
+                            for note in result.info_list))
+
+    def test_does_not_match_across_integrations(self):
+        """An entity disconnected from HASS must not match an upstream
+        key from ZM, even if the integration_name coincides."""
+        self._disconnected_entity(
+            name = '[Disconnected] foo',
+            previous_integration_name = 'foo',
+        )
+        zm_upstream_key = self._make_upstream_key('foo', integration_id='zoneminder')
+
+        candidates = EntityIntegrationOperations.find_reconnect_candidates(
+            integration_id = 'zoneminder',
+            upstream_keys = [ zm_upstream_key ],
+        )
+
+        self.assertEqual(candidates, {})
+
+    def test_no_match_returns_empty_dict(self):
+        upstream_key = self._make_upstream_key('light.unknown')
+
+        candidates = EntityIntegrationOperations.find_reconnect_candidates(
+            integration_id = self.INTEGRATION_ID,
+            upstream_keys = [ upstream_key ],
+        )
+
+        self.assertEqual(candidates, {})
+
+    def test_empty_upstream_set_short_circuits_without_db_query(self):
+        with self.assertNumQueries(0):
+            candidates = EntityIntegrationOperations.find_reconnect_candidates(
+                integration_id = self.INTEGRATION_ID,
+                upstream_keys = [],
+            )
+
+        self.assertEqual(candidates, {})
+
+    def test_secondary_lookup_is_a_single_batched_query(self):
+        """Many upstream keys → one DB query for the candidate scan,
+        regardless of how many keys are passed."""
+        for i in range(5):
+            self._disconnected_entity(
+                name = f'[Disconnected] light_{i}',
+                previous_integration_name = f'light.{i}',
+            )
+        upstream_keys = [ self._make_upstream_key(f'light.{i}') for i in range(5) ]
+
+        with self.assertNumQueries(1):
+            candidates = EntityIntegrationOperations.find_reconnect_candidates(
+                integration_id = self.INTEGRATION_ID,
+                upstream_keys = upstream_keys,
+            )
+
+        self.assertEqual(len(candidates), 5)
+
+
+class PreserveWithUserDataNamePreservationTests(TestCase):
+    """
+    Disconnect (preserve_with_user_data) signals the detached state
+    structurally — via the previous_integration_* columns — and does
+    NOT mutate the entity name. This pins the contract: any name the
+    operator sees post-detach is the name the entity had before
+    detach.
+    """
+
+    def test_disconnect_does_not_mutate_entity_name(self):
+        entity = Entity.objects.create(
+            name='User Edited Name',
+            entity_type_str='LIGHT',
+            integration_id='hass',
+            integration_name='light.kitchen',
+        )
+        EntityAttribute.objects.create(
+            entity=entity,
+            name='Custom Note',
+            value='retain me',
+            value_type_str=str(AttributeValueType.TEXT),
+            attribute_type_str=str(AttributeType.CUSTOM),
+        )
+
+        EntityIntegrationOperations.preserve_with_user_data(
+            entity=entity,
+            integration_name='hass',
+        )
+
+        entity.refresh_from_db()
+        self.assertEqual(entity.name, 'User Edited Name')
+        # Detached state is signaled by the previous_integration_* columns.
+        self.assertEqual(entity.previous_integration_id, 'hass')
+        self.assertIsNone(entity.integration_id)

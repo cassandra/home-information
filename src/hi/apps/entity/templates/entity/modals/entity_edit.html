@@ -14,6 +14,14 @@
     From: {% integration_display_name entity %}
   </small>
 </div>
+{% elif entity.previous_integration_id %}
+<div class="text-muted text-center font-italic">
+  <small>
+    {% previous_integration_logo_path entity as prev_logo_path %}
+    {% if prev_logo_path %}<img src="{% static prev_logo_path %}" alt="" style="max-height: 18px; width: auto; margin-right: 4px; opacity: 0.6;">{% endif %}
+    Detached from: {% previous_integration_display_name entity %}
+  </small>
+</div>
 {% endif %}
 <!-- Root container for this attribute editing context -->
 <div id="{{ attr_page_context.container_html_id }}" 

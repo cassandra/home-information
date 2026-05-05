@@ -32,8 +32,9 @@
     <strong>DELETE SAFE</strong> — delete the {{ removal_summary.deletable_count }}
     {% if removal_summary.deletable_count == 1 %}item{% else %}items{% endif %}
     without custom data, and preserve the {{ removal_summary.user_data_count }} with custom
-    data (disconnected from this integration, prefixed with
-    <code>[Disconnected]</code>, custom attributes and layout retained).
+    data (detached from this integration; the items will show as
+    <em>Detached from {{ integration_data.label }}</em> in the entity-detail UI,
+    with custom attributes and layout retained).
   </li>
   <li>
     <strong>DELETE ALL</strong> — delete all {{ removal_summary.total_count }}

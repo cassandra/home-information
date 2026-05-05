@@ -137,6 +137,20 @@ class ZoneMinderSynchronizer( IntegrationSynchronizer, ZoneMinderMixin ):
         integration_key_to_entity = self._get_existing_zm_monitor_entities( result = result )
         result.info_list.append( f'Found {len(integration_key_to_entity)} existing ZM items.' )
 
+        # Issue #281 reconnect pre-pass (framework-level). Any
+        # disconnected entity whose previous identity matches an
+        # unmatched upstream monitor is reconnected in place and
+        # added to integration_key_to_entity, so the main loop
+        # below treats it as primary-matched without any
+        # reconnect-aware branching.
+        self.reconnect_disconnected_items(
+            integration_id = ZmMetaData.integration_id,
+            integration_label = ZmMetaData.label,
+            integration_key_to_upstream = integration_key_to_monitor,
+            integration_key_to_entity = integration_key_to_entity,
+            result = result,
+        )
+
         created_entities = []
         for integration_key, zm_monitor in integration_key_to_monitor.items():
             entity = integration_key_to_entity.get( integration_key )
@@ -157,6 +171,22 @@ class ZoneMinderSynchronizer( IntegrationSynchronizer, ZoneMinderMixin ):
             continue
 
         return created_entities
+
+    def _rebuild_integration_components( self,
+                                         entity   : Entity,
+                                         upstream : ZmMonitor,
+                                         result   : IntegrationSyncResult ):
+        """Issue #281: dispatch to the ZoneMinder monitor-entity
+        converter with the existing-entity parameter set, so the
+        converter repopulates integration-owned components on the
+        previously-disconnected entity rather than creating a fresh
+        one."""
+        self._create_monitor_entity(
+            zm_monitor = upstream,
+            result = result,
+            entity = entity,
+        )
+        return
 
     def _fetch_zm_monitors( self, result : IntegrationSyncResult ) -> Dict[ IntegrationKey, ZmMonitor ]:
         zm_manager = self.zm_manager()
@@ -224,7 +254,17 @@ class ZoneMinderSynchronizer( IntegrationSynchronizer, ZoneMinderMixin ):
             
     def _create_monitor_entity( self,
                                 zm_monitor  : ZmMonitor,
-                                result      : IntegrationSyncResult ) -> Entity:
+                                result      : IntegrationSyncResult,
+                                entity      : Optional[Entity] = None ) -> Entity:
+        """
+        Create or repopulate the integration-owned components for a
+        ZoneMinder monitor. When ``entity`` is None (the standard
+        import path), a fresh Entity is created. When ``entity`` is
+        provided (the auto-reconnect path from Issue #281), the
+        integration-owned fields on that entity are repopulated; the
+        entity's ``name`` is deliberately preserved because the user
+        may have edited it before/after the intervening disconnect.
+        """
         zm_manager = self.zm_manager()
 
         with transaction.atomic():
@@ -232,13 +272,18 @@ class ZoneMinderSynchronizer( IntegrationSynchronizer, ZoneMinderMixin ):
                 prefix = zm_manager.ZM_MONITOR_INTEGRATION_NAME_PREFIX,
                 zm_monitor_id = zm_monitor.id(),
             )
-            entity = Entity(
-                name = zm_monitor.name(),
-                entity_type_str = str(EntityType.CAMERA),
-                can_user_delete = ZmMetaData.allow_entity_deletion,
-                has_video_stream = True,
-            )
+
+            if entity is None:
+                entity = Entity(
+                    name = zm_monitor.name(),
+                    entity_type_str = str(EntityType.CAMERA),
+                )
+
+            # Integration-owned: re-applied on both fresh-create and
+            # reconnect so the entity reflects current upstream state.
             entity.integration_key = entity_integration_key
+            entity.can_user_delete = ZmMetaData.allow_entity_deletion
+            entity.has_video_stream = True
             entity.save()
 
             movement_sensor = HiModelHelper.create_movement_sensor(

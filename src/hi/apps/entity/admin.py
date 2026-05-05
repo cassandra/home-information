@@ -75,11 +75,14 @@ class EntityAdmin(admin.ModelAdmin):
         'entity_type_str',
         'integration_id',
         'integration_name',
+        'previous_integration_id',
+        'previous_integration_name',
         'is_disabled',
         'created_datetime',
     )
 
-    search_fields = ['name']
+    list_filter = ( 'integration_id', 'previous_integration_id', 'is_disabled', )
+    search_fields = ['name', 'integration_name', 'previous_integration_name']
 
     inlines = [
         EntityAttributeInLine,

@@ -48,6 +48,36 @@ class TestHbConverter(TestCase):
         self.assertEqual(entity.integration_payload.get('location', {}).get('name'), 'Garage')
         self.assertEqual(entity.integration_payload.get('labels')[0].get('name'), 'Tools')
 
+    def test_create_models_with_existing_entity_does_not_create_new_and_preserves_name(self):
+        """Issue #281 reconnect contract: when an existing Entity is
+        passed in, repopulate its integration-owned fields without
+        creating a new row and without overwriting the (possibly
+        user-edited) name."""
+        existing = Entity.objects.create(
+            name='User Renamed Item',
+            entity_type_str=str(EntityType.SERVICE),
+        )
+        baseline_count = Entity.objects.count()
+        item = self._mock_item(item_id='item-reconnect', name='Upstream Drill Name')
+
+        returned = HbConverter.create_models_for_hb_item(
+            hb_item=item,
+            entity=existing,
+        )
+
+        self.assertEqual(Entity.objects.count(), baseline_count)
+        self.assertEqual(returned.id, existing.id)
+        existing.refresh_from_db()
+        # Name preserved (NOT 'Upstream Drill Name').
+        self.assertEqual(existing.name, 'User Renamed Item')
+        # Integration-owned fields repopulated from upstream.
+        self.assertEqual(existing.integration_id, HbMetaData.integration_id)
+        self.assertEqual(existing.integration_name, 'item-reconnect')
+        self.assertEqual(
+            existing.integration_payload.get('location', {}).get('name'),
+            'Garage',
+        )
+
     def test_update_models_for_hb_item_updates_name_type_and_payload(self):
         entity = Entity.objects.create(
             name='Old Name',

@@ -682,10 +682,12 @@ class IntegrationManagerTestCase(TestCase):
 
         # Integration-only entity is gone.
         self.assertFalse(Entity.objects.filter(id=no_user_id).exists())
-        # User-data entity survives and is disconnected (integration_id cleared).
+        # User-data entity survives in detached state: active integration
+        # identity cleared, previous identity recorded for the
+        # auto-reconnect path.
         preserved = Entity.objects.get(id=user_data_id)
         self.assertIsNone(preserved.integration_id)
-        self.assertTrue(preserved.name.startswith('[Disconnected]'))
+        self.assertIsNotNone(preserved.previous_integration_id)
 
         # Configuration attributes retained for re-Configure.
         self.assertEqual(integration.attributes.count(), 1)
