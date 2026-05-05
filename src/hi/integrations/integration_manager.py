@@ -413,7 +413,9 @@ class IntegrationManager( Singleton ):
           SAFE (default): delete entities without user-created data; preserve
           entities with user-created data by detaching them from the
           integration (via EntityIntegrationOperations.preserve_with_user_data).
-          Preserved entities get the '[Disconnected]' name prefix.
+          Preserved entities surface as "Detached from <integration>" in
+          the entity-detail UI and become candidates for the auto-reconnect
+          path on a subsequent re-Configure + sync.
 
           ALL: hard-delete all entities attached to this integration
           regardless of user data.

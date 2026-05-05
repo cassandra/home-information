@@ -7,7 +7,7 @@ are distinct from the read-only analytical methods on EntityUserDataDetector.
 """
 
 import logging
-from typing import Dict, Iterable, Optional, Set
+from typing import Dict, Iterable, List, Optional, Set
 
 from django.db import transaction
 
@@ -17,7 +17,7 @@ from hi.apps.sense.models import Sensor
 from hi.apps.control.models import Controller
 
 from .sync_result import IntegrationSyncResult
-from .transient_models import IntegrationRemovalSummary
+from .transient_models import IntegrationKey, IntegrationRemovalSummary
 from .user_data_detector import EntityUserDataDetector
 
 logger = logging.getLogger(__name__)
@@ -121,16 +121,19 @@ class EntityIntegrationOperations:
           * ``preserve_user_data=True`` (the SAFE pattern, used by
             DELETE SAFE on disable and by sync-time refresh
             removals): entities carrying operator-added attributes
-            are preserved via ``[Disconnected]`` rename; others are
-            hard-deleted.
+            are detached from the integration (active integration
+            identity cleared, previous identity recorded for the
+            auto-reconnect path); others are hard-deleted.
 
           * ``preserve_user_data=False`` (the DELETE ALL pattern):
             every entity in the closure is hard-deleted, including
             those with user-added data.
 
         ``result`` is optional. When provided, each closure entity's
-        name is appended to ``result.removed_list``; the preserve
-        path also adds its diagnostic note to ``result.info_list``.
+        name is appended to either ``result.removed_list`` (the
+        hard-delete branch) or ``result.detached_list`` (the
+        preserve branch) — never both. The preserve branch also
+        adds its diagnostic note to ``result.info_list``.
 
         Each entity in the closure is classified by its *own* user
         data, independent of the seed's classification. This
@@ -142,15 +145,17 @@ class EntityIntegrationOperations:
         """
         closure_ids = cls.collect_removal_closure( seed_entity_ids )
         for entity in Entity.objects.filter( id__in = closure_ids ):
-            if result is not None:
-                result.removed_list.append( entity.name )
             if preserve_user_data and EntityUserDataDetector.has_user_created_attributes( entity ):
+                # preserve_with_user_data appends to result.detached_list
+                # itself; nothing to record here on this branch.
                 cls.preserve_with_user_data(
                     entity = entity,
                     integration_name = integration_name,
                     result = result,
                 )
             else:
+                if result is not None:
+                    result.removed_list.append( entity.name )
                 entity.delete()
         return
 
@@ -176,15 +181,103 @@ class EntityIntegrationOperations:
             user_data_count = user_data_count,
         )
 
+    @classmethod
+    def find_reconnect_candidates(
+            cls,
+            integration_id : str,
+            upstream_keys  : Iterable[ IntegrationKey ],
+            result         : Optional[ IntegrationSyncResult ] = None,
+    ) -> Dict[ IntegrationKey, Entity ]:
+        """
+        Auto-reconnect candidate lookup (Issue #281). Pure read.
+
+        Given a set of upstream IntegrationKeys that the
+        synchronizer's primary-match step did NOT match, return a
+        map of ``upstream_key → matching disconnected entity`` for
+        every key that uniquely aligns with a disconnected entity's
+        ``previous_integration_id`` / ``previous_integration_name``.
+
+        Ambiguous matches (multiple disconnected entities sharing
+        the same previous identity) are dropped from the result map.
+        The issue's contract is to leave the duplicate for the user
+        to resolve via merge (#263), since the system has no basis
+        to pick one side over the other. A WARNING is logged and a
+        breadcrumb is appended to ``result.info_list`` (when
+        provided) for each ambiguous case so the operator can find
+        them.
+
+        The per-entity reconnect mutations and converter dispatch
+        are deliberately NOT performed here. Callers (the
+        per-integration synchronizers) own that step because each
+        integration's converter has a different signature and
+        callers also want to enrich ``result`` with their own
+        operator-facing messages. ``strip_disconnected_prefix`` is
+        provided as a shared helper for the name-cleanup step.
+
+        The lookup is a single batched DB query keyed on
+        ``(previous_integration_id, previous_integration_name__in=...)``
+        — O(1) DB round trips regardless of how many upstream keys
+        the caller passes.
+        """
+        upstream_keys = list( upstream_keys )
+        if not upstream_keys:
+            return {}
+
+        upstream_keys_by_name : Dict[ str, IntegrationKey ] = {
+            key.integration_name: key for key in upstream_keys
+        }
+
+        candidate_entities = Entity.objects.filter(
+            previous_integration_id = integration_id,
+            previous_integration_name__in = list( upstream_keys_by_name.keys() ),
+        )
+
+        candidates_by_name : Dict[ str, List[ Entity ] ] = {}
+        for entity in candidate_entities:
+            candidates_by_name.setdefault(
+                entity.previous_integration_name, [],
+            ).append( entity )
+
+        reconnect_map : Dict[ IntegrationKey, Entity ] = {}
+        for previous_name, entities in candidates_by_name.items():
+            upstream_key = upstream_keys_by_name.get( previous_name )
+            # Defensive: the IN-filter guarantees previous_name is in
+            # the dict, but a corrupted row could slip through.
+            if upstream_key is None:
+                continue
+
+            if len( entities ) > 1:
+                ambiguity_message = (
+                    f'Auto-reconnect skipped for {integration_id} item '
+                    f'"{previous_name}": {len(entities)} disconnected '
+                    f'entities share that previous identity. Resolve via '
+                    f'merge.'
+                )
+                logger.warning( ambiguity_message )
+                if result is not None:
+                    result.info_list.append( ambiguity_message )
+                continue
+
+            reconnect_map[ upstream_key ] = entities[0]
+
+        return reconnect_map
+
     @staticmethod
     def preserve_with_user_data( entity           : Entity,
                                  integration_name : str,
                                  result           : Optional[IntegrationSyncResult] = None ):
         """
-        Preserve an entity with user-created data by disconnecting it from
-        its integration and removing only integration-related components
-        (sensors, controllers, orphaned states, integration-owned
-        attributes). Applies the '[Disconnected]' name prefix.
+        Preserve an entity with user-created data by disconnecting it
+        from its integration and removing only integration-related
+        components (sensors, controllers, orphaned states,
+        integration-owned attributes). The entity's previous
+        integration identity is recorded on the entity so the
+        auto-reconnect path can recognize it if the same upstream
+        key reappears later. The detached state is signaled
+        structurally — ``integration_id`` becomes NULL and
+        ``previous_integration_id`` carries the prior identity — and
+        surfaced to the operator via a "Detached from <integration>"
+        badge in the entity-detail UI.
 
         Args:
             entity: The Entity to preserve.
@@ -238,13 +331,18 @@ class EntityIntegrationOperations:
             if removed_attr_count:
                 logger.debug(f'Removed {removed_attr_count} integration attributes for {entity}')
 
-            # Disconnect entity from integration
-            entity.integration_id = None
-            entity.integration_name = None
+            # Disconnect entity from integration. The current integration
+            # identity is copied to the previous_integration_* fields
+            # so the auto-reconnect path can recognize this entity if
+            # the same upstream key reappears later. The presence of
+            # previous_integration_id is also what drives the
+            # "Detached from <integration>" UI badge.
+            entity.previous_integration_key = entity.integration_key
+            entity.integration_key = None
 
             # Restore user-management flags. These are commonly set to False
             # by integration converters to prevent the user from deleting or
-            # extending an integration-managed entity. After disconnect the
+            # extending an integration-managed entity. After detach the
             # entity is no longer integration-managed, so user-management
             # rights are restored.
             entity.can_user_delete = True
@@ -254,19 +352,20 @@ class EntityIntegrationOperations:
             # video-stream capability is genuinely lost (the backing sensor
             # was deleted above). The is_disabled flag is the general
             # capability gate — listing/enumeration sites use it to keep
-            # a disconnected entity out of capability-driven UX (e.g., the
+            # a detached entity out of capability-driven UX (e.g., the
             # sidebar Cameras list).
             entity.has_video_stream = False
             entity.is_disabled = True
 
-            # Update name to indicate disconnected status
-            if not entity.name.startswith('[Disconnected]'):
-                entity.name = f'[Disconnected] {entity.name}'
-
             entity.save()
 
         if result is not None:
+            # detached_list drives the operator-visible "Detached"
+            # tile + per-category list in the sync result modal;
+            # info_list keeps the diagnostic note for the collapsed
+            # Details section.
+            result.detached_list.append( entity.name )
             result.info_list.append(
-                f'Preserved {integration_name} item "{original_name}" with user data, '
-                f'disconnected from integration and renamed to "{entity.name}"'
+                f'Preserved {integration_name} item "{original_name}" with user data; '
+                f'detached from integration.'
             )

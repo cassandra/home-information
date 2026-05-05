@@ -2105,6 +2105,26 @@ g[hover] {
     height: auto;
 }
 
+/* Smaller variant for inline contexts (entity detail badges,
+   list-row item indicators) where 24px is too dominant. */
+.hi-integration-logo--inline {
+    max-height: 18px;
+    max-width: 18px;
+    width: auto;
+    height: auto;
+}
+
+/* Detached variant: same dimensions as --inline, faded to signal
+   the previously-attached state. Paired with the
+   "Detached from <integration>" badge. */
+.hi-integration-logo--detached {
+    max-height: 18px;
+    max-width: 18px;
+    width: auto;
+    height: auto;
+    opacity: 0.6;
+}
+
 .hi-uppercase-label {
     letter-spacing: 0.05em;
 }

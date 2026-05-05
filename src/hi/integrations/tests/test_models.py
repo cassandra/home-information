@@ -401,9 +401,74 @@ class IntegrationDetailsModelTestCase(TestCase):
         
         # Test setting with falsy value
         mock_obj.integration_key = ''
-        
+
         self.assertIsNone(mock_obj.integration_id)
         self.assertIsNone(mock_obj.integration_name)
+
+    def test_previous_integration_key_property_round_trip_on_real_model(self):
+        """previous_integration_key get/set round-trip on a real
+        concrete subclass (Entity). Asserts the property is wired
+        correctly to the previous_integration_id /
+        previous_integration_name fields independently of the active
+        integration_id / integration_name pair.
+
+        Uses Entity directly rather than a re-implemented mock so a
+        future refactor of the property cannot silently diverge from
+        production behavior."""
+        from hi.apps.entity.models import Entity
+
+        entity = Entity.objects.create(
+            name='reconnect_test',
+            entity_type_str='LIGHT',
+        )
+
+        # Default: both previous-identity fields NULL.
+        self.assertIsNone(entity.previous_integration_id)
+        self.assertIsNone(entity.previous_integration_name)
+
+        # Set via the property.
+        prev_key = IntegrationKey('hass', 'light.kitchen')
+        entity.previous_integration_key = prev_key
+
+        self.assertEqual(entity.previous_integration_id, 'hass')
+        self.assertEqual(entity.previous_integration_name, 'light.kitchen')
+
+        # Get returns an equivalent IntegrationKey.
+        round_tripped = entity.previous_integration_key
+        self.assertEqual(round_tripped, prev_key)
+
+        # Clearing via None.
+        entity.previous_integration_key = None
+        self.assertIsNone(entity.previous_integration_id)
+        self.assertIsNone(entity.previous_integration_name)
+
+    def test_previous_integration_key_is_independent_of_active_integration_key(self):
+        """Setting previous_integration_key must not touch
+        integration_id / integration_name, and vice versa. The two
+        pairs are semantically independent: an entity can be
+        actively connected (active populated, previous NULL),
+        disconnected (active NULL, previous populated), or fresh
+        (both NULL). Reconnect transitions disconnected → active
+        and the symmetry of the two setters is what makes that
+        transition safe."""
+        from hi.apps.entity.models import Entity
+
+        entity = Entity.objects.create(
+            name='independence_test',
+            entity_type_str='LIGHT',
+            integration_id='hass',
+            integration_name='light.living_room',
+        )
+
+        # Setting previous_integration_key leaves the active pair alone.
+        entity.previous_integration_key = IntegrationKey('zoneminder', 'monitor.4')
+        self.assertEqual(entity.integration_id, 'hass')
+        self.assertEqual(entity.integration_name, 'light.living_room')
+
+        # Clearing the active pair leaves the previous pair alone.
+        entity.integration_key = None
+        self.assertEqual(entity.previous_integration_id, 'zoneminder')
+        self.assertEqual(entity.previous_integration_name, 'monitor.4')
 
     def test_get_integration_details_method(self):
         """Test get_integration_details method returns correct IntegrationDetails."""

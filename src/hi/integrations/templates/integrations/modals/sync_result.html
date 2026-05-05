@@ -104,7 +104,7 @@
     item lists. Only non-zero categories render — symmetry is less
     important than not implying a third stat that doesn't exist.
   {% endcomment %}
-  <div class="d-flex justify-content-around text-center mb-4 pb-3 border-bottom">
+  <div class="d-flex justify-content-around flex-wrap text-center mb-4 pb-3 border-bottom">
     {% if sync_result.created_list %}
     <div class="px-3">
       <div class="text-success font-weight-bold hi-sync-result-stat-number">
@@ -121,9 +121,25 @@
       <div class="text-muted small text-uppercase hi-uppercase-label">Updated</div>
     </div>
     {% endif %}
-    {% if sync_result.removed_list %}
+    {% if sync_result.reconnected_list %}
+    <div class="px-3">
+      <div class="text-info font-weight-bold hi-sync-result-stat-number">
+        {{ sync_result.reconnected_list|length }}
+      </div>
+      <div class="text-muted small text-uppercase hi-uppercase-label">Reconnected</div>
+    </div>
+    {% endif %}
+    {% if sync_result.detached_list %}
     <div class="px-3">
       <div class="text-secondary font-weight-bold hi-sync-result-stat-number">
+        {{ sync_result.detached_list|length }}
+      </div>
+      <div class="text-muted small text-uppercase hi-uppercase-label">Detached</div>
+    </div>
+    {% endif %}
+    {% if sync_result.removed_list %}
+    <div class="px-3">
+      <div class="text-danger font-weight-bold hi-sync-result-stat-number">
         {{ sync_result.removed_list|length }}
       </div>
       <div class="text-muted small text-uppercase hi-uppercase-label">Removed</div>
@@ -138,12 +154,25 @@
     the affordance to the entity names themselves.
   {% endcomment %}
   {% if sync_result.removed_list %}
-  <div class="mb-3 pl-3 hi-category-section hi-category-section--secondary">
-    <div class="small text-secondary text-uppercase mb-1 hi-uppercase-label">
+  <div class="mb-3 pl-3 hi-category-section hi-category-section--danger">
+    <div class="small text-danger text-uppercase mb-1 hi-uppercase-label">
       Removed ({{ sync_result.removed_list|length }})
     </div>
     <ul class="list-unstyled small mb-0 hi-sync-result-item-list">
       {% for name in sync_result.removed_list %}
+      <li>{{ name }}</li>
+      {% endfor %}
+    </ul>
+  </div>
+  {% endif %}
+
+  {% if sync_result.detached_list %}
+  <div class="mb-3 pl-3 hi-category-section hi-category-section--secondary">
+    <div class="small text-secondary text-uppercase mb-1 hi-uppercase-label">
+      Detached ({{ sync_result.detached_list|length }})
+    </div>
+    <ul class="list-unstyled small mb-0 hi-sync-result-item-list">
+      {% for name in sync_result.detached_list %}
       <li>{{ name }}</li>
       {% endfor %}
     </ul>
@@ -157,6 +186,19 @@
     </div>
     <ul class="list-unstyled small mb-0 hi-sync-result-item-list">
       {% for name in sync_result.updated_list %}
+      <li>{{ name }}</li>
+      {% endfor %}
+    </ul>
+  </div>
+  {% endif %}
+
+  {% if sync_result.reconnected_list %}
+  <div class="mb-3 pl-3 hi-category-section hi-category-section--info">
+    <div class="small text-info text-uppercase mb-1 hi-uppercase-label">
+      Reconnected ({{ sync_result.reconnected_list|length }})
+    </div>
+    <ul class="list-unstyled small mb-0 hi-sync-result-item-list">
+      {% for name in sync_result.reconnected_list %}
       <li>{{ name }}</li>
       {% endfor %}
     </ul>

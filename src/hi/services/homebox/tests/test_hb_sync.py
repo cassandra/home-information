@@ -100,6 +100,15 @@ class TestHomeBoxSynchronizer(SimpleTestCase):
             sync_attrs_mock = stack.enter_context(
                 patch.object(synchronizer, '_sync_helper_entity_attributes')
             )
+            # Reconnect pre-pass (Issue #281) is framework-level on
+            # IntegrationSynchronizer.reconnect_disconnected_items and
+            # does its own DB query; this SimpleTestCase doesn't allow
+            # DB access, so stub it out. The reconnect logic itself
+            # is covered by FindReconnectCandidatesTests in
+            # test_entity_operations.py.
+            stack.enter_context(
+                patch.object(synchronizer, 'reconnect_disconnected_items')
+            )
 
             synchronizer._sync_helper_entities(
                 item_list=[item_new, item_existing, item_invalid],
@@ -353,3 +362,37 @@ class TestHomeBoxSynchronizerSyncResultGrouping(SimpleTestCase):
 
         # No newly-created entities → placement_input is None.
         self.assertIsNone(result.placement_input)
+
+
+class TestHomeBoxSynchronizerRebuildIntegrationComponents(SimpleTestCase):
+    """
+    Issue #281: the per-integration ``_rebuild_integration_components``
+    override is the only piece each synchronizer contributes to the
+    framework-level reconnect path. This test verifies that
+    HomeBoxSynchronizer's override dispatches to ``HbConverter`` with
+    the existing-entity argument set. Framework-level behavior
+    (find candidates, strip prefix, clear previous identity, update
+    entity map, info_list note) is covered by tests of
+    IntegrationSynchronizer.reconnect_disconnected_items. End-to-end
+    DB cycle is exercised in Phase 6.
+    """
+
+    def test_dispatches_to_converter_with_existing_entity(self):
+        synchronizer = HomeBoxSynchronizer()
+        result = IntegrationSyncResult(title='HomeBox Test')
+        existing_entity = Mock(name='existing_entity')
+        upstream = Mock(name='hb_item')
+
+        with patch(
+                'hi.services.homebox.hb_sync.HbConverter.create_models_for_hb_item'
+        ) as mock_converter:
+            synchronizer._rebuild_integration_components(
+                entity=existing_entity,
+                upstream=upstream,
+                result=result,
+            )
+
+        mock_converter.assert_called_once_with(
+            hb_item=upstream,
+            entity=existing_entity,
+        )

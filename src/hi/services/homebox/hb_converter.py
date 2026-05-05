@@ -27,24 +27,41 @@ class HbConverter:
     ]
 
     @classmethod
-    def create_models_for_hb_item( cls, hb_item: HbItem ) -> Entity:
-
+    def create_models_for_hb_item( cls,
+                                   hb_item : HbItem,
+                                   entity  : Optional[Entity] = None ) -> Entity:
+        """
+        Create or repopulate the integration-owned components for an
+        HbItem. When ``entity`` is None (the standard import path), a
+        fresh Entity is created from the upstream payload. When
+        ``entity`` is provided (the auto-reconnect path from Issue
+        #281), the integration-owned fields on that entity are
+        repopulated; the entity's ``name`` is deliberately preserved
+        because the user may have edited it before/after the
+        intervening disconnect.
+        """
         with transaction.atomic():
             entity_integration_key = cls.hb_item_to_integration_key( hb_item = hb_item )
-            entity_name = cls.hb_item_to_entity_name( hb_item = hb_item )
-            entity_type = cls.hb_item_to_entity_type( hb_item = hb_item )
-            
-            entity = Entity(
-                name = entity_name,
-                entity_type_str = str(entity_type),
-                can_user_delete = HbMetaData.allow_entity_deletion,
-                can_add_custom_attributes = HbMetaData.can_add_custom_attributes,
-                integration_payload = cls.hb_item_to_entity_payload( hb_item = hb_item ),
-            )
+            entity_payload = cls.hb_item_to_entity_payload( hb_item = hb_item )
 
+            if entity is None:
+                entity = Entity(
+                    name = cls.hb_item_to_entity_name( hb_item = hb_item ),
+                    entity_type_str = str( cls.hb_item_to_entity_type( hb_item = hb_item ) ),
+                )
+
+            # The fields below apply equally to fresh-create and
+            # reconnect: integration_key, integration_payload, and the
+            # integration-managed access flags are all integration-owned
+            # and must reflect the current upstream state. The entity
+            # name and entity_type are intentionally left alone on the
+            # reconnect path (set above only for fresh-create).
             entity.integration_key = entity_integration_key
+            entity.integration_payload = entity_payload
+            entity.can_user_delete = HbMetaData.allow_entity_deletion
+            entity.can_add_custom_attributes = HbMetaData.can_add_custom_attributes
             entity.save()
-            
+
         return entity
 
     @classmethod

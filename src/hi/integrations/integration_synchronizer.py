@@ -13,7 +13,9 @@ Sync is opt-in: a gateway whose integration does not support sync
 returns None.
 """
 import logging
-from typing import List, Optional
+from typing import Any, Dict, List, Optional
+
+from django.db import transaction
 
 from hi.apps.common.database_lock import ExclusionLockContext
 from hi.apps.entity.entity_placement import (
@@ -24,6 +26,7 @@ from hi.apps.entity.models import Entity
 
 from .entity_operations import EntityIntegrationOperations
 from .sync_result import IntegrationSyncResult
+from .transient_models import IntegrationKey, IntegrationMetaData
 
 logger = logging.getLogger(__name__)
 
@@ -109,6 +112,20 @@ class IntegrationSynchronizer:
         """
         raise NotImplementedError('Subclasses must override this method')
 
+    def get_integration_metadata(self) -> IntegrationMetaData:
+        """
+        Subclasses return their integration's ``IntegrationMetaData``
+        constant (the same object the gateway exposes via
+        ``get_metadata()``). The framework reads ``.integration_id``
+        and ``.label`` from it for shared operations like the
+        auto-reconnect pre-pass and the entity-removal helper, so
+        each subclass declares the source of truth in one place
+        instead of repeating the values at every call site.
+        """
+        raise NotImplementedError(
+            f'{self.__class__.__name__} must override get_integration_metadata()'
+        )
+
     def group_entities_for_placement(
             self, entities : List[Entity],
     ) -> EntityPlacementInput:
@@ -153,10 +170,139 @@ class IntegrationSynchronizer:
             return f'{integration_key.integration_id}:{integration_key.integration_name}'
         return f'entity:{entity.id}'
 
+    def reconnect_disconnected_items(
+            self,
+            integration_key_to_upstream : Dict[ IntegrationKey, Any ],
+            integration_key_to_entity   : Dict[ IntegrationKey, Entity ],
+            result                      : IntegrationSyncResult ):
+        """
+        Framework-level auto-reconnect (Issue #281). Symmetric to
+        the framework-level disconnect path
+        (``EntityIntegrationOperations.preserve_with_user_data``):
+        both directions of the cycle live in shared code, with each
+        integration contributing only the minimal piece that's
+        genuinely integration-specific — the converter dispatch via
+        ``_rebuild_integration_components()``.
+
+        For each unmatched upstream key with a unique secondary
+        match, this method:
+
+          * clears the previous-identity columns (which removes the
+            "Detached from <integration>" badge in the UI),
+          * dispatches to ``_rebuild_integration_components()`` so the
+            integration's converter repopulates the integration-owned
+            components on the existing entity,
+          * appends the entity name to ``result.reconnected_list``
+            (which drives the "Reconnected" tile + per-category list
+            in the sync result modal) and to ``result.info_list``
+            (the diagnostic Details section),
+          * inserts the reconnected entity into
+            ``integration_key_to_entity`` so the synchronizer's main
+            loop sees it as primary-matched and gives it the standard
+            update / attribute-sync treatment without any
+            reconnect-specific branching.
+
+        The entity's ``name`` is deliberately not touched: the user
+        may have edited it before or after the intervening detach,
+        and the detached/connected distinction is signaled
+        structurally via the integration_id / previous_integration_id
+        columns rather than by a name-string convention.
+
+        Ambiguous secondary matches are handled inside
+        ``find_reconnect_candidates``: dropped silently, with a
+        WARNING log + ``info_list`` breadcrumb so the operator can
+        find them and resolve via merge (#263).
+        """
+        unmatched_upstream_keys = [
+            integration_key for integration_key in integration_key_to_upstream
+            if integration_key not in integration_key_to_entity
+        ]
+        if not unmatched_upstream_keys:
+            return
+
+        metadata = self.get_integration_metadata()
+        candidates = EntityIntegrationOperations.find_reconnect_candidates(
+            integration_id = metadata.integration_id,
+            upstream_keys = unmatched_upstream_keys,
+            result = result,
+        )
+        if not candidates:
+            return
+
+        for upstream_key, entity in candidates.items():
+            # Wrap each reconnect in its own atomic boundary so a
+            # mid-batch converter failure rolls back that single
+            # entity's changes (including the cleared previous
+            # identity) without aborting reconnects already
+            # committed for prior entities. The result-list appends
+            # are inside the boundary so they stay consistent with
+            # the persisted state.
+            with transaction.atomic():
+                entity.previous_integration_key = None
+                self._rebuild_integration_components(
+                    entity = entity,
+                    upstream = integration_key_to_upstream[ upstream_key ],
+                    result = result,
+                )
+                # The disconnect path set is_disabled=True (the
+                # capability gate that hides detached entities from
+                # listings like the Cameras sidebar). Reconnect is
+                # the symmetric clear: the entity is integration-
+                # attached again and should participate in those
+                # listings. Capability flags like has_video_stream
+                # are converter-owned and should already have been
+                # re-established by _rebuild_integration_components.
+                entity.is_disabled = False
+                # Defensive save: subclasses' converters typically
+                # save the entity themselves, but the framework
+                # explicitly persists the cleared previous-identity
+                # and is_disabled fields so a future converter that
+                # only writes related rows cannot leave the entity
+                # in a half-reconnected state.
+                entity.save(
+                    update_fields = [
+                        'previous_integration_id',
+                        'previous_integration_name',
+                        'is_disabled',
+                    ],
+                )
+                # reconnected_list drives the operator-visible
+                # "Reconnected" tile + per-category list in the
+                # sync result modal; info_list keeps the same name
+                # in the diagnostic Details section so the operator
+                # sees a consistent record across both surfaces.
+                result.reconnected_list.append( entity.name )
+                result.info_list.append(
+                    f'Auto-reconnected {metadata.label} item "{entity.name}"'
+                )
+                integration_key_to_entity[ upstream_key ] = entity
+        return
+
+    def _rebuild_integration_components( self,
+                                         entity   : Entity,
+                                         upstream : Any,
+                                         result   : IntegrationSyncResult ):
+        """
+        Subclass hook for the auto-reconnect (Issue #281) path. Given
+        an existing Entity (the previously-disconnected one) and the
+        upstream payload for it, repopulate the entity's
+        integration-owned components by dispatching to the
+        integration's converter with the existing-entity parameter set.
+
+        The base class raises NotImplementedError; subclasses must
+        override to participate in auto-reconnect. (Reconnect is
+        framework-driven; the only piece each integration owns is
+        this thin converter-dispatch override.)
+        """
+        raise NotImplementedError(
+            f'{self.__class__.__name__} must override '
+            f'_rebuild_integration_components() to participate in '
+            f'auto-reconnect.'
+        )
+
     def _remove_entity_intelligently(self,
                                      entity: Entity,
-                                     result: IntegrationSyncResult,
-                                     integration_name: str):
+                                     result: IntegrationSyncResult):
         """
         Remove an entity that no longer exists in the integration.
 
@@ -165,13 +311,12 @@ class IntegrationSynchronizer:
         closure walk picks up delegate entities (e.g., the Area
         auto-created when a camera was placed in a view) when their
         only remaining principal is being removed. Operator-added
-        attributes on any closure entity trigger the
-        ``[Disconnected]`` preserve path; otherwise the entity is
-        hard-deleted.
+        attributes on any closure entity trigger the detach-and-preserve
+        path; otherwise the entity is hard-deleted.
         """
         EntityIntegrationOperations.remove_entities_with_closure(
             seed_entity_ids = { entity.id },
-            integration_name = integration_name,
+            integration_name = self.get_integration_metadata().label,
             preserve_user_data = True,
             result = result,
         )

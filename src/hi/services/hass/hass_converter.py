@@ -483,20 +483,32 @@ class HassConverter:
     @classmethod
     def create_models_for_hass_device( cls,
                                        hass_device       : HassDevice,
-                                       add_alarm_events  : bool  ) -> Entity:
-        
+                                       add_alarm_events  : bool,
+                                       entity            : Optional[Entity] = None ) -> Entity:
+        """
+        Create or repopulate the integration-owned components for a
+        HassDevice. When ``entity`` is None (the standard import path),
+        a fresh Entity is created from the upstream device. When
+        ``entity`` is provided (the auto-reconnect path from Issue
+        #281), the integration-owned fields on that entity are
+        repopulated; the entity's ``name`` is deliberately preserved
+        because the user may have edited it before/after the
+        intervening disconnect.
+        """
         with transaction.atomic():
 
             entity_integration_key = cls.hass_device_to_integration_key( hass_device = hass_device )
-            entity_name = cls.hass_device_to_entity_name( hass_device )
-            entity_type = cls.hass_device_to_entity_type( hass_device )
-            
-            entity = Entity(
-                name = entity_name,
-                entity_type_str = str(entity_type),
-                can_user_delete = HassMetaData.allow_entity_deletion,
-            )
+
+            if entity is None:
+                entity = Entity(
+                    name = cls.hass_device_to_entity_name( hass_device ),
+                    entity_type_str = str( cls.hass_device_to_entity_type( hass_device ) ),
+                )
+
+            # Integration-owned: re-applied on both fresh-create and
+            # reconnect so the entity reflects current upstream state.
             entity.integration_key = entity_integration_key
+            entity.can_user_delete = HassMetaData.allow_entity_deletion
             entity.save()
             
             insteon_address = cls.hass_device_to_insteon_address( hass_device )
