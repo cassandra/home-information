@@ -11,12 +11,13 @@ Five profiles, each designed to exercise a specific scenario:
                        device types, a handful of HomeBox items, a
                        few ZM monitors. Used as the *before* state
                        for delta tests.
-  * baseline-changed — same shape as baseline, with one removal,
-                       one rename, and one addition per integration.
-                       Importing baseline then switching the
-                       simulator to this profile and clicking
-                       Refresh exercises every change kind in a
-                       single click.
+  * baseline-changed — same shape as baseline, with deltas in every
+                       integration. The pair (baseline ↔
+                       baseline-changed) is designed to exercise all
+                       five sync-result categories — created,
+                       updated, reconnected, detached, removed — in
+                       a single flip back-and-forth. See "Operator
+                       workflow for full-category coverage" below.
   * hass-zoo         — one HASS entity of every supported type.
                        Visual / grouping coverage for the HASS
                        converter; HomeBox/ZM stay empty.
@@ -27,6 +28,40 @@ Five profiles, each designed to exercise a specific scenario:
 Re-running the command is a no-op when the named profile exists.
 Pass ``--reset`` to delete the matching profile (and its entities)
 before recreating.
+
+Operator workflow for full-category coverage (sync result modal
+manual validation):
+
+  1. Switch simulator to ``baseline``. Sync HI. Three entities
+     whose names start with ``★ Custom Attr Needed ★`` will be
+     imported alongside the others (one per integration). Open
+     each in entity-edit and add ANY custom attribute (e.g., a
+     "Note" attribute with any value). The custom attribute is
+     what flips them onto the preserve-with-user-data path when
+     they later disappear upstream.
+  2. Switch simulator to ``baseline-changed``. Refresh sync.
+     The result modal shows:
+       - Created: three new items present only in baseline-changed
+       - Updated: three items renamed / metadata-changed
+       - Removed: three items absent here, no user attribute
+       - Detached: three ★-prefixed items absent here, with the
+         user attribute the operator added in step 1 retained
+       - (Reconnected is empty on this direction)
+  3. Switch simulator back to ``baseline``. Refresh sync.
+     The result modal shows:
+       - Reconnected: the three ★-prefixed items rejoin via the
+         secondary-match path; their custom attributes are intact
+       - Created: the three previously-Removed items return as
+         fresh entities (no previous_integration_id, so no
+         reconnect — they come back as duplicates would, but
+         since the originals were hard-deleted there's no
+         duplication, just re-creation)
+       - Updated: the renames / changes swap back
+       - Removed: the three baseline-changed-only items are
+         dropped (no user attributes anchored, so hard-deleted)
+       - (Detached is empty on this direction unless extra
+         attributes were anchored on items unique to
+         baseline-changed)
 """
 from django.core.management.base import BaseCommand
 from django.db import transaction
@@ -132,17 +167,26 @@ class Command(BaseCommand):
         return 0
 
     def _build_baseline(self, profile: SimProfile) -> int:
-        # HASS: one of each common device kind (5 entities).
+        # HASS: one of each common device kind, plus a ★-prefixed
+        # item that the operator anchors with a custom attribute
+        # before flipping to baseline-changed (drives the
+        # detach/reconnect cycle on the HASS side).
         self._add_hass_light_switch( profile, 'Garage Light'   , '01.AA.01' )
         self._add_hass_dimmer(       profile, 'Den Lamp'       , '01.AA.02' )
         self._add_hass_motion(       profile, 'Hallway Motion' , '01.AA.03' )
         self._add_hass_open_close(   profile, 'Front Door'     , '01.AA.04' )
         self._add_hass_outlet(       profile, 'Kitchen Outlet' , '01.AA.05' )
+        self._add_hass_light_switch(
+            profile, '★ Custom Attr Needed ★ Office Light', '01.AA.10',
+        )
 
-        # HomeBox: 4 items with mixed metadata richness. ``item_id``
-        # is the per-item stable id used by the integration's
-        # change-detection — kept identical across baseline /
-        # baseline-changed for items that should be 'the same item'.
+        # HomeBox: 4 items with mixed metadata richness, plus a
+        # ★-prefixed item that the operator anchors with a custom
+        # attribute (HomeBox-side detach/reconnect anchor).
+        # ``item_id`` is the per-item stable id used by the
+        # integration's change-detection — kept identical across
+        # baseline / baseline-changed for items that should be 'the
+        # same item'.
         self._add_homebox_item(
             profile, 'Cordless Drill',
             item_id = 'cordless-drill',
@@ -169,25 +213,45 @@ class Command(BaseCommand):
             item_id = 'spare-light-bulbs',
             quantity = 12,
         )
+        self._add_homebox_item(
+            profile, '★ Custom Attr Needed ★ Multimeter',
+            item_id = 'multimeter',
+            manufacturer = 'Fluke',
+            model_number = '117',
+            quantity = 1,
+        )
 
-        # ZoneMinder: 1 server (singleton) + 2 monitors.
+        # ZoneMinder: 1 server (singleton) + 2 monitors + a
+        # ★-prefixed monitor anchor for the ZM detach/reconnect
+        # cycle.
         self._add_zm_server( profile )
         self._add_zm_monitor( profile, 'Front Door Camera' , monitor_id = 1 )
         self._add_zm_monitor( profile, 'Driveway Camera'   , monitor_id = 2 )
+        self._add_zm_monitor(
+            profile, '★ Custom Attr Needed ★ Backyard Camera',
+            monitor_id = 5,
+        )
 
         return profile.db_sim_entities.count()
 
     def _build_baseline_changed(self, profile: SimProfile) -> int:
-        # Designed so that importing `baseline` first, then switching
-        # the simulator to this profile and hitting Refresh, exercises
-        # remove + update + create in a single sync.
+        # Designed as the partner of baseline so that flipping the
+        # simulator between the two profiles and Refreshing
+        # exercises every one of the five sync-result categories
+        # (created / updated / reconnected / detached / removed)
+        # in a single click. See the module docstring for the
+        # operator workflow that drives the detach/reconnect path
+        # via user-attribute anchoring.
 
         # HASS deltas vs baseline:
         #   Garage Light       — kept (no change)
         #   Den Lamp           — RENAMED to "Den Reading Lamp" (update)
         #   Hallway Motion     — kept
-        #   Front Door         — REMOVED (drop)
+        #   Front Door         — REMOVED (no user attribute → hard delete)
         #   Kitchen Outlet     — kept
+        #   ★ Office Light     — ABSENT here; with a user attribute
+        #                        anchored on the HI side it takes
+        #                        the preserve path → Detached
         #   <new> Patio Switch — ADDED (create)
         self._add_hass_light_switch( profile, 'Garage Light'     , '01.AA.01' )
         self._add_hass_dimmer(       profile, 'Den Reading Lamp' , '01.AA.02' )
@@ -195,13 +259,18 @@ class Command(BaseCommand):
         # Front Door (01.AA.04) intentionally absent.
         self._add_hass_outlet(       profile, 'Kitchen Outlet'   , '01.AA.05' )
         self._add_hass_light_switch( profile, 'Patio Switch'     , '01.AA.06' )
+        # Office Light (01.AA.10) intentionally absent — its HI-side
+        # entity has the user-anchored custom attribute and takes
+        # the detach path on the first sync after switching here.
 
         # HomeBox deltas:
         #   Cordless Drill   — kept (same item_id, same content)
         #   Stud Finder      — same item_id, manufacturer changed
         #                      (attribute update path)
-        #   Soldering Iron   — REMOVED (item_id absent)
+        #   Soldering Iron   — REMOVED (item_id absent, no user attr)
         #   Spare Bulbs      — kept (same item_id, same content)
+        #   ★ Multimeter     — ABSENT (item_id absent) → Detached on
+        #                      the HI side via user-attribute anchor
         #   <new> Caulk Gun  — ADDED (new item_id)
         # Identity carries via ``item_id`` (the simulator's stable
         # API id), not row order — so the order here doesn't matter
@@ -232,15 +301,24 @@ class Command(BaseCommand):
             description = '10-oz cartridge gun, dripless',
             quantity = 1,
         )
+        # 'multimeter' (item_id) intentionally absent — Detached
+        # via user-attribute anchor on the HI side.
 
         # ZoneMinder deltas:
-        #   ZM Server          — kept
-        #   Front Door Camera  — RENAMED to "Front Porch Camera"
-        #   Driveway Camera    — REMOVED
-        #   <new> Backyard Cam — ADDED
+        #   ZM Server           — kept
+        #   Front Door Camera   — RENAMED to "Front Porch Camera"
+        #   Driveway Camera     — REMOVED
+        #   ★ Backyard Camera   — ABSENT (monitor_id 5 absent) →
+        #                         Detached via user-attribute anchor
+        #   <new> Garage Camera — ADDED (monitor_id 3); deliberately
+        #                         not named "Backyard Camera" to
+        #                         avoid colliding with the
+        #                         ★-prefixed Detached anchor when
+        #                         flipping back.
         self._add_zm_server( profile )
         self._add_zm_monitor( profile, 'Front Porch Camera' , monitor_id = 1 )
-        self._add_zm_monitor( profile, 'Backyard Camera'    , monitor_id = 3 )
+        self._add_zm_monitor( profile, 'Garage Camera'      , monitor_id = 3 )
+        # monitor_id 5 (Backyard Camera) intentionally absent.
 
         return profile.db_sim_entities.count()
 
