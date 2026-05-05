@@ -138,8 +138,8 @@ class TestZoneMinderSynchronizerStateSync(TestCase):
         )
         self.synchronizer._zm_manager = self.mock_manager
     
-    @patch.object(Entity.objects, 'filter_by_integration_key')
-    @patch.object(Sensor.objects, 'filter_by_integration_key')
+    @patch('hi.services.zoneminder.zm_sync.Entity.objects.filter_by_integration_key')
+    @patch('hi.services.zoneminder.zm_sync.Sensor.objects.filter_by_integration_key')
     @patch.object(ZoneMinderSynchronizer, '_create_zm_entity')
     def test_sync_states_creates_zm_entity_when_missing(self, mock_create_entity, mock_sensor_filter, mock_entity_filter):
         """Test _sync_states creates ZM entity when it doesn't exist and verifies entity creation parameters"""
@@ -186,8 +186,8 @@ class TestZoneMinderSynchronizerStateSync(TestCase):
         # Test behavior: should not have errors when successful
         self.assertEqual(len(result.error_list), 0)
     
-    @patch.object(Entity.objects, 'filter_by_integration_key')
-    @patch.object(Sensor.objects, 'filter_by_integration_key')
+    @patch('hi.services.zoneminder.zm_sync.Entity.objects.filter_by_integration_key')
+    @patch('hi.services.zoneminder.zm_sync.Sensor.objects.filter_by_integration_key')
     def test_sync_states_missing_sensor_error(self, mock_sensor_filter, mock_entity_filter):
         """Test _sync_states handles missing run state sensor and stops processing gracefully"""
         # Mock states
@@ -214,8 +214,8 @@ class TestZoneMinderSynchronizerStateSync(TestCase):
         # Should not have created any entities since sensor missing
         self.assertEqual(len(result.info_list), 0)
     
-    @patch.object(Entity.objects, 'filter_by_integration_key')
-    @patch.object(Sensor.objects, 'filter_by_integration_key')
+    @patch('hi.services.zoneminder.zm_sync.Entity.objects.filter_by_integration_key')
+    @patch('hi.services.zoneminder.zm_sync.Sensor.objects.filter_by_integration_key')
     def test_sync_states_updates_value_range_when_changed(self, mock_sensor_filter, mock_entity_filter):
         """Test _sync_states updates value range when states change and persists changes"""
         # Mock new states
@@ -261,8 +261,8 @@ class TestZoneMinderSynchronizerStateSync(TestCase):
         self.assertIn('start', message)
         self.assertIn('pause', message)
     
-    @patch.object(Entity.objects, 'filter_by_integration_key')
-    @patch.object(Sensor.objects, 'filter_by_integration_key')
+    @patch('hi.services.zoneminder.zm_sync.Entity.objects.filter_by_integration_key')
+    @patch('hi.services.zoneminder.zm_sync.Sensor.objects.filter_by_integration_key')
     def test_sync_states_no_update_when_unchanged(self, mock_sensor_filter, mock_entity_filter):
         """Test _sync_states doesn't update when state values unchanged and preserves existing state"""
         # Mock states - identical to existing
@@ -485,7 +485,7 @@ class TestZoneMinderSynchronizerExistingEntities(TestCase):
         self.mock_manager.ZM_MONITOR_INTEGRATION_NAME_PREFIX = 'monitor'
         self.synchronizer._zm_manager = self.mock_manager
     
-    @patch.object(Entity.objects, 'filter')
+    @patch('hi.services.zoneminder.zm_sync.Entity.objects.filter')
     def test_get_existing_zm_monitor_entities_filters_by_integration_id(self, mock_filter):
         """Test _get_existing_zm_monitor_entities filters by correct integration ID"""
         mock_filter.return_value = []
@@ -495,7 +495,7 @@ class TestZoneMinderSynchronizerExistingEntities(TestCase):
         
         mock_filter.assert_called_once_with(integration_id=ZmMetaData.integration_id)
     
-    @patch.object(Entity.objects, 'filter')
+    @patch('hi.services.zoneminder.zm_sync.Entity.objects.filter')
     def test_get_existing_zm_monitor_entities_handles_missing_integration_key(self, mock_filter):
         """Test entity retrieval handles entities without integration keys"""
         # Mock entity without integration key
@@ -513,7 +513,7 @@ class TestZoneMinderSynchronizerExistingEntities(TestCase):
         # Should NOT include entity in result (mock key doesn't start with 'monitor' prefix)
         self.assertEqual(len(result_dict), 0)
     
-    @patch.object(Entity.objects, 'filter')
+    @patch('hi.services.zoneminder.zm_sync.Entity.objects.filter')
     def test_get_existing_zm_monitor_entities_filters_monitor_entities(self, mock_filter):
         """Test entity retrieval only includes monitor entities"""
         # Mock entities - one monitor, one non-monitor
@@ -794,8 +794,8 @@ class TestZoneMinderSynchronizerWithRealData(TestCase):
             mock_monitors.append(mock_monitor)
         return mock_monitors
     
-    @patch.object(Entity.objects, 'filter_by_integration_key')
-    @patch.object(Sensor.objects, 'filter_by_integration_key')
+    @patch('hi.services.zoneminder.zm_sync.Entity.objects.filter_by_integration_key')
+    @patch('hi.services.zoneminder.zm_sync.Sensor.objects.filter_by_integration_key')
     def test_sync_states_with_real_zm_state_names(self, mock_sensor_filter, mock_entity_filter):
         """Test state sync handles real ZM state names: default, Away, HomeDay, Disabled"""
         # Use real state data
@@ -906,7 +906,7 @@ class TestZoneMinderSynchronizerWithRealData(TestCase):
         mock_entity.save.assert_called_once()
         self.assertEqual(result.updated_list, ['Camera_001 → HighCamera'])
     
-    @patch.object(Entity.objects, 'filter')
+    @patch('hi.services.zoneminder.zm_sync.Entity.objects.filter')
     def test_get_existing_entities_with_real_monitor_id_patterns(self, mock_filter):
         """Test existing entity retrieval with realistic monitor ID patterns"""
         # Create mock entities with integration keys matching real monitor IDs
