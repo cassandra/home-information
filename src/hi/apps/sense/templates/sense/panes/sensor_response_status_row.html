@@ -34,7 +34,7 @@
     </div>    
   </div>
   <div class="col-6 align-self-center">
-    <a href="{{ sensor_response.click_url }}" title="See details">
+    <a href="{{ sensor_response.click_url }}" title="See details" data-async="true">
       <div class="{{ sensor_response.css_class }}">
         {% include_with_fallback sensor_response.sensor.entity_state.entity_state_type.value_template_name "sense/panes/sensor_response_value_default.html" %}
       </div>

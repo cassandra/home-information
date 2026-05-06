@@ -2,6 +2,7 @@ import logging
 from .pyzm_client.helpers.Monitor import Monitor as ZmMonitor
 from typing import Dict, Optional
 
+from asgiref.sync import sync_to_async
 from django.db import transaction
 
 from hi.apps.entity.enums import EntityType
@@ -17,6 +18,7 @@ from hi.apps.entity.entity_placement import (
 )
 
 from hi.integrations.integration_synchronizer import IntegrationSynchronizer
+from hi.integrations.sync_check import IntegrationSyncCheck, SyncDelta
 from hi.integrations.sync_result import IntegrationSyncResult
 from hi.integrations.transient_models import IntegrationKey
 
@@ -47,6 +49,51 @@ class ZoneMinderSynchronizer( IntegrationSynchronizer, ZoneMinderMixin ):
                 ' run-state sensors.'
             )
         return None
+
+    async def check_needs_sync(self) -> Optional[SyncDelta]:
+        """Issue #283 — sync-check probe for ZoneMinder.
+
+        Fetches the current monitor list (cheap on a typical install
+        — bounded by camera count), builds the upstream
+        IntegrationKey set using the same prefix scheme as the live
+        sync (``MONITOR.<id>``), and compares against the
+        IntegrationKeys of monitor-shaped HI entities. The ZM service
+        entity and run-state sensors are excluded from the
+        comparison because they are not per-monitor and would
+        otherwise look like permanent extras on the HI side.
+        """
+        zm_manager = await self.zm_manager_async()
+        if zm_manager is None:
+            return None
+        prefix = zm_manager.ZM_MONITOR_INTEGRATION_NAME_PREFIX
+        zm_monitors = await zm_manager.get_zm_monitors_async( force_load = True )
+        upstream_keys = {
+            zm_manager._to_integration_key(
+                prefix = prefix,
+                zm_monitor_id = zm_monitor.id(),
+            )
+            for zm_monitor in zm_monitors
+        }
+        current_keys = await sync_to_async( self._get_current_monitor_integration_keys )(
+            prefix = prefix,
+        )
+        return IntegrationSyncCheck.compute_delta(
+            upstream_keys = upstream_keys,
+            current_keys = current_keys,
+        )
+
+    @staticmethod
+    def _get_current_monitor_integration_keys( prefix : str ) -> set:
+        return {
+            IntegrationKey(
+                integration_id = integration_id,
+                integration_name = integration_name,
+            )
+            for integration_id, integration_name in Entity.objects.filter(
+                integration_id = ZmMetaData.integration_id,
+                integration_name__startswith = prefix,
+            ).values_list( 'integration_id', 'integration_name' )
+        }
 
     def _sync_impl( self, is_initial_import: bool ) -> IntegrationSyncResult:
         result = IntegrationSyncResult(

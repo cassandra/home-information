@@ -1,6 +1,7 @@
 import json
 from typing import Dict
 
+from hi.apps.alert.alarm import Alarm
 from hi.apps.alert.enums import AlarmLevel
 from hi.apps.control.enums import ControllerType
 from hi.apps.control.models import Controller
@@ -32,8 +33,8 @@ class HiModelHelper:
 
     DEFAULT_CONNECTIVITY_EVENT_WINDOW_SECS = 180
     DEFAULT_CONNECTIVITY_DEDUPE_WINDOW_SECS = 300
-    DEFAULT_CONNECTIVITY_ALARM_LIFETIME_SECS = 0
-    
+    DEFAULT_CONNECTIVITY_ALARM_LIFETIME_SECS = Alarm.MAX_LIFETIME_SECS
+
     DEFAULT_OPEN_CLOSE_EVENT_WINDOW_SECS = 180
     DEFAULT_OPEN_CLOSE_DEDUPE_WINDOW_SECS = 300
     DEFAULT_OPEN_CLOSE_ALARM_LIFETIME_SECS = 600
@@ -44,7 +45,7 @@ class HiModelHelper:
 
     DEFAULT_BATTERY_EVENT_WINDOW_SECS = 180
     DEFAULT_BATTERY_DEDUPE_WINDOW_SECS = 300
-    DEFAULT_BATTERY_ALARM_LIFETIME_SECS = 0
+    DEFAULT_BATTERY_ALARM_LIFETIME_SECS = Alarm.MAX_LIFETIME_SECS
     
     @classmethod
     def create_blob_sensor( cls,

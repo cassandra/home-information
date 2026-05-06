@@ -48,6 +48,11 @@
     {% empty %}
     <div class="col-12 text-secondary"><em>No integrations configured.</em></div>
     {% endfor %}
+    {% for provider in framework_health_providers %}
+    <div class="col-lg-6 col-md-12 mb-3">
+      {% include "system/panes/health_status_card.html" with health_status_provider=provider %}
+    </div>
+    {% endfor %}
   </div>
 
   <!-- Weather Sources Section -->

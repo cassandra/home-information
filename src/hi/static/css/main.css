@@ -1283,6 +1283,9 @@ g[hover] {
 .hi-integration-indicator-paused {
     color: var(--muted-color);
 }
+.hi-integration-indicator-needs-sync {
+    color: var(--info-color);
+}
 
 .text-success-custom {
     color: var(--success-color);

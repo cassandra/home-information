@@ -1235,3 +1235,112 @@ class EventDefinitionLifecycleCycleTests(TestCase):
             result=result,
         )
         self.assertEqual(self._zm_event_def_count(), 1)
+
+
+from hi.testing.async_task_utils import AsyncTaskTestCase
+
+
+class TestZoneMinderSynchronizerCheckNeedsSync(AsyncTaskTestCase):
+    """Issue #283 — sync-check probe shape for ZoneMinder.
+
+    Pins that upstream keys are built using the same prefix scheme
+    as the live sync (``MONITOR.<id>``) and that the HI side filter
+    excludes non-monitor entities (the ZM service entity, run-state
+    sensors). Uses real Entity rows so the
+    ``integration_name__startswith=prefix`` query is exercised — the
+    "exclude service entity" claim that lives only in code is the
+    load-bearing piece this test class pins.
+    """
+
+    def _zm_key(self, name: str):
+        return IntegrationKey(
+            integration_id=ZmMetaData.integration_id,
+            integration_name=name,
+        )
+
+    def _make_zm_monitor_entities(self, monitor_ids):
+        for monitor_id in monitor_ids:
+            Entity.objects.create(
+                name=f'Camera {monitor_id}',
+                entity_type_str='CAMERA',
+                integration_id=ZmMetaData.integration_id,
+                integration_name=f'monitor.{monitor_id}',
+            )
+
+    def _make_zm_service_entity(self):
+        # The ZM service entity is integration_id='zm' but does NOT
+        # carry the 'monitor.' prefix — the probe must exclude it
+        # from the comparison.
+        Entity.objects.create(
+            name='ZoneMinder Service',
+            entity_type_str='SERVICE',
+            integration_id=ZmMetaData.integration_id,
+            integration_name='zoneminder.service',
+        )
+
+    def _run_check(self, monitor_ids):
+        synchronizer = ZoneMinderSynchronizer()
+        manager = Mock()
+        manager.ZM_MONITOR_INTEGRATION_NAME_PREFIX = 'monitor'
+
+        # Mirror the production zm_manager._to_integration_key
+        # builder so the test's upstream side passes through the
+        # same IntegrationKey construction the production code uses.
+        def to_integration_key(prefix, zm_monitor_id):
+            return IntegrationKey(
+                integration_id=ZmMetaData.integration_id,
+                integration_name=f'{prefix}.{zm_monitor_id}',
+            )
+        manager._to_integration_key = to_integration_key
+
+        async def get_monitors(force_load=False):
+            return [
+                Mock(**{'id.return_value': monitor_id})
+                for monitor_id in monitor_ids
+            ]
+
+        manager.get_zm_monitors_async = get_monitors
+
+        async def get_manager():
+            return manager
+
+        with patch.object(synchronizer, 'zm_manager_async', side_effect=get_manager):
+            return self.run_async(synchronizer.check_needs_sync())
+
+    def test_in_sync_when_upstream_monitors_match_hi(self):
+        self._make_zm_monitor_entities([1, 2, 3])
+        delta = self._run_check(monitor_ids=[1, 2, 3])
+        self.assertFalse(delta.needs_sync)
+
+    def test_upstream_added_appears_in_delta(self):
+        self._make_zm_monitor_entities([1, 2, 3])
+        delta = self._run_check(monitor_ids=[1, 2, 3, 4])
+        self.assertEqual(delta.added, {self._zm_key('monitor.4')})
+        self.assertEqual(delta.removed, set())
+
+    def test_upstream_removed_appears_in_delta(self):
+        self._make_zm_monitor_entities([1, 2])
+        delta = self._run_check(monitor_ids=[1])
+        self.assertEqual(delta.added, set())
+        self.assertEqual(delta.removed, {self._zm_key('monitor.2')})
+
+    def test_zm_service_entity_is_excluded_from_comparison(self):
+        # The ZM service entity has integration_id='zm' but no
+        # 'monitor.' prefix on integration_name. The probe must
+        # exclude it from the HI side, otherwise it would always
+        # show up as "removed" (no upstream monitor matches).
+        self._make_zm_monitor_entities([1, 2])
+        self._make_zm_service_entity()
+        delta = self._run_check(monitor_ids=[1, 2])
+        self.assertFalse(delta.needs_sync)
+
+    def test_returns_none_when_manager_not_ready(self):
+        synchronizer = ZoneMinderSynchronizer()
+
+        async def get_manager():
+            return None
+
+        with patch.object(synchronizer, 'zm_manager_async', side_effect=get_manager):
+            result = self.run_async(synchronizer.check_needs_sync())
+
+        self.assertIsNone(result)

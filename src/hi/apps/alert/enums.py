@@ -7,6 +7,7 @@ class AlarmSource( LabeledEnum ):
     WEATHER        = ( 'Weather'       , '' )
     CONSOLE        = ( 'Console'       , '' )
     HEALTH_STATUS  = ( 'Health Status' , '' )
+    INTEGRATION    = ( 'Integration'   , '' )
 
     
 class AlarmLevel( LabeledEnum ):

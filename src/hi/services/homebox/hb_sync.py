@@ -1,11 +1,13 @@
 import logging
 from typing import Dict, List, Optional
 
+from asgiref.sync import sync_to_async
 from django.db import transaction
 
 from hi.apps.entity.models import Entity, EntityAttribute
 
 from hi.integrations.integration_synchronizer import IntegrationSynchronizer
+from hi.integrations.sync_check import IntegrationSyncCheck, SyncDelta
 from hi.integrations.sync_result import IntegrationSyncResult
 from hi.integrations.transient_models import IntegrationKey
 
@@ -27,6 +29,51 @@ class HomeBoxSynchronizer( IntegrationSynchronizer, HomeBoxMixin ):
             'HomeBox Labels and Locations are kept as metadata on '
             'each item, not as separate organizational concepts in HI.'
         )
+
+    async def check_needs_sync(self) -> Optional[SyncDelta]:
+        """Issue #283 — sync-check probe for HomeBox.
+
+        Uses the lightweight items-summary endpoint (one API call,
+        no per-item details) to build the upstream IntegrationKey
+        set, compares against the IntegrationKeys of HomeBox-attached
+        HI entities, and returns the resulting ``SyncDelta``.
+        Convention matched to
+        ``HbConverter.hb_item_to_integration_key``: each HomeBox
+        item becomes one HI entity whose ``integration_name`` is
+        ``str(item.id)``. Adds/removes only — update detection via
+        timestamps is deferred.
+        """
+        hb_manager = await self.hb_manager_async()
+        if hb_manager is None:
+            # Manager not yet initialized — let the next probe cycle
+            # try again. Returning None opts this cycle out cleanly.
+            return None
+        summary_list = await hb_manager.fetch_hb_items_summary_from_api_async()
+        upstream_keys = {
+            IntegrationKey(
+                integration_id = HbMetaData.integration_id,
+                integration_name = str( item['id'] ),
+            )
+            for item in summary_list
+            if item.get('id') is not None
+        }
+        current_keys = await sync_to_async( self._get_current_integration_keys )()
+        return IntegrationSyncCheck.compute_delta(
+            upstream_keys = upstream_keys,
+            current_keys = current_keys,
+        )
+
+    @staticmethod
+    def _get_current_integration_keys() -> set:
+        return {
+            IntegrationKey(
+                integration_id = integration_id,
+                integration_name = integration_name,
+            )
+            for integration_id, integration_name in Entity.objects.filter(
+                integration_id = HbMetaData.integration_id,
+            ).values_list( 'integration_id', 'integration_name' )
+        }
 
     def _sync_impl( self, is_initial_import: bool ) -> IntegrationSyncResult:
         hb_manager = self.hb_manager()
