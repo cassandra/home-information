@@ -218,7 +218,7 @@ a.clickable-card:active {
     color: var(--on-primary-color);
 }
 
-.bg-secondary, .btn-secondary {
+.bg-secondary, .btn-secondary, .badge-secondary {
     color: var(--on-secondary-color) !important;
     background-color: var(--secondary-color) !important;
     border-color: var(--secondary-highlight-color) !important;
