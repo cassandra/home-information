@@ -15,7 +15,10 @@ import logging
 
 from django.test import TestCase
 
-from hi.apps.entity.models import Entity, EntityState
+from hi.apps.attribute.enums import AttributeType, AttributeValueType
+from hi.apps.entity.models import Entity, EntityAttribute, EntityState
+from hi.apps.event.models import EventDefinition
+from hi.integrations.entity_operations import EntityIntegrationOperations
 from hi.services.hass.hass_converter import HassConverter
 from hi.services.hass.hass_metadata import HassMetaData
 from hi.services.hass.hass_models import HassDevice
@@ -156,3 +159,107 @@ class CreateModelsForHassDeviceReconnectContractTests(TestCase):
         existing.refresh_from_db()
         self.assertEqual(existing.integration_id, HassMetaData.integration_id)
         self.assertIsNotNone(existing.integration_name)
+
+
+class EventDefinitionLifecycleCycleTests(TestCase):
+    """
+    Issue #288 Phase 3: end-to-end EventDefinition lifecycle for HASS
+    across disable/re-enable cycles. Verifies that integration-owned
+    EventDefinitions return to a stable count rather than accumulating.
+
+    Uses a binary_sensor + motion device_class state — the converter
+    maps that to ``EntityStateType.MOVEMENT`` and creates a
+    ``create_movement_event_definition`` when ``add_alarm_events=True``.
+    A single state shape is enough to exercise the cycle; the
+    connectivity / open_close / battery branches share the same
+    cleanup-and-recreate dispatch.
+    """
+
+    def _build_motion_sensor_device(self, device_id='hallway_motion'):
+        api_dict = {
+            'entity_id': f'binary_sensor.{device_id}',
+            'state': 'off',
+            'attributes': {
+                'friendly_name': device_id.replace('_', ' ').title(),
+                'device_class': 'motion',
+            },
+            'last_changed': '2026-01-01T00:00:00+00:00',
+            'last_reported': '2026-01-01T00:00:00+00:00',
+            'last_updated': '2026-01-01T00:00:00+00:00',
+            'context': {'id': 'ctx', 'parent_id': None, 'user_id': None},
+        }
+        hass_state = HassConverter.create_hass_state(api_dict)
+        device = HassDevice(device_id=device_id)
+        device.add_state(hass_state)
+        return device
+
+    def _hass_event_def_count(self):
+        return EventDefinition.objects.filter(
+            integration_id=HassMetaData.integration_id,
+        ).count()
+
+    def test_motion_sensor_creates_one_event_definition(self):
+        # Sanity: the chosen state shape actually drives the
+        # add_alarm_events branch we're exercising.
+        device = self._build_motion_sensor_device()
+        HassConverter.create_models_for_hass_device(
+            hass_device=device,
+            add_alarm_events=True,
+        )
+        self.assertEqual(self._hass_event_def_count(), 1)
+
+    def test_hard_delete_then_recreate_cycle_baseline_count(self):
+        device = self._build_motion_sensor_device()
+        entity = HassConverter.create_models_for_hass_device(
+            hass_device=device,
+            add_alarm_events=True,
+        )
+        self.assertEqual(self._hass_event_def_count(), 1)
+
+        EntityIntegrationOperations.remove_entities_with_closure(
+            seed_entity_ids=[entity.id],
+            integration_name=HassMetaData.integration_id,
+            preserve_user_data=False,
+        )
+        self.assertEqual(self._hass_event_def_count(), 0)
+
+        # Re-import the same upstream device. Without Phase 2 cleanup,
+        # the prior EventDefinition would still be present and we'd see
+        # 2; with the fix, we're back to 1.
+        HassConverter.create_models_for_hass_device(
+            hass_device=self._build_motion_sensor_device(),
+            add_alarm_events=True,
+        )
+        self.assertEqual(self._hass_event_def_count(), 1)
+
+    def test_preserve_then_reconnect_cycle_baseline_count(self):
+        device = self._build_motion_sensor_device()
+        entity = HassConverter.create_models_for_hass_device(
+            hass_device=device,
+            add_alarm_events=True,
+        )
+        EntityAttribute.objects.create(
+            entity=entity,
+            name='User Note',
+            value='retain me',
+            value_type_str=str(AttributeValueType.TEXT),
+            attribute_type_str=str(AttributeType.CUSTOM),
+        )
+        self.assertEqual(self._hass_event_def_count(), 1)
+
+        EntityIntegrationOperations.preserve_with_user_data(
+            entity=entity,
+            integration_name=HassMetaData.integration_id,
+        )
+        self.assertEqual(self._hass_event_def_count(), 0)
+
+        # Reconnect dispatch is the same converter call with
+        # ``entity=existing``. Should recreate exactly one
+        # EventDefinition for the upstream item.
+        entity.refresh_from_db()
+        HassConverter.create_models_for_hass_device(
+            hass_device=self._build_motion_sensor_device(),
+            add_alarm_events=True,
+            entity=entity,
+        )
+        self.assertEqual(self._hass_event_def_count(), 1)

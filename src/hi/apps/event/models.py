@@ -1,3 +1,20 @@
+"""
+Event-system models.
+
+Lifecycle note (Issue #288): EventDefinition is integration-attached
+(inherits IntegrationDetailsModel). Integration-owned rows
+(``integration_id IS NOT NULL``) are cleaned up at the integration
+disconnect / sync-removal boundary by
+``hi.integrations.event_definition_operations.EventDefinitionOperations``,
+not by a generalized "EntityState delete cascades to parent" rule.
+User-owned rows are not touched by integration cleanup; the existing
+``on_delete=CASCADE`` on ``EventClause.entity_state`` and
+``ControlAction.controller`` continues to apply, which can leave a
+user-owned EventDefinition silently semantically changed (clauseless,
+or with reduced clauses) — that broader UX is deferred to a separate
+redesign.
+"""
+
 from django.db import models
 
 from hi.apps.alert.enums import AlarmLevel

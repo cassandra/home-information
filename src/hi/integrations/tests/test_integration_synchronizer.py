@@ -24,6 +24,7 @@ from django.test import TestCase, TransactionTestCase
 
 from hi.apps.attribute.enums import AttributeType
 from hi.apps.entity.models import Entity, EntityAttribute, EntityState
+from hi.apps.event.models import EventClause, EventDefinition
 from hi.apps.sense.models import Sensor
 from hi.apps.control.models import Controller
 from hi.integrations.integration_synchronizer import IntegrationSynchronizer
@@ -335,6 +336,67 @@ class IntegrationSynchronizerRemovalTestCase(TestCase):
         
         # User sensor should be preserved
         self.assertTrue(Sensor.objects.filter(id=user_sensor2.id).exists())
+
+    def test_sync_remove_no_user_data_removes_event_definition(self):
+        """Issue #288: sync-time refresh removal of an entity with no
+        user data takes the hard-delete branch; integration-owned
+        EventDefinitions referencing that entity must be cleaned up
+        even though Entity.delete()'s CASCADE only reaches the
+        EventClause child."""
+        event_def = EventDefinition.objects.create(
+            name='Sync Removal Alarm',
+            event_type_str='SECURITY',
+            event_window_secs=60,
+            dedupe_window_secs=300,
+            integration_id='test_integration',
+            integration_name='event_sync_removal',
+        )
+        EventClause.objects.create(
+            event_definition=event_def,
+            entity_state=self.entity_state,
+            value='active',
+        )
+
+        self.synchronizer._remove_entity_intelligently(
+            self.entity, self.result,
+        )
+
+        self.assertFalse(EventDefinition.objects.filter(id=event_def.id).exists())
+
+    def test_sync_remove_with_user_data_removes_integration_event_definition(self):
+        """Issue #288: sync-time refresh removal of a preserved entity
+        (entity stays, integration components stripped) must also
+        remove the integration-owned EventDefinition."""
+        EntityAttribute.objects.create(
+            entity=self.entity,
+            name='User Note',
+            value='retain me',
+            value_type_str='TEXT',
+            attribute_type_str=str(AttributeType.CUSTOM),
+        )
+        event_def = EventDefinition.objects.create(
+            name='Preserve Cycle Alarm',
+            event_type_str='SECURITY',
+            event_window_secs=60,
+            dedupe_window_secs=300,
+            integration_id='test_integration',
+            integration_name='event_preserve_cycle',
+        )
+        EventClause.objects.create(
+            event_definition=event_def,
+            entity_state=self.entity_state,
+            value='active',
+        )
+
+        self.synchronizer._remove_entity_intelligently(
+            self.entity, self.result,
+        )
+
+        # Entity preserved (user data branch), but the integration-owned
+        # EventDefinition was removed.
+        self.entity.refresh_from_db()
+        self.assertIsNone(self.entity.integration_id)
+        self.assertFalse(EventDefinition.objects.filter(id=event_def.id).exists())
 
     def test_remove_entity_with_no_states(self):
         """Test deletion of entity with no entity states."""

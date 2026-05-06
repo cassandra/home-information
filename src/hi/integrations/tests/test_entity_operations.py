@@ -13,6 +13,8 @@ from django.test import TestCase
 
 from hi.apps.attribute.enums import AttributeType, AttributeValueType
 from hi.apps.entity.models import Entity, EntityAttribute, EntityState, EntityStateDelegation
+from hi.apps.event.models import EventClause, EventDefinition
+from hi.apps.sense.models import Sensor
 from hi.integrations.entity_operations import EntityIntegrationOperations
 
 logging.disable(logging.CRITICAL)
@@ -533,3 +535,195 @@ class PreserveWithUserDataNamePreservationTests(TestCase):
         # Detached state is signaled by the previous_integration_* columns.
         self.assertEqual(entity.previous_integration_id, 'hass')
         self.assertIsNone(entity.integration_id)
+
+
+class EventDefinitionCleanupTests(TestCase):
+    """
+    Phase 2 wiring: preserve_with_user_data and the hard-delete branch
+    of remove_entities_with_closure must remove integration-owned
+    EventDefinitions for the affected entities. User-owned
+    EventDefinitions are intentionally left untouched (see policy in
+    EventDefinitionOperations).
+    """
+
+    INTEGRATION_ID = 'test_integration'
+    OTHER_INTEGRATION_ID = 'other_integration'
+
+    def _make_integration_entity(self, name, integration_id=INTEGRATION_ID):
+        entity = Entity.objects.create(
+            name=name,
+            entity_type_str='CAMERA',
+            integration_id=integration_id,
+            integration_name=f'device_{name}',
+        )
+        # Force the preserve path: give the entity user-created data.
+        EntityAttribute.objects.create(
+            entity=entity,
+            name='User Note',
+            value='retain me',
+            value_type_str=str(AttributeValueType.TEXT),
+            attribute_type_str=str(AttributeType.CUSTOM),
+        )
+        return entity
+
+    def _make_state_with_integration_sensor(self, entity):
+        # The integration sensor + state shape that converters produce.
+        # The sensor's integration_id presence is what
+        # EntityUserDataDetector uses to classify the state as
+        # integration-related (so it becomes orphaned and deleted on
+        # preserve).
+        state = EntityState.objects.create(
+            entity=entity,
+            entity_state_type_str='MOVEMENT',
+            name=f'{entity.name} Motion',
+        )
+        Sensor.objects.create(
+            entity_state=state,
+            name=f'{entity.name} Sensor',
+            sensor_type_str='DEFAULT',
+            integration_id=self.INTEGRATION_ID,
+            integration_name=f'sensor_{entity.name}',
+        )
+        return state
+
+    def _make_event_def(self, name, integration_id=INTEGRATION_ID):
+        return EventDefinition.objects.create(
+            name=name,
+            event_type_str='SECURITY',
+            event_window_secs=60,
+            dedupe_window_secs=300,
+            integration_id=integration_id,
+            integration_name=f'event_{name}' if integration_id else None,
+        )
+
+    def test_preserve_removes_integration_event_definition(self):
+        entity = self._make_integration_entity('cam')
+        state = self._make_state_with_integration_sensor(entity)
+        event_def = self._make_event_def('cam alarm')
+        EventClause.objects.create(
+            event_definition=event_def,
+            entity_state=state,
+            value='active',
+        )
+
+        EntityIntegrationOperations.preserve_with_user_data(
+            entity=entity,
+            integration_name=self.INTEGRATION_ID,
+        )
+
+        self.assertFalse(EventDefinition.objects.filter(id=event_def.id).exists())
+
+    def test_preserve_leaves_user_event_definition_untouched(self):
+        # User-owned EventDefinition referencing the entity's state must
+        # survive disconnect. This documents the deferred gap: the
+        # CASCADE on EventClause.entity_state will still delete the
+        # clause when the orphaned state is deleted, leaving the
+        # EventDefinition silently semantically changed — that broader
+        # UX issue is out of scope here.
+        entity = self._make_integration_entity('cam')
+        state = self._make_state_with_integration_sensor(entity)
+        user_event_def = self._make_event_def('user rule', integration_id=None)
+        EventClause.objects.create(
+            event_definition=user_event_def,
+            entity_state=state,
+            value='active',
+        )
+
+        EntityIntegrationOperations.preserve_with_user_data(
+            entity=entity,
+            integration_name=self.INTEGRATION_ID,
+        )
+
+        self.assertTrue(EventDefinition.objects.filter(id=user_event_def.id).exists())
+
+    def test_preserve_leaves_other_integration_event_definition_untouched(self):
+        entity = self._make_integration_entity('cam')
+        state = self._make_state_with_integration_sensor(entity)
+        other_event_def = self._make_event_def(
+            'other', integration_id=self.OTHER_INTEGRATION_ID,
+        )
+        EventClause.objects.create(
+            event_definition=other_event_def,
+            entity_state=state,
+            value='active',
+        )
+
+        EntityIntegrationOperations.preserve_with_user_data(
+            entity=entity,
+            integration_name=self.INTEGRATION_ID,
+        )
+
+        self.assertTrue(EventDefinition.objects.filter(id=other_event_def.id).exists())
+
+    def test_hard_delete_removes_integration_event_definition(self):
+        # No user data → remove_entities_with_closure takes the
+        # hard-delete branch. Without the explicit cleanup, CASCADE
+        # from Entity.delete() reaches EventClause but stops short
+        # of EventDefinition.
+        entity = Entity.objects.create(
+            name='cam',
+            entity_type_str='CAMERA',
+            integration_id=self.INTEGRATION_ID,
+            integration_name='device_cam',
+        )
+        state = EntityState.objects.create(
+            entity=entity,
+            entity_state_type_str='MOVEMENT',
+        )
+        event_def = self._make_event_def('cam alarm')
+        EventClause.objects.create(
+            event_definition=event_def,
+            entity_state=state,
+            value='active',
+        )
+
+        EntityIntegrationOperations.remove_entities_with_closure(
+            seed_entity_ids=[entity.id],
+            integration_name=self.INTEGRATION_ID,
+            preserve_user_data=False,
+        )
+
+        self.assertFalse(Entity.objects.filter(id=entity.id).exists())
+        self.assertFalse(EventDefinition.objects.filter(id=event_def.id).exists())
+
+    def test_closure_expansion_removes_event_definitions_on_delegate(self):
+        # remove_entities_with_closure pulls in delegate entities. A
+        # delegate's own integration-owned EventDefinitions must be
+        # removed too — the cleanup is per-entity inside the loop.
+        principal = Entity.objects.create(
+            name='principal',
+            entity_type_str='CAMERA',
+            integration_id=self.INTEGRATION_ID,
+            integration_name='principal_device',
+        )
+        principal_state = EntityState.objects.create(
+            entity=principal, entity_state_type_str='DISCRETE',
+        )
+        delegate = Entity.objects.create(
+            name='delegate',
+            entity_type_str='AREA',
+            integration_id=self.INTEGRATION_ID,
+            integration_name='delegate_device',
+        )
+        EntityStateDelegation.objects.create(
+            entity_state=principal_state,
+            delegate_entity=delegate,
+        )
+        delegate_state = EntityState.objects.create(
+            entity=delegate, entity_state_type_str='MOVEMENT',
+        )
+        delegate_event_def = self._make_event_def('delegate alarm')
+        EventClause.objects.create(
+            event_definition=delegate_event_def,
+            entity_state=delegate_state,
+            value='active',
+        )
+
+        EntityIntegrationOperations.remove_entities_with_closure(
+            seed_entity_ids=[principal.id],
+            integration_name=self.INTEGRATION_ID,
+            preserve_user_data=False,
+        )
+
+        self.assertFalse(Entity.objects.filter(id__in=[principal.id, delegate.id]).exists())
+        self.assertFalse(EventDefinition.objects.filter(id=delegate_event_def.id).exists())

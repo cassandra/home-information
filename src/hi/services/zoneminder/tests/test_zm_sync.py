@@ -4,9 +4,12 @@ import os
 from unittest.mock import Mock, patch, call
 from django.test import TestCase
 
-from hi.apps.entity.models import Entity
+from hi.apps.attribute.enums import AttributeType, AttributeValueType
+from hi.apps.entity.models import Entity, EntityAttribute
+from hi.apps.event.models import EventDefinition
 from hi.apps.sense.models import Sensor
 
+from hi.integrations.entity_operations import EntityIntegrationOperations
 from hi.integrations.integration_manager import IntegrationManager
 from hi.integrations.sync_result import IntegrationSyncResult
 from hi.integrations.transient_models import IntegrationKey
@@ -1111,3 +1114,124 @@ class CreateMonitorEntityReconnectContractTests(TestCase):
         self.assertEqual(existing.integration_id, ZmMetaData.integration_id)
         self.assertEqual(existing.integration_name, 'monitor.101')
         self.assertTrue(existing.has_video_stream)
+
+
+class EventDefinitionLifecycleCycleTests(TestCase):
+    """
+    Issue #288 Phase 3: end-to-end EventDefinition lifecycle across
+    disable/re-enable cycles. Verifies that integration-owned
+    EventDefinitions return to a stable count (one per monitor) instead
+    of accumulating across cycles, on both the hard-delete path and
+    the preserve-and-reconnect path.
+    """
+
+    MONITOR_ID = 77
+
+    def setUp(self):
+        # IntegrationManager is a process-wide singleton; reset its
+        # in-memory state so prior tests in the suite cannot pollute
+        # ours (and ours cannot pollute theirs).
+        IntegrationManager().reset_for_testing()
+
+        self.synchronizer = ZoneMinderSynchronizer()
+
+        self.mock_manager = Mock()
+        self.mock_manager.ZM_MONITOR_INTEGRATION_NAME_PREFIX = 'monitor'
+        self.mock_manager.MOVEMENT_SENSOR_PREFIX = 'monitor.motion'
+        self.mock_manager.MONITOR_FUNCTION_SENSOR_PREFIX = 'monitor.function'
+        self.mock_manager.MOVEMENT_EVENT_PREFIX = 'monitor.motion'
+        # Alarm event creation must be on for this test class — that's
+        # what we're exercising.
+        self.mock_manager.should_add_alarm_events = True
+
+        def make_key(prefix, zm_monitor_id):
+            return IntegrationKey(
+                integration_id=ZmMetaData.integration_id,
+                integration_name=f'{prefix}.{zm_monitor_id}',
+            )
+        self.mock_manager._to_integration_key.side_effect = make_key
+
+        self.synchronizer._zm_manager = self.mock_manager
+
+    def _mock_monitor(self, monitor_id=None, name='Driveway'):
+        monitor = Mock()
+        monitor.id.return_value = monitor_id if monitor_id is not None else self.MONITOR_ID
+        monitor.name.return_value = name
+        return monitor
+
+    def _create_monitor(self, name='Driveway'):
+        result = IntegrationSyncResult(title='Create')
+        return self.synchronizer._create_monitor_entity(
+            zm_monitor=self._mock_monitor(name=name),
+            result=result,
+        )
+
+    def _zm_event_def_count(self):
+        return EventDefinition.objects.filter(
+            integration_id=ZmMetaData.integration_id,
+        ).count()
+
+    def test_hard_delete_then_recreate_cycle_baseline_count(self):
+        # Cycle: create, hard-delete, recreate. Without Phase 2 cleanup
+        # the EventDefinition would accumulate; with it, count returns
+        # to exactly one.
+        self._create_monitor()
+        self.assertEqual(self._zm_event_def_count(), 1)
+
+        # Take the hard-delete branch (no user data on the entity).
+        EntityIntegrationOperations.remove_entities_with_closure(
+            seed_entity_ids=[
+                Entity.objects.get(integration_id=ZmMetaData.integration_id).id,
+            ],
+            integration_name=ZmMetaData.integration_id,
+            preserve_user_data=False,
+        )
+        self.assertEqual(self._zm_event_def_count(), 0)
+
+        # Recreate (next sync sees the monitor as new).
+        self._create_monitor()
+        self.assertEqual(self._zm_event_def_count(), 1)
+
+        # One more cycle to be sure we're not just clean-on-first-loop.
+        EntityIntegrationOperations.remove_entities_with_closure(
+            seed_entity_ids=[
+                Entity.objects.get(integration_id=ZmMetaData.integration_id).id,
+            ],
+            integration_name=ZmMetaData.integration_id,
+            preserve_user_data=False,
+        )
+        self._create_monitor()
+        self.assertEqual(self._zm_event_def_count(), 1)
+
+    def test_preserve_then_reconnect_cycle_baseline_count(self):
+        # Cycle: create, preserve-disconnect (user data forces SAFE
+        # branch), reconnect via _rebuild_integration_components.
+        # End state: exactly one integration-owned EventDefinition.
+        entity = self._create_monitor()
+        EntityAttribute.objects.create(
+            entity=entity,
+            name='User Note',
+            value='retain me',
+            value_type_str=str(AttributeValueType.TEXT),
+            attribute_type_str=str(AttributeType.CUSTOM),
+        )
+        self.assertEqual(self._zm_event_def_count(), 1)
+
+        # SAFE path: preserve_with_user_data should remove the
+        # integration EventDefinition.
+        EntityIntegrationOperations.preserve_with_user_data(
+            entity=entity,
+            integration_name=ZmMetaData.integration_id,
+        )
+        self.assertEqual(self._zm_event_def_count(), 0)
+
+        # Reconnect path uses the same converter as fresh-create with
+        # entity=existing. Should recreate exactly one EventDefinition.
+        entity.refresh_from_db()
+        result = IntegrationSyncResult(title='Reconnect')
+        self.synchronizer._rebuild_integration_components(
+            entity=entity,
+            upstream=self._mock_monitor(),
+            result=result,
+        )
+        self.assertEqual(self._zm_event_def_count(), 1)

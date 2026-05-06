@@ -4,6 +4,14 @@ Operations on entities with respect to their integration attachment.
 This module holds mutating operations (disconnect, preserve, detach) that
 act on Entity instances relative to the integration that owns them. These
 are distinct from the read-only analytical methods on EntityUserDataDetector.
+
+EventDefinition cleanup (Issue #288) is integration-scoped and is
+invoked here from both ``preserve_with_user_data`` and the hard-delete
+branch of ``remove_entities_with_closure``. See
+``EventDefinitionOperations`` for the policy: only EventDefinition rows
+whose own ``integration_id`` matches are removed; user-owned
+EventDefinitions referencing the entity's states are intentionally
+left alone (deferred to the broader EventDefinition UX redesign).
 """
 
 import logging
@@ -16,6 +24,7 @@ from hi.apps.entity.models import Entity, EntityState, EntityStateDelegation
 from hi.apps.sense.models import Sensor
 from hi.apps.control.models import Controller
 
+from .event_definition_operations import EventDefinitionOperations
 from .sync_result import IntegrationSyncResult
 from .transient_models import IntegrationKey, IntegrationRemovalSummary
 from .user_data_detector import EntityUserDataDetector
@@ -156,6 +165,13 @@ class EntityIntegrationOperations:
             else:
                 if result is not None:
                     result.removed_list.append( entity.name )
+                # Django's DB-level CASCADE from Entity.delete() reaches
+                # EventClause / ControlAction (the children) but stops
+                # there — the parent EventDefinition row is never
+                # touched. Delete integration-owned EventDefinitions
+                # for this entity first, then let CASCADE handle the
+                # rest of the entity graph.
+                EventDefinitionOperations.delete_for_entity( entity )
                 entity.delete()
         return
 
@@ -270,14 +286,22 @@ class EntityIntegrationOperations:
         Preserve an entity with user-created data by disconnecting it
         from its integration and removing only integration-related
         components (sensors, controllers, orphaned states,
-        integration-owned attributes). The entity's previous
-        integration identity is recorded on the entity so the
-        auto-reconnect path can recognize it if the same upstream
-        key reappears later. The detached state is signaled
-        structurally — ``integration_id`` becomes NULL and
-        ``previous_integration_id`` carries the prior identity — and
-        surfaced to the operator via a "Detached from <integration>"
-        badge in the entity-detail UI.
+        integration-owned attributes, integration-owned
+        EventDefinitions). The entity's previous integration identity
+        is recorded on the entity so the auto-reconnect path can
+        recognize it if the same upstream key reappears later. The
+        detached state is signaled structurally — ``integration_id``
+        becomes NULL and ``previous_integration_id`` carries the prior
+        identity — and surfaced to the operator via a "Detached from
+        <integration>" badge in the entity-detail UI.
+
+        Issue #288: integration-owned EventDefinitions are removed
+        first inside the atomic block via
+        ``EventDefinitionOperations.delete_for_entity``. User-owned
+        EventDefinitions (``integration_id IS NULL``) referencing this
+        entity's states are intentionally NOT touched here — the
+        broader UX of broken/partial user rules is deferred to a
+        separate redesign.
 
         Args:
             entity: The Entity to preserve.
@@ -297,6 +321,15 @@ class EntityIntegrationOperations:
         )
 
         with transaction.atomic():
+            # Remove integration-owned EventDefinitions for this entity.
+            # Done first so the parent rows are gone before the states/
+            # controllers they reference are deleted below; CASCADE on
+            # EventClause/ControlAction reaches only the children, so
+            # parents must be removed explicitly here. See
+            # EventDefinitionOperations docstring for the integration-
+            # scoped policy.
+            EventDefinitionOperations.delete_for_entity( entity )
+
             # Remove integration-related sensors
             if sensor_ids_to_remove:
                 removed_sensor_count = Sensor.objects.filter(
