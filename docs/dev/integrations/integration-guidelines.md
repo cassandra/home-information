@@ -36,6 +36,30 @@ Implement `IntegrationGateway` with required methods:
 ### 5. Register with Factory
 Add gateway mapping in `hi/integrations/integration_factory.py`
 
+### 6. Write Per-Integration Documentation
+Every user-configured integration MUST ship with two short docs based
+on the templates:
+
+- **User-facing**: copy [`docs/integrations/_template.md`](../../integrations/_template.md)
+  to `docs/integrations/<integration-name>.md` and fill in all seven
+  sections (Overview, Prerequisites, Obtaining credentials,
+  Configuration values, Setup walkthrough, Troubleshooting, Known
+  limitations).
+- **Developer-facing**: copy [`_template.md`](_template.md) to
+  `docs/dev/integrations/<integration-name>.md` and fill in all six
+  sections (Overview, Key modules, API patterns, Implementation
+  notes, Testing approach, References). Keep it high-level and refer
+  to the code for details — the code is the authoritative source.
+
+After creating both docs, add a one-paragraph entry plus a link in
+the user-facing landing page at [`docs/Integrations.md`](../../Integrations.md).
+
+> **Internal data sources** like the Weather subsystem
+> (`docs/dev/integrations/weather-integration.md`) do not require
+> per-integration user-facing docs — they are not user-configured in
+> the integration sense. The template structure above applies only to
+> integrations that appear on the Settings → Integrations page.
+
 ## Gateway Implementation Patterns
 
 ### Gateway Methods
