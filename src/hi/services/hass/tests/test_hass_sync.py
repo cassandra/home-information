@@ -364,12 +364,20 @@ class TestHassSynchronizerSyncResultGrouping(TestCase):
         self.assertEqual(placement_input.groups[0].items[0].key, 'hass:camera.front')
 
 
-class TestHassSynchronizerCheckNeedsSync(TestCase):
+from hi.testing.async_task_utils import AsyncTaskTestCase
+
+
+class TestHassSynchronizerCheckNeedsSync(AsyncTaskTestCase):
     """Issue #283 — sync-check probe shape for Home Assistant.
 
     Pins the contract that the upstream key set is *post-allowlist*
     (so the count matches what Refresh would actually import) and
     that the comparison is over aggregated HassDevice ids.
+
+    Uses real Entity rows for the HI side so the probe's
+    ``Entity.objects.filter(...)`` query path is exercised end-to-end.
+    Only the upstream HTTP boundary
+    (``fetch_hass_states_from_api_async``) is mocked.
     """
 
     def _hass_key(self, name: str):
@@ -380,8 +388,17 @@ class TestHassSynchronizerCheckNeedsSync(TestCase):
             integration_name=name,
         )
 
-    def _run_check(self, hass_states_payload, current_keys, allowlist=''):
-        import asyncio
+    def _make_hass_entities(self, integration_names):
+        from hi.services.hass.hass_metadata import HassMetaData
+        for name in integration_names:
+            Entity.objects.create(
+                name=f'HASS Device {name}',
+                entity_type_str='LIGHT',
+                integration_id=HassMetaData.integration_id,
+                integration_name=name,
+            )
+
+    def _run_check(self, hass_states_payload, allowlist=''):
         synchronizer = HassSynchronizer()
         manager = Mock()
         manager.import_allowlist = allowlist
@@ -394,14 +411,8 @@ class TestHassSynchronizerCheckNeedsSync(TestCase):
         async def get_manager():
             return manager
 
-        with ( patch.object( synchronizer,
-                             'hass_manager_async',
-                             side_effect=get_manager ),
-               patch.object( HassSynchronizer,
-                             '_get_current_integration_keys',
-                             return_value=current_keys ),
-               ):
-            return asyncio.run(synchronizer.check_needs_sync())
+        with patch.object(synchronizer, 'hass_manager_async', side_effect=get_manager):
+            return self.run_async(synchronizer.check_needs_sync())
 
     def _hass_state(self, entity_id):
         """Build a minimal valid HassState via the converter helper."""
@@ -417,18 +428,19 @@ class TestHassSynchronizerCheckNeedsSync(TestCase):
         })
 
     def test_in_sync_when_upstream_devices_match_hi(self):
+        self._make_hass_entities(['kitchen', 'hall'])
         states = {
             'switch.kitchen': self._hass_state('switch.kitchen'),
             'switch.hall': self._hass_state('switch.hall'),
         }
         delta = self._run_check(
             hass_states_payload=states,
-            current_keys={self._hass_key('kitchen'), self._hass_key('hall')},
             allowlist='switch',
         )
         self.assertFalse(delta.needs_sync)
 
     def test_upstream_added_appears_in_delta(self):
+        self._make_hass_entities(['kitchen', 'hall'])
         states = {
             'switch.kitchen': self._hass_state('switch.kitchen'),
             'switch.hall': self._hass_state('switch.hall'),
@@ -436,19 +448,18 @@ class TestHassSynchronizerCheckNeedsSync(TestCase):
         }
         delta = self._run_check(
             hass_states_payload=states,
-            current_keys={self._hass_key('kitchen'), self._hass_key('hall')},
             allowlist='switch',
         )
         self.assertEqual(delta.added, {self._hass_key('garage')})
         self.assertEqual(delta.removed, set())
 
     def test_upstream_removed_appears_in_delta(self):
+        self._make_hass_entities(['kitchen', 'hall'])
         states = {
             'switch.kitchen': self._hass_state('switch.kitchen'),
         }
         delta = self._run_check(
             hass_states_payload=states,
-            current_keys={self._hass_key('kitchen'), self._hass_key('hall')},
             allowlist='switch',
         )
         self.assertEqual(delta.added, set())
@@ -458,25 +469,24 @@ class TestHassSynchronizerCheckNeedsSync(TestCase):
         # HA exposes a switch and a sensor; allowlist only allows
         # switch. The sensor should not appear in the upstream set,
         # so a HI side without 'weather' is still in sync.
+        self._make_hass_entities(['kitchen'])
         states = {
             'switch.kitchen': self._hass_state('switch.kitchen'),
             'sensor.weather': self._hass_state('sensor.weather'),
         }
         delta = self._run_check(
             hass_states_payload=states,
-            current_keys={self._hass_key('kitchen')},
             allowlist='switch',
         )
         self.assertFalse(delta.needs_sync)
 
     def test_returns_none_when_manager_not_ready(self):
-        import asyncio
         synchronizer = HassSynchronizer()
 
         async def get_manager():
             return None
 
         with patch.object(synchronizer, 'hass_manager_async', side_effect=get_manager):
-            result = asyncio.run(synchronizer.check_needs_sync())
+            result = self.run_async(synchronizer.check_needs_sync())
 
         self.assertIsNone(result)

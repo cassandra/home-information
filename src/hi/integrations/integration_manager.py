@@ -61,9 +61,11 @@ class IntegrationManager( Singleton ):
         """
         self._integration_data_map.clear()
         self._monitor_map.clear()
-        if self._sync_check_monitor is not None:
-            self._sync_check_monitor.stop()
+        with self._data_lock:
+            sync_check_monitor = self._sync_check_monitor
             self._sync_check_monitor = None
+        if sync_check_monitor is not None:
+            sync_check_monitor.stop()
         return
 
     def get_integration_data_list( self, enabled_only = False ) -> List[ IntegrationData ]:
@@ -139,10 +141,10 @@ class IntegrationManager( Singleton ):
         them alongside the per-integration list so they don't go
         invisible. Returned in a stable order; missing entries simply
         mean those monitors have not been started yet."""
-        providers = []
-        if self._sync_check_monitor is not None:
-            providers.append( self._sync_check_monitor )
-        return providers
+        with self._data_lock:
+            if self._sync_check_monitor is None:
+                return []
+            return [ self._sync_check_monitor ]
 
     def get_health_status_provider_map(self) -> Dict[str, HealthStatusProvider]:
         """Snapshot of running monitors keyed by integration_id.
@@ -181,9 +183,14 @@ class IntegrationManager( Singleton ):
             logger.debug( f'Stopping integration monitor: {integration_id}' )
             monitor.stop()
             continue
-        if self._sync_check_monitor is not None:
+        # Snapshot the slot under the lock; release before calling
+        # stop() so we don't hold the threading lock across a
+        # stop() that just toggles a flag (cheap, but kept clean).
+        with self._data_lock:
+            sync_check_monitor = self._sync_check_monitor
+        if sync_check_monitor is not None:
             logger.debug( 'Stopping sync-check monitor.' )
-            self._sync_check_monitor.stop()
+            sync_check_monitor.stop()
         return
         
     async def _load_integration_data(self) -> None:
@@ -250,6 +257,11 @@ class IntegrationManager( Singleton ):
             logger.debug( 'Skipping sync-check monitor. See SUPPRESS_MONITORS = True' )
             return
 
+        # No explicit lock: ``initialize`` is the sole caller and
+        # already holds ``self._data_lock`` for its entire async
+        # body. ``_data_lock`` is a non-reentrant ``threading.Lock``,
+        # so re-acquiring it here would deadlock the initialization
+        # path.
         self._sync_check_monitor = IntegrationSyncCheckMonitor()
         logger.debug( 'Starting sync-check monitor.' )
         asyncio.create_task(

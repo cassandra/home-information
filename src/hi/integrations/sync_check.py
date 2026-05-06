@@ -154,7 +154,22 @@ class IntegrationSyncCheck:
         stopped monitor cannot leave forever-old state visible. Fires
         a transition alarm when the recorded state moves from
         no-prior / in-sync to needs-sync (see ``_should_alarm``);
-        in-progress drift does not re-alarm cycle after cycle."""
+        in-progress drift does not re-alarm cycle after cycle.
+
+        Concurrency: this is a read-modify-write on the cache without
+        a lock. The two callers — the framework monitor's probe cycle
+        and ``record_sync_complete`` via the synchronizer's post-sync
+        hook — can theoretically run concurrently if a user-triggered
+        Refresh overlaps a probe cycle. By inspection the
+        interleavings are benign: duplicate-direction races (both
+        writers see prior=clean and call ``_fire_needs_sync_alarm``)
+        collapse to a single alert via ``AlertManager``'s
+        signature-based dedup, and opposite-direction races worst
+        case fire a stale alarm for drift that was just cleared
+        — dismissable, rare, no correctness impact. A Redis lock
+        would prevent it but trades real cache-backend portability
+        risk (LocMemCache in tests) for a marginal UX win, so we
+        intentionally do not lock here."""
         if not integration_id:
             return
         prior = cls.get_state( integration_id )
@@ -207,8 +222,9 @@ class IntegrationSyncCheck:
         into the needs-sync state. Per-integration unique signature
         (``integrations.needs_sync.<integration_id>``) so two
         integrations both reporting drift surface as two distinct
-        alerts. Lifetime is 0 (until acknowledged) — matches the
-        codebase convention for INFO-level monitor alarms."""
+        alerts. Lifetime is ``Alarm.MAX_LIFETIME_SECS`` — the
+        canonical "until acknowledged" value (see
+        ``hi/apps/alert/alarm.py``)."""
         from hi.apps.alert.alarm import Alarm
         from hi.apps.alert.alert_manager import AlertManager
         from hi.apps.alert.enums import AlarmLevel, AlarmSource
