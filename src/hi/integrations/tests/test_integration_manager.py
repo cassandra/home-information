@@ -10,7 +10,8 @@ from unittest.mock import Mock, AsyncMock, patch
 from django.test import TestCase
 
 from hi.apps.attribute.enums import AttributeType, AttributeValueType
-from hi.apps.entity.models import Entity, EntityAttribute
+from hi.apps.entity.models import Entity, EntityAttribute, EntityState
+from hi.apps.event.models import EventClause, EventDefinition
 from hi.integrations.exceptions import IntegrationConnectionError
 from hi.integrations.integration_manager import IntegrationManager
 from hi.integrations.integration_data import IntegrationData
@@ -711,6 +712,118 @@ class IntegrationManagerTestCase(TestCase):
 
         # Configuration attributes retained even when entities all deleted.
         self.assertEqual(integration.attributes.count(), 1)
+
+    def _attach_integration_event_def(self, entity, integration_id, name='alarm'):
+        """Attach an integration-owned EventDefinition referencing one of
+        the entity's states. Used by the disable-EventDefinition-cleanup
+        regression tests below."""
+        state = EntityState.objects.create(
+            entity=entity,
+            entity_state_type_str='MOVEMENT',
+            name=f'{entity.name} State',
+        )
+        event_def = EventDefinition.objects.create(
+            name=name,
+            event_type_str='SECURITY',
+            event_window_secs=60,
+            dedupe_window_secs=300,
+            integration_id=integration_id,
+            integration_name=f'event_{entity.id}',
+        )
+        EventClause.objects.create(
+            event_definition=event_def,
+            entity_state=state,
+            value='active',
+        )
+        return event_def
+
+    def test_disable_safe_removes_integration_event_definitions(self):
+        """Issue #288: SAFE-disable removes integration-owned EventDefinitions
+        for both hard-deleted (no user data) and preserved (user data)
+        entities. The cleanup happens via EntityIntegrationOperations
+        regardless of which branch the entity takes."""
+        manager = IntegrationManager()
+        manager.reset_for_testing()
+
+        integration_id = 'disable_safe_event_def_test'
+        _, data, integration_only_entity, user_data_entity = (
+            self._make_integration_with_entities(integration_id, include_user_data_entity=True)
+        )
+        no_user_event_def = self._attach_integration_event_def(
+            integration_only_entity, integration_id, name='no_user_alarm',
+        )
+        preserve_event_def = self._attach_integration_event_def(
+            user_data_entity, integration_id, name='preserve_alarm',
+        )
+
+        with patch.object(manager, '_stop_integration_monitor'):
+            manager.disable_integration(data, mode=IntegrationDisableMode.SAFE)
+
+        self.assertFalse(EventDefinition.objects.filter(id=no_user_event_def.id).exists())
+        self.assertFalse(EventDefinition.objects.filter(id=preserve_event_def.id).exists())
+
+    def test_disable_all_removes_integration_event_definitions(self):
+        """Issue #288: ALL-disable hard-deletes every entity and must also
+        remove all integration-owned EventDefinitions. CASCADE from
+        Entity.delete() reaches the children but stops short of the
+        EventDefinition parent — explicit cleanup in the hard-delete
+        branch covers it."""
+        manager = IntegrationManager()
+        manager.reset_for_testing()
+
+        integration_id = 'disable_all_event_def_test'
+        _, data, integration_only_entity, user_data_entity = (
+            self._make_integration_with_entities(integration_id, include_user_data_entity=True)
+        )
+        event_def_a = self._attach_integration_event_def(
+            integration_only_entity, integration_id, name='alarm_a',
+        )
+        event_def_b = self._attach_integration_event_def(
+            user_data_entity, integration_id, name='alarm_b',
+        )
+
+        with patch.object(manager, '_stop_integration_monitor'):
+            manager.disable_integration(data, mode=IntegrationDisableMode.ALL)
+
+        self.assertFalse(EventDefinition.objects.filter(
+            id__in=[event_def_a.id, event_def_b.id],
+        ).exists())
+
+    def test_disable_does_not_touch_other_integration_event_definitions(self):
+        """Disabling one integration must not collateral-remove
+        EventDefinitions owned by another integration, even when the
+        other integration's EventDefinitions reference entity states
+        that share names with the disconnecting integration's."""
+        manager = IntegrationManager()
+        manager.reset_for_testing()
+
+        integration_id = 'disable_isolation_test'
+        _, data, integration_only_entity, _ = (
+            self._make_integration_with_entities(
+                integration_id, include_user_data_entity=False,
+            )
+        )
+        target_event_def = self._attach_integration_event_def(
+            integration_only_entity, integration_id, name='target',
+        )
+
+        # Independent entity + EventDefinition owned by a different
+        # integration — must survive.
+        other_entity = Entity.objects.create(
+            name='Other Integration Entity',
+            entity_type_str='LIGHT',
+            integration_id='other_integration',
+            integration_name='other_device',
+        )
+        other_event_def = self._attach_integration_event_def(
+            other_entity, 'other_integration', name='other',
+        )
+
+        with patch.object(manager, '_stop_integration_monitor'):
+            manager.disable_integration(data, mode=IntegrationDisableMode.ALL)
+
+        self.assertFalse(EventDefinition.objects.filter(id=target_event_def.id).exists())
+        self.assertTrue(EventDefinition.objects.filter(id=other_event_def.id).exists())
 
     def test_disable_integration_stops_monitor_before_entity_changes(self):
         """Monitors must stop before any entity mutation to avoid races with sync."""
