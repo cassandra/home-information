@@ -1,5 +1,5 @@
 {% extends "config/pages/config_base.html" %}
-{% load icons %}
+{% load icons integration_tags static %}
 
 {% block config_content %}
 <div class="container-fluid">
@@ -41,6 +41,10 @@
                data-async="modal" >
               {{ event_definition.name }}
             </a>
+            {% if event_definition.integration_id %}
+            {% integration_logo_path event_definition as logo_path %}
+            {% if logo_path %}<img src="{% static logo_path %}" class="hi-integration-logo--inline ml-1" alt="{% integration_display_name event_definition %}" title="{% integration_display_name event_definition %}">{% endif %}
+            {% endif %}
           </td>
           <td>
             {{ event_definition.event_type.label }}
