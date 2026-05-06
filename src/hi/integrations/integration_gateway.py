@@ -53,6 +53,11 @@ class IntegrationGateway:
         (pre-sync confirmation, sync execution, post-sync placement);
         the synchronizer participates by providing the integration-
         specific work plus a small amount of peripheral metadata.
+
+        The Issue #283 sync-check probe also rides on the synchronizer
+        (see ``IntegrationSynchronizer.check_needs_sync``): integrations
+        without a synchronizer naturally opt out of both full sync and
+        the periodic drift check.
         """
         return None
 

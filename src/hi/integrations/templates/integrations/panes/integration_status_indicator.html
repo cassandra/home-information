@@ -1,17 +1,21 @@
 {% load icons %}
 {% comment %}
 Compact integration-status indicator — small icon + tooltip, no label.
-Composes HealthStatus and the integration's is_paused flag into a
-single attention-grabbing glyph for the sidebar nav-tab.
+Composes HealthStatus, the integration's is_paused flag, and the
+Issue #283 sync-check state into a single attention-grabbing glyph
+for the sidebar nav-tab.
 
 Parameters:
-  health_status   : HealthStatus instance (required).
-  is_paused       : bool — integration's is_paused flag (required).
+  health_status      : HealthStatus instance (required).
+  is_paused          : bool — integration's is_paused flag (required).
+  sync_check_result  : SyncCheckResult or None (optional) — Issue #283
+                       sync-check state for this integration.
 
 Visual priority (worst-of):
-  ERROR   > WARNING  > paused
-HEALTHY-and-not-paused renders nothing — sidebar should be visually
-clean when there is nothing to draw the operator's attention to.
+  ERROR > WARNING > paused > needs-sync
+HEALTHY-and-not-paused-and-in-sync renders nothing — sidebar should
+be visually clean when there is nothing to draw the operator's
+attention to.
 
 DISABLED is intentionally not handled — disabled integrations are
 excluded from the sidebar tab list upstream.
@@ -40,6 +44,13 @@ UNKNOWN is intentionally not handled — initialization edge, transient.
         aria-label="Paused — background monitor is suspended"
         title="Paused — background monitor is suspended">
     {% icon "pause" size="sm" %}
+  </span>
+{% elif sync_check_result.needs_sync %}
+  <span class="hi-integration-indicator hi-integration-indicator-needs-sync"
+        role="img"
+        aria-label="{{ sync_check_result.summary_message }}"
+        title="{{ sync_check_result.summary_message }}">
+    {% icon "sync" size="sm" %}
   </span>
 {% endif %}
 {% endwith %}

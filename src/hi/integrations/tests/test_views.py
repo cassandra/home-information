@@ -1165,3 +1165,127 @@ class RefineViewTests(SyncViewTestCase):
             'integrations_refine', kwargs={'location_view_id': 99999},
         ))
         self.assertEqual(response.status_code, 404)
+
+
+class _RenderableManageViewPane:
+    """Minimal stand-in for an IntegrationManageViewPane that points
+    at an existing empty per-integration template so the manage view
+    can render in tests without a real per-integration pane wired
+    in. Reuses ``homebox/panes/hb_manage.html`` (a documented empty
+    extension-point template) rather than introducing a test-only
+    template file."""
+
+    def get_template_name(self):
+        return 'homebox/panes/hb_manage.html'
+
+    def get_template_context(self, integration_data):
+        return {}
+
+
+class _RenderableGateway(_SyncCapableGateway):
+    """``_SyncCapableGateway`` plus a real ManageViewPane so the
+    full IntegrationManageView render path works."""
+
+    def get_manage_view_pane(self):
+        return _RenderableManageViewPane()
+
+
+class IntegrationManageViewSyncCheckContextTests(SyncViewTestCase):
+    """Issue #283 — wire-up tests for the sync-check state on the
+    integration manage page. Pins:
+      * banner renders when the active integration's cached
+        SyncCheckResult reports needs_sync;
+      * banner does NOT render when there is no cache state or
+        the cache reports in-sync.
+    """
+
+    INTEGRATION_ID = 'sync_check_view_test'
+
+    def setUp(self):
+        super().setUp()
+        from django.core.cache import cache
+        IntegrationManager().reset_for_testing()
+        cache.clear()
+
+        self.integration = Integration.objects.create(
+            integration_id=self.INTEGRATION_ID,
+            is_enabled=True,
+            is_paused=False,
+        )
+        self.gateway = _RenderableGateway(integration_id=self.INTEGRATION_ID)
+        IntegrationManager()._integration_data_map[self.INTEGRATION_ID] = IntegrationData(
+            integration_gateway=self.gateway,
+            integration=self.integration,
+        )
+
+    def tearDown(self):
+        from django.core.cache import cache
+        cache.clear()
+        super().tearDown()
+
+    def _url(self):
+        return reverse(
+            'integrations_manage',
+            kwargs={'integration_id': self.INTEGRATION_ID},
+        )
+
+    def test_banner_renders_when_sync_check_reports_drift(self):
+        from hi.integrations.sync_check import (
+            IntegrationSyncCheck,
+            SyncDelta,
+        )
+        from hi.integrations.transient_models import IntegrationKey
+        IntegrationSyncCheck.set_state(
+            integration_id=self.INTEGRATION_ID,
+            result=IntegrationSyncCheck.build_result(
+                delta=SyncDelta(added={
+                    IntegrationKey(integration_id=self.INTEGRATION_ID,
+                                   integration_name='item-1'),
+                }),
+                integration_label='Sync View Test Integration',
+            ),
+        )
+
+        response = self.client.get(self._url())
+        self.assertSuccessResponse(response)
+        body = response.content.decode()
+        self.assertIn('1 new item upstream', body)
+        # The "REFRESH" call-to-action is rendered as an inline
+        # anchor that links to the pre-sync modal, so the rendered
+        # HTML carries both the link text and the URL.
+        self.assertIn(
+            reverse('integrations_pre_sync',
+                    kwargs={'integration_id': self.INTEGRATION_ID}),
+            body,
+        )
+        self.assertIn('>REFRESH</a>', body)
+
+    def _refresh_link_url(self):
+        return reverse(
+            'integrations_pre_sync',
+            kwargs={'integration_id': self.INTEGRATION_ID},
+        )
+
+    def test_no_banner_when_no_cache_state(self):
+        # Fresh server, probe has not yet run — manage page should
+        # render cleanly without the inline-Refresh banner. (The
+        # standalone REFRESH button at the page header is unaffected
+        # — it is the banner-link variant that should be absent.)
+        response = self.client.get(self._url())
+        self.assertSuccessResponse(response)
+        body = response.content.decode()
+        self.assertNotIn('upstream', body)
+
+    def test_no_banner_when_in_sync(self):
+        # Probe has run and confirmed in-sync (zero-delta); the
+        # banner is gated on needs_sync, so it must not appear.
+        from hi.integrations.sync_check import IntegrationSyncCheck
+        IntegrationSyncCheck.record_sync_complete(
+            integration_id=self.INTEGRATION_ID,
+            integration_label='Sync View Test Integration',
+        )
+
+        response = self.client.get(self._url())
+        self.assertSuccessResponse(response)
+        body = response.content.decode()
+        self.assertNotIn('upstream', body)

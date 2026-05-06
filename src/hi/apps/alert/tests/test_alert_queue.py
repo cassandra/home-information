@@ -345,8 +345,17 @@ class TestAlertQueue(BaseTestCase):
         return
 
     def test_alert_queue_remove_expired_alerts(self):
-        """Test remove_expired_or_acknowledged_alerts - critical for cleanup."""
-        # Create expired alarm (negative lifetime to force expiration)
+        """Test remove_expired_or_acknowledged_alerts - critical for cleanup.
+
+        Advances ``datetimeproxy`` past the alarm's expiration rather
+        than constructing an alarm with non-positive lifetime
+        (``Alarm.__post_init__`` rejects that). The alert system
+        consults ``datetimeproxy.now()`` for ``end_datetime``
+        comparison, so the simulated clock advance is what makes the
+        cleanup observe the alarm as expired.
+        """
+        from datetime import timedelta
+        baseline = datetimeproxy.now()
         expired_alarm = Alarm(
             alarm_source=AlarmSource.EVENT,
             alarm_type='expired_test',
@@ -354,30 +363,37 @@ class TestAlertQueue(BaseTestCase):
             title='Expired Alarm',
             sensor_response_list=[],
             security_level=SecurityLevel.LOW,
-            alarm_lifetime_secs=-1,  # Expired immediately
-            timestamp=datetimeproxy.now(),
+            alarm_lifetime_secs=1,
+            timestamp=baseline,
         )
         
         # Add expired and active alarms
         expired_alert = self.queue.add_alarm(expired_alarm)
         active_alert = self.queue.add_alarm(self.test_alarm)
-        
+
         initial_count = len(self.queue)
         self.assertEqual(initial_count, 2)
-        
-        # Run cleanup
-        self.queue.remove_expired_or_acknowledged_alerts()
-        
-        # Should remove expired alert but keep active one
-        self.assertEqual(len(self.queue), 1)
-        
-        # Should not find expired alert
-        with self.assertRaises(KeyError):
-            self.queue.get_alert(expired_alert.id)
-        
-        # Should still find active alert
-        found_alert = self.queue.get_alert(active_alert.id)
-        self.assertEqual(found_alert, active_alert)
+
+        # Advance the simulated clock past the expired alarm's end
+        # but still before the active alarm's. The cleanup pass reads
+        # the time via ``datetimeproxy.now()`` so this is sufficient
+        # to make it observe the first alarm as expired.
+        datetimeproxy.set(baseline + timedelta(seconds=10))
+        try:
+            self.queue.remove_expired_or_acknowledged_alerts()
+
+            # Should remove expired alert but keep active one
+            self.assertEqual(len(self.queue), 1)
+
+            # Should not find expired alert
+            with self.assertRaises(KeyError):
+                self.queue.get_alert(expired_alert.id)
+
+            # Should still find active alert
+            found_alert = self.queue.get_alert(active_alert.id)
+            self.assertEqual(found_alert, active_alert)
+        finally:
+            datetimeproxy.reset()
         return
 
     def test_alert_queue_remove_acknowledged_alerts(self):

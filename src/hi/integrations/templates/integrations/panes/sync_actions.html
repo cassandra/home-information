@@ -11,10 +11,16 @@
   Label flips on `core.has_entities`: IMPORT for the first-time path,
   REFRESH for subsequent re-syncs. The framework manage view computes
   has_entities into the `core` context.
+
+  When the Issue #283 sync-check probe has detected upstream drift
+  (`core.sync_check_result.needs_sync`), the REFRESH variant
+  promotes from outline-secondary to solid btn-primary so it pulls
+  the eye. The IMPORT variant is always primary since there is
+  nothing to compare against on a first run.
 {% endcomment %}
 {% if core.integration_data.is_enabled and core.integration_data.integration_gateway.get_synchronizer %}
 <a href="{% url 'integrations_pre_sync' integration_id=core.integration_data.integration_id %}"
-   class="btn {% if core.has_entities %}btn-outline-secondary{% else %}btn-outline-primary{% endif %}"
+   class="btn {% if core.has_entities %}{% if core.sync_check_result.needs_sync %}btn-primary{% else %}btn-outline-secondary{% endif %}{% else %}btn-outline-primary{% endif %}"
    role="button"
    data-async="modal">
   {% if core.has_entities %}

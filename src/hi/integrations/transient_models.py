@@ -39,10 +39,26 @@ class IntegrationKey:
     integration_name  : str  # Name or identifier that is used by the external source.
 
     def __post_init__(self):
-        # Want to make matching more robust, so convert to lowercase
-        self.integration_id = self.integration_id.lower()
-        self.integration_name = self.integration_name.lower()
+        # Make matching more robust by canonicalizing both fields.
+        # The exact rule (currently lowercase) lives in normalize() so
+        # external callers comparing raw strings against stored
+        # integration_name values can apply the same rule without
+        # constructing a full IntegrationKey.
+        self.integration_id = self.normalize( self.integration_id )
+        self.integration_name = self.normalize( self.integration_name )
         return
+
+    @staticmethod
+    def normalize( value : str ) -> str:
+        """Canonical normalization applied to ``integration_id`` and
+        ``integration_name``. Exposed so callers that need to compare
+        raw strings against stored values can apply exactly the same
+        rule without constructing full IntegrationKey instances. Most
+        comparisons should go through full ``IntegrationKey`` objects
+        and rely on the dataclass's ``__hash__`` / ``__eq__`` (which
+        also use this rule); this static is the escape hatch for
+        cases where a one-shot string normalization is enough."""
+        return value.lower()
     
     def __str__(self):
         return self.integration_key_str

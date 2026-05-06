@@ -135,9 +135,11 @@ class AlarmAction( models.Model ):
         null = False, blank = False,
     )
 
-    # How long will this alarm be relevant to the user.  Alarms exist until
-    # they expire or are acknowledged.  Set this to zero for ann alarm that
-    # will only be dismissed by a user acknowledgement.
+    # How long will this alarm be relevant to the user. Alarms exist
+    # until they expire or are acknowledged. Use ``Alarm.MAX_LIFETIME_SECS``
+    # for an alarm that should remain visible until the user
+    # acknowledges it (zero would expire immediately and is rejected
+    # by ``Alarm.__post_init__``).
     #
     alarm_lifetime_secs = models.PositiveIntegerField(
         'Lifetime Secs',

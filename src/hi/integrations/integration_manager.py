@@ -47,6 +47,7 @@ class IntegrationManager( Singleton ):
     def __init_singleton__( self ):
         self._integration_data_map : Dict[ str, IntegrationData ] = dict()
         self._monitor_map = dict()
+        self._sync_check_monitor = None
         self._initialized = False
         self._data_lock = threading.Lock()
         self._monitor_event_loop = None
@@ -60,6 +61,9 @@ class IntegrationManager( Singleton ):
         """
         self._integration_data_map.clear()
         self._monitor_map.clear()
+        if self._sync_check_monitor is not None:
+            self._sync_check_monitor.stop()
+            self._sync_check_monitor = None
         return
 
     def get_integration_data_list( self, enabled_only = False ) -> List[ IntegrationData ]:
@@ -103,6 +107,9 @@ class IntegrationManager( Singleton ):
                 if provider.get_provider_info().provider_id == provider_id:
                     return provider
                 continue
+            if ( self._sync_check_monitor is not None
+                 and self._sync_check_monitor.get_provider_info().provider_id == provider_id ):
+                return self._sync_check_monitor
         raise KeyError( f'Unknown provider id: "{provider_id}".' )
 
     def get_health_status_by_monitor_id( self,
@@ -112,11 +119,30 @@ class IntegrationManager( Singleton ):
                 if monitor.id == monitor_id:
                     return monitor
                 continue
+            if ( self._sync_check_monitor is not None
+                 and self._sync_check_monitor.id == monitor_id ):
+                return self._sync_check_monitor
         raise KeyError( f'Unknown monitor id: "{monitor_id}".' )
 
     def get_health_status_providers(self) -> List[HealthStatusProvider]:
         with self._data_lock:
-            return list( self._monitor_map.values() )
+            providers = list( self._monitor_map.values() )
+            if self._sync_check_monitor is not None:
+                providers.append( self._sync_check_monitor )
+            return providers
+
+    def get_framework_health_status_providers(self) -> List[HealthStatusProvider]:
+        """Framework-level monitors owned by ``IntegrationManager`` itself
+        rather than by any one integration. These are the integration
+        framework's own background workers (currently just the
+        Issue #283 sync-check monitor); the System Info page renders
+        them alongside the per-integration list so they don't go
+        invisible. Returned in a stable order; missing entries simply
+        mean those monitors have not been started yet."""
+        providers = []
+        if self._sync_check_monitor is not None:
+            providers.append( self._sync_check_monitor )
+        return providers
 
     def get_health_status_provider_map(self) -> Dict[str, HealthStatusProvider]:
         """Snapshot of running monitors keyed by integration_id.
@@ -142,18 +168,22 @@ class IntegrationManager( Singleton ):
             self._initialized = True
 
             self._monitor_event_loop = event_loop
-           
+
             logger.info("Discovering and starting integration monitors...")
             await self._load_integration_data()
             await self._start_all_integration_monitors()
+            await self._start_sync_check_monitor()
         return
-        
+
     async def shutdown(self) -> None:
         logger.info("Stopping all integration monitors...")
         for integration_id, monitor in self._monitor_map.items():
             logger.debug( f'Stopping integration monitor: {integration_id}' )
             monitor.stop()
             continue
+        if self._sync_check_monitor is not None:
+            logger.debug( 'Stopping sync-check monitor.' )
+            self._sync_check_monitor.stop()
         return
         
     async def _load_integration_data(self) -> None:
@@ -196,6 +226,36 @@ class IntegrationManager( Singleton ):
             await asyncio.sleep( self.START_DELAY_INTERVAL_SECS )
             await self._start_integration_monitor( integration_data = integration_data )
             continue
+        return
+
+    async def _start_sync_check_monitor(self) -> None:
+        """
+        Start the framework-level sync-check monitor (Issue #283). Singular
+        across all integrations: iterates enabled+unpaused integrations,
+        gets each integration's synchronizer via gateway.get_synchronizer(),
+        and dispatches to its check_needs_sync. Sync-check rides on the
+        same opt-in surface as full sync — integrations without a
+        synchronizer naturally opt out. Started after the per-integration
+        health monitors so the integration data map is already populated;
+        per-integration probe failures inside the cycle are caught
+        individually so a not-yet-ready integration cannot abort the cycle.
+        """
+        # Local import keeps the module-import-time graph clean — the
+        # monitor module imports IntegrationManager lazily inside its
+        # do_work, but the manager only needs the class here for
+        # construction.
+        from .monitors import IntegrationSyncCheckMonitor
+
+        if settings.DEBUG and settings.SUPPRESS_MONITORS:
+            logger.debug( 'Skipping sync-check monitor. See SUPPRESS_MONITORS = True' )
+            return
+
+        self._sync_check_monitor = IntegrationSyncCheckMonitor()
+        logger.debug( 'Starting sync-check monitor.' )
+        asyncio.create_task(
+            self._sync_check_monitor.start(),
+            name = 'IntegrationSyncCheckMonitor',
+        )
         return
 
     def _launch_integration_monitor_task( self, integration_data : IntegrationData ):

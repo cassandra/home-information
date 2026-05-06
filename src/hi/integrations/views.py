@@ -26,6 +26,7 @@ from .exceptions import IntegrationConnectionError
 from .integration_attribute_edit_context import IntegrationAttributeItemEditContext
 from .integration_manager import IntegrationManager
 from .models import IntegrationAttribute
+from .sync_check import IntegrationSyncCheck
 from .view_mixins import IntegrationPlacementViewMixin, IntegrationViewMixin
 
 logger = logging.getLogger(__name__)
@@ -634,6 +635,27 @@ class IntegrationManageView( ConfigPageView, IntegrationViewMixin, AttributeEdit
             integration_id = integration_data.integration_id,
         ).exists()
 
+        # Issue #283 sync-check state.
+        #   * sync_check_result drives the banner and the Refresh
+        #     button emphasis on the active integration's manage
+        #     page.
+        #   * sidebar_items pairs each integration with its current
+        #     sync-check result so the sidebar template iterates one
+        #     pre-resolved list instead of looking up per-integration
+        #     state mid-render.
+        sync_check_result = IntegrationSyncCheck.get_state(
+            integration_data.integration_id,
+        )
+        sidebar_items = [
+            {
+                'integration_data': data,
+                'sync_check_result': IntegrationSyncCheck.get_state(
+                    data.integration_id,
+                ),
+            }
+            for data in integration_data_list
+        ]
+
         template_context.update({
             # Extra needed on initial view only for tabbed navigation. Not
             # needed for attribute edit operations.
@@ -646,6 +668,8 @@ class IntegrationManageView( ConfigPageView, IntegrationViewMixin, AttributeEdit
                 'manage_view_template_name': manage_template_name,
                 'health_status': health_status_provider.health_status,
                 'has_entities': has_entities,
+                'sync_check_result': sync_check_result,
+                'sidebar_items': sidebar_items,
             },
         })
         return template_context

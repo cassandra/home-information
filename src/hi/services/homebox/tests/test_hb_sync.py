@@ -396,3 +396,81 @@ class TestHomeBoxSynchronizerRebuildIntegrationComponents(SimpleTestCase):
             hb_item=upstream,
             entity=existing_entity,
         )
+
+
+class TestHomeBoxSynchronizerCheckNeedsSync(SimpleTestCase):
+    """Issue #283 — sync-check probe shape for HomeBox."""
+
+    def _hb_key(self, name: str):
+        from hi.integrations.transient_models import IntegrationKey
+        return IntegrationKey(
+            integration_id=HbMetaData.integration_id,
+            integration_name=name,
+        )
+
+    def _run_check(self, summary_list, current_keys):
+        import asyncio
+        synchronizer = HomeBoxSynchronizer()
+        manager = Mock()
+
+        async def fetch_summary():
+            return summary_list
+
+        manager.fetch_hb_items_summary_from_api_async = fetch_summary
+
+        async def get_manager():
+            return manager
+
+        with ( patch.object( synchronizer,
+                             'hb_manager_async',
+                             side_effect=get_manager ),
+               patch.object( HomeBoxSynchronizer,
+                             '_get_current_integration_keys',
+                             return_value=current_keys ),
+               ):
+            return asyncio.run(synchronizer.check_needs_sync())
+
+    def test_in_sync_when_upstream_matches_hi(self):
+        delta = self._run_check(
+            summary_list=[{'id': 1}, {'id': 2}],
+            current_keys={self._hb_key('1'), self._hb_key('2')},
+        )
+        self.assertFalse(delta.needs_sync)
+
+    def test_upstream_added_appears_in_delta(self):
+        delta = self._run_check(
+            summary_list=[{'id': 1}, {'id': 2}, {'id': 3}],
+            current_keys={self._hb_key('1'), self._hb_key('2')},
+        )
+        self.assertEqual(delta.added, {self._hb_key('3')})
+        self.assertEqual(delta.removed, set())
+
+    def test_upstream_removed_appears_in_delta(self):
+        delta = self._run_check(
+            summary_list=[{'id': 1}],
+            current_keys={self._hb_key('1'), self._hb_key('2')},
+        )
+        self.assertEqual(delta.added, set())
+        self.assertEqual(delta.removed, {self._hb_key('2')})
+
+    def test_summary_items_missing_id_are_skipped(self):
+        # Defensive: a HomeBox item with no id (corrupted upstream
+        # response) does not crash the probe — it is just dropped
+        # from the upstream set.
+        delta = self._run_check(
+            summary_list=[{'id': 1}, {'name': 'no-id'}, {'id': 3}],
+            current_keys={self._hb_key('1'), self._hb_key('3')},
+        )
+        self.assertFalse(delta.needs_sync)
+
+    def test_returns_none_when_manager_not_ready(self):
+        import asyncio
+        synchronizer = HomeBoxSynchronizer()
+
+        async def get_manager():
+            return None
+
+        with patch.object(synchronizer, 'hb_manager_async', side_effect=get_manager):
+            result = asyncio.run(synchronizer.check_needs_sync())
+
+        self.assertIsNone(result)

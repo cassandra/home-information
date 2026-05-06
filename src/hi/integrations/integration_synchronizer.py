@@ -25,6 +25,7 @@ from hi.apps.entity.entity_placement import (
 from hi.apps.entity.models import Entity
 
 from .entity_operations import EntityIntegrationOperations
+from .sync_check import IntegrationSyncCheck, SyncDelta
 from .sync_result import IntegrationSyncResult
 from .transient_models import IntegrationKey, IntegrationMetaData
 
@@ -95,15 +96,44 @@ class IntegrationSynchronizer:
         try:
             with ExclusionLockContext(name=self.SYNCHRONIZATION_LOCK_NAME):
                 logger.debug(f'{self.__class__.__name__} sync started.')
-                return self._sync_impl(is_initial_import=is_initial_import)
+                result = self._sync_impl(is_initial_import=is_initial_import)
         except RuntimeError as e:
             logger.exception(e)
-            return IntegrationSyncResult(
+            result = IntegrationSyncResult(
                 title=self.get_result_title(is_initial_import=is_initial_import),
                 error_list=[str(e)],
             )
         finally:
             logger.debug(f'{self.__class__.__name__} sync ended.')
+
+        self._record_sync_check_complete_if_successful( result = result )
+        return result
+
+    def _record_sync_check_complete_if_successful(
+            self, result : IntegrationSyncResult ) -> None:
+        """Issue #283: a successful sync brings HI in line with upstream
+        as of right now. Write a zero-delta sync-check result with the
+        current timestamp so UI surfaces clear immediately and the next
+        background probe has a fresh baseline. Cache write failures must
+        not propagate — the sync itself succeeded and the caller's
+        flow should continue regardless."""
+        if result.error_list:
+            return
+        try:
+            metadata = self.get_integration_metadata()
+        except NotImplementedError:
+            return
+        try:
+            IntegrationSyncCheck.record_sync_complete(
+                integration_id = metadata.integration_id,
+                integration_label = metadata.label,
+            )
+        except Exception as e:
+            logger.warning(
+                f'Failed to record sync-check completion for '
+                f'{metadata.integration_id}: {e}'
+            )
+        return
 
     def _sync_impl(self, is_initial_import: bool) -> IntegrationSyncResult:
         """
@@ -111,6 +141,31 @@ class IntegrationSynchronizer:
         Called with the synchronization lock held.
         """
         raise NotImplementedError('Subclasses must override this method')
+
+    async def check_needs_sync(self) -> Optional[SyncDelta]:
+        """Issue #283 — periodic sync-check probe. Return a
+        ``SyncDelta`` describing how upstream has drifted from HI's
+        current state, or ``None`` to opt out.
+
+        The framework monitor in ``hi.integrations.monitors`` invokes
+        this on each enabled+unpaused integration's synchronizer once
+        per cycle (default 4 hours). Implementations should do a
+        *cheap* upstream fetch — the probe is purely informational and
+        runs even when no user action is in progress — and delegate
+        the comparison to ``IntegrationSyncCheck.compute_delta``. The
+        framework wraps the returned delta into a
+        ``SyncCheckResult`` (with timestamp and summary) and caches
+        it; subclasses do not touch the cache directly.
+
+        Failures (client unavailable, upstream unreachable) should
+        propagate; the framework monitor's per-call try/except
+        classifies the cycle as ERROR for that integration and
+        continues with the others.
+
+        Default returns ``None`` — opt-out. Sync-check is opt-in even
+        among integrations that support full sync.
+        """
+        return None
 
     def get_integration_metadata(self) -> IntegrationMetaData:
         """

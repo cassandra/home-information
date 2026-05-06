@@ -1,6 +1,7 @@
 import logging
 from typing import Dict, List, Optional
 
+from asgiref.sync import sync_to_async
 from django.db import transaction
 
 from hi.apps.entity.models import Entity
@@ -12,6 +13,7 @@ from hi.apps.entity.entity_placement import (
 )
 
 from hi.integrations.integration_synchronizer import IntegrationSynchronizer
+from hi.integrations.sync_check import IntegrationSyncCheck, SyncDelta
 from hi.integrations.sync_result import IntegrationSyncResult
 from hi.integrations.transient_models import IntegrationKey
 
@@ -32,6 +34,56 @@ class HassSynchronizer( IntegrationSynchronizer, HassMixin ):
         if is_initial_import:
             return 'Only items matching your Allowed Item Types setting will be imported.'
         return 'Only items matching your Allowed Item Types setting are compared.'
+
+    async def check_needs_sync(self) -> Optional[SyncDelta]:
+        """Issue #283 — sync-check probe for Home Assistant.
+
+        Fetches the same ``/api/states`` payload the periodic monitor
+        uses, applies the configured Allowed Item Types allowlist (so
+        the upstream key set matches what Refresh would actually
+        import — not what HA exposes raw), then compares against the
+        IntegrationKeys of HA-attached HI entities.
+
+        Convention matched to
+        ``HassConverter.hass_device_to_integration_key``: each
+        aggregated HassDevice maps to one IntegrationKey, which is
+        what Refresh stores on the corresponding HI entity. Routing
+        the upstream side through the same converter helper means
+        the comparison automatically picks up whatever canonicalization
+        ``IntegrationKey`` applies. Adds/removes only.
+        """
+        hass_manager = await self.hass_manager_async()
+        if hass_manager is None:
+            return None
+        hass_entity_id_to_state = await hass_manager.fetch_hass_states_from_api_async(
+            verbose = False,
+        )
+        import_allowlist = hass_manager.import_allowlist
+        hass_device_id_to_device = HassConverter.hass_states_to_hass_devices(
+            hass_entity_id_to_state = hass_entity_id_to_state,
+            import_allowlist = import_allowlist,
+        )
+        upstream_keys = {
+            HassConverter.hass_device_to_integration_key( hass_device )
+            for hass_device in hass_device_id_to_device.values()
+        }
+        current_keys = await sync_to_async( self._get_current_integration_keys )()
+        return IntegrationSyncCheck.compute_delta(
+            upstream_keys = upstream_keys,
+            current_keys = current_keys,
+        )
+
+    @staticmethod
+    def _get_current_integration_keys() -> set:
+        return {
+            IntegrationKey(
+                integration_id = integration_id,
+                integration_name = integration_name,
+            )
+            for integration_id, integration_name in Entity.objects.filter(
+                integration_id = HassMetaData.integration_id,
+            ).values_list( 'integration_id', 'integration_name' )
+        }
 
     def _sync_impl( self, is_initial_import: bool ) -> IntegrationSyncResult:
         hass_manager = self.hass_manager()

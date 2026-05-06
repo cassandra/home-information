@@ -11,19 +11,19 @@
         {% icon "settings" size="sm" css_class="hi-icon-left" %}INTEGRATIONS
       </a>
     </div>
-    {% for integration_data in core.integration_data_list %}
-    <a class="nav-link hi-vertical-nav-link {% if core.integration_data.integration_id == integration_data.integration_id %}active{% endif %}"
-       href="{% url 'integrations_manage' integration_id=integration_data.integration_id %}"
+    {% for item in core.sidebar_items %}
+    <a class="nav-link hi-vertical-nav-link {% if core.integration_data.integration_id == item.integration_data.integration_id %}active{% endif %}"
+       href="{% url 'integrations_manage' integration_id=item.integration_data.integration_id %}"
        data-async="true">
       <div class="d-flex justify-content-between align-items-center">
         <span class="d-flex align-items-center" style="white-space: nowrap;">
-          <img src="{% static integration_data.integration_metadata.logo_static_path %}"
-               alt="{{ integration_data.label }}"
+          <img src="{% static item.integration_data.integration_metadata.logo_static_path %}"
+               alt="{{ item.integration_data.label }}"
                style="max-height: 18px; width: auto; margin-right: 6px; flex-shrink: 0;">
-          {{ integration_data.label }}
+          {{ item.integration_data.label }}
         </span>
-        {% with health_status=integration_data.integration_gateway.get_health_status_provider.health_status %}
-        {% include "integrations/panes/integration_status_indicator.html" with health_status=health_status is_paused=integration_data.integration.is_paused %}
+        {% with health_status=item.integration_data.integration_gateway.get_health_status_provider.health_status %}
+        {% include "integrations/panes/integration_status_indicator.html" with health_status=health_status is_paused=item.integration_data.integration.is_paused sync_check_result=item.sync_check_result %}
         {% endwith %}
       </div>
     </a>
@@ -58,6 +58,16 @@
               {% include "integrations/panes/sync_actions.html" %}
             </div>
           </div>
+          {% if core.sync_check_result and core.sync_check_result.needs_sync %}
+          <div class="alert alert-info py-2 mt-2 mb-0" role="status">
+            {% icon "sync" size="sm" css_class="hi-icon-left" %}{{ core.sync_check_result.summary_message }}
+            Click
+            <a href="{% url 'integrations_pre_sync' integration_id=core.integration_data.integration_id %}"
+               class="alert-link"
+               data-async="modal">REFRESH</a>
+            to import.
+          </div>
+          {% endif %}
           {% include core.manage_view_template_name %}
         </div>
 

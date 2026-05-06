@@ -580,28 +580,6 @@ class TestAlarmActionAdvanced(BaseTestCase):
         self.assertEqual(alarm_action.alarm_level, AlarmLevel.NONE)  # from_name_safe returns default (first enum)
         return
 
-    def test_alarm_action_zero_lifetime_manual_acknowledgment(self):
-        """Test alarm action with zero lifetime for manual acknowledgment only."""
-        event_def = EventDefinition.objects.create(
-            name='Manual Alarm Event',
-            event_type_str='SECURITY',
-            event_window_secs=60,
-            dedupe_window_secs=300,
-            integration_id='test_id',
-            integration_name='test_integration'
-        )
-        
-        alarm_action = AlarmAction.objects.create(
-            event_definition=event_def,
-            security_level_str='CRITICAL',
-            alarm_level_str='CRITICAL',
-            alarm_lifetime_secs=0  # Manual acknowledgment only
-        )
-        
-        # Zero lifetime should indicate manual acknowledgment requirement
-        self.assertEqual(alarm_action.alarm_lifetime_secs, 0)
-        return
-
     def test_alarm_action_multiple_per_event_definition(self):
         """Test multiple alarm actions for different security levels."""
         event_def = EventDefinition.objects.create(
