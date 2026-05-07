@@ -35,6 +35,19 @@ class ZoneMinderSimulator( Simulator ):
         return [ ZmSimMonitor( sim_entity = x ) for x in self.sim_entities
                  if x.sim_entity_definition.sim_entity_fields_class == ZmMonitorSimEntityFields ]
 
+    def find_zm_monitor_by_id( self, monitor_id : int ) -> ZmSimMonitor:
+        """Locate a monitor by its API id, or return None if no
+        monitor in the active profile carries that id. Used by the
+        media endpoints (thumbnail / MJPEG) to render frames with
+        the correct monitor name; missing ids fall back to a
+        generic placeholder rather than 404, to keep the simulator
+        forgiving across profile switches that drop monitors."""
+        for zm_sim_monitor in self.get_zm_monitor_sim_entity_list():
+            if zm_sim_monitor.monitor_id == monitor_id:
+                return zm_sim_monitor
+            continue
+        return None
+
     def get_zm_server_sim_entity( self ) -> ZmSimServer:
         for sim_entity in self.sim_entities:
             if sim_entity.sim_entity_definition.sim_entity_fields_class == ZmServerSimEntityFields:
