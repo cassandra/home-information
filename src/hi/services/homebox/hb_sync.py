@@ -396,8 +396,15 @@ class HomeBoxSynchronizer( IntegrationSynchronizer, HomeBoxMixin ):
     def _remove_attribute( self,
                            attribute: EntityAttribute,
                            message_list: List[str] ):
+        # Hard-delete: these are integration-owned attributes (not
+        # editable by the user), so the SoftDeleteAttributeModel's
+        # default soft-delete + restore affordance doesn't apply.
+        # Soft-deleting would surface the row under "Deleted
+        # Attributes" with a restore button, and a restore creates
+        # an inconsistency between HI and the integration's source
+        # of truth.
         old_name = attribute.name
-        attribute.delete()
+        attribute.delete( hard_delete = True )
         message_list.append( f'Field attribute removed: {old_name}' )
         return
 

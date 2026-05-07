@@ -64,13 +64,14 @@ Individual file attribute card with preview, actions, and metadata
   
   <!-- File Info -->
   <div class="{{ DIVID.ATTR_V2_FILE_INFO_CLASS }}">
-    <input type="text" 
+    <input type="text"
            id="{{ attr_item_context|file_title_field_name:attribute.id }}"
-           name="{{ attr_item_context|file_title_field_name:attribute.id }}" 
-           value="{{ attribute.value }}" 
+           name="{{ attr_item_context|file_title_field_name:attribute.id }}"
+           value="{{ attribute.value }}"
            class="{{ DIVID.ATTR_V2_FILE_TITLE_INPUT_CLASS }}"
            placeholder="Enter file title"
-           maxlength="255">
+           maxlength="255"
+           {% if not attribute.is_editable %}readonly aria-readonly="true"{% endif %}>
     <div class="{{ DIVID.ATTR_V2_FILE_NAME_CLASS }}">{{ attribute.name }}</div>
     
     <!-- File Actions -->
