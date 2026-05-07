@@ -1146,13 +1146,36 @@ class HassConverter:
         if ( HassApi.LIGHT_DOMAIN in domain_set
              or HassApi.LIGHT_DEVICE_CLASS in device_class_set ):
             return EntityType.LIGHT
+        # Outlet device class wins over the generic switch domain
+        # branch below — an HA switch.x with device_class=outlet is
+        # specifically an electrical outlet, not a wall switch.
         if HassApi.OUTLET_DEVICE_CLASS in device_class_set:
-            return EntityType.WALL_SWITCH
+            return EntityType.ELECTRICAL_OUTLET
+        if HassApi.SWITCH_DOMAIN in domain_set:
+            return EntityType.ON_OFF_SWITCH
+        if HassApi.LOCK_DOMAIN in domain_set:
+            return EntityType.DOOR_LOCK
+        # HA covers are doors / windows / garage doors / blinds /
+        # awnings / etc. Without a device-class refinement that maps
+        # cleanly to HI's specific types, OPEN_CLOSE_SENSOR is the
+        # least-wrong default; the operator can change it post-import
+        # to DOOR / WINDOW / GARAGE_DOOR if appropriate.
+        if HassApi.COVER_DOMAIN in domain_set:
+            return EntityType.OPEN_CLOSE_SENSOR
+        # Fan domain has no HA-side device class to distinguish
+        # ceiling vs exhaust; CEILING_FAN is the more common case.
+        if HassApi.FAN_DOMAIN in domain_set:
+            return EntityType.CEILING_FAN
+        # Climate domain is the controllable HVAC entity; the
+        # temperature device-class check below catches passive
+        # temperature sensors that aren't climate entities.
+        if HassApi.CLIMATE_DOMAIN in domain_set:
+            return EntityType.THERMOSTAT
         if HassApi.TEMPERATURE_DEVICE_CLASS in device_class_set:
             return EntityType.THERMOSTAT
         if HassApi.CONNECTIVITY_DEVICE_CLASS in device_class_set:
             return EntityType.HEALTHCHECK
-  
+
         return EntityType.OTHER
             
     @classmethod
