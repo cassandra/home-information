@@ -2,6 +2,8 @@ from dataclasses import dataclass, fields, MISSING
 from datetime import datetime
 from typing import Any, Dict, List, Tuple, Type
 
+from hi.apps.common.utils import str_to_bool
+
 from .enums import SimEntityType, SimStateType
 
 
@@ -99,6 +101,18 @@ class SimState:
     @property
     def name(self):
         return self.sim_entity_fields.name
+
+    @property
+    def is_on(self) -> bool:
+        """Boolean coercion of ``value`` for templates that render
+        a checkbox ``checked``-state. Default ``value``s like
+        ``'off'`` are non-empty strings and would be truthy under
+        Django's ``{% if value %}`` test, leaving the initial
+        render out of sync with the logical state. Routing through
+        ``str_to_bool`` keeps the visible toggle aligned with the
+        actual ON/OFF interpretation across all string-stored
+        boolean states (ON_OFF, MOVEMENT, OPEN_CLOSE, etc.)."""
+        return str_to_bool( self.value )
 
     def set_value_from_string( self, value_str : str ):
         """ Subclasses should override this is the value is not a string and needs conversion. """
