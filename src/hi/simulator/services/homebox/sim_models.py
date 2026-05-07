@@ -10,13 +10,19 @@ The to_api_dict helper builds the JSON shape the integration's HbItem parser
 (src/hi/services/homebox/hb_models.py) consumes.
 """
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field as dc_field
 from typing import Any, Dict, List
 
 from hi.apps.common.utils import str_to_bool
 
 from hi.simulator.base_models import SimEntityFields, SimState, SimEntityDefinition
 from hi.simulator.enums import SimEntityType, SimStateType
+
+from .attachment_catalog import (
+    attachment_choices,
+    build_attachment_metadata,
+    parse_attachment_keys,
+)
 
 
 @dataclass( frozen = True )
@@ -32,13 +38,33 @@ class HomeBoxInventoryItemFields( SimEntityFields ):
     item in two different profiles ends up with different ids.
     """
 
-    item_id        : str  = ''
-    description    : str  = ''
-    serial_number  : str  = ''
-    model_number   : str  = ''
-    manufacturer   : str  = ''
-    notes          : str  = ''
-    quantity       : int  = 1
+    item_id          : str  = ''
+    description      : str  = ''
+    serial_number    : str  = ''
+    model_number     : str  = ''
+    manufacturer     : str  = ''
+    notes            : str  = ''
+    quantity         : int  = 1
+    # Comma-separated wire keys of ``AttachmentTemplate`` members
+    # (``hi.simulator.services.homebox.attachment_catalog``);
+    # unknown keys are dropped silently. The simulator's API
+    # download endpoint renders each referenced attachment's
+    # bytes on demand, so this is the only place attachments
+    # are configured per-item. The ``csv_choices`` metadata hook
+    # tells ``SimEntityFieldsForm`` to render this as a
+    # multi-checkbox picker over the catalog instead of a free-
+    # text input.
+    attachment_keys  : str  = dc_field(
+        default = '',
+        metadata = {
+            'csv_choices': attachment_choices,
+            'help_text': (
+                'Pre-canned simulator attachments to attach to '
+                'this item. Each selection is rendered on demand '
+                'when the integration fetches it.'
+            ),
+        },
+    )
 
 
 @dataclass
@@ -86,16 +112,23 @@ def build_item_api_dict( sim_entity_id    : int,
     Build the HomeBox item JSON shape returned by the simulator's API,
     matching the fields the integration's HbItem parser consumes.
 
-    Fields not in the simulator's scope (custom fields, attachments,
-    location, labels) are emitted as empty/null. Timestamps come
-    from the persisted ``DbSimEntity`` so they're stable across
-    reads — change only when the operator actually edits the row,
-    matching real HomeBox behavior.
+    Fields not in the simulator's scope (custom fields, location,
+    labels) are emitted as empty/null. Attachments are populated
+    from the per-item ``attachment_keys`` CSV via the catalog in
+    ``attachment_catalog``; the actual bytes are rendered on demand
+    by the download endpoint when the integration fetches each
+    attachment. Timestamps come from the persisted ``DbSimEntity``
+    so they're stable across reads — change only when the operator
+    actually edits the row, matching real HomeBox behavior.
     """
     # Prefer the operator-supplied stable id; fall back to the
     # auto-assigned PK for items that don't set one (legacy and
     # UI-created profiles).
     item_id = fields.item_id or str(sim_entity_id)
+    attachments = [
+        build_attachment_metadata( template )
+        for template in parse_attachment_keys( fields.attachment_keys )
+    ]
     return {
         'id'             : item_id,
         'name'           : fields.name,
@@ -107,7 +140,7 @@ def build_item_api_dict( sim_entity_id    : int,
         'quantity'       : fields.quantity,
         'archived'       : archived_state.is_archived,
         'fields'         : [],
-        'attachments'    : [],
+        'attachments'    : attachments,
         'location'       : None,
         'labels'         : [],
         'createdAt'      : created_at.isoformat(),

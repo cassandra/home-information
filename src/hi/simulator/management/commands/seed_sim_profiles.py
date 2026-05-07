@@ -81,6 +81,7 @@ from hi.simulator.services.hass.sim_models import (
     HassInsteonOpenCloseSensorFields,
     HassInsteonOutletFields,
 )
+from hi.simulator.services.homebox.attachment_catalog import AttachmentTemplate
 from hi.simulator.services.homebox.sim_models import (
     HomeBoxInventoryItemFields,
 )
@@ -202,12 +203,17 @@ class Command(BaseCommand):
             model_number = 'DCD777',
             serial_number = 'DW-100231',
             quantity = 1,
+            attachment_keys = ','.join([
+                AttachmentTemplate.MANUAL.key,
+                AttachmentTemplate.RECEIPT.key,
+            ]),
         )
         self._add_homebox_item(
             profile, 'Stud Finder',
             item_id = 'stud-finder',
             manufacturer = 'Franklin Sensors',
             quantity = 1,
+            attachment_keys = AttachmentTemplate.PHOTO.key,
         )
         self._add_homebox_item(
             profile, 'Soldering Iron Kit',
@@ -282,12 +288,20 @@ class Command(BaseCommand):
             model_number = 'DCD777',
             serial_number = 'DW-100231',
             quantity = 1,
+            # Attachment churn vs baseline: receipt removed, warranty
+            # added; manual kept. Exercises attachment add+remove
+            # paths in the refresh sync.
+            attachment_keys = ','.join([
+                AttachmentTemplate.MANUAL.key,
+                AttachmentTemplate.WARRANTY.key,
+            ]),
         )
         self._add_homebox_item(
             profile, 'Stud Finder',
             item_id = 'stud-finder',
             manufacturer = 'Bosch',  # changed from 'Franklin Sensors'
             quantity = 1,
+            attachment_keys = AttachmentTemplate.PHOTO.key,  # unchanged across baseline pair
         )
         self._add_homebox_item(
             profile, 'Spare Light Bulbs',

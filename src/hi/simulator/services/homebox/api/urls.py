@@ -15,4 +15,8 @@ urlpatterns = [
     re_path( r'^v1/items/(?P<item_id>[\w\-]+)$',
              views.ItemDetailView.as_view(),
              name = 'homebox_api_item_detail' ),
+
+    re_path( r'^v1/items/(?P<item_id>[\w\-]+)/attachments/(?P<attachment_id>[\w\-]+)$',
+             views.AttachmentDownloadView.as_view(),
+             name = 'homebox_api_attachment_download' ),
 ]
