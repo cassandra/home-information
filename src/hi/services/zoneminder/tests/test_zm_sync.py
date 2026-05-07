@@ -545,41 +545,42 @@ class TestZoneMinderSynchronizerEntityUpdate(TestCase):
     def setUp(self):
         self.synchronizer = ZoneMinderSynchronizer()
     
-    def test_update_entity_changes_name_when_different(self):
-        """Test _update_entity updates name when monitor name changed and preserves other attributes"""
+    def test_update_entity_preserves_user_edited_name(self):
+        """Operator-edited names are user-owned after creation; an
+        upstream rename in ZoneMinder does not propagate. The
+        operator's chosen name stays put across refreshes."""
         mock_entity = Mock()
-        mock_entity.name = 'Old Name'
+        mock_entity.name = 'Operator Name'
         mock_entity.id = 123
         mock_entity.entity_type_str = 'CAMERA'
         mock_entity.can_user_delete = True
         original_integration_key = Mock()
         mock_entity.integration_key = original_integration_key
         mock_entity.save = Mock()
-        
+
         mock_monitor = Mock()
-        mock_monitor.name.return_value = 'New Name'
+        mock_monitor.name.return_value = 'Upstream Renamed'
         mock_monitor.id.return_value = 456
-        
+
         result = IntegrationSyncResult(title='Test')
         self.synchronizer._update_entity(mock_entity, mock_monitor, result)
-        
-        # Test name update behavior
-        self.assertEqual(mock_entity.name, 'New Name')
-        mock_entity.save.assert_called_once()
-        
-        # Test preservation of other critical attributes
-        self.assertEqual(mock_entity.id, 123)  # Entity ID unchanged
-        self.assertEqual(mock_entity.entity_type_str, 'CAMERA')  # Type unchanged
-        self.assertEqual(mock_entity.can_user_delete, True)  # User delete flag unchanged
-        self.assertEqual(mock_entity.integration_key, original_integration_key)  # Integration key unchanged
-        
-        # Rename surfaces the old → new transition in updated_list
-        # (operator can see both names at a glance).
-        self.assertEqual(len(result.error_list), 0)
-        self.assertEqual(result.updated_list, ['Old Name → New Name'])
 
-    def test_update_entity_no_change_when_name_same(self):
-        """Test _update_entity doesn't save when name unchanged and preserves all entity state"""
+        # Name preserved despite upstream rename.
+        self.assertEqual(mock_entity.name, 'Operator Name')
+        mock_entity.save.assert_not_called()
+
+        # Other entity state untouched.
+        self.assertEqual(mock_entity.entity_type_str, 'CAMERA')
+        self.assertEqual(mock_entity.can_user_delete, True)
+        self.assertEqual(mock_entity.integration_key, original_integration_key)
+
+        # No rename message — there's no rename to surface.
+        self.assertEqual(len(result.error_list), 0)
+        self.assertEqual(result.updated_list, [])
+
+    def test_update_entity_no_persistence_when_name_same(self):
+        """No-op even when names happen to match — the method
+        intentionally does not touch user-owned name on update."""
         mock_entity = Mock()
         mock_entity.name = 'Same Name'
         mock_entity.id = 789
@@ -593,10 +594,7 @@ class TestZoneMinderSynchronizerEntityUpdate(TestCase):
         result = IntegrationSyncResult(title='Test')
         self.synchronizer._update_entity(mock_entity, mock_monitor, result)
 
-        # Test no persistence when no changes.
         mock_entity.save.assert_not_called()
-
-        # No-change path appends nothing and surfaces nothing.
         self.assertEqual(len(result.error_list), 0)
         self.assertEqual(result.updated_list, [])
         self.assertEqual(result.info_list, [])
@@ -779,22 +777,21 @@ class TestZoneMinderSynchronizerWithRealData(TestCase):
         self.assertIn('ROTATE_0', orientations)
         self.assertIn('ROTATE_270', orientations)
     
-    def test_update_entity_with_real_monitor_name_changes(self):
-        """Test entity updates with realistic monitor name scenarios"""
-        # Create scenario where monitor name changed from generic to real name
+    def test_update_entity_preserves_operator_name_against_real_monitor_data(self):
+        """Even with a real-shaped ZM monitor object, the operator's
+        chosen name persists on update — the integration treats
+        entity name as user-owned after creation."""
         mock_entity = Mock()
-        mock_entity.name = 'Camera_001'  # Generic name
-        
-        # Use real monitor data
+        mock_entity.name = 'Operator Renamed Cam'
+
         real_monitor = self.create_mock_monitors_from_real_data()[0]  # HighCamera
-        
+
         result = IntegrationSyncResult(title='Test')
         self.synchronizer._update_entity(mock_entity, real_monitor, result)
-        
-        # Should update to real name from ZM API
-        self.assertEqual(mock_entity.name, 'HighCamera')
-        mock_entity.save.assert_called_once()
-        self.assertEqual(result.updated_list, ['Camera_001 → HighCamera'])
+
+        self.assertEqual(mock_entity.name, 'Operator Renamed Cam')
+        mock_entity.save.assert_not_called()
+        self.assertEqual(result.updated_list, [])
     
     @patch('hi.services.zoneminder.zm_sync.Entity.objects.filter')
     def test_get_existing_entities_with_real_monitor_id_patterns(self, mock_filter):

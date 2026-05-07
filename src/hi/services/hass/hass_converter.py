@@ -534,22 +534,21 @@ class HassConverter:
     
     @classmethod
     def update_models_for_hass_device( cls, entity : Entity, hass_device : HassDevice ) -> List[str]:
+        """Refresh integration-owned components on an existing entity.
+
+        ``entity.name`` and ``entity.entity_type`` are user-editable
+        in HI's UI on HASS entities (``can_add_custom_attributes``
+        defaults to True), so they're treated as user-owned after
+        creation: this method does not touch them on update. The
+        operator's choice of name and type sticks across refreshes.
+        Symmetric to the create-vs-reconnect distinction in
+        ``create_models_for_hass_device``, which already preserves
+        ``name`` on the reconnect path.
+        """
 
         messages = list()
         with transaction.atomic():
 
-            entity_name = cls.hass_device_to_entity_name( hass_device )
-            entity_type = cls.hass_device_to_entity_type( hass_device )
-            if entity.name != entity_name:
-                messages.append(f'Name changed for {entity}. Setting to "{entity_name}"')
-                entity.name = entity_name
-                entity.save()
-
-            if entity.entity_type != entity_type:
-                messages.append(f'Type changed for {entity}. Setting to "{entity_type}"')
-                entity.entity_type = entity_type
-                entity.save()
-            
             insteon_address = cls.hass_device_to_insteon_address( hass_device )
             try:
                 attribute = entity.attributes.get( name = cls.INSTEON_ADDRESS_ATTR_NAME )

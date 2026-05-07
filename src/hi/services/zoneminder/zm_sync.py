@@ -369,12 +369,17 @@ class ZoneMinderSynchronizer( IntegrationSynchronizer, ZoneMinderMixin ):
                         entity      : Entity,
                         zm_monitor  : ZmMonitor,
                         result      : IntegrationSyncResult ):
-        if entity.name != zm_monitor.name():
-            old_name = entity.name
-            entity.name = zm_monitor.name()
-            entity.save()
-            # Surface the rename so the operator sees both names.
-            result.updated_list.append( f'{old_name} → {entity.name}' )
+        """Refresh integration-owned components on an existing entity.
+
+        ``entity.name`` is user-editable in HI's UI on ZM entities
+        (``can_add_custom_attributes`` defaults to True), so it's
+        treated as user-owned after creation: this method does not
+        touch it on update. ZM monitor renames upstream are not
+        propagated; the operator's chosen name stays. The method is
+        currently a no-op stub kept for the symmetry of the sync
+        flow's create/update/remove dispatch — future
+        integration-owned per-entity fields would land here.
+        """
         return
     
     def _remove_entity( self,
