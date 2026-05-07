@@ -82,7 +82,10 @@ class IntegrationSynchronizer:
             return 'Import Result'
         return 'Refresh Result'
 
-    def sync(self, is_initial_import: bool) -> IntegrationSyncResult:
+    def sync(self,
+             is_initial_import   : bool,
+             preserve_user_data  : bool = True,
+             ) -> IntegrationSyncResult:
         """
         Public entry point used by the framework. Wraps `_sync_impl`
         with the sync lock and standard error handling. Subclasses
@@ -92,7 +95,19 @@ class IntegrationSynchronizer:
         sync flow (Import for first-time, Refresh otherwise);
         threaded down so each subclass can title its result
         consistently.
+
+        ``preserve_user_data`` controls how user-data entities are
+        handled when the sync drops them as no-longer-present
+        upstream — symmetric to the integration-disable flow's SAFE
+        / ALL choice. True (default, "Refresh and Retain") detaches
+        them; False ("Refresh and Remove") hard-deletes them. Stored
+        on the instance for the duration so
+        ``_remove_entity_intelligently`` can read it without
+        threading the flag through every subclass's ``_sync_impl``;
+        the process-wide ``SYNCHRONIZATION_LOCK_NAME`` precludes
+        concurrent syncs.
         """
+        self._preserve_user_data = preserve_user_data
         try:
             with ExclusionLockContext(name=self.SYNCHRONIZATION_LOCK_NAME):
                 logger.debug(f'{self.__class__.__name__} sync started.')
@@ -362,16 +377,18 @@ class IntegrationSynchronizer:
         Remove an entity that no longer exists in the integration.
 
         Delegates to ``EntityIntegrationOperations.remove_entities_with_closure``
-        — the same path the integration-disable SAFE flow uses. The
+        — the same path the integration-disable flow uses. The
         closure walk picks up delegate entities (e.g., the Area
         auto-created when a camera was placed in a view) when their
-        only remaining principal is being removed. Operator-added
-        attributes on any closure entity trigger the detach-and-preserve
-        path; otherwise the entity is hard-deleted.
+        only remaining principal is being removed. Whether
+        operator-added attributes trigger the detach-and-preserve
+        branch is controlled by ``self._preserve_user_data`` (set on
+        ``sync()`` entry from the operator's pre-sync choice;
+        defaults to True / preserve when not explicitly set).
         """
         EntityIntegrationOperations.remove_entities_with_closure(
             seed_entity_ids = { entity.id },
             integration_name = self.get_integration_metadata().label,
-            preserve_user_data = True,
+            preserve_user_data = getattr( self, '_preserve_user_data', True ),
             result = result,
         )
