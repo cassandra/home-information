@@ -38,6 +38,20 @@ class HassSimulator( Simulator ):
                 continue
             continue
         raise KeyError( f'HAss entity {hass_entity_id} does not exist.' )
+
+    def find_sim_entity_by_hass_entity_id( self, hass_entity_id : str ) -> SimEntity:
+        """Locate the SimEntity that owns a SimState with the given
+        HA entity_id, or return None if no match. Used by the
+        service-call dispatcher to map an incoming HA service call
+        to the right per-device-type handler — the handler then
+        decides which of the entity's SimStates to update and how."""
+        for sim_entity in self._sim_entity_map.values():
+            for sim_state in sim_entity.sim_state_list:
+                if sim_state.entity_id == hass_entity_id:
+                    return sim_entity
+                continue
+            continue
+        return None
         
     @property
     def sim_entity_definition_list(self) -> List[ SimEntityDefinition ]:

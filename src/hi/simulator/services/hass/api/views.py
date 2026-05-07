@@ -8,23 +8,10 @@ from django.views.decorators.csrf import csrf_exempt
 from django.views.generic import View
 
 from hi.simulator.services.hass.api_composers import HassApiComposer
+from hi.simulator.services.hass.service_dispatchers import HassServiceDispatcher
 from hi.simulator.services.hass.simulator import HassSimulator
 
 logger = logging.getLogger(__name__)
-
-
-# Service-call mapping for the limited set of entity types the simulator
-# supports (switches, outlets, dimmer light switches). Keys are
-# (domain, service) tuples; values are the target state value the
-# simulator should set on the addressed entity.
-#
-# Sensors (motion, open/close) are read-only and accept no service calls.
-_SUPPORTED_SERVICES = {
-    ( 'switch', 'turn_on' ): 'on',
-    ( 'switch', 'turn_off' ): 'off',
-    ( 'light', 'turn_on' ): 'on',
-    ( 'light', 'turn_off' ): 'off',
-}
 
 
 class PingView( View ):
@@ -99,10 +86,10 @@ class ServiceCallView( View ):
     The response is a JSON list of state objects for the entities that
     were changed.
 
-    Only the services emitted by Home Information's HAss controller for
-    the hard-coded simulator entity types (switch/light turn_on/turn_off)
-    are supported. Brightness data on light.turn_on is accepted but not
-    modeled — the simulator's dimmer states are ON_OFF only.
+    Service-call → SimState translation is delegated to
+    ``HassServiceDispatcher`` so per-device-type behavior (single-state
+    on/off, dimmer brightness, color-bulb hs/temp routing) lives in
+    one place rather than as a hard-coded mapping table here.
     """
 
     def post(self, request, *args, **kwargs):
@@ -115,14 +102,6 @@ class ServiceCallView( View ):
             except json.JSONDecodeError as jde:
                 raise BadRequest( f'Request body is not JSON: {jde}' )
 
-            target_state = _SUPPORTED_SERVICES.get( (domain, service) )
-            if target_state is None:
-                logger.warning( f'Unsupported HAss service: {domain}.{service}' )
-                return JsonResponse(
-                    { 'message': f'Service {domain}.{service} not supported by simulator' },
-                    status = 400,
-                )
-
             entity_id_field = data.get('entity_id')
             if not entity_id_field:
                 raise BadRequest( '"entity_id" is required in service call body.' )
@@ -134,21 +113,40 @@ class ServiceCallView( View ):
             hass_simulator = HassSimulator()
             changed_states = list()
             for hass_entity_id in entity_id_list:
-                try:
-                    sim_state = hass_simulator.set_sim_state_by_hass_entity_id(
-                        hass_entity_id = hass_entity_id,
-                        value_str = target_state,
+                sim_entity = hass_simulator.find_sim_entity_by_hass_entity_id(
+                    hass_entity_id = hass_entity_id,
+                )
+                if sim_entity is None:
+                    # Real HA silently no-ops on unknown entity_ids
+                    # in service calls; mirror that behavior.
+                    logger.warning( f'HAss entity not found: {hass_entity_id}' )
+                    continue
+
+                updates = HassServiceDispatcher.dispatch(
+                    sim_entity = sim_entity,
+                    domain = domain,
+                    service = service,
+                    payload = data,
+                )
+                if not updates:
+                    logger.warning(
+                        f'Unsupported HAss service for {hass_entity_id}: '
+                        f'{domain}.{service}'
+                    )
+                    continue
+
+                for sim_state_id, value_str in updates:
+                    sim_state = sim_entity.set_sim_state(
+                        sim_state_id = sim_state_id,
+                        value_str = value_str,
                     )
                     changed_states.append( sim_state.to_api_dict() )
-                except KeyError:
-                    # Real HA silently no-ops on unknown entity_ids in
-                    # service calls; mirror that behavior.
-                    logger.warning( f'HAss entity not found: {hass_entity_id}' )
+                    continue
                 continue
 
             logger.debug(
                 f'HAss service call: {domain}.{service} on {entity_id_list} '
-                f'-> {target_state} ({len(changed_states)} changed)'
+                f'({len(changed_states)} state(s) changed)'
             )
             return JsonResponse( changed_states, safe = False )
 

@@ -829,15 +829,45 @@ class HassConverter:
         logger.warning( f'No mapping found for domain {domain}, device_class {device_class}. Using BLOB.' )
         return EntityStateType.BLOB
 
+    # HA color/light modes that imply the light supports a
+    # variable brightness level. Used by ``_has_brightness_capability``
+    # to recognize a dimmer-capable light from its declared
+    # ``supported_color_modes`` even when the live ``brightness``
+    # attribute is absent — which HA does when the light is off.
+    # Without this, a known dimmer that's currently off would
+    # collapse into the on/off path and lose its dimmer state
+    # type on every off→on transition.
+    _BRIGHTNESS_SUPPORTING_COLOR_MODES = {
+        'brightness',
+        'color_temp',
+        'hs',
+        'rgb',
+        'rgbw',
+        'rgbww',
+        'white',
+        'xy',
+    }
+
     @classmethod
     def _has_brightness_capability( cls, hass_state: HassState ) -> bool:
-        """Check if a light has brightness/dimming capability"""
+        """Check if a light has brightness/dimming capability."""
         if hass_state.domain != HassApi.LIGHT_DOMAIN:
             return False
-        
-        # Check if brightness is in the state attributes
+
         attributes = hass_state.attributes
-        return 'brightness' in attributes or 'brightness_pct' in attributes
+        if 'brightness' in attributes or 'brightness_pct' in attributes:
+            return True
+
+        # The brightness attribute is omitted in HA's off-state
+        # output even for known-dimmable lights; consult the
+        # capability declaration in ``supported_color_modes`` so
+        # the dimmer path keeps firing across on/off transitions.
+        supported_color_modes = attributes.get('supported_color_modes')
+        if isinstance(supported_color_modes, list):
+            for mode in supported_color_modes:
+                if mode in cls._BRIGHTNESS_SUPPORTING_COLOR_MODES:
+                    return True
+        return False
 
     @classmethod
     def _is_controllable_domain_and_type( cls, domain: str, entity_state_type: EntityStateType ) -> bool:

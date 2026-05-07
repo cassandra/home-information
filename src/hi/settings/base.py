@@ -265,6 +265,7 @@ PIPELINE = {
                 'js/antinode.js',
                 'js/autosize.min.js',
                 'js/main.js',
+                'js/controllers.js',
             ),
             'output_filename': 'js/js_before_content.js',
         },

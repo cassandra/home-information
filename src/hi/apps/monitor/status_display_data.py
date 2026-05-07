@@ -21,6 +21,7 @@ class StatusDisplayData:
         self._controller_data_list = entity_state_status_data.controller_data_list
 
         self._svg_status_style = self._get_svg_status_style()
+        self._controller_data_value = self._get_controller_data_value()
         return
 
     @property
@@ -52,6 +53,23 @@ class StatusDisplayData:
         if self._svg_status_style:
             return self._svg_status_style.to_dict()
         return dict()
+
+    @property
+    def controller_data_value(self):
+        """The value to push to controller widgets (slider, checkbox,
+        select, color picker) for this state via the polling
+        controller-value map. None means this state has no
+        controller (read-only sensor) and should be skipped.
+
+        Distinct from the visual ``svg_status_style`` (CSS-driven
+        bucketed status): the controller value is whatever the
+        widget needs to faithfully reflect the latest state — a
+        precise numeric for a slider, ``'on'``/``'off'`` for a
+        checkbox, the discrete value for a select, a structured
+        dict for a future color picker. Per-state-type reshaping
+        can be added in ``_get_controller_data_value`` when a
+        widget needs something other than the raw sensor value."""
+        return self._controller_data_value
             
     @property
     def latest_sensor_value(self):
@@ -71,6 +89,25 @@ class StatusDisplayData:
             return self.sensor_response_list[1].timestamp
         return None
     
+    def _get_controller_data_value(self):
+        """Compute the controller-shaped value for this state.
+
+        Returns None when the state has no controller (purely
+        read-only sensors like motion or open/close binary
+        sensors), so the polling map skips them. Default for
+        controllable states is the raw latest sensor value, which
+        is what the existing widget templates already render
+        on initial load (slider ``value=...``, checkbox
+        ``checked=...``, select option ``selected=...``).
+
+        Per-state-type overrides go here when a widget needs a
+        reshape — e.g., a future COLOR state would return a dict
+        like ``{"hs": [60, 100]}`` for the color picker to consume.
+        """
+        if not self._controller_data_list:
+            return None
+        return self.latest_sensor_value
+
     def _get_svg_status_style(self):
     
         if self.entity_state.entity_state_type == EntityStateType.MOVEMENT:

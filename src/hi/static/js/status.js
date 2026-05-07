@@ -31,6 +31,7 @@
     const ServerTimestampAttr = 'timestamp';
     const LastServerTimestampAttr = 'lastTimestamp';
     const CssClassUpdateMapAttr = 'cssClassUpdateMap';
+    const CssControllerValueMapAttr = 'cssControllerValueMap';
     const IdReplaceUpdateMapAttr = 'idReplaceUpdateMap';
     const IdReplaceHashMapAttr = 'idReplaceHashMap';
     const ConsoleLockedAttr = 'consoleLocked';
@@ -148,6 +149,9 @@
         if ( CssClassUpdateMapAttr in respObj ) {
             handleCssClassUpdates( respObj[CssClassUpdateMapAttr] );
         }
+        if ( CssControllerValueMapAttr in respObj ) {
+            Hi.controllers.applyValueMap( respObj[CssControllerValueMapAttr] );
+        }
         if ( TransientViewSuggestionAttr in respObj ) {
             handleTransientViewSuggestion( respObj[TransientViewSuggestionAttr] );
         }
@@ -238,11 +242,18 @@
     }
     
     function handleCssClassUpdates( updateMap ) {
-
+        // Apply attribute updates (the bucketed status string and
+        // peers) for CSS-driven visual styling. Widget-state
+        // updates (slider position, checkbox checked, select value)
+        // come through the parallel controller-value path; see
+        // ``Hi.controllers.applyValueMap`` in controllers.js.
+        // The descendent ``div[status]`` text-update branch is
+        // preserved here because its purpose is visual (showing
+        // the bucketed status as text), not widget control.
         for ( let cssClass in updateMap ) {
             let elements = getElementsByCssClass( cssClass );
             let attrMap = updateMap[cssClass];
-            for ( let attrName in attrMap ) {               
+            for ( let attrName in attrMap ) {
                 let attrValue = attrMap[attrName];
                 elements.each( function() {
                     if (this.hasAttribute(attrName)) {
@@ -250,28 +261,11 @@
                         if ( attrValue != null && ( currentValue !== String(attrValue) )) {
                             $(this).attr( attrName, attrValue );
                         }
-                    } else {
-                        // Special cases:
-                        //    - descendent SELECT tag - assume select value is sensor value
-                        //    - descendent checkbox - assumes status value 'on' when checked
-                        //    - descendent DIV tag with status attr - assume attr and text needs updating
-                        //
-                        if ( attrName == 'status' ) {
-                            $(this).find('select').val( attrValue );
-                            
-                            $(this).find('input[type="checkbox"]').each( function(index, element) {
-                                if ( attrValue == 'on' ) {
-                                    $(element).attr( 'checked', 'true' );
-                                } else {
-                                    $(element).removeAttr( 'checked' );
-                                }
-                            });
-                            
-                            $(this).find('div[status]').each( function(index, element) {
-                                $(element).attr( attrName, attrValue );
-                                $(element).text( attrValue );
-                            });
-                        }
+                    } else if ( attrName == 'status' ) {
+                        $(this).find('div[status]').each( function(index, element) {
+                            $(element).attr( attrName, attrValue );
+                            $(element).text( attrValue );
+                        });
                     }
                 });
             }
