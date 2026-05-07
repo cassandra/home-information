@@ -66,6 +66,40 @@ class HassState( SimState ):
         }
 
     
+class HassBrightnessHelper:
+    """Conversions between the simulator's stored brightness value
+    (HA's 0-255 numeric string) and the two HA-shape outputs that
+    light states emit: the entity-level ``state`` field
+    (``'on'``/``'off'``) and the ``brightness`` attribute integer.
+    Shared across HASS light state classes (Insteon dimmer, smart
+    bulb, color smart bulb's brightness component)."""
+
+    @staticmethod
+    def value_to_state( value : str ) -> str:
+        """Map a brightness value to the HA ``state`` field. HA
+        reports ``state='on'`` whenever the light is producing any
+        light, ``state='off'`` only when fully off."""
+        try:
+            numeric = int( float( value ) ) if value is not None else 0
+        except ( TypeError, ValueError ):
+            numeric = 0
+        return 'on' if numeric > 0 else 'off'
+
+    @staticmethod
+    def value_to_attr( value : str ) -> int:
+        """Map a brightness value to the integer ``brightness``
+        attribute (1-255). Returns None when the bulb is off so
+        callers can omit the attribute, matching HA's typical
+        off-state shape."""
+        try:
+            numeric = int( float( value ) ) if value is not None else 0
+        except ( TypeError, ValueError ):
+            numeric = 0
+        if numeric <= 0:
+            return None
+        return min( numeric, 255 )
+
+
 @dataclass( frozen = True )
 class HassInsteonSimEntityFields( SimEntityFields ):
     """ Base class for all HAss Insteon devices """
@@ -134,25 +168,52 @@ class HassInsteonDimmerLightSwitchFields( HassInsteonSimEntityFields ):
 class HassInsteonDimmerLightLightState( HassInsteonState ):
 
     sim_entity_fields  : HassInsteonDimmerLightSwitchFields
-    sim_state_type     : SimStateType                  = SimStateType.ON_OFF
+    # CONTINUOUS so the operator can set arbitrary brightness via
+    # the simulator's range slider. Value is a string-encoded int
+    # in HA's 1-255 brightness range; 0 means off. Without this
+    # change HI's _has_brightness_capability check failed (no
+    # ``brightness`` in attributes) and the entity imported as
+    # ON_OFF rather than LIGHT_DIMMER, leaving the existing
+    # ``controller_light_dimmer.html`` slider unreachable for
+    # HASS-imported dimmers.
+    sim_state_type     : SimStateType                  = SimStateType.CONTINUOUS
     sim_state_id       : str                           = 'light'
+    value              : str                           = '255'
+
+    @property
+    def min_value(self):
+        return 0
+
+    @property
+    def max_value(self):
+        return 255
 
     @property
     def name(self):
         return f'{self.entity_name} Light'
-        
+
     @property
     def entity_id(self):
         return 'light.switchlinc_dimmer_%s' % self.insteon_address_id_suffix
-    
+
+    @property
+    def state(self):
+        return HassBrightnessHelper.value_to_state( self.value )
+
     @property
     def attributes(self) -> Dict[ str, str ]:
-        return {
+        attrs = {
             'friendly_name': self.entity_name,
             "icon": "mdi:lightbulb",
             "insteon_address": self.insteon_address,
             "insteon_group": 1,
+            "supported_color_modes": [ "brightness" ],
         }
+        brightness = HassBrightnessHelper.value_to_attr( self.value )
+        if brightness is not None:
+            attrs[ "brightness" ] = brightness
+            attrs[ "color_mode" ] = "brightness"
+        return attrs
 
     
 @dataclass( frozen = True )
@@ -326,6 +387,260 @@ class HassInsteonOutletState( HassInsteonState ):
         }
 
     
+# --------------------------------------------------------------------------
+# Non-Insteon HASS device variants
+# --------------------------------------------------------------------------
+#
+# Smart bulbs (Hue-, Lifx-, Wyze-style) are dedicated lighting
+# products HA exposes via the ``light`` domain with brightness and
+# (for color bulbs) color attributes. They are not switches wired
+# to fixtures, so they do NOT inherit from ``HassInsteonState`` —
+# bulbs carry no Insteon address / group, and inheriting would
+# leak those Insteon-flavored attributes into the API output and
+# mask issues in HI's vendor-neutral attribute path.
+#
+# The simulator's data model is HI-centric: each runtime-mutable
+# value HI sees as its own EntityState gets its own SimState here,
+# with its own min/max range and slider in the simulator UI. Real
+# HA, however, models a color bulb as ONE entity with multiple
+# attributes — see ``api_composers.py`` for the per-device-type
+# composer that collapses the multi-state HI shape to HA's flat-
+# attribute shape on emit.
+
+
+@dataclass( frozen = True )
+class HassSmartBulbFields( SimEntityFields ):
+    """A brightness-only smart bulb. No color attributes — that
+    variant is ``HassColorSmartBulbFields`` below. One SimState
+    per device, so this device uses the default API composer
+    (one-state-per-HA-entity)."""
+    pass
+
+
+@dataclass
+class HassSmartBulbState( HassState ):
+    """Single CONTINUOUS brightness state in HA's 0-255 range.
+    ``state`` is derived (``on`` when brightness > 0, else
+    ``off``); ``brightness`` is omitted from attributes when off,
+    matching HA's typical off-state shape."""
+
+    sim_entity_fields  : HassSmartBulbFields
+    sim_state_type     : SimStateType                  = SimStateType.CONTINUOUS
+    sim_state_id       : str                           = 'light'
+    value              : str                           = '255'
+
+    @property
+    def min_value(self):
+        return 0
+
+    @property
+    def max_value(self):
+        return 255
+
+    @property
+    def name(self):
+        return f'{self.entity_name} Brightness'
+
+    @property
+    def entity_id(self):
+        suffix = self.entity_name.lower().replace( ' ', '_' )
+        return f'light.smart_bulb_{suffix}'
+
+    @property
+    def state(self):
+        return HassBrightnessHelper.value_to_state( self.value )
+
+    @property
+    def attributes(self) -> Dict[ str, str ]:
+        attrs = {
+            'friendly_name': self.entity_name,
+            'icon': 'mdi:lightbulb',
+            'supported_color_modes': [ 'brightness' ],
+        }
+        brightness = HassBrightnessHelper.value_to_attr( self.value )
+        if brightness is not None:
+            attrs[ 'brightness' ] = brightness
+            attrs[ 'color_mode' ] = 'brightness'
+        return attrs
+
+
+@dataclass( frozen = True )
+class HassColorSmartBulbFields( SimEntityFields ):
+    """A color smart bulb. Composed of multiple SimStates
+    (brightness, hue, saturation, color temperature) collapsed
+    into one HA entity at emit time by ``api_composers``."""
+    pass
+
+
+def _color_bulb_entity_id( name : str ) -> str:
+    suffix = name.lower().replace( ' ', '_' )
+    return f'light.color_bulb_{suffix}'
+
+
+@dataclass
+class HassColorSmartBulbBrightnessState( HassState ):
+    """Brightness component of a color smart bulb (CONTINUOUS,
+    0-255). Drives the HA entity's ``state`` (on/off) and the
+    ``brightness`` attribute. Designated as the primary state in
+    the color-bulb composer (its ``state`` field becomes the
+    composed entity's ``state`` field)."""
+
+    sim_entity_fields  : HassColorSmartBulbFields
+    sim_state_type     : SimStateType                  = SimStateType.CONTINUOUS
+    sim_state_id       : str                           = 'brightness'
+    value              : str                           = '255'
+
+    @property
+    def min_value(self):
+        return 0
+
+    @property
+    def max_value(self):
+        return 255
+
+    @property
+    def name(self):
+        return f'{self.entity_name} Brightness'
+
+    @property
+    def entity_id(self):
+        return _color_bulb_entity_id( self.entity_name )
+
+    @property
+    def state(self):
+        return HassBrightnessHelper.value_to_state( self.value )
+
+    @property
+    def attributes(self) -> Dict[ str, str ]:
+        # The composer combines this state's contributions with
+        # those of the other color-bulb states; we return only
+        # this state's piece of the attribute dict.
+        attrs = {
+            'friendly_name': self.entity_name,
+            'icon': 'mdi:lightbulb',
+            'supported_color_modes': [ 'hs', 'color_temp', 'rgb' ],
+        }
+        brightness = HassBrightnessHelper.value_to_attr( self.value )
+        if brightness is not None:
+            attrs[ 'brightness' ] = brightness
+        return attrs
+
+
+@dataclass
+class HassColorSmartBulbHueState( HassState ):
+    """Hue component (CONTINUOUS, 0-360 degrees). Combined with
+    the saturation state into ``hs_color: [hue, saturation]`` by
+    the color-bulb composer."""
+
+    sim_entity_fields  : HassColorSmartBulbFields
+    sim_state_type     : SimStateType                  = SimStateType.CONTINUOUS
+    sim_state_id       : str                           = 'hue'
+    value              : str                           = '60'
+
+    @property
+    def min_value(self):
+        return 0
+
+    @property
+    def max_value(self):
+        return 360
+
+    @property
+    def name(self):
+        return f'{self.entity_name} Hue'
+
+    @property
+    def entity_id(self):
+        return _color_bulb_entity_id( self.entity_name )
+
+    @property
+    def state(self):
+        # Composer ignores this state's ``state`` field; only the
+        # primary (brightness) state's value drives the entity's
+        # state. Returning a placeholder keeps the HassState
+        # contract satisfied for any direct callers.
+        return 'on'
+
+    @property
+    def attributes(self) -> Dict[ str, str ]:
+        # Hue and saturation must compose into ``hs_color: [h, s]``;
+        # neither alone has the full pair. Return the hue under a
+        # private key the composer combines with the saturation
+        # state's contribution into a single ``hs_color`` attribute.
+        return { '_partial_hs_hue': float( self.value ) }
+
+
+@dataclass
+class HassColorSmartBulbSaturationState( HassState ):
+    """Saturation component (CONTINUOUS, 0-100 percent). Pairs
+    with the hue state to compose ``hs_color``."""
+
+    sim_entity_fields  : HassColorSmartBulbFields
+    sim_state_type     : SimStateType                  = SimStateType.CONTINUOUS
+    sim_state_id       : str                           = 'saturation'
+    value              : str                           = '100'
+
+    @property
+    def min_value(self):
+        return 0
+
+    @property
+    def max_value(self):
+        return 100
+
+    @property
+    def name(self):
+        return f'{self.entity_name} Saturation'
+
+    @property
+    def entity_id(self):
+        return _color_bulb_entity_id( self.entity_name )
+
+    @property
+    def state(self):
+        return 'on'
+
+    @property
+    def attributes(self) -> Dict[ str, str ]:
+        return { '_partial_hs_saturation': float( self.value ) }
+
+
+@dataclass
+class HassColorSmartBulbColorTempState( HassState ):
+    """Color temperature component (CONTINUOUS, 2000-6500 Kelvin
+    — HA's typical light range, warm to cool white). Emits
+    ``color_temp_kelvin`` directly; no composition needed."""
+
+    sim_entity_fields  : HassColorSmartBulbFields
+    sim_state_type     : SimStateType                  = SimStateType.CONTINUOUS
+    sim_state_id       : str                           = 'color_temp'
+    value              : str                           = '4000'
+
+    @property
+    def min_value(self):
+        return 2000
+
+    @property
+    def max_value(self):
+        return 6500
+
+    @property
+    def name(self):
+        return f'{self.entity_name} Color Temp'
+
+    @property
+    def entity_id(self):
+        return _color_bulb_entity_id( self.entity_name )
+
+    @property
+    def state(self):
+        return 'on'
+
+    @property
+    def attributes(self) -> Dict[ str, str ]:
+        return { 'color_temp_kelvin': int( float( self.value ) ) }
+
+
 HASS_SIM_ENTITY_DEFINITION_LIST = [
     SimEntityDefinition(
         class_label = 'Insteon Switch',
@@ -381,6 +696,29 @@ HASS_SIM_ENTITY_DEFINITION_LIST = [
         sim_entity_fields_class = HassInsteonOutletFields,
         sim_state_class_list = [
             HassInsteonOutletState,
+        ],
+    ),
+    SimEntityDefinition(
+        class_label = 'Smart Bulb (brightness)',
+        sim_entity_type = SimEntityType.LIGHT,
+        sim_entity_fields_class = HassSmartBulbFields,
+        sim_state_class_list = [
+            HassSmartBulbState,
+        ],
+    ),
+    SimEntityDefinition(
+        class_label = 'Smart Bulb (color)',
+        sim_entity_type = SimEntityType.LIGHT,
+        sim_entity_fields_class = HassColorSmartBulbFields,
+        sim_state_class_list = [
+            # Order matters: ``api_composers`` treats the first
+            # state (brightness) as the primary, taking its
+            # ``state`` field for the composed HA entity. The
+            # other states only contribute attributes.
+            HassColorSmartBulbBrightnessState,
+            HassColorSmartBulbHueState,
+            HassColorSmartBulbSaturationState,
+            HassColorSmartBulbColorTempState,
         ],
     ),
 ]

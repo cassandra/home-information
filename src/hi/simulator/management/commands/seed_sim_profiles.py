@@ -74,12 +74,14 @@ from django.db import transaction
 from hi.simulator.enums import SimEntityType
 from hi.simulator.models import DbSimEntity, SimProfile
 from hi.simulator.services.hass.sim_models import (
+    HassColorSmartBulbFields,
     HassInsteonDimmerLightSwitchFields,
     HassInsteonDualBandLightSwitchFields,
     HassInsteonLightSwitchFields,
     HassInsteonMotionDetectorFields,
     HassInsteonOpenCloseSensorFields,
     HassInsteonOutletFields,
+    HassSmartBulbFields,
 )
 from hi.simulator.services.homebox.attachment_catalog import AttachmentTemplate
 from hi.simulator.services.homebox.sim_models import (
@@ -335,12 +337,14 @@ class Command(BaseCommand):
 
     def _build_hass_zoo(self, profile: SimProfile) -> int:
         # One of every HASS sim entity definition type.
-        self._add_hass_light_switch( profile, 'Zoo Light Switch'     , '01.BB.01' )
-        self._add_hass_dimmer(       profile, 'Zoo Dimmer'           , '01.BB.02' )
-        self._add_hass_dual_band(    profile, 'Zoo Dual Band Switch' , '01.BB.03' )
-        self._add_hass_motion(       profile, 'Zoo Motion'           , '01.BB.04' )
-        self._add_hass_open_close(   profile, 'Zoo Open/Close'       , '01.BB.05' )
-        self._add_hass_outlet(       profile, 'Zoo Outlet'           , '01.BB.06' )
+        self._add_hass_light_switch(   profile, 'Zoo Light Switch'     , '01.BB.01' )
+        self._add_hass_dimmer(         profile, 'Zoo Dimmer'           , '01.BB.02' )
+        self._add_hass_dual_band(      profile, 'Zoo Dual Band Switch' , '01.BB.03' )
+        self._add_hass_motion(         profile, 'Zoo Motion'           , '01.BB.04' )
+        self._add_hass_open_close(     profile, 'Zoo Open/Close'       , '01.BB.05' )
+        self._add_hass_outlet(         profile, 'Zoo Outlet'           , '01.BB.06' )
+        self._add_hass_smart_bulb(     profile, 'Zoo Smart Bulb' )
+        self._add_hass_color_smart_bulb( profile, 'Zoo Color Bulb' )
         return profile.db_sim_entities.count()
 
     def _build_volume(self, profile: SimProfile) -> int:
@@ -452,6 +456,24 @@ class Command(BaseCommand):
             fields_class = HassInsteonOutletFields,
             sim_entity_type = SimEntityType.ELECTRICAL_OUTLET,
             fields_kwargs = {'name': name, 'insteon_address': addr},
+        )
+
+    def _add_hass_smart_bulb(self, profile, name):
+        self._create_db_entity(
+            profile = profile,
+            simulator_id = 'hass',
+            fields_class = HassSmartBulbFields,
+            sim_entity_type = SimEntityType.LIGHT,
+            fields_kwargs = {'name': name},
+        )
+
+    def _add_hass_color_smart_bulb(self, profile, name):
+        self._create_db_entity(
+            profile = profile,
+            simulator_id = 'hass',
+            fields_class = HassColorSmartBulbFields,
+            sim_entity_type = SimEntityType.LIGHT,
+            fields_kwargs = {'name': name},
         )
 
     def _add_homebox_item(self, profile, name, **fields_kwargs):

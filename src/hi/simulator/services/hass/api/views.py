@@ -7,6 +7,7 @@ from django.utils.decorators import method_decorator
 from django.views.decorators.csrf import csrf_exempt
 from django.views.generic import View
 
+from hi.simulator.services.hass.api_composers import HassApiComposer
 from hi.simulator.services.hass.simulator import HassSimulator
 
 logger = logging.getLogger(__name__)
@@ -44,8 +45,17 @@ class AllStatesView( View ):
     def get(self, request, *args, **kwargs):
         try:
             hass_simulator = HassSimulator()
-            hass_sim_state_list = hass_simulator.get_hass_sim_state_list()
-            return JsonResponse( [ x.to_api_dict() for x in hass_sim_state_list ], safe = False )
+            # Compose per-entity rather than per-state so devices
+            # whose HA shape is "one entity with attributes from
+            # multiple SimStates" (color smart bulbs, future
+            # climate entities) get collapsed correctly. Devices
+            # without a registered composer use the default
+            # one-state-per-HA-entity behavior, preserving the
+            # existing motion-detector / switch / sensor shapes.
+            api_dicts = []
+            for sim_entity in hass_simulator.sim_entities:
+                api_dicts.extend( HassApiComposer.compose( sim_entity ) )
+            return JsonResponse( api_dicts, safe = False )
 
         except Exception:
             logger.exception( 'Problem processing HAss states API request' )
