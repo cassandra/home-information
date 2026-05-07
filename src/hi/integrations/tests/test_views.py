@@ -387,13 +387,13 @@ class PreSyncViewTests(SyncViewTestCase):
         self.assertSuccessResponse(response)
         body = response.content.decode()
         self.assertIn('>REFRESH<', body.replace('\n', ''))
-        self.assertNotIn('REFRESH AND RETAIN', body)
-        self.assertNotIn('REFRESH AND REMOVE', body)
+        self.assertNotIn('RETAIN MISSING', body)
+        self.assertNotIn('REMOVE MISSING', body)
 
     def test_refresh_modal_shows_retain_remove_choice_with_user_data(self):
         """When at least one attached entity has operator-added
         attributes, the Refresh modal exposes the policy choice
-        (REFRESH AND RETAIN / REFRESH AND REMOVE) symmetric to the
+        (RETAIN MISSING / REMOVE MISSING) symmetric to the
         disable modal's DELETE SAFE / DELETE ALL.
         """
         from hi.apps.attribute.enums import AttributeType, AttributeValueType
@@ -415,8 +415,8 @@ class PreSyncViewTests(SyncViewTestCase):
         response = self.client.get(self._url())
         self.assertSuccessResponse(response)
         body = response.content.decode()
-        self.assertIn('REFRESH AND RETAIN', body)
-        self.assertIn('REFRESH AND REMOVE', body)
+        self.assertIn('RETAIN MISSING', body)
+        self.assertIn('REMOVE MISSING', body)
 
 
 class SyncViewTests(SyncViewTestCase):
@@ -467,13 +467,13 @@ class SyncViewTests(SyncViewTestCase):
         self.assertTrue(self.synchronizer.last_preserve_user_data)
 
     def test_post_with_preserve_user_data_false_disables_preservation(self):
-        """The REFRESH AND REMOVE button posts preserve_user_data=false;
+        """The REMOVE MISSING button posts preserve_user_data=false;
         the view must thread that through to synchronizer.sync."""
         self.client.post(self._url(), {'preserve_user_data': 'false'})
         self.assertFalse(self.synchronizer.last_preserve_user_data)
 
     def test_post_with_preserve_user_data_true_keeps_preservation(self):
-        """The REFRESH AND RETAIN button posts preserve_user_data=true."""
+        """The RETAIN MISSING button posts preserve_user_data=true."""
         self.client.post(self._url(), {'preserve_user_data': 'true'})
         self.assertTrue(self.synchronizer.last_preserve_user_data)
 
