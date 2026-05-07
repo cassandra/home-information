@@ -161,6 +161,61 @@ class CreateModelsForHassDeviceReconnectContractTests(TestCase):
         self.assertIsNotNone(existing.integration_name)
 
 
+class UpdateModelsForHassDeviceContractTests(TestCase):
+    """Pin that ``update_models_for_hass_device`` treats user-editable
+    fields (``name``, ``entity_type``) as user-owned after creation.
+    HASS entities default ``can_add_custom_attributes=True`` so the
+    operator can edit name/type via the entity-edit modal; once
+    edited, refreshes must not silently revert those changes."""
+
+    def _build_simple_light_device(self, device_id='kitchen_light'):
+        api_dict = {
+            'entity_id': f'light.{device_id}',
+            'state': 'on',
+            'attributes': {
+                'friendly_name': device_id.replace('_', ' ').title(),
+                'supported_color_modes': ['onoff'],
+                'color_mode': 'onoff',
+            },
+            'last_changed': '2026-01-01T00:00:00+00:00',
+            'last_reported': '2026-01-01T00:00:00+00:00',
+            'last_updated': '2026-01-01T00:00:00+00:00',
+            'context': {'id': 'ctx', 'parent_id': None, 'user_id': None},
+        }
+        hass_state = HassConverter.create_hass_state(api_dict)
+        device = HassDevice(device_id=device_id)
+        device.add_state(hass_state)
+        return device
+
+    def test_update_preserves_user_edited_name(self):
+        existing = Entity.objects.create(
+            name='Operator Picked Name',
+            entity_type_str='WALL_SWITCH',
+        )
+        device = self._build_simple_light_device()
+
+        HassConverter.update_models_for_hass_device(
+            entity=existing, hass_device=device,
+        )
+
+        existing.refresh_from_db()
+        self.assertEqual(existing.name, 'Operator Picked Name')
+
+    def test_update_preserves_user_edited_entity_type(self):
+        existing = Entity.objects.create(
+            name='Kitchen Light',
+            entity_type_str='WALL_SWITCH',  # operator chose switch icon for a light
+        )
+        device = self._build_simple_light_device()
+
+        HassConverter.update_models_for_hass_device(
+            entity=existing, hass_device=device,
+        )
+
+        existing.refresh_from_db()
+        self.assertEqual(existing.entity_type_str, 'WALL_SWITCH')
+
+
 class EventDefinitionLifecycleCycleTests(TestCase):
     """
     Issue #288 Phase 3: end-to-end EventDefinition lifecycle for HASS

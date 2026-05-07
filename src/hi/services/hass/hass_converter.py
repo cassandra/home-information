@@ -534,22 +534,21 @@ class HassConverter:
     
     @classmethod
     def update_models_for_hass_device( cls, entity : Entity, hass_device : HassDevice ) -> List[str]:
+        """Refresh integration-owned components on an existing entity.
+
+        ``entity.name`` and ``entity.entity_type`` are user-editable
+        in HI's UI on HASS entities (``can_add_custom_attributes``
+        defaults to True), so they're treated as user-owned after
+        creation: this method does not touch them on update. The
+        operator's choice of name and type sticks across refreshes.
+        Symmetric to the create-vs-reconnect distinction in
+        ``create_models_for_hass_device``, which already preserves
+        ``name`` on the reconnect path.
+        """
 
         messages = list()
         with transaction.atomic():
 
-            entity_name = cls.hass_device_to_entity_name( hass_device )
-            entity_type = cls.hass_device_to_entity_type( hass_device )
-            if entity.name != entity_name:
-                messages.append(f'Name changed for {entity}. Setting to "{entity_name}"')
-                entity.name = entity_name
-                entity.save()
-
-            if entity.entity_type != entity_type:
-                messages.append(f'Type changed for {entity}. Setting to "{entity_type}"')
-                entity.entity_type = entity_type
-                entity.save()
-            
             insteon_address = cls.hass_device_to_insteon_address( hass_device )
             try:
                 attribute = entity.attributes.get( name = cls.INSTEON_ADDRESS_ATTR_NAME )
@@ -1127,6 +1126,50 @@ class HassConverter:
             return friendly_name
         return hass_device.device_id
         
+    # Word-boundary patterns matched against the device's display
+    # name to upgrade a switch-domain device's EntityType at import
+    # time when the name reveals what the switch is wired to. Word
+    # boundaries guard against substring collisions (e.g.
+    # "Lighthouse", "Lightning" don't match the bare "light"
+    # keyword). Each regex is paired with the EntityType it implies
+    # in ``_NAME_INFERENCE_RULES`` below.
+    _OUTLET_NAME_PATTERN = re.compile(
+        r'\b(plug|plugs|outlet|outlets|receptacle|receptacles)\b',
+        re.IGNORECASE,
+    )
+    _FAN_NAME_PATTERN = re.compile(
+        r'\b(fan|fans)\b',
+        re.IGNORECASE,
+    )
+    _LIGHT_NAME_PATTERN = re.compile(
+        r'\b(light|lights|lighting'
+        r'|lamp|lamps|bulb|bulbs|led|sconce|chandelier'
+        r'|pendant|spotlight|floodlight|lantern)\b',
+        re.IGNORECASE,
+    )
+
+    @classmethod
+    def _device_name_to_inferred_type(
+            cls, hass_device : HassDevice ) -> Optional[EntityType]:
+        """Heuristic mapping for a switch-domain device whose name
+        reveals what it's connected to. Order encodes precedence:
+        outlet/plug keywords are most specific (a "Smart Plug" is
+        almost always wanted as ELECTRICAL_OUTLET), fan next, light
+        last. Returns None when no rule matches; the caller falls
+        through to the generic ON_OFF_SWITCH for switch-domain
+        devices. False positives cost one manual edit which now
+        sticks across refreshes."""
+        name = cls.hass_device_to_entity_name( hass_device )
+        if not name:
+            return None
+        if cls._OUTLET_NAME_PATTERN.search( name ):
+            return EntityType.ELECTRICAL_OUTLET
+        if cls._FAN_NAME_PATTERN.search( name ):
+            return EntityType.CEILING_FAN
+        if cls._LIGHT_NAME_PATTERN.search( name ):
+            return EntityType.LIGHT
+        return None
+
     @classmethod
     def hass_device_to_entity_type( cls, hass_device : HassDevice ) -> EntityType:
         domain_set = hass_device.domain_set
@@ -1146,13 +1189,44 @@ class HassConverter:
         if ( HassApi.LIGHT_DOMAIN in domain_set
              or HassApi.LIGHT_DEVICE_CLASS in device_class_set ):
             return EntityType.LIGHT
+        # Outlet device class wins over the switch-domain branch
+        # below — an HA switch.x with device_class=outlet is
+        # specifically an electrical outlet, not a wall switch.
         if HassApi.OUTLET_DEVICE_CLASS in device_class_set:
-            return EntityType.WALL_SWITCH
+            return EntityType.ELECTRICAL_OUTLET
+        # For a generic switch.x device, the name often reveals
+        # what the switch is wired to (Kitchen Light, Smart Plug,
+        # Ceiling Fan); the heuristic upgrades the type at import
+        # time when a clear match is present, falling through to
+        # the catch-all ON_OFF_SWITCH otherwise.
+        if HassApi.SWITCH_DOMAIN in domain_set:
+            inferred = cls._device_name_to_inferred_type( hass_device )
+            if inferred is not None:
+                return inferred
+            return EntityType.ON_OFF_SWITCH
+        if HassApi.LOCK_DOMAIN in domain_set:
+            return EntityType.DOOR_LOCK
+        # HA covers are doors / windows / garage doors / blinds /
+        # awnings / etc. Without a device-class refinement that maps
+        # cleanly to HI's specific types, OPEN_CLOSE_SENSOR is the
+        # least-wrong default; the operator can change it post-import
+        # to DOOR / WINDOW / GARAGE_DOOR if appropriate.
+        if HassApi.COVER_DOMAIN in domain_set:
+            return EntityType.OPEN_CLOSE_SENSOR
+        # Fan domain has no HA-side device class to distinguish
+        # ceiling vs exhaust; CEILING_FAN is the more common case.
+        if HassApi.FAN_DOMAIN in domain_set:
+            return EntityType.CEILING_FAN
+        # Climate domain is the controllable HVAC entity; the
+        # temperature device-class check below catches passive
+        # temperature sensors that aren't climate entities.
+        if HassApi.CLIMATE_DOMAIN in domain_set:
+            return EntityType.THERMOSTAT
         if HassApi.TEMPERATURE_DEVICE_CLASS in device_class_set:
             return EntityType.THERMOSTAT
         if HassApi.CONNECTIVITY_DEVICE_CLASS in device_class_set:
             return EntityType.HEALTHCHECK
-  
+
         return EntityType.OTHER
             
     @classmethod
