@@ -88,3 +88,9 @@ class EntityAttributeItemEditContext(AttributeItemEditContext):
         if self.can_add_custom_attributes:
             return ''
         return 'New attributes are disabled for externally managed entities.'
+
+    @property
+    def externally_managed_message(self) -> str:
+        if self.can_add_custom_attributes:
+            return ''
+        return 'Attributes are managed externally and cannot be edited here.'

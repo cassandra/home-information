@@ -26,6 +26,20 @@ saving from there returns to this modal. On the manage-page entry
 path, the user came from the manage page and the inherited CANCEL
 already takes them "back" to it.
 
+When `removal_summary.has_mixed_state` (Refresh path with at least
+one user-data entity present), the modal symmetrically mirrors the
+disable modal's policy choice: REFRESH AND RETAIN preserves dropped
+user-data items by detaching, REFRESH AND REMOVE hard-deletes them.
+The summary is the integration's full footprint (not a per-sync
+prediction); the operator's choice expresses policy that applies at
+sync execution if any drops carry user data.
+
+The form is opened in `preamble` and closed in `postamble` so each
+action button is a plain `<button name="preserve_user_data" value=…>`
+on the same form (mirrors the integration_disable.html pattern).
+The REVIEW CONFIG anchor on the first-time path sits inside the
+form harmlessly — it navigates rather than submitting.
+
 Context:
   integration_data        : IntegrationData (required) — for label, id.
   is_initial_import       : bool (required) — True when no entities for
@@ -34,20 +48,22 @@ Context:
                             REFRESH operations.
   sync_description        : Optional[str] — per-integration text from
                             IntegrationSynchronizer.get_description.
-  sync_url                : str (required) — URL the action posts to.
+  sync_url                : str (required) — URL the form posts to.
   review_config_url       : str (required) — URL the REVIEW CONFIG
                             action opens (the integrations_enable
                             modal).
+  removal_summary         : Optional[IntegrationRemovalSummary] —
+                            integration's user-data classification.
+                            None on the first-time import path; a
+                            zero-count summary when no entities are
+                            attached. Drives the Retain / Remove
+                            choice on the Refresh path.
 {% endcomment %}
 
-{% comment %}
-First-time path only: override the inherited dismiss-only CANCEL with
-one that triggers a full page reload. Reason: the operator's
-underlying page (typically integrations home) was rendered before the
-integration was enabled and is therefore stale; a plain dismiss would
-leave them on a pre-enable view. On the refresh path the underlying
-page is already current, so we keep the inherited dismiss behavior.
-{% endcomment %}
+{% block preamble %}
+<form action="{{ sync_url }}" method="post" class="form" data-async="modal">
+  {% csrf_token %}
+{% endblock %}
 
 {% block title_text %}
 {% if is_initial_import %}
@@ -69,23 +85,30 @@ Refresh from {{ integration_data.label }}?
   Refresh adds new items from <strong>{{ integration_data.label }}</strong>,
   updates ones that have changed, and removes ones no longer present.
 </p>
+{% if removal_summary.has_mixed_state %}
+<p>
+  This integration has <strong>{{ removal_summary.user_data_count }}</strong>
+  {% if removal_summary.user_data_count == 1 %}item{% else %}items{% endif %}
+  with custom data you've added. If a Refresh would drop
+  {% if removal_summary.user_data_count == 1 %}that item{% else %}any of them{% endif %}:
+</p>
+<ul>
+  <li>
+    <strong>RETAIN MISSING</strong> — preserve any missing items with custom data
+    (detached from this integration; they will show as
+    <em>Detached from {{ integration_data.label }}</em> in the entity-detail UI,
+    with custom attributes and layout retained).
+  </li>
+  <li>
+    <strong>REMOVE MISSING</strong> — delete any missing items along with their
+    custom data. You will not be able to recover the deleted custom data.
+  </li>
+</ul>
+{% endif %}
 {% endif %}
 
 {% if sync_description %}
 <p class="text-muted">{{ sync_description }}</p>
-{% endif %}
-{% endblock %}
-
-{% block action_left %}
-{% if is_initial_import %}
-<a id="hi-modal-cancel" role="button"
-   class="btn btn-outline-tertiary"
-   href="#"
-   onclick="location.reload(); return false;">
-  {% icon "close" size="lg" css_class="hi-icon-left" %}SKIP
-</a>
-{% else %}
-{{ block.super }}
 {% endif %}
 {% endblock %}
 
@@ -97,18 +120,31 @@ Refresh from {{ integration_data.label }}?
    data-async="modal">
   {% icon "settings" size="lg" css_class="hi-icon-left" %}REVIEW CONFIG
 </a>
+{% elif removal_summary.has_mixed_state %}
+<button type="submit" class="btn btn-outline-danger ml-2"
+        name="preserve_user_data" value="false">
+  {% icon "warning" size="sm" css_class="hi-icon-left" %}REMOVE MISSING
+</button>
 {% endif %}
 {% endblock %}
 
 {% block action_right %}
-<form action="{{ sync_url }}" method="post" class="form" data-async="modal">
-  {% csrf_token %}
-  <button type="submit" class="btn btn-primary">
-    {% if is_initial_import %}
-    {% icon "upload" size="lg" css_class="hi-icon-left" %}IMPORT
-    {% else %}
-    {% icon "sync" size="lg" css_class="hi-icon-left" %}REFRESH
-    {% endif %}
-  </button>
+{% if is_initial_import %}
+<button type="submit" class="btn btn-primary">
+  {% icon "upload" size="lg" css_class="hi-icon-left" %}IMPORT
+</button>
+{% elif removal_summary.has_mixed_state %}
+<button type="submit" class="btn btn-primary"
+        name="preserve_user_data" value="true">
+  {% icon "shield" size="sm" css_class="hi-icon-left" %}RETAIN MISSING
+</button>
+{% else %}
+<button type="submit" class="btn btn-primary">
+  {% icon "sync" size="lg" css_class="hi-icon-left" %}REFRESH
+</button>
+{% endif %}
+{% endblock %}
+
+{% block postamble %}
 </form>
 {% endblock %}

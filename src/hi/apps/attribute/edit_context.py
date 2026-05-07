@@ -262,6 +262,18 @@ class AttributeItemEditContext( AttributePageEditContext ):
     @property
     def add_attribute_disabled_message(self) -> str:
         return ''
+
+    @property
+    def externally_managed_message(self) -> str:
+        """Operator-facing notice rendered in the action bar's
+        UPDATE-button slot when the surface has no UPDATE action
+        (i.e., ``can_add_custom_attributes`` is False on the owner).
+        Returns an empty string by default; owner contexts override
+        to enable the notice. The template only renders the notice
+        when UPDATE is hidden, so an owner can return a non-empty
+        value here without worrying about duplication on the normal
+        editable surface."""
+        return ''
     
     def to_template_context(self) -> Dict[str, Any]:
         template_context = super().to_template_context()

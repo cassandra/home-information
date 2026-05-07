@@ -354,7 +354,18 @@ class ZoneMinderManager( SingletonManager, AggregateHealthProvider, ApiHealthSta
         )()
 
     def get_video_stream_url( self, monitor_id : int ):
-        return f'{self.zm_client.portal_url}/cgi-bin/nph-zms?mode=jpeg&scale=100&rate=5&maxfps=5&monitor={monitor_id}'
+        # Cache-bust the URL so a re-rendered <img> on the same
+        # monitor (e.g., reopening an entity-status modal) gets a
+        # unique src value and the browser refetches the stream
+        # rather than reusing the previously-completed response.
+        # Symmetric to get_event_video_stream_url below.
+        import time
+        timestamp = int(time.time())
+        return (
+            f'{self.zm_client.portal_url}/cgi-bin/nph-zms'
+            f'?mode=jpeg&scale=100&rate=5&maxfps=5&monitor={monitor_id}'
+            f'&_t={timestamp}'
+        )
 
     def get_event_video_stream_url( self, event_id : int ):
         # Add timestamp for cache busting to help with connection management

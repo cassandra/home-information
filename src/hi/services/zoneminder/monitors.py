@@ -31,7 +31,7 @@ class ZoneMinderMonitor( PeriodicMonitor, ZoneMinderMixin, SensorResponseMixin )
     ZONEMINDER_POLLING_INTERVAL_SECS = ZmTimeouts.POLLING_INTERVAL_SECS
     ZONEMINDER_API_TIMEOUT_SECS = ZmTimeouts.API_TIMEOUT_SECS
 
-    CACHING_DISABLED = True
+    DEBUG_STATES_AND_MONITORS = False
     
     def __init__( self ):
         super().__init__(
@@ -313,7 +313,7 @@ class ZoneMinderMonitor( PeriodicMonitor, ZoneMinderMixin, SensorResponseMixin )
         current_poll_datetime = datetimeproxy.now()
         sensor_response_map = dict()
 
-        zm_monitors = await self.zm_manager().get_zm_monitors_async( force_load = self.CACHING_DISABLED )
+        zm_monitors = await self.zm_manager().get_zm_monitors_async( force_load = self.DEBUG_STATES_AND_MONITORS )
         for zm_monitor in zm_monitors:
             function_sensor_response = self._create_monitor_function_sensor_response(
                 zm_monitor = zm_monitor,
@@ -329,7 +329,7 @@ class ZoneMinderMonitor( PeriodicMonitor, ZoneMinderMixin, SensorResponseMixin )
         sensor_response_map = dict()
 
         active_run_state_name = None
-        zm_states = await self.zm_manager().get_zm_states_async( force_load = self.CACHING_DISABLED )
+        zm_states = await self.zm_manager().get_zm_states_async( force_load = self.DEBUG_STATES_AND_MONITORS )
         for zm_state in zm_states:
             if zm_state.active():
                 active_run_state_name = zm_state.name()

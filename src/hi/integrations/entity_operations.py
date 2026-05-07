@@ -178,10 +178,20 @@ class EntityIntegrationOperations:
     @staticmethod
     def summarize_for_removal( integration_id : str ) -> IntegrationRemovalSummary:
         """
-        Classify the entities targeted by a Remove of the given integration
-        (including orphan-after-removal delegates) for the Remove
-        confirmation dialog: counts total entities and those with
-        user-created data.
+        Classify the entities attached to the integration for the
+        confirmation dialogs that gate a Disable or a Refresh: counts
+        total entities (plus orphan-after-removal delegates) and how
+        many carry user-created data.
+
+        Both the Disable modal and the pre-Refresh modal use the same
+        classification: each is asking the operator a *policy*
+        question ("if items with custom data are about to be let go,
+        retain them or delete them?") and surfaces the SAFE / ALL
+        choice only when ``has_mixed_state``. Refresh's actual dropped
+        set is decided at sync execution against fresh upstream — the
+        operator's choice expresses the policy that applies if drops
+        include user-data items, regardless of which specific items
+        end up dropping.
         """
         target_ids = EntityIntegrationOperations.get_removal_entity_ids(
             integration_id = integration_id,

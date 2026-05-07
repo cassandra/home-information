@@ -567,7 +567,12 @@ class HassConverter:
                     
             elif attribute and not insteon_address:
                 messages.append( f'Insteon address removed for {entity}. Removing {insteon_address}' )
-                attribute.delete()
+                # Hard-delete: integration-owned attribute (not
+                # user-editable). Soft-delete would surface this
+                # in the "Deleted Attributes" section with a
+                # restore button, creating an inconsistency
+                # against upstream's source of truth.
+                attribute.delete( hard_delete = True )
                 
             elif not attribute and insteon_address:
                 messages.append( f'No insteon address for {entity}. Adding {insteon_address}' )

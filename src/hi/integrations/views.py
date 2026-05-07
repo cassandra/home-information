@@ -6,6 +6,7 @@ from django.urls import reverse
 from django.views.generic import View
 
 from hi.apps.common import antinode
+from hi.apps.common.utils import str_to_bool
 from hi.enums import ViewMode, ViewType
 from hi.exceptions import ForceRedirectException
 from hi.hi_async_view import HiModalView
@@ -124,6 +125,20 @@ class IntegrationPreSyncView( HiModalView, IntegrationViewMixin ):
             kwargs = { 'integration_id': integration_data.integration_id },
         )
 
+        # Refresh path: surface the same SAFE / ALL policy choice the
+        # disable modal does when the integration has any user-data
+        # entities. The summary is the integration's full footprint
+        # (not a per-sync prediction): the operator's choice
+        # expresses the policy applied at sync execution if any
+        # drops carry user data, which is the same question the
+        # disable modal asks. Skipped on the first-time import path
+        # since no entities exist yet.
+        removal_summary = None
+        if not is_initial_import:
+            removal_summary = EntityIntegrationOperations.summarize_for_removal(
+                integration_id = integration_data.integration_id,
+            )
+
         context = {
             'integration_data': integration_data,
             'is_initial_import': is_initial_import,
@@ -132,6 +147,7 @@ class IntegrationPreSyncView( HiModalView, IntegrationViewMixin ):
             ),
             'sync_url': sync_url,
             'review_config_url': review_config_url,
+            'removal_summary': removal_summary,
         }
         return self.modal_response( request, context )
 
@@ -176,7 +192,20 @@ class IntegrationSyncView( HiModalView, IntegrationViewMixin ):
             integration_id = integration_data.integration_id,
         ).exists()
 
-        sync_result = synchronizer.sync( is_initial_import = is_initial_import )
+        # Operator's per-Refresh policy for items that would be
+        # dropped. True ("Refresh and Retain") preserves user-data
+        # entities by detaching them; False ("Refresh and Remove")
+        # hard-deletes everything dropped. Defaults to True — the
+        # safe value when the choice was not surfaced (no user-data
+        # entities) or the field was absent for any reason.
+        preserve_user_data = str_to_bool(
+            request.POST.get( 'preserve_user_data', 'true' ),
+        )
+
+        sync_result = synchronizer.sync(
+            is_initial_import = is_initial_import,
+            preserve_user_data = preserve_user_data,
+        )
 
         # Scope the placement to just the entities this sync created.
         # Without scoping, the placement's GET endpoint queries every

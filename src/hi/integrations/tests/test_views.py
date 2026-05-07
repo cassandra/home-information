@@ -210,9 +210,10 @@ class _SyncTestSynchronizer:
     def get_result_title(self, is_initial_import):
         return 'Test Sync Result'
 
-    def sync(self, is_initial_import=False):
+    def sync(self, is_initial_import=False, preserve_user_data=True):
         from hi.integrations.sync_result import IntegrationSyncResult
         self.sync_called = True
+        self.last_preserve_user_data = preserve_user_data
         return IntegrationSyncResult(
             title='Test Sync Result',
             info_list=['Synced.'],
@@ -368,6 +369,55 @@ class PreSyncViewTests(SyncViewTestCase):
         self.assertSuccessResponse(response)
         self.assertNotIn('REVIEW CONFIG', response.content.decode())
 
+    def test_refresh_modal_shows_single_button_when_no_user_data(self):
+        """No entities carry user data → has_mixed_state is False, so
+        the Refresh path renders the single REFRESH button (not the
+        Retain / Remove choice). Mirrors the integration_disable
+        modal's collapsed mode for the no-mixed-state case.
+        """
+        from hi.apps.entity.enums import EntityType
+        from hi.apps.entity.models import Entity
+        Entity.objects.create(
+            integration_id=self.INTEGRATION_ID,
+            integration_name='ent_no_user_data',
+            name='No User Data',
+            entity_type_str=EntityType.default_value(),
+        )
+        response = self.client.get(self._url())
+        self.assertSuccessResponse(response)
+        body = response.content.decode()
+        self.assertIn('>REFRESH<', body.replace('\n', ''))
+        self.assertNotIn('RETAIN MISSING', body)
+        self.assertNotIn('REMOVE MISSING', body)
+
+    def test_refresh_modal_shows_retain_remove_choice_with_user_data(self):
+        """When at least one attached entity has operator-added
+        attributes, the Refresh modal exposes the policy choice
+        (RETAIN MISSING / REMOVE MISSING) symmetric to the
+        disable modal's DELETE SAFE / DELETE ALL.
+        """
+        from hi.apps.attribute.enums import AttributeType, AttributeValueType
+        from hi.apps.entity.enums import EntityType
+        from hi.apps.entity.models import Entity, EntityAttribute
+        entity = Entity.objects.create(
+            integration_id=self.INTEGRATION_ID,
+            integration_name='ent_with_user_data',
+            name='Has User Data',
+            entity_type_str=EntityType.default_value(),
+        )
+        EntityAttribute.objects.create(
+            entity=entity,
+            name='Operator Note',
+            value='Hand-edited.',
+            attribute_type_str=str(AttributeType.CUSTOM),
+            value_type_str=str(AttributeValueType.TEXT),
+        )
+        response = self.client.get(self._url())
+        self.assertSuccessResponse(response)
+        body = response.content.decode()
+        self.assertIn('RETAIN MISSING', body)
+        self.assertIn('REMOVE MISSING', body)
+
 
 class SyncViewTests(SyncViewTestCase):
     """
@@ -407,6 +457,25 @@ class SyncViewTests(SyncViewTestCase):
         response = self.client.post(self._url())
         self.assertSuccessResponse(response)
         self.assertTrue(self.synchronizer.sync_called)
+
+    def test_post_defaults_to_preserve_user_data(self):
+        """POST with no preserve_user_data field (e.g., the
+        single-button form rendered when has_mixed_state is False)
+        falls back to the safe default — preserve user data on
+        drops."""
+        self.client.post(self._url())
+        self.assertTrue(self.synchronizer.last_preserve_user_data)
+
+    def test_post_with_preserve_user_data_false_disables_preservation(self):
+        """The REMOVE MISSING button posts preserve_user_data=false;
+        the view must thread that through to synchronizer.sync."""
+        self.client.post(self._url(), {'preserve_user_data': 'false'})
+        self.assertFalse(self.synchronizer.last_preserve_user_data)
+
+    def test_post_with_preserve_user_data_true_keeps_preservation(self):
+        """The RETAIN MISSING button posts preserve_user_data=true."""
+        self.client.post(self._url(), {'preserve_user_data': 'true'})
+        self.assertTrue(self.synchronizer.last_preserve_user_data)
 
     def test_post_404s_when_integration_has_no_synchronizer(self):
         IntegrationManager()._integration_data_map[self.INTEGRATION_ID] = IntegrationData(
@@ -519,8 +588,9 @@ class _PlacementTestSynchronizer:
     def get_result_title(self, is_initial_import):
         return 'Placement Test'
 
-    def sync(self, is_initial_import=False):
+    def sync(self, is_initial_import=False, preserve_user_data=True):
         self.sync_called = True
+        self.last_preserve_user_data = preserve_user_data
         return self._sync_result
 
 
