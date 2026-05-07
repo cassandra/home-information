@@ -233,7 +233,7 @@ class HassInsteonMotionDetectorBatteryState( HassInsteonState ):
     sim_state_type     : SimStateType                     = SimStateType.DISCRETE
     sim_state_id       : str                              = 'battery'
     value              : str                              = 'High'
-    
+
     @property
     def name(self):
         return f'{self.entity_name} Battery'
@@ -244,11 +244,11 @@ class HassInsteonMotionDetectorBatteryState( HassInsteonState ):
             ( 'Low'    , 'Low' ),
             ( 'High' , 'High' ),
         ]
-    
+
     @property
     def entity_id(self):
         return 'binary_sensor.motion_sensor_%s_battery' % self.insteon_address_id_suffix
-    
+
     @property
     def attributes(self) -> Dict[ str, str ]:
         return {
@@ -257,6 +257,16 @@ class HassInsteonMotionDetectorBatteryState( HassInsteonState ):
             "insteon_address": self.insteon_address,
             "insteon_group": 1,
         }
+
+    @property
+    def state(self):
+        # HA convention for binary_sensor with device_class=battery:
+        # "on" means the battery is low (problem signal), "off"
+        # means it's healthy. Override the inherited str_to_bool
+        # path so the DISCRETE Low/High UI choice maps to the
+        # right API output instead of resolving both labels to
+        # "off" via str_to_bool.
+        return 'on' if self.value == 'Low' else 'off'
 
 
 @dataclass( frozen = True )
