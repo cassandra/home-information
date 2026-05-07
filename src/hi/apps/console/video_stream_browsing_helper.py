@@ -423,7 +423,12 @@ class VideoStreamBrowsingHelper:
                 prev_sensor_response = None,
                 next_sensor_response = None,
                 window_start_timestamp = None,
-                window_end_timestamp = pivot_timestamp if has_newer_records else None,
+                # ``window_end_timestamp`` is declared Optional[datetime]
+                # and the templates run it through |date:"U"; the int
+                # ``pivot_timestamp`` would crash the formatter. Reuse the
+                # already-computed datetime so the no-records branch
+                # honors the field's contract.
+                window_end_timestamp = pivot_time if has_newer_records else None,
             )
         
         # Convert to SensorResponse objects
@@ -506,7 +511,11 @@ class VideoStreamBrowsingHelper:
                 pagination_metadata={'has_older_records': has_older_records, 'has_newer_records': False},
                 prev_sensor_response=None,
                 next_sensor_response=None,
-                window_start_timestamp = pivot_timestamp if has_older_records else None,
+                # ``window_start_timestamp`` is declared Optional[datetime]
+                # and the templates run it through |date:"U"; the int
+                # ``pivot_timestamp`` would crash the formatter. Reuse
+                # the already-computed datetime instead.
+                window_start_timestamp = pivot_time if has_older_records else None,
                 window_end_timestamp = None,
             )
         
