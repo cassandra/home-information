@@ -1126,6 +1126,50 @@ class HassConverter:
             return friendly_name
         return hass_device.device_id
         
+    # Word-boundary patterns matched against the device's display
+    # name to upgrade a switch-domain device's EntityType at import
+    # time when the name reveals what the switch is wired to. Word
+    # boundaries guard against substring collisions (e.g.
+    # "Lighthouse", "Lightning" don't match the bare "light"
+    # keyword). Each regex is paired with the EntityType it implies
+    # in ``_NAME_INFERENCE_RULES`` below.
+    _OUTLET_NAME_PATTERN = re.compile(
+        r'\b(plug|plugs|outlet|outlets|receptacle|receptacles)\b',
+        re.IGNORECASE,
+    )
+    _FAN_NAME_PATTERN = re.compile(
+        r'\b(fan|fans)\b',
+        re.IGNORECASE,
+    )
+    _LIGHT_NAME_PATTERN = re.compile(
+        r'\b(light|lights|lighting'
+        r'|lamp|lamps|bulb|bulbs|led|sconce|chandelier'
+        r'|pendant|spotlight|floodlight|lantern)\b',
+        re.IGNORECASE,
+    )
+
+    @classmethod
+    def _device_name_to_inferred_type(
+            cls, hass_device : HassDevice ) -> Optional[EntityType]:
+        """Heuristic mapping for a switch-domain device whose name
+        reveals what it's connected to. Order encodes precedence:
+        outlet/plug keywords are most specific (a "Smart Plug" is
+        almost always wanted as ELECTRICAL_OUTLET), fan next, light
+        last. Returns None when no rule matches; the caller falls
+        through to the generic ON_OFF_SWITCH for switch-domain
+        devices. False positives cost one manual edit which now
+        sticks across refreshes."""
+        name = cls.hass_device_to_entity_name( hass_device )
+        if not name:
+            return None
+        if cls._OUTLET_NAME_PATTERN.search( name ):
+            return EntityType.ELECTRICAL_OUTLET
+        if cls._FAN_NAME_PATTERN.search( name ):
+            return EntityType.CEILING_FAN
+        if cls._LIGHT_NAME_PATTERN.search( name ):
+            return EntityType.LIGHT
+        return None
+
     @classmethod
     def hass_device_to_entity_type( cls, hass_device : HassDevice ) -> EntityType:
         domain_set = hass_device.domain_set
@@ -1145,12 +1189,20 @@ class HassConverter:
         if ( HassApi.LIGHT_DOMAIN in domain_set
              or HassApi.LIGHT_DEVICE_CLASS in device_class_set ):
             return EntityType.LIGHT
-        # Outlet device class wins over the generic switch domain
-        # branch below — an HA switch.x with device_class=outlet is
+        # Outlet device class wins over the switch-domain branch
+        # below — an HA switch.x with device_class=outlet is
         # specifically an electrical outlet, not a wall switch.
         if HassApi.OUTLET_DEVICE_CLASS in device_class_set:
             return EntityType.ELECTRICAL_OUTLET
+        # For a generic switch.x device, the name often reveals
+        # what the switch is wired to (Kitchen Light, Smart Plug,
+        # Ceiling Fan); the heuristic upgrades the type at import
+        # time when a clear match is present, falling through to
+        # the catch-all ON_OFF_SWITCH otherwise.
         if HassApi.SWITCH_DOMAIN in domain_set:
+            inferred = cls._device_name_to_inferred_type( hass_device )
+            if inferred is not None:
+                return inferred
             return EntityType.ON_OFF_SWITCH
         if HassApi.LOCK_DOMAIN in domain_set:
             return EntityType.DOOR_LOCK
