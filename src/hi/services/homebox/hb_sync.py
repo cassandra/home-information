@@ -49,6 +49,11 @@ class HomeBoxSynchronizer( IntegrationSynchronizer, HomeBoxMixin ):
             # try again. Returning None opts this cycle out cleanly.
             return None
         summary_list = await hb_manager.fetch_hb_items_summary_from_api_async()
+        # ``archived: true`` upstream is HomeBox's "no longer in
+        # active use" marker. Treat archived items as if they were
+        # absent so the sync-check correctly reports them as removed
+        # — see ``_sync_helper_entities`` for the matching filter on
+        # the full-detail fetch.
         upstream_keys = {
             IntegrationKey(
                 integration_id = HbMetaData.integration_id,
@@ -56,6 +61,7 @@ class HomeBoxSynchronizer( IntegrationSynchronizer, HomeBoxMixin ):
             )
             for item in summary_list
             if item.get('id') is not None
+            and item.get('archived') is not True
         }
         current_keys = await sync_to_async( self._get_current_integration_keys )()
         return IntegrationSyncCheck.compute_delta(
@@ -124,13 +130,28 @@ class HomeBoxSynchronizer( IntegrationSynchronizer, HomeBoxMixin ):
         Existing-entity updates do not contribute — they don't need
         re-placement."""
         integration_key_to_item = dict()
+        skipped_archived = 0
         for item in item_list:
+            # ``archived: true`` upstream means the item is no
+            # longer in active use. Skip it so the sync's removal
+            # branch picks up its HI counterpart on the same pass:
+            # SAFE removal handles user-data preservation if the
+            # operator added attributes; hard-delete otherwise.
+            # Mirrored in ``check_needs_sync`` so the sync-check
+            # delta agrees with what the full sync will do.
+            if item.archived is True:
+                skipped_archived += 1
+                continue
             try:
                 integration_key = HbConverter.hb_item_to_integration_key( hb_item = item )
                 integration_key_to_item[integration_key] = item
             except Exception as e:
                 result.error_list.append( f'Ignoring HomeBox item due to missing/invalid id: {e}' )
             continue
+        if skipped_archived:
+            result.info_list.append(
+                f'Skipped {skipped_archived} archived HomeBox item(s).'
+            )
 
         integration_key_to_entity = self._get_existing_hb_entities( result = result )
         result.info_list.append( f'Found {len(integration_key_to_entity)} existing HomeBox items.' )
