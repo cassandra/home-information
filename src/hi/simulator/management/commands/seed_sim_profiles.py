@@ -32,25 +32,30 @@ before recreating.
 Operator workflow for full-category coverage (sync result modal
 manual validation):
 
-  1. Switch simulator to ``baseline``. Sync HI. Three entities
+  1. Switch simulator to ``baseline``. Sync HI. Two entities
      whose names start with ``★ Custom Attr Needed ★`` will be
-     imported alongside the others (one per integration). Open
-     each in entity-edit and add ANY custom attribute (e.g., a
-     "Note" attribute with any value). The custom attribute is
-     what flips them onto the preserve-with-user-data path when
-     they later disappear upstream.
+     imported (HASS and ZM only — HomeBox sets
+     ``can_add_custom_attributes = False`` by design, so HB
+     entities cannot participate in the detach/reconnect cycle
+     and have no anchor item). Open each in entity-edit and add
+     ANY custom attribute (e.g., a "Note" attribute with any
+     value). The custom attribute is what flips them onto the
+     preserve-with-user-data path when they later disappear
+     upstream.
   2. Switch simulator to ``baseline-changed``. Refresh sync.
      The result modal shows:
        - Created: three new items present only in baseline-changed
        - Updated: three items renamed / metadata-changed
        - Removed: three items absent here, no user attribute
-       - Detached: three ★-prefixed items absent here, with the
-         user attribute the operator added in step 1 retained
+       - Detached: two ★-prefixed items (HASS, ZM) absent here,
+         with the user attribute the operator added in step 1
+         retained
        - (Reconnected is empty on this direction)
   3. Switch simulator back to ``baseline``. Refresh sync.
      The result modal shows:
-       - Reconnected: the three ★-prefixed items rejoin via the
-         secondary-match path; their custom attributes are intact
+       - Reconnected: the two ★-prefixed items (HASS, ZM) rejoin
+         via the secondary-match path; their custom attributes
+         are intact
        - Created: the three previously-Removed items return as
          fresh entities (no previous_integration_id, so no
          reconnect — they come back as duplicates would, but
@@ -180,13 +185,15 @@ class Command(BaseCommand):
             profile, '★ Custom Attr Needed ★ Office Light', '01.AA.10',
         )
 
-        # HomeBox: 4 items with mixed metadata richness, plus a
-        # ★-prefixed item that the operator anchors with a custom
-        # attribute (HomeBox-side detach/reconnect anchor).
-        # ``item_id`` is the per-item stable id used by the
-        # integration's change-detection — kept identical across
-        # baseline / baseline-changed for items that should be 'the
-        # same item'.
+        # HomeBox: 4 items with mixed metadata richness. No
+        # ★-prefixed anchor here: HomeBox sets
+        # ``can_add_custom_attributes = False`` (the converter is
+        # the source of truth for HB item attributes), so the
+        # operator cannot add a custom attribute on the HI side and
+        # the detach/reconnect cycle does not apply to HB. ``item_id``
+        # is the per-item stable id used by the integration's
+        # change-detection — kept identical across baseline /
+        # baseline-changed for items that should be 'the same item'.
         self._add_homebox_item(
             profile, 'Cordless Drill',
             item_id = 'cordless-drill',
@@ -212,13 +219,6 @@ class Command(BaseCommand):
             profile, 'Spare Light Bulbs',
             item_id = 'spare-light-bulbs',
             quantity = 12,
-        )
-        self._add_homebox_item(
-            profile, '★ Custom Attr Needed ★ Multimeter',
-            item_id = 'multimeter',
-            manufacturer = 'Fluke',
-            model_number = '117',
-            quantity = 1,
         )
 
         # ZoneMinder: 1 server (singleton) + 2 monitors + a
@@ -269,9 +269,8 @@ class Command(BaseCommand):
         #                      (attribute update path)
         #   Soldering Iron   — REMOVED (item_id absent, no user attr)
         #   Spare Bulbs      — kept (same item_id, same content)
-        #   ★ Multimeter     — ABSENT (item_id absent) → Detached on
-        #                      the HI side via user-attribute anchor
         #   <new> Caulk Gun  — ADDED (new item_id)
+        # No HB detach/reconnect anchor — see baseline's HB section.
         # Identity carries via ``item_id`` (the simulator's stable
         # API id), not row order — so the order here doesn't matter
         # for change-detection.
@@ -301,8 +300,6 @@ class Command(BaseCommand):
             description = '10-oz cartridge gun, dripless',
             quantity = 1,
         )
-        # 'multimeter' (item_id) intentionally absent — Detached
-        # via user-attribute anchor on the HI side.
 
         # ZoneMinder deltas:
         #   ZM Server           — kept
