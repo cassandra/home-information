@@ -26,6 +26,7 @@ from hi.simulator.base_models import SimState
 
 from .sim_models import (
     HassColorSmartBulbBrightnessState,
+    HassColorSmartBulbColorModeState,
     HassColorSmartBulbFields,
 )
 
@@ -65,6 +66,7 @@ class HassApiComposer:
         standard ``hs_color: [h, s]`` two-element list."""
         primary_dict = None
         merged_attrs : Dict = {}
+        color_mode_value = None
         for state in sim_states:
             api_dict = state.to_api_dict()
             if isinstance( state, HassColorSmartBulbBrightnessState ):
@@ -73,6 +75,8 @@ class HassApiComposer:
                 # attributes from the other states into its
                 # attributes dict.
                 primary_dict = dict( api_dict )
+            elif isinstance( state, HassColorSmartBulbColorModeState ):
+                color_mode_value = state.value
             merged_attrs.update( api_dict.get( 'attributes', {} ) )
             continue
 
@@ -83,12 +87,12 @@ class HassApiComposer:
         if hue is not None and sat is not None:
             merged_attrs[ 'hs_color' ] = [ hue, sat ]
 
-        # ``color_mode`` is set by the composer (not by individual
-        # states) so the bulb's active mode is consistent
-        # regardless of which states the operator has touched.
-        # ``hs`` is HA's most common active mode for color bulbs.
-        if 'brightness' in merged_attrs:
-            merged_attrs[ 'color_mode' ] = 'hs'
+        # ``color_mode`` reflects the dedicated SimState — the
+        # service dispatcher writes it when HI sends hs_color or
+        # color_temp_kelvin, and the operator can override it
+        # directly via the simulator UI for edge-case testing.
+        if color_mode_value is not None:
+            merged_attrs[ 'color_mode' ] = color_mode_value
 
         if primary_dict is None:
             # No brightness state in the entity — should not

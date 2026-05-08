@@ -129,10 +129,14 @@ class HassServiceDispatcher:
         if isinstance( hs_color, list ) and len( hs_color ) == 2:
             updates.append( ( 'hue', str( hs_color[ 0 ] ) ) )
             updates.append( ( 'saturation', str( hs_color[ 1 ] ) ) )
+            # Mirrors HA's behavior: writing hs_color makes hs the
+            # active color_mode.
+            updates.append( ( 'color_mode', 'hs' ) )
 
         color_temp = payload.get( 'color_temp_kelvin' )
         if color_temp is not None:
             updates.append( ( 'color_temp', str( int( color_temp ) ) ) )
+            updates.append( ( 'color_mode', 'color_temp' ) )
 
         # ``rgb_color`` is accepted on the wire but not modeled —
         # the bulb's color is driven by hs_color/color_temp in this

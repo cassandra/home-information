@@ -2,7 +2,7 @@ import base64
 from dataclasses import dataclass
 import os
 import time
-from typing import Dict, List, Tuple
+from typing import ClassVar, Dict, List, Tuple
 
 import hi.apps.common.datetimeproxy as datetimeproxy
 from hi.apps.common.utils import str_to_bool
@@ -641,6 +641,59 @@ class HassColorSmartBulbColorTempState( HassState ):
         return { 'color_temp_kelvin': int( float( self.value ) ) }
 
 
+@dataclass
+class HassColorSmartBulbColorModeState( HassState ):
+    """Active color mode (DISCRETE). HA reports this as the
+    ``color_mode`` attribute and derives it from whichever color
+    attribute was most recently written; the simulator's service
+    dispatcher mirrors that by writing this state when it sees
+    ``hs_color`` or ``color_temp_kelvin`` on a service call. The
+    simulator also exposes the dropdown directly so a tester can
+    reach edge values (e.g., ``unknown``, ``rgbww``) without
+    having to drive every mode through HI's controllers."""
+
+    COLOR_MODE_CHOICES : ClassVar[ List[ Tuple[ str, str ] ] ] = [
+        ( 'unknown', 'Unknown' ),
+        ( 'onoff', 'On/Off' ),
+        ( 'brightness', 'Brightness' ),
+        ( 'color_temp', 'Color Temperature' ),
+        ( 'hs', 'HS Color' ),
+        ( 'rgb', 'RGB Color' ),
+        ( 'rgbw', 'RGBW Color' ),
+        ( 'rgbww', 'RGBWW Color' ),
+        ( 'xy', 'XY Color' ),
+        ( 'white', 'White' ),
+    ]
+
+    sim_entity_fields  : HassColorSmartBulbFields
+    sim_state_type     : SimStateType                  = SimStateType.DISCRETE
+    sim_state_id       : str                           = 'color_mode'
+    value              : str                           = 'hs'
+
+    @property
+    def name(self):
+        return f'{self.entity_name} Color Mode'
+
+    @property
+    def entity_id(self):
+        return _color_bulb_entity_id( self.entity_name )
+
+    @property
+    def state(self):
+        return 'on'
+
+    @property
+    def choices(self) -> List[ Tuple[ str, str ] ]:
+        return self.COLOR_MODE_CHOICES
+
+    @property
+    def attributes(self) -> Dict[ str, str ]:
+        # Composer reads this state's value as the entity-level
+        # ``color_mode`` attribute; emit nothing per-state to
+        # avoid duplicate keys when the composer merges.
+        return {}
+
+
 HASS_SIM_ENTITY_DEFINITION_LIST = [
     SimEntityDefinition(
         class_label = 'Insteon Switch',
@@ -719,6 +772,7 @@ HASS_SIM_ENTITY_DEFINITION_LIST = [
             HassColorSmartBulbHueState,
             HassColorSmartBulbSaturationState,
             HassColorSmartBulbColorTempState,
+            HassColorSmartBulbColorModeState,
         ],
     ),
 ]
