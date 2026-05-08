@@ -25,7 +25,7 @@ from hi.integrations.transient_models import IntegrationKey
 from .enums import HassStateValue
 from .hass_metadata import HassMetaData
 from .hass_models import HassApi, HassServiceCall, HassState, HassDevice
-from .hass_service_composer import HassServiceComposer
+from .hass_service_composer import ControlIntent, HassServiceComposer
 
 logger = logging.getLogger(__name__)
 
@@ -614,11 +614,11 @@ class HassConverter( IntegrationConverterMixin ):
                             hass_state = hass_state,
                             substate_type = substate_type,
                         )
-                        changed_fields = sub_controller.update_integration_payload( sub_payload )
-                        if changed_fields:
+                        if sub_controller.integration_payload != sub_payload:
+                            changed_fields = sub_controller.update_integration_payload( sub_payload )
                             messages.append(
                                 f'Updated payload for substate controller {sub_controller}:'
-                                f' {", ".join(changed_fields)}'
+                                f' {", ".join(changed_fields) if changed_fields else "key change"}'
                             )
                     continue
                 
@@ -1063,14 +1063,24 @@ class HassConverter( IntegrationConverterMixin ):
         sub-state. The suffix lets the controller dispatch (and
         sensor-update routing) tell which dimension a given key
         targets without parsing supported_color_modes again."""
-        suffix = cls._HASS_SUBSTATE_SUFFIXES[ entity_state_type ]
+        return cls._substate_integration_key_for_suffix(
+            parent_entity_id = hass_state.entity_id,
+            suffix = cls._HASS_SUBSTATE_SUFFIXES[ entity_state_type ],
+        )
+
+    @classmethod
+    def _substate_integration_key_for_suffix(
+            cls,
+            parent_entity_id : str,
+            suffix           : str,
+    ) -> IntegrationKey:
         # ``~`` separator chosen over ``:`` because the latter has
         # special meaning in CSS selectors (pseudo-classes) and
         # in URLs; ``~`` is web-safe in every position and never
         # appears in real HA entity_ids (they're ``[a-z0-9_]+``).
         return IntegrationKey(
             integration_id = HassMetaData.integration_id,
-            integration_name = f'{hass_state.entity_id}~{suffix}',
+            integration_name = f'{parent_entity_id}~{suffix}',
         )
 
     @classmethod
@@ -1671,18 +1681,17 @@ class HassConverter( IntegrationConverterMixin ):
     @classmethod
     def to_ha_on_off_intent( cls, hi_control_value : str ) -> str:
         """Normalize an HI on/off-style control value to a
-        canonical HA-side intent: ``'on'`` / ``'off'`` /
-        ``'open'`` / ``'close'``. ``HassServiceComposer`` maps the
-        intent + domain to the right HA service name."""
+        canonical ``ControlIntent``. ``HassServiceComposer`` maps
+        the intent + domain to the right HA service name."""
         lower = hi_control_value.lower()
-        if lower in ( 'on', 'true', '1' ):
-            return 'on'
-        if lower in ( 'off', 'false', '0' ):
-            return 'off'
-        if lower == 'open':
-            return 'open'
-        if lower == 'close':
-            return 'close'
+        if lower == str( EntityStateValue.ON ) or lower in ( 'true', '1' ):
+            return ControlIntent.ON
+        if lower == str( EntityStateValue.OFF ) or lower in ( 'false', '0' ):
+            return ControlIntent.OFF
+        if lower == str( EntityStateValue.OPEN ):
+            return ControlIntent.OPEN
+        if lower == str( EntityStateValue.CLOSED ) or lower == 'close':
+            return ControlIntent.CLOSE
         raise ValueError( f'Unknown control value: {hi_control_value}' )
 
     @classmethod
@@ -1753,9 +1762,9 @@ class HassConverter( IntegrationConverterMixin ):
                     f'Invalid {substate} value: {hi_control_value}'
                 )
             partner_substate = 'saturation' if substate == 'hue' else 'hue'
-            partner_int_key = IntegrationKey(
-                integration_id = HassMetaData.integration_id,
-                integration_name = f'{parent_entity_id}~{partner_substate}',
+            partner_int_key = cls._substate_integration_key_for_suffix(
+                parent_entity_id = parent_entity_id,
+                suffix = partner_substate,
             )
             partner_value_str = cls.get_latest_state_values(
                 integration_keys = [ partner_int_key ],
@@ -1802,14 +1811,18 @@ class HassConverter( IntegrationConverterMixin ):
                 hi_control_value = hi_control_value,
             )
 
-        if cls._is_numeric_control( hi_control_value, domain_payload ):
-            numeric_value = cls.to_ha_numeric_parameter_value( hi_control_value )
-            return HassServiceComposer.for_numeric_parameter(
-                domain = domain,
-                hass_substate_id = hass_substate_id,
-                numeric_value = numeric_value,
-                domain_payload = domain_payload,
-            )
+        if cls._payload_supports_numeric_control( domain_payload ):
+            try:
+                numeric_value = cls.to_ha_numeric_parameter_value( hi_control_value )
+            except ( ValueError, TypeError ):
+                numeric_value = None
+            if numeric_value is not None:
+                return HassServiceComposer.for_numeric_parameter(
+                    domain = domain,
+                    hass_substate_id = hass_substate_id,
+                    numeric_value = numeric_value,
+                    domain_payload = domain_payload,
+                )
 
         intent = cls.to_ha_on_off_intent( hi_control_value )
         result = HassServiceComposer.for_payload_intent(
@@ -1833,31 +1846,22 @@ class HassConverter( IntegrationConverterMixin ):
             hass_substate_id : str,
             hi_control_value : str,
     ) -> HassServiceCall:
-        if cls._is_numeric_value( hi_control_value ):
+        try:
             numeric_value = cls.to_ha_numeric_parameter_value( hi_control_value )
-            return HassServiceComposer.for_numeric_best_effort(
+        except ( ValueError, TypeError ):
+            intent = cls.to_ha_on_off_intent( hi_control_value )
+            return HassServiceComposer.for_on_off_best_effort(
                 domain = domain,
                 hass_substate_id = hass_substate_id,
-                numeric_value = numeric_value,
+                intent = intent,
             )
-        intent = cls.to_ha_on_off_intent( hi_control_value )
-        return HassServiceComposer.for_on_off_best_effort(
+        return HassServiceComposer.for_numeric_best_effort(
             domain = domain,
             hass_substate_id = hass_substate_id,
-            intent = intent,
+            numeric_value = numeric_value,
         )
 
     @classmethod
-    def _is_numeric_value( cls, hi_control_value : str ) -> bool:
-        try:
-            float( hi_control_value )
-            return True
-        except ( ValueError, TypeError ):
-            return False
-
-    @classmethod
-    def _is_numeric_control( cls, hi_control_value : str, domain_payload : dict ) -> bool:
-        if not cls._is_numeric_value( hi_control_value ):
-            return False
+    def _payload_supports_numeric_control( cls, domain_payload : dict ) -> bool:
         return ( domain_payload.get( 'supports_brightness', False )
                  or domain_payload.get( 'set_service' ) is not None )

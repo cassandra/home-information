@@ -1,6 +1,18 @@
 from typing import Optional
 
-from .hass_models import HassServiceCall
+from .hass_models import HassApi, HassServiceCall
+
+
+class ControlIntent:
+    """Canonical operator intents flowing across the HI->HA
+    bridge. ``HassConverter.to_ha_on_off_intent`` produces these
+    from HI control values; ``HassServiceComposer`` dispatches
+    on them to pick the right HA service name."""
+
+    ON = 'on'
+    OFF = 'off'
+    OPEN = 'open'
+    CLOSE = 'close'
 
 
 class HassServiceComposer:
@@ -12,10 +24,10 @@ class HassServiceComposer:
     boundary methods first."""
 
     _PAYLOAD_INTENT_SERVICE_KEYS = {
-        'on': 'on_service',
-        'off': 'off_service',
-        'open': 'open_service',
-        'close': 'close_service',
+        ControlIntent.ON: 'on_service',
+        ControlIntent.OFF: 'off_service',
+        ControlIntent.OPEN: 'open_service',
+        ControlIntent.CLOSE: 'close_service',
     }
 
     @classmethod
@@ -49,24 +61,24 @@ class HassServiceComposer:
             hass_substate_id : str,
             intent           : str,
     ) -> HassServiceCall:
-        if intent == 'on':
-            service = 'turn_on'
-        elif intent == 'off':
-            service = 'turn_off'
-        elif intent == 'open':
-            if domain == 'cover':
-                service = 'open_cover'
-            elif domain == 'lock':
-                service = 'unlock'
+        if intent == ControlIntent.ON:
+            service = HassApi.TURN_ON_SERVICE
+        elif intent == ControlIntent.OFF:
+            service = HassApi.TURN_OFF_SERVICE
+        elif intent == ControlIntent.OPEN:
+            if domain == HassApi.COVER_DOMAIN:
+                service = HassApi.OPEN_COVER_SERVICE
+            elif domain == HassApi.LOCK_DOMAIN:
+                service = HassApi.UNLOCK_SERVICE
             else:
-                service = 'turn_on'
-        elif intent == 'close':
-            if domain == 'cover':
-                service = 'close_cover'
-            elif domain == 'lock':
-                service = 'lock'
+                service = HassApi.TURN_ON_SERVICE
+        elif intent == ControlIntent.CLOSE:
+            if domain == HassApi.COVER_DOMAIN:
+                service = HassApi.CLOSE_COVER_SERVICE
+            elif domain == HassApi.LOCK_DOMAIN:
+                service = HassApi.LOCK_SERVICE
             else:
-                service = 'turn_off'
+                service = HassApi.TURN_OFF_SERVICE
         else:
             raise ValueError( f'Unknown control intent: {intent}' )
         return HassServiceCall(
@@ -82,7 +94,7 @@ class HassServiceComposer:
             hass_substate_id : str,
             numeric_value    : float,
     ) -> HassServiceCall:
-        if domain == 'light':
+        if domain == HassApi.LIGHT_DOMAIN:
             brightness_pct = int( numeric_value )
             if not ( 0 <= brightness_pct <= 100 ):
                 raise ValueError(
@@ -91,24 +103,24 @@ class HassServiceComposer:
             if brightness_pct == 0:
                 return HassServiceCall(
                     domain = domain,
-                    service = 'turn_off',
+                    service = HassApi.TURN_OFF_SERVICE,
                     hass_entity_id = hass_substate_id,
                     service_data = None,
                 )
             return HassServiceCall(
                 domain = domain,
-                service = 'turn_on',
+                service = HassApi.TURN_ON_SERVICE,
                 hass_entity_id = hass_substate_id,
                 service_data = { 'brightness_pct': brightness_pct },
             )
-        if domain == 'climate':
+        if domain == HassApi.CLIMATE_DOMAIN:
             return HassServiceCall(
                 domain = domain,
-                service = 'set_temperature',
+                service = HassApi.SET_TEMPERATURE_SERVICE,
                 hass_entity_id = hass_substate_id,
                 service_data = { 'temperature': numeric_value },
             )
-        if domain == 'cover':
+        if domain == HassApi.COVER_DOMAIN:
             position_pct = int( numeric_value )
             if not ( 0 <= position_pct <= 100 ):
                 raise ValueError(
@@ -116,18 +128,18 @@ class HassServiceComposer:
                 )
             return HassServiceCall(
                 domain = domain,
-                service = 'set_cover_position',
+                service = HassApi.SET_COVER_POSITION_SERVICE,
                 hass_entity_id = hass_substate_id,
                 service_data = { 'position': position_pct },
             )
-        if domain == 'media_player':
+        if domain == HassApi.MEDIA_PLAYER_DOMAIN:
             if not ( 0.0 <= numeric_value <= 1.0 ):
                 raise ValueError(
                     f'Invalid volume value: {numeric_value} (must be 0.0-1.0)'
                 )
             return HassServiceCall(
                 domain = domain,
-                service = 'volume_set',
+                service = HassApi.VOLUME_SET_SERVICE,
                 hass_entity_id = hass_substate_id,
                 service_data = { 'volume_level': numeric_value },
             )
@@ -234,7 +246,7 @@ class HassServiceComposer:
     ) -> HassServiceCall:
         if not ( 0.0 <= volume <= 1.0 ):
             raise ValueError( f'Invalid volume value: {volume} (must be 0.0-1.0)' )
-        service = domain_payload.get( 'set_service', 'volume_set' )
+        service = domain_payload.get( 'set_service', HassApi.VOLUME_SET_SERVICE )
         return HassServiceCall(
             domain = domain,
             service = service,
@@ -255,7 +267,7 @@ class HassServiceComposer:
             raise ValueError(
                 f'Invalid position value: {position} (must be 0-100)'
             )
-        service = domain_payload.get( 'set_service', 'set_cover_position' )
+        service = domain_payload.get( 'set_service', HassApi.SET_COVER_POSITION_SERVICE )
         return HassServiceCall(
             domain = domain,
             service = service,
@@ -272,7 +284,7 @@ class HassServiceComposer:
     ) -> HassServiceCall:
         return HassServiceCall(
             domain = domain,
-            service = 'turn_on',
+            service = HassApi.TURN_ON_SERVICE,
             hass_entity_id = parent_entity_id,
             service_data = { 'color_temp_kelvin': kelvin },
         )
@@ -287,7 +299,7 @@ class HassServiceComposer:
     ) -> HassServiceCall:
         return HassServiceCall(
             domain = domain,
-            service = 'turn_on',
+            service = HassApi.TURN_ON_SERVICE,
             hass_entity_id = parent_entity_id,
             service_data = { 'hs_color': [ hue, saturation ] },
         )
