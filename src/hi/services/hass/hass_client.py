@@ -117,22 +117,22 @@ class HassClient:
             )
         return response.json()
 
-    def call_service( self, domain: str, service: str, hass_state_id: str, service_data: dict = None ):
+    def call_service( self, domain: str, service: str, hass_entity_id: str, service_data: dict = None ):
         """
-        Call a Home Assistant service for a specific HassState.
-        
+        Call a Home Assistant service for a specific HA entity.
+
         Args:
             domain: The domain (e.g., 'light', 'switch')
             service: The service name (e.g., 'turn_on', 'turn_off')
-            hass_state_id: The HassState identifier (e.g., 'light.switch_name')
+            hass_entity_id: The HA entity_id (e.g., 'light.switch_name')
             service_data: Additional service data (optional)
-        
+
         Returns:
             Response object
         """
         url = f'{self._api_base_url}/api/services/{domain}/{service}'
         data = {
-            'entity_id': hass_state_id,
+            'entity_id': hass_entity_id,
         }
         if service_data:
             data.update(service_data)
@@ -153,7 +153,7 @@ class HassClient:
                 f'Ensure the URL points at the HASS API root.'
             )
 
-        logger.debug( f'HAss call_service: {domain}.{service} for {hass_state_id}, response={response.status_code}' )
+        logger.debug( f'HAss call_service: {domain}.{service} for {hass_entity_id}, response={response.status_code}' )
         return response
 
     

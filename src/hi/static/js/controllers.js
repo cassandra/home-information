@@ -54,9 +54,7 @@
             const type = element.type;
             if ( type === 'range' || type === 'number' || type === 'text' ) {
                 _setIfDifferent( element, 'value', String( value ) );
-                if ( element.classList.contains( 'brightness-slider' ) ) {
-                    _syncBrightnessDisplay( element );
-                }
+                _syncSliderDisplay( element );
                 return;
             }
             if ( type === 'checkbox' ) {
@@ -77,17 +75,31 @@
         // the same class for CSS purposes) are unaffected.
     }
 
-    function _syncBrightnessDisplay( slider ) {
-        // Mirror the slider's current value into the sibling
-        // ``.brightness-value`` span as ``N%``. Called whenever
-        // the slider's value changes (drag, button click,
-        // controller-value polling) so the displayed percentage
-        // stays in lock-step with the thumb position.
-        const $display = $( slider ).closest( '.brightness-control' )
-              .find( '.brightness-value' );
-        if ( $display.length ) {
-            $display.text( slider.value + '%' );
-        }
+    function _syncSliderDisplay( slider ) {
+        // Mirror a slider's current value into a paired display
+        // element. Sliders opt in by declaring two data
+        // attributes on the ``<input type=range>``:
+        //
+        //   Hi.CONTROLLER_DISPLAY_TARGET_ATTR  CSS selector for
+        //       the display element, looked up within the
+        //       enclosing form.
+        //   Hi.CONTROLLER_DISPLAY_FORMAT_ATTR  Format string with
+        //       ``{n}`` as the value placeholder, e.g. ``{n}%``,
+        //       ``{n}°``, ``{n}K``. Optional; defaults to ``{n}``.
+        //
+        // Attribute names are defined in DIVID (server) and
+        // mirrored in main.js (client) — templates emit them via
+        // the DIVID entries and this code reads them via Hi.
+        //
+        // Called whenever the slider's value changes (drag,
+        // button click, controller-value polling) so the
+        // displayed value stays in lock-step with the thumb.
+        const selector = slider.getAttribute( Hi.CONTROLLER_DISPLAY_TARGET_ATTR );
+        if ( ! selector ) return;
+        const $display = $( slider ).closest( 'form' ).find( selector );
+        if ( ! $display.length ) return;
+        const format = slider.getAttribute( Hi.CONTROLLER_DISPLAY_FORMAT_ATTR ) || '{n}';
+        $display.text( format.replace( '{n}', slider.value ) );
     }
 
     function _setIfDifferent( element, prop, newValue ) {
@@ -117,16 +129,21 @@
             const $slider = $btn.closest('.brightness-control')
                   .find('.brightness-slider');
             $slider.val( $btn.data('value') ).trigger('change');
-            _syncBrightnessDisplay( $slider[ 0 ] );
+            _syncSliderDisplay( $slider[ 0 ] );
         });
 
-        // Mirror the value into the display span as the operator
-        // drags the slider. ``input`` fires continuously during a
-        // drag; ``change`` only fires on release, which would let
-        // the displayed percentage lag behind the thumb position.
-        $('body').on('input', '.brightness-slider', function() {
-            _syncBrightnessDisplay( this );
-        });
+        // Mirror the value into the display element as the
+        // operator drags any slider that opted in. ``input``
+        // fires continuously during a drag; ``change`` only
+        // fires on release, which would let the displayed value
+        // lag behind the thumb position.
+        $('body').on(
+            'input',
+            `input[type=range][${Hi.CONTROLLER_DISPLAY_TARGET_ATTR}]`,
+            function() {
+                _syncSliderDisplay( this );
+            }
+        );
     });
 
 })();

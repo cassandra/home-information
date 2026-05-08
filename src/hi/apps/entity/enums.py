@@ -226,16 +226,32 @@ class EntityStateType(LabeledEnum):
                          [] )
     BANDWIDTH_USAGE  = ( 'Bandwidth Usage'  , '',
                          [] )
+    # COLOR_TEMPERATURE is the white-light Kelvin scale
+    # (warm 2000K to cool 6500K); distinct from a chromatic
+    # color (HUE+SATURATION) since the underlying physics and
+    # the natural UI affordance are different — a 1-D Kelvin
+    # slider, not a 2-D color picker.
+    COLOR_TEMPERATURE = ( 'Color Temperature', 'White-light temperature in Kelvin',
+                          [] )
     CONNECTIVITY     = ( 'Connectivity'     , '',
                          [ EntityStateValue.CONNECTED,
-                           EntityStateValue.DISCONNECTED ] )    
+                           EntityStateValue.DISCONNECTED ] )
     DATETIME         = ( 'Date/Time'        , '',
                          [] )
     ELECTRIC_USAGE   = ( 'Electric Usage'   , '',
                          [] )
     HIGH_LOW         = ( 'High/Low'         , '',
                          [ EntityStateValue.HIGH,
-                           EntityStateValue.LOW ] )    
+                           EntityStateValue.LOW ] )
+    # HUE and SATURATION are paired in HA's ``hs_color`` 2-tuple
+    # but modeled as separate 1-D EntityStates here so each gets
+    # its own slider; the controller dispatch composes the pair
+    # at the HA service-call boundary. HUE is in degrees (0-360);
+    # SATURATION is a percentage (0-100). Brightness is a third,
+    # independent dimension (LIGHT_DIMMER) — see hi_styles.py
+    # for the chromaticity-vs-intensity rationale.
+    HUE              = ( 'Hue'              , 'Color hue in degrees (0-360)',
+                         [] )
     HUMIDITY         = ( 'Humidity'         , '',
                          [] )
     LIGHT_DIMMER     = ( 'Light Dimmer'     , 'Controllable light brightness (0-100)',
@@ -256,6 +272,8 @@ class EntityStateType(LabeledEnum):
     PRESENCE         = ( 'Presence'         , '',
                          [ EntityStateValue.ACTIVE,
                            EntityStateValue.IDLE ] )
+    SATURATION       = ( 'Saturation'       , 'Color saturation as a percentage (0-100)',
+                         [] )
     SOUND_LEVEL      = ( 'Sound Level'      , '',
                          [] )
     TEMPERATURE      = ( 'Temperature'      , '',

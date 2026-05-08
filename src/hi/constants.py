@@ -131,6 +131,13 @@ DIVID = {
     'ATTR_V2_SHOW_LESS_TEXT_CLASS': 'show-less-text',
     'ATTR_V2_DELETE_FILE_ATTR': 'delete_file_attribute',
 
+    # Controller widgets - Data attributes shared between
+    # controller templates (server-emitted) and controllers.js
+    # (client-side display sync). Continuous-slider widgets opt
+    # into a paired display element by setting these attributes.
+    'CONTROLLER_DISPLAY_TARGET_ATTR': 'data-display-target',
+    'CONTROLLER_DISPLAY_FORMAT_ATTR': 'data-display-format',
+
     # Entity Picker - JavaScript dependencies only
     'ENTITY_PICKER_FILTERABLE_ITEM_CLASS': 'filterable-item',
     'ENTITY_PICKER_GROUP_SECTION_CLASS': 'entity-group-section',

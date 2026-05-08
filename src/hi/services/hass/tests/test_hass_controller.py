@@ -52,7 +52,7 @@ class TestHassControllerBehaviorVerification(TestCase):
         
         # Verify the service call was made correctly (system boundary)
         self.mock_client.call_service.assert_called_once_with(
-            domain='light', service='turn_on', hass_state_id='light.living_room'
+            domain='light', service='turn_on', hass_entity_id='light.living_room', service_data=None
         )
     
     def test_do_control_brightness_numeric_conversion_and_service_call(self):
@@ -82,7 +82,7 @@ class TestHassControllerBehaviorVerification(TestCase):
         self.mock_client.call_service.assert_called_once_with(
             domain='light',
             service='turn_on', 
-            hass_state_id='light.dining_room',
+            hass_entity_id='light.dining_room',
             service_data={'brightness_pct': 75}
         )
     
@@ -112,7 +112,7 @@ class TestHassControllerBehaviorVerification(TestCase):
         self.mock_client.call_service.assert_called_once_with(
             domain='light',
             service='turn_off',
-            hass_state_id='light.bedroom',
+            hass_entity_id='light.bedroom',
             service_data=None
         )
 
@@ -140,7 +140,7 @@ class TestHassControllerBehaviorVerification(TestCase):
         self.mock_client.call_service.assert_called_once_with(
             domain='media_player',
             service='volume_set',
-            hass_state_id='media_player.living_room',
+            hass_entity_id='media_player.living_room',
             service_data={'volume_level': 0.7}
         )
     
@@ -185,7 +185,7 @@ class TestHassControllerErrorHandlingBehavior(TestCase):
         integration_details = IntegrationDetails(key=integration_key)
         
         # Patch the converter to raise an exception
-        with patch('hi.services.hass.hass_controller.HassConverter.hass_entity_id_to_state_value_str') as mock_converter:
+        with patch('hi.services.hass.hass_controller.HassConverter.hi_value_to_hass_service_call') as mock_converter:
             mock_converter.side_effect = ValueError("Invalid entity format")
             
             result = self.controller.do_control(integration_details, 'on')
@@ -249,7 +249,7 @@ class TestHassControllerDomainRoutingBehavior(TestCase):
         self.mock_client.call_service.assert_called_once_with(
             domain='cover',
             service='open_cover',
-            hass_state_id='cover.garage_door'
+            hass_entity_id='cover.garage_door', service_data=None
         )
     
     def test_best_effort_routing_without_payload(self):
@@ -269,7 +269,7 @@ class TestHassControllerDomainRoutingBehavior(TestCase):
         self.mock_client.call_service.assert_called_once_with(
             domain='switch',
             service='turn_off',
-            hass_state_id='switch.outlet'
+            hass_entity_id='switch.outlet', service_data=None
         )
     
     def test_payload_domain_overrides_entity_id_domain(self):
@@ -296,7 +296,7 @@ class TestHassControllerDomainRoutingBehavior(TestCase):
         self.mock_client.call_service.assert_called_once_with(
             domain='switch',  # From payload, not entity_id
             service='turn_on',
-            hass_state_id='light.misleading_name'
+            hass_entity_id='light.misleading_name', service_data=None
         )
     
     def test_climate_temperature_control_with_best_effort(self):
@@ -316,7 +316,7 @@ class TestHassControllerDomainRoutingBehavior(TestCase):
         self.mock_client.call_service.assert_called_once_with(
             domain='climate',
             service='set_temperature',
-            hass_state_id='climate.thermostat',
+            hass_entity_id='climate.thermostat',
             service_data={'temperature': 72.5}
         )
     
@@ -367,7 +367,7 @@ class TestHassControllerValueTransformationBehavior(TestCase):
                 self.assertEqual(result.error_list, [])
                 
                 self.mock_client.call_service.assert_called_once_with(
-                    domain='light', service='turn_on', hass_state_id='light.test'
+                    domain='light', service='turn_on', hass_entity_id='light.test', service_data=None
                 )
     
     def test_numeric_one_treated_as_brightness_not_boolean(self):
@@ -387,7 +387,7 @@ class TestHassControllerValueTransformationBehavior(TestCase):
         self.mock_client.call_service.assert_called_once_with(
             domain='light',
             service='turn_on',
-            hass_state_id='light.test',
+            hass_entity_id='light.test',
             service_data={'brightness_pct': 1}
         )
     
@@ -412,7 +412,7 @@ class TestHassControllerValueTransformationBehavior(TestCase):
                 self.assertEqual(result.error_list, [])
                 
                 self.mock_client.call_service.assert_called_once_with(
-                    domain='switch', service='turn_off', hass_state_id='switch.test'
+                    domain='switch', service='turn_off', hass_entity_id='switch.test', service_data=None
                 )
     
     def test_numeric_zero_on_switch_returns_error(self):
@@ -455,7 +455,7 @@ class TestHassControllerValueTransformationBehavior(TestCase):
         self.assertEqual(result_open.error_list, [])
         
         self.mock_client.call_service.assert_called_with(
-            domain='cover', service='open_cover', hass_state_id='cover.garage'
+            domain='cover', service='open_cover', hass_entity_id='cover.garage', service_data=None
         )
         
         # Reset and test 'close' maps to close_cover
@@ -466,7 +466,7 @@ class TestHassControllerValueTransformationBehavior(TestCase):
         self.assertEqual(result_close.error_list, [])
         
         self.mock_client.call_service.assert_called_with(
-            domain='cover', service='close_cover', hass_state_id='cover.garage'
+            domain='cover', service='close_cover', hass_entity_id='cover.garage', service_data=None
         )
 
 
@@ -481,20 +481,18 @@ class TestHassControllerHttpExceptionHandling(TestCase):
         self.controller._hass_manager = self.mock_manager
     
     def test_http_service_call_exception_not_caught_in_best_effort(self):
-        """Test that HTTP exceptions in best-effort control are caught and returned as errors"""
+        """Test that HTTP exceptions during do_control are caught and returned as errors"""
         integration_key = IntegrationKey(integration_id='hass', integration_name='light.test')
         integration_details = IntegrationDetails(key=integration_key)  # No payload - triggers best-effort
-        
+
         # Simulate HTTP failure
         self.mock_client.call_service.side_effect = Exception("HTTP 503 Service Unavailable")
-        
-        # In best-effort mode, exceptions are caught and returned as errors
+
         result = self.controller.do_control(integration_details, 'on')
-        
+
         # Should return error result, not propagate exception
         self.assertIsNone(result.new_value)
         self.assertTrue(len(result.error_list) > 0)
-        self.assertIn('Best-effort control failed', result.error_list[0])
         self.assertIn('HTTP 503 Service Unavailable', result.error_list[0])
     
     def test_set_state_http_exception_propagates(self):
@@ -544,7 +542,7 @@ class TestHassControllerNumericValidationBehavior(TestCase):
         self.mock_client.call_service.assert_called_once_with(
             domain='light',
             service='turn_off',
-            hass_state_id='light.dimmer',
+            hass_entity_id='light.dimmer',
             service_data=None
         )
         
@@ -559,7 +557,7 @@ class TestHassControllerNumericValidationBehavior(TestCase):
         self.mock_client.call_service.assert_called_once_with(
             domain='light',
             service='turn_on',
-            hass_state_id='light.dimmer',
+            hass_entity_id='light.dimmer',
             service_data={'brightness_pct': 100}
         )
     
@@ -629,7 +627,7 @@ class TestHassControllerNumericValidationBehavior(TestCase):
                 self.mock_client.call_service.assert_called_once_with(
                     domain='media_player',
                     service='volume_set',
-                    hass_state_id='media_player.speaker',
+                    hass_entity_id='media_player.speaker',
                     service_data={'volume_level': float(volume)}
                 )
         
@@ -685,7 +683,7 @@ class TestHassControllerCoverPositionBehavior(TestCase):
         self.mock_client.call_service.assert_called_once_with(
             domain='cover',
             service='set_cover_position',
-            hass_state_id='cover.blinds',
+            hass_entity_id='cover.blinds',
             service_data={'position': 50}
         )
 
@@ -749,7 +747,7 @@ class TestHassControllerRealWorldEntityBehavior(TestCase):
         self.mock_client.call_service.assert_called_once_with(
             domain='script',
             service='turn_on',
-            hass_state_id=script_entity
+            hass_entity_id=script_entity, service_data=None
         )
     
     def test_sensor_entities_return_error_for_control_attempts(self):
@@ -864,8 +862,8 @@ class TestHassControllerIntegrationBehavior(TestCase):
                 self.mock_client.call_service.assert_called_once_with(
                     domain='light',
                     service=expected_service,
-                    hass_state_id='light.living_room',
-                    **(dict(service_data=expected_data) if expected_data else {})
+                    hass_entity_id='light.living_room',
+                    service_data=expected_data,
                 )
     
     def test_lock_domain_uses_lock_unlock_services(self):
@@ -884,7 +882,7 @@ class TestHassControllerIntegrationBehavior(TestCase):
         self.mock_client.call_service.assert_called_once_with(
             domain='lock',
             service='unlock',  # 'open' -> 'unlock' for locks
-            hass_state_id='lock.front_door'
+            hass_entity_id='lock.front_door', service_data=None
         )
         
         # Test 'close' maps to 'lock' for locks
@@ -898,7 +896,7 @@ class TestHassControllerIntegrationBehavior(TestCase):
         self.mock_client.call_service.assert_called_once_with(
             domain='lock',
             service='lock',  # 'close' -> 'lock' for locks  
-            hass_state_id='lock.front_door'
+            hass_entity_id='lock.front_door', service_data=None
         )
     
     @patch('hi.services.hass.hass_mixins.HassManager')
