@@ -3,10 +3,7 @@
 /* Common Control Container Styles */
 .on-off-control,
 .discrete-control,
-.brightness-control,
-.hue-control,
-.saturation-control,
-.color-temperature-control {
+.hi-continuous-slider-control {
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -184,31 +181,25 @@
     transform: scale(1.1);
 }
 
-.brightness-display,
-.hue-display,
-.saturation-display,
-.color-temperature-display {
+.hi-continuous-slider-display {
     display: flex;
     align-items: center;
     gap: 1rem;
 }
 
-.brightness-value,
-.hue-value,
-.saturation-value,
-.color-temperature-value {
+.hi-continuous-slider-value {
     font-weight: bold;
     min-width: 3rem;
     text-align: center;
     font-size: 0.9rem;
 }
 
-.brightness-buttons {
+.hi-continuous-slider-presets {
     display: flex;
     gap: 0.5rem;
 }
 
-.brightness-btn {
+.hi-continuous-slider-preset-btn {
     min-width: 3rem;
     font-size: 0.8rem;
 }

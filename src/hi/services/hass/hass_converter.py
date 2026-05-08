@@ -25,62 +25,53 @@ from hi.integrations.transient_models import IntegrationKey
 from .enums import HassStateValue
 from .hass_metadata import HassMetaData
 from .hass_models import HassApi, HassServiceCall, HassState, HassDevice
+from .hass_service_composer import HassServiceComposer
 
 logger = logging.getLogger(__name__)
 
 
 class HassConverter( IntegrationConverterMixin ):
     """
-    Converts Home Assistant API states into HI devices with comprehensive service call support.
-    
-    OVERVIEW:
-    - Converts HA API states into HI devices (Entity models)
-    - HA devices may consist of multiple states (e.g., light.kitchen + switch.kitchen = one device)
-    - Determines which HA devices are imported into HI
-    - HA API response doesn't make state-to-device relationships explicit, so we use heuristics
-    
-    ARCHITECTURE:
-    
-    1. DEVICE AGGREGATION (heuristic grouping of HassStates into HassDevices):
-       - device_group_id: States with same Insteon address are grouped together
-       - full_name matching: States with same name but different domains are grouped
-       - suffix-based logic: Removes known suffixes (_temperature, _battery) to find base device
-       - switch/light deduplication: Avoids creating duplicate entities for dual-domain devices
-    
-    2. ENTITY-STATE MAPPING (structured mapping from HA domains/device_classes to EntityStateTypes):
-       - Uses HASS_STATE_TO_ENTITY_STATE_TYPE_MAPPING table for consistent, predictable mapping
-       - Key: (domain, device_class, has_brightness) → EntityStateType
-       - Handles special cases: dimmer lights, door sensors, temperature sensors, etc.
-       - Replaces old heuristic if/else chains with maintainable lookup tables
-    
-    3. CONTROLLABILITY DETERMINATION:
-       - ON_OFF_CONTROLLABLE_DOMAINS: light, switch (simple on/off control)  
-       - COMPLEX_CONTROLLABLE_DOMAINS: cover, fan, climate, etc. (multiple services)
-       - SENSOR_ONLY_DOMAINS: binary_sensor, sensor, camera (read-only)
-       - Uses _is_controllable_domain_and_type() for precise control determination
-    
-    4. SERVICE CALL PAYLOAD (storage of service routing info for device control):
-       - CONTROL_SERVICE_MAPPING: (domain, EntityStateType) → service names and parameters
-       - Payload data stored during import contains: domain, on_service, off_service, capabilities
-       - Controller uses payload data directly without runtime lookups or EntityStateType awareness
-       - Enables proper HA service calls (turn_on/turn_off) instead of unreliable set_state API
-    
-    5. CONTROLLER + SENSOR CREATION:
-       - Controllable devices: Create Controller (which auto-creates associated Sensor)
-       - Sensor-only devices: Create Sensor only
-       - All models store integration payload data for service call routing
-       - Maintains 1:1 HassState ↔ EntityState mapping with proper separation of concerns
-    
-    RATIONALE:
-    - Centralizes all HA integration complexity in converter (import-time)  
-    - Controller becomes simple payload consumer (runtime)
-    - Service calls work reliably vs set_state which only updates HA internal state
-    - Structured mappings are maintainable vs scattered heuristic logic
-    - Backward compatible with existing device grouping and alarm event creation
-    
-    FLOW:
-    HA API → HassStates → Device Grouping → EntityState Mapping → Service Payload → 
-    Controller/Sensor Creation → Payload Storage → Runtime Service Calls
+    Bidirectional bridge between HI's data model and Home
+    Assistant's API.
+
+    Terminology:
+    - domain        : HA top-level category (``light``, ``switch``,
+                      ``binary_sensor``, ``sensor``, ``cover``, ...).
+                      The prefix of an entity_id (``light.x`` →
+                      domain ``light``).
+    - device_class  : Subtype within a domain (``motion``,
+                      ``temperature``, ``door``, ...). Reported in
+                      the HA state's attributes.
+    - entity, state : A single HA entity (one entity_id) and the
+                      bundle HA returns for it from
+                      ``/api/states/{entity_id}`` (top-level
+                      ``state`` field + ``attributes`` dict).
+                      ``HassState`` wraps one HA state.
+    - substate      : One meaningful atom inside a HA state that
+                      maps to one HI EntityState. Simple entities
+                      have one substate; color bulbs have several
+                      (brightness, hue, saturation, color_temp).
+    - device        : An aggregate of HA entities believed to
+                      belong to one physical thing. Heuristic
+                      grouping (Insteon address, name suffixes)
+                      since HA's API doesn't make the relationship
+                      explicit.
+
+    Three jobs:
+    1. Import-time: HA API → HI Entity + Sensor + Controller
+       models. Aggregates entities into devices, maps each substate
+       to an EntityStateType, decides controller-vs-sensor, attaches
+       an integration_payload carrying service-routing info for
+       outbound calls.
+    2. Inbound runtime (``hass_state_to_sensor_value_map``): one HA
+       state → ``Dict[IntegrationKey, value]``, one entry per
+       substate.
+    3. Outbound runtime (``hi_value_to_hass_service_call``): one HI
+       control value + integration_payload → ``HassServiceCall``.
+       Bridge methods parse HI values via ``to_ha_*`` boundary
+       helpers and delegate pure HA-side composition to
+       ``HassServiceComposer``.
     """
 
     @staticmethod
@@ -606,16 +597,30 @@ class HassConverter( IntegrationConverterMixin ):
                 state_integration_key = cls.hass_state_to_integration_key( hass_state = hass_state )
                 seen_state_integration_keys.add( state_integration_key )
 
-                # Color sub-states are derived EntityStates of the
-                # same HA state; register their keys so the cleanup
-                # loop below spares them.
-                for sub_state_type in cls._color_sub_state_types_for_hass_state( hass_state ):
-                    seen_state_integration_keys.add(
-                        cls._color_sub_state_integration_key(
-                            hass_state = hass_state,
-                            entity_state_type = sub_state_type,
-                        )
+                # Substates are derived EntityStates of the same
+                # HA state; register their keys so the cleanup
+                # loop below spares them, and refresh their
+                # controller payloads so payload-shape changes
+                # propagate to existing records.
+                for substate_type in cls._substate_types_for_hass_state( hass_state ):
+                    sub_key = cls._substate_integration_key(
+                        hass_state = hass_state,
+                        entity_state_type = substate_type,
                     )
+                    seen_state_integration_keys.add( sub_key )
+                    sub_controller = entiity_controllers.get( sub_key )
+                    if sub_controller:
+                        sub_payload = cls._substate_integration_payload(
+                            hass_state = hass_state,
+                            substate_type = substate_type,
+                        )
+                        changed_fields = sub_controller.update_integration_payload( sub_payload )
+                        if changed_fields:
+                            messages.append(
+                                f'Updated payload for substate controller {sub_controller}:'
+                                f' {", ".join(changed_fields)}'
+                            )
+                    continue
                 
                 sensor = entiity_sensors.get( state_integration_key )
                 controller = entiity_controllers.get( state_integration_key )
@@ -627,16 +632,27 @@ class HassConverter( IntegrationConverterMixin ):
                     model_with_entity_state = controller if controller else sensor
                     existing_entity_state_type = model_with_entity_state.entity_state.entity_state_type
                     is_controllable = cls._is_controllable_domain_and_type(hass_state.domain, existing_entity_state_type)
-                    
+
                     # Generate new payload using existing logic
                     new_payload = cls._create_service_payload(hass_state, existing_entity_state_type, is_controllable)
-                    
+
                     # Update payload for both sensor and controller if they exist
                     for model, model_type in [(sensor, 'sensor'), (controller, 'controller')]:
                         if model:
                             changed_fields = model.update_integration_payload(new_payload)
                             if changed_fields:
                                 messages.append(f'Updated payload for {model_type} {model}: {", ".join(changed_fields)}')
+
+                    # Create any newly-implied substate controllers
+                    # (e.g., a bulb that gained color modes since
+                    # it was first imported).
+                    created = cls._create_substate_controllers(
+                        entity = entity,
+                        hass_state = hass_state,
+                        existing_controllers = entiity_controllers,
+                    )
+                    for new_controller in created:
+                        messages.append( f'Added substate controller {new_controller}' )
                 else:
                     messages.append( f'Missing sensors/controllers for {entity}. Adding {hass_state}' )
                     new_hass_state_list.append( hass_state )
@@ -726,12 +742,11 @@ class HassConverter( IntegrationConverterMixin ):
             )
             prefix_to_entity_state[hass_state.domain] = entity_state
 
-            # Color sub-states (HUE, SATURATION, COLOR_TEMPERATURE) —
-            # one HA ``light.x`` state can carry color attributes that
-            # HI represents as additional EntityStates with their own
-            # sliders. See ``_color_sub_state_types_for_hass_state``
-            # for the supported_color_modes → sub-state mapping.
-            cls._create_color_sub_state_controllers(
+            # Some HA states decompose into multiple HI
+            # EntityStates; create the additional substate
+            # controllers (currently only light's color attributes
+            # — HUE, SATURATION, COLOR_TEMPERATURE).
+            cls._create_substate_controllers(
                 entity = entity,
                 hass_state = hass_state,
             )
@@ -739,41 +754,65 @@ class HassConverter( IntegrationConverterMixin ):
         return
 
     @classmethod
-    def _create_color_sub_state_controllers(
+    def _create_substate_controllers(
             cls,
-            entity      : Entity,
-            hass_state  : HassState,
-    ):
-        sub_state_types = cls._color_sub_state_types_for_hass_state( hass_state )
-        if not sub_state_types:
-            return
+            entity                : Entity,
+            hass_state            : HassState,
+            existing_controllers  : Optional[ Dict ] = None,
+    ) -> List:
+        """Idempotent: creates a controller for each substate
+        implied by ``hass_state`` that doesn't already exist.
+        ``existing_controllers`` maps integration_key -> Controller
+        for the entity's already-known controllers; pass it to
+        avoid re-creating substates on re-sync. Returns the list
+        of newly-created controllers."""
+        substate_types = cls._substate_types_for_hass_state( hass_state )
+        if not substate_types:
+            return []
+        if existing_controllers is None:
+            existing_controllers = {}
         base_name = hass_state.friendly_name or entity.name
-        for sub_state_type in sub_state_types:
-            sub_integration_key = cls._color_sub_state_integration_key(
+        created = []
+        for substate_type in substate_types:
+            substate_integration_key = cls._substate_integration_key(
                 hass_state = hass_state,
-                entity_state_type = sub_state_type,
+                entity_state_type = substate_type,
             )
-            controller_name = f'{base_name} {sub_state_type.label}'
+            if substate_integration_key in existing_controllers:
+                continue
+            controller_name = f'{base_name} {substate_type.label}'
             value_range_str = json.dumps(
-                cls._CONTROLLER_STATE_VALUE_RANGES[ sub_state_type ]
+                cls._CONTROLLER_STATE_VALUE_RANGES[ substate_type ]
             )
             controller = HiModelHelper.create_controller(
                 entity = entity,
-                entity_state_type = sub_state_type,
+                entity_state_type = substate_type,
                 name = controller_name,
-                integration_key = sub_integration_key,
+                integration_key = substate_integration_key,
                 value_range_str = value_range_str,
             )
-            controller.integration_payload = {
-                'domain': hass_state.domain,
-                'is_controllable': True,
-                'color_sub_state': cls._COLOR_SUB_STATE_SUFFIXES[ sub_state_type ],
-                'parent_entity_id': hass_state.entity_id,
-            }
+            controller.integration_payload = cls._substate_integration_payload(
+                hass_state = hass_state,
+                substate_type = substate_type,
+            )
             controller.save()
+            created.append( controller )
             continue
-        return
-    
+        return created
+
+    @classmethod
+    def _substate_integration_payload(
+            cls,
+            hass_state    : HassState,
+            substate_type : EntityStateType,
+    ) -> dict:
+        return {
+            'domain': hass_state.domain,
+            'is_controllable': True,
+            'substate': cls._HASS_SUBSTATE_SUFFIXES[ substate_type ],
+            'parent_entity_id': hass_state.entity_id,
+        }
+
     @classmethod
     def _create_hass_state_sensor_or_controller( cls,
                                                  hass_device       : HassDevice,
@@ -921,10 +960,10 @@ class HassConverter( IntegrationConverterMixin ):
     }
 
     # Suffix appended to a HA entity_id to form the integration
-    # key for each color sub-state. The brightness state keeps
-    # the bare entity_id (no suffix) so existing dimmer entities
-    # are not disturbed; only the new sub-states get a suffix.
-    _COLOR_SUB_STATE_SUFFIXES = {
+    # key for each substate of a one-to-many HA-state-to-HI-state
+    # decomposition. The parent (e.g., a light's brightness) keeps
+    # the bare entity_id; each substate gets its own suffix.
+    _HASS_SUBSTATE_SUFFIXES = {
         EntityStateType.HUE: 'hue',
         EntityStateType.SATURATION: 'saturation',
         EntityStateType.COLOR_TEMPERATURE: 'color_temp',
@@ -941,7 +980,7 @@ class HassConverter( IntegrationConverterMixin ):
     }
 
     @classmethod
-    def _color_sub_state_types_for_hass_state(
+    def _substate_types_for_hass_state(
             cls, hass_state: HassState ) -> List[ EntityStateType ]:
         """Return the color-related EntityStateTypes that a single
         HA ``light.x`` state implies via its ``supported_color_modes``
@@ -961,16 +1000,16 @@ class HassConverter( IntegrationConverterMixin ):
         if not isinstance( supported, list ):
             return []
 
-        sub_state_types = []
+        substate_types = []
         if any( m in cls._CHROMATIC_COLOR_MODES for m in supported ):
-            sub_state_types.append( EntityStateType.HUE )
-            sub_state_types.append( EntityStateType.SATURATION )
+            substate_types.append( EntityStateType.HUE )
+            substate_types.append( EntityStateType.SATURATION )
         if 'color_temp' in supported:
-            sub_state_types.append( EntityStateType.COLOR_TEMPERATURE )
-        return sub_state_types
+            substate_types.append( EntityStateType.COLOR_TEMPERATURE )
+        return substate_types
 
     @classmethod
-    def _extract_color_sub_state_value(
+    def _extract_substate_value(
             cls,
             hass_state         : HassState,
             entity_state_type  : EntityStateType,
@@ -1015,7 +1054,7 @@ class HassConverter( IntegrationConverterMixin ):
         return None
 
     @classmethod
-    def _color_sub_state_integration_key(
+    def _substate_integration_key(
             cls,
             hass_state         : HassState,
             entity_state_type  : EntityStateType,
@@ -1024,7 +1063,7 @@ class HassConverter( IntegrationConverterMixin ):
         sub-state. The suffix lets the controller dispatch (and
         sensor-update routing) tell which dimension a given key
         targets without parsing supported_color_modes again."""
-        suffix = cls._COLOR_SUB_STATE_SUFFIXES[ entity_state_type ]
+        suffix = cls._HASS_SUBSTATE_SUFFIXES[ entity_state_type ]
         # ``~`` separator chosen over ``:`` because the latter has
         # special meaning in CSS selectors (pseudo-classes) and
         # in URLs; ``~`` is web-safe in every position and never
@@ -1502,15 +1541,15 @@ class HassConverter( IntegrationConverterMixin ):
         brightness_value = cls._dimmer_brightness_value( hass_state )
         if brightness_value:
             result[ cls.hass_state_to_integration_key( hass_state ) ] = brightness_value
-        for color_state_type in cls._color_sub_state_types_for_hass_state( hass_state ):
-            value = cls._extract_color_sub_state_value( hass_state, color_state_type )
+        for substate_type in cls._substate_types_for_hass_state( hass_state ):
+            value = cls._extract_substate_value( hass_state, substate_type )
             if value is None:
                 continue
-            color_key = cls._color_sub_state_integration_key(
+            substate_key = cls._substate_integration_key(
                 hass_state = hass_state,
-                entity_state_type = color_state_type,
+                entity_state_type = substate_type,
             )
-            result[ color_key ] = value
+            result[ substate_key ] = value
             continue
         return result
 
@@ -1614,9 +1653,37 @@ class HassConverter( IntegrationConverterMixin ):
     #
     # Inverse direction of ``hass_state_to_sensor_value_map``: given a
     # HI control value targeting one HA substate, produce the HA
-    # service call to invoke. Stays in the converter so HassController
-    # owns no HI->HA conversion knowledge.
+    # service call to invoke. Bridge methods here parse HI values
+    # and orchestrate; pure HA-side composition lives in
+    # ``HassServiceComposer``.
     # ------------------------------------------------------------------
+
+    @classmethod
+    def to_ha_numeric_parameter_value( cls, hi_control_value : str ) -> float:
+        """Identity-valued boundary marker: parses an HI numeric
+        control value into the float HA expects. Today the value
+        passes through unchanged; the named conversion documents
+        the namespace transition and gives a single point to
+        introduce real conversion if HI's units later diverge from
+        HA's."""
+        return float( hi_control_value )
+
+    @classmethod
+    def to_ha_on_off_intent( cls, hi_control_value : str ) -> str:
+        """Normalize an HI on/off-style control value to a
+        canonical HA-side intent: ``'on'`` / ``'off'`` /
+        ``'open'`` / ``'close'``. ``HassServiceComposer`` maps the
+        intent + domain to the right HA service name."""
+        lower = hi_control_value.lower()
+        if lower in ( 'on', 'true', '1' ):
+            return 'on'
+        if lower in ( 'off', 'false', '0' ):
+            return 'off'
+        if lower == 'open':
+            return 'open'
+        if lower == 'close':
+            return 'close'
+        raise ValueError( f'Unknown control value: {hi_control_value}' )
 
     @classmethod
     def hi_value_to_hass_service_call(
@@ -1628,8 +1695,8 @@ class HassConverter( IntegrationConverterMixin ):
         """Compose the HA service call for a HI control value
         targeting one HA substate. Raises ValueError when the
         inputs cannot be resolved to a valid call."""
-        if domain_payload and domain_payload.get( 'color_sub_state' ):
-            return cls._color_sub_state_service_call(
+        if domain_payload and domain_payload.get( 'substate' ):
+            return cls._substate_service_call(
                 hi_control_value = hi_control_value,
                 domain_payload = domain_payload,
             )
@@ -1656,40 +1723,39 @@ class HassConverter( IntegrationConverterMixin ):
         )
 
     @classmethod
-    def _color_sub_state_service_call(
+    def _substate_service_call(
             cls,
             hi_control_value : str,
             domain_payload   : dict,
     ) -> HassServiceCall:
-        sub_state = domain_payload[ 'color_sub_state' ]
+        substate = domain_payload[ 'substate' ]
         parent_entity_id = domain_payload[ 'parent_entity_id' ]
         domain = domain_payload[ 'domain' ]
 
-        if sub_state == 'color_temp':
+        if substate == 'color_temp':
             try:
-                kelvin = int( round( float( hi_control_value ) ) )
+                kelvin = int( round( cls.to_ha_numeric_parameter_value( hi_control_value ) ) )
             except ( ValueError, TypeError ):
                 raise ValueError(
                     f'Invalid color_temp value: {hi_control_value}'
                 )
-            return HassServiceCall(
+            return HassServiceComposer.for_color_temp(
                 domain = domain,
-                service = 'turn_on',
-                hass_entity_id = parent_entity_id,
-                service_data = { 'color_temp_kelvin': kelvin },
+                parent_entity_id = parent_entity_id,
+                kelvin = kelvin,
             )
 
-        if sub_state in ( 'hue', 'saturation' ):
+        if substate in ( 'hue', 'saturation' ):
             try:
-                changed_value = float( hi_control_value )
+                changed_value = cls.to_ha_numeric_parameter_value( hi_control_value )
             except ( ValueError, TypeError ):
                 raise ValueError(
-                    f'Invalid {sub_state} value: {hi_control_value}'
+                    f'Invalid {substate} value: {hi_control_value}'
                 )
-            partner_sub_state = 'saturation' if sub_state == 'hue' else 'hue'
+            partner_substate = 'saturation' if substate == 'hue' else 'hue'
             partner_int_key = IntegrationKey(
                 integration_id = HassMetaData.integration_id,
-                integration_name = f'{parent_entity_id}~{partner_sub_state}',
+                integration_name = f'{parent_entity_id}~{partner_substate}',
             )
             partner_value_str = cls.get_latest_state_values(
                 integration_keys = [ partner_int_key ],
@@ -1706,27 +1772,27 @@ class HassConverter( IntegrationConverterMixin ):
             # arbitrary fallback whose effect is irrelevant when
             # saturation=0 and small when saturation is being set
             # for the first time.
-            if sub_state == 'hue':
+            if substate == 'hue':
                 hue = changed_value
                 sat = partner_value if partner_value is not None else 100.0
             else:
                 hue = partner_value if partner_value is not None else 0.0
                 sat = changed_value
-            return HassServiceCall(
+            return HassServiceComposer.for_hs_color(
                 domain = domain,
-                service = 'turn_on',
-                hass_entity_id = parent_entity_id,
-                service_data = { 'hs_color': [ hue, sat ] },
+                parent_entity_id = parent_entity_id,
+                hue = hue,
+                saturation = sat,
             )
 
-        raise ValueError( f'Unknown color sub-state: {sub_state}' )
+        raise ValueError( f'Unknown substate: {substate}' )
 
     @classmethod
     def _payload_driven_service_call(
             cls,
             domain           : str,
             hass_substate_id : str,
-            hi_control_value         : str,
+            hi_control_value : str,
             domain_payload   : dict,
     ) -> HassServiceCall:
         if not domain_payload.get( 'is_controllable', False ):
@@ -1737,279 +1803,48 @@ class HassConverter( IntegrationConverterMixin ):
             )
 
         if cls._is_numeric_control( hi_control_value, domain_payload ):
-            return cls._numeric_parameter_service_call(
+            numeric_value = cls.to_ha_numeric_parameter_value( hi_control_value )
+            return HassServiceComposer.for_numeric_parameter(
                 domain = domain,
                 hass_substate_id = hass_substate_id,
-                hi_control_value = hi_control_value,
+                numeric_value = numeric_value,
                 domain_payload = domain_payload,
             )
 
-        lower = hi_control_value.lower()
-        if lower in [ 'on', 'true', '1' ]:
-            service_key = 'on_service'
-        elif lower in [ 'off', 'false', '0' ]:
-            service_key = 'off_service'
-        elif lower in [ 'open' ]:
-            service_key = 'open_service'
-        elif lower in [ 'close' ]:
-            service_key = 'close_service'
-        else:
-            raise ValueError( f'Unknown control value: {hi_control_value}' )
-
-        service = domain_payload.get( service_key )
-        if not service:
+        intent = cls.to_ha_on_off_intent( hi_control_value )
+        result = HassServiceComposer.for_payload_intent(
+            domain = domain,
+            hass_substate_id = hass_substate_id,
+            intent = intent,
+            domain_payload = domain_payload,
+        )
+        if result is None:
             return cls._best_effort_service_call(
                 domain = domain,
                 hass_substate_id = hass_substate_id,
                 hi_control_value = hi_control_value,
             )
-        return HassServiceCall(
-            domain = domain,
-            service = service,
-            hass_entity_id = hass_substate_id,
-        )
+        return result
 
     @classmethod
     def _best_effort_service_call(
             cls,
             domain           : str,
             hass_substate_id : str,
-            hi_control_value         : str,
+            hi_control_value : str,
     ) -> HassServiceCall:
         if cls._is_numeric_value( hi_control_value ):
-            return cls._numeric_best_effort_service_call(
+            numeric_value = cls.to_ha_numeric_parameter_value( hi_control_value )
+            return HassServiceComposer.for_numeric_best_effort(
                 domain = domain,
                 hass_substate_id = hass_substate_id,
-                hi_control_value = hi_control_value,
+                numeric_value = numeric_value,
             )
-        return cls._on_off_best_effort_service_call(
+        intent = cls.to_ha_on_off_intent( hi_control_value )
+        return HassServiceComposer.for_on_off_best_effort(
             domain = domain,
             hass_substate_id = hass_substate_id,
-            hi_control_value = hi_control_value,
-        )
-
-    @classmethod
-    def _on_off_best_effort_service_call(
-            cls,
-            domain           : str,
-            hass_substate_id : str,
-            hi_control_value         : str,
-    ) -> HassServiceCall:
-        lower = hi_control_value.lower()
-        if lower in [ 'on', 'true', '1' ]:
-            service = 'turn_on'
-        elif lower in [ 'off', 'false', '0' ]:
-            service = 'turn_off'
-        elif lower == 'open':
-            if domain == 'cover':
-                service = 'open_cover'
-            elif domain == 'lock':
-                service = 'unlock'
-            else:
-                service = 'turn_on'
-        elif lower == 'close':
-            if domain == 'cover':
-                service = 'close_cover'
-            elif domain == 'lock':
-                service = 'lock'
-            else:
-                service = 'turn_off'
-        else:
-            raise ValueError( f'Unknown control value: {hi_control_value}' )
-        return HassServiceCall(
-            domain = domain,
-            service = service,
-            hass_entity_id = hass_substate_id,
-        )
-
-    @classmethod
-    def _numeric_best_effort_service_call(
-            cls,
-            domain           : str,
-            hass_substate_id : str,
-            hi_control_value         : str,
-    ) -> HassServiceCall:
-        numeric_value = float( hi_control_value )
-        if domain == 'light':
-            brightness_pct = int( numeric_value )
-            if not ( 0 <= brightness_pct <= 100 ):
-                raise ValueError(
-                    f'Invalid brightness value: {brightness_pct} (must be 0-100)'
-                )
-            if brightness_pct == 0:
-                return HassServiceCall(
-                    domain = domain,
-                    service = 'turn_off',
-                    hass_entity_id = hass_substate_id,
-                    service_data = None,
-                )
-            return HassServiceCall(
-                domain = domain,
-                service = 'turn_on',
-                hass_entity_id = hass_substate_id,
-                service_data = { 'brightness_pct': brightness_pct },
-            )
-        if domain == 'climate':
-            return HassServiceCall(
-                domain = domain,
-                service = 'set_temperature',
-                hass_entity_id = hass_substate_id,
-                service_data = { 'temperature': numeric_value },
-            )
-        if domain == 'cover':
-            position_pct = int( numeric_value )
-            if not ( 0 <= position_pct <= 100 ):
-                raise ValueError(
-                    f'Invalid position value: {position_pct} (must be 0-100)'
-                )
-            return HassServiceCall(
-                domain = domain,
-                service = 'set_cover_position',
-                hass_entity_id = hass_substate_id,
-                service_data = { 'position': position_pct },
-            )
-        if domain == 'media_player':
-            if not ( 0.0 <= numeric_value <= 1.0 ):
-                raise ValueError(
-                    f'Invalid volume value: {numeric_value} (must be 0.0-1.0)'
-                )
-            return HassServiceCall(
-                domain = domain,
-                service = 'volume_set',
-                hass_entity_id = hass_substate_id,
-                service_data = { 'volume_level': numeric_value },
-            )
-        raise ValueError( f'No numeric control pattern for domain: {domain}' )
-
-    @classmethod
-    def _numeric_parameter_service_call(
-            cls,
-            domain           : str,
-            hass_substate_id : str,
-            hi_control_value         : str,
-            domain_payload   : dict,
-    ) -> HassServiceCall:
-        numeric_value = float( hi_control_value )
-        if domain_payload.get( 'supports_brightness', False ):
-            return cls._brightness_service_call(
-                domain = domain,
-                hass_substate_id = hass_substate_id,
-                brightness = numeric_value,
-                domain_payload = domain_payload,
-            )
-        parameters = domain_payload.get( 'parameters', {} )
-        if 'temperature' in parameters:
-            return cls._temperature_service_call(
-                domain = domain,
-                hass_substate_id = hass_substate_id,
-                temperature = numeric_value,
-                domain_payload = domain_payload,
-            )
-        if 'volume_level' in parameters:
-            return cls._volume_service_call(
-                domain = domain,
-                hass_substate_id = hass_substate_id,
-                volume = numeric_value,
-                domain_payload = domain_payload,
-            )
-        if 'position' in parameters:
-            return cls._position_service_call(
-                domain = domain,
-                hass_substate_id = hass_substate_id,
-                position = numeric_value,
-                domain_payload = domain_payload,
-            )
-        if domain_payload.get( 'set_service' ):
-            service = domain_payload.get( 'set_service' )
-            return HassServiceCall(
-                domain = domain,
-                service = service,
-                hass_entity_id = hass_substate_id,
-                service_data = { domain.rstrip( 's' ): numeric_value },
-            )
-        raise ValueError( 'No numeric parameter handling defined' )
-
-    @classmethod
-    def _brightness_service_call(
-            cls,
-            domain           : str,
-            hass_substate_id : str,
-            brightness       : float,
-            domain_payload   : dict,
-    ) -> HassServiceCall:
-        brightness_pct = int( brightness )
-        if not ( 0 <= brightness_pct <= 100 ):
-            raise ValueError( f'Invalid brightness value: {brightness}' )
-        if brightness_pct == 0:
-            service = domain_payload.get( 'off_service' )
-            service_data = None
-        else:
-            service = domain_payload.get( 'on_service' )
-            service_data = { 'brightness_pct': brightness_pct }
-        if not service:
-            raise ValueError( 'No service defined for brightness control' )
-        return HassServiceCall(
-            domain = domain,
-            service = service,
-            hass_entity_id = hass_substate_id,
-            service_data = service_data,
-        )
-
-    @classmethod
-    def _temperature_service_call(
-            cls,
-            domain           : str,
-            hass_substate_id : str,
-            temperature      : float,
-            domain_payload   : dict,
-    ) -> HassServiceCall:
-        service = domain_payload.get( 'set_service' )
-        if not service:
-            raise ValueError( 'No temperature service defined' )
-        return HassServiceCall(
-            domain = domain,
-            service = service,
-            hass_entity_id = hass_substate_id,
-            service_data = { 'temperature': temperature },
-        )
-
-    @classmethod
-    def _volume_service_call(
-            cls,
-            domain           : str,
-            hass_substate_id : str,
-            volume           : float,
-            domain_payload   : dict,
-    ) -> HassServiceCall:
-        if not ( 0.0 <= volume <= 1.0 ):
-            raise ValueError( f'Invalid volume value: {volume} (must be 0.0-1.0)' )
-        service = domain_payload.get( 'set_service', 'volume_set' )
-        return HassServiceCall(
-            domain = domain,
-            service = service,
-            hass_entity_id = hass_substate_id,
-            service_data = { 'volume_level': volume },
-        )
-
-    @classmethod
-    def _position_service_call(
-            cls,
-            domain           : str,
-            hass_substate_id : str,
-            position         : float,
-            domain_payload   : dict,
-    ) -> HassServiceCall:
-        position_pct = int( position )
-        if not ( 0 <= position_pct <= 100 ):
-            raise ValueError(
-                f'Invalid position value: {position} (must be 0-100)'
-            )
-        service = domain_payload.get( 'set_service', 'set_cover_position' )
-        return HassServiceCall(
-            domain = domain,
-            service = service,
-            hass_entity_id = hass_substate_id,
-            service_data = { 'position': position_pct },
+            intent = intent,
         )
 
     @classmethod

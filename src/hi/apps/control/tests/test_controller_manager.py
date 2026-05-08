@@ -89,7 +89,7 @@ class TestControllerManager(BaseTestCase):
         
         # Verify integration details passed correctly
         call_args = mock_integration_controller.do_control.call_args
-        self.assertEqual(call_args.kwargs['control_value'], 'on')
+        self.assertEqual(call_args.kwargs['hi_control_value'], 'on')
         integration_details = call_args.kwargs['integration_details']
         self.assertEqual(integration_details.key, controller.integration_key)
         self.assertEqual(integration_details.payload, controller.integration_payload)
@@ -205,5 +205,5 @@ class TestControllerManager(BaseTestCase):
         # Verify both called integration with same parameters
         self.assertEqual(mock_integration_controller.do_control.call_count, 2)
         for call in mock_integration_controller.do_control.call_args_list:
-            self.assertEqual(call.kwargs['control_value'], '75')
+            self.assertEqual(call.kwargs['hi_control_value'], '75')
         return

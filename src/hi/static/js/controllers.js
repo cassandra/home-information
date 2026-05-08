@@ -119,18 +119,22 @@
     }
 
     jQuery(function($) {
-        // Dimmer Off / Full buttons (controller_light_dimmer.html).
-        // Find the sibling slider, set its value to the button's
-        // ``data-value``, and trigger ``change`` so antinode's
-        // ``onchange-async`` handler submits the parent form —
-        // identical round-trip to dragging the slider.
-        $('body').on('click', '.brightness-btn', function() {
-            const $btn = $(this);
-            const $slider = $btn.closest('.brightness-control')
-                  .find('.brightness-slider');
-            $slider.val( $btn.data('value') ).trigger('change');
-            _syncSliderDisplay( $slider[ 0 ] );
-        });
+        // Continuous-slider preset buttons (e.g., the dimmer's
+        // Off/Full). The button's ``data-value`` is written to
+        // the sibling slider and ``change`` is triggered so
+        // antinode's ``onchange-async`` handler submits the form
+        // — identical round-trip to dragging the slider.
+        $('body').on(
+            'click',
+            `.${Hi.CONTROLLER_PRESET_BTN_CLASS}`,
+            function() {
+                const $btn = $(this);
+                const $slider = $btn.closest( `.${Hi.CONTROLLER_SLIDER_CONTROL_CLASS}` )
+                      .find( `.${Hi.CONTROLLER_SLIDER_CLASS}` );
+                $slider.val( $btn.attr( Hi.DATA_VALUE_ATTR ) ).trigger( 'change' );
+                _syncSliderDisplay( $slider[ 0 ] );
+            }
+        );
 
         // Mirror the value into the display element as the
         // operator drags any slider that opted in. ``input``

@@ -127,12 +127,16 @@
         DATA_ORIGINAL_VALUE_ATTR: 'data-original-value',
         ATTR_V2_DELETE_FILE_ATTR: 'delete_file_attribute',
 
-        // Controller widgets - Data attributes shared between
-        // controller templates (server-emitted) and controllers.js
-        // (client-side display sync). Mirror of DIVID entries in
-        // src/hi/constants.py.
+        // Controller widgets - Class names and data attributes
+        // shared between controller templates (server-emitted)
+        // and controllers.js (client-side display sync, preset
+        // buttons). Mirror of DIVID entries in src/hi/constants.py.
         CONTROLLER_DISPLAY_TARGET_ATTR: 'data-display-target',
         CONTROLLER_DISPLAY_FORMAT_ATTR: 'data-display-format',
+        CONTROLLER_SLIDER_CLASS: 'hi-continuous-slider',
+        CONTROLLER_SLIDER_CONTROL_CLASS: 'hi-continuous-slider-control',
+        CONTROLLER_PRESET_BTN_CLASS: 'hi-continuous-slider-preset-btn',
+        DATA_VALUE_ATTR: 'data-value',
 
         // Entity Picker - selectors for JavaScript dependencies
         ENTITY_PICKER_FILTERABLE_ITEM_SELECTOR: '.filterable-item',

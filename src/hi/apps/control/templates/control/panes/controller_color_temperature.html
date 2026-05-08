@@ -1,16 +1,1 @@
-<div class="color-temperature-control">
-  <input type="range"
-         name="value"
-         min="2000"
-         max="6500"
-         step="100"
-         value="{{ controller_data.latest_sensor_response.value|default:4000 }}"
-         class="{{ controller_data.css_class }} hi-continuous-slider color-temperature-slider"
-         {{ DIVID.CONTROLLER_DISPLAY_TARGET_ATTR }}=".color-temperature-value"
-         {{ DIVID.CONTROLLER_DISPLAY_FORMAT_ATTR }}="{n}K"
-         onchange-async="true"
-         data-controller-id="{{ controller_data.controller.id }}">
-  <div class="color-temperature-display">
-    <span class="color-temperature-value">{{ controller_data.latest_sensor_response.value|default:4000 }}K</span>
-  </div>
-</div>
+{% include "control/panes/continuous_slider.html" with slider_min=2000 slider_max=6500 slider_step=100 slider_default=4000 display_unit="K" slider_class="color-temperature-slider" %}
