@@ -520,17 +520,14 @@ class IntegrationDetailsModelTestCase(TestCase):
             
             def update_integration_payload(self, new_payload):
                 old_payload = self.integration_payload or {}
+                if old_payload == new_payload:
+                    return []
                 changed_fields = []
-                
-                # Check for changes to existing fields only
                 for key, new_value in new_payload.items():
                     if key in old_payload and old_payload[key] != new_value:
                         changed_fields.append(f'{key}: {old_payload[key]} -> {new_value}')
-                
-                # Always update payload (even if no existing fields changed)
                 self.integration_payload = new_payload
                 self.save()
-                
                 return changed_fields
         
         # Test with empty initial payload

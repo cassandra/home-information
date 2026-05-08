@@ -3,10 +3,37 @@ from unittest.mock import patch
 
 from django.test import TestCase
 
+from hi.apps.control.models import Controller
+from hi.integrations.integration_converter_helper import IntegrationConverterHelper
 from hi.services.hass.hass_converter import HassConverter
-from hi.services.hass.hass_models import HassState
+from hi.services.hass.hass_models import HassDevice, HassState
 
 logging.disable(logging.CRITICAL)
+
+
+def _build_color_light_device(
+        device_id='color_bulb', supported_color_modes=None,
+        state='on', brightness=255,
+):
+    supported_color_modes = supported_color_modes or ['hs', 'color_temp']
+    api_dict = {
+        'entity_id': f'light.{device_id}',
+        'state': state,
+        'attributes': {
+            'friendly_name': device_id.replace('_', ' ').title(),
+            'supported_color_modes': supported_color_modes,
+            'color_mode': supported_color_modes[0],
+            'brightness': brightness,
+        },
+        'last_changed': '2026-01-01T00:00:00+00:00',
+        'last_reported': '2026-01-01T00:00:00+00:00',
+        'last_updated': '2026-01-01T00:00:00+00:00',
+        'context': {'id': 'ctx', 'parent_id': None, 'user_id': None},
+    }
+    hass_state = HassConverter.create_hass_state(api_dict)
+    device = HassDevice(device_id=device_id)
+    device.add_state(hass_state)
+    return device
 
 
 def _make_light_hass_state(api_dict, entity_id='light.x'):
@@ -122,12 +149,7 @@ class TestSubstateOutboundDispatch(TestCase):
 
     def test_hue_with_cached_saturation_uses_partner_value(self):
         with patch.object(
-            HassConverter, 'get_latest_state_values',
-            return_value={
-                # The integration_key in the result dict is the same
-                # IntegrationKey object the caller passed in; using
-                # any-value match here is simpler than reconstructing.
-            },
+                IntegrationConverterHelper, 'get_latest_state_values',
         ) as mock_lookup:
             # Build a real return value keyed by whatever key
             # HassConverter constructs internally.
@@ -154,7 +176,7 @@ class TestSubstateOutboundDispatch(TestCase):
         self.assertEqual(service_call.service_data, {'hs_color': [180.0, 60.0]})
 
     def test_saturation_with_cached_hue_uses_partner_value(self):
-        with patch.object(HassConverter, 'get_latest_state_values') as mock_lookup:
+        with patch.object(IntegrationConverterHelper, "get_latest_state_values") as mock_lookup:
             def side_effect(integration_keys):
                 return {integration_keys[0]: '210'}
             mock_lookup.side_effect = side_effect
@@ -174,8 +196,7 @@ class TestSubstateOutboundDispatch(TestCase):
 
     def test_hue_without_cached_partner_defaults_saturation_to_full(self):
         with patch.object(
-            HassConverter, 'get_latest_state_values',
-            return_value={},
+                IntegrationConverterHelper, 'get_latest_state_values',
         ) as mock_lookup:
             mock_lookup.side_effect = lambda integration_keys: {integration_keys[0]: None}
             service_call = HassConverter.hi_value_to_hass_service_call(
@@ -191,7 +212,7 @@ class TestSubstateOutboundDispatch(TestCase):
         self.assertEqual(service_call.service_data, {'hs_color': [90.0, 100.0]})
 
     def test_saturation_without_cached_partner_defaults_hue_to_zero(self):
-        with patch.object(HassConverter, 'get_latest_state_values') as mock_lookup:
+        with patch.object(IntegrationConverterHelper, "get_latest_state_values") as mock_lookup:
             mock_lookup.side_effect = lambda integration_keys: {integration_keys[0]: None}
             service_call = HassConverter.hi_value_to_hass_service_call(
                 hass_substate_id='light.c~saturation',
@@ -258,3 +279,96 @@ class TestBoundaryHelpers(TestCase):
     def test_to_ha_on_off_intent_rejects_unknown(self):
         with self.assertRaises(ValueError):
             HassConverter.to_ha_on_off_intent('maybe')
+
+
+class TestSubstateControllerCreationIdempotency(TestCase):
+    """Verify ``_create_substate_controllers`` is idempotent and
+    that ``update_models_for_hass_device`` symmetrically adds
+    newly-implied substate controllers without duplicating
+    existing ones."""
+
+    def _count_substate_controllers(self, entity):
+        return Controller.objects.filter(
+            entity_state__entity=entity,
+        ).exclude(
+            integration_name=f'light.{entity.integration_name}',
+        ).filter(
+            integration_name__contains='~',
+        ).count()
+
+    def test_initial_create_produces_three_substate_controllers(self):
+        device = _build_color_light_device(
+            device_id='c1',
+            supported_color_modes=['hs', 'color_temp'],
+        )
+        entity = HassConverter.create_models_for_hass_device(
+            hass_device=device,
+            add_alarm_events=False,
+        )
+        substate_controllers = Controller.objects.filter(
+            entity_state__entity=entity,
+            integration_name__contains='~',
+        )
+        suffixes = sorted(
+            c.integration_name.split('~', 1)[1] for c in substate_controllers
+        )
+        self.assertEqual(suffixes, ['color_temp', 'hue', 'saturation'])
+
+    def test_resync_does_not_duplicate_existing_substate_controllers(self):
+        device = _build_color_light_device(
+            device_id='c2',
+            supported_color_modes=['hs', 'color_temp'],
+        )
+        entity = HassConverter.create_models_for_hass_device(
+            hass_device=device, add_alarm_events=False,
+        )
+        before = Controller.objects.filter(
+            entity_state__entity=entity,
+            integration_name__contains='~',
+        ).count()
+        self.assertEqual(before, 3)
+
+        # Re-sync the same device shape — should be a no-op for
+        # substate controller creation.
+        HassConverter.update_models_for_hass_device(
+            entity=entity, hass_device=device,
+        )
+        after = Controller.objects.filter(
+            entity_state__entity=entity,
+            integration_name__contains='~',
+        ).count()
+        self.assertEqual(after, 3)
+
+    def test_resync_creates_newly_implied_substate_controllers(self):
+        # Initial import: brightness-only bulb (no color substates).
+        device = _build_color_light_device(
+            device_id='c3',
+            supported_color_modes=['brightness'],
+        )
+        entity = HassConverter.create_models_for_hass_device(
+            hass_device=device, add_alarm_events=False,
+        )
+        self.assertEqual(
+            Controller.objects.filter(
+                entity_state__entity=entity,
+                integration_name__contains='~',
+            ).count(),
+            0,
+        )
+
+        # Bulb gains color modes (firmware update, etc.); re-sync.
+        upgraded_device = _build_color_light_device(
+            device_id='c3',
+            supported_color_modes=['hs', 'color_temp'],
+        )
+        HassConverter.update_models_for_hass_device(
+            entity=entity, hass_device=upgraded_device,
+        )
+        suffixes = sorted(
+            c.integration_name.split('~', 1)[1]
+            for c in Controller.objects.filter(
+                entity_state__entity=entity,
+                integration_name__contains='~',
+            )
+        )
+        self.assertEqual(suffixes, ['color_temp', 'hue', 'saturation'])

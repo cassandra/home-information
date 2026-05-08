@@ -26,14 +26,14 @@ Parameters:
          min="{{ slider_min }}"
          max="{{ slider_max }}"
          {% if slider_step %}step="{{ slider_step }}"{% endif %}
-         value="{{ controller_data.latest_sensor_response.value|default:slider_default }}"
+         value="{{ controller_data.latest_sensor_response.value|default_if_none:slider_default }}"
          class="{{ controller_data.css_class }} {{ DIVID.CONTROLLER_SLIDER_CLASS }} {{ slider_class }}"
          {{ DIVID.CONTROLLER_DISPLAY_TARGET_ATTR }}=".hi-continuous-slider-value"
          {{ DIVID.CONTROLLER_DISPLAY_FORMAT_ATTR }}="{n}{{ display_unit }}"
          onchange-async="true"
          data-controller-id="{{ controller_data.controller.id }}">
   <div class="hi-continuous-slider-display">
-    <span class="hi-continuous-slider-value">{{ controller_data.latest_sensor_response.value|default:slider_default }}{{ display_unit }}</span>
+    <span class="hi-continuous-slider-value">{{ controller_data.latest_sensor_response.value|default_if_none:slider_default }}{{ display_unit }}</span>
     {% if show_presets %}
       <div class="hi-continuous-slider-presets">
         <button type="button"

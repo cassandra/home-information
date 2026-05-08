@@ -13,7 +13,7 @@ Each integration is a Django app in `hi/services/` directory. The `hi.integratio
 A single upstream state may decompose into multiple HI EntityStates when the upstream protocol packs several independently-controllable values into one entity (e.g., a color light's brightness + hue + saturation + color temperature). The framework supports this via:
 
 - **integration_key suffix convention**: each derived EntityState gets its own integration_key (e.g., `light.x` for the parent, `light.x~hue` / `light.x~saturation` for the substates). The integration controls the suffix scheme.
-- **`IntegrationConverterMixin`** (`hi/integrations/integration_converter_mixin.py`): converters that need to compose outbound calls from multiple HI EntityState values inherit it for `get_latest_state_values(integration_keys)`. Inbound decomposition writes each substate value through `SensorResponse`; outbound recomposition reads back via the mixin's runtime cache lookup.
+- **`IntegrationConverterHelper`** (`hi/integrations/integration_converter_helper.py`): a classmethod helper used by converters that need to compose outbound calls from multiple HI EntityState values. Exposes `get_latest_state_values(integration_keys)` for the runtime cache lookup. Inbound decomposition writes each substate value through `SensorResponse`; outbound recomposition reads it back via this helper.
 - The integration's converter decides which upstream attributes become substates and how they map back to outbound calls. See the HA integration's substate handling for a worked example.
 
 ### Responsibility Boundaries

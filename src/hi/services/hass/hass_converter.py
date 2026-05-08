@@ -19,7 +19,7 @@ from hi.apps.entity.enums import (
 from hi.apps.entity.models import Entity, EntityAttribute, EntityState
 from hi.apps.model_helper import HiModelHelper
 
-from hi.integrations.integration_converter_mixin import IntegrationConverterMixin
+from hi.integrations.integration_converter_helper import IntegrationConverterHelper
 from hi.integrations.transient_models import IntegrationKey
 
 from .enums import HassStateValue
@@ -30,7 +30,7 @@ from .hass_service_composer import ControlIntent, HassServiceComposer
 logger = logging.getLogger(__name__)
 
 
-class HassConverter( IntegrationConverterMixin ):
+class HassConverter:
     """
     Bidirectional bridge between HI's data model and Home
     Assistant's API.
@@ -614,11 +614,11 @@ class HassConverter( IntegrationConverterMixin ):
                             hass_state = hass_state,
                             substate_type = substate_type,
                         )
-                        if sub_controller.integration_payload != sub_payload:
-                            changed_fields = sub_controller.update_integration_payload( sub_payload )
+                        changed_fields = sub_controller.update_integration_payload( sub_payload )
+                        if changed_fields:
                             messages.append(
                                 f'Updated payload for substate controller {sub_controller}:'
-                                f' {", ".join(changed_fields) if changed_fields else "key change"}'
+                                f' {", ".join(changed_fields)}'
                             )
                     continue
                 
@@ -1015,13 +1015,14 @@ class HassConverter( IntegrationConverterMixin ):
             entity_state_type  : EntityStateType,
     ) -> Optional[ str ]:
         """Pull the value for a single color sub-state out of a HA
-        light's attributes. Returns ``None`` when the attribute the
-        sub-state needs is absent — HA omits color attributes when
-        the light is off, and only the attribute matching the
-        current ``color_mode`` is authoritative; the other modes'
-        attributes may or may not be reported. Callers skip
-        ``None``-valued sub-states rather than emitting a stale
-        response."""
+        light's attributes. Returns whatever HA reports — we don't
+        filter by ``color_mode``. HA may continue to report
+        ``hs_color`` while in color_temp mode (or vice versa);
+        that value is still the bulb's last-known chromaticity and
+        relaying it as the HUE/SATURATION HI state is correct.
+        Returns ``None`` only when the attribute is absent (e.g.,
+        HA omits color attributes when the light is off); callers
+        skip ``None``-valued sub-states from the response map."""
         attrs = hass_state.attributes
 
         if entity_state_type == EntityStateType.HUE:
@@ -1766,7 +1767,7 @@ class HassConverter( IntegrationConverterMixin ):
                 parent_entity_id = parent_entity_id,
                 suffix = partner_substate,
             )
-            partner_value_str = cls.get_latest_state_values(
+            partner_value_str = IntegrationConverterHelper.get_latest_state_values(
                 integration_keys = [ partner_int_key ],
             ).get( partner_int_key )
             try:

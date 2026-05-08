@@ -77,7 +77,7 @@ Upstream API reference: <https://developers.home-assistant.io/docs/api/rest/>.
   into its substate value entries. Outbound: `hi_value_to_hass_service_call`
   routes substate-targeted control values to a single HA service call,
   reading partner substate values via the framework's
-  `IntegrationConverterMixin` to compose paired payloads (e.g.,
+  `IntegrationConverterHelper` to compose paired payloads (e.g.,
   `hs_color: [hue, saturation]`).
 - **HassConverter vs HassServiceComposer.** The converter owns
   HI<->HA bridging (parsing HI control values, choosing the right

@@ -189,21 +189,21 @@ class IntegrationDetailsModel( models.Model ):
     def update_integration_payload(self, new_payload: dict) -> list:
         """
         Update integration payload and return list of changed fields.
-        Only reports changes to existing fields (ignores new fields).
-        Returns list of strings describing changes, empty if no existing values changed.
+        Reports modifications to existing fields by name; returns an
+        empty list when nothing changed (no DB write performed).
         """
         old_payload = self.integration_payload or {}
+        if old_payload == new_payload:
+            return []
+
         changed_fields = []
-        
-        # Check for changes to existing fields only
         for key, new_value in new_payload.items():
             if key in old_payload and old_payload[key] != new_value:
                 changed_fields.append(f'{key}: {old_payload[key]} -> {new_value}')
-        
-        # Always update payload (even if no existing fields changed)
+
         self.integration_payload = new_payload
         self.save()
-        
+
         return changed_fields
 
 
