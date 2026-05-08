@@ -1,6 +1,7 @@
 import json
 import logging
 import re
+from dataclasses import dataclass
 from typing import Dict, List, Optional, Set, Tuple
 
 from django.db import transaction
@@ -643,16 +644,17 @@ class HassConverter:
                             if changed_fields:
                                 messages.append(f'Updated payload for {model_type} {model}: {", ".join(changed_fields)}')
 
-                    # Create any newly-implied substate controllers
+                    # Create any newly-implied substate models
                     # (e.g., a bulb that gained color modes since
                     # it was first imported).
-                    created = cls._create_substate_controllers(
+                    created = cls._create_substate_models(
                         entity = entity,
                         hass_state = hass_state,
                         existing_controllers = entiity_controllers,
+                        existing_sensors = entiity_sensors,
                     )
-                    for new_controller in created:
-                        messages.append( f'Added substate controller {new_controller}' )
+                    for new_model in created:
+                        messages.append( f'Added substate model {new_model}' )
                 else:
                     messages.append( f'Missing sensors/controllers for {entity}. Adding {hass_state}' )
                     new_hass_state_list.append( hass_state )
@@ -744,9 +746,9 @@ class HassConverter:
 
             # Some HA states decompose into multiple HI
             # EntityStates; create the additional substate
-            # controllers (currently only light's color attributes
-            # — HUE, SATURATION, COLOR_TEMPERATURE).
-            cls._create_substate_controllers(
+            # models (Controllers for axes the operator drives,
+            # Sensors for read-only ones like COLOR_MODE).
+            cls._create_substate_models(
                 entity = entity,
                 hass_state = hass_state,
             )
@@ -754,49 +756,67 @@ class HassConverter:
         return
 
     @classmethod
-    def _create_substate_controllers(
+    def _create_substate_models(
             cls,
             entity                : Entity,
             hass_state            : HassState,
             existing_controllers  : Optional[ Dict ] = None,
+            existing_sensors      : Optional[ Dict ] = None,
     ) -> List:
-        """Idempotent: creates a controller for each substate
-        implied by ``hass_state`` that doesn't already exist.
-        ``existing_controllers`` maps integration_key -> Controller
-        for the entity's already-known controllers; pass it to
-        avoid re-creating substates on re-sync. Returns the list
-        of newly-created controllers."""
+        """Idempotent: creates a Controller (for controllable
+        substates) or a Sensor (for read-only ones) per
+        ``_SUBSTATE_SPECS`` for each substate implied by
+        ``hass_state`` that doesn't already exist. Pass the
+        entity's existing ``Controller``/``Sensor`` maps so
+        re-sync avoids re-creation. Returns the list of
+        newly-created models."""
         substate_types = cls._substate_types_for_hass_state( hass_state )
         if not substate_types:
             return []
         if existing_controllers is None:
             existing_controllers = {}
+        if existing_sensors is None:
+            existing_sensors = {}
         base_name = hass_state.friendly_name or entity.name
         created = []
         for substate_type in substate_types:
+            spec = cls._SUBSTATE_SPECS[ substate_type ]
             substate_integration_key = cls._substate_integration_key(
                 hass_state = hass_state,
                 entity_state_type = substate_type,
             )
-            if substate_integration_key in existing_controllers:
+            existing_for_kind = (
+                existing_controllers if spec.is_controllable else existing_sensors
+            )
+            if substate_integration_key in existing_for_kind:
                 continue
-            controller_name = f'{base_name} {substate_type.label}'
-            value_range_str = json.dumps(
-                cls._CONTROLLER_STATE_VALUE_RANGES[ substate_type ]
+            record_name = f'{base_name} {substate_type.label}'
+            value_range_str = (
+                json.dumps( spec.value_range ) if spec.value_range else ''
             )
-            controller = HiModelHelper.create_controller(
-                entity = entity,
-                entity_state_type = substate_type,
-                name = controller_name,
-                integration_key = substate_integration_key,
-                value_range_str = value_range_str,
-            )
-            controller.integration_payload = cls._substate_integration_payload(
-                hass_state = hass_state,
-                substate_type = substate_type,
-            )
-            controller.save()
-            created.append( controller )
+            if spec.is_controllable:
+                controller = HiModelHelper.create_controller(
+                    entity = entity,
+                    entity_state_type = substate_type,
+                    name = record_name,
+                    integration_key = substate_integration_key,
+                    value_range_str = value_range_str,
+                )
+                controller.integration_payload = cls._substate_integration_payload(
+                    hass_state = hass_state,
+                    substate_type = substate_type,
+                )
+                controller.save()
+                created.append( controller )
+            else:
+                sensor = HiModelHelper.create_sensor(
+                    entity = entity,
+                    entity_state_type = substate_type,
+                    name = record_name,
+                    integration_key = substate_integration_key,
+                    value_range_str = value_range_str,
+                )
+                created.append( sensor )
             continue
         return created
 
@@ -806,10 +826,11 @@ class HassConverter:
             hass_state    : HassState,
             substate_type : EntityStateType,
     ) -> dict:
+        spec = cls._SUBSTATE_SPECS[ substate_type ]
         return {
             'domain': hass_state.domain,
-            'is_controllable': True,
-            'substate': cls._HASS_SUBSTATE_SUFFIXES[ substate_type ],
+            'is_controllable': spec.is_controllable,
+            'substate': spec.suffix,
             'parent_entity_id': hass_state.entity_id,
         }
 
@@ -959,24 +980,56 @@ class HassConverter:
         'xy',
     }
 
-    # Suffix appended to a HA entity_id to form the integration
-    # key for each substate of a one-to-many HA-state-to-HI-state
-    # decomposition. The parent (e.g., a light's brightness) keeps
-    # the bare entity_id; each substate gets its own suffix.
-    _HASS_SUBSTATE_SUFFIXES = {
-        EntityStateType.HUE: 'hue',
-        EntityStateType.SATURATION: 'saturation',
-        EntityStateType.COLOR_TEMPERATURE: 'color_temp',
+    # Per-substate metadata. The suffix is appended to the parent
+    # HA entity_id to form the substate's integration_key (parent
+    # keeps the bare entity_id; each substate gets its own
+    # suffix). ``is_controllable`` selects Sensor-only vs
+    # Sensor+Controller creation. ``value_range`` is stored on
+    # the EntityState's value_range_str so client widgets and
+    # any server-side validation share one source of truth;
+    # ``None`` for substates whose value space comes from their
+    # EntityStateType's enum choices instead (e.g., COLOR_MODE).
+    @dataclass(frozen=True)
+    class _SubstateSpec:
+        suffix          : str
+        is_controllable : bool
+        value_range     : Optional[Dict] = None
+
+    _SUBSTATE_SPECS = {
+        EntityStateType.HUE: _SubstateSpec(
+            suffix='hue', is_controllable=True,
+            value_range={ 'min': 0, 'max': 360 },
+        ),
+        EntityStateType.SATURATION: _SubstateSpec(
+            suffix='saturation', is_controllable=True,
+            value_range={ 'min': 0, 'max': 100 },
+        ),
+        EntityStateType.COLOR_TEMPERATURE: _SubstateSpec(
+            suffix='color_temp', is_controllable=True,
+            value_range={ 'min': 2000, 'max': 6500 },
+        ),
+        EntityStateType.COLOR_MODE: _SubstateSpec(
+            suffix='color_mode', is_controllable=False,
+        ),
     }
 
-    # Value ranges for controllers, keyed by EntityStateType.
-    # Stored on the EntityState's value_range_str so client-side
-    # widgets and any server-side validation share one source of
-    # truth.
-    _CONTROLLER_STATE_VALUE_RANGES = {
-        EntityStateType.HUE: { 'min': 0, 'max': 360 },
-        EntityStateType.SATURATION: { 'min': 0, 'max': 100 },
-        EntityStateType.COLOR_TEMPERATURE: { 'min': 2000, 'max': 6500 },
+    # Translation of HA's color_mode attribute values to HI's
+    # COLOR_MODE EntityStateValues. HA's ``null`` and explicit
+    # ``'unknown'`` both map to UNKNOWN — HA's docs distinguish
+    # them but don't ascribe different semantics, and off-state
+    # behavior varies per-integration.
+    _HASS_COLOR_MODE_TO_HI_VALUE = {
+        None: EntityStateValue.COLOR_MODE_UNKNOWN,
+        'unknown': EntityStateValue.COLOR_MODE_UNKNOWN,
+        'onoff': EntityStateValue.COLOR_MODE_ONOFF,
+        'brightness': EntityStateValue.COLOR_MODE_BRIGHTNESS,
+        'color_temp': EntityStateValue.COLOR_MODE_COLOR_TEMP,
+        'hs': EntityStateValue.COLOR_MODE_HS,
+        'rgb': EntityStateValue.COLOR_MODE_RGB,
+        'rgbw': EntityStateValue.COLOR_MODE_RGBW,
+        'rgbww': EntityStateValue.COLOR_MODE_RGBWW,
+        'xy': EntityStateValue.COLOR_MODE_XY,
+        'white': EntityStateValue.COLOR_MODE_WHITE,
     }
 
     @classmethod
@@ -1006,6 +1059,12 @@ class HassConverter:
             substate_types.append( EntityStateType.SATURATION )
         if 'color_temp' in supported:
             substate_types.append( EntityStateType.COLOR_TEMPERATURE )
+        # COLOR_MODE only adds information when there's actual
+        # mode-switching to track. A bulb with a single supported
+        # mode (e.g., ``['brightness']``) has a constant value;
+        # skip it.
+        if len( supported ) > 1:
+            substate_types.append( EntityStateType.COLOR_MODE )
         return substate_types
 
     @classmethod
@@ -1052,6 +1111,15 @@ class HassConverter:
                     return None
             return None
 
+        if entity_state_type == EntityStateType.COLOR_MODE:
+            if 'color_mode' not in attrs:
+                return None
+            ha_value = attrs[ 'color_mode' ]
+            hi_value = cls._HASS_COLOR_MODE_TO_HI_VALUE.get(
+                ha_value, EntityStateValue.COLOR_MODE_UNKNOWN,
+            )
+            return str( hi_value )
+
         return None
 
     @classmethod
@@ -1066,7 +1134,7 @@ class HassConverter:
         targets without parsing supported_color_modes again."""
         return cls._substate_integration_key_for_suffix(
             parent_entity_id = hass_state.entity_id,
-            suffix = cls._HASS_SUBSTATE_SUFFIXES[ entity_state_type ],
+            suffix = cls._SUBSTATE_SPECS[ entity_state_type ].suffix,
         )
 
     @classmethod

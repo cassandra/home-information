@@ -108,6 +108,11 @@ class StatusDisplayManager( Singleton, SensorResponseMixin ):
                 entity_state = entity_state,
                 sensor_response_list = sensor_response_list,
                 controller_data_list = controller_data_list,
+                # This branch only sees EntityStates that produced
+                # responses, so a sensor must exist; controllers
+                # are explicitly known via the list above.
+                has_sensor = True,
+                has_controller = bool( controller_data_list ),
             )
             entity_state_status_data_list.append( entity_state_status_data )
             continue
@@ -282,6 +287,8 @@ class StatusDisplayManager( Singleton, SensorResponseMixin ):
                 entity_state = entity_state,
                 sensor_response_list = entity_state_sensor_response_list,
                 controller_data_list = controller_data_list,
+                has_sensor = bool( entity_state_to_sensor_list.get( entity_state ) ),
+                has_controller = bool( controller_data_list ),
             )
             entity_state_to_entity_state_status_data_map[entity_state] = entity_state_status_data
             continue

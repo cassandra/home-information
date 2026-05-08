@@ -202,8 +202,23 @@ class EntityStateValue(LabeledEnum):
 
     HIGH           = ( 'High', '' )
     LOW            = ( 'Low', '' )
- 
-    
+
+    # COLOR_MODE values — modes a smart bulb can be in. UNKNOWN
+    # covers integrations that don't report a mode and cases where
+    # the bulb hasn't yet declared one. Names follow HA's modes;
+    # see EntityStateType.COLOR_MODE for the integration mapping.
+    COLOR_MODE_UNKNOWN     = ( 'Unknown', '' )
+    COLOR_MODE_ONOFF       = ( 'Basic On/Off', '' )
+    COLOR_MODE_BRIGHTNESS  = ( 'Brightness', '' )
+    COLOR_MODE_COLOR_TEMP  = ( 'White Temperature', '' )
+    COLOR_MODE_HS          = ( 'HS Color', '' )
+    COLOR_MODE_RGB         = ( 'RGB Color', '' )
+    COLOR_MODE_RGBW        = ( 'RGBW Color', '' )
+    COLOR_MODE_RGBWW       = ( 'RGBWW Color', '' )
+    COLOR_MODE_XY          = ( 'XY Color', '' )
+    COLOR_MODE_WHITE       = ( 'White', '' )
+
+
 class EntityStateType(LabeledEnum):
     
     # General types
@@ -226,6 +241,22 @@ class EntityStateType(LabeledEnum):
                          [] )
     BANDWIDTH_USAGE  = ( 'Bandwidth Usage'  , '',
                          [] )
+    # COLOR_MODE reports which lighting mode a smart bulb is
+    # currently in (e.g., HS color, white temperature, basic
+    # on/off). Read-only sensor; HA derives the value from
+    # whichever attribute was most recently written. The value
+    # set is the ``COLOR_MODE_*`` family of EntityStateValues.
+    COLOR_MODE       = ( 'Color Mode'       , 'Active lighting color mode',
+                         [ EntityStateValue.COLOR_MODE_UNKNOWN,
+                           EntityStateValue.COLOR_MODE_ONOFF,
+                           EntityStateValue.COLOR_MODE_BRIGHTNESS,
+                           EntityStateValue.COLOR_MODE_COLOR_TEMP,
+                           EntityStateValue.COLOR_MODE_HS,
+                           EntityStateValue.COLOR_MODE_RGB,
+                           EntityStateValue.COLOR_MODE_RGBW,
+                           EntityStateValue.COLOR_MODE_RGBWW,
+                           EntityStateValue.COLOR_MODE_XY,
+                           EntityStateValue.COLOR_MODE_WHITE ] )
     # COLOR_TEMPERATURE is the white-light Kelvin scale
     # (warm 2000K to cool 6500K); distinct from a chromatic
     # color (HUE+SATURATION) since the underlying physics and

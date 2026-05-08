@@ -10,8 +10,11 @@
     {% elif entity_state_status_data.sensor_response_list %}
     {% include "sense/panes/sensor_response_status_row.html" with sensor_response=entity_state_status_data.latest_sensor_response %}
 
+    {% elif entity_state_status_data.has_sensor %}
+    <div class="alert alert-info">{{ entity_state_status_data.entity_state.name }}: awaiting sensor reading.</div>
+
     {% else %}
-    <div class="alert alert-info">No sensors or controllers defined.</div>
+    <div class="alert alert-info">{{ entity_state_status_data.entity_state.name }}: no sensors or controllers defined.</div>
     {% endif %}
     
   </div>

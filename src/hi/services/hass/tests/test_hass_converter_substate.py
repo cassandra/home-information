@@ -4,6 +4,8 @@ from unittest.mock import patch
 from django.test import TestCase
 
 from hi.apps.control.models import Controller
+from hi.apps.entity.enums import EntityStateValue
+from hi.apps.sense.models import Sensor
 from hi.integrations.integration_converter_helper import IntegrationConverterHelper
 from hi.services.hass.hass_converter import HassConverter
 from hi.services.hass.hass_models import HassDevice, HassState
@@ -372,3 +374,99 @@ class TestSubstateControllerCreationIdempotency(TestCase):
             )
         )
         self.assertEqual(suffixes, ['color_temp', 'hue', 'saturation'])
+
+
+class TestColorModeSubstate(TestCase):
+    """Behavior specific to the COLOR_MODE substate (sensor-only,
+    discrete-valued, mapped from HA's ``color_mode`` attribute)."""
+
+    def test_color_mode_value_translation(self):
+        """HA's color_mode strings translate to HI EntityStateValue
+        members; null and 'unknown' both map to UNKNOWN."""
+        cases = [
+            ('hs', EntityStateValue.COLOR_MODE_HS),
+            ('color_temp', EntityStateValue.COLOR_MODE_COLOR_TEMP),
+            ('rgb', EntityStateValue.COLOR_MODE_RGB),
+            ('onoff', EntityStateValue.COLOR_MODE_ONOFF),
+            ('brightness', EntityStateValue.COLOR_MODE_BRIGHTNESS),
+            ('white', EntityStateValue.COLOR_MODE_WHITE),
+            (None, EntityStateValue.COLOR_MODE_UNKNOWN),
+            ('unknown', EntityStateValue.COLOR_MODE_UNKNOWN),
+        ]
+        for ha_value, expected_hi_value in cases:
+            with self.subTest(ha_value=ha_value):
+                hass_state = _build_color_light_device(
+                    device_id='cm',
+                    supported_color_modes=['hs', 'color_temp'],
+                ).hass_state_list[0]
+                hass_state.api_dict['attributes']['color_mode'] = ha_value
+                value_map = HassConverter.hass_state_to_sensor_value_map(hass_state)
+                color_mode_key = next(
+                    k for k in value_map if k.integration_name.endswith('~color_mode')
+                )
+                self.assertEqual(value_map[color_mode_key], str(expected_hi_value))
+
+    def test_color_mode_attribute_absent_skipped_from_value_map(self):
+        """When HA omits the ``color_mode`` attribute key entirely,
+        the substate is skipped from the value map (last-known
+        retained), consistent with hue/saturation behavior."""
+        hass_state = _build_color_light_device(
+            device_id='cm2',
+            supported_color_modes=['hs', 'color_temp'],
+        ).hass_state_list[0]
+        # Strip color_mode; the fixture builder sets it by default.
+        del hass_state.api_dict['attributes']['color_mode']
+        value_map = HassConverter.hass_state_to_sensor_value_map(hass_state)
+        color_mode_keys = [
+            k for k in value_map if k.integration_name.endswith('~color_mode')
+        ]
+        self.assertEqual(color_mode_keys, [])
+
+    def test_color_mode_substate_creates_sensor_not_controller(self):
+        """COLOR_MODE is sensor-only — operator can't directly set
+        the mode (HA derives it from whichever attribute was
+        most-recently written)."""
+        device = _build_color_light_device(
+            device_id='cm3',
+            supported_color_modes=['hs', 'color_temp'],
+        )
+        entity = HassConverter.create_models_for_hass_device(
+            hass_device=device, add_alarm_events=False,
+        )
+        # COLOR_MODE substate should exist as a Sensor.
+        self.assertTrue(
+            Sensor.objects.filter(
+                entity_state__entity=entity,
+                integration_name__endswith='~color_mode',
+            ).exists()
+        )
+        # COLOR_MODE substate should NOT exist as a Controller.
+        self.assertFalse(
+            Controller.objects.filter(
+                entity_state__entity=entity,
+                integration_name__endswith='~color_mode',
+            ).exists()
+        )
+
+    def test_resync_does_not_duplicate_color_mode_sensor(self):
+        device = _build_color_light_device(
+            device_id='cm4',
+            supported_color_modes=['hs', 'color_temp'],
+        )
+        entity = HassConverter.create_models_for_hass_device(
+            hass_device=device, add_alarm_events=False,
+        )
+        before = Sensor.objects.filter(
+            entity_state__entity=entity,
+            integration_name__endswith='~color_mode',
+        ).count()
+        self.assertEqual(before, 1)
+
+        HassConverter.update_models_for_hass_device(
+            entity=entity, hass_device=device,
+        )
+        after = Sensor.objects.filter(
+            entity_state__entity=entity,
+            integration_name__endswith='~color_mode',
+        ).count()
+        self.assertEqual(after, 1)
