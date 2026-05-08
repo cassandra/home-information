@@ -9,6 +9,13 @@ Each integration is a Django app in `hi/services/` directory. The `hi.integratio
 - **integration_key**: Associates entities/sensors with external systems
 - **detail_attrs**: Opaque data blob - only the integration uses this data
 
+### One-to-many state composition
+A single upstream state may decompose into multiple HI EntityStates when the upstream protocol packs several independently-controllable values into one entity (e.g., a color light's brightness + hue + saturation + color temperature). The framework supports this via:
+
+- **integration_key suffix convention**: each derived EntityState gets its own integration_key (e.g., `light.x` for the parent, `light.x~hue` / `light.x~saturation` for the substates). The integration controls the suffix scheme.
+- **`IntegrationConverterMixin`** (`hi/integrations/integration_converter_mixin.py`): converters that need to compose outbound calls from multiple HI EntityState values inherit it for `get_latest_state_values(integration_keys)`. Inbound decomposition writes each substate value through `SensorResponse`; outbound recomposition reads back via the mixin's runtime cache lookup.
+- The integration's converter decides which upstream attributes become substates and how they map back to outbound calls. See the HA integration's substate handling for a worked example.
+
 ### Responsibility Boundaries
 Integrations create `SensorResponse` objects which become `Event` objects with duration. The Event duration is the only accessible duration data - Event objects don't know about underlying integration specifics.
 
