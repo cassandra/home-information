@@ -603,6 +603,7 @@ class HassConverter:
                 # loop below spares them, and refresh their
                 # controller payloads so payload-shape changes
                 # propagate to existing records.
+                any_existing_substate = False
                 for substate_type in cls._substate_types_for_hass_state( hass_state ):
                     sub_key = cls._substate_integration_key(
                         hass_state = hass_state,
@@ -610,6 +611,9 @@ class HassConverter:
                     )
                     seen_state_integration_keys.add( sub_key )
                     sub_controller = entiity_controllers.get( sub_key )
+                    sub_sensor = entiity_sensors.get( sub_key )
+                    if sub_controller or sub_sensor:
+                        any_existing_substate = True
                     if sub_controller:
                         sub_payload = cls._substate_integration_payload(
                             hass_state = hass_state,
@@ -622,27 +626,28 @@ class HassConverter:
                                 f' {", ".join(changed_fields)}'
                             )
                     continue
-                
+
                 sensor = entiity_sensors.get( state_integration_key )
                 controller = entiity_controllers.get( state_integration_key )
 
-                # Update integration payload for existing sensors and controllers
-                # Every HassState should have at least a sensor, potentially also a controller
-                if sensor or controller:
-                    # Use sensor or controller to determine EntityStateType (they should be the same)
-                    model_with_entity_state = controller if controller else sensor
-                    existing_entity_state_type = model_with_entity_state.entity_state.entity_state_type
-                    is_controllable = cls._is_controllable_domain_and_type(hass_state.domain, existing_entity_state_type)
-
-                    # Generate new payload using existing logic
-                    new_payload = cls._create_service_payload(hass_state, existing_entity_state_type, is_controllable)
-
-                    # Update payload for both sensor and controller if they exist
-                    for model, model_type in [(sensor, 'sensor'), (controller, 'controller')]:
-                        if model:
-                            changed_fields = model.update_integration_payload(new_payload)
-                            if changed_fields:
-                                messages.append(f'Updated payload for {model_type} {model}: {", ".join(changed_fields)}')
+                # For multi-substate lights, no model lives at
+                # the bare key — match on existing substates so
+                # we don't fall through to the "missing" branch
+                # and re-create what's already there.
+                if sensor or controller or any_existing_substate:
+                    if sensor or controller:
+                        # Refresh the parent (bare-key) payload —
+                        # only relevant for single-state HA entities;
+                        # multi-substate lights have no parent model.
+                        model_with_entity_state = controller if controller else sensor
+                        existing_entity_state_type = model_with_entity_state.entity_state.entity_state_type
+                        is_controllable = cls._is_controllable_domain_and_type(hass_state.domain, existing_entity_state_type)
+                        new_payload = cls._create_service_payload(hass_state, existing_entity_state_type, is_controllable)
+                        for model, model_type in [(sensor, 'sensor'), (controller, 'controller')]:
+                            if model:
+                                changed_fields = model.update_integration_payload(new_payload)
+                                if changed_fields:
+                                    messages.append(f'Updated payload for {model_type} {model}: {", ".join(changed_fields)}')
 
                     # Create any newly-implied substate models
                     # (e.g., a bulb that gained color modes since
@@ -735,23 +740,30 @@ class HassConverter:
                 and ( hass_state.domain in ignore_light_state_prefixes )):
                 continue
 
-            entity_state = cls._create_hass_state_sensor_or_controller(
-                hass_device = hass_device,
-                hass_state = hass_state,
-                entity = entity,
-                integration_key = state_integration_key,
-                add_alarm_events = add_alarm_events,
-            )
-            prefix_to_entity_state[hass_state.domain] = entity_state
-
-            # Some HA states decompose into multiple HI
-            # EntityStates; create the additional substate
-            # models (Controllers for axes the operator drives,
-            # Sensors for read-only ones like COLOR_MODE).
-            cls._create_substate_models(
-                entity = entity,
-                hass_state = hass_state,
-            )
+            substate_types = cls._substate_types_for_hass_state( hass_state )
+            if EntityStateType.LIGHT_DIMMER in substate_types:
+                # Multi-substate light: ALL EntityStates are
+                # created as peer substates (no asymmetric
+                # bare-key parent). The Entity itself is still
+                # identified by the bare HA entity_id; only the
+                # EntityStates use suffixed integration_keys.
+                cls._create_substate_models(
+                    entity = entity,
+                    hass_state = hass_state,
+                )
+            else:
+                entity_state = cls._create_hass_state_sensor_or_controller(
+                    hass_device = hass_device,
+                    hass_state = hass_state,
+                    entity = entity,
+                    integration_key = state_integration_key,
+                    add_alarm_events = add_alarm_events,
+                )
+                prefix_to_entity_state[hass_state.domain] = entity_state
+                cls._create_substate_models(
+                    entity = entity,
+                    hass_state = hass_state,
+                )
             continue
         return
 
@@ -996,6 +1008,10 @@ class HassConverter:
         value_range     : Optional[Dict] = None
 
     _SUBSTATE_SPECS = {
+        EntityStateType.LIGHT_DIMMER: _SubstateSpec(
+            suffix='brightness', is_controllable=True,
+            value_range={ 'min': 0, 'max': 100 },
+        ),
         EntityStateType.HUE: _SubstateSpec(
             suffix='hue', is_controllable=True,
             value_range={ 'min': 0, 'max': 360 },
@@ -1053,11 +1069,20 @@ class HassConverter:
         if not isinstance( supported, list ):
             return []
 
+        chromatic_present = any( m in cls._CHROMATIC_COLOR_MODES for m in supported )
+        color_temp_present = 'color_temp' in supported
+
         substate_types = []
-        if any( m in cls._CHROMATIC_COLOR_MODES for m in supported ):
+        # When any color substate is present, brightness becomes
+        # a peer substate too (no asymmetric "primary state").
+        # Brightness-only bulbs keep the bare-key model: single
+        # state, no decomposition needed.
+        if chromatic_present or color_temp_present:
+            substate_types.append( EntityStateType.LIGHT_DIMMER )
+        if chromatic_present:
             substate_types.append( EntityStateType.HUE )
             substate_types.append( EntityStateType.SATURATION )
-        if 'color_temp' in supported:
+        if color_temp_present:
             substate_types.append( EntityStateType.COLOR_TEMPERATURE )
         # COLOR_MODE only adds information when there's actual
         # mode-switching to track. A bulb with a single supported
@@ -1073,8 +1098,8 @@ class HassConverter:
             hass_state         : HassState,
             entity_state_type  : EntityStateType,
     ) -> Optional[ str ]:
-        """Pull the value for a single color sub-state out of a HA
-        light's attributes. Returns whatever HA reports — we don't
+        """Pull the value for a single substate out of a HA
+        light's state. Returns whatever HA reports — we don't
         filter by ``color_mode``. HA may continue to report
         ``hs_color`` while in color_temp mode (or vice versa);
         that value is still the bulb's last-known chromaticity and
@@ -1083,6 +1108,9 @@ class HassConverter:
         HA omits color attributes when the light is off); callers
         skip ``None``-valued sub-states from the response map."""
         attrs = hass_state.attributes
+
+        if entity_state_type == EntityStateType.LIGHT_DIMMER:
+            return cls._dimmer_brightness_value( hass_state )
 
         if entity_state_type == EntityStateType.HUE:
             hs = attrs.get( 'hs_color' )
@@ -1613,14 +1641,18 @@ class HassConverter:
     def _dimmer_light_to_sensor_value_map(
             cls, hass_state : HassState ) -> Dict[ IntegrationKey, str ]:
         """Brightness percentage plus any color sub-state values
-        (hue, saturation, color temperature) implied by the HA
-        light's ``supported_color_modes``. Each value targets a
-        distinct HI EntityState."""
+        (hue, saturation, color temperature, color mode) implied
+        by the HA light's ``supported_color_modes``. Each value
+        targets a distinct HI EntityState. For multi-substate
+        lights brightness is itself a peer substate (suffixed
+        key); for single-state lights it goes at the bare key."""
         result : Dict[ IntegrationKey, str ] = {}
-        brightness_value = cls._dimmer_brightness_value( hass_state )
-        if brightness_value:
-            result[ cls.hass_state_to_integration_key( hass_state ) ] = brightness_value
-        for substate_type in cls._substate_types_for_hass_state( hass_state ):
+        substate_types = cls._substate_types_for_hass_state( hass_state )
+        if EntityStateType.LIGHT_DIMMER not in substate_types:
+            brightness_value = cls._dimmer_brightness_value( hass_state )
+            if brightness_value:
+                result[ cls.hass_state_to_integration_key( hass_state ) ] = brightness_value
+        for substate_type in substate_types:
             value = cls._extract_substate_value( hass_state, substate_type )
             if value is None:
                 continue
@@ -1809,6 +1841,19 @@ class HassConverter:
         substate = domain_payload[ 'substate' ]
         parent_entity_id = domain_payload[ 'parent_entity_id' ]
         domain = domain_payload[ 'domain' ]
+
+        if substate == 'brightness':
+            try:
+                numeric_value = cls.to_ha_numeric_parameter_value( hi_control_value )
+            except ( ValueError, TypeError ):
+                raise ValueError(
+                    f'Invalid brightness value: {hi_control_value}'
+                )
+            return HassServiceComposer.for_numeric_best_effort(
+                domain = domain,
+                hass_substate_id = parent_entity_id,
+                numeric_value = numeric_value,
+            )
 
         if substate == 'color_temp':
             try:

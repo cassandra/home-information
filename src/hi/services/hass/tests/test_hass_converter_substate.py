@@ -78,7 +78,10 @@ class TestSubstateInboundDecomposition(TestCase):
         }, entity_id='light.c')
         value_map = HassConverter.hass_state_to_sensor_value_map(hass_state)
         keys = sorted(k.integration_name for k in value_map.keys())
-        self.assertEqual(keys, ['light.c', 'light.c~hue', 'light.c~saturation'])
+        self.assertEqual(
+            keys,
+            ['light.c~brightness', 'light.c~hue', 'light.c~saturation'],
+        )
 
     def test_color_bulb_with_color_temp_returns_brightness_plus_kelvin(self):
         hass_state = _make_light_hass_state({
@@ -92,7 +95,7 @@ class TestSubstateInboundDecomposition(TestCase):
         }, entity_id='light.c')
         value_map = HassConverter.hass_state_to_sensor_value_map(hass_state)
         keys = sorted(k.integration_name for k in value_map.keys())
-        self.assertEqual(keys, ['light.c', 'light.c~color_temp'])
+        self.assertEqual(keys, ['light.c~brightness', 'light.c~color_temp'])
 
     def test_color_bulb_with_both_modes_returns_all_substates(self):
         hass_state = _make_light_hass_state({
@@ -109,13 +112,18 @@ class TestSubstateInboundDecomposition(TestCase):
         keys = sorted(k.integration_name for k in value_map.keys())
         self.assertEqual(
             keys,
-            ['light.c', 'light.c~color_temp', 'light.c~hue', 'light.c~saturation'],
+            [
+                'light.c~brightness',
+                'light.c~color_temp',
+                'light.c~hue',
+                'light.c~saturation',
+            ],
         )
 
     def test_off_state_color_bulb_returns_brightness_zero_and_skips_color(self):
         # HA omits color attributes when the light is off; substates
         # whose attribute is absent return None and are skipped from
-        # the value map.
+        # the value map. Brightness reports 0 at its substate key.
         hass_state = _make_light_hass_state({
             'entity_id': 'light.c',
             'state': 'off',
@@ -125,7 +133,7 @@ class TestSubstateInboundDecomposition(TestCase):
         }, entity_id='light.c')
         value_map = HassConverter.hass_state_to_sensor_value_map(hass_state)
         keys = [k.integration_name for k in value_map.keys()]
-        self.assertEqual(keys, ['light.c'])
+        self.assertEqual(keys, ['light.c~brightness'])
         self.assertEqual(list(value_map.values())[0], '0')
 
 
@@ -298,7 +306,7 @@ class TestSubstateControllerCreationIdempotency(TestCase):
             integration_name__contains='~',
         ).count()
 
-    def test_initial_create_produces_three_substate_controllers(self):
+    def test_initial_create_produces_four_substate_controllers(self):
         device = _build_color_light_device(
             device_id='c1',
             supported_color_modes=['hs', 'color_temp'],
@@ -314,7 +322,7 @@ class TestSubstateControllerCreationIdempotency(TestCase):
         suffixes = sorted(
             c.integration_name.split('~', 1)[1] for c in substate_controllers
         )
-        self.assertEqual(suffixes, ['color_temp', 'hue', 'saturation'])
+        self.assertEqual(suffixes, ['brightness', 'color_temp', 'hue', 'saturation'])
 
     def test_resync_does_not_duplicate_existing_substate_controllers(self):
         device = _build_color_light_device(
@@ -328,7 +336,7 @@ class TestSubstateControllerCreationIdempotency(TestCase):
             entity_state__entity=entity,
             integration_name__contains='~',
         ).count()
-        self.assertEqual(before, 3)
+        self.assertEqual(before, 4)
 
         # Re-sync the same device shape — should be a no-op for
         # substate controller creation.
@@ -339,10 +347,11 @@ class TestSubstateControllerCreationIdempotency(TestCase):
             entity_state__entity=entity,
             integration_name__contains='~',
         ).count()
-        self.assertEqual(after, 3)
+        self.assertEqual(after, 4)
 
     def test_resync_creates_newly_implied_substate_controllers(self):
-        # Initial import: brightness-only bulb (no color substates).
+        # Initial import: brightness-only bulb (no color substates,
+        # brightness at the bare integration_key).
         device = _build_color_light_device(
             device_id='c3',
             supported_color_modes=['brightness'],
@@ -359,6 +368,9 @@ class TestSubstateControllerCreationIdempotency(TestCase):
         )
 
         # Bulb gains color modes (firmware update, etc.); re-sync.
+        # Brightness is now a peer substate alongside the new color
+        # ones; the bare-key controller is cleaned up by the
+        # re-sync's seen-keys logic.
         upgraded_device = _build_color_light_device(
             device_id='c3',
             supported_color_modes=['hs', 'color_temp'],
@@ -373,7 +385,7 @@ class TestSubstateControllerCreationIdempotency(TestCase):
                 integration_name__contains='~',
             )
         )
-        self.assertEqual(suffixes, ['color_temp', 'hue', 'saturation'])
+        self.assertEqual(suffixes, ['brightness', 'color_temp', 'hue', 'saturation'])
 
 
 class TestColorModeSubstate(TestCase):
