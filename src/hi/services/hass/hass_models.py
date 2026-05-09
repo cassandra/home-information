@@ -46,6 +46,9 @@ class HassApi:
     MEDIA_STOP_SERVICE = 'media_stop'
     VOLUME_SET_SERVICE = 'volume_set'
     SET_PERCENTAGE_SERVICE = 'set_percentage'
+    OSCILLATE_SERVICE = 'oscillate'
+    SET_DIRECTION_SERVICE = 'set_direction'
+    SET_PRESET_MODE_SERVICE = 'set_preset_mode'
     
     # Legacy aliases for backward compatibility (remove after migration)
     AUTOMATION_ID_PREFIX = AUTOMATION_DOMAIN

@@ -304,6 +304,54 @@ class HassServiceComposer:
         )
 
     @classmethod
+    def for_oscillating(
+            cls,
+            domain           : str,
+            hass_substate_id : str,
+            oscillating      : bool,
+    ) -> HassServiceCall:
+        return HassServiceCall(
+            domain = domain,
+            service = HassApi.OSCILLATE_SERVICE,
+            hass_entity_id = hass_substate_id,
+            service_data = { 'oscillating': bool( oscillating ) },
+        )
+
+    @classmethod
+    def for_direction(
+            cls,
+            domain           : str,
+            hass_substate_id : str,
+            direction        : str,
+    ) -> HassServiceCall:
+        if direction not in ( 'forward', 'reverse' ):
+            raise ValueError(
+                f'Invalid fan direction: {direction} (must be forward/reverse)'
+            )
+        return HassServiceCall(
+            domain = domain,
+            service = HassApi.SET_DIRECTION_SERVICE,
+            hass_entity_id = hass_substate_id,
+            service_data = { 'direction': direction },
+        )
+
+    @classmethod
+    def for_preset_mode(
+            cls,
+            domain           : str,
+            hass_substate_id : str,
+            preset_mode      : str,
+    ) -> HassServiceCall:
+        if not preset_mode:
+            raise ValueError( 'preset_mode must be a non-empty string' )
+        return HassServiceCall(
+            domain = domain,
+            service = HassApi.SET_PRESET_MODE_SERVICE,
+            hass_entity_id = hass_substate_id,
+            service_data = { 'preset_mode': preset_mode },
+        )
+
+    @classmethod
     def for_color_temp(
             cls,
             domain           : str,
