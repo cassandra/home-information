@@ -1,6 +1,8 @@
 from cachetools import TTLCache
 from typing import Dict, List, Set, Sequence
 
+from django.conf import settings
+
 from hi.apps.control.transient_models import ControllerData
 from hi.apps.common.singleton import Singleton
 from hi.apps.entity.enums import EntityStateType
@@ -10,6 +12,7 @@ from hi.apps.location.svg_item_factory import SvgItemFactory
 from hi.apps.sense.models import Sensor
 from hi.apps.sense.sensor_response_manager import SensorResponseMixin
 from hi.apps.sense.transient_models import SensorResponse
+from hi.testing.dev_overrides import DevOverrideManager
 
 from .status_display_data import StatusDisplayData
 from .transient_models import EntityStatusData, EntityStateStatusData
@@ -36,6 +39,15 @@ class StatusDisplayManager( Singleton, SensorResponseMixin ):
             if status_display_data.should_skip:
                 continue
             css_class_update_map[status_display_data.css_class] = status_display_data.attribute_dict
+            if settings.DEBUG and settings.DEBUG_TRACE_STATE:
+                latest = status_display_data.sensor_response_list[ 0 ]
+                DevOverrideManager.trace_state(
+                    'hi.ui_poll.sensor.out',
+                    ha_entity_id = latest.integration_key.integration_name,
+                    hi_entity_state_id = status_display_data.entity_state.id,
+                    hi_value = latest.value,
+                    attribute_dict = status_display_data.attribute_dict,
+                )
             continue
 
         return css_class_update_map
@@ -58,6 +70,15 @@ class StatusDisplayManager( Singleton, SensorResponseMixin ):
             if controller_value is None:
                 continue
             controller_value_map[ status_display_data.css_class ] = controller_value
+            if settings.DEBUG and settings.DEBUG_TRACE_STATE:
+                latest = status_display_data.sensor_response_list[ 0 ]
+                DevOverrideManager.trace_state(
+                    'hi.ui_poll.controller.out',
+                    ha_entity_id = latest.integration_key.integration_name,
+                    hi_entity_state_id = status_display_data.entity_state.id,
+                    hi_value = controller_value,
+                    raw_value = latest.value,
+                )
             continue
 
         return controller_value_map

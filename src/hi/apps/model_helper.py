@@ -243,6 +243,22 @@ class HiModelHelper:
         )
 
     @classmethod
+    def create_open_close_controller( cls,
+                                      entity           : Entity,
+                                      integration_key  : IntegrationKey  = None,
+                                      name             : str             = None,
+                                      is_sensed        : bool            = True ) -> Controller:
+        if not name:
+            name = f'{entity.name} Controller'
+        return cls.create_controller(
+            entity = entity,
+            entity_state_type = EntityStateType.OPEN_CLOSE,
+            name = name,
+            is_sensed = is_sensed,
+            integration_key = integration_key,
+        )
+
+    @classmethod
     def create_discrete_controller( cls,
                                     entity           : Entity,
                                     name_label_dict  : Dict[ str, str ],

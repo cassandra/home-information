@@ -4,12 +4,15 @@ from cachetools import TTLCache
 import logging
 from typing import Dict, List, Optional
 
+from django.conf import settings
+
 from hi.apps.common.redis_client import get_redis_client
 from hi.apps.common.singleton import Singleton
 from hi.apps.event.event_mixins import EventMixin
 from hi.apps.event.transient_models import EntityStateTransition
 
 from hi.integrations.transient_models import IntegrationKey
+from hi.testing.dev_overrides import DevOverrideManager
 
 from .models import Sensor
 from .sensor_history_manager import SensorHistoryMixin
@@ -112,6 +115,14 @@ class SensorResponseManager( Singleton, SensorHistoryMixin, EventMixin ):
             if cached_value:
                 previous_sensor_response = SensorResponse.from_string( cached_value )
                 if latest_sensor_response.value == previous_sensor_response.value:
+                    if settings.DEBUG and settings.DEBUG_TRACE_STATE:
+                        sensor = latest_sensor_response.sensor
+                        DevOverrideManager.trace_state(
+                            'hi.sensor.skip',
+                            ha_entity_id = integration_key.integration_name,
+                            hi_entity_state_id = sensor.entity_state.id if sensor else None,
+                            hi_value = latest_sensor_response.value,
+                        )
                     continue
 
                 entity_state_transition = await self._create_entity_state_transition(
@@ -120,7 +131,25 @@ class SensorResponseManager( Singleton, SensorHistoryMixin, EventMixin ):
                 )
                 if entity_state_transition:
                     entity_state_transition_list.append( entity_state_transition )
-                
+
+                if settings.DEBUG and settings.DEBUG_TRACE_STATE:
+                    sensor = latest_sensor_response.sensor
+                    DevOverrideManager.trace_state(
+                        'hi.sensor.commit',
+                        ha_entity_id = integration_key.integration_name,
+                        hi_entity_state_id = sensor.entity_state.id if sensor else None,
+                        hi_value = f'{previous_sensor_response.value} -> {latest_sensor_response.value}',
+                    )
+            else:
+                if settings.DEBUG and settings.DEBUG_TRACE_STATE:
+                    sensor = latest_sensor_response.sensor
+                    DevOverrideManager.trace_state(
+                        'hi.sensor.first',
+                        ha_entity_id = integration_key.integration_name,
+                        hi_entity_state_id = sensor.entity_state.id if sensor else None,
+                        hi_value = latest_sensor_response.value,
+                    )
+
             changed_sensor_response_list.append( latest_sensor_response )
             continue
 

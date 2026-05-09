@@ -90,10 +90,12 @@ class HassApi:
     UNIT_OF_MEASUREMENT_ATTR = 'unit_of_measurement'
     
     BATTERY_DEVICE_CLASS = 'battery'
+    BLIND_DEVICE_CLASS = 'blind'  # cover domain
     CONNECTIVITY_DEVICE_CLASS = 'connectivity'
     DOOR_DEVICE_CLASS = 'door'
     ENUM_DEVICE_CLASS = 'enum'
-    GARAGE_DOOR_DEVICE_CLASS = 'garage_door'
+    GARAGE_DEVICE_CLASS = 'garage'  # cover domain
+    GARAGE_DOOR_DEVICE_CLASS = 'garage_door'  # binary_sensor domain
     HUMIDITY_DEVICE_CLASS = 'humidity'
     LIGHT_DEVICE_CLASS = 'light'
     MOTION_DEVICE_CLASS = 'motion'

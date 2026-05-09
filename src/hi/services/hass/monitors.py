@@ -1,11 +1,14 @@
 import logging
 
+from django.conf import settings
+
 import hi.apps.common.datetimeproxy as datetimeproxy
 from hi.apps.alert.enums import AlarmLevel
 from hi.apps.monitor.periodic_monitor import PeriodicMonitor
 from hi.apps.sense.sensor_response_manager import SensorResponseMixin
 from hi.apps.sense.transient_models import SensorResponse
 from hi.apps.system.provider_info import ProviderInfo
+from hi.testing.dev_overrides import DevOverrideManager
 
 from .hass_converter import HassConverter
 from .hass_mixins import HassMixin
@@ -94,6 +97,14 @@ class HassMonitor( PeriodicMonitor, HassMixin, SensorResponseMixin ):
         
         for hass_state in id_to_hass_state_map.values():
             value_map = HassConverter.hass_state_to_sensor_value_map( hass_state )
+            if settings.DEBUG and settings.DEBUG_TRACE_STATE:
+                DevOverrideManager.trace_state(
+                    'hi.ha_poll.in',
+                    ha_entity_id = hass_state.entity_id,
+                    ha_value = hass_state.state_value,
+                    device_class = hass_state.device_class,
+                    value_map = { str(k): v for k, v in value_map.items() },
+                )
             for integration_key, sensor_value_str in value_map.items():
                 if not sensor_value_str:
                     continue

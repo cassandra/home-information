@@ -58,10 +58,11 @@
                 return;
             }
             if ( type === 'checkbox' ) {
-                const checked = _coerceCheckboxValue( value );
+                const checked = _coerceCheckboxValue( element, value );
                 if ( element.checked !== checked ) {
                     element.checked = checked;
                 }
+                _syncCheckboxStatusText( element, checked );
                 return;
             }
         }
@@ -102,18 +103,48 @@
         $display.text( format.replace( '{n}', slider.value ) );
     }
 
+    function _syncCheckboxStatusText( checkbox, checked ) {
+        // Mirror a checkbox's checked-state into a paired text
+        // label (e.g., the "On"/"Off" caption under a toggle).
+        // Labels are carried as ``data-on-text`` and
+        // ``data-off-text`` on the checkbox so different
+        // controller variants can use domain-specific wording
+        // (e.g., "Open"/"Closed", "Locked"/"Unlocked"). The
+        // status text lives in a sibling ``.status-text`` within
+        // the enclosing ``.on-off-control`` container — opt-in:
+        // checkboxes without the data attributes or container
+        // are silently skipped so unrelated checkboxes are
+        // unaffected.
+        const onText = checkbox.getAttribute( 'data-on-text' );
+        const offText = checkbox.getAttribute( 'data-off-text' );
+        if ( ! onText || ! offText ) return;
+        const $statusText = $( checkbox ).closest( '.on-off-control' )
+              .find( '.status-text' );
+        if ( ! $statusText.length ) return;
+        $statusText.text( checked ? onText : offText );
+    }
+
     function _setIfDifferent( element, prop, newValue ) {
         if ( element[ prop ] !== newValue ) {
             element[ prop ] = newValue;
         }
     }
 
-    function _coerceCheckboxValue( value ) {
+    function _coerceCheckboxValue( element, value ) {
+        // The truthy wire value comes from the checkbox's own
+        // ``value`` attribute (server-rendered), so each domain's
+        // vocabulary lives in templates rather than duplicated
+        // here. Browsers default unset checkbox ``value`` to
+        // ``'on'``, which is exactly what ON_OFF needs;
+        // OPEN_CLOSE templates set ``value="open"``. ``true`` /
+        // ``1`` remain accepted as universal truthy strings.
         if ( typeof value === 'boolean' ) return value;
         if ( typeof value === 'number' ) return value !== 0;
         if ( typeof value === 'string' ) {
             const lowered = value.toLowerCase();
-            return lowered === 'on' || lowered === 'true' || lowered === '1';
+            const truthy = ( element.value || 'on' ).toLowerCase();
+            if ( lowered === truthy ) return true;
+            return lowered === 'true' || lowered === '1';
         }
         return Boolean( value );
     }

@@ -2,18 +2,19 @@
   <label class="switch-modern">
     <input type="checkbox"
            name="value"
+           value="open"
            class="{{ controller_data.css_class }} switch-input"
-           {% if controller_data.latest_sensor_response.is_on %}checked="true"{% endif %}
+           {% if controller_data.latest_sensor_response.is_open %}checked="true"{% endif %}
            status="{{ controller_data.latest_sensor_response.value }}"
-           data-on-text="On"
-           data-off-text="Off"
+           data-on-text="Open"
+           data-off-text="Closed"
            onchange-async="true"
            data-controller-id="{{ controller_data.controller.id }}">
     <span class="switch-slider"></span>
   </label>
   <div class="switch-status">
     <span class="status-text">
-      {% if controller_data.latest_sensor_response.is_on %}On{% else %}Off{% endif %}
+      {% if controller_data.latest_sensor_response.is_open %}Open{% else %}Closed{% endif %}
     </span>
   </div>
 </div>

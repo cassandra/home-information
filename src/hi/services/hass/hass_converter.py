@@ -1222,6 +1222,12 @@ class HassConverter:
                 integration_key = integration_key,
                 name = name,
             )
+        elif entity_state_type == EntityStateType.OPEN_CLOSE:
+            controller = HiModelHelper.create_open_close_controller(
+                entity = entity,
+                integration_key = integration_key,
+                name = name,
+            )
         elif entity_state_type == EntityStateType.LIGHT_DIMMER:
             controller = HiModelHelper.create_light_dimmer_controller(
                 entity = entity,
