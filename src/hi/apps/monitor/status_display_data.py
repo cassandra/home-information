@@ -124,6 +124,9 @@ class StatusDisplayData:
 
         if self.entity_state.entity_state_type == EntityStateType.OPEN_CLOSE:
             return self._get_open_close_status_style()
+
+        if self.entity_state.entity_state_type == EntityStateType.OPEN_CLOSE_POSITION:
+            return self._get_open_close_position_status_style()
         
         if self.entity_state.entity_state_type == EntityStateType.CONNECTIVITY:
             return self._get_connectivity_status_style()
@@ -191,6 +194,20 @@ class StatusDisplayData:
     def _get_light_dimmer_status_style( self ):
         return StatusStyle.light_dimmer( self.latest_sensor_value )
         
+    def _get_open_close_position_status_style( self ):
+        # Continuous-position cover: closed at 0, open above. The
+        # OPEN/CLOSED visual buckets mirror the discrete OPEN_CLOSE
+        # styling so a partial-position cover still reads as "open"
+        # in the location SVG. Recent/Past visual aging isn't tracked
+        # here since transitions are continuous rather than discrete.
+        try:
+            position = int( float( self.latest_sensor_value ) )
+        except ( TypeError, ValueError ):
+            position = 0
+        if position > 0:
+            return StatusStyle.Open
+        return StatusStyle.Closed
+
     def _get_open_close_status_style( self ):
 
         if self.latest_sensor_value == str(EntityStateValue.OPEN):

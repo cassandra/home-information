@@ -210,7 +210,11 @@ class HassConverter:
         # Switch Domain
         (HassApi.SWITCH_DOMAIN, None, None): EntityStateType.ON_OFF,
         
-        # Cover Domain (blinds, curtains, garage doors)
+        # Cover Domain (blinds, curtains, garage doors). Covers
+        # that report ``current_position`` are routed to
+        # OPEN_CLOSE_POSITION (continuous slider) by the lookup
+        # logic, not via this table — these entries cover only
+        # the discrete open/close case.
         (HassApi.COVER_DOMAIN, HassApi.DOOR_DEVICE_CLASS, None): EntityStateType.OPEN_CLOSE,
         (HassApi.COVER_DOMAIN, HassApi.GARAGE_DOOR_DEVICE_CLASS, None): EntityStateType.OPEN_CLOSE,
         (HassApi.COVER_DOMAIN, HassApi.WINDOW_DEVICE_CLASS, None): EntityStateType.OPEN_CLOSE,
@@ -282,6 +286,14 @@ class HassConverter:
         (HassApi.COVER_DOMAIN, EntityStateType.OPEN_CLOSE): {
             'on_service': HassApi.OPEN_COVER_SERVICE,    # 'on' = open
             'off_service': HassApi.CLOSE_COVER_SERVICE,  # 'off' = close
+            'set_service': HassApi.SET_COVER_POSITION_SERVICE,
+            'parameters': {
+                'position': 'percentage',  # 0-100
+            },
+        },
+        (HassApi.COVER_DOMAIN, EntityStateType.OPEN_CLOSE_POSITION): {
+            'on_service': HassApi.OPEN_COVER_SERVICE,
+            'off_service': HassApi.CLOSE_COVER_SERVICE,
             'set_service': HassApi.SET_COVER_POSITION_SERVICE,
             'parameters': {
                 'position': 'percentage',  # 0-100
@@ -931,11 +943,19 @@ class HassConverter:
     @classmethod
     def _determine_entity_state_type_from_mapping( cls, hass_state: HassState ) -> EntityStateType:
         """Use mapping table to determine EntityStateType from HassState"""
-        
+
         domain = hass_state.domain
         device_class = hass_state.device_class
         has_brightness = cls._has_brightness_capability( hass_state )
-        
+
+        # Position-aware override for covers: a cover that
+        # reports ``current_position`` is structurally a
+        # continuous slider (closed at 0, open above) — like a
+        # dimmer, not a binary toggle. Skip the discrete
+        # open/close mapping and use the continuous type.
+        if domain == HassApi.COVER_DOMAIN and cls._has_position_capability( hass_state ):
+            return EntityStateType.OPEN_CLOSE_POSITION
+
         # Try exact match first
         mapping_key = (domain, device_class, has_brightness)
         if mapping_key in cls.HASS_STATE_TO_ENTITY_STATE_TYPE_MAPPING:
@@ -1202,6 +1222,14 @@ class HassConverter:
         return False
 
     @classmethod
+    def _has_position_capability( cls, hass_state: HassState ) -> bool:
+        """True when an HA cover state reports ``current_position``,
+        meaning the cover is a continuous-position device (blind,
+        slider shade) rather than a binary open/close (garage,
+        door)."""
+        return hass_state.attributes.get( 'current_position' ) is not None
+
+    @classmethod
     def _is_controllable_domain_and_type( cls, domain: str, entity_state_type: EntityStateType ) -> bool:
         """Check if this domain+type combination is controllable"""
         return (domain, entity_state_type) in cls.CONTROL_SERVICE_MAPPING
@@ -1224,6 +1252,12 @@ class HassConverter:
             )
         elif entity_state_type == EntityStateType.OPEN_CLOSE:
             controller = HiModelHelper.create_open_close_controller(
+                entity = entity,
+                integration_key = integration_key,
+                name = name,
+            )
+        elif entity_state_type == EntityStateType.OPEN_CLOSE_POSITION:
+            controller = HiModelHelper.create_open_close_position_controller(
                 entity = entity,
                 integration_key = integration_key,
                 name = name,
@@ -1636,6 +1670,8 @@ class HassConverter:
             return cls._binary_sensor_to_sensor_value_map( hass_state )
         if domain == HassApi.LOCK_DOMAIN:
             return cls._lock_to_sensor_value_map( hass_state )
+        if domain == HassApi.COVER_DOMAIN:
+            return cls._cover_to_sensor_value_map( hass_state )
         return cls._passthrough_to_sensor_value_map( hass_state )
 
     @classmethod
@@ -1762,6 +1798,25 @@ class HassConverter:
         if not value:
             return {}
         return { cls.hass_state_to_integration_key( hass_state ) : value }
+
+    @classmethod
+    def _cover_to_sensor_value_map(
+            cls, hass_state : HassState ) -> Dict[ IntegrationKey, str ]:
+        """Cover domain: when ``current_position`` is reported,
+        the EntityState is OPEN_CLOSE_POSITION (continuous slider)
+        and the numeric position is the canonical value. Without
+        position, the EntityState is OPEN_CLOSE (binary toggle)
+        and HA's discrete state string passes through unchanged.
+        Transitional ``'opening'`` / ``'closing'`` states pass
+        through as well; downstream display logic falls back to
+        the closed style for unrecognized values."""
+        if cls._has_position_capability( hass_state ):
+            try:
+                position = int( float( hass_state.attributes[ 'current_position' ] ) )
+            except ( TypeError, ValueError ):
+                return {}
+            return { cls.hass_state_to_integration_key( hass_state ) : str( position ) }
+        return cls._passthrough_to_sensor_value_map( hass_state )
 
     @classmethod
     def _passthrough_to_sensor_value_map(

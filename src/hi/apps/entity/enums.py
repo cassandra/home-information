@@ -299,7 +299,10 @@ class EntityStateType(LabeledEnum):
                            EntityStateValue.OFF ] )    
     OPEN_CLOSE       = ( 'Open/Close'       , '',
                          [ EntityStateValue.OPEN,
-                           EntityStateValue.CLOSED ] )    
+                           EntityStateValue.CLOSED ] )
+    OPEN_CLOSE_POSITION = ( 'Open/Close Position',
+                            'Continuous open/close position as a percentage (0=closed, 100=open)',
+                            [] )
     PRESENCE         = ( 'Presence'         , '',
                          [ EntityStateValue.ACTIVE,
                            EntityStateValue.IDLE ] )
