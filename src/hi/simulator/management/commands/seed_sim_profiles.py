@@ -81,6 +81,7 @@ from hi.simulator.services.hass.sim_models import (
     HassInsteonMotionDetectorFields,
     HassInsteonOpenCloseSensorFields,
     HassInsteonOutletFields,
+    HassLockFields,
     HassSmartBulbFields,
 )
 from hi.simulator.services.homebox.attachment_catalog import AttachmentTemplate
@@ -345,6 +346,7 @@ class Command(BaseCommand):
         self._add_hass_outlet(         profile, 'Zoo Outlet'           , '01.BB.06' )
         self._add_hass_smart_bulb(     profile, 'Zoo Smart Bulb' )
         self._add_hass_color_smart_bulb( profile, 'Zoo Color Bulb' )
+        self._add_hass_lock(           profile, 'Zoo Lock' )
         return profile.db_sim_entities.count()
 
     def _build_volume(self, profile: SimProfile) -> int:
@@ -473,6 +475,15 @@ class Command(BaseCommand):
             simulator_id = 'hass',
             fields_class = HassColorSmartBulbFields,
             sim_entity_type = SimEntityType.LIGHT,
+            fields_kwargs = {'name': name},
+        )
+
+    def _add_hass_lock(self, profile, name):
+        self._create_db_entity(
+            profile = profile,
+            simulator_id = 'hass',
+            fields_class = HassLockFields,
+            sim_entity_type = SimEntityType.DOOR_LOCK,
             fields_kwargs = {'name': name},
         )
 

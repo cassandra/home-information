@@ -1628,6 +1628,8 @@ class HassConverter:
             return cls._light_to_sensor_value_map( hass_state )
         if domain == HassApi.BINARY_SENSOR_DOMAIN:
             return cls._binary_sensor_to_sensor_value_map( hass_state )
+        if domain == HassApi.LOCK_DOMAIN:
+            return cls._lock_to_sensor_value_map( hass_state )
         return cls._passthrough_to_sensor_value_map( hass_state )
 
     @classmethod
@@ -1734,6 +1736,26 @@ class HassConverter:
             return str( EntityStateValue.OFF )
         logger.warning( f'Unknown HAss binary state value "{hass_state.state_value}".' )
         return None
+
+    @classmethod
+    def _lock_to_sensor_value_map(
+            cls, hass_state : HassState ) -> Dict[ IntegrationKey, str ]:
+        """Translate HA lock domain's domain-specific state strings
+        to HI's canonical ON_OFF values. HA reports ``'locked'`` /
+        ``'unlocked'`` as the entity state; HI's ON_OFF EntityState
+        keys off ``EntityStateValue.ON`` / ``OFF`` for display and
+        widget coercion. Without this, HI's checkbox would always
+        render as ``Off`` regardless of the lock's real state."""
+        sv = hass_state.state_value.lower()
+        if sv == HassStateValue.LOCKED:
+            value = str( EntityStateValue.ON )
+        elif sv == HassStateValue.UNLOCKED:
+            value = str( EntityStateValue.OFF )
+        else:
+            value = hass_state.state_value
+        if not value:
+            return {}
+        return { cls.hass_state_to_integration_key( hass_state ) : value }
 
     @classmethod
     def _passthrough_to_sensor_value_map(

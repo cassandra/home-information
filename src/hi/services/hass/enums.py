@@ -54,3 +54,5 @@ class HassStateValue:
 
     ON = 'on'
     OFF = 'off'
+    LOCKED = 'locked'
+    UNLOCKED = 'unlocked'
