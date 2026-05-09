@@ -304,6 +304,11 @@ class EntityStateType(LabeledEnum):
     OPEN_CLOSE_POSITION = ( 'Open/Close Position',
                             'Continuous open/close position as a percentage (0=closed, 100=open)',
                             [] )
+    POWER_LEVEL      = ( 'Power Level',
+                         'Generic continuous power/intensity/speed (0-100). Per-context label '
+                         '(e.g., "Speed" for fans, "Aperture" for dampers) is set on the '
+                         'EntityState.',
+                         [] )
     PRESENCE         = ( 'Presence'         , '',
                          [ EntityStateValue.ACTIVE,
                            EntityStateValue.IDLE ] )

@@ -56,6 +56,7 @@ class LocationViewType(LabeledEnum):
           EntityStateType.OPEN_CLOSE_POSITION,
           EntityStateType.ON_OFF,
           EntityStateType.LIGHT_DIMMER,
+          EntityStateType.POWER_LEVEL,
           EntityStateType.LIGHT_LEVEL,
           EntityStateType.CONNECTIVITY,
           EntityStateType.HIGH_LOW,

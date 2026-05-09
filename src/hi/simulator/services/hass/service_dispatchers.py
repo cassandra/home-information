@@ -30,6 +30,7 @@ from hi.simulator.enums import SimStateType
 
 from .sim_models import (
     HassColorSmartBulbFields,
+    HassFanFields,
     HassGarageCoverFields,
     HassGenericCoverFields,
     HassLockFields,
@@ -220,6 +221,45 @@ class HassServiceDispatcher:
         return []
 
     @staticmethod
+    def _fan( sim_entity,
+              domain   : str,
+              service  : str,
+              payload  : Dict[ str, Any ],
+              ) -> List[ Tuple[ str, str ] ]:
+        """Speed-only fan: ``turn_on`` / ``turn_off`` /
+        ``set_percentage`` all act on the percentage SimState.
+        ``turn_on`` with no payload defaults to max speed so
+        the operator sees an effect; with a ``percentage`` /
+        ``percentage_step`` payload, that value is used."""
+        if domain != 'fan':
+            return []
+        if service == 'turn_off':
+            return [ ( 'percentage', '0' ) ]
+        if service == 'turn_on':
+            value_str = HassServiceDispatcher._extract_percentage_value_str( payload )
+            if value_str is None:
+                value_str = '100'
+            return [ ( 'percentage', value_str ) ]
+        if service == 'set_percentage':
+            value_str = HassServiceDispatcher._extract_percentage_value_str( payload )
+            if value_str is None:
+                return []
+            return [ ( 'percentage', value_str ) ]
+        return []
+
+    @staticmethod
+    def _extract_percentage_value_str( payload : Dict[ str, Any ] ) -> Optional[ str ]:
+        """Read fan ``percentage`` from an HA service-call
+        payload as a 0-100 integer string. Returns None when the
+        payload doesn't carry one."""
+        if 'percentage' not in payload:
+            return None
+        try:
+            return str( int( float( payload[ 'percentage' ] ) ) )
+        except ( TypeError, ValueError ):
+            return None
+
+    @staticmethod
     def _extract_brightness_value_str( payload : Dict[ str, Any ] ) -> Optional[ str ]:
         """Read brightness from an HA service-call payload as a
         string suitable for a CONTINUOUS sim state (HA 0-255).
@@ -245,6 +285,7 @@ class HassServiceDispatcher:
 # objects exist as references. Keyed off SimEntityFields class.
 HassServiceDispatcher._REGISTRY = {
     HassColorSmartBulbFields: HassServiceDispatcher._color_smart_bulb,
+    HassFanFields: HassServiceDispatcher._fan,
     HassGarageCoverFields: HassServiceDispatcher._discrete_cover,
     HassGenericCoverFields: HassServiceDispatcher._discrete_cover,
     HassLockFields: HassServiceDispatcher._lock,

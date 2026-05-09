@@ -873,6 +873,67 @@ class HassWindowBlindCoverState( HassState ):
         }
 
 
+@dataclass( frozen = True )
+class HassFanFields( SimEntityFields ):
+    """Speed-only fan. Single CONTINUOUS SimState (0-100
+    percentage). The ``state`` property derives ``'on'`` /
+    ``'off'`` from the percentage; ``percentage`` and
+    ``percentage_step`` attributes carry the numeric value and
+    granularity."""
+    pass
+
+
+def _fan_entity_id( name : str ) -> str:
+    suffix = name.lower().replace( ' ', '_' )
+    return f'fan.{suffix}'
+
+
+@dataclass
+class HassFanState( HassState ):
+    sim_entity_fields  : HassFanFields
+    sim_state_type     : SimStateType                  = SimStateType.CONTINUOUS
+    sim_state_id       : str                           = 'percentage'
+    value              : str                           = '0'
+
+    @property
+    def min_value(self):
+        return 0
+
+    @property
+    def max_value(self):
+        return 100
+
+    @property
+    def name(self):
+        return f'{self.entity_name} Speed'
+
+    @property
+    def entity_id(self):
+        return _fan_entity_id( self.entity_name )
+
+    @property
+    def state(self):
+        try:
+            percentage = int( float( self.value ) )
+        except ( TypeError, ValueError ):
+            percentage = 0
+        return 'on' if percentage > 0 else 'off'
+
+    @property
+    def attributes(self) -> Dict[ str, str ]:
+        try:
+            percentage = int( float( self.value ) )
+        except ( TypeError, ValueError ):
+            percentage = 0
+        # 25%-step granularity (low/medium/high/max). Real fans
+        # vary; this is a representative middle-of-the-road shape.
+        return {
+            'friendly_name': self.entity_name,
+            'percentage': percentage,
+            'percentage_step': 25,
+        }
+
+
 HASS_SIM_ENTITY_DEFINITION_LIST = [
     SimEntityDefinition(
         class_label = 'Insteon Switch',
@@ -984,6 +1045,14 @@ HASS_SIM_ENTITY_DEFINITION_LIST = [
         sim_entity_fields_class = HassGenericCoverFields,
         sim_state_class_list = [
             HassGenericCoverState,
+        ],
+    ),
+    SimEntityDefinition(
+        class_label = 'Fan (speed-only)',
+        sim_entity_type = SimEntityType.CEILING_FAN,
+        sim_entity_fields_class = HassFanFields,
+        sim_state_class_list = [
+            HassFanState,
         ],
     ),
 ]

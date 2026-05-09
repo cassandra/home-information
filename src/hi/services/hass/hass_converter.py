@@ -309,6 +309,14 @@ class HassConverter:
                 'percentage': 'percentage',  # 0-100
             },
         },
+        (HassApi.FAN_DOMAIN, EntityStateType.POWER_LEVEL): {
+            'on_service': HassApi.TURN_ON_SERVICE,
+            'off_service': HassApi.TURN_OFF_SERVICE,
+            'set_service': HassApi.SET_PERCENTAGE_SERVICE,
+            'parameters': {
+                'percentage': 'percentage',  # 0-100
+            },
+        },
         
         # Climate Domain Services
         (HassApi.CLIMATE_DOMAIN, EntityStateType.TEMPERATURE): {
@@ -956,6 +964,15 @@ class HassConverter:
         if domain == HassApi.COVER_DOMAIN and cls._has_position_capability( hass_state ):
             return EntityStateType.OPEN_CLOSE_POSITION
 
+        # Speed-aware override for fans: a fan that reports
+        # ``percentage`` (and only ``percentage`` — not the
+        # multi-feature attributes that trigger substate
+        # decomposition) is a single continuous slider.
+        if ( domain == HassApi.FAN_DOMAIN
+             and cls._has_percentage_capability( hass_state )
+             and not cls._fan_has_multi_features( hass_state ) ):
+            return EntityStateType.POWER_LEVEL
+
         # Try exact match first
         mapping_key = (domain, device_class, has_brightness)
         if mapping_key in cls.HASS_STATE_TO_ENTITY_STATE_TYPE_MAPPING:
@@ -1230,6 +1247,26 @@ class HassConverter:
         return hass_state.attributes.get( 'current_position' ) is not None
 
     @classmethod
+    def _has_percentage_capability( cls, hass_state: HassState ) -> bool:
+        """True when an HA fan state reports ``percentage``, meaning
+        the fan exposes a continuous speed dimension."""
+        return hass_state.attributes.get( 'percentage' ) is not None
+
+    @classmethod
+    def _fan_has_multi_features( cls, hass_state: HassState ) -> bool:
+        """True when an HA fan state reports any of the multi-axis
+        capabilities that trigger substate decomposition
+        (oscillating, direction, preset_modes). Detection is by
+        attribute presence; HA reports these only when the fan
+        actually supports them."""
+        attrs = hass_state.attributes
+        return (
+            'oscillating' in attrs
+            or 'direction' in attrs
+            or 'preset_modes' in attrs
+        )
+
+    @classmethod
     def _is_controllable_domain_and_type( cls, domain: str, entity_state_type: EntityStateType ) -> bool:
         """Check if this domain+type combination is controllable"""
         return (domain, entity_state_type) in cls.CONTROL_SERVICE_MAPPING
@@ -1264,6 +1301,14 @@ class HassConverter:
             )
         elif entity_state_type == EntityStateType.LIGHT_DIMMER:
             controller = HiModelHelper.create_light_dimmer_controller(
+                entity = entity,
+                integration_key = integration_key,
+                name = name,
+            )
+        elif entity_state_type == EntityStateType.POWER_LEVEL:
+            # Caller decides per-domain label by passing ``name``;
+            # for a fan, it lands as e.g. "Zoo Fan Speed".
+            controller = HiModelHelper.create_power_level_controller(
                 entity = entity,
                 integration_key = integration_key,
                 name = name,
@@ -1677,6 +1722,8 @@ class HassConverter:
             return cls._lock_to_sensor_value_map( hass_state )
         if domain == HassApi.COVER_DOMAIN:
             return cls._cover_to_sensor_value_map( hass_state )
+        if domain == HassApi.FAN_DOMAIN:
+            return cls._fan_to_sensor_value_map( hass_state )
         return cls._passthrough_to_sensor_value_map( hass_state )
 
     @classmethod
@@ -1822,6 +1869,28 @@ class HassConverter:
                 return {}
             return { cls.hass_state_to_integration_key( hass_state ) : str( position ) }
         return cls._passthrough_to_sensor_value_map( hass_state )
+
+    @classmethod
+    def _fan_to_sensor_value_map(
+            cls, hass_state : HassState ) -> Dict[ IntegrationKey, str ]:
+        """Fan domain: when ``percentage`` is present (without
+        multi-feature attributes that would trigger substate
+        decomposition), the EntityState is POWER_LEVEL and the
+        numeric percentage is the canonical value. Without
+        percentage, the EntityState is ON_OFF and the discrete
+        ``'on'``/``'off'`` state passes through. Multi-feature
+        fans (Phase 2) decompose into substates and route
+        through a different code path."""
+        if cls._fan_has_multi_features( hass_state ):
+            return cls._passthrough_to_sensor_value_map( hass_state )
+        raw_percentage = hass_state.attributes.get( 'percentage' )
+        if raw_percentage is None:
+            return cls._passthrough_to_sensor_value_map( hass_state )
+        try:
+            percentage = int( float( raw_percentage ) )
+        except ( TypeError, ValueError ):
+            return {}
+        return { cls.hass_state_to_integration_key( hass_state ) : str( percentage ) }
 
     @classmethod
     def _passthrough_to_sensor_value_map(
