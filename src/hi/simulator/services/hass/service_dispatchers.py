@@ -34,6 +34,7 @@ from .sim_models import (
     HassGarageCoverFields,
     HassGenericCoverFields,
     HassLockFields,
+    HassMultiFeatureFanFields,
     HassWindowBlindCoverFields,
 )
 
@@ -248,6 +249,49 @@ class HassServiceDispatcher:
         return []
 
     @staticmethod
+    def _multi_feature_fan( sim_entity,
+                            domain   : str,
+                            service  : str,
+                            payload  : Dict[ str, Any ],
+                            ) -> List[ Tuple[ str, str ] ]:
+        """Multi-feature fan: routes each axis-specific HA service
+        to the matching SimState. ``turn_on`` / ``turn_off`` /
+        ``set_percentage`` act on the percentage SimState (same
+        as the speed-only fan); ``oscillate`` writes the
+        oscillating SimState; ``set_direction`` and
+        ``set_preset_mode`` write theirs."""
+        if domain != 'fan':
+            return []
+        if service == 'turn_off':
+            return [ ( 'percentage', '0' ) ]
+        if service == 'turn_on':
+            value_str = HassServiceDispatcher._extract_percentage_value_str( payload )
+            if value_str is None:
+                value_str = '100'
+            return [ ( 'percentage', value_str ) ]
+        if service == 'set_percentage':
+            value_str = HassServiceDispatcher._extract_percentage_value_str( payload )
+            if value_str is None:
+                return []
+            return [ ( 'percentage', value_str ) ]
+        if service == 'oscillate':
+            osc = payload.get( 'oscillating' )
+            if osc is None:
+                return []
+            return [ ( 'oscillating', 'on' if bool( osc ) else 'off' ) ]
+        if service == 'set_direction':
+            direction = payload.get( 'direction' )
+            if direction not in ( 'forward', 'reverse' ):
+                return []
+            return [ ( 'direction', direction ) ]
+        if service == 'set_preset_mode':
+            preset_mode = payload.get( 'preset_mode' )
+            if not preset_mode:
+                return []
+            return [ ( 'preset', str( preset_mode ) ) ]
+        return []
+
+    @staticmethod
     def _extract_percentage_value_str( payload : Dict[ str, Any ] ) -> Optional[ str ]:
         """Read fan ``percentage`` from an HA service-call
         payload as a 0-100 integer string. Returns None when the
@@ -289,5 +333,6 @@ HassServiceDispatcher._REGISTRY = {
     HassGarageCoverFields: HassServiceDispatcher._discrete_cover,
     HassGenericCoverFields: HassServiceDispatcher._discrete_cover,
     HassLockFields: HassServiceDispatcher._lock,
+    HassMultiFeatureFanFields: HassServiceDispatcher._multi_feature_fan,
     HassWindowBlindCoverFields: HassServiceDispatcher._window_blind_cover,
 }
