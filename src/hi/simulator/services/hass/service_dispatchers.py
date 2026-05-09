@@ -31,6 +31,7 @@ from hi.simulator.enums import SimStateType
 from .sim_models import (
     HassColorSmartBulbFields,
     HassGarageCoverFields,
+    HassGenericCoverFields,
     HassLockFields,
     HassWindowBlindCoverFields,
 )
@@ -173,13 +174,16 @@ class HassServiceDispatcher:
         return []
 
     @staticmethod
-    def _garage_cover( sim_entity,
-                       domain   : str,
-                       service  : str,
-                       payload  : Dict[ str, Any ],
-                       ) -> List[ Tuple[ str, str ] ]:
-        """Garage cover: ``open_cover`` / ``close_cover`` toggle
-        the ON_OFF SimState (no position support)."""
+    def _discrete_cover( sim_entity,
+                         domain   : str,
+                         service  : str,
+                         payload  : Dict[ str, Any ],
+                         ) -> List[ Tuple[ str, str ] ]:
+        """Discrete open/close cover (no position attribute):
+        ``open_cover`` / ``close_cover`` toggle the ON_OFF
+        SimState. Used by every cover whose HA shape is binary
+        — garage doors, generic covers, and any future cover
+        device class without ``current_position``."""
         if domain != 'cover':
             return []
         if service == 'open_cover':
@@ -241,7 +245,8 @@ class HassServiceDispatcher:
 # objects exist as references. Keyed off SimEntityFields class.
 HassServiceDispatcher._REGISTRY = {
     HassColorSmartBulbFields: HassServiceDispatcher._color_smart_bulb,
-    HassGarageCoverFields: HassServiceDispatcher._garage_cover,
+    HassGarageCoverFields: HassServiceDispatcher._discrete_cover,
+    HassGenericCoverFields: HassServiceDispatcher._discrete_cover,
     HassLockFields: HassServiceDispatcher._lock,
     HassWindowBlindCoverFields: HassServiceDispatcher._window_blind_cover,
 }

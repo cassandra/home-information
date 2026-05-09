@@ -216,7 +216,7 @@ class HassConverter:
         # logic, not via this table — these entries cover only
         # the discrete open/close case.
         (HassApi.COVER_DOMAIN, HassApi.DOOR_DEVICE_CLASS, None): EntityStateType.OPEN_CLOSE,
-        (HassApi.COVER_DOMAIN, HassApi.GARAGE_DOOR_DEVICE_CLASS, None): EntityStateType.OPEN_CLOSE,
+        (HassApi.COVER_DOMAIN, HassApi.GARAGE_DEVICE_CLASS, None): EntityStateType.OPEN_CLOSE,
         (HassApi.COVER_DOMAIN, HassApi.WINDOW_DEVICE_CLASS, None): EntityStateType.OPEN_CLOSE,
         (HassApi.COVER_DOMAIN, None, None): EntityStateType.OPEN_CLOSE,  # Default for covers
         
@@ -1608,13 +1608,18 @@ class HassConverter:
             return EntityType.ON_OFF_SWITCH
         if HassApi.LOCK_DOMAIN in domain_set:
             return EntityType.DOOR_LOCK
-        # HA covers are doors / windows / garage doors / blinds /
-        # awnings / etc. Without a device-class refinement that maps
-        # cleanly to HI's specific types, OPEN_CLOSE_SENSOR is the
-        # least-wrong default; the operator can change it post-import
-        # to DOOR / WINDOW / GARAGE_DOOR if appropriate.
+        # HA covers are the *control mechanism* (motor / opener)
+        # for doors / windows / garage doors / blinds / awnings /
+        # gates / etc. The thing being controlled (the door, the
+        # window) is a separate floor-plan element; what HA
+        # exposes here is the actuator. ``GARAGE_DOOR_OPENER``
+        # already specializes the most common case;
+        # ``OPEN_CLOSE_ACTUATOR`` is the generic fall-through for
+        # every other cover device class.
         if HassApi.COVER_DOMAIN in domain_set:
-            return EntityType.OPEN_CLOSE_SENSOR
+            if HassApi.GARAGE_DEVICE_CLASS in device_class_set:
+                return EntityType.GARAGE_DOOR_OPENER
+            return EntityType.OPEN_CLOSE_ACTUATOR
         # Fan domain has no HA-side device class to distinguish
         # ceiling vs exhaust; CEILING_FAN is the more common case.
         if HassApi.FAN_DOMAIN in domain_set:

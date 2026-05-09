@@ -781,6 +781,46 @@ class HassGarageCoverState( HassState ):
 
 
 @dataclass( frozen = True )
+class HassGenericCoverFields( SimEntityFields ):
+    """Generic cover with no device_class. Discrete
+    open/closed, no position attribute. Exercises the
+    converter's ``(cover, None, None)`` fall-through mapping
+    so future cover device classes that aren't explicitly
+    listed get tested by the same fixture path."""
+    pass
+
+
+@dataclass
+class HassGenericCoverState( HassState ):
+    """Internally ON_OFF (open == on); the ``state`` property
+    maps to HA's cover-domain wire strings ``'open'`` /
+    ``'closed'``. No ``device_class`` attribute is emitted."""
+
+    sim_entity_fields  : HassGenericCoverFields
+    sim_state_type     : SimStateType                  = SimStateType.ON_OFF
+    sim_state_id       : str                           = 'cover'
+    value              : str                           = 'off'
+
+    @property
+    def name(self):
+        return f'{self.entity_name} Cover'
+
+    @property
+    def entity_id(self):
+        return _cover_entity_id( self.entity_name )
+
+    @property
+    def state(self):
+        return 'open' if str_to_bool( self.value ) else 'closed'
+
+    @property
+    def attributes(self) -> Dict[ str, str ]:
+        return {
+            'friendly_name': self.entity_name,
+        }
+
+
+@dataclass( frozen = True )
 class HassWindowBlindCoverFields( SimEntityFields ):
     """Window blind cover with position. Single CONTINUOUS
     SimState (0-100 percent). The ``state`` property derives
@@ -924,7 +964,7 @@ HASS_SIM_ENTITY_DEFINITION_LIST = [
     ),
     SimEntityDefinition(
         class_label = 'Cover (garage)',
-        sim_entity_type = SimEntityType.OPEN_CLOSE_SENSOR,
+        sim_entity_type = SimEntityType.OPEN_CLOSE_ACTUATOR,
         sim_entity_fields_class = HassGarageCoverFields,
         sim_state_class_list = [
             HassGarageCoverState,
@@ -932,10 +972,18 @@ HASS_SIM_ENTITY_DEFINITION_LIST = [
     ),
     SimEntityDefinition(
         class_label = 'Cover (window blind)',
-        sim_entity_type = SimEntityType.OPEN_CLOSE_SENSOR,
+        sim_entity_type = SimEntityType.OPEN_CLOSE_ACTUATOR,
         sim_entity_fields_class = HassWindowBlindCoverFields,
         sim_state_class_list = [
             HassWindowBlindCoverState,
+        ],
+    ),
+    SimEntityDefinition(
+        class_label = 'Cover (generic, no device_class)',
+        sim_entity_type = SimEntityType.OPEN_CLOSE_ACTUATOR,
+        sim_entity_fields_class = HassGenericCoverFields,
+        sim_state_class_list = [
+            HassGenericCoverState,
         ],
     ),
 ]

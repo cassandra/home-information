@@ -92,6 +92,7 @@ class SimEntityType(LabeledEnum):
     LIGHT_SENSOR         = ( 'Light Sensor', '' )
     MOTION_SENSOR        = ( 'Motion Sensor', '' )
     NETWORK_SWITCH       = ( 'Network Switch', '' )
+    OPEN_CLOSE_ACTUATOR  = ( 'Open/Close Actuator', '' )
     OPEN_CLOSE_SENSOR    = ( 'Open/Close Sensor', '' )
     OTHER                = ( 'Other', '' )  # Will use generic visual element
     PRESENCE_SENSOR      = ( 'Presence Sensor', '' )

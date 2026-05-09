@@ -78,6 +78,7 @@ class EntityType(LabeledEnum):
     MOTOR                = ( 'Motor', '' )
     NETWORK_SWITCH       = ( 'Network Switch', '' )
     ON_OFF_SWITCH        = ( 'On/Off Switch', '' )
+    OPEN_CLOSE_ACTUATOR  = ( 'Open/Close Actuator', '' )  # Controls things that open/close
     OPEN_CLOSE_SENSOR    = ( 'Open/Close Sensor', '' )
     OTHER                = ( 'Other', '' )  # Will use generic visual element
     OVEN                 = ( 'Oven', '' )
