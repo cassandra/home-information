@@ -34,6 +34,7 @@ class StatusView( View,
     LastServerTimestampAttr = 'lastTimestamp'
     AlertStatusDataAttr = 'alertData'
     CssClassUpdateMapAttr = 'cssClassUpdateMap'
+    CssControllerValueMapAttr = 'cssControllerValueMap'
     IdReplaceUpdateMapAttr = 'idReplaceUpdateMap'
     IdReplaceHashMapAttr = 'idReplaceHashMap'
     ConsoleLockedAttr = 'consoleLocked'
@@ -72,6 +73,8 @@ class StatusView( View,
         css_class_update_map = dict()
         css_class_update_map.update( StatusDisplayManager().get_status_css_class_update_map() )
 
+        css_controller_value_map = StatusDisplayManager().get_status_controller_value_map()
+
         # Hash provided for client to prevent unneeded DOM updates since
         # they can interfer with user interactions.
         #
@@ -91,6 +94,7 @@ class StatusView( View,
             self.ServerTimestampAttr: server_datetime.isoformat(),
             self.AlertStatusDataAttr: alert_status_data.to_dict( request = request ),
             self.CssClassUpdateMapAttr: css_class_update_map,
+            self.CssControllerValueMapAttr: css_controller_value_map,
             self.IdReplaceUpdateMapAttr: id_replace_map,
             self.IdReplaceHashMapAttr: id_replace_hash_map,
             self.ConsoleLockedAttr: request.session.get(

@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import Dict
+from typing import Dict, Optional
 
 
 class HassApi:
@@ -169,7 +169,17 @@ class HassState:
             return f'insteon:{self.insteon_address}'
         return None
 
-    
+
+@dataclass
+class HassServiceCall:
+    """Outbound HA service call composed from a HI control value."""
+
+    domain          : str
+    service         : str
+    hass_entity_id  : str
+    service_data    : Optional[Dict] = None
+
+
 class HassDevice:
     """ An aggregate of one or more HassStates associated with a single device. """
     

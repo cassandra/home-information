@@ -65,6 +65,26 @@ Upstream API reference: <https://developers.home-assistant.io/docs/api/rest/>.
 - **Allowlist filtering.** Only HA domains and device classes named
   in the `IMPORT_ALLOWLIST` integration attribute are imported. The
   default list is set in `enums.py` (`HassAttributeType`).
+- **HA state vs HA substate.** A "HA state" is the bundle HA returns
+  for one entity_id (top-level `state` field plus `attributes` dict);
+  a "HA substate" is each meaningful atom inside that bundle that HI
+  represents as one HI EntityState. Simple entities have one substate
+  per HA state; a color bulb decomposes into four (brightness, hue,
+  saturation, color temperature). Substate integration_keys use a
+  `~suffix` convention (`light.x` for the parent, `light.x~hue` etc.
+  for the rest) — see `_HASS_SUBSTATE_SUFFIXES` in `hass_converter.py`.
+  Inbound: `hass_state_to_sensor_value_map` decomposes one HA state
+  into its substate value entries. Outbound: `hi_value_to_hass_service_call`
+  routes substate-targeted control values to a single HA service call,
+  reading partner substate values via the framework's
+  `IntegrationConverterHelper` to compose paired payloads (e.g.,
+  `hs_color: [hue, saturation]`).
+- **HassConverter vs HassServiceComposer.** The converter owns
+  HI<->HA bridging (parsing HI control values, choosing the right
+  outbound path); the composer (`hass_service_composer.py`) owns
+  pure HA-side service-call shaping. Bridge methods cross the
+  namespace via `to_ha_*` helpers and hand HA-shaped values to the
+  composer.
 
 ## Testing approach
 

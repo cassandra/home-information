@@ -14,6 +14,14 @@ class EntityStateStatusData:
     entity_state          : EntityState
     sensor_response_list  : List[ SensorResponse ]  # Not grouped by sensor, but ordered by response time
     controller_data_list  : List[ ControllerData ]
+    # Whether the EntityState has any Sensor / Controller defined,
+    # distinct from whether the response/data lists are populated.
+    # A sensor-only state whose Sensor has no cached response yet
+    # has ``has_sensor=True`` but an empty ``sensor_response_list``;
+    # the display layer uses these to distinguish "awaiting first
+    # reading" from "nothing defined."
+    has_sensor            : bool                    = False
+    has_controller        : bool                    = False
 
     @property
     def latest_sensor_response(self) -> SensorResponse:

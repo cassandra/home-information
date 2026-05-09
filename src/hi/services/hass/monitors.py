@@ -93,16 +93,17 @@ class HassMonitor( PeriodicMonitor, HassMixin, SensorResponseMixin ):
         sensor_response_latest_map = dict()
         
         for hass_state in id_to_hass_state_map.values():
-            integration_key = HassConverter.hass_state_to_integration_key( hass_state = hass_state )
-            sensor_value_str = HassConverter.hass_state_to_sensor_value_str( hass_state )
-            if not sensor_value_str:
+            value_map = HassConverter.hass_state_to_sensor_value_map( hass_state )
+            for integration_key, sensor_value_str in value_map.items():
+                if not sensor_value_str:
+                    continue
+                sensor_response = SensorResponse(
+                    integration_key = integration_key,
+                    value = sensor_value_str,
+                    timestamp = current_datetime,
+                )
+                sensor_response_latest_map[integration_key] = sensor_response
                 continue
-            sensor_response = SensorResponse(
-                integration_key = integration_key,
-                value = sensor_value_str,
-                timestamp = current_datetime,
-            )
-            sensor_response_latest_map[integration_key] = sensor_response
             continue
 
         await self.sensor_response_manager().update_with_latest_sensor_responses(

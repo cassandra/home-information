@@ -2,7 +2,7 @@ from asgiref.sync import sync_to_async
 import asyncio
 from cachetools import TTLCache
 import logging
-from typing import Dict, List
+from typing import Dict, List, Optional
 
 from hi.apps.common.redis_client import get_redis_client
 from hi.apps.common.singleton import Singleton
@@ -169,6 +169,25 @@ class SensorResponseManager( Singleton, SensorHistoryMixin, EventMixin ):
 
         return sensor_response_list_map
     
+    def get_latest_sensor_response_map(
+            self, integration_keys : List[ IntegrationKey ],
+    ) -> Dict[ IntegrationKey, Optional[ SensorResponse ] ]:
+        if not integration_keys:
+            return {}
+        list_cache_keys = [ self.to_sensor_response_list_cache_key( k ) for k in integration_keys ]
+        pipeline = self._redis_client.pipeline()
+        for list_cache_key in list_cache_keys:
+            pipeline.lindex( list_cache_key, 0 )
+            continue
+        cached_values = pipeline.execute()
+        result : Dict[ IntegrationKey, Optional[ SensorResponse ] ] = {}
+        for integration_key, cached_value in zip( integration_keys, cached_values ):
+            result[ integration_key ] = (
+                SensorResponse.from_string( cached_value ) if cached_value else None
+            )
+            continue
+        return result
+
     def get_latest_sensor_responses( self,
                                      sensor_list : List[ Sensor ] ) -> Dict[ Sensor, List[ SensorResponse ] ]:
         

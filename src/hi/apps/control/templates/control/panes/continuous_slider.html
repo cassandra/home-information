@@ -1,0 +1,52 @@
+{% comment %}
+Continuous slider widget (range input + value display + optional
+min/max preset buttons). Per-slider templates {% include %} this
+partial with their own parameters.
+
+Parameters:
+- slider_min, slider_max  : required range bounds (numeric).
+- slider_step             : optional step (default: omitted).
+- slider_default          : value to display when no latest
+                            sensor response is cached.
+- display_unit            : suffix for the displayed value
+                            ('%', '°', 'K', or '').
+- slider_class            : per-slider CSS class for gradient
+                            track styling (e.g., 'hue-slider').
+- show_presets            : True to render two preset buttons
+                            that snap the slider to its min and
+                            max values (default: False).
+- min_preset_label        : button label for the min preset
+                            (default: 'Min').
+- max_preset_label        : button label for the max preset
+                            (default: 'Max').
+{% endcomment %}
+<div class="{{ DIVID.CONTROLLER_SLIDER_CONTROL_CLASS }}">
+  <input type="range"
+         name="value"
+         min="{{ slider_min }}"
+         max="{{ slider_max }}"
+         {% if slider_step %}step="{{ slider_step }}"{% endif %}
+         value="{{ controller_data.latest_sensor_response.value|default_if_none:slider_default }}"
+         class="{{ controller_data.css_class }} {{ DIVID.CONTROLLER_SLIDER_CLASS }} {{ slider_class }}"
+         {{ DIVID.CONTROLLER_DISPLAY_TARGET_ATTR }}=".hi-continuous-slider-value"
+         {{ DIVID.CONTROLLER_DISPLAY_FORMAT_ATTR }}="{n}{{ display_unit }}"
+         onchange-async="true"
+         data-controller-id="{{ controller_data.controller.id }}">
+  <div class="hi-continuous-slider-display">
+    <span class="hi-continuous-slider-value">{{ controller_data.latest_sensor_response.value|default_if_none:slider_default }}{{ display_unit }}</span>
+    {% if show_presets %}
+      <div class="hi-continuous-slider-presets">
+        <button type="button"
+                class="btn btn-sm btn-secondary {{ DIVID.CONTROLLER_PRESET_BTN_CLASS }}"
+                {{ DIVID.DATA_VALUE_ATTR }}="{{ slider_min }}">
+          {{ min_preset_label|default:"Min" }}
+        </button>
+        <button type="button"
+                class="btn btn-sm btn-primary {{ DIVID.CONTROLLER_PRESET_BTN_CLASS }}"
+                {{ DIVID.DATA_VALUE_ATTR }}="{{ slider_max }}">
+          {{ max_preset_label|default:"Max" }}
+        </button>
+      </div>
+    {% endif %}
+  </div>
+</div>

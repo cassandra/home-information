@@ -226,6 +226,72 @@ class AsyncSensorResponseManagerTestCase(AsyncTaskTestCase):
         self.assertEqual(deserialized.detail_attrs, original_response.detail_attrs)
         self.assertEqual(deserialized.source_image_url, original_response.source_image_url)
 
+    def test_get_latest_sensor_response_map_empty_list_short_circuits(self):
+        """Empty integration_keys returns empty dict without touching Redis."""
+        with patch.object(self.manager, '_redis_client') as mock_redis:
+            result = self.manager.get_latest_sensor_response_map(integration_keys=[])
+            self.assertEqual(result, {})
+            mock_redis.pipeline.assert_not_called()
+
+    def test_get_latest_sensor_response_map_returns_none_for_uncached(self):
+        """Keys with no cached entry map to None."""
+        # Reset fakeredis state for this test.
+        self.manager._redis_client.flushdb()
+
+        result = self.manager.get_latest_sensor_response_map(
+            integration_keys=[self.integration_key],
+        )
+        self.assertEqual(result, {self.integration_key: None})
+
+    def test_get_latest_sensor_response_map_returns_latest_for_cached(self):
+        """Keys with cached entries return the most recent SensorResponse."""
+        self.manager._redis_client.flushdb()
+
+        cache_key = self.manager.to_sensor_response_list_cache_key(self.integration_key)
+        older = SensorResponse(
+            integration_key=self.integration_key,
+            value='old_value',
+            timestamp=timezone.now(),
+        )
+        newer = SensorResponse(
+            integration_key=self.integration_key,
+            value='new_value',
+            timestamp=timezone.now(),
+        )
+        # LPUSH order matches the production write path (newer at index 0).
+        self.manager._redis_client.lpush(cache_key, str(older))
+        self.manager._redis_client.lpush(cache_key, str(newer))
+
+        result = self.manager.get_latest_sensor_response_map(
+            integration_keys=[self.integration_key],
+        )
+        self.assertEqual(len(result), 1)
+        self.assertEqual(result[self.integration_key].value, 'new_value')
+
+    def test_get_latest_sensor_response_map_handles_mixed_cached_and_uncached(self):
+        """Multiple keys: some cached, some not — order preserved, None for misses."""
+        self.manager._redis_client.flushdb()
+
+        key_a = IntegrationKey(integration_id='a', integration_name='one')
+        key_b = IntegrationKey(integration_id='b', integration_name='two')
+        key_c = IntegrationKey(integration_id='c', integration_name='three')
+
+        # Cache only key_a and key_c.
+        for key, value in [(key_a, 'val_a'), (key_c, 'val_c')]:
+            cache_key = self.manager.to_sensor_response_list_cache_key(key)
+            response = SensorResponse(
+                integration_key=key, value=value, timestamp=timezone.now(),
+            )
+            self.manager._redis_client.lpush(cache_key, str(response))
+
+        result = self.manager.get_latest_sensor_response_map(
+            integration_keys=[key_a, key_b, key_c],
+        )
+        self.assertEqual(set(result.keys()), {key_a, key_b, key_c})
+        self.assertEqual(result[key_a].value, 'val_a')
+        self.assertIsNone(result[key_b])
+        self.assertEqual(result[key_c].value, 'val_c')
+
     def test_get_latest_sensor_responses_for_specific_sensors(self):
         """Test retrieval of responses for specific sensor list."""
         # Create additional test data

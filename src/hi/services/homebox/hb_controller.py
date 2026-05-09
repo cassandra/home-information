@@ -14,11 +14,11 @@ class HomeBoxController( IntegrationController, HomeBoxMixin ):
     def do_control(
         self,
         integration_details: IntegrationDetails,
-        control_value: str,
+        hi_control_value: str,
     ) -> IntegrationControlResult:
         logger.debug(
             f'HomeBox do_control unsupported. details={integration_details},'
-            f' value={control_value}'
+            f' value={hi_control_value}'
         )
         return IntegrationControlResult(
             new_value = None,

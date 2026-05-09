@@ -14,22 +14,22 @@ class ZoneMinderController( IntegrationController, ZoneMinderMixin ):
 
     def do_control( self,
                     integration_details : IntegrationDetails,
-                    control_value       : str             ) -> IntegrationControlResult:
+                    hi_control_value       : str             ) -> IntegrationControlResult:
         zm_manager = self.zm_manager()
         integration_key = integration_details.key
         try:
             if integration_key.integration_name == zm_manager.ZM_RUN_STATE_SENSOR_INTEGRATION_NAME:
-                return self.set_run_state( run_state_value = control_value )
+                return self.set_run_state( run_state_value = hi_control_value )
 
             if integration_key.integration_name.startswith( zm_manager.MONITOR_FUNCTION_SENSOR_PREFIX ):
                 m = re.match( r'.+\D(\d+)', integration_key.integration_name )
                 if m:
                     return self.set_monitor_function(
                         monitor_id = m.group(1),
-                        function_value = control_value,
+                        function_value = hi_control_value,
                     )
 
-            logger.warning( f'ZM action undefined. key={integration_key}, value={control_value}' )
+            logger.warning( f'ZM action undefined. key={integration_key}, value={hi_control_value}' )
             raise ValueError( 'Unknown ZM control action.' )
 
         except Exception as e:

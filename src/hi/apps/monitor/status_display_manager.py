@@ -39,6 +39,28 @@ class StatusDisplayManager( Singleton, SensorResponseMixin ):
             continue
 
         return css_class_update_map
+
+    def get_status_controller_value_map( self ) -> Dict[ str, object ]:
+        """Build the class-to-controller-value map consumed by the
+        polling response's ``cssControllerValueMap`` key. Parallel
+        to ``get_status_css_class_update_map`` but for value-bearing
+        controller widgets (slider, checkbox, select, future color
+        picker) rather than CSS-driven visual styling. States with
+        no controller (read-only sensors) are skipped — see
+        ``StatusDisplayData.controller_data_value``."""
+
+        entity_state_status_data_list = self.get_all_entity_state_status_data_list()
+        status_display_data_list = [ StatusDisplayData(x) for x in entity_state_status_data_list ]
+
+        controller_value_map = dict()
+        for status_display_data in status_display_data_list:
+            controller_value = status_display_data.controller_data_value
+            if controller_value is None:
+                continue
+            controller_value_map[ status_display_data.css_class ] = controller_value
+            continue
+
+        return controller_value_map
         
     def get_all_entity_state_status_data_list( self ) -> List[ EntityStateStatusData ]:
         """
@@ -86,6 +108,11 @@ class StatusDisplayManager( Singleton, SensorResponseMixin ):
                 entity_state = entity_state,
                 sensor_response_list = sensor_response_list,
                 controller_data_list = controller_data_list,
+                # This branch only sees EntityStates that produced
+                # responses, so a sensor must exist; controllers
+                # are explicitly known via the list above.
+                has_sensor = True,
+                has_controller = bool( controller_data_list ),
             )
             entity_state_status_data_list.append( entity_state_status_data )
             continue
@@ -260,6 +287,8 @@ class StatusDisplayManager( Singleton, SensorResponseMixin ):
                 entity_state = entity_state,
                 sensor_response_list = entity_state_sensor_response_list,
                 controller_data_list = controller_data_list,
+                has_sensor = bool( entity_state_to_sensor_list.get( entity_state ) ),
+                has_controller = bool( controller_data_list ),
             )
             entity_state_to_entity_state_status_data_map[entity_state] = entity_state_status_data
             continue

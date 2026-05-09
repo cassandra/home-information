@@ -37,7 +37,7 @@ class ControllerManager( Singleton ):
         
         control_result = integration_controller.do_control(
             integration_details = controller.get_integration_details(),
-            control_value = control_value,
+            hi_control_value = control_value,
         )
         if not control_result.has_errors:
             ControllerHistoryManager().add_to_controller_history(
