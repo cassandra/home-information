@@ -28,7 +28,7 @@ from typing import Any, Dict, List, Optional, Tuple
 
 from hi.simulator.enums import SimStateType
 
-from .sim_models import HassColorSmartBulbFields
+from .sim_models import HassColorSmartBulbFields, HassLockFields
 
 
 class HassServiceDispatcher:
@@ -150,6 +150,24 @@ class HassServiceDispatcher:
         return updates
 
     @staticmethod
+    def _lock( sim_entity,
+               domain   : str,
+               service  : str,
+               payload  : Dict[ str, Any ],
+               ) -> List[ Tuple[ str, str ] ]:
+        """Lock domain: ``lock.lock`` and ``lock.unlock`` toggle
+        the lock's primary ON_OFF SimState. The state's ``state``
+        property maps the value to HA's ``'locked'`` / ``'unlocked'``
+        strings on emit."""
+        if domain != 'lock':
+            return []
+        if service == 'lock':
+            return [ ( 'lock', 'on' ) ]
+        if service == 'unlock':
+            return [ ( 'lock', 'off' ) ]
+        return []
+
+    @staticmethod
     def _extract_brightness_value_str( payload : Dict[ str, Any ] ) -> Optional[ str ]:
         """Read brightness from an HA service-call payload as a
         string suitable for a CONTINUOUS sim state (HA 0-255).
@@ -175,4 +193,5 @@ class HassServiceDispatcher:
 # objects exist as references. Keyed off SimEntityFields class.
 HassServiceDispatcher._REGISTRY = {
     HassColorSmartBulbFields: HassServiceDispatcher._color_smart_bulb,
+    HassLockFields: HassServiceDispatcher._lock,
 }

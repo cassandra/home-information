@@ -694,6 +694,49 @@ class HassColorSmartBulbColorModeState( HassState ):
         return {}
 
 
+@dataclass( frozen = True )
+class HassLockFields( SimEntityFields ):
+    """A lock device. Single ON_OFF SimState whose value drives
+    HA's domain-specific ``state`` strings (``'locked'`` /
+    ``'unlocked'``)."""
+    pass
+
+
+def _lock_entity_id( name : str ) -> str:
+    suffix = name.lower().replace( ' ', '_' )
+    return f'lock.{suffix}'
+
+
+@dataclass
+class HassLockState( HassState ):
+    """A lock's state. Internally ON_OFF (locked == on); the
+    ``state`` property maps to HA's domain-specific
+    ``'locked'`` / ``'unlocked'`` strings."""
+
+    sim_entity_fields  : HassLockFields
+    sim_state_type     : SimStateType                  = SimStateType.ON_OFF
+    sim_state_id       : str                           = 'lock'
+    value              : str                           = 'on'
+
+    @property
+    def name(self):
+        return f'{self.entity_name} Lock'
+
+    @property
+    def entity_id(self):
+        return _lock_entity_id( self.entity_name )
+
+    @property
+    def state(self):
+        return 'locked' if str_to_bool( self.value ) else 'unlocked'
+
+    @property
+    def attributes(self) -> Dict[ str, str ]:
+        return {
+            'friendly_name': self.entity_name,
+        }
+
+
 HASS_SIM_ENTITY_DEFINITION_LIST = [
     SimEntityDefinition(
         class_label = 'Insteon Switch',
@@ -773,6 +816,14 @@ HASS_SIM_ENTITY_DEFINITION_LIST = [
             HassColorSmartBulbSaturationState,
             HassColorSmartBulbColorTempState,
             HassColorSmartBulbColorModeState,
+        ],
+    ),
+    SimEntityDefinition(
+        class_label = 'Lock',
+        sim_entity_type = SimEntityType.DOOR_LOCK,
+        sim_entity_fields_class = HassLockFields,
+        sim_state_class_list = [
+            HassLockState,
         ],
     ),
 ]
