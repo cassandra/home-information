@@ -244,8 +244,6 @@ class SensorResponseManager( Singleton, SensorHistoryMixin, EventMixin ):
         if not sensor_response_list:
             return
 
-        self._latest_sensor_data_dirty = True
-
         await self._add_sensors( sensor_response_list = sensor_response_list )
 
         sensor_history_manager = await self.sensor_history_manager_async()
@@ -253,8 +251,8 @@ class SensorResponseManager( Singleton, SensorHistoryMixin, EventMixin ):
         # This also has side effect of populating sensor_history_id
         await sensor_history_manager.add_to_sensor_history(
             sensor_response_list = sensor_response_list,
-        )        
-        
+        )
+
         pipeline = self._redis_client.pipeline()
         for sensor_response in sensor_response_list:
             list_cache_key = self.to_sensor_response_list_cache_key( sensor_response.integration_key )
@@ -265,6 +263,12 @@ class SensorResponseManager( Singleton, SensorHistoryMixin, EventMixin ):
             continue
         pipeline.execute()
 
+        # Flag the in-memory map stale only after Redis is
+        # updated. Setting it earlier opens a race where a
+        # concurrent reader rebuilds the map from pre-update
+        # Redis and clears the flag, leaving the in-memory map
+        # stuck on the stale value until the next commit.
+        self._latest_sensor_data_dirty = True
         return
     
     def to_sensor_response_list_cache_key( self, integration_key : IntegrationKey ) -> str:

@@ -469,21 +469,24 @@ class StatusDisplayManager( Singleton, SensorResponseMixin ):
                 sensor_list = sensor_list,
             )
 
-        # Apply overrides via copy: SensorResponseManager
-        # memoizes the response map, so mutating a cached
-        # SensorResponse here would persist the override beyond
-        # its TTL.
+        # Apply overrides into a fresh dict so neither the
+        # SensorResponse objects nor the response lists owned by
+        # SensorResponseManager's cache are touched. Mutating
+        # them would persist the override past its TTL.
+        result = dict()
         for sensor, sensor_response_list in sensor_to_sensor_response_list.items():
             if ( not sensor_response_list
                  or ( sensor.entity_state.id not in self._status_value_overrides )):
+                result[ sensor ] = sensor_response_list
                 continue
-            sensor_response_list[0] = dataclasses.replace(
-                sensor_response_list[0],
-                value = self._status_value_overrides[sensor.entity_state.id],
+            overridden = dataclasses.replace(
+                sensor_response_list[ 0 ],
+                value = self._status_value_overrides[ sensor.entity_state.id ],
             )
+            result[ sensor ] = [ overridden, *sensor_response_list[ 1: ] ]
             continue
 
-        return sensor_to_sensor_response_list
+        return result
         
     def add_entity_state_value_override( self,
                                          entity_state    : EntityState,
