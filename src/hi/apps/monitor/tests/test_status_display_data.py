@@ -306,6 +306,56 @@ class TestStatusDisplayData(BaseTestCase):
         
         self.assertEqual(display_data.svg_status_style, StatusStyle.Closed)
 
+    # OPEN_CLOSE_POSITION State Type Tests (continuous-position cover)
+
+    def test_open_close_position_zero_returns_closed_style(self):
+        sensor_response = self._create_mock_sensor_response('0')
+        status_data = self._create_entity_state_status_data(
+            'OPEN_CLOSE_POSITION', [ sensor_response ],
+        )
+
+        display_data = StatusDisplayData( status_data )
+
+        self.assertEqual( display_data.svg_status_style, StatusStyle.Closed )
+
+    def test_open_close_position_partial_returns_open_partial_style(self):
+        # Mid-range positions land in the partial bucket, mirroring
+        # the dimmer's three-bucket discretization.
+        for position in ( '1', '50', '74' ):
+            with self.subTest( position=position ):
+                sensor_response = self._create_mock_sensor_response( position )
+                status_data = self._create_entity_state_status_data(
+                    'OPEN_CLOSE_POSITION', [ sensor_response ],
+                )
+
+                display_data = StatusDisplayData( status_data )
+
+                self.assertEqual( display_data.svg_status_style, StatusStyle.OpenPartial )
+
+    def test_open_close_position_high_returns_open_style(self):
+        for position in ( '75', '90', '100' ):
+            with self.subTest( position=position ):
+                sensor_response = self._create_mock_sensor_response( position )
+                status_data = self._create_entity_state_status_data(
+                    'OPEN_CLOSE_POSITION', [ sensor_response ],
+                )
+
+                display_data = StatusDisplayData( status_data )
+
+                self.assertEqual( display_data.svg_status_style, StatusStyle.Open )
+
+    def test_open_close_position_non_numeric_returns_closed_style(self):
+        # Defensive: a malformed value shouldn't crash the
+        # display path; treat as closed.
+        sensor_response = self._create_mock_sensor_response( 'garbage' )
+        status_data = self._create_entity_state_status_data(
+            'OPEN_CLOSE_POSITION', [ sensor_response ],
+        )
+
+        display_data = StatusDisplayData( status_data )
+
+        self.assertEqual( display_data.svg_status_style, StatusStyle.Closed )
+
     # Edge Cases and Default Behavior Tests
     
     def test_no_sensor_data_returns_default_style(self):
