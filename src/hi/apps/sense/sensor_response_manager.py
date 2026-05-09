@@ -264,10 +264,13 @@ class SensorResponseManager( Singleton, SensorHistoryMixin, EventMixin ):
         pipeline.execute()
 
         # Flag the in-memory map stale only after Redis is
-        # updated. Setting it earlier opens a race where a
+        # updated. Setting it earlier opens a window where a
         # concurrent reader rebuilds the map from pre-update
         # Redis and clears the flag, leaving the in-memory map
-        # stuck on the stale value until the next commit.
+        # stuck on the stale value until the next commit. A
+        # reader that runs between ``pipeline.execute()`` and
+        # this assignment can still see one stale poll, but
+        # next-call recovery is automatic.
         self._latest_sensor_data_dirty = True
         return
     
