@@ -466,6 +466,7 @@ class EntityGroupType(LabeledEnum):
         EntityType.WALL_SWITCH,
     })
     OTHER = ( 'Other', '', {
+        EntityType.OPEN_CLOSE_ACTUATOR,
         EntityType.OTHER,
     })
     OUTDOORS = ( 'Outdoors', '', {

@@ -316,6 +316,7 @@ class EntityStyle:
         EntityType.MOTOR,
         EntityType.NETWORK_SWITCH,
         EntityType.ON_OFF_SWITCH,
+        EntityType.OPEN_CLOSE_ACTUATOR,
         EntityType.OPEN_CLOSE_SENSOR,
         EntityType.OVEN,
         EntityType.PLANT,
