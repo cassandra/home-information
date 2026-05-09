@@ -527,6 +527,18 @@ class StatusStyle:
         fill_color = STATUS_PAST_COLOR,
         fill_opacity = 0.5,
     )
+    # Partially-open spatial state for continuous-position covers.
+    # Distinct from ``OpenRecent`` (temporal decay after a recent
+    # open) so spatial and temporal semantics don't share a name,
+    # even though the visual palette is intentionally aligned.
+    OpenPartial = SvgStatusStyle(
+        status_value = 'partial',
+        stroke_color = STATUS_RECENT_COLOR,
+        stroke_width = DEFAULT_STROKE_WIDTH,
+        stroke_dasharray = DEFAULT_STROKE_DASHARRAY,
+        fill_color = STATUS_RECENT_COLOR,
+        fill_opacity = 0.5,
+    )
     Closed = SvgStatusStyle(
         status_value = 'closed',
         stroke_color = STATUS_IDLE_COLOR,

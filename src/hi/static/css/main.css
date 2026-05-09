@@ -712,15 +712,15 @@ path.hover-target[hover] + path.hi-path-open {
 }
 
 g[status="active"] {
-    outline: 2px solid var(--status-active-color);
     filter: drop-shadow(0 0 5px var(--status-active-color));
 }
 g[status="recent"] {
-    outline: 2px solid var(--status-recent-color);
+    filter: drop-shadow(0 0 5px var(--status-recent-color));
+}
+g[status="partial"] {
     filter: drop-shadow(0 0 5px var(--status-recent-color));
 }
 g[status="past"] {
-    outline: 2px solid var(--status-past-color);
     filter: drop-shadow(0 0 5px var(--status-past-color));
 }
 
@@ -794,6 +794,10 @@ div[status="recent"] {
 div[status="past"] {
     color: var(--on-status-past-color);
     background-color: var(--status-past-color);
+}
+div[status="partial"] {
+    color: var(--on-status-recent-color);
+    background-color: var(--status-recent-color);
 }
 div[status="open"] {
     color: var(--on-status-bad-color);
