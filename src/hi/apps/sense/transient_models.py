@@ -50,6 +50,9 @@ class SensorResponse:
     def is_on(self):
         return bool( self.value == str(EntityStateValue.ON) )
 
+    def is_open(self):
+        return bool( self.value == str(EntityStateValue.OPEN) )
+
     @property
     def video_browse_url(self) -> str:
         if self.has_video_stream and self.sensor_history_id:

@@ -12,6 +12,10 @@ Parameters:
                             ('%', '°', 'K', or '').
 - slider_class            : per-slider CSS class for gradient
                             track styling (e.g., 'hue-slider').
+- min_label, max_label    : optional static text flanking the
+                            slider (e.g., 'Closed' / 'Open' for
+                            a position slider). Omitted when
+                            blank.
 - show_presets            : True to render two preset buttons
                             that snap the slider to its min and
                             max values (default: False).
@@ -21,17 +25,21 @@ Parameters:
                             (default: 'Max').
 {% endcomment %}
 <div class="{{ DIVID.CONTROLLER_SLIDER_CONTROL_CLASS }}">
-  <input type="range"
-         name="value"
-         min="{{ slider_min }}"
-         max="{{ slider_max }}"
-         {% if slider_step %}step="{{ slider_step }}"{% endif %}
-         value="{{ controller_data.latest_sensor_response.value|default_if_none:slider_default }}"
-         class="{{ controller_data.css_class }} {{ DIVID.CONTROLLER_SLIDER_CLASS }} {{ slider_class }}"
-         {{ DIVID.CONTROLLER_DISPLAY_TARGET_ATTR }}=".hi-continuous-slider-value"
-         {{ DIVID.CONTROLLER_DISPLAY_FORMAT_ATTR }}="{n}{{ display_unit }}"
-         onchange-async="true"
-         data-controller-id="{{ controller_data.controller.id }}">
+  <div class="hi-continuous-slider-row">
+    {% if min_label %}<span class="hi-continuous-slider-extreme">{{ min_label }}</span>{% endif %}
+    <input type="range"
+           name="value"
+           min="{{ slider_min }}"
+           max="{{ slider_max }}"
+           {% if slider_step %}step="{{ slider_step }}"{% endif %}
+           value="{{ controller_data.latest_sensor_response.value|default_if_none:slider_default }}"
+           class="{{ controller_data.css_class }} {{ DIVID.CONTROLLER_SLIDER_CLASS }} {{ slider_class }}"
+           {{ DIVID.CONTROLLER_DISPLAY_TARGET_ATTR }}=".hi-continuous-slider-value"
+           {{ DIVID.CONTROLLER_DISPLAY_FORMAT_ATTR }}="{n}{{ display_unit }}"
+           onchange-async="true"
+           data-controller-id="{{ controller_data.controller.id }}">
+    {% if max_label %}<span class="hi-continuous-slider-extreme">{{ max_label }}</span>{% endif %}
+  </div>
   <div class="hi-continuous-slider-display">
     <span class="hi-continuous-slider-value">{{ controller_data.latest_sensor_response.value|default_if_none:slider_default }}{{ display_unit }}</span>
     {% if show_presets %}

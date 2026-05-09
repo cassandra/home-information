@@ -28,7 +28,13 @@ from typing import Any, Dict, List, Optional, Tuple
 
 from hi.simulator.enums import SimStateType
 
-from .sim_models import HassColorSmartBulbFields, HassLockFields
+from .sim_models import (
+    HassColorSmartBulbFields,
+    HassGarageCoverFields,
+    HassGenericCoverFields,
+    HassLockFields,
+    HassWindowBlindCoverFields,
+)
 
 
 class HassServiceDispatcher:
@@ -168,6 +174,52 @@ class HassServiceDispatcher:
         return []
 
     @staticmethod
+    def _discrete_cover( sim_entity,
+                         domain   : str,
+                         service  : str,
+                         payload  : Dict[ str, Any ],
+                         ) -> List[ Tuple[ str, str ] ]:
+        """Discrete open/close cover (no position attribute):
+        ``open_cover`` / ``close_cover`` toggle the ON_OFF
+        SimState. Used by every cover whose HA shape is binary
+        — garage doors, generic covers, and any future cover
+        device class without ``current_position``."""
+        if domain != 'cover':
+            return []
+        if service == 'open_cover':
+            return [ ( 'cover', 'on' ) ]
+        if service == 'close_cover':
+            return [ ( 'cover', 'off' ) ]
+        return []
+
+    @staticmethod
+    def _window_blind_cover( sim_entity,
+                             domain   : str,
+                             service  : str,
+                             payload  : Dict[ str, Any ],
+                             ) -> List[ Tuple[ str, str ] ]:
+        """Window blind cover: ``open_cover`` / ``close_cover``
+        snap to 100 / 0; ``set_cover_position`` writes the
+        payload's ``position`` value (0-100) to the CONTINUOUS
+        SimState."""
+        if domain != 'cover':
+            return []
+        if service == 'open_cover':
+            return [ ( 'position', '100' ) ]
+        if service == 'close_cover':
+            return [ ( 'position', '0' ) ]
+        if service == 'set_cover_position':
+            position = payload.get( 'position' )
+            if position is None:
+                return []
+            try:
+                position_int = int( float( position ) )
+            except ( TypeError, ValueError ):
+                return []
+            return [ ( 'position', str( position_int ) ) ]
+        return []
+
+    @staticmethod
     def _extract_brightness_value_str( payload : Dict[ str, Any ] ) -> Optional[ str ]:
         """Read brightness from an HA service-call payload as a
         string suitable for a CONTINUOUS sim state (HA 0-255).
@@ -193,5 +245,8 @@ class HassServiceDispatcher:
 # objects exist as references. Keyed off SimEntityFields class.
 HassServiceDispatcher._REGISTRY = {
     HassColorSmartBulbFields: HassServiceDispatcher._color_smart_bulb,
+    HassGarageCoverFields: HassServiceDispatcher._discrete_cover,
+    HassGenericCoverFields: HassServiceDispatcher._discrete_cover,
     HassLockFields: HassServiceDispatcher._lock,
+    HassWindowBlindCoverFields: HassServiceDispatcher._window_blind_cover,
 }

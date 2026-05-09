@@ -737,6 +737,142 @@ class HassLockState( HassState ):
         }
 
 
+@dataclass( frozen = True )
+class HassGarageCoverFields( SimEntityFields ):
+    """Garage door cover. Discrete open/closed; no position
+    attribute (real garage doors are typically on/off)."""
+    pass
+
+
+def _cover_entity_id( name : str ) -> str:
+    suffix = name.lower().replace( ' ', '_' )
+    return f'cover.{suffix}'
+
+
+@dataclass
+class HassGarageCoverState( HassState ):
+    """Internally ON_OFF (open == on); the ``state`` property
+    maps to HA's cover-domain wire strings ``'open'`` /
+    ``'closed'``."""
+
+    sim_entity_fields  : HassGarageCoverFields
+    sim_state_type     : SimStateType                  = SimStateType.ON_OFF
+    sim_state_id       : str                           = 'cover'
+    value              : str                           = 'off'
+
+    @property
+    def name(self):
+        return f'{self.entity_name} Cover'
+
+    @property
+    def entity_id(self):
+        return _cover_entity_id( self.entity_name )
+
+    @property
+    def state(self):
+        return 'open' if str_to_bool( self.value ) else 'closed'
+
+    @property
+    def attributes(self) -> Dict[ str, str ]:
+        return {
+            'friendly_name': self.entity_name,
+            'device_class': 'garage',
+        }
+
+
+@dataclass( frozen = True )
+class HassGenericCoverFields( SimEntityFields ):
+    """Generic cover with no device_class. Discrete
+    open/closed, no position attribute. Exercises the
+    converter's ``(cover, None, None)`` fall-through mapping
+    so future cover device classes that aren't explicitly
+    listed get tested by the same fixture path."""
+    pass
+
+
+@dataclass
+class HassGenericCoverState( HassState ):
+    """Internally ON_OFF (open == on); the ``state`` property
+    maps to HA's cover-domain wire strings ``'open'`` /
+    ``'closed'``. No ``device_class`` attribute is emitted."""
+
+    sim_entity_fields  : HassGenericCoverFields
+    sim_state_type     : SimStateType                  = SimStateType.ON_OFF
+    sim_state_id       : str                           = 'cover'
+    value              : str                           = 'off'
+
+    @property
+    def name(self):
+        return f'{self.entity_name} Cover'
+
+    @property
+    def entity_id(self):
+        return _cover_entity_id( self.entity_name )
+
+    @property
+    def state(self):
+        return 'open' if str_to_bool( self.value ) else 'closed'
+
+    @property
+    def attributes(self) -> Dict[ str, str ]:
+        return {
+            'friendly_name': self.entity_name,
+        }
+
+
+@dataclass( frozen = True )
+class HassWindowBlindCoverFields( SimEntityFields ):
+    """Window blind cover with position. Single CONTINUOUS
+    SimState (0-100 percent). The ``state`` property derives
+    open/closed from the position; the ``current_position``
+    attribute carries the numeric value."""
+    pass
+
+
+@dataclass
+class HassWindowBlindCoverState( HassState ):
+    sim_entity_fields  : HassWindowBlindCoverFields
+    sim_state_type     : SimStateType                  = SimStateType.CONTINUOUS
+    sim_state_id       : str                           = 'position'
+    value              : str                           = '0'
+
+    @property
+    def min_value(self):
+        return 0
+
+    @property
+    def max_value(self):
+        return 100
+
+    @property
+    def name(self):
+        return f'{self.entity_name} Position'
+
+    @property
+    def entity_id(self):
+        return _cover_entity_id( self.entity_name )
+
+    @property
+    def state(self):
+        try:
+            position = int( float( self.value ) )
+        except ( TypeError, ValueError ):
+            position = 0
+        return 'open' if position > 0 else 'closed'
+
+    @property
+    def attributes(self) -> Dict[ str, str ]:
+        try:
+            position = int( float( self.value ) )
+        except ( TypeError, ValueError ):
+            position = 0
+        return {
+            'friendly_name': self.entity_name,
+            'device_class': 'blind',
+            'current_position': position,
+        }
+
+
 HASS_SIM_ENTITY_DEFINITION_LIST = [
     SimEntityDefinition(
         class_label = 'Insteon Switch',
@@ -824,6 +960,30 @@ HASS_SIM_ENTITY_DEFINITION_LIST = [
         sim_entity_fields_class = HassLockFields,
         sim_state_class_list = [
             HassLockState,
+        ],
+    ),
+    SimEntityDefinition(
+        class_label = 'Cover (garage)',
+        sim_entity_type = SimEntityType.OPEN_CLOSE_ACTUATOR,
+        sim_entity_fields_class = HassGarageCoverFields,
+        sim_state_class_list = [
+            HassGarageCoverState,
+        ],
+    ),
+    SimEntityDefinition(
+        class_label = 'Cover (window blind)',
+        sim_entity_type = SimEntityType.OPEN_CLOSE_ACTUATOR,
+        sim_entity_fields_class = HassWindowBlindCoverFields,
+        sim_state_class_list = [
+            HassWindowBlindCoverState,
+        ],
+    ),
+    SimEntityDefinition(
+        class_label = 'Cover (generic, no device_class)',
+        sim_entity_type = SimEntityType.OPEN_CLOSE_ACTUATOR,
+        sim_entity_fields_class = HassGenericCoverFields,
+        sim_state_class_list = [
+            HassGenericCoverState,
         ],
     ),
 ]

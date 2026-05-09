@@ -139,6 +139,81 @@ class TestStatusDisplayManager(BaseTestCase):
             
             self.assertIsNone(latest_response)
 
+    def test_override_does_not_mutate_cached_sensor_response(self):
+        """Regression for the cache-poisoning bug: applying a value
+        override must not modify the SensorResponse owned by
+        SensorResponseManager's cache, otherwise the override
+        persists past its TTL."""
+        from hi.integrations.transient_models import IntegrationKey
+        from datetime import datetime
+
+        entity = Entity.objects.create( name='Test Entity', entity_type_str='CAMERA' )
+        entity_state = EntityState.objects.create(
+            entity=entity, entity_state_type_str='OPEN_CLOSE_POSITION',
+        )
+        sensor = Sensor.objects.create(
+            name='Test Sensor', entity_state=entity_state, sensor_type_str='DEFAULT',
+        )
+        cached_response = SensorResponse(
+            integration_key=IntegrationKey(
+                integration_id='hass', integration_name='cover.test',
+            ),
+            value='30',
+            timestamp=datetime( 2026, 1, 1 ),
+            sensor=sensor,
+        )
+
+        manager = StatusDisplayManager()
+        manager._status_value_overrides.clear()
+        manager.add_entity_state_value_override( entity_state, '99' )
+
+        with patch.object(
+                manager.sensor_response_manager(),
+                'get_all_latest_sensor_responses',
+        ) as mock_helper:
+            mock_helper.return_value = { sensor: [ cached_response ] }
+            manager._get_latest_sensor_responses_helper()
+
+        self.assertEqual(
+            cached_response.value, '30',
+            'Override application must not mutate the cached SensorResponse',
+        )
+
+    def test_override_returns_overridden_value_via_copy(self):
+        """The override must surface in the returned response list
+        even though the cached object is left intact."""
+        from hi.integrations.transient_models import IntegrationKey
+        from datetime import datetime
+
+        entity = Entity.objects.create( name='Test Entity', entity_type_str='CAMERA' )
+        entity_state = EntityState.objects.create(
+            entity=entity, entity_state_type_str='OPEN_CLOSE_POSITION',
+        )
+        sensor = Sensor.objects.create(
+            name='Test Sensor', entity_state=entity_state, sensor_type_str='DEFAULT',
+        )
+        cached_response = SensorResponse(
+            integration_key=IntegrationKey(
+                integration_id='hass', integration_name='cover.test',
+            ),
+            value='30',
+            timestamp=datetime( 2026, 1, 1 ),
+            sensor=sensor,
+        )
+
+        manager = StatusDisplayManager()
+        manager._status_value_overrides.clear()
+        manager.add_entity_state_value_override( entity_state, '99' )
+
+        with patch.object(
+                manager.sensor_response_manager(),
+                'get_all_latest_sensor_responses',
+        ) as mock_helper:
+            mock_helper.return_value = { sensor: [ cached_response ] }
+            result = manager._get_latest_sensor_responses_helper()
+
+        self.assertEqual( result[ sensor ][ 0 ].value, '99' )
+
     def test_get_entity_status_data_list_preserves_order(self):
         """Test entity status data list maintains input entity order."""
         entity1 = Entity.objects.create(name='Entity 1', entity_type_str='CAMERA')

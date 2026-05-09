@@ -1,10 +1,11 @@
-{% with on_text="On" off_text="Off" %}
+{% with on_text="Open" off_text="Closed" %}
 <div class="on-off-control">
   <label class="switch-modern">
     <input type="checkbox"
            name="value"
+           value="open"
            class="{{ controller_data.css_class }} switch-input"
-           {% if controller_data.latest_sensor_response.is_on %}checked="true"{% endif %}
+           {% if controller_data.latest_sensor_response.is_open %}checked="true"{% endif %}
            status="{{ controller_data.latest_sensor_response.value }}"
            data-on-text="{{ on_text }}"
            data-off-text="{{ off_text }}"
@@ -14,7 +15,7 @@
   </label>
   <div class="switch-status">
     <span class="status-text">
-      {% if controller_data.latest_sensor_response.is_on %}{{ on_text }}{% else %}{{ off_text }}{% endif %}
+      {% if controller_data.latest_sensor_response.is_open %}{{ on_text }}{% else %}{{ off_text }}{% endif %}
     </span>
   </div>
 </div>

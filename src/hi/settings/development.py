@@ -129,6 +129,11 @@ LOGGING = {
             'handlers': ['console' ],
             'level': 'INFO',
         },
+        'hi.state_trace': {
+            'handlers': ['console' ],
+            'level': 'INFO',
+            'propagate': False,
+        },
         'django.template': {
             'handlers': ['console'],
             'level': 'INFO',  # Changed from DEBUG to INFO to reduce verbose variable lookup messages
@@ -156,3 +161,11 @@ DEBUG_FORCE_TRANSIENT_VIEW_OVERRIDE = False  # Set to True to enable
 
 # For testing UI error display of the various attribute editing form errors.
 DEBUG_INJECT_ATTRIBUTE_FORM_ERRORS = False
+
+# Per-state tracing for debugging value flow. Set
+# ``DEBUG_TRACE_STATE = True`` and populate one or both id lists
+# with the specific HA entity_ids and/or HI EntityState PKs to
+# instrument.
+DEBUG_TRACE_STATE = False
+DEBUG_TRACE_HA_ENTITY_IDS = []  # strings / integration_key.name
+DEBUG_TRACE_HI_ENTITY_STATE_IDS = []  # ints / EntityState database ids

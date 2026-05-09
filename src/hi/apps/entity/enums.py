@@ -78,6 +78,7 @@ class EntityType(LabeledEnum):
     MOTOR                = ( 'Motor', '' )
     NETWORK_SWITCH       = ( 'Network Switch', '' )
     ON_OFF_SWITCH        = ( 'On/Off Switch', '' )
+    OPEN_CLOSE_ACTUATOR  = ( 'Open/Close Actuator', '' )  # Controls things that open/close
     OPEN_CLOSE_SENSOR    = ( 'Open/Close Sensor', '' )
     OTHER                = ( 'Other', '' )  # Will use generic visual element
     OVEN                 = ( 'Oven', '' )
@@ -299,7 +300,10 @@ class EntityStateType(LabeledEnum):
                            EntityStateValue.OFF ] )    
     OPEN_CLOSE       = ( 'Open/Close'       , '',
                          [ EntityStateValue.OPEN,
-                           EntityStateValue.CLOSED ] )    
+                           EntityStateValue.CLOSED ] )
+    OPEN_CLOSE_POSITION = ( 'Open/Close Position',
+                            'Continuous open/close position as a percentage (0=closed, 100=open)',
+                            [] )
     PRESENCE         = ( 'Presence'         , '',
                          [ EntityStateValue.ACTIVE,
                            EntityStateValue.IDLE ] )
@@ -462,6 +466,7 @@ class EntityGroupType(LabeledEnum):
         EntityType.WALL_SWITCH,
     })
     OTHER = ( 'Other', '', {
+        EntityType.OPEN_CLOSE_ACTUATOR,
         EntityType.OTHER,
     })
     OUTDOORS = ( 'Outdoors', '', {

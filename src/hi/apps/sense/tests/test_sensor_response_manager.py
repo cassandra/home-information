@@ -140,6 +140,49 @@ class AsyncSensorResponseManagerTestCase(AsyncTaskTestCase):
         deserialized = SensorResponse.from_string(serialized)
         self.assertEqual(new_response.value, deserialized.value)
 
+    def test_dirty_flag_set_only_after_redis_pipeline_executes(self):
+        """Regression for the cache-poisoning race: setting the
+        dirty flag before the Redis write let a concurrent reader
+        rebuild the in-memory map from pre-update Redis state and
+        clear the flag, leaving the map permanently stuck on the
+        stale value. Assert the flag is still False at the moment
+        ``pipeline.execute()`` runs and True after."""
+        observed_dirty_at_execute = []
+
+        async def run():
+            sensor_response = SensorResponse(
+                integration_key=self.integration_key,
+                value='on',
+                timestamp=timezone.now(),
+            )
+
+            mock_pipeline = Mock()
+
+            def capture_dirty_state():
+                observed_dirty_at_execute.append(
+                    self.manager._latest_sensor_data_dirty,
+                )
+                return []
+
+            mock_pipeline.execute.side_effect = capture_dirty_state
+
+            with patch.object( self.manager, '_redis_client' ) as mock_redis:
+                mock_redis.pipeline.return_value = mock_pipeline
+                self.manager._latest_sensor_data_dirty = False
+                await self.manager._add_latest_sensor_responses( [ sensor_response ] )
+
+        import asyncio
+        asyncio.get_event_loop().run_until_complete( run() )
+
+        self.assertEqual(
+            observed_dirty_at_execute, [ False ],
+            'Dirty flag was set before the Redis pipeline executed',
+        )
+        self.assertTrue(
+            self.manager._latest_sensor_data_dirty,
+            'Dirty flag must be True after the Redis pipeline executes',
+        )
+
     def test_redis_caching_operations_use_correct_commands(self):
         """Test Redis cache key generation follows expected pattern."""
         

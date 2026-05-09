@@ -124,6 +124,9 @@ class StatusDisplayData:
 
         if self.entity_state.entity_state_type == EntityStateType.OPEN_CLOSE:
             return self._get_open_close_status_style()
+
+        if self.entity_state.entity_state_type == EntityStateType.OPEN_CLOSE_POSITION:
+            return self._get_open_close_position_status_style()
         
         if self.entity_state.entity_state_type == EntityStateType.CONNECTIVITY:
             return self._get_connectivity_status_style()
@@ -191,6 +194,23 @@ class StatusDisplayData:
     def _get_light_dimmer_status_style( self ):
         return StatusStyle.light_dimmer( self.latest_sensor_value )
         
+    def _get_open_close_position_status_style( self ):
+        # Discretize the continuous position into three visual
+        # buckets, mirroring the dimmer pattern (off / dim / on).
+        # A continuous color gradient would require per-value CSS
+        # rules; three buckets keep the SVG palette finite while
+        # still distinguishing closed, partially-open, and
+        # fully-open states.
+        try:
+            position = int( float( self.latest_sensor_value ) )
+        except ( TypeError, ValueError ):
+            position = 0
+        if position <= 0:
+            return StatusStyle.Closed
+        if position < 75:
+            return StatusStyle.OpenPartial
+        return StatusStyle.Open
+
     def _get_open_close_status_style( self ):
 
         if self.latest_sensor_value == str(EntityStateValue.OPEN):

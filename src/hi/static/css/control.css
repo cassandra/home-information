@@ -181,6 +181,19 @@
     transform: scale(1.1);
 }
 
+.hi-continuous-slider-row {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding-right: 0.5rem;
+}
+
+.hi-continuous-slider-extreme {
+    font-size: 0.8rem;
+    color: var(--text-color, #333);
+    white-space: nowrap;
+}
+
 .hi-continuous-slider-display {
     display: flex;
     align-items: center;

@@ -77,13 +77,13 @@ class HassDeviceToEntityTypeTests( TestCase ):
             EntityType.DOOR_LOCK,
         )
 
-    def test_cover_domain_maps_to_open_close_sensor( self ):
+    def test_cover_domain_maps_to_open_close_actuator( self ):
         device = _make_device(
             entity_id = 'cover.bedroom_blinds', friendly_name = 'Bedroom Blinds',
         )
         self.assertEqual(
             HassConverter.hass_device_to_entity_type( device ),
-            EntityType.OPEN_CLOSE_SENSOR,
+            EntityType.OPEN_CLOSE_ACTUATOR,
         )
 
     def test_fan_domain_maps_to_ceiling_fan( self ):

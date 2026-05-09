@@ -75,6 +75,8 @@ from hi.simulator.enums import SimEntityType
 from hi.simulator.models import DbSimEntity, SimProfile
 from hi.simulator.services.hass.sim_models import (
     HassColorSmartBulbFields,
+    HassGarageCoverFields,
+    HassGenericCoverFields,
     HassInsteonDimmerLightSwitchFields,
     HassInsteonDualBandLightSwitchFields,
     HassInsteonLightSwitchFields,
@@ -83,6 +85,7 @@ from hi.simulator.services.hass.sim_models import (
     HassInsteonOutletFields,
     HassLockFields,
     HassSmartBulbFields,
+    HassWindowBlindCoverFields,
 )
 from hi.simulator.services.homebox.attachment_catalog import AttachmentTemplate
 from hi.simulator.services.homebox.sim_models import (
@@ -347,6 +350,9 @@ class Command(BaseCommand):
         self._add_hass_smart_bulb(     profile, 'Zoo Smart Bulb' )
         self._add_hass_color_smart_bulb( profile, 'Zoo Color Bulb' )
         self._add_hass_lock(           profile, 'Zoo Lock' )
+        self._add_hass_garage_cover(   profile, 'Zoo Garage' )
+        self._add_hass_window_blind_cover( profile, 'Zoo Blind' )
+        self._add_hass_generic_cover(  profile, 'Zoo Cover' )
         return profile.db_sim_entities.count()
 
     def _build_volume(self, profile: SimProfile) -> int:
@@ -484,6 +490,33 @@ class Command(BaseCommand):
             simulator_id = 'hass',
             fields_class = HassLockFields,
             sim_entity_type = SimEntityType.DOOR_LOCK,
+            fields_kwargs = {'name': name},
+        )
+
+    def _add_hass_garage_cover(self, profile, name):
+        self._create_db_entity(
+            profile = profile,
+            simulator_id = 'hass',
+            fields_class = HassGarageCoverFields,
+            sim_entity_type = SimEntityType.OPEN_CLOSE_ACTUATOR,
+            fields_kwargs = {'name': name},
+        )
+
+    def _add_hass_window_blind_cover(self, profile, name):
+        self._create_db_entity(
+            profile = profile,
+            simulator_id = 'hass',
+            fields_class = HassWindowBlindCoverFields,
+            sim_entity_type = SimEntityType.OPEN_CLOSE_ACTUATOR,
+            fields_kwargs = {'name': name},
+        )
+
+    def _add_hass_generic_cover(self, profile, name):
+        self._create_db_entity(
+            profile = profile,
+            simulator_id = 'hass',
+            fields_class = HassGenericCoverFields,
+            sim_entity_type = SimEntityType.OPEN_CLOSE_ACTUATOR,
             fields_kwargs = {'name': name},
         )
 
