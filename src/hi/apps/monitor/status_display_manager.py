@@ -1,3 +1,4 @@
+import dataclasses
 from cachetools import TTLCache
 from typing import Dict, List, Set, Sequence
 
@@ -468,11 +469,18 @@ class StatusDisplayManager( Singleton, SensorResponseMixin ):
                 sensor_list = sensor_list,
             )
 
+        # Apply overrides via copy: SensorResponseManager
+        # memoizes the response map, so mutating a cached
+        # SensorResponse here would persist the override beyond
+        # its TTL.
         for sensor, sensor_response_list in sensor_to_sensor_response_list.items():
             if ( not sensor_response_list
                  or ( sensor.entity_state.id not in self._status_value_overrides )):
                 continue
-            sensor_response_list[0].value = self._status_value_overrides[sensor.entity_state.id]
+            sensor_response_list[0] = dataclasses.replace(
+                sensor_response_list[0],
+                value = self._status_value_overrides[sensor.entity_state.id],
+            )
             continue
 
         return sensor_to_sensor_response_list
