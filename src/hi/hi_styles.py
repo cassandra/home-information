@@ -487,6 +487,43 @@ class StatusStyle:
         fill_color = STATUS_OK_COLOR,
         fill_opacity = 0.15,
     )
+    # Smoke alarm reuses the movement / open-close ``active`` /
+    # ``recent`` / ``past`` / ``idle`` status_value vocabulary so
+    # the existing g[status="…"] / div[status="…"] CSS rules
+    # apply unchanged. The state-type-specific labeling lives in
+    # the ``EntityStateValue`` enum, not the SVG status attribute.
+    SmokeDetected = SvgStatusStyle(
+        status_value = 'active',
+        stroke_color = STATUS_ACTIVE_COLOR,
+        stroke_width = DEFAULT_STROKE_WIDTH,
+        stroke_dasharray = DEFAULT_STROKE_DASHARRAY,
+        fill_color = STATUS_ACTIVE_COLOR,
+        fill_opacity = 0.5,
+    )
+    SmokeRecent = SvgStatusStyle(
+        status_value = 'recent',
+        stroke_color = STATUS_RECENT_COLOR,
+        stroke_width = DEFAULT_STROKE_WIDTH,
+        stroke_dasharray = DEFAULT_STROKE_DASHARRAY,
+        fill_color = STATUS_RECENT_COLOR,
+        fill_opacity = 0.5,
+    )
+    SmokePast = SvgStatusStyle(
+        status_value = 'past',
+        stroke_color = STATUS_PAST_COLOR,
+        stroke_width = DEFAULT_STROKE_WIDTH,
+        stroke_dasharray = DEFAULT_STROKE_DASHARRAY,
+        fill_color = STATUS_PAST_COLOR,
+        fill_opacity = 0.5,
+    )
+    SmokeClear = SvgStatusStyle(
+        status_value = 'idle',
+        stroke_color = STATUS_OK_COLOR,
+        stroke_width = DEFAULT_STROKE_WIDTH,
+        stroke_dasharray = DEFAULT_STROKE_DASHARRAY,
+        fill_color = STATUS_OK_COLOR,
+        fill_opacity = 0.15,
+    )
     On = SvgStatusStyle(
         status_value = 'on',
         stroke_color = 'yellow',

@@ -204,6 +204,9 @@ class EntityStateValue(LabeledEnum):
     HIGH           = ( 'High', '' )
     LOW            = ( 'Low', '' )
 
+    SMOKE_DETECTED = ( 'Smoke Detected', '' )
+    SMOKE_CLEAR    = ( 'Clear', '' )
+
     # COLOR_MODE values — modes a smart bulb can be in. UNKNOWN
     # covers integrations that don't report a mode and cases where
     # the bulb hasn't yet declared one. Names follow HA's modes;
@@ -314,6 +317,9 @@ class EntityStateType(LabeledEnum):
                            EntityStateValue.IDLE ] )
     SATURATION       = ( 'Saturation'       , 'Color saturation as a percentage (0-100)',
                          [] )
+    SMOKE            = ( 'Smoke'            , '',
+                         [ EntityStateValue.SMOKE_DETECTED,
+                           EntityStateValue.SMOKE_CLEAR ] )
     SOUND_LEVEL      = ( 'Sound Level'      , '',
                          [] )
     TEMPERATURE      = ( 'Temperature'      , '',

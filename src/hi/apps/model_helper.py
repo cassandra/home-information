@@ -210,6 +210,20 @@ class HiModelHelper:
         )
 
     @classmethod
+    def create_smoke_sensor( cls,
+                             entity              : Entity,
+                             integration_key     : IntegrationKey  = None,
+                             name                : str             = None ) -> Sensor:
+        if not name:
+            name = f'{entity.name} Smoke'
+        return cls.create_sensor(
+            entity = entity,
+            entity_state_type = EntityStateType.SMOKE,
+            name = name,
+            integration_key = integration_key,
+        )
+
+    @classmethod
     def create_on_off_controller( cls,
                                   entity           : Entity,
                                   integration_key  : IntegrationKey  = None,

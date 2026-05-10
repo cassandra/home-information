@@ -239,6 +239,7 @@ class HassConverter:
         (HassApi.BINARY_SENSOR_DOMAIN, HassApi.DOOR_DEVICE_CLASS, None): EntityStateType.OPEN_CLOSE,
         (HassApi.BINARY_SENSOR_DOMAIN, HassApi.GARAGE_DOOR_DEVICE_CLASS, None): EntityStateType.OPEN_CLOSE,
         (HassApi.BINARY_SENSOR_DOMAIN, HassApi.WINDOW_DEVICE_CLASS, None): EntityStateType.OPEN_CLOSE,
+        (HassApi.BINARY_SENSOR_DOMAIN, HassApi.SMOKE_DEVICE_CLASS, None): EntityStateType.SMOKE,
         (HassApi.BINARY_SENSOR_DOMAIN, None, None): EntityStateType.ON_OFF,  # Generic binary sensor
         
         # Sensor Domain (read-only sensors)
@@ -1695,6 +1696,12 @@ class HassConverter:
                 integration_key = integration_key,
                 name = name,
             )
+        elif entity_state_type == EntityStateType.SMOKE:
+            sensor = HiModelHelper.create_smoke_sensor(
+                entity = entity,
+                integration_key = integration_key,
+                name = name,
+            )
         else:
             # Default fallback
             sensor = HiModelHelper.create_blob_sensor(
@@ -1828,6 +1835,12 @@ class HassConverter:
                 integration_key = integration_key,
                 name = name,
             )
+        elif entity_state_type == EntityStateType.SMOKE:
+            sensor = HiModelHelper.create_smoke_sensor(
+                entity = entity,
+                integration_key = integration_key,
+                name = name,
+            )
         else:
             # Default fallback
             sensor = HiModelHelper.create_blob_sensor(
@@ -1954,6 +1967,8 @@ class HassConverter:
             return EntityType.OPEN_CLOSE_SENSOR
         if HassApi.MOTION_DEVICE_CLASS in device_class_set:
             return EntityType.MOTION_SENSOR
+        if HassApi.SMOKE_DEVICE_CLASS in device_class_set:
+            return EntityType.SMOKE_DETECTOR
         if ( HassApi.LIGHT_DOMAIN in domain_set
              or HassApi.LIGHT_DEVICE_CLASS in device_class_set ):
             return EntityType.LIGHT
@@ -2152,8 +2167,9 @@ class HassConverter:
     def _binary_sensor_value( cls, hass_state : HassState ) -> Optional[ str ]:
         """Translate HA binary state (on/off) plus device_class to
         the matching HI EntityStateValue: ACTIVE/IDLE for motion,
-        OPEN/CLOSED for doors and peers, CONNECTED/DISCONNECTED
-        for connectivity, LOW/HIGH for battery."""
+        OPEN/CLOSED for doors and peers, SMOKE_DETECTED/SMOKE_CLEAR
+        for smoke, CONNECTED/DISCONNECTED for connectivity,
+        LOW/HIGH for battery."""
         sv = hass_state.state_value.lower()
         dc = hass_state.device_class
         if sv == HassStateValue.ON:
@@ -2163,6 +2179,8 @@ class HassConverter:
                 return str( EntityStateValue.LOW )
             if dc in HassApi.OPEN_CLOSE_DEVICE_CLASS_SET:
                 return str( EntityStateValue.OPEN )
+            if dc == HassApi.SMOKE_DEVICE_CLASS:
+                return str( EntityStateValue.SMOKE_DETECTED )
             if dc == HassApi.CONNECTIVITY_DEVICE_CLASS:
                 return str( EntityStateValue.CONNECTED )
             return str( EntityStateValue.ON )
@@ -2173,6 +2191,8 @@ class HassConverter:
                 return str( EntityStateValue.HIGH )
             if dc in HassApi.OPEN_CLOSE_DEVICE_CLASS_SET:
                 return str( EntityStateValue.CLOSED )
+            if dc == HassApi.SMOKE_DEVICE_CLASS:
+                return str( EntityStateValue.SMOKE_CLEAR )
             if dc == HassApi.CONNECTIVITY_DEVICE_CLASS:
                 return str( EntityStateValue.DISCONNECTED )
             return str( EntityStateValue.OFF )
