@@ -274,14 +274,48 @@ class TestFanImport(TestCase):
             hass_device=device,
             add_alarm_events=False,
         )
-        types_by_name = {
-            es.name.split( ' ' )[ -1 ]: es.entity_state_type
-            for es in EntityState.objects.filter( entity=entity )
+        # Index by the integration-payload's substate suffix (the
+        # stable contract) rather than by parsing the EntityState's
+        # display label, which is presentational and could change.
+        types_by_suffix = {
+            ctrl.integration_payload.get( 'substate' ): ctrl.entity_state.entity_state_type
+            for ctrl in Controller.objects.filter( entity_state__entity=entity )
         }
-        self.assertEqual( types_by_name[ 'Speed' ], EntityStateType.POWER_LEVEL )
-        self.assertEqual( types_by_name[ 'Oscillation' ], EntityStateType.ON_OFF )
-        self.assertEqual( types_by_name[ 'Direction' ], EntityStateType.DISCRETE )
-        self.assertEqual( types_by_name[ 'Preset' ], EntityStateType.DISCRETE )
+        self.assertEqual( types_by_suffix[ 'speed' ], EntityStateType.POWER_LEVEL )
+        self.assertEqual( types_by_suffix[ 'oscillating' ], EntityStateType.ON_OFF )
+        self.assertEqual( types_by_suffix[ 'direction' ], EntityStateType.DISCRETE )
+        self.assertEqual( types_by_suffix[ 'preset' ], EntityStateType.DISCRETE )
+
+
+class TestFanOutboundDispatchSpeedOnly(TestCase):
+    """Single-state speed-only fans take a different outbound
+    path than multi-feature fans: their domain_payload has no
+    ``substate`` field, so dispatch flows through
+    ``_payload_driven_service_call`` to the
+    ``HassServiceComposer.for_numeric_parameter`` percentage
+    branch. This is distinct from the substate-dispatch path
+    exercised by ``TestFanOutboundDispatch``."""
+
+    def test_numeric_routes_to_set_percentage(self):
+        payload = {
+            'domain': HassApi.FAN_DOMAIN,
+            'is_controllable': True,
+            'on_service': HassApi.TURN_ON_SERVICE,
+            'off_service': HassApi.TURN_OFF_SERVICE,
+            'set_service': HassApi.SET_PERCENTAGE_SERVICE,
+            'parameters': { 'percentage': 'percentage' },
+        }
+        call = HassConverter.hi_value_to_hass_service_call(
+            hass_substate_id='fan.zoo_fan',
+            hi_control_value='42',
+            domain_payload=payload,
+        )
+        self.assertEqual( call, HassServiceCall(
+            domain=HassApi.FAN_DOMAIN,
+            service=HassApi.SET_PERCENTAGE_SERVICE,
+            hass_entity_id='fan.zoo_fan',
+            service_data={ 'percentage': 42 },
+        ))
 
 
 class TestFanOutboundDispatch(TestCase):

@@ -317,3 +317,60 @@ class TestForColor(TestCase):
         self.assertEqual(result.service_data, {'hs_color': [180.0, 75.0]})
         self.assertEqual(result.service, 'turn_on')
         self.assertEqual(result.hass_entity_id, 'light.x')
+
+
+class TestFanAxisComposers(TestCase):
+
+    def test_for_percentage_valid(self):
+        result = HassServiceComposer.for_percentage(
+            domain='fan', hass_substate_id='fan.x',
+            percentage=42, domain_payload={'set_service': 'set_percentage'},
+        )
+        self.assertEqual(result.service, 'set_percentage')
+        self.assertEqual(result.service_data, {'percentage': 42})
+
+    def test_for_percentage_out_of_range_raises(self):
+        with self.assertRaises(ValueError):
+            HassServiceComposer.for_percentage(
+                domain='fan', hass_substate_id='fan.x',
+                percentage=120, domain_payload={'set_service': 'set_percentage'},
+            )
+
+    def test_for_oscillating_true(self):
+        result = HassServiceComposer.for_oscillating(
+            domain='fan', hass_substate_id='fan.x', oscillating=True,
+        )
+        self.assertEqual(result.service, 'oscillate')
+        self.assertEqual(result.service_data, {'oscillating': True})
+
+    def test_for_oscillating_false(self):
+        result = HassServiceComposer.for_oscillating(
+            domain='fan', hass_substate_id='fan.x', oscillating=False,
+        )
+        self.assertEqual(result.service_data, {'oscillating': False})
+
+    def test_for_direction_valid(self):
+        result = HassServiceComposer.for_direction(
+            domain='fan', hass_substate_id='fan.x', direction='reverse',
+        )
+        self.assertEqual(result.service, 'set_direction')
+        self.assertEqual(result.service_data, {'direction': 'reverse'})
+
+    def test_for_direction_invalid_raises(self):
+        with self.assertRaises(ValueError):
+            HassServiceComposer.for_direction(
+                domain='fan', hass_substate_id='fan.x', direction='upward',
+            )
+
+    def test_for_preset_mode_valid(self):
+        result = HassServiceComposer.for_preset_mode(
+            domain='fan', hass_substate_id='fan.x', preset_mode='sleep',
+        )
+        self.assertEqual(result.service, 'set_preset_mode')
+        self.assertEqual(result.service_data, {'preset_mode': 'sleep'})
+
+    def test_for_preset_mode_empty_raises(self):
+        with self.assertRaises(ValueError):
+            HassServiceComposer.for_preset_mode(
+                domain='fan', hass_substate_id='fan.x', preset_mode='',
+            )
