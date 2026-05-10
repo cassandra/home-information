@@ -1841,6 +1841,12 @@ class HassConverter:
                 integration_key = integration_key,
                 name = name,
             )
+            if add_alarm_events:
+                HiModelHelper.create_smoke_event_definition(
+                    name = f'{sensor.name} Alarm',
+                    entity_state = sensor.entity_state,
+                    integration_key = integration_key,
+                )
         else:
             # Default fallback
             sensor = HiModelHelper.create_blob_sensor(
@@ -1848,7 +1854,7 @@ class HassConverter:
                 integration_key = integration_key,
                 name = name,
             )
-        
+
         # Store domain payload for sensors
         sensor.integration_payload = domain_payload
         sensor.save()

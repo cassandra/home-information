@@ -6,7 +6,9 @@ from hi.apps.entity.enums import (
     EntityStateType, EntityStateValue, EntityType,
 )
 from hi.apps.entity.models import EntityState
+from hi.apps.event.models import EventDefinition
 from hi.services.hass.hass_converter import HassConverter
+from hi.services.hass.hass_metadata import HassMetaData
 from hi.services.hass.hass_models import HassDevice
 
 logging.disable(logging.CRITICAL)
@@ -94,6 +96,22 @@ class TestSmokeBinarySensor(TestCase):
             hass_device = device, add_alarm_events = False,
         )
         self.assertEqual( entity.entity_type, EntityType.SMOKE_DETECTOR )
+
+    def test_smoke_creates_alarm_event_definition(self):
+        # Smoke is safety-critical and warrants its own alarm rule —
+        # mirrors the door/window OPEN_CLOSE and motion MOVEMENT
+        # branches that wire ``create_*_event_definition`` when
+        # ``add_alarm_events=True``.
+        device, _ = _build_binary_sensor_device(
+            'kitchen_smoke', device_class = 'smoke',
+        )
+        HassConverter.create_models_for_hass_device(
+            hass_device = device, add_alarm_events = True,
+        )
+        hass_event_defs = EventDefinition.objects.filter(
+            integration_id = HassMetaData.integration_id,
+        )
+        self.assertEqual( hass_event_defs.count(), 1 )
 
 
 class TestDoorWindowBinarySensor(TestCase):
