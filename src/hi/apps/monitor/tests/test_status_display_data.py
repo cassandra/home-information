@@ -198,6 +198,93 @@ class TestStatusDisplayData(BaseTestCase):
         
         self.assertEqual(display_data.svg_status_style, StatusStyle.MovementIdle)
 
+    # SMOKE State Type Tests with Time Thresholds
+    #
+    # Mirrors the movement decay pattern but with longer thresholds
+    # (10 min recent / 30 min past) since fire events have higher
+    # operator significance and the visual reminder should linger.
+
+    @patch('hi.apps.common.datetimeproxy.now')
+    def test_smoke_state_detected_returns_smoke_detected(self, mock_now):
+        mock_now.return_value = datetime(2023, 1, 1, 12, 0, 0)
+
+        sensor_response = self._create_mock_sensor_response(
+            str(EntityStateValue.SMOKE_DETECTED)
+        )
+        status_data = self._create_entity_state_status_data('SMOKE', [sensor_response])
+
+        display_data = StatusDisplayData(status_data)
+
+        self.assertEqual(display_data.svg_status_style, StatusStyle.SmokeDetected)
+
+    @patch('hi.apps.common.datetimeproxy.now')
+    def test_smoke_state_recent_within_threshold(self, mock_now):
+        # Penultimate detected 5 minutes ago (within the 10-minute
+        # RECENT threshold); current is clear.
+        base_time = datetime(2023, 1, 1, 12, 0, 0)
+        mock_now.return_value = base_time
+
+        recent_response = self._create_mock_sensor_response(
+            str(EntityStateValue.SMOKE_CLEAR), base_time,
+        )
+        past_response = self._create_mock_sensor_response(
+            str(EntityStateValue.SMOKE_DETECTED),
+            base_time - timedelta(seconds=300),
+        )
+
+        status_data = self._create_entity_state_status_data(
+            'SMOKE', [recent_response, past_response],
+        )
+
+        display_data = StatusDisplayData(status_data)
+
+        self.assertEqual(display_data.svg_status_style, StatusStyle.SmokeRecent)
+
+    @patch('hi.apps.common.datetimeproxy.now')
+    def test_smoke_state_past_beyond_recent_within_past(self, mock_now):
+        # Penultimate detected 20 minutes ago (between RECENT 10
+        # min and PAST 30 min thresholds).
+        base_time = datetime(2023, 1, 1, 12, 0, 0)
+        mock_now.return_value = base_time
+
+        recent_response = self._create_mock_sensor_response(
+            str(EntityStateValue.SMOKE_CLEAR), base_time,
+        )
+        past_response = self._create_mock_sensor_response(
+            str(EntityStateValue.SMOKE_DETECTED),
+            base_time - timedelta(seconds=1200),
+        )
+
+        status_data = self._create_entity_state_status_data(
+            'SMOKE', [recent_response, past_response],
+        )
+
+        display_data = StatusDisplayData(status_data)
+
+        self.assertEqual(display_data.svg_status_style, StatusStyle.SmokePast)
+
+    @patch('hi.apps.common.datetimeproxy.now')
+    def test_smoke_state_clear_after_past_threshold(self, mock_now):
+        # Penultimate detected 1 hour ago (beyond PAST 30 min).
+        base_time = datetime(2023, 1, 1, 12, 0, 0)
+        mock_now.return_value = base_time
+
+        recent_response = self._create_mock_sensor_response(
+            str(EntityStateValue.SMOKE_CLEAR), base_time,
+        )
+        past_response = self._create_mock_sensor_response(
+            str(EntityStateValue.SMOKE_DETECTED),
+            base_time - timedelta(seconds=3600),
+        )
+
+        status_data = self._create_entity_state_status_data(
+            'SMOKE', [recent_response, past_response],
+        )
+
+        display_data = StatusDisplayData(status_data)
+
+        self.assertEqual(display_data.svg_status_style, StatusStyle.SmokeClear)
+
     # PRESENCE State Type Tests (similar to movement)
     
     @patch('hi.apps.common.datetimeproxy.now')
