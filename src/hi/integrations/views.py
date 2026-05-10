@@ -26,6 +26,7 @@ from .enums import IntegrationDisableMode
 from .exceptions import IntegrationConnectionError
 from .integration_attribute_edit_context import IntegrationAttributeItemEditContext
 from .integration_manager import IntegrationManager
+from .integration_metadata_cache import IntegrationMetadataCache
 from .models import IntegrationAttribute
 from .sync_check import IntegrationSyncCheck
 from .view_mixins import IntegrationPlacementViewMixin, IntegrationViewMixin
@@ -202,10 +203,21 @@ class IntegrationSyncView( HiModalView, IntegrationViewMixin ):
             request.POST.get( 'preserve_user_data', 'true' ),
         )
 
-        sync_result = synchronizer.sync(
-            is_initial_import = is_initial_import,
-            preserve_user_data = preserve_user_data,
-        )
+        try:
+            sync_result = synchronizer.sync(
+                is_initial_import = is_initial_import,
+                preserve_user_data = preserve_user_data,
+            )
+        finally:
+            # Drop any cached metadata pinned by a poll that raced
+            # this sync — most importantly, the ``{'units': None}``
+            # negative entries that ``_lazy_fill`` caches on miss.
+            # Without this, the first poll for a newly-imported
+            # unit-bearing EntityState can lock in a bad entry for
+            # the process lifetime, showing raw (unconverted) values
+            # in the UI until the server restarts. ``finally`` so a
+            # partial-commit failure during sync also flushes.
+            IntegrationMetadataCache().invalidate()
 
         # Scope the placement to just the entities this sync created.
         # Without scoping, the placement's GET endpoint queries every
@@ -555,10 +567,17 @@ class IntegrationDisableView( HiModalView, IntegrationViewMixin ):
     def post(self, request, *args, **kwargs):
         integration_data = self._get_validated_integration_data( kwargs )
         mode = IntegrationDisableMode.from_name_safe( request.POST.get('mode', '') )
-        IntegrationManager().disable_integration(
-            integration_data = integration_data,
-            mode = mode,
-        )
+        try:
+            IntegrationManager().disable_integration(
+                integration_data = integration_data,
+                mode = mode,
+            )
+        finally:
+            # Disable removes EntityStates whose ``integration_key``s
+            # may still be cached; invalidate so subsequent reads
+            # don't return stale entries that reference deleted
+            # rows. Symmetric with the post-sync invalidation.
+            IntegrationMetadataCache().invalidate()
         redirect_url = reverse( 'integrations_home' )
         return self.redirect_response( request, redirect_url )
 

@@ -20,9 +20,8 @@ def _seed_cache_entry( integration_key, units ):
 
 
 def _reset_cache():
-    cache = IntegrationMetadataCache()
-    cache._cache.clear()
-    cache._warmed = False
+    # Singleton cache state must not leak across tests.
+    IntegrationMetadataCache().invalidate()
 
 
 class TestToEntityStateValue(TestCase):

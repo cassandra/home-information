@@ -34,8 +34,8 @@ def _make_entity_with_sensor( integration_key, units = None ):
 
 
 def _reset_cache():
-    IntegrationMetadataCache()._cache.clear()
-    IntegrationMetadataCache()._warmed = False
+    # Singleton cache state must not leak across tests.
+    IntegrationMetadataCache().invalidate()
 
 
 class TestIntegrationMetadataCache(TestCase):
@@ -119,6 +119,42 @@ class TestIntegrationMetadataCache(TestCase):
         self.assertEqual( second, { 'units': None } )
         # Second call must not have re-queried Sensor.objects.
         mock_sensor_objects.select_related.assert_not_called()
+
+    def test_invalidate_drops_stale_negative_entry_and_re_warms(self):
+        # Reproduces the import-vs-poll race: a poll cached a
+        # ``{'units': None}`` miss for a key the DB doesn't yet
+        # have a row for; later the import commits the row with
+        # real units. Without ``invalidate``, the bad entry sticks
+        # for the process lifetime and HI shows raw (unconverted)
+        # values for the new sensor. ``invalidate`` (called from
+        # the integration sync view post-sync) flushes the cache;
+        # the next ``get_entry`` re-warms from the now-current DB.
+        racy_key = IntegrationKey(
+            integration_id = 'hass',
+            integration_name = 'sensor.zoo_thermometer',
+        )
+        # Pre-sync poll: row absent → negative entry pinned.
+        self.assertEqual(
+            IntegrationMetadataCache().get_entry( racy_key ),
+            { 'units': None },
+        )
+        # Sync commits the row with real units.
+        _make_entity_with_sensor( racy_key, units = '°C' )
+        # Without invalidate, the cached miss would shadow it.
+        self.assertEqual(
+            IntegrationMetadataCache()._cache.get( racy_key ),
+            { 'units': None },
+        )
+
+        IntegrationMetadataCache().invalidate()
+
+        self.assertFalse( IntegrationMetadataCache()._warmed )
+        self.assertEqual( IntegrationMetadataCache()._cache, {} )
+        # Next read warms from the now-consistent DB.
+        self.assertEqual(
+            IntegrationMetadataCache().get_entry( racy_key ),
+            { 'units': '°C' },
+        )
 
     def test_divergent_sensor_controller_keeps_sensor_entry(self):
         # Sensor and Controller with the same integration_key but
