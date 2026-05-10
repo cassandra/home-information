@@ -30,6 +30,8 @@ from .sim_models import (
     HassColorSmartBulbFields,
     HassMultiFeatureFanFields,
     HassMultiFeatureFanPercentageState,
+    HassThermostatFields,
+    HassThermostatHvacModeState,
 )
 
 
@@ -128,6 +130,60 @@ class HassApiComposer:
         primary_dict[ 'attributes' ] = merged_attrs
         return [ primary_dict ]
 
+    @staticmethod
+    def _thermostat( sim_states : List[ SimState ] ) -> List[ Dict ]:
+        """Compose a thermostat's substate SimStates into ONE HA
+        ``climate.x`` entity. The HVAC-mode SimState carries the
+        primary state (HA climate's ``state`` field is the active
+        hvac_mode). Setpoint shape varies with the active mode:
+        ``heat_cool`` emits ``target_temp_low`` /
+        ``target_temp_high``, every other mode emits a single
+        ``temperature``. Real HA thermostats behave the same way."""
+        primary_dict = None
+        merged_attrs : Dict = {}
+        active_mode = None
+        partials : Dict = {}
+        temperature_unit = None
+        for state in sim_states:
+            api_dict = state.to_api_dict()
+            if isinstance( state, HassThermostatHvacModeState ):
+                primary_dict = dict( api_dict )
+                active_mode = state.value
+            merged_attrs.update( api_dict.get( 'attributes', {} ) )
+            sim_entity_fields = getattr( state, 'sim_entity_fields', None )
+            if isinstance( sim_entity_fields, HassThermostatFields ):
+                temperature_unit = sim_entity_fields.temperature_unit
+            continue
+
+        # Lift partial setpoint contributions into the active-mode
+        # shape; drop the partial markers either way so they don't
+        # leak into the emitted attributes.
+        for partial_key in (
+                '_partial_target_temperature',
+                '_partial_target_temp_low',
+                '_partial_target_temp_high',
+        ):
+            if partial_key in merged_attrs:
+                partials[ partial_key ] = merged_attrs.pop( partial_key )
+
+        if active_mode == 'heat_cool':
+            if '_partial_target_temp_low' in partials:
+                merged_attrs[ 'target_temp_low' ] = partials[ '_partial_target_temp_low' ]
+            if '_partial_target_temp_high' in partials:
+                merged_attrs[ 'target_temp_high' ] = partials[ '_partial_target_temp_high' ]
+        else:
+            if '_partial_target_temperature' in partials:
+                merged_attrs[ 'temperature' ] = partials[ '_partial_target_temperature' ]
+
+        if temperature_unit is not None:
+            merged_attrs[ 'temperature_unit' ] = temperature_unit
+
+        if primary_dict is None:
+            return HassApiComposer._default( sim_states )
+
+        primary_dict[ 'attributes' ] = merged_attrs
+        return [ primary_dict ]
+
 
 # Registry built after the class is defined so the classmethod
 # objects exist as references. Keyed off SimEntityFields class so
@@ -135,4 +191,5 @@ class HassApiComposer:
 HassApiComposer._REGISTRY = {
     HassColorSmartBulbFields: HassApiComposer._color_smart_bulb,
     HassMultiFeatureFanFields: HassApiComposer._multi_feature_fan,
+    HassThermostatFields: HassApiComposer._thermostat,
 }

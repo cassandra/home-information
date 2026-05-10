@@ -1082,6 +1082,8 @@ class HassConverter:
             return cls._light_substate_specs( hass_state )
         if hass_state.domain == HassApi.FAN_DOMAIN:
             return cls._fan_substate_specs( hass_state )
+        if hass_state.domain == HassApi.CLIMATE_DOMAIN:
+            return cls._climate_substate_specs( hass_state )
         return []
 
     @classmethod
@@ -1190,6 +1192,93 @@ class HassConverter:
             ))
         return specs
 
+    # HA's well-known set of HVAC action values (what the system
+    # is currently doing). Used as the value range of the
+    # ``hvac_action`` substate so the controller widget displays
+    # human-friendly labels even though the substate is
+    # sensor-only (read from HA, not operator-set).
+    _HVAC_ACTION_CHOICES = {
+        'heating'     : 'Heating',
+        'cooling'     : 'Cooling',
+        'drying'      : 'Drying',
+        'fan'         : 'Fan',
+        'idle'        : 'Idle',
+        'off'         : 'Off',
+        'preheating'  : 'Preheating',
+        'defrosting'  : 'Defrosting',
+    }
+
+    @classmethod
+    def _climate_substate_specs(
+            cls, hass_state: HassState ) -> List[ '_SubstateSpec' ]:
+        """Substates implied by a HA ``climate.x`` state. A climate
+        entity that declares ``hvac_modes`` always decomposes:
+        current_temperature (sensor), hvac_mode (controller from
+        the declared modes list), hvac_action (sensor), plus a
+        setpoint substate set chosen from the supported modes —
+        single ``target_temperature`` for any single-mode
+        operation (heat/cool/off/etc.), low+high pair for
+        ``heat_cool`` mode. Climate entities lacking
+        ``hvac_modes`` fall through to the bare-key TEMPERATURE
+        mapping for backward compatibility."""
+        attrs = hass_state.attributes
+        hvac_modes = attrs.get( 'hvac_modes' )
+        if not isinstance( hvac_modes, list ) or not hvac_modes:
+            return []
+
+        specs = [
+            cls._SubstateSpec(
+                suffix = 'current_temperature',
+                entity_state_type = EntityStateType.TEMPERATURE,
+                is_controllable = False,
+                label = 'Current Temperature',
+            ),
+            cls._SubstateSpec(
+                suffix = 'hvac_mode',
+                entity_state_type = EntityStateType.DISCRETE,
+                is_controllable = True,
+                value_range = { mode: mode for mode in hvac_modes },
+                label = 'HVAC Mode',
+            ),
+            cls._SubstateSpec(
+                suffix = 'hvac_action',
+                entity_state_type = EntityStateType.DISCRETE,
+                is_controllable = False,
+                value_range = dict( cls._HVAC_ACTION_CHOICES ),
+                label = 'HVAC Action',
+            ),
+        ]
+
+        # Setpoint substates: any non-heat_cool mode (heat / cool /
+        # off / dry / fan_only / auto) implies single-setpoint
+        # operation; ``heat_cool`` implies a low/high pair. A
+        # thermostat that supports both creates all three —
+        # which one carries a value at runtime depends on the
+        # active hvac_mode.
+        has_single_mode = any( m != 'heat_cool' for m in hvac_modes )
+        has_dual_mode = 'heat_cool' in hvac_modes
+        if has_single_mode:
+            specs.append( cls._SubstateSpec(
+                suffix = 'target_temperature',
+                entity_state_type = EntityStateType.TEMPERATURE,
+                is_controllable = True,
+                label = 'Setpoint',
+            ))
+        if has_dual_mode:
+            specs.append( cls._SubstateSpec(
+                suffix = 'target_temp_low',
+                entity_state_type = EntityStateType.TEMPERATURE,
+                is_controllable = True,
+                label = 'Setpoint Low',
+            ))
+            specs.append( cls._SubstateSpec(
+                suffix = 'target_temp_high',
+                entity_state_type = EntityStateType.TEMPERATURE,
+                is_controllable = True,
+                label = 'Setpoint High',
+            ))
+        return specs
+
     @classmethod
     def _extract_substate_value(
             cls,
@@ -1204,6 +1293,8 @@ class HassConverter:
             return cls._light_substate_value( hass_state, suffix )
         if hass_state.domain == HassApi.FAN_DOMAIN:
             return cls._fan_substate_value( hass_state, suffix )
+        if hass_state.domain == HassApi.CLIMATE_DOMAIN:
+            return cls._climate_substate_value( hass_state, suffix )
         return None
 
     @classmethod
@@ -1275,6 +1366,44 @@ class HassConverter:
         if suffix == 'preset':
             return attrs.get( 'preset_mode' )
         return None
+
+    @classmethod
+    def _climate_substate_value(
+            cls, hass_state : HassState, suffix : str ) -> Optional[ str ]:
+        """Climate-domain substate values. Temperature substates
+        emit floats as strings; mode/action substates emit HA's
+        wire enum strings. The hvac_mode's value lives on the
+        entity-level ``state`` field (not in attributes), per HA's
+        climate platform contract. Setpoint substates only emit a
+        value when the matching attribute is present in the live
+        state — HA's setpoint shape varies by mode (single
+        ``temperature`` vs ``target_temp_low`` + ``target_temp_high``)
+        and unused setpoints simply aren't reported."""
+        attrs = hass_state.attributes
+        if suffix == 'current_temperature':
+            return cls._numeric_attr_as_str( attrs, 'current_temperature' )
+        if suffix == 'hvac_mode':
+            return hass_state.state_value
+        if suffix == 'hvac_action':
+            return attrs.get( 'hvac_action' )
+        if suffix == 'target_temperature':
+            return cls._numeric_attr_as_str( attrs, 'temperature' )
+        if suffix == 'target_temp_low':
+            return cls._numeric_attr_as_str( attrs, 'target_temp_low' )
+        if suffix == 'target_temp_high':
+            return cls._numeric_attr_as_str( attrs, 'target_temp_high' )
+        return None
+
+    @staticmethod
+    def _numeric_attr_as_str(
+            attrs : Dict, key : str ) -> Optional[ str ]:
+        raw = attrs.get( key )
+        if raw is None:
+            return None
+        try:
+            return str( float( raw ) )
+        except ( TypeError, ValueError ):
+            return None
 
     @classmethod
     def _substate_integration_key(
@@ -1813,6 +1942,8 @@ class HassConverter:
             return cls._cover_to_sensor_value_map( hass_state )
         if domain == HassApi.FAN_DOMAIN:
             return cls._fan_to_sensor_value_map( hass_state )
+        if domain == HassApi.CLIMATE_DOMAIN:
+            return cls._climate_to_sensor_value_map( hass_state )
         return cls._passthrough_to_sensor_value_map( hass_state )
 
     @classmethod
@@ -1991,6 +2122,31 @@ class HassConverter:
         except ( TypeError, ValueError ):
             return {}
         return { cls.hass_state_to_integration_key( hass_state ) : str( percentage ) }
+
+    @classmethod
+    def _climate_to_sensor_value_map(
+            cls, hass_state : HassState ) -> Dict[ IntegrationKey, str ]:
+        """Climate domain: a thermostat that declares
+        ``hvac_modes`` decomposes into substates (current
+        temperature, mode, action, setpoint(s)) — each value
+        lands at its suffix-keyed integration_key. Climate
+        entities lacking ``hvac_modes`` (rare but allowed by
+        HA's contract) fall through to passthrough behavior."""
+        substate_specs = cls._substate_specs_for_hass_state( hass_state )
+        if not substate_specs:
+            return cls._passthrough_to_sensor_value_map( hass_state )
+        result : Dict[ IntegrationKey, str ] = {}
+        for spec in substate_specs:
+            value = cls._extract_substate_value( hass_state, spec.suffix )
+            if value is None:
+                continue
+            substate_key = cls._substate_integration_key(
+                hass_state = hass_state,
+                suffix = spec.suffix,
+            )
+            result[ substate_key ] = value
+            continue
+        return result
 
     @classmethod
     def _passthrough_to_sensor_value_map(

@@ -87,6 +87,7 @@ from hi.simulator.services.hass.sim_models import (
     HassLockFields,
     HassMultiFeatureFanFields,
     HassSmartBulbFields,
+    HassThermostatFields,
     HassWindowBlindCoverFields,
 )
 from hi.simulator.services.homebox.attachment_catalog import AttachmentTemplate
@@ -357,6 +358,12 @@ class Command(BaseCommand):
         self._add_hass_generic_cover(  profile, 'Zoo Cover' )
         self._add_hass_ceiling_fan(    profile, 'Zoo Fan' )
         self._add_hass_multi_feature_fan( profile, 'Zoo Smart Fan' )
+        self._add_hass_thermostat(     profile, 'Zoo Thermostat' )
+        self._add_hass_thermostat(
+            profile, 'Zoo Heater',
+            hvac_modes = [ 'heat', 'off' ],
+            temperature_unit = '°C',
+        )
         return profile.db_sim_entities.count()
 
     def _build_volume(self, profile: SimProfile) -> int:
@@ -540,6 +547,21 @@ class Command(BaseCommand):
             fields_class = HassMultiFeatureFanFields,
             sim_entity_type = SimEntityType.CEILING_FAN,
             fields_kwargs = {'name': name},
+        )
+
+    def _add_hass_thermostat(self, profile, name, hvac_modes=None, temperature_unit='°F'):
+        fields_kwargs = {
+            'name': name,
+            'temperature_unit': temperature_unit,
+        }
+        if hvac_modes is not None:
+            fields_kwargs[ 'hvac_modes' ] = hvac_modes
+        self._create_db_entity(
+            profile = profile,
+            simulator_id = 'hass',
+            fields_class = HassThermostatFields,
+            sim_entity_type = SimEntityType.THERMOSTAT,
+            fields_kwargs = fields_kwargs,
         )
 
     def _add_homebox_item(self, profile, name, **fields_kwargs):

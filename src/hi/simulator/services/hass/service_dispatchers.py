@@ -35,6 +35,7 @@ from .sim_models import (
     HassGenericCoverFields,
     HassLockFields,
     HassMultiFeatureFanFields,
+    HassThermostatFields,
     HassWindowBlindCoverFields,
 )
 
@@ -292,6 +293,42 @@ class HassServiceDispatcher:
         return []
 
     @staticmethod
+    def _thermostat( sim_entity,
+                     domain   : str,
+                     service  : str,
+                     payload  : Dict[ str, Any ],
+                     ) -> List[ Tuple[ str, str ] ]:
+        """Thermostat: routes ``set_temperature`` (with ``temperature``
+        / ``target_temp_low`` / ``target_temp_high``) and
+        ``set_hvac_mode`` to the matching SimStates. HA's
+        ``set_temperature`` service accepts either a single
+        ``temperature`` or the low/high pair depending on the
+        thermostat's active mode — the dispatcher applies whatever
+        the payload carries."""
+        if domain != 'climate':
+            return []
+        updates : List[ Tuple[ str, str ] ] = []
+        if service == 'set_temperature':
+            for key, sim_state_id in (
+                    ( 'temperature', 'target_temperature' ),
+                    ( 'target_temp_low', 'target_temp_low' ),
+                    ( 'target_temp_high', 'target_temp_high' ),
+            ):
+                if key in payload:
+                    try:
+                        numeric = float( payload[ key ] )
+                    except ( TypeError, ValueError ):
+                        continue
+                    updates.append( ( sim_state_id, str( numeric ) ) )
+            return updates
+        if service == 'set_hvac_mode':
+            mode = payload.get( 'hvac_mode' )
+            if not mode:
+                return []
+            return [ ( 'hvac_mode', str( mode ) ) ]
+        return []
+
+    @staticmethod
     def _extract_percentage_value_str( payload : Dict[ str, Any ] ) -> Optional[ str ]:
         """Read fan ``percentage`` from an HA service-call
         payload as a 0-100 integer string. Returns None when the
@@ -334,5 +371,6 @@ HassServiceDispatcher._REGISTRY = {
     HassGenericCoverFields: HassServiceDispatcher._discrete_cover,
     HassLockFields: HassServiceDispatcher._lock,
     HassMultiFeatureFanFields: HassServiceDispatcher._multi_feature_fan,
+    HassThermostatFields: HassServiceDispatcher._thermostat,
     HassWindowBlindCoverFields: HassServiceDispatcher._window_blind_cover,
 }
