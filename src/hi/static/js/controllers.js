@@ -28,6 +28,14 @@
     window.Hi = window.Hi || {};
     Hi.controllers = Hi.controllers || {};
 
+    // Sliders the user is actively dragging. Polling-driven value
+    // updates skip these elements so a server refresh mid-drag
+    // doesn't yank the thumb out from under the operator's
+    // fingers. Cleared on pointerup / change so subsequent polls
+    // resume normally — by definition the change-async submit on
+    // release will reconcile the value at that point.
+    const _activeSliders = new WeakSet();
+
     /**
      * Apply a class-name → controller-value map by finding each
      * matching element and updating the appropriate widget
@@ -53,6 +61,9 @@
         if ( tag === 'INPUT' ) {
             const type = element.type;
             if ( type === 'range' || type === 'number' || type === 'text' ) {
+                if ( type === 'range' && _activeSliders.has( element ) ) {
+                    return;
+                }
                 _setIfDifferent( element, 'value', String( value ) );
                 _syncSliderDisplay( element );
                 return;
@@ -178,6 +189,22 @@
             function() {
                 _syncSliderDisplay( this );
             }
+        );
+
+        // Track active drag so polling-driven value updates can
+        // skip sliders the operator is currently manipulating.
+        // Cleared on pointer release and on ``change`` (the
+        // canonical "value committed" signal — covers keyboard
+        // arrow adjustments and drag release alike).
+        $('body').on(
+            'mousedown touchstart',
+            'input[type=range]',
+            function() { _activeSliders.add( this ); }
+        );
+        $('body').on(
+            'mouseup touchend touchcancel change blur',
+            'input[type=range]',
+            function() { _activeSliders.delete( this ); }
         );
     });
 
