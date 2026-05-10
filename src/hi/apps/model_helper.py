@@ -279,6 +279,27 @@ class HiModelHelper:
         )
 
     @classmethod
+    def create_power_level_controller(
+            cls,
+            entity           : Entity,
+            integration_key  : IntegrationKey  = None,
+            name             : str             = None,
+            is_sensed        : bool            = True ) -> Controller:
+        if not name:
+            name = f'{entity.name} Level'
+        # Generic continuous power/intensity/speed 0-100. Per-context
+        # label (e.g., "Speed" for fans) is set by the caller via name.
+        value_range = { 'min': 0, 'max': 100 }
+        return cls.create_controller(
+            entity = entity,
+            entity_state_type = EntityStateType.POWER_LEVEL,
+            name = name,
+            is_sensed = is_sensed,
+            integration_key = integration_key,
+            value_range_str = json.dumps( value_range ),
+        )
+
+    @classmethod
     def create_discrete_controller( cls,
                                     entity           : Entity,
                                     name_label_dict  : Dict[ str, str ],

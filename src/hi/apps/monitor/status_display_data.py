@@ -127,6 +127,9 @@ class StatusDisplayData:
 
         if self.entity_state.entity_state_type == EntityStateType.OPEN_CLOSE_POSITION:
             return self._get_open_close_position_status_style()
+
+        if self.entity_state.entity_state_type == EntityStateType.POWER_LEVEL:
+            return StatusStyle.light_dimmer( self.latest_sensor_value )
         
         if self.entity_state.entity_state_type == EntityStateType.CONNECTIVITY:
             return self._get_connectivity_status_style()

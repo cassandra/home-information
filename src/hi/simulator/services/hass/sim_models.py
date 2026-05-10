@@ -873,6 +873,241 @@ class HassWindowBlindCoverState( HassState ):
         }
 
 
+@dataclass( frozen = True )
+class HassFanFields( SimEntityFields ):
+    """Speed-only fan. Single CONTINUOUS SimState (0-100
+    percentage). The ``state`` property derives ``'on'`` /
+    ``'off'`` from the percentage; ``percentage`` and
+    ``percentage_step`` attributes carry the numeric value and
+    granularity."""
+    pass
+
+
+def _fan_entity_id( name : str ) -> str:
+    suffix = name.lower().replace( ' ', '_' )
+    return f'fan.{suffix}'
+
+
+@dataclass
+class HassFanState( HassState ):
+    sim_entity_fields  : HassFanFields
+    sim_state_type     : SimStateType                  = SimStateType.CONTINUOUS
+    sim_state_id       : str                           = 'percentage'
+    value              : str                           = '0'
+
+    @property
+    def min_value(self):
+        return 0
+
+    @property
+    def max_value(self):
+        return 100
+
+    @property
+    def name(self):
+        return f'{self.entity_name} Speed'
+
+    @property
+    def entity_id(self):
+        return _fan_entity_id( self.entity_name )
+
+    @property
+    def state(self):
+        try:
+            percentage = int( float( self.value ) )
+        except ( TypeError, ValueError ):
+            percentage = 0
+        return 'on' if percentage > 0 else 'off'
+
+    @property
+    def attributes(self) -> Dict[ str, str ]:
+        try:
+            percentage = int( float( self.value ) )
+        except ( TypeError, ValueError ):
+            percentage = 0
+        # 25%-step granularity (low/medium/high/max). Real fans
+        # vary; this is a representative middle-of-the-road shape.
+        return {
+            'friendly_name': self.entity_name,
+            'percentage': percentage,
+            'percentage_step': 25,
+        }
+
+
+@dataclass( frozen = True )
+class HassMultiFeatureFanFields( SimEntityFields ):
+    """A multi-feature ceiling fan: speed plus oscillating,
+    direction, and preset_mode axes. Composed of multiple
+    SimStates collapsed into one HA ``fan.x`` entity at emit
+    time by ``api_composers``. HI imports this as four peer
+    substate EntityStates (~speed, ~oscillating, ~direction,
+    ~preset)."""
+    pass
+
+
+def _multi_feature_fan_entity_id( name : str ) -> str:
+    suffix = name.lower().replace( ' ', '_' )
+    return f'fan.{suffix}'
+
+
+@dataclass
+class HassMultiFeatureFanPercentageState( HassState ):
+    """Speed component (CONTINUOUS, 0-100). Primary state of the
+    composed entity (drives the entity's ``state`` field)."""
+
+    sim_entity_fields  : HassMultiFeatureFanFields
+    sim_state_type     : SimStateType                  = SimStateType.CONTINUOUS
+    sim_state_id       : str                           = 'percentage'
+    value              : str                           = '0'
+
+    @property
+    def min_value(self):
+        return 0
+
+    @property
+    def max_value(self):
+        return 100
+
+    @property
+    def name(self):
+        return f'{self.entity_name} Speed'
+
+    @property
+    def entity_id(self):
+        return _multi_feature_fan_entity_id( self.entity_name )
+
+    @property
+    def state(self):
+        try:
+            percentage = int( float( self.value ) )
+        except ( TypeError, ValueError ):
+            percentage = 0
+        return 'on' if percentage > 0 else 'off'
+
+    @property
+    def attributes(self) -> Dict[ str, str ]:
+        try:
+            percentage = int( float( self.value ) )
+        except ( TypeError, ValueError ):
+            percentage = 0
+        return {
+            'friendly_name': self.entity_name,
+            'percentage': percentage,
+            'percentage_step': 25,
+        }
+
+
+@dataclass
+class HassMultiFeatureFanOscillatingState( HassState ):
+    """Oscillation component (ON_OFF). Composed into the entity's
+    ``oscillating`` attribute as a real Python bool (HA expects
+    bool, not the simulator's internal ``'on'``/``'off'``
+    string)."""
+
+    sim_entity_fields  : HassMultiFeatureFanFields
+    sim_state_type     : SimStateType                  = SimStateType.ON_OFF
+    sim_state_id       : str                           = 'oscillating'
+    value              : str                           = 'off'
+
+    @property
+    def name(self):
+        return f'{self.entity_name} Oscillation'
+
+    @property
+    def entity_id(self):
+        return _multi_feature_fan_entity_id( self.entity_name )
+
+    @property
+    def state(self):
+        # Composer ignores; primary state drives entity-level state.
+        return 'on'
+
+    @property
+    def attributes(self) -> Dict[ str, str ]:
+        return { 'oscillating': str_to_bool( self.value ) }
+
+
+@dataclass
+class HassMultiFeatureFanDirectionState( HassState ):
+    """Direction component (DISCRETE). Two-value enum;
+    contributes the entity's ``direction`` attribute."""
+
+    DIRECTION_CHOICES : ClassVar[ List[ Tuple[ str, str ] ] ] = [
+        ( 'forward', 'Forward' ),
+        ( 'reverse', 'Reverse' ),
+    ]
+
+    sim_entity_fields  : HassMultiFeatureFanFields
+    sim_state_type     : SimStateType                  = SimStateType.DISCRETE
+    sim_state_id       : str                           = 'direction'
+    value              : str                           = 'forward'
+
+    @property
+    def name(self):
+        return f'{self.entity_name} Direction'
+
+    @property
+    def entity_id(self):
+        return _multi_feature_fan_entity_id( self.entity_name )
+
+    @property
+    def state(self):
+        return 'on'
+
+    @property
+    def choices(self) -> List[ Tuple[ str, str ] ]:
+        return self.DIRECTION_CHOICES
+
+    @property
+    def attributes(self) -> Dict[ str, str ]:
+        return { 'direction': self.value }
+
+
+@dataclass
+class HassMultiFeatureFanPresetState( HassState ):
+    """Preset component (DISCRETE). Three representative HA
+    presets — actual fan vendors expose varying lists; the
+    simulator picks a small standard set so HI's import path
+    sees the per-fan ``preset_modes`` declaration without
+    overreaching into vendor-specific ones. Contributes the
+    entity's ``preset_mode`` (current selection) and
+    ``preset_modes`` (available list) attributes."""
+
+    PRESET_CHOICES : ClassVar[ List[ Tuple[ str, str ] ] ] = [
+        ( 'auto', 'Auto' ),
+        ( 'sleep', 'Sleep' ),
+        ( 'eco', 'Eco' ),
+    ]
+
+    sim_entity_fields  : HassMultiFeatureFanFields
+    sim_state_type     : SimStateType                  = SimStateType.DISCRETE
+    sim_state_id       : str                           = 'preset'
+    value              : str                           = 'auto'
+
+    @property
+    def name(self):
+        return f'{self.entity_name} Preset'
+
+    @property
+    def entity_id(self):
+        return _multi_feature_fan_entity_id( self.entity_name )
+
+    @property
+    def state(self):
+        return 'on'
+
+    @property
+    def choices(self) -> List[ Tuple[ str, str ] ]:
+        return self.PRESET_CHOICES
+
+    @property
+    def attributes(self) -> Dict[ str, str ]:
+        return {
+            'preset_mode': self.value,
+            'preset_modes': [ choice for choice, _label in self.PRESET_CHOICES ],
+        }
+
+
 HASS_SIM_ENTITY_DEFINITION_LIST = [
     SimEntityDefinition(
         class_label = 'Insteon Switch',
@@ -984,6 +1219,25 @@ HASS_SIM_ENTITY_DEFINITION_LIST = [
         sim_entity_fields_class = HassGenericCoverFields,
         sim_state_class_list = [
             HassGenericCoverState,
+        ],
+    ),
+    SimEntityDefinition(
+        class_label = 'Fan (speed-only)',
+        sim_entity_type = SimEntityType.CEILING_FAN,
+        sim_entity_fields_class = HassFanFields,
+        sim_state_class_list = [
+            HassFanState,
+        ],
+    ),
+    SimEntityDefinition(
+        class_label = 'Fan (multi-feature)',
+        sim_entity_type = SimEntityType.CEILING_FAN,
+        sim_entity_fields_class = HassMultiFeatureFanFields,
+        sim_state_class_list = [
+            HassMultiFeatureFanPercentageState,
+            HassMultiFeatureFanOscillatingState,
+            HassMultiFeatureFanDirectionState,
+            HassMultiFeatureFanPresetState,
         ],
     ),
 ]

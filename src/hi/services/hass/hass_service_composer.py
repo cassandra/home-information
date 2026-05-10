@@ -182,6 +182,13 @@ class HassServiceComposer:
                 position = numeric_value,
                 domain_payload = domain_payload,
             )
+        if 'percentage' in parameters:
+            return cls.for_percentage(
+                domain = domain,
+                hass_substate_id = hass_substate_id,
+                percentage = numeric_value,
+                domain_payload = domain_payload,
+            )
         if domain_payload.get( 'set_service' ):
             service = domain_payload[ 'set_service' ]
             return HassServiceCall(
@@ -273,6 +280,75 @@ class HassServiceComposer:
             service = service,
             hass_entity_id = hass_substate_id,
             service_data = { 'position': position_pct },
+        )
+
+    @classmethod
+    def for_percentage(
+            cls,
+            domain           : str,
+            hass_substate_id : str,
+            percentage       : float,
+            domain_payload   : dict,
+    ) -> HassServiceCall:
+        percentage_int = int( percentage )
+        if not ( 0 <= percentage_int <= 100 ):
+            raise ValueError(
+                f'Invalid percentage value: {percentage} (must be 0-100)'
+            )
+        service = domain_payload.get( 'set_service', HassApi.SET_PERCENTAGE_SERVICE )
+        return HassServiceCall(
+            domain = domain,
+            service = service,
+            hass_entity_id = hass_substate_id,
+            service_data = { 'percentage': percentage_int },
+        )
+
+    @classmethod
+    def for_oscillating(
+            cls,
+            domain           : str,
+            hass_substate_id : str,
+            oscillating      : bool,
+    ) -> HassServiceCall:
+        return HassServiceCall(
+            domain = domain,
+            service = HassApi.OSCILLATE_SERVICE,
+            hass_entity_id = hass_substate_id,
+            service_data = { 'oscillating': bool( oscillating ) },
+        )
+
+    @classmethod
+    def for_direction(
+            cls,
+            domain           : str,
+            hass_substate_id : str,
+            direction        : str,
+    ) -> HassServiceCall:
+        if direction not in ( 'forward', 'reverse' ):
+            raise ValueError(
+                f'Invalid fan direction: {direction} (must be forward/reverse)'
+            )
+        return HassServiceCall(
+            domain = domain,
+            service = HassApi.SET_DIRECTION_SERVICE,
+            hass_entity_id = hass_substate_id,
+            service_data = { 'direction': direction },
+        )
+
+    @classmethod
+    def for_preset_mode(
+            cls,
+            domain           : str,
+            hass_substate_id : str,
+            preset_mode      : str,
+    ) -> HassServiceCall:
+        if not preset_mode:
+            raise ValueError( 'preset_mode must be a non-empty string' )
+        return HassServiceCall(
+            domain = domain,
+            service = HassApi.SET_PRESET_MODE_SERVICE,
+            hass_entity_id = hass_substate_id,
+            service_data = { 'preset_mode': preset_mode },
         )
 
     @classmethod

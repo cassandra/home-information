@@ -356,6 +356,75 @@ class TestStatusDisplayData(BaseTestCase):
 
         self.assertEqual( display_data.svg_status_style, StatusStyle.Closed )
 
+    # POWER_LEVEL State Type Tests (continuous-percentage controller)
+    # Reuses StatusStyle.light_dimmer for bucketing: <15 off,
+    # 15-84 dim, >=85 on. Verify the bucket boundaries and the
+    # graceful path for malformed values.
+
+    def test_power_level_zero_returns_off_bucket(self):
+        sensor_response = self._create_mock_sensor_response( '0' )
+        status_data = self._create_entity_state_status_data(
+            'POWER_LEVEL', [ sensor_response ],
+        )
+
+        display_data = StatusDisplayData( status_data )
+
+        self.assertEqual( display_data.svg_status_style.status_value, 'off' )
+
+    def test_power_level_low_returns_dim_bucket_at_threshold(self):
+        # 15 is the off→dim boundary.
+        sensor_response = self._create_mock_sensor_response( '15' )
+        status_data = self._create_entity_state_status_data(
+            'POWER_LEVEL', [ sensor_response ],
+        )
+
+        display_data = StatusDisplayData( status_data )
+
+        self.assertEqual( display_data.svg_status_style.status_value, 'dim' )
+
+    def test_power_level_mid_returns_dim_bucket(self):
+        sensor_response = self._create_mock_sensor_response( '50' )
+        status_data = self._create_entity_state_status_data(
+            'POWER_LEVEL', [ sensor_response ],
+        )
+
+        display_data = StatusDisplayData( status_data )
+
+        self.assertEqual( display_data.svg_status_style.status_value, 'dim' )
+
+    def test_power_level_high_returns_on_bucket_at_threshold(self):
+        # 85 is the dim→on boundary.
+        sensor_response = self._create_mock_sensor_response( '85' )
+        status_data = self._create_entity_state_status_data(
+            'POWER_LEVEL', [ sensor_response ],
+        )
+
+        display_data = StatusDisplayData( status_data )
+
+        self.assertEqual( display_data.svg_status_style.status_value, 'on' )
+
+    def test_power_level_full_returns_on_bucket(self):
+        sensor_response = self._create_mock_sensor_response( '100' )
+        status_data = self._create_entity_state_status_data(
+            'POWER_LEVEL', [ sensor_response ],
+        )
+
+        display_data = StatusDisplayData( status_data )
+
+        self.assertEqual( display_data.svg_status_style.status_value, 'on' )
+
+    def test_power_level_non_numeric_falls_to_off_bucket(self):
+        # Defensive: a malformed value shouldn't crash the
+        # display path; treat as off (value=0).
+        sensor_response = self._create_mock_sensor_response( 'garbage' )
+        status_data = self._create_entity_state_status_data(
+            'POWER_LEVEL', [ sensor_response ],
+        )
+
+        display_data = StatusDisplayData( status_data )
+
+        self.assertEqual( display_data.svg_status_style.status_value, 'off' )
+
     # Edge Cases and Default Behavior Tests
     
     def test_no_sensor_data_returns_default_style(self):

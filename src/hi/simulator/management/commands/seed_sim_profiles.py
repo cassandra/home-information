@@ -75,6 +75,7 @@ from hi.simulator.enums import SimEntityType
 from hi.simulator.models import DbSimEntity, SimProfile
 from hi.simulator.services.hass.sim_models import (
     HassColorSmartBulbFields,
+    HassFanFields,
     HassGarageCoverFields,
     HassGenericCoverFields,
     HassInsteonDimmerLightSwitchFields,
@@ -84,6 +85,7 @@ from hi.simulator.services.hass.sim_models import (
     HassInsteonOpenCloseSensorFields,
     HassInsteonOutletFields,
     HassLockFields,
+    HassMultiFeatureFanFields,
     HassSmartBulbFields,
     HassWindowBlindCoverFields,
 )
@@ -353,6 +355,8 @@ class Command(BaseCommand):
         self._add_hass_garage_cover(   profile, 'Zoo Garage' )
         self._add_hass_window_blind_cover( profile, 'Zoo Blind' )
         self._add_hass_generic_cover(  profile, 'Zoo Cover' )
+        self._add_hass_ceiling_fan(    profile, 'Zoo Fan' )
+        self._add_hass_multi_feature_fan( profile, 'Zoo Smart Fan' )
         return profile.db_sim_entities.count()
 
     def _build_volume(self, profile: SimProfile) -> int:
@@ -517,6 +521,24 @@ class Command(BaseCommand):
             simulator_id = 'hass',
             fields_class = HassGenericCoverFields,
             sim_entity_type = SimEntityType.OPEN_CLOSE_ACTUATOR,
+            fields_kwargs = {'name': name},
+        )
+
+    def _add_hass_ceiling_fan(self, profile, name):
+        self._create_db_entity(
+            profile = profile,
+            simulator_id = 'hass',
+            fields_class = HassFanFields,
+            sim_entity_type = SimEntityType.CEILING_FAN,
+            fields_kwargs = {'name': name},
+        )
+
+    def _add_hass_multi_feature_fan(self, profile, name):
+        self._create_db_entity(
+            profile = profile,
+            simulator_id = 'hass',
+            fields_class = HassMultiFeatureFanFields,
+            sim_entity_type = SimEntityType.CEILING_FAN,
             fields_kwargs = {'name': name},
         )
 

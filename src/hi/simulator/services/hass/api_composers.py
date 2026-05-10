@@ -28,6 +28,8 @@ from .sim_models import (
     HassColorSmartBulbBrightnessState,
     HassColorSmartBulbColorModeState,
     HassColorSmartBulbFields,
+    HassMultiFeatureFanFields,
+    HassMultiFeatureFanPercentageState,
 )
 
 
@@ -104,10 +106,33 @@ class HassApiComposer:
         primary_dict[ 'attributes' ] = merged_attrs
         return [ primary_dict ]
 
+    @staticmethod
+    def _multi_feature_fan( sim_states : List[ SimState ] ) -> List[ Dict ]:
+        """Compose a multi-feature fan's percentage / oscillating /
+        direction / preset SimStates into ONE HA ``fan.x`` entity.
+        Percentage is the primary state (drives the entity's
+        ``state`` field on/off); the others contribute attributes
+        only."""
+        primary_dict = None
+        merged_attrs : Dict = {}
+        for state in sim_states:
+            api_dict = state.to_api_dict()
+            if isinstance( state, HassMultiFeatureFanPercentageState ):
+                primary_dict = dict( api_dict )
+            merged_attrs.update( api_dict.get( 'attributes', {} ) )
+            continue
+
+        if primary_dict is None:
+            return HassApiComposer._default( sim_states )
+
+        primary_dict[ 'attributes' ] = merged_attrs
+        return [ primary_dict ]
+
 
 # Registry built after the class is defined so the classmethod
 # objects exist as references. Keyed off SimEntityFields class so
 # the dispatch is per-device-type.
 HassApiComposer._REGISTRY = {
     HassColorSmartBulbFields: HassApiComposer._color_smart_bulb,
+    HassMultiFeatureFanFields: HassApiComposer._multi_feature_fan,
 }

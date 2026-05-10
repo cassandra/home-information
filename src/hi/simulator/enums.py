@@ -70,6 +70,7 @@ class SimEntityType(LabeledEnum):
     AUTOMOBILE           = ( 'Automobile', '' )
     BAROMETER            = ( 'Barometer', '' )
     CAMERA               = ( 'Camera', '' )
+    CEILING_FAN          = ( 'Ceiling Fan', '' )
     COMPUTER             = ( 'Computer', '' )
     CONSUMABLE           = ( 'Consumable', '' )
     CONTROL_WIRE         = ( 'Control Wire', '' )
