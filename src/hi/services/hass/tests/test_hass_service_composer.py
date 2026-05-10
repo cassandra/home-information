@@ -374,3 +374,49 @@ class TestFanAxisComposers(TestCase):
             HassServiceComposer.for_preset_mode(
                 domain='fan', hass_substate_id='fan.x', preset_mode='',
             )
+
+
+class TestClimateAxisComposers(TestCase):
+
+    def test_for_temperature_range_valid(self):
+        result = HassServiceComposer.for_temperature_range(
+            domain='climate', hass_substate_id='climate.x',
+            low=68, high=75,
+        )
+        self.assertEqual(result.service, 'set_temperature')
+        self.assertEqual(result.service_data, {
+            'target_temp_low': 68, 'target_temp_high': 75,
+        })
+
+    def test_for_temperature_range_low_above_high_raises(self):
+        with self.assertRaises(ValueError):
+            HassServiceComposer.for_temperature_range(
+                domain='climate', hass_substate_id='climate.x',
+                low=80, high=70,
+            )
+
+    def test_for_hvac_mode_valid(self):
+        result = HassServiceComposer.for_hvac_mode(
+            domain='climate', hass_substate_id='climate.x', hvac_mode='cool',
+        )
+        self.assertEqual(result.service, 'set_hvac_mode')
+        self.assertEqual(result.service_data, {'hvac_mode': 'cool'})
+
+    def test_for_hvac_mode_empty_raises(self):
+        with self.assertRaises(ValueError):
+            HassServiceComposer.for_hvac_mode(
+                domain='climate', hass_substate_id='climate.x', hvac_mode='',
+            )
+
+    def test_for_fan_mode_valid(self):
+        result = HassServiceComposer.for_fan_mode(
+            domain='climate', hass_substate_id='climate.x', fan_mode='high',
+        )
+        self.assertEqual(result.service, 'set_fan_mode')
+        self.assertEqual(result.service_data, {'fan_mode': 'high'})
+
+    def test_for_fan_mode_empty_raises(self):
+        with self.assertRaises(ValueError):
+            HassServiceComposer.for_fan_mode(
+                domain='climate', hass_substate_id='climate.x', fan_mode='',
+            )
