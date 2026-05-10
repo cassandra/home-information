@@ -39,7 +39,7 @@ Compact history display that loads into attribute cards
         </div>
         <div>
           {% if record.value != attribute.value %}
-            {% if attr_item_context.can_add_custom_attributes %}
+            {% if attr_item_context.allow_edits and attribute.is_editable %}
               <a href="{% attr_restore_url attr_item_context attribute.id record.pk %}"
                  class="btn btn-xs btn-outline-primary {{ DIVID.ATTR_V2_RESTORE_LINK_CLASS }}"
                  title="Restore this value">
@@ -50,7 +50,7 @@ Compact history display that loads into attribute cards
                       class="btn btn-xs btn-outline-primary {{ DIVID.ATTR_V2_RESTORE_LINK_CLASS }}"
                       disabled
                       aria-disabled="true"
-                      title="{{ attr_item_context.add_attribute_disabled_message }}">
+                      title="This value cannot be edited.">
                 Restore
               </button>
             {% endif %}

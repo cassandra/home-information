@@ -22,7 +22,13 @@ class SubsystemAttributePageEditContext(AttributePageEditContext):
         super().__init__( owner_type = 'subsystem' )
         self.selected_subsystem_id = selected_subsystem_id
         return
-    
+
+    @property
+    def can_add_custom_attributes(self) -> bool:
+        # Config settings expose system-defined attributes only;
+        # values are editable but no new attributes may be added.
+        return False
+
     @property
     def can_restore_default(self):
         return True
@@ -51,7 +57,12 @@ class SubsystemAttributeItemEditContext(AttributeItemEditContext):
     def subsystem(self) -> Subsystem:
         """Get the Subsystem instance (typed accessor)."""
         return self.owner
-    
+
+    @property
+    def can_add_custom_attributes(self) -> bool:
+        # Mirrors SubsystemAttributePageEditContext — see comment there.
+        return False
+
     @property
     def can_restore_default(self):
         return True
