@@ -25,7 +25,7 @@ Optional (forwarded to slider chrome):
   min_preset_label, max_preset_label
 {% endcomment %}
 {% with effective_canonical_value=controller_data.latest_sensor_response.value|default_if_none:slider_default %}
-{% with display_min=slider_min|to_display:entity_state display_max=slider_max|to_display:entity_state display_value=effective_canonical_value|to_display:entity_state %}
+{% with display_min=slider_min|as_display_value:entity_state display_max=slider_max|as_display_value:entity_state display_value=effective_canonical_value|as_display_value:entity_state %}
 <div class="{{ DIVID.CONTROLLER_SLIDER_CONTROL_CLASS }}">
   <div class="hi-continuous-slider-row">
     {% if min_label %}<span class="hi-continuous-slider-extreme">{{ min_label }}</span>{% endif %}

@@ -34,8 +34,8 @@ def _make_entity_with_sensor( integration_key, units = None ):
 
 
 def _reset_cache():
-    IntegrationMetadataCache._cache.clear()
-    IntegrationMetadataCache._warmed = False
+    IntegrationMetadataCache()._cache.clear()
+    IntegrationMetadataCache()._warmed = False
 
 
 class TestIntegrationMetadataCache(TestCase):
@@ -60,10 +60,10 @@ class TestIntegrationMetadataCache(TestCase):
         )
         _make_entity_with_sensor( key, units = '°C' )
 
-        entry = IntegrationMetadataCache.get_entry( key )
+        entry = IntegrationMetadataCache().get_entry( key )
 
         self.assertEqual( entry, { 'units': '°C' } )
-        self.assertTrue( IntegrationMetadataCache._warmed )
+        self.assertTrue( IntegrationMetadataCache()._warmed )
 
     def test_warmup_dedupes_sensor_and_controller_sharing_key(self):
         # HiModelHelper.create_controller(is_sensed=True) creates both
@@ -80,17 +80,17 @@ class TestIntegrationMetadataCache(TestCase):
         controller.integration_key = key
         controller.save()
 
-        entry = IntegrationMetadataCache.get_entry( key )
+        entry = IntegrationMetadataCache().get_entry( key )
 
         self.assertEqual( entry, { 'units': '°C' } )
 
     def test_lazy_fill_loads_entity_created_after_warmup(self):
         # Warmup with no entities present — cache marks itself
         # warmed but is empty.
-        IntegrationMetadataCache.get_entry( IntegrationKey(
+        IntegrationMetadataCache().get_entry( IntegrationKey(
             integration_id = 'hass', integration_name = 'absent',
         ))
-        self.assertTrue( IntegrationMetadataCache._warmed )
+        self.assertTrue( IntegrationMetadataCache()._warmed )
         # New entity created after warmup; lazy_fill should query
         # the DB for the specific key and populate.
         late_key = IntegrationKey(
@@ -98,7 +98,7 @@ class TestIntegrationMetadataCache(TestCase):
         )
         _make_entity_with_sensor( late_key, units = '°F' )
 
-        entry = IntegrationMetadataCache.get_entry( late_key )
+        entry = IntegrationMetadataCache().get_entry( late_key )
 
         self.assertEqual( entry, { 'units': '°F' } )
 
@@ -109,11 +109,11 @@ class TestIntegrationMetadataCache(TestCase):
             integration_id = 'hass', integration_name = 'never.imported',
         )
 
-        first = IntegrationMetadataCache.get_entry( key )
+        first = IntegrationMetadataCache().get_entry( key )
         with patch(
             'hi.integrations.integration_metadata_cache.Sensor.objects',
         ) as mock_sensor_objects:
-            second = IntegrationMetadataCache.get_entry( key )
+            second = IntegrationMetadataCache().get_entry( key )
 
         self.assertEqual( first, { 'units': None } )
         self.assertEqual( second, { 'units': None } )
@@ -150,7 +150,7 @@ class TestIntegrationMetadataCache(TestCase):
         controller.integration_key = key
         controller.save()
 
-        entry = IntegrationMetadataCache.get_entry( key )
+        entry = IntegrationMetadataCache().get_entry( key )
 
         # Sensor pass wins, per the documented design.
         self.assertEqual( entry, { 'units': '°C' } )
@@ -176,7 +176,7 @@ class TestIntegrationMetadataCacheAsync(AsyncTaskTestCase):
 
         # Cold cache — async hits sync_to_async wrapper for warmup.
         entry = self.run_async(
-            IntegrationMetadataCache.get_entry_async( key )
+            IntegrationMetadataCache().get_entry_async( key )
         )
 
         self.assertEqual( entry, { 'units': '°C' } )
@@ -190,13 +190,13 @@ class TestIntegrationMetadataCacheAsync(AsyncTaskTestCase):
         )
         _make_entity_with_sensor( key, units = '°C' )
         # Prime the cache.
-        IntegrationMetadataCache.get_entry( key )
+        IntegrationMetadataCache().get_entry( key )
 
         with patch(
             'hi.integrations.integration_metadata_cache.sync_to_async',
         ) as mock_sync_to_async:
             entry = self.run_async(
-                IntegrationMetadataCache.get_entry_async( key )
+                IntegrationMetadataCache().get_entry_async( key )
             )
 
         self.assertEqual( entry, { 'units': '°C' } )

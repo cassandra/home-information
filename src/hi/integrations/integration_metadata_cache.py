@@ -4,6 +4,7 @@ from typing import Any, Dict, Optional
 
 from asgiref.sync import sync_to_async
 
+from hi.apps.common.singleton import Singleton
 from hi.apps.control.models import Controller
 from hi.apps.entity.models import EntityState
 from hi.apps.sense.models import Sensor
@@ -13,7 +14,7 @@ from .transient_models import IntegrationKey
 logger = logging.getLogger(__name__)
 
 
-class IntegrationMetadataCache:
+class IntegrationMetadataCache( Singleton ):
     """Process-wide, lazily-warmed cache of EntityState metadata
     that integration converters need at value-translation time.
 
@@ -36,13 +37,14 @@ class IntegrationMetadataCache:
     (CPython dict reads are atomic for our access pattern).
     """
 
-    _cache : Dict[ IntegrationKey, Dict[str, Any] ] = {}
-    _lock = threading.Lock()
-    _warmed = False
+    def __init_singleton__(self):
+        self._cache : Dict[ IntegrationKey, Dict[str, Any] ] = {}
+        self._lock = threading.Lock()
+        self._warmed = False
+        return
 
-    @classmethod
     def get_entry(
-            cls, integration_key : IntegrationKey,
+            self, integration_key : IntegrationKey,
     ) -> Dict[str, Any]:
         """Return the cached metadata dict for the given
         ``integration_key``. Triggers a single bulk warmup on the
@@ -50,30 +52,28 @@ class IntegrationMetadataCache:
         warmup are filled lazily on miss. Sync API; use
         ``get_entry_async`` from async contexts to avoid Django's
         SynchronousOnlyOperation guard during DB-touching paths."""
-        if not cls._warmed:
-            cls._warmup()
-        entry = cls._cache.get( integration_key )
+        if not self._warmed:
+            self._warmup()
+        entry = self._cache.get( integration_key )
         if entry is not None:
             return entry
-        return cls._lazy_fill( integration_key )
+        return self._lazy_fill( integration_key )
 
-    @classmethod
     async def get_entry_async(
-            cls, integration_key : IntegrationKey,
+            self, integration_key : IntegrationKey,
     ) -> Dict[str, Any]:
         """Async variant of ``get_entry``. After the cache is
         warmed, reads are pure-Python dict accesses and the
         sync_to_async hop is essentially free; before warm and on
         lazy-fill misses, the DB lookup happens in a thread pool
         so it's safe to call from async monitor contexts."""
-        if cls._warmed and integration_key in cls._cache:
-            return cls._cache[ integration_key ]
+        if self._warmed and integration_key in self._cache:
+            return self._cache[ integration_key ]
         return await sync_to_async(
-            cls.get_entry, thread_sensitive=True,
+            self.get_entry, thread_sensitive=True,
         )( integration_key )
 
-    @classmethod
-    def _warmup(cls):
+    def _warmup(self):
         """One-shot bulk load of every known integration_key.
 
         Assumes any Sensor/Controller pair sharing an
@@ -82,22 +82,22 @@ class IntegrationMetadataCache:
         cross-integration collisions). Sensor entries win on overlap;
         a warning fires if the Controller's entry would have
         disagreed — canary for invariant violations."""
-        with cls._lock:
-            if cls._warmed:
+        with self._lock:
+            if self._warmed:
                 return
             for sensor in Sensor.objects.select_related( 'entity_state' ).all():
                 key = sensor.integration_key
                 if key is None:
                     continue
-                cls._cache[ key ] = cls._build_entry( sensor.entity_state )
+                self._cache[ key ] = self._build_entry( sensor.entity_state )
             for controller in Controller.objects.select_related( 'entity_state' ).all():
                 key = controller.integration_key
                 if key is None:
                     continue
-                controller_entry = cls._build_entry( controller.entity_state )
-                existing = cls._cache.get( key )
+                controller_entry = self._build_entry( controller.entity_state )
+                existing = self._cache.get( key )
                 if existing is None:
-                    cls._cache[ key ] = controller_entry
+                    self._cache[ key ] = controller_entry
                     continue
                 if existing != controller_entry:
                     logger.warning(
@@ -105,24 +105,23 @@ class IntegrationMetadataCache:
                         f'{key}: divergent Sensor/Controller metadata '
                         f'({existing} vs {controller_entry}). See class docs.'
                     )
-            cls._warmed = True
+            self._warmed = True
 
-    @classmethod
     def _lazy_fill(
-            cls, integration_key : IntegrationKey,
+            self, integration_key : IntegrationKey,
     ) -> Dict[str, Any]:
         """Single-row fill on a post-warmup miss (entity created
         after warmup). Falls back to an empty entry when the key
         resolves to nothing so subsequent misses don't re-query."""
-        entity_state = cls._lookup_entity_state( integration_key )
+        entity_state = self._lookup_entity_state( integration_key )
         entry = (
-            cls._build_entry( entity_state )
+            self._build_entry( entity_state )
             if entity_state is not None
             else { 'units': None }
         )
-        with cls._lock:
-            cls._cache.setdefault( integration_key, entry )
-        return cls._cache[ integration_key ]
+        with self._lock:
+            self._cache.setdefault( integration_key, entry )
+        return self._cache[ integration_key ]
 
     @staticmethod
     def _lookup_entity_state(

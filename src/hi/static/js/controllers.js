@@ -193,16 +193,25 @@
 
         // Track active drag so polling-driven value updates can
         // skip sliders the operator is currently manipulating.
-        // Cleared on pointer release and on ``change`` (the
-        // canonical "value committed" signal — covers keyboard
-        // arrow adjustments and drag release alike).
+        // Set on pointer-down (mouse / touch / pen via Pointer
+        // Events). Cleared on pointer release and on ``change``
+        // (the canonical "value committed" signal — covers
+        // keyboard arrow adjustments too).
+        //
+        // Release-side handlers live on ``document``, not ``body``:
+        // a pointer release that happens off the slider element
+        // (or even outside the viewport) still bubbles to document,
+        // ensuring the flag clears so subsequent polls can resume
+        // updating. Listening on body alone would leak the flag if
+        // the user dragged the thumb past the page edge before
+        // releasing.
         $('body').on(
-            'mousedown touchstart',
+            'mousedown touchstart pointerdown',
             'input[type=range]',
             function() { _activeSliders.add( this ); }
         );
-        $('body').on(
-            'mouseup touchend touchcancel change blur',
+        $(document).on(
+            'mouseup touchend touchcancel pointerup pointercancel change blur',
             'input[type=range]',
             function() { _activeSliders.delete( this ); }
         );

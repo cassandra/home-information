@@ -15,7 +15,7 @@ class TestDisplayValue(BaseTestCase):
 
     def test_str_combines_magnitude_and_unit(self):
         # ``DisplayValue.__str__`` is the contract that templates
-        # rely on for ``{{ value|to_display:entity_state }}`` to
+        # rely on for ``{{ value|as_display_value:entity_state }}`` to
         # produce combined text directly.
         self.assertEqual(
             str( DisplayValue( magnitude = '69.8', unit_symbol = '°F' ) ),

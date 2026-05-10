@@ -14,13 +14,15 @@ def _seed_cache_entry( integration_key, units ):
     """Pre-populate the metadata cache so the converter helpers
     don't need real Sensor/Controller rows for unit-translation
     tests that only exercise the helper's conversion math."""
-    IntegrationMetadataCache._warmed = True
-    IntegrationMetadataCache._cache[ integration_key ] = { 'units': units }
+    cache = IntegrationMetadataCache()
+    cache._warmed = True
+    cache._cache[ integration_key ] = { 'units': units }
 
 
 def _reset_cache():
-    IntegrationMetadataCache._cache.clear()
-    IntegrationMetadataCache._warmed = False
+    cache = IntegrationMetadataCache()
+    cache._cache.clear()
+    cache._warmed = False
 
 
 class TestToEntityStateValue(TestCase):

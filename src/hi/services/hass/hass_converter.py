@@ -21,6 +21,7 @@ from hi.apps.model_helper import HiModelHelper
 
 from hi.integrations.integration_converter_helper import IntegrationConverterHelper
 from hi.integrations.transient_models import IntegrationKey
+from hi.units import CANONICAL_TEMPERATURE_UNIT
 
 from .enums import HassStateValue
 from .hass_metadata import HassMetaData
@@ -1064,16 +1065,14 @@ class HassConverter:
         def display_label(self) -> str:
             return self.label if self.label else self.entity_state_type.label
 
-    # HI's canonical temperature unit is declared once here. Code
-    # operating on EntityStates / payloads consults their stored units
-    # field rather than this constant, so changing the canonical
-    # propagates correctly via the spec → EntityState/payload chain.
-    # Setpoint slider bounds live alongside because they are expressed
-    # in this unit; changing the canonical also requires updating these
-    # bounds to the equivalent values in the new unit.
-    _CANONICAL_TEMPERATURE_UNIT       = '°C'
-    _CANONICAL_TEMPERATURE_MIN_VALUE  = 5
-    _CANONICAL_TEMPERATURE_MAX_VALUE  = 35
+    # Setpoint slider bounds for thermostat substates, expressed in
+    # ``hi.units.CANONICAL_TEMPERATURE_UNIT``. Climate-specific UX
+    # choices (slightly wider than typical HVAC comfort ranges so
+    # the operator can push edge cases). If the HI-wide canonical
+    # changes, these bounds must also be updated to the equivalent
+    # values in the new unit.
+    _SETPOINT_MIN_CANONICAL  = 5
+    _SETPOINT_MAX_CANONICAL  = 35
 
     # Translation of HA's color_mode attribute values to HI's
     # COLOR_MODE EntityStateValues. HA's ``null`` and explicit
@@ -1253,7 +1252,7 @@ class HassConverter:
         if not isinstance( hvac_modes, list ) or not hvac_modes:
             return []
 
-        canonical_unit = cls._CANONICAL_TEMPERATURE_UNIT
+        canonical_unit = CANONICAL_TEMPERATURE_UNIT
         specs = [
             cls._SubstateSpec(
                 suffix = 'current_temperature',
@@ -1345,8 +1344,8 @@ class HassConverter:
         ranges so the operator can push edge cases. Display layer
         converts to the user's preferred unit."""
         return {
-            'min': cls._CANONICAL_TEMPERATURE_MIN_VALUE,
-            'max': cls._CANONICAL_TEMPERATURE_MAX_VALUE,
+            'min': cls._SETPOINT_MIN_CANONICAL,
+            'max': cls._SETPOINT_MAX_CANONICAL,
         }
 
     @classmethod
@@ -1732,7 +1731,7 @@ class HassConverter:
                 entity_state_type = EntityStateType.TEMPERATURE,
                 name = name,
                 integration_key = integration_key,
-                units = cls._CANONICAL_TEMPERATURE_UNIT,
+                units = CANONICAL_TEMPERATURE_UNIT,
             )
             domain_payload = {
                 **( domain_payload or {} ),

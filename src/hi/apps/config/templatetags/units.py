@@ -11,11 +11,12 @@ register = template.Library()
 
 
 @register.filter
-def to_display( value, entity_state ):
+def as_display_value( value, entity_state ):
     """Boundary translation for templates: take a value in the
     EntityState's stored unit and return a ``DisplayValue`` (with
     ``magnitude`` / ``unit_symbol`` / combined ``__str__``) ready
-    for display. Pass-through when the EntityState has no units."""
+    for display in the user's preferred unit. Pass-through when
+    the EntityState has no units."""
     return ConsoleConverterHelper.from_entity_state_value(
         entity_state_value = value,
         entity_state = entity_state,

@@ -2,10 +2,10 @@
 {% comment %}
 Temperature sensor value rendering. Server-side
 ``sensor_response.value`` is in the EntityState's stored unit;
-the ``to_display`` filter goes through ``ConsoleConverterHelper``
+the ``as_display_value`` filter goes through ``ConsoleConverterHelper``
 to produce a ``DisplayValue`` whose ``__str__`` combines the
 user-display magnitude and unit symbol.
 {% endcomment %}
 <div class="text-center px-2" status="{{ sensor_response.value }}">
-  {{ sensor_response.value|to_display:sensor_response.sensor.entity_state }}
+  {{ sensor_response.value|as_display_value:sensor_response.sensor.entity_state }}
 </div>

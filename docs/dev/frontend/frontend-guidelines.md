@@ -93,7 +93,7 @@ The helpers:
 
 - **`ConsoleConverterHelper.from_entity_state_value(value, entity_state)`** returns a `DisplayValue` dataclass with `magnitude` / `unit_symbol` fields plus a combined `__str__`. Use `magnitude` when a numeric attribute is needed (slider `value=`); use the dataclass directly when combined text is wanted (status label, modal value).
 - **`ConsoleConverterHelper.to_entity_state_value(display_value, entity_state)`** for the inbound direction. `ControlViewMixin.to_entity_state_value` is a thin pass-through for control views.
-- **`{{ value|to_display:entity_state }}`** template filter (in `hi/apps/config/templatetags/units.py`) wraps the outbound helper; outputs `DisplayValue.__str__` (combined text) by default, or use `.magnitude` / `.unit_symbol` for separate access.
+- **`{{ value|as_display_value:entity_state }}`** template filter (in `hi/apps/config/templatetags/units.py`) wraps the outbound helper; outputs `DisplayValue.__str__` (combined text) by default, or use `.magnitude` / `.unit_symbol` for separate access.
 
 Both pass through unchanged when the EntityState has no units, so the helpers are safe to call uniformly without per-state-type branching.
 

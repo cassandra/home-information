@@ -10,6 +10,7 @@ from hi.services.hass.hass_converter import HassConverter
 from hi.services.hass.hass_models import HassApi, HassDevice, HassServiceCall
 from hi.integrations.integration_converter_helper import IntegrationConverterHelper
 from hi.integrations.integration_metadata_cache import IntegrationMetadataCache
+from hi.units import CANONICAL_TEMPERATURE_UNIT
 
 logging.disable(logging.CRITICAL)
 
@@ -153,8 +154,8 @@ class TestClimateSubstateSpecs(TestCase):
                 self.assertEqual(
                     setpoint.value_range,
                     {
-                        'min': HassConverter._CANONICAL_TEMPERATURE_MIN_VALUE,
-                        'max': HassConverter._CANONICAL_TEMPERATURE_MAX_VALUE,
+                        'min': HassConverter._SETPOINT_MIN_CANONICAL,
+                        'max': HassConverter._SETPOINT_MAX_CANONICAL,
                     },
                 )
 
@@ -177,7 +178,7 @@ class TestClimateSubstateSpecs(TestCase):
             if spec.suffix in temperature_suffixes:
                 self.assertEqual(
                     spec.units,
-                    HassConverter._CANONICAL_TEMPERATURE_UNIT,
+                    CANONICAL_TEMPERATURE_UNIT,
                     f'{spec.suffix} should carry canonical units',
                 )
 
@@ -214,21 +215,23 @@ class TestClimateSubstateSpecs(TestCase):
 
 
 def _reset_unit_cache():
-    """Class-level cache state must not leak across tests."""
-    IntegrationMetadataCache._cache.clear()
-    IntegrationMetadataCache._warmed = False
+    """Singleton cache state must not leak across tests."""
+    cache = IntegrationMetadataCache()
+    cache._cache.clear()
+    cache._warmed = False
 
 
 def _seed_unit_cache_for_climate(parent_entity_id, units, suffixes):
     """Pre-populate IntegrationMetadataCache for the given climate
     substates so converter tests can exercise unit-translation paths
     without first creating Sensor/Controller rows in the DB."""
-    IntegrationMetadataCache._warmed = True
+    cache = IntegrationMetadataCache()
+    cache._warmed = True
     for suffix in suffixes:
         key = HassConverter._substate_integration_key_for_suffix(
             parent_entity_id = parent_entity_id, suffix = suffix,
         )
-        IntegrationMetadataCache._cache[ key ] = { 'units': units }
+        cache._cache[ key ] = { 'units': units }
 
 
 class TestClimateInboundStateTranslation(TestCase):
@@ -276,7 +279,7 @@ class TestClimateInboundStateTranslation(TestCase):
         # values are unit-coherent across the system.
         _seed_unit_cache_for_climate(
             parent_entity_id = 'climate.bedroom',
-            units = HassConverter._CANONICAL_TEMPERATURE_UNIT,
+            units = CANONICAL_TEMPERATURE_UNIT,
             suffixes = (
                 'current_temperature', 'target_temp_low', 'target_temp_high',
             ),
@@ -430,7 +433,7 @@ class TestClimateImport(TestCase):
         for state in temp_states:
             self.assertEqual(
                 state.units,
-                HassConverter._CANONICAL_TEMPERATURE_UNIT,
+                CANONICAL_TEMPERATURE_UNIT,
             )
 
     def test_setpoint_controller_payload_carries_native_unit(self):

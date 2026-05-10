@@ -53,7 +53,7 @@ class IntegrationConverterHelper:
         EntityState.units string (or None when no translation is
         needed). Backed by ``IntegrationMetadataCache`` (process-wide,
         lazy-warmed)."""
-        return IntegrationMetadataCache.get_entry( integration_key )
+        return IntegrationMetadataCache().get_entry( integration_key )
 
     @classmethod
     async def get_cache_entry_async(
@@ -61,7 +61,7 @@ class IntegrationConverterHelper:
     ) -> Dict[str, Any]:
         """Async variant of ``get_cache_entry`` for use from async
         monitor / converter paths."""
-        return await IntegrationMetadataCache.get_entry_async( integration_key )
+        return await IntegrationMetadataCache().get_entry_async( integration_key )
 
     @classmethod
     def to_entity_state_value(
