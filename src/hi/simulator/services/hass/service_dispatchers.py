@@ -326,6 +326,11 @@ class HassServiceDispatcher:
             if not mode:
                 return []
             return [ ( 'hvac_mode', str( mode ) ) ]
+        if service == 'set_fan_mode':
+            mode = payload.get( 'fan_mode' )
+            if not mode:
+                return []
+            return [ ( 'fan_mode', str( mode ) ) ]
         return []
 
     @staticmethod

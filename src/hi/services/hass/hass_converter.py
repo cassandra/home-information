@@ -1254,7 +1254,10 @@ class HassConverter:
         # operation; ``heat_cool`` implies a low/high pair. A
         # thermostat that supports both creates all three —
         # which one carries a value at runtime depends on the
-        # active hvac_mode.
+        # active hvac_mode. Value range adapts to the entity's
+        # ``temperature_unit`` so the slider widget shows
+        # sensible bounds for both °F and °C thermostats.
+        setpoint_range = cls._setpoint_value_range( attrs )
         has_single_mode = any( m != 'heat_cool' for m in hvac_modes )
         has_dual_mode = 'heat_cool' in hvac_modes
         if has_single_mode:
@@ -1262,6 +1265,7 @@ class HassConverter:
                 suffix = 'target_temperature',
                 entity_state_type = EntityStateType.TEMPERATURE,
                 is_controllable = True,
+                value_range = setpoint_range,
                 label = 'Setpoint',
             ))
         if has_dual_mode:
@@ -1269,15 +1273,49 @@ class HassConverter:
                 suffix = 'target_temp_low',
                 entity_state_type = EntityStateType.TEMPERATURE,
                 is_controllable = True,
+                value_range = setpoint_range,
                 label = 'Setpoint Low',
             ))
             specs.append( cls._SubstateSpec(
                 suffix = 'target_temp_high',
                 entity_state_type = EntityStateType.TEMPERATURE,
                 is_controllable = True,
+                value_range = setpoint_range,
                 label = 'Setpoint High',
             ))
+
+        # Optional axes that real thermostats commonly expose.
+        # Surfaced only when the live state declares them so HI
+        # doesn't display a "Fan Mode" control on a thermostat
+        # that doesn't have one.
+        fan_modes = attrs.get( 'fan_modes' )
+        if isinstance( fan_modes, list ) and fan_modes:
+            specs.append( cls._SubstateSpec(
+                suffix = 'fan_mode',
+                entity_state_type = EntityStateType.DISCRETE,
+                is_controllable = True,
+                value_range = { mode: mode for mode in fan_modes },
+                label = 'Fan Mode',
+            ))
+        if 'current_humidity' in attrs:
+            specs.append( cls._SubstateSpec(
+                suffix = 'current_humidity',
+                entity_state_type = EntityStateType.HUMIDITY,
+                is_controllable = False,
+                label = 'Current Humidity',
+            ))
         return specs
+
+    @staticmethod
+    def _setpoint_value_range( attrs : Dict ) -> Dict[ str, float ]:
+        """Slider bounds for thermostat setpoints, adapting to the
+        entity's reported ``temperature_unit``. Bounds are slightly
+        wider than typical HVAC comfort ranges so the operator can
+        push edge cases."""
+        unit = attrs.get( 'temperature_unit' )
+        if unit == '°C':
+            return { 'min': 5, 'max': 35 }
+        return { 'min': 40, 'max': 95 }
 
     @classmethod
     def _extract_substate_value(
@@ -1392,6 +1430,10 @@ class HassConverter:
             return cls._numeric_attr_as_str( attrs, 'target_temp_low' )
         if suffix == 'target_temp_high':
             return cls._numeric_attr_as_str( attrs, 'target_temp_high' )
+        if suffix == 'fan_mode':
+            return attrs.get( 'fan_mode' )
+        if suffix == 'current_humidity':
+            return cls._numeric_attr_as_str( attrs, 'current_humidity' )
         return None
 
     @staticmethod
@@ -2354,6 +2396,81 @@ class HassConverter:
                 domain = domain,
                 hass_substate_id = parent_entity_id,
                 preset_mode = hi_control_value,
+            )
+
+        if substate == 'target_temperature':
+            try:
+                temperature = cls.to_ha_numeric_parameter_value( hi_control_value )
+            except ( ValueError, TypeError ):
+                raise ValueError(
+                    f'Invalid temperature value: {hi_control_value}'
+                )
+            return HassServiceComposer.for_temperature(
+                domain = domain,
+                hass_substate_id = parent_entity_id,
+                temperature = temperature,
+                domain_payload = { 'set_service': HassApi.SET_TEMPERATURE_SERVICE },
+            )
+
+        if substate in ( 'target_temp_low', 'target_temp_high' ):
+            try:
+                changed_value = cls.to_ha_numeric_parameter_value( hi_control_value )
+            except ( ValueError, TypeError ):
+                raise ValueError(
+                    f'Invalid {substate} value: {hi_control_value}'
+                )
+            partner_substate = (
+                'target_temp_high' if substate == 'target_temp_low'
+                else 'target_temp_low'
+            )
+            partner_int_key = cls._substate_integration_key_for_suffix(
+                parent_entity_id = parent_entity_id,
+                suffix = partner_substate,
+            )
+            partner_value_str = IntegrationConverterHelper.get_latest_state_values(
+                integration_keys = [ partner_int_key ],
+            ).get( partner_int_key )
+            try:
+                partner_value = (
+                    float( partner_value_str ) if partner_value_str is not None else None
+                )
+            except ( ValueError, TypeError ):
+                partner_value = None
+            # Defaults when the partner has no cached value yet
+            # (e.g., before the first poll cycle): pick a sensible
+            # ordering around the changed value so HA's call doesn't
+            # reject low > high.
+            if substate == 'target_temp_low':
+                low = changed_value
+                high = (
+                    partner_value if partner_value is not None and partner_value >= low
+                    else low
+                )
+            else:
+                high = changed_value
+                low = (
+                    partner_value if partner_value is not None and partner_value <= high
+                    else high
+                )
+            return HassServiceComposer.for_temperature_range(
+                domain = domain,
+                hass_substate_id = parent_entity_id,
+                low = low,
+                high = high,
+            )
+
+        if substate == 'hvac_mode':
+            return HassServiceComposer.for_hvac_mode(
+                domain = domain,
+                hass_substate_id = parent_entity_id,
+                hvac_mode = hi_control_value,
+            )
+
+        if substate == 'fan_mode':
+            return HassServiceComposer.for_fan_mode(
+                domain = domain,
+                hass_substate_id = parent_entity_id,
+                fan_mode = hi_control_value,
             )
 
         raise ValueError( f'Unknown substate: {substate}' )

@@ -244,6 +244,64 @@ class HassServiceComposer:
         )
 
     @classmethod
+    def for_temperature_range(
+            cls,
+            domain           : str,
+            hass_substate_id : str,
+            low              : float,
+            high             : float,
+    ) -> HassServiceCall:
+        """``climate.set_temperature`` with the dual-setpoint
+        shape used in ``heat_cool`` mode. HA expects both bounds
+        in the same call; the caller is responsible for
+        composing the unchanged partner from cached state."""
+        if low > high:
+            raise ValueError(
+                f'Invalid temperature range: low={low} > high={high}'
+            )
+        return HassServiceCall(
+            domain = domain,
+            service = HassApi.SET_TEMPERATURE_SERVICE,
+            hass_entity_id = hass_substate_id,
+            service_data = {
+                'target_temp_low': low,
+                'target_temp_high': high,
+            },
+        )
+
+    @classmethod
+    def for_hvac_mode(
+            cls,
+            domain           : str,
+            hass_substate_id : str,
+            hvac_mode        : str,
+    ) -> HassServiceCall:
+        if not hvac_mode:
+            raise ValueError( 'hvac_mode must be a non-empty string' )
+        return HassServiceCall(
+            domain = domain,
+            service = HassApi.SET_HVAC_MODE_SERVICE,
+            hass_entity_id = hass_substate_id,
+            service_data = { 'hvac_mode': hvac_mode },
+        )
+
+    @classmethod
+    def for_fan_mode(
+            cls,
+            domain           : str,
+            hass_substate_id : str,
+            fan_mode         : str,
+    ) -> HassServiceCall:
+        if not fan_mode:
+            raise ValueError( 'fan_mode must be a non-empty string' )
+        return HassServiceCall(
+            domain = domain,
+            service = HassApi.SET_FAN_MODE_SERVICE,
+            hass_entity_id = hass_substate_id,
+            service_data = { 'fan_mode': fan_mode },
+        )
+
+    @classmethod
     def for_volume(
             cls,
             domain           : str,

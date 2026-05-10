@@ -49,6 +49,7 @@ class HassApi:
     OSCILLATE_SERVICE = 'oscillate'
     SET_DIRECTION_SERVICE = 'set_direction'
     SET_PRESET_MODE_SERVICE = 'set_preset_mode'
+    SET_FAN_MODE_SERVICE = 'set_fan_mode'
     
     # Legacy aliases for backward compatibility (remove after migration)
     AUTOMATION_ID_PREFIX = AUTOMATION_DOMAIN

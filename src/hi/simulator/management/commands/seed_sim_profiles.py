@@ -362,6 +362,7 @@ class Command(BaseCommand):
         self._add_hass_thermostat(
             profile, 'Zoo Heater',
             hvac_modes = [ 'heat', 'off' ],
+            fan_modes = [],
             temperature_unit = '°C',
         )
         return profile.db_sim_entities.count()
@@ -549,13 +550,17 @@ class Command(BaseCommand):
             fields_kwargs = {'name': name},
         )
 
-    def _add_hass_thermostat(self, profile, name, hvac_modes=None, temperature_unit='°F'):
+    def _add_hass_thermostat(self, profile, name,
+                             hvac_modes=None, fan_modes=None,
+                             temperature_unit='°F'):
         fields_kwargs = {
             'name': name,
             'temperature_unit': temperature_unit,
         }
         if hvac_modes is not None:
             fields_kwargs[ 'hvac_modes' ] = hvac_modes
+        if fan_modes is not None:
+            fields_kwargs[ 'fan_modes' ] = fan_modes
         self._create_db_entity(
             profile = profile,
             simulator_id = 'hass',

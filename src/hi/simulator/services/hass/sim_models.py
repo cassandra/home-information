@@ -1134,18 +1134,24 @@ _THERMOSTAT_HVAC_ACTION_CHOICES = [
 class HassThermostatFields( SimEntityFields ):
     """A multi-axis thermostat. Composed of multiple SimStates
     (current_temperature, target_temperature, target_temp_low,
-    target_temp_high, hvac_mode, hvac_action) collapsed into one
-    HA ``climate.x`` entity at emit time.
+    target_temp_high, hvac_mode, hvac_action, fan_mode,
+    current_humidity) collapsed into one HA ``climate.x``
+    entity at emit time.
 
     ``hvac_modes`` declares the modes this thermostat supports —
     a heat-only thermostat omits ``heat_cool`` (and HI
     accordingly creates only the single-setpoint substate, not
-    the low/high pair). ``temperature_unit`` controls °F vs °C
+    the low/high pair). ``fan_modes`` declares the available
+    fan settings (when empty, the thermostat doesn't expose a
+    fan-mode axis). ``temperature_unit`` controls °F vs °C
     handling end-to-end so HI's unit passthrough can be
     exercised for both."""
 
     hvac_modes       : list = field(
         default_factory = lambda : [ 'heat', 'cool', 'heat_cool', 'off' ],
+    )
+    fan_modes        : list = field(
+        default_factory = lambda : [ 'auto', 'low', 'medium', 'high' ],
     )
     temperature_unit : str  = '°F'
 
@@ -1364,6 +1370,87 @@ class HassThermostatHvacModeState( HassState ):
 
 
 @dataclass
+class HassThermostatFanModeState( HassState ):
+    """Fan mode (DISCRETE, controllable). Choices come from the
+    per-thermostat ``fan_modes`` field — a thermostat with
+    ``fan_modes=[]`` exposes no choices and the composer drops
+    the attribute. Common HA values: auto / low / medium / high
+    / on / off."""
+
+    sim_entity_fields  : HassThermostatFields
+    sim_state_type     : SimStateType                  = SimStateType.DISCRETE
+    sim_state_id       : str                           = 'fan_mode'
+    value              : str                           = 'auto'
+
+    @property
+    def name(self):
+        return f'{self.entity_name} Fan Mode'
+
+    @property
+    def entity_id(self):
+        return _thermostat_entity_id( self.entity_name )
+
+    @property
+    def state(self):
+        return 'on'
+
+    @property
+    def choices(self) -> List[ Tuple[ str, str ] ]:
+        return [
+            ( mode, mode.title() )
+            for mode in self.sim_entity_fields.fan_modes
+        ]
+
+    @property
+    def attributes(self) -> Dict[ str, str ]:
+        if not self.sim_entity_fields.fan_modes:
+            return {}
+        return {
+            'fan_mode': self.value,
+            'fan_modes': list( self.sim_entity_fields.fan_modes ),
+        }
+
+
+@dataclass
+class HassThermostatCurrentHumidityState( HassState ):
+    """Current humidity reading (CONTINUOUS, sensor-only). The
+    simulator UI lets the operator drive it for testing."""
+
+    sim_entity_fields  : HassThermostatFields
+    sim_state_type     : SimStateType                  = SimStateType.CONTINUOUS
+    sim_state_id       : str                           = 'current_humidity'
+    value              : str                           = '45'
+
+    @property
+    def min_value(self):
+        return 0
+
+    @property
+    def max_value(self):
+        return 100
+
+    @property
+    def name(self):
+        return f'{self.entity_name} Current Humidity'
+
+    @property
+    def entity_id(self):
+        return _thermostat_entity_id( self.entity_name )
+
+    @property
+    def state(self):
+        return 'on'
+
+    @property
+    def attributes(self) -> Dict[ str, str ]:
+        try:
+            humidity = float( self.value )
+        except ( TypeError, ValueError ):
+            humidity = 0.0
+        return { 'current_humidity': humidity }
+
+
+@dataclass
 class HassThermostatHvacActionState( HassState ):
     """What the HVAC system is currently doing (heating /
     cooling / idle / off). Sensor-only in HA terms; the
@@ -1544,6 +1631,8 @@ HASS_SIM_ENTITY_DEFINITION_LIST = [
             HassThermostatTargetTempHighState,
             HassThermostatHvacModeState,
             HassThermostatHvacActionState,
+            HassThermostatFanModeState,
+            HassThermostatCurrentHumidityState,
         ],
     ),
 ]
