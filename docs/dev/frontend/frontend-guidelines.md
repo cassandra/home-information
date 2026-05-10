@@ -82,6 +82,25 @@ return {
 
 In this way, there is at most two places these ids are used as strings, and both client and server can referenced more safely.
 
+## Unit-Bearing Values: Server ↔ UI Translation
+
+Server-side EntityState values are stored in a canonical unit per state type (e.g., temperatures are °C internally regardless of whether the source integration reports °F or °C). The UI displays them in the user's configured display unit (IMPERIAL / METRIC) — translation happens at the server/UI boundary in **both directions**:
+
+- **Outbound (server → UI):** convert the EntityState's stored value to the user's display unit before rendering. Used for initial template renders AND polling-driven UI refreshes; both paths share one helper so the displayed value is consistent.
+- **Inbound (UI → server):** convert form/slider submissions from the user's display unit back to the EntityState's stored unit before caching/dispatching.
+
+The helpers:
+
+- **`ConsoleConverterHelper.from_entity_state_value(value, entity_state)`** returns a `DisplayValue` dataclass with `magnitude` / `unit_symbol` fields plus a combined `__str__`. Use `magnitude` when a numeric attribute is needed (slider `value=`); use the dataclass directly when combined text is wanted (status label, modal value).
+- **`ConsoleConverterHelper.to_entity_state_value(display_value, entity_state)`** for the inbound direction. `ControlViewMixin.to_entity_state_value` is a thin pass-through for control views.
+- **`{{ value|to_display:entity_state }}`** template filter (in `hi/apps/config/templatetags/units.py`) wraps the outbound helper; outputs `DisplayValue.__str__` (combined text) by default, or use `.magnitude` / `.unit_symbol` for separate access.
+
+Both pass through unchanged when the EntityState has no units, so the helpers are safe to call uniformly without per-state-type branching.
+
+The polling-update path lives in `StatusDisplayData` (sensor refresh) and `_get_controller_data_value` (controller widget refresh). They go through the same `ConsoleConverterHelper.from_entity_state_value` helper so async UI refreshes match initial template renders — if they don't, the bug is almost certainly that some new render path is reading raw values instead of going through the helper.
+
+The integration ↔ server boundary has a parallel pair (`IntegrationConverterHelper.to_/from_entity_state_value`) for converters; see [Integration Guidelines](../integrations/integration-guidelines.md).
+
 ## JavaScript Standards
 
 **Minimize Javascript**: We should strive for the minimal amount of new Javascript. There are many special-purpose needs in the app that require Javascript, but we should never do in Javascfript what we can achieve on the backend.
