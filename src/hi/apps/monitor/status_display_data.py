@@ -1,5 +1,9 @@
 import hi.apps.common.datetimeproxy as datetimeproxy
 
+from hi.apps.console.console_converter_helper import (
+    ConsoleConverterHelper,
+    DisplayValue,
+)
 from hi.apps.entity.enums import EntityStateType, EntityStateValue
 
 from hi.hi_styles import StatusStyle
@@ -78,6 +82,20 @@ class StatusDisplayData:
         return None
 
     @property
+    def latest_display_value(self) -> DisplayValue:
+        """Latest sensor value translated to the user's preferred
+        display unit (when the EntityState has unit-bearing data) —
+        the polling-update analogue of the template-render boundary
+        translation. Returns a ``DisplayValue`` with separated
+        magnitude and unit_symbol so consumers can format per
+        their need (slider's numeric ``value=`` uses ``.magnitude``;
+        status text uses ``str(...)`` which combines both)."""
+        return ConsoleConverterHelper.from_entity_state_value(
+            entity_state_value = self.latest_sensor_value,
+            entity_state = self._entity_state,
+        )
+
+    @property
     def penultimate_sensor_value(self):
         if len(self.sensor_response_list) > 1:
             return self.sensor_response_list[1].value
@@ -95,10 +113,14 @@ class StatusDisplayData:
         Returns None when the state has no controller (purely
         read-only sensors like motion or open/close binary
         sensors), so the polling map skips them. Default for
-        controllable states is the raw latest sensor value, which
-        is what the existing widget templates already render
-        on initial load (slider ``value=...``, checkbox
-        ``checked=...``, select option ``selected=...``).
+        controllable states is the latest sensor value translated
+        to the user's display unit when the EntityState has units —
+        widgets rendered by ``continuous_slider_with_units.html``
+        operate in display-unit space, so the polling refresh has
+        to push values in that same unit. Unit-less states pass
+        through unchanged so existing widget contracts (slider
+        ``value=...``, checkbox ``checked=...``, select option
+        ``selected=...``) are preserved.
 
         Per-state-type overrides go here when a widget needs a
         reshape — e.g., a future COLOR state would return a dict
@@ -106,7 +128,10 @@ class StatusDisplayData:
         """
         if not self._controller_data_list:
             return None
-        return self.latest_sensor_value
+        # Slider widget's numeric ``value=`` attribute needs just
+        # the magnitude — combined-string would break the range
+        # input's parsing.
+        return self.latest_display_value.magnitude
 
     def _get_svg_status_style(self):
     
@@ -150,7 +175,11 @@ class StatusDisplayData:
         # EntityStateType.WATER_FLOW
         # EntityStateType.WIND_SPEED
 
-        status_value = self.latest_sensor_value
+        # Use the display-unit text so the polling refresh of the
+        # status display matches what the initial server-side
+        # template render produced (combined magnitude + unit
+        # suffix for unit-bearing values, raw value otherwise).
+        status_value = str( self.latest_display_value )
         if not status_value:
             status_value = StatusStyle.DEFAULT_STATUS_VALUE
 

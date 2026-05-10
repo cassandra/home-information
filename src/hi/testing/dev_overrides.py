@@ -157,10 +157,10 @@ class StateTraceManager:
     # disrupting alignment; long values overflow the slot and
     # disrupt only their own row, not subsequent ones.
     LABEL_W   = 28
-    HA_ID_W   = 32
+    HA_ID_W   = 42
     HA_VAL_W  = 14
     HI_ID_W   = 6
-    HI_VAL_W  = 36
+    HI_VAL_W  = 26
 
     @classmethod
     def emit( cls,

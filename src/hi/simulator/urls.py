@@ -57,6 +57,10 @@ urlpatterns = [
     re_path( r'^fault-mode/set/(?P<simulator_id>[\w_\-\.\:]+)$',
              views.SetSimulatorFaultModeView.as_view(),
              name = 'simulator_fault_mode_set' ),
+
+    re_path( r'^runtime/temperature-unit-override$',
+             views.TemperatureUnitOverrideSetView.as_view(),
+             name = 'simulator_temperature_unit_override_set' ),
 ]
 
 

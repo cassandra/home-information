@@ -28,6 +28,7 @@ from typing import Any, Dict, List, Optional, Tuple
 
 from hi.simulator.enums import SimStateType
 
+from .unit_translation import UnitTranslationHelper
 from .sim_models import (
     HassColorSmartBulbFields,
     HassFanFields,
@@ -304,11 +305,24 @@ class HassServiceDispatcher:
         ``set_temperature`` service accepts either a single
         ``temperature`` or the low/high pair depending on the
         thermostat's active mode — the dispatcher applies whatever
-        the payload carries."""
+        the payload carries.
+
+        Incoming temperature values are in the unit the simulator
+        was emitting at request time (profile unit by default; the
+        runtime override's unit when set). SimStates store in the
+        profile's unit, so we reverse-translate here to keep
+        internal storage unit-coherent with each profile's per-
+        entity ``temperature_unit``."""
         if domain != 'climate':
             return []
         updates : List[ Tuple[ str, str ] ] = []
         if service == 'set_temperature':
+            profile_unit = getattr(
+                sim_entity.sim_entity_fields, 'temperature_unit', None,
+            )
+            emitted_unit = UnitTranslationHelper.emitted_temperature_unit(
+                profile_unit = profile_unit,
+            )
             for key, sim_state_id in (
                     ( 'temperature', 'target_temperature' ),
                     ( 'target_temp_low', 'target_temp_low' ),
@@ -319,7 +333,12 @@ class HassServiceDispatcher:
                         numeric = float( payload[ key ] )
                     except ( TypeError, ValueError ):
                         continue
-                    updates.append( ( sim_state_id, str( numeric ) ) )
+                    profile_unit_value = UnitTranslationHelper.convert_temperature_value(
+                        numeric,
+                        from_unit = emitted_unit,
+                        to_unit = profile_unit,
+                    )
+                    updates.append( ( sim_state_id, str( profile_unit_value ) ) )
             return updates
         if service == 'set_hvac_mode':
             mode = payload.get( 'hvac_mode' )

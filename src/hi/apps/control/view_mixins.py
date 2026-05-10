@@ -1,13 +1,18 @@
+import logging
 from typing import List
 
 from django.core.exceptions import BadRequest
 from django.http import Http404, HttpRequest, HttpResponse
 from django.shortcuts import render
 
+from hi.apps.console.console_converter_helper import ConsoleConverterHelper
 from hi.apps.control.models import Controller
+from hi.apps.entity.models import EntityState
 from hi.apps.monitor.status_display_manager import StatusDisplayManager
 
 from .transient_models import ControllerData
+
+logger = logging.getLogger(__name__)
 
 
 class ControlViewMixin:
@@ -22,6 +27,20 @@ class ControlViewMixin:
             return Controller.objects.get( id = controller_id )
         except Controller.DoesNotExist:
             raise Http404( request )
+
+    def to_entity_state_value(
+            self,
+            display_value : str,
+            entity_state  : EntityState,
+    ) -> str:
+        """Convenience for control views: thin pass-through to
+        ``ConsoleConverterHelper.to_entity_state_value`` so the call
+        site reads naturally alongside ``get_controller`` /
+        ``controller_data_response``."""
+        return ConsoleConverterHelper.to_entity_state_value(
+            display_value = display_value,
+            entity_state = entity_state,
+        )
 
     def controller_data_response( self,
                                   request                : HttpRequest,

@@ -1,3 +1,5 @@
-{% with value_range=controller_data.controller.entity_state.value_range_dict %}
-{% include "control/panes/continuous_slider.html" with slider_min=value_range.min|default:30 slider_max=value_range.max|default:100 slider_step="0.5" slider_default=70 display_unit="°" slider_class="temperature-slider" %}
+{% with entity_state=controller_data.controller.entity_state %}
+{% with value_range=entity_state.value_range_dict %}
+{% include "control/panes/continuous_slider_with_units.html" with entity_state=entity_state slider_min=value_range.min slider_max=value_range.max slider_default=value_range.min slider_step="0.1" slider_class="temperature-slider" %}
+{% endwith %}
 {% endwith %}

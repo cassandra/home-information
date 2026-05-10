@@ -1,5 +1,5 @@
 <div class="continuous-control d-flex align-items-center">
-  <span class="mr-2">{{ sim_state.min_value }}</span>
+  <span class="mr-2">{{ sim_state.min_value|floatformat:"-1" }}{{ sim_state.display_unit }}</span>
   <input type="range"
          name="value"
          min="{{ sim_state.min_value }}"
@@ -7,6 +7,6 @@
          value="{{ sim_state.value }}"
          oninput="this.nextElementSibling.value=this.value"
          onchange-async="true">
-  <output class="ml-2" style="min-width: 3em; text-align: right;">{{ sim_state.value }}</output>
-  <span class="ml-2">{{ sim_state.max_value }}</span>
+  <output class="ml-2" style="min-width: 3em; text-align: right;">{{ sim_state.value|floatformat:"-1" }}</output>{% if sim_state.display_unit %}<span class="ml-1">{{ sim_state.display_unit }}</span>{% endif %}
+  <span class="ml-2">{{ sim_state.max_value|floatformat:"-1" }}{{ sim_state.display_unit }}</span>
 </div>

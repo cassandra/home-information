@@ -1,7 +1,9 @@
-from typing import Dict, List, Optional
+from typing import Any, Dict, List, Optional
 
 from hi.apps.sense.sensor_response_manager import SensorResponseMixin
+from hi.units import UnitQuantity
 
+from .integration_metadata_cache import IntegrationMetadataCache
 from .transient_models import IntegrationKey
 
 
@@ -41,3 +43,115 @@ class IntegrationConverterHelper:
             integration_key: ( response.value if response else None )
             for integration_key, response in response_map.items()
         }
+
+    @classmethod
+    def get_cache_entry(
+            cls, integration_key : IntegrationKey,
+    ) -> Dict[str, Any]:
+        """Return cached EntityState metadata used by integration
+        value translation. The dict has a ``units`` key holding the
+        EntityState.units string (or None when no translation is
+        needed). Backed by ``IntegrationMetadataCache`` (process-wide,
+        lazy-warmed)."""
+        return IntegrationMetadataCache.get_entry( integration_key )
+
+    @classmethod
+    async def get_cache_entry_async(
+            cls, integration_key : IntegrationKey,
+    ) -> Dict[str, Any]:
+        """Async variant of ``get_cache_entry`` for use from async
+        monitor / converter paths."""
+        return await IntegrationMetadataCache.get_entry_async( integration_key )
+
+    @classmethod
+    def to_entity_state_value(
+            cls,
+            external_value   : float,
+            external_unit    : str,
+            integration_key  : IntegrationKey,
+    ) -> float:
+        """Inbound boundary: translate a numeric value from the
+        integration's external unit (e.g., HA's reported
+        ``unit_of_measurement``) to the EntityState's stored unit.
+        The target unit is read from the IntegrationMetadataCache.
+        Pass-through when the EntityState has no units or the units
+        already match."""
+        target_unit = cls.get_cache_entry(
+            integration_key,
+        ).get( 'units' )
+        return cls._convert_between_units(
+            value = external_value,
+            from_unit = external_unit,
+            to_unit = target_unit,
+        )
+
+    @classmethod
+    async def to_entity_state_value_async(
+            cls,
+            external_value   : float,
+            external_unit    : str,
+            integration_key  : IntegrationKey,
+    ) -> float:
+        """Async variant of ``to_entity_state_value`` for use from
+        async monitor paths. Cache lookup goes through
+        sync_to_async; conversion arithmetic is pure-Python."""
+        entry = await cls.get_cache_entry_async( integration_key )
+        return cls._convert_between_units(
+            value = external_value,
+            from_unit = external_unit,
+            to_unit = entry.get( 'units' ),
+        )
+
+    @classmethod
+    def from_entity_state_value(
+            cls,
+            entity_state_value : float,
+            external_unit      : str,
+            integration_key    : IntegrationKey,
+    ) -> float:
+        """Outbound boundary: translate a numeric value in the
+        EntityState's stored unit to the integration's external
+        unit (e.g., HA's currently-reported native unit). The
+        source unit is read from the IntegrationMetadataCache.
+        Pass-through when the EntityState has no units or the units
+        already match."""
+        source_unit = cls.get_cache_entry(
+            integration_key,
+        ).get( 'units' )
+        return cls._convert_between_units(
+            value = entity_state_value,
+            from_unit = source_unit,
+            to_unit = external_unit,
+        )
+
+    @classmethod
+    async def from_entity_state_value_async(
+            cls,
+            entity_state_value : float,
+            external_unit      : str,
+            integration_key    : IntegrationKey,
+    ) -> float:
+        """Async variant of ``from_entity_state_value``."""
+        entry = await cls.get_cache_entry_async( integration_key )
+        return cls._convert_between_units(
+            value = entity_state_value,
+            from_unit = entry.get( 'units' ),
+            to_unit = external_unit,
+        )
+
+    @staticmethod
+    def _convert_between_units(
+            value     : float,
+            from_unit : Optional[str],
+            to_unit   : Optional[str],
+    ) -> float:
+        """Pure-Python Pint conversion between unit strings.
+        Pass-through when either side is missing or the units
+        already match. Defensive on parse failures so a malformed
+        unit string never raises into the converter call sites."""
+        if not from_unit or not to_unit or from_unit == to_unit:
+            return value
+        try:
+            return UnitQuantity( value, from_unit ).to( to_unit ).magnitude
+        except Exception:
+            return value

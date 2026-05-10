@@ -1161,8 +1161,69 @@ def _thermostat_entity_id( name : str ) -> str:
     return f'climate.{suffix}'
 
 
+class _ThermostatTemperatureDefaultMixin:
+    """Mixin for thermostat temperature SimStates that swaps the
+    Fahrenheit-style class default (e.g., ``'70'``) for a sensible
+    Celsius value when the parent entity is configured °C-native.
+
+    Without this, °C-native profiles (e.g., Zoo Heater) would
+    initialize ``current_temperature = 70`` meaning 70°C — over
+    150°F, which makes the simulator's value confusing on first
+    load. Subclasses set ``_CELSIUS_DEFAULT_VALUE``; the mixin
+    detects the dataclass field default and swaps it in. User-
+    overridden values (set via the simulator UI) bypass the swap
+    because they no longer match the class default."""
+
+    _CELSIUS_DEFAULT_VALUE : str = ''
+
+    # Slider bounds used when temperature_unit is °F (the seed
+    # default) and °C respectively. Picked so both ranges cover
+    # roughly the same physical span (−1°C / 30°F at the low end,
+    # ~38°C / 100°F at the high end), with round numbers in each
+    # unit so the slider looks natural.
+    _FAHRENHEIT_MIN = 30
+    _FAHRENHEIT_MAX = 100
+    _CELSIUS_MIN = 0
+    _CELSIUS_MAX = 40
+
+    def _apply_celsius_default_if_native(self):
+        if not self._CELSIUS_DEFAULT_VALUE:
+            return
+        if getattr( self.sim_entity_fields, 'temperature_unit', None ) != '°C':
+            return
+        class_default = type( self ).__dataclass_fields__[ 'value' ].default
+        if self.value == class_default:
+            self.value = self._CELSIUS_DEFAULT_VALUE
+
+    def _is_celsius_native(self) -> bool:
+        return getattr(
+            self.sim_entity_fields, 'temperature_unit', None,
+        ) == '°C'
+
+    @property
+    def min_value(self):
+        return self._CELSIUS_MIN if self._is_celsius_native() else self._FAHRENHEIT_MIN
+
+    @property
+    def max_value(self):
+        return self._CELSIUS_MAX if self._is_celsius_native() else self._FAHRENHEIT_MAX
+
+    @property
+    def display_unit(self) -> str:
+        """The profile-defined temperature unit. The simulator UI
+        shows ``self.value`` directly — and the SimState always
+        stores in the profile's unit (the runtime override only
+        applies at the wire boundary in the composer/dispatcher).
+        So the slider label should be the profile unit too,
+        regardless of any active override."""
+        return getattr(
+            self.sim_entity_fields, 'temperature_unit', '',
+        ) or ''
+
+
 @dataclass
-class HassThermostatCurrentTemperatureState( HassState ):
+class HassThermostatCurrentTemperatureState(
+        _ThermostatTemperatureDefaultMixin, HassState ):
     """Current temperature reading. Sensor-only in HA terms but
     operator-controllable in the simulator UI so a tester can
     drive temperature changes (otherwise there's nothing to
@@ -1173,13 +1234,11 @@ class HassThermostatCurrentTemperatureState( HassState ):
     sim_state_id       : str                           = 'current_temperature'
     value              : str                           = '70'
 
-    @property
-    def min_value(self):
-        return 30
+    _CELSIUS_DEFAULT_VALUE = '21'
 
-    @property
-    def max_value(self):
-        return 100
+    def __post_init__(self):
+        super().__post_init__()
+        self._apply_celsius_default_if_native()
 
     @property
     def name(self):
@@ -1204,7 +1263,8 @@ class HassThermostatCurrentTemperatureState( HassState ):
 
 
 @dataclass
-class HassThermostatTargetTemperatureState( HassState ):
+class HassThermostatTargetTemperatureState(
+        _ThermostatTemperatureDefaultMixin, HassState ):
     """Single setpoint (used when hvac_mode is heat / cool / off
     / etc., not heat_cool). Composer emits this only when the
     active mode isn't ``heat_cool``."""
@@ -1214,13 +1274,11 @@ class HassThermostatTargetTemperatureState( HassState ):
     sim_state_id       : str                           = 'target_temperature'
     value              : str                           = '72'
 
-    @property
-    def min_value(self):
-        return 30
+    _CELSIUS_DEFAULT_VALUE = '22'
 
-    @property
-    def max_value(self):
-        return 100
+    def __post_init__(self):
+        super().__post_init__()
+        self._apply_celsius_default_if_native()
 
     @property
     def name(self):
@@ -1246,7 +1304,8 @@ class HassThermostatTargetTemperatureState( HassState ):
 
 
 @dataclass
-class HassThermostatTargetTempLowState( HassState ):
+class HassThermostatTargetTempLowState(
+        _ThermostatTemperatureDefaultMixin, HassState ):
     """Low setpoint of the heat_cool pair. Emitted by the composer
     only when the active mode is heat_cool."""
 
@@ -1255,13 +1314,11 @@ class HassThermostatTargetTempLowState( HassState ):
     sim_state_id       : str                           = 'target_temp_low'
     value              : str                           = '68'
 
-    @property
-    def min_value(self):
-        return 30
+    _CELSIUS_DEFAULT_VALUE = '20'
 
-    @property
-    def max_value(self):
-        return 100
+    def __post_init__(self):
+        super().__post_init__()
+        self._apply_celsius_default_if_native()
 
     @property
     def name(self):
@@ -1285,7 +1342,8 @@ class HassThermostatTargetTempLowState( HassState ):
 
 
 @dataclass
-class HassThermostatTargetTempHighState( HassState ):
+class HassThermostatTargetTempHighState(
+        _ThermostatTemperatureDefaultMixin, HassState ):
     """High setpoint of the heat_cool pair. Emitted by the composer
     only when the active mode is heat_cool."""
 
@@ -1294,13 +1352,11 @@ class HassThermostatTargetTempHighState( HassState ):
     sim_state_id       : str                           = 'target_temp_high'
     value              : str                           = '75'
 
-    @property
-    def min_value(self):
-        return 30
+    _CELSIUS_DEFAULT_VALUE = '24'
 
-    @property
-    def max_value(self):
-        return 100
+    def __post_init__(self):
+        super().__post_init__()
+        self._apply_celsius_default_if_native()
 
     @property
     def name(self):

@@ -1,5 +1,6 @@
 import logging
 
+from asgiref.sync import sync_to_async
 from django.conf import settings
 
 import hi.apps.common.datetimeproxy as datetimeproxy
@@ -95,8 +96,17 @@ class HassMonitor( PeriodicMonitor, HassMixin, SensorResponseMixin ):
         current_datetime = datetimeproxy.now()
         sensor_response_latest_map = dict()
         
+        # The converter chain is sync; the IntegrationMetadataCache it
+        # consults may trigger DB queries on cold-cache or new-entity
+        # paths. Wrap each per-state translation through sync_to_async
+        # so any DB work happens in a thread pool rather than raising
+        # SynchronousOnlyOperation in this async monitor context.
+        translate = sync_to_async(
+            HassConverter.hass_state_to_sensor_value_map,
+            thread_sensitive = True,
+        )
         for hass_state in id_to_hass_state_map.values():
-            value_map = HassConverter.hass_state_to_sensor_value_map( hass_state )
+            value_map = await translate( hass_state )
             if settings.DEBUG and settings.DEBUG_TRACE_STATE:
                 DevOverrideManager.trace_state(
                     'hi.ha_poll.in',
