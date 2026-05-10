@@ -16,6 +16,7 @@ import logging
 from django.test import TestCase
 
 from hi.apps.attribute.enums import AttributeType, AttributeValueType
+from hi.apps.entity.enums import EntityStateType
 from hi.apps.entity.models import Entity, EntityAttribute, EntityState
 from hi.apps.event.models import EventDefinition
 from hi.integrations.entity_operations import EntityIntegrationOperations
@@ -75,6 +76,75 @@ class CreateModelsForHassDeviceCreateNewContractTests(TestCase):
 
         # Light produces at least one EntityState (the on/off state).
         self.assertGreaterEqual(EntityState.objects.filter(entity=entity).count(), 1)
+
+
+class CreateModelsForComboSensorDeviceTests(TestCase):
+    """A real-world combo temp+humidity sensor surfaces in HA as two
+    ``sensor.x`` entities (``sensor.<name>_temperature`` and
+    ``sensor.<name>_humidity``); HI's converter groups them via the
+    ``_temperature`` / ``_humidity`` suffix strip in
+    ``STATE_SUFFIXES`` so the parent device collapses to one HI
+    Entity with two EntityStates. Pin that end-to-end composition —
+    the suffix-strip grouping is the path that makes #301's combo
+    sensor work without an explicit HA device_group_id."""
+
+    def _build_combo_device(self, device_id='kitchen_climate'):
+        def _state(suffix, value, device_class, unit):
+            api_dict = {
+                'entity_id': f'sensor.{device_id}_{suffix}',
+                'state': value,
+                'attributes': {
+                    'friendly_name':
+                        f'{device_id.replace("_", " ").title()} '
+                        f'{suffix.title()}',
+                    'device_class': device_class,
+                    'unit_of_measurement': unit,
+                },
+                'last_changed': '2026-01-01T00:00:00+00:00',
+                'last_reported': '2026-01-01T00:00:00+00:00',
+                'last_updated': '2026-01-01T00:00:00+00:00',
+                'context': {'id': 'ctx', 'parent_id': None, 'user_id': None},
+            }
+            return HassConverter.create_hass_state(api_dict)
+        device = HassDevice(device_id=device_id)
+        device.add_state(_state('temperature', '72', 'temperature', '°F'))
+        device.add_state(_state('humidity', '45', 'humidity', '%'))
+        return device
+
+    def test_combo_device_creates_one_entity_with_two_entity_states(self):
+        entity = HassConverter.create_models_for_hass_device(
+            hass_device=self._build_combo_device(),
+            add_alarm_events=False,
+        )
+
+        state_types = sorted(
+            s.entity_state_type_str
+            for s in EntityState.objects.filter(entity=entity)
+        )
+        self.assertEqual(
+            state_types,
+            sorted([
+                str(EntityStateType.HUMIDITY),
+                str(EntityStateType.TEMPERATURE),
+            ]),
+        )
+
+    def test_combo_device_creates_only_one_entity_row(self):
+        # Belt-and-suspenders for the grouping path — without the
+        # ``_temperature`` / ``_humidity`` suffix-strip the two
+        # wire entities would materialize as two separate HI
+        # Entities. The single-row assertion pins that they
+        # collapse.
+        HassConverter.create_models_for_hass_device(
+            hass_device=self._build_combo_device(),
+            add_alarm_events=False,
+        )
+        self.assertEqual(
+            Entity.objects.filter(
+                integration_id=HassMetaData.integration_id,
+            ).count(),
+            1,
+        )
 
 
 class CreateModelsForHassDeviceReconnectContractTests(TestCase):
