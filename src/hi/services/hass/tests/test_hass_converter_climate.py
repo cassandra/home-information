@@ -216,9 +216,7 @@ class TestClimateSubstateSpecs(TestCase):
 
 def _reset_unit_cache():
     """Singleton cache state must not leak across tests."""
-    cache = IntegrationMetadataCache()
-    cache._cache.clear()
-    cache._warmed = False
+    IntegrationMetadataCache().invalidate()
 
 
 def _seed_unit_cache_for_climate(parent_entity_id, units, suffixes):

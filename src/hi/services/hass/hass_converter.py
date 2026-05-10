@@ -1910,8 +1910,38 @@ class HassConverter:
 
         friendly_name = shortest_id_state.friendly_name
         if friendly_name:
-            return friendly_name
+            return cls._strip_state_suffix_from_friendly_name(
+                hass_state = shortest_id_state,
+                friendly_name = friendly_name,
+            )
         return hass_device.device_id
+
+    @staticmethod
+    def _strip_state_suffix_from_friendly_name(
+            hass_state    : HassState,
+            friendly_name : str ) -> str:
+        """For a combo-device state grouped via entity_id suffix
+        stripping (e.g., ``sensor.kitchen_humidity`` →
+        device_id ``kitchen``), the picked friendly_name often
+        still carries the title-cased suffix word
+        (``'Kitchen Humidity'``). Strip it so the HI Entity name
+        is the device-level name (``'Kitchen'``).
+        Conservative: only strips when the friendly_name's tail
+        is the direct title-case of the entity_id's removed
+        underscore suffix — a user-renamed friendly_name that
+        doesn't follow that pattern passes through unchanged."""
+        full = hass_state.entity_name_sans_prefix
+        short = hass_state.entity_name_sans_suffix
+        if full == short:
+            return friendly_name
+        suffix = full[ len(short): ]
+        suffix_words = ' '.join(
+            part.capitalize() for part in suffix.split('_') if part
+        )
+        tail = ' ' + suffix_words
+        if friendly_name.endswith( tail ):
+            return friendly_name[ : -len(tail) ]
+        return friendly_name
         
     # Word-boundary patterns matched against the device's display
     # name to upgrade a switch-domain device's EntityType at import
@@ -2012,12 +2042,17 @@ class HassConverter:
         if HassApi.FAN_DOMAIN in domain_set:
             return EntityType.CEILING_FAN
         # Climate domain is the controllable HVAC entity; the
-        # temperature device-class check below catches passive
-        # temperature sensors that aren't climate entities.
+        # temperature / humidity device-class checks below catch
+        # passive sensors that aren't climate entities. Combo
+        # temp+humidity devices hit the temperature branch first
+        # and resolve to THERMOMETER, which reads naturally for
+        # the dual-quantity case.
         if HassApi.CLIMATE_DOMAIN in domain_set:
             return EntityType.THERMOSTAT
         if HassApi.TEMPERATURE_DEVICE_CLASS in device_class_set:
-            return EntityType.THERMOSTAT
+            return EntityType.THERMOMETER
+        if HassApi.HUMIDITY_DEVICE_CLASS in device_class_set:
+            return EntityType.HYGROMETER
         if HassApi.CONNECTIVITY_DEVICE_CLASS in device_class_set:
             return EntityType.HEALTHCHECK
 

@@ -107,6 +107,26 @@ class IntegrationMetadataCache( Singleton ):
                     )
             self._warmed = True
 
+    def invalidate(self):
+        """Drop all cached entries and reset the warmup flag.
+
+        Called by the integration framework after any operation
+        that creates, refreshes, or removes EntityStates with
+        integration_keys (sync, disable). The next ``get_entry``
+        triggers a fresh bulk warmup from the now-consistent DB
+        state.
+
+        Necessary because ``_lazy_fill`` caches ``{'units': None}``
+        on miss to keep the polling-loop hot path free of repeat
+        DB queries. Without invalidation, a poll that races an
+        in-progress import pins a bad entry for the lifetime of
+        the process — visible as raw, unconverted values for any
+        new unit-bearing EntityState (most obviously a wrong-by-
+        ~88°F temperature reading)."""
+        with self._lock:
+            self._cache.clear()
+            self._warmed = False
+
     def _lazy_fill(
             self, integration_key : IntegrationKey,
     ) -> Dict[str, Any]:

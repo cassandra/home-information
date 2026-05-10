@@ -823,6 +823,260 @@ class HassSmokeDetectorState( HassState ):
         }
 
 
+# --------------------------------------------------------------------------
+# Numeric sensors (``sensor.x`` with explicit device_class)
+# --------------------------------------------------------------------------
+#
+# Read-only HA ``sensor`` entities whose ``state`` is a numeric
+# string and whose ``unit_of_measurement`` attribute drives HI's
+# units-aware display path. Three shapes are provided:
+#
+# 1. Temperature sensor (single ``sensor.x`` with
+#    ``device_class=temperature``).
+# 2. Humidity sensor (single ``sensor.x`` with
+#    ``device_class=humidity``).
+# 3. Combo temp+humidity sensor (two ``sensor.x`` entities
+#    sharing a short_name so HI's converter groups them into one
+#    HI Entity with two EntityStates — mirrors real-world combo
+#    sensors like Aqara / BME280 / SHT3x).
+#
+# Each SimState is CONTINUOUS so the operator can drive the
+# value from the simulator UI. No HA-side controllability —
+# real ``sensor.x`` entities are read-only.
+
+
+_DEFAULT_FAHRENHEIT_VALUE = '70'
+_DEFAULT_CELSIUS_VALUE = '21'
+_FAHRENHEIT_MIN = 30
+_FAHRENHEIT_MAX = 100
+_CELSIUS_MIN = 0
+_CELSIUS_MAX = 40
+
+
+def _sensor_entity_id( name : str, suffix : str = '' ) -> str:
+    """``sensor.<slug>[_suffix]``. Combo states pass
+    ``_temperature`` / ``_humidity`` as the suffix so the
+    short_name (after HI strips known suffixes) is the same for
+    both states, which is what groups them into one HassDevice."""
+    slug = name.lower().replace( ' ', '_' )
+    if suffix:
+        return f'sensor.{slug}{suffix}'
+    return f'sensor.{slug}'
+
+
+@dataclass( frozen = True )
+class HassTemperatureSensorFields( SimEntityFields ):
+    """Standalone temperature sensor (``sensor.x`` with
+    ``device_class=temperature``). ``temperature_unit`` toggles
+    °F vs °C end-to-end so HI's unit pass-through can be
+    exercised in both directions."""
+    temperature_unit : str = '°F'
+
+
+@dataclass
+class HassTemperatureSensorState( HassState ):
+    sim_entity_fields  : HassTemperatureSensorFields
+    sim_state_type     : SimStateType                       = SimStateType.CONTINUOUS
+    sim_state_id       : str                                = 'temperature'
+    value              : str                                = _DEFAULT_FAHRENHEIT_VALUE
+
+    def __post_init__(self):
+        super().__post_init__()
+        # Class-level default is Fahrenheit-shaped (``'70'``); on
+        # °C-configured profiles swap it for a sensible Celsius
+        # default so first-load values don't read as ``70°C``.
+        # Only swaps when ``value`` still equals the class default,
+        # so operator-set values survive.
+        if self.sim_entity_fields.temperature_unit != '°C':
+            return
+        class_default = type( self ).__dataclass_fields__[ 'value' ].default
+        if self.value == class_default:
+            self.value = _DEFAULT_CELSIUS_VALUE
+
+    @property
+    def name(self):
+        return f'{self.entity_name} Temperature'
+
+    @property
+    def entity_id(self):
+        return _sensor_entity_id( self.entity_name )
+
+    @property
+    def state(self):
+        # For ``sensor.x`` entities the wire ``state`` IS the
+        # numeric reading — HA encodes it as a string.
+        return self.value
+
+    @property
+    def attributes(self) -> Dict[ str, str ]:
+        return {
+            'device_class'       : 'temperature',
+            'friendly_name'      : self.entity_name,
+            'unit_of_measurement': self.sim_entity_fields.temperature_unit,
+        }
+
+    @property
+    def min_value(self):
+        if self.sim_entity_fields.temperature_unit == '°C':
+            return _CELSIUS_MIN
+        return _FAHRENHEIT_MIN
+
+    @property
+    def max_value(self):
+        if self.sim_entity_fields.temperature_unit == '°C':
+            return _CELSIUS_MAX
+        return _FAHRENHEIT_MAX
+
+    @property
+    def display_unit(self) -> str:
+        return self.sim_entity_fields.temperature_unit
+
+
+@dataclass( frozen = True )
+class HassHumiditySensorFields( SimEntityFields ):
+    """Standalone humidity sensor (``sensor.x`` with
+    ``device_class=humidity``). Unit is always ``%`` so no
+    per-device toggle is needed."""
+    pass
+
+
+@dataclass
+class HassHumiditySensorState( HassState ):
+    sim_entity_fields  : HassHumiditySensorFields
+    sim_state_type     : SimStateType                    = SimStateType.CONTINUOUS
+    sim_state_id       : str                             = 'humidity'
+    value              : str                             = '45'
+
+    @property
+    def name(self):
+        return f'{self.entity_name} Humidity'
+
+    @property
+    def entity_id(self):
+        return _sensor_entity_id( self.entity_name )
+
+    @property
+    def state(self):
+        return self.value
+
+    @property
+    def attributes(self) -> Dict[ str, str ]:
+        return {
+            'device_class'       : 'humidity',
+            'friendly_name'      : self.entity_name,
+            'unit_of_measurement': '%',
+        }
+
+    @property
+    def min_value(self):
+        return 0
+
+    @property
+    def max_value(self):
+        return 100
+
+
+@dataclass( frozen = True )
+class HassTempHumiditySensorFields( SimEntityFields ):
+    """Combo sensor that reports both temperature and humidity
+    (e.g., Aqara / BME280 / SHT3x). HA represents this as two
+    separate ``sensor.x`` entities; HI's converter collapses
+    them back into one Entity with two EntityStates via
+    suffix-strip grouping (``sensor.<name>_temperature`` and
+    ``sensor.<name>_humidity`` share short_name ``<name>``)."""
+    temperature_unit : str = '°F'
+
+
+@dataclass
+class HassTempHumiditySensorTemperatureState( HassState ):
+    sim_entity_fields  : HassTempHumiditySensorFields
+    sim_state_type     : SimStateType                          = SimStateType.CONTINUOUS
+    sim_state_id       : str                                   = 'temperature'
+    value              : str                                   = _DEFAULT_FAHRENHEIT_VALUE
+
+    def __post_init__(self):
+        super().__post_init__()
+        if self.sim_entity_fields.temperature_unit != '°C':
+            return
+        class_default = type( self ).__dataclass_fields__[ 'value' ].default
+        if self.value == class_default:
+            self.value = _DEFAULT_CELSIUS_VALUE
+
+    @property
+    def name(self):
+        return f'{self.entity_name} Temperature'
+
+    @property
+    def entity_id(self):
+        # ``_temperature`` suffix is in ``STATE_SUFFIXES``, so
+        # HI strips it to the short_name for grouping.
+        return _sensor_entity_id( self.entity_name, suffix = '_temperature' )
+
+    @property
+    def state(self):
+        return self.value
+
+    @property
+    def attributes(self) -> Dict[ str, str ]:
+        return {
+            'device_class'       : 'temperature',
+            'friendly_name'      : f'{self.entity_name} Temperature',
+            'unit_of_measurement': self.sim_entity_fields.temperature_unit,
+        }
+
+    @property
+    def min_value(self):
+        if self.sim_entity_fields.temperature_unit == '°C':
+            return _CELSIUS_MIN
+        return _FAHRENHEIT_MIN
+
+    @property
+    def max_value(self):
+        if self.sim_entity_fields.temperature_unit == '°C':
+            return _CELSIUS_MAX
+        return _FAHRENHEIT_MAX
+
+    @property
+    def display_unit(self) -> str:
+        return self.sim_entity_fields.temperature_unit
+
+
+@dataclass
+class HassTempHumiditySensorHumidityState( HassState ):
+    sim_entity_fields  : HassTempHumiditySensorFields
+    sim_state_type     : SimStateType                          = SimStateType.CONTINUOUS
+    sim_state_id       : str                                   = 'humidity'
+    value              : str                                   = '45'
+
+    @property
+    def name(self):
+        return f'{self.entity_name} Humidity'
+
+    @property
+    def entity_id(self):
+        return _sensor_entity_id( self.entity_name, suffix = '_humidity' )
+
+    @property
+    def state(self):
+        return self.value
+
+    @property
+    def attributes(self) -> Dict[ str, str ]:
+        return {
+            'device_class'       : 'humidity',
+            'friendly_name'      : f'{self.entity_name} Humidity',
+            'unit_of_measurement': '%',
+        }
+
+    @property
+    def min_value(self):
+        return 0
+
+    @property
+    def max_value(self):
+        return 100
+
+
 @dataclass( frozen = True )
 class HassLockFields( SimEntityFields ):
     """A lock device. Single ON_OFF SimState whose value drives
@@ -1827,6 +2081,31 @@ HASS_SIM_ENTITY_DEFINITION_LIST = [
             HassMultiFeatureFanOscillatingState,
             HassMultiFeatureFanDirectionState,
             HassMultiFeatureFanPresetState,
+        ],
+    ),
+    SimEntityDefinition(
+        class_label = 'Temperature Sensor',
+        sim_entity_type = SimEntityType.THERMOMETER,
+        sim_entity_fields_class = HassTemperatureSensorFields,
+        sim_state_class_list = [
+            HassTemperatureSensorState,
+        ],
+    ),
+    SimEntityDefinition(
+        class_label = 'Humidity Sensor',
+        sim_entity_type = SimEntityType.HYGROMETER,
+        sim_entity_fields_class = HassHumiditySensorFields,
+        sim_state_class_list = [
+            HassHumiditySensorState,
+        ],
+    ),
+    SimEntityDefinition(
+        class_label = 'Temperature + Humidity Sensor',
+        sim_entity_type = SimEntityType.THERMOMETER,
+        sim_entity_fields_class = HassTempHumiditySensorFields,
+        sim_state_class_list = [
+            HassTempHumiditySensorTemperatureState,
+            HassTempHumiditySensorHumidityState,
         ],
     ),
     SimEntityDefinition(
