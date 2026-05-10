@@ -766,6 +766,9 @@ g[status="high"] {
 g[status="low"] {
     filter: drop-shadow(0 0 5px var(--status-bad-color));
 }
+g[status="smoke_detected"] {
+    filter: drop-shadow(0 0 5px var(--status-bad-color));
+}
 
 
 div[status] {

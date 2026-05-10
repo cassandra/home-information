@@ -113,9 +113,10 @@ class SimEntityType(LabeledEnum):
     OTHER                = ( 'Other', '' )  # Will use generic visual element
     PRESENCE_SENSOR      = ( 'Presence Sensor', '' )
     SEWER_LINE           = ( 'Sewer Wire', '' )
-    SHOWER               = ( 'Shower', '' ) 
-    SINK                 = ( 'Sink', '' ) 
+    SHOWER               = ( 'Shower', '' )
+    SINK                 = ( 'Sink', '' )
     SERVICE              = ( 'Service'         , '' )
+    SMOKE_DETECTOR       = ( 'Smoke Detector', '' )
     SPEAKER              = ( 'Speaker', '' )
     SPINKLER_CONTROLLER  = ( 'Spinkler Controller', '' )
     SPINKLER_VALVE       = ( 'Spinkler Valve', '' )  # Controls sprinkler heads

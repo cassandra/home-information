@@ -46,6 +46,10 @@ class HiModelHelper:
     DEFAULT_BATTERY_EVENT_WINDOW_SECS = 180
     DEFAULT_BATTERY_DEDUPE_WINDOW_SECS = 300
     DEFAULT_BATTERY_ALARM_LIFETIME_SECS = Alarm.MAX_LIFETIME_SECS
+
+    DEFAULT_SMOKE_EVENT_WINDOW_SECS = 180
+    DEFAULT_SMOKE_DEDUPE_WINDOW_SECS = 300
+    DEFAULT_SMOKE_ALARM_LIFETIME_SECS = Alarm.MAX_LIFETIME_SECS
     
     @classmethod
     def create_blob_sensor( cls,
@@ -207,6 +211,20 @@ class HiModelHelper:
             name = name,
             integration_key = integration_key,
             provides_video_stream = provides_video_stream,
+        )
+
+    @classmethod
+    def create_smoke_sensor( cls,
+                             entity              : Entity,
+                             integration_key     : IntegrationKey  = None,
+                             name                : str             = None ) -> Sensor:
+        if not name:
+            name = f'{entity.name} Smoke'
+        return cls.create_sensor(
+            entity = entity,
+            entity_state_type = EntityStateType.SMOKE,
+            name = name,
+            integration_key = integration_key,
         )
 
     @classmethod
@@ -490,6 +508,31 @@ class HiModelHelper:
             event_window_secs = cls.DEFAULT_MOVEMENT_EVENT_WINDOW_SECS,
             dedupe_window_secs = cls.DEFAULT_MOVEMENT_DEDUPE_WINDOW_SECS,
             alarm_lifetime_secs = cls.DEFAULT_MOVEMENT_ALARM_LIFETIME_SECS,
+            integration_key = integration_key,
+        )
+
+    @classmethod
+    def create_smoke_event_definition(
+            cls,
+            name                 : str,
+            entity_state         : EntityState,
+            integration_key      : IntegrationKey  = None ) -> EventDefinition:
+
+        # Smoke is life-safety: both security levels map to CRITICAL.
+        # The user's "I'm home, keep things quiet" posture (LOW) does
+        # not reduce the urgency of a fire alarm.
+        return EventManager().create_simple_alarm_event_definition(
+            name = name,
+            event_type = EventType.SECURITY,
+            entity_state = entity_state,
+            value = EntityStateValue.SMOKE_DETECTED,
+            security_to_alarm_level = {
+                SecurityLevel.HIGH: AlarmLevel.CRITICAL,
+                SecurityLevel.LOW: AlarmLevel.CRITICAL,
+            },
+            event_window_secs = cls.DEFAULT_SMOKE_EVENT_WINDOW_SECS,
+            dedupe_window_secs = cls.DEFAULT_SMOKE_DEDUPE_WINDOW_SECS,
+            alarm_lifetime_secs = cls.DEFAULT_SMOKE_ALARM_LIFETIME_SECS,
             integration_key = integration_key,
         )
 

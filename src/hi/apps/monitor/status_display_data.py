@@ -15,9 +15,15 @@ class StatusDisplayData:
 
     RECENT_MOVEMENT_THRESHOLD_SECS = 90
     PAST_MOVEMENT_THRESHOLD_SECS = 180
-    
+
     RECENT_OPEN_THRESHOLD_SECS = 90
     PAST_OPEN_THRESHOLD_SECS = 180
+
+    # Smoke-alarm decay is longer than movement/open-close: a fire
+    # event is rare and the recent / past status carries higher
+    # operator significance, so the visual reminder lingers.
+    RECENT_SMOKE_THRESHOLD_SECS = 600
+    PAST_SMOKE_THRESHOLD_SECS = 1800
     
     def __init__( self, entity_state_status_data : EntityStateStatusData ):
         self._entity_state = entity_state_status_data.entity_state
@@ -134,7 +140,7 @@ class StatusDisplayData:
         return self.latest_display_value.magnitude
 
     def _get_svg_status_style(self):
-    
+
         if self.entity_state.entity_state_type == EntityStateType.MOVEMENT:
             return self._get_movement_status_style()
         
@@ -161,6 +167,9 @@ class StatusDisplayData:
         
         if self.entity_state.entity_state_type == EntityStateType.HIGH_LOW:
             return self._get_high_low_status_style()
+
+        if self.entity_state.entity_state_type == EntityStateType.SMOKE:
+            return self._get_smoke_status_style()
 
         # TODO: These should map the latest value into a continuous range of colors/opacity
         #
@@ -214,6 +223,21 @@ class StatusDisplayData:
                 return StatusStyle.MovementPast
 
         return StatusStyle.MovementIdle
+
+    def _get_smoke_status_style( self ):
+
+        if self.latest_sensor_value == str(EntityStateValue.SMOKE_DETECTED):
+            return StatusStyle.SmokeDetected
+
+        if self.penultimate_sensor_value == str(EntityStateValue.SMOKE_DETECTED):
+            smoke_timedelta = datetimeproxy.now() - self.penultimate_sensor_timestamp
+            if smoke_timedelta.total_seconds() < self.RECENT_SMOKE_THRESHOLD_SECS:
+                return StatusStyle.SmokeRecent
+
+            elif smoke_timedelta.total_seconds() < self.PAST_SMOKE_THRESHOLD_SECS:
+                return StatusStyle.SmokePast
+
+        return StatusStyle.SmokeClear
         
     def _get_on_off_status_style( self ):
 

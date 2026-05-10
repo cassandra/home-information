@@ -79,6 +79,7 @@ from hi.simulator.services.hass.sim_models import (
     HassGarageCoverFields,
     HassGenericCoverFields,
     HassInsteonDimmerLightSwitchFields,
+    HassDoorContactSensorFields,
     HassInsteonDualBandLightSwitchFields,
     HassInsteonLightSwitchFields,
     HassInsteonMotionDetectorFields,
@@ -87,8 +88,10 @@ from hi.simulator.services.hass.sim_models import (
     HassLockFields,
     HassMultiFeatureFanFields,
     HassSmartBulbFields,
+    HassSmokeDetectorFields,
     HassThermostatFields,
     HassWindowBlindCoverFields,
+    HassWindowContactSensorFields,
 )
 from hi.simulator.services.homebox.attachment_catalog import AttachmentTemplate
 from hi.simulator.services.homebox.sim_models import (
@@ -352,6 +355,9 @@ class Command(BaseCommand):
         self._add_hass_outlet(         profile, 'Zoo Outlet'           , '01.BB.06' )
         self._add_hass_smart_bulb(     profile, 'Zoo Smart Bulb' )
         self._add_hass_color_smart_bulb( profile, 'Zoo Color Bulb' )
+        self._add_hass_door_contact(   profile, 'Zoo Door Contact' )
+        self._add_hass_window_contact( profile, 'Zoo Window Contact' )
+        self._add_hass_smoke_detector( profile, 'Zoo Smoke Detector' )
         self._add_hass_lock(           profile, 'Zoo Lock' )
         self._add_hass_garage_cover(   profile, 'Zoo Garage' )
         self._add_hass_window_blind_cover( profile, 'Zoo Blind' )
@@ -493,6 +499,33 @@ class Command(BaseCommand):
             simulator_id = 'hass',
             fields_class = HassColorSmartBulbFields,
             sim_entity_type = SimEntityType.LIGHT,
+            fields_kwargs = {'name': name},
+        )
+
+    def _add_hass_door_contact(self, profile, name):
+        self._create_db_entity(
+            profile = profile,
+            simulator_id = 'hass',
+            fields_class = HassDoorContactSensorFields,
+            sim_entity_type = SimEntityType.OPEN_CLOSE_SENSOR,
+            fields_kwargs = {'name': name},
+        )
+
+    def _add_hass_window_contact(self, profile, name):
+        self._create_db_entity(
+            profile = profile,
+            simulator_id = 'hass',
+            fields_class = HassWindowContactSensorFields,
+            sim_entity_type = SimEntityType.OPEN_CLOSE_SENSOR,
+            fields_kwargs = {'name': name},
+        )
+
+    def _add_hass_smoke_detector(self, profile, name):
+        self._create_db_entity(
+            profile = profile,
+            simulator_id = 'hass',
+            fields_class = HassSmokeDetectorFields,
+            sim_entity_type = SimEntityType.SMOKE_DETECTOR,
             fields_kwargs = {'name': name},
         )
 

@@ -1,1 +1,2 @@
-<div class="text-center px-2" status="{{ sensor_response.value }}">{{ sensor_response.value }}</div>
+{% load entity_tags %}
+<div class="text-center px-2" status="{{ sensor_response.value }}">{{ sensor_response.value|value_label }}</div>

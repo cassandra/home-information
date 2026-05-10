@@ -694,6 +694,135 @@ class HassColorSmartBulbColorModeState( HassState ):
         return {}
 
 
+# --------------------------------------------------------------------------
+# Binary sensors (non-Insteon, explicit device_class)
+# --------------------------------------------------------------------------
+#
+# Door / window contact sensors and smoke detectors are
+# ``binary_sensor.x`` entities differentiated by their
+# ``device_class`` attribute. Per HA convention the alarm state
+# is ``'on'`` (door/window open, smoke detected); ``'off'`` is
+# the normal state. The three classes are structurally similar
+# but kept parallel because the underlying SimStateType differs
+# (OPEN_CLOSE for door/window, ON_OFF for smoke) which drives a
+# different simulator-side UI control.
+
+
+def _binary_sensor_entity_id( name : str ) -> str:
+    suffix = name.lower().replace( ' ', '_' )
+    return f'binary_sensor.{suffix}'
+
+
+@dataclass( frozen = True )
+class HassDoorContactSensorFields( SimEntityFields ):
+    """A door contact sensor (``binary_sensor`` with
+    ``device_class=door``). Single OPEN_CLOSE SimState whose
+    value drives HA's ``state`` (``'on'`` = open, ``'off'`` =
+    closed, per HA convention)."""
+    pass
+
+
+@dataclass
+class HassDoorContactSensorState( HassState ):
+    sim_entity_fields  : HassDoorContactSensorFields
+    sim_state_type     : SimStateType                  = SimStateType.OPEN_CLOSE
+    sim_state_id       : str                           = 'contact'
+    value              : str                           = 'off'
+
+    @property
+    def name(self):
+        return f'{self.entity_name} Contact'
+
+    @property
+    def entity_id(self):
+        return _binary_sensor_entity_id( self.entity_name )
+
+    @property
+    def state(self):
+        return 'on' if str_to_bool( self.value ) else 'off'
+
+    @property
+    def attributes(self) -> Dict[ str, str ]:
+        return {
+            'device_class': 'door',
+            'friendly_name': self.entity_name,
+            'icon': 'mdi:door',
+        }
+
+
+@dataclass( frozen = True )
+class HassWindowContactSensorFields( SimEntityFields ):
+    """A window contact sensor (``binary_sensor`` with
+    ``device_class=window``). Wire shape mirrors the door variant
+    aside from the device_class string."""
+    pass
+
+
+@dataclass
+class HassWindowContactSensorState( HassState ):
+    sim_entity_fields  : HassWindowContactSensorFields
+    sim_state_type     : SimStateType                  = SimStateType.OPEN_CLOSE
+    sim_state_id       : str                           = 'contact'
+    value              : str                           = 'off'
+
+    @property
+    def name(self):
+        return f'{self.entity_name} Contact'
+
+    @property
+    def entity_id(self):
+        return _binary_sensor_entity_id( self.entity_name )
+
+    @property
+    def state(self):
+        return 'on' if str_to_bool( self.value ) else 'off'
+
+    @property
+    def attributes(self) -> Dict[ str, str ]:
+        return {
+            'device_class': 'window',
+            'friendly_name': self.entity_name,
+            'icon': 'mdi:window-closed-variant',
+        }
+
+
+@dataclass( frozen = True )
+class HassSmokeDetectorFields( SimEntityFields ):
+    """A smoke detector (``binary_sensor`` with
+    ``device_class=smoke``). Single ON_OFF SimState — ``'on'``
+    means smoke detected (alarm), ``'off'`` is clear, per HA
+    convention."""
+    pass
+
+
+@dataclass
+class HassSmokeDetectorState( HassState ):
+    sim_entity_fields  : HassSmokeDetectorFields
+    sim_state_type     : SimStateType                  = SimStateType.ON_OFF
+    sim_state_id       : str                           = 'smoke'
+    value              : str                           = 'off'
+
+    @property
+    def name(self):
+        return f'{self.entity_name} Smoke'
+
+    @property
+    def entity_id(self):
+        return _binary_sensor_entity_id( self.entity_name )
+
+    @property
+    def state(self):
+        return 'on' if str_to_bool( self.value ) else 'off'
+
+    @property
+    def attributes(self) -> Dict[ str, str ]:
+        return {
+            'device_class': 'smoke',
+            'friendly_name': self.entity_name,
+            'icon': 'mdi:smoke-detector',
+        }
+
+
 @dataclass( frozen = True )
 class HassLockFields( SimEntityFields ):
     """A lock device. Single ON_OFF SimState whose value drives
@@ -1623,6 +1752,30 @@ HASS_SIM_ENTITY_DEFINITION_LIST = [
             HassColorSmartBulbSaturationState,
             HassColorSmartBulbColorTempState,
             HassColorSmartBulbColorModeState,
+        ],
+    ),
+    SimEntityDefinition(
+        class_label = 'Door Contact Sensor',
+        sim_entity_type = SimEntityType.OPEN_CLOSE_SENSOR,
+        sim_entity_fields_class = HassDoorContactSensorFields,
+        sim_state_class_list = [
+            HassDoorContactSensorState,
+        ],
+    ),
+    SimEntityDefinition(
+        class_label = 'Window Contact Sensor',
+        sim_entity_type = SimEntityType.OPEN_CLOSE_SENSOR,
+        sim_entity_fields_class = HassWindowContactSensorFields,
+        sim_state_class_list = [
+            HassWindowContactSensorState,
+        ],
+    ),
+    SimEntityDefinition(
+        class_label = 'Smoke Detector',
+        sim_entity_type = SimEntityType.SMOKE_DETECTOR,
+        sim_entity_fields_class = HassSmokeDetectorFields,
+        sim_state_class_list = [
+            HassSmokeDetectorState,
         ],
     ),
     SimEntityDefinition(

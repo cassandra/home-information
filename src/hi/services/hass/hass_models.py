@@ -104,6 +104,7 @@ class HassApi:
     LIGHT_DEVICE_CLASS = 'light'
     MOTION_DEVICE_CLASS = 'motion'
     OUTLET_DEVICE_CLASS = 'outlet'
+    SMOKE_DEVICE_CLASS = 'smoke'
     TEMPERATURE_DEVICE_CLASS = 'temperature'
     TIMESTAMP_DEVICE_CLASS = 'timestamp'
     WINDOW_DEVICE_CLASS = 'window'
