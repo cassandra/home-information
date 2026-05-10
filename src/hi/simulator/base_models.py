@@ -136,6 +136,14 @@ class SimState:
         """ Subclasses using SimStateType.DISCRETE should override this to provide the valid values. """
         return list()
 
+    @property
+    def display_unit(self) -> str:
+        """Optional unit suffix shown next to the value/bounds in
+        the simulator UI (e.g., ``°F`` next to a thermostat
+        temperature). Subclasses with unit-bearing values should
+        override; default is empty (no suffix)."""
+        return ''
+
     def copy_value( self, other_sim_state : 'SimState' ):
         if not other_sim_state:
             return

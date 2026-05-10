@@ -7,10 +7,11 @@ from django.views.generic import View
 
 import hi.apps.common.antinode as antinode
 
-from .enums import SimulatorFaultMode
+from .enums import SimulatorFaultMode, SimTemperatureUnit
 from .exceptions import SimEntityValidationError
 from . import forms
 from .models import DbSimEntity, SimProfile
+from .runtime_settings import SimulatorRuntimeSettings
 from .simulator_manager import SimulatorManager
 from .sim_entity import SimEntity
 from .view_mixins import SimulatorViewMixin
@@ -27,12 +28,15 @@ class HomeView( View, SimulatorViewMixin ):
             request = request,
             simulator_list = [ x.simulator for x in simulator_data_list ],
         )
+        runtime_settings = SimulatorRuntimeSettings()
         context = {
             'sim_profile_list': sim_profile_list,
             'current_sim_profile': current_sim_profile,
             'simulator_data_list': simulator_data_list,
             'current_simulator': current_simulator,
             'fault_mode_choices': list( SimulatorFaultMode ),
+            'temperature_unit_choices': list( SimTemperatureUnit ),
+            'temperature_unit_override': runtime_settings.temperature_unit_override,
         }
         return render( request, 'simulator/pages/home.html', context )
 
@@ -385,6 +389,31 @@ class SimStateSetView( View, SimulatorViewMixin ):
         )
         context = {
             'sim_state': sim_state,
+        }
+        return render( request, self.TEMPLATE_NAME, context )
+
+
+class TemperatureUnitOverrideSetView( View ):
+    """Operator control to flip the simulator's process-wide
+    temperature unit override (or clear it back to per-profile
+    defaults). Returns the dropdown's form fragment so antinode.js
+    can swap it in place — preserves the current integration tab
+    and avoids a full reload."""
+
+    TEMPLATE_NAME = 'simulator/panes/temperature_unit_override_form.html'
+
+    def post( self, request, *args, **kwargs ):
+        raw = ( request.POST.get( 'temperature_unit' ) or '' ).strip()
+        if raw:
+            override = SimTemperatureUnit.from_name_safe( raw )
+            if override is None:
+                raise BadRequest( f'Unknown temperature unit: {raw!r}' )
+        else:
+            override = None
+        SimulatorRuntimeSettings().set_temperature_unit_override( override )
+        context = {
+            'temperature_unit_choices': list( SimTemperatureUnit ),
+            'temperature_unit_override': override,
         }
         return render( request, self.TEMPLATE_NAME, context )
         

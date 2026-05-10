@@ -28,6 +28,7 @@ from typing import Any, Dict, List, Optional, Tuple
 
 from hi.simulator.enums import SimStateType
 
+from .unit_translation import UnitTranslationHelper
 from .sim_models import (
     HassColorSmartBulbFields,
     HassFanFields,
@@ -35,6 +36,7 @@ from .sim_models import (
     HassGenericCoverFields,
     HassLockFields,
     HassMultiFeatureFanFields,
+    HassThermostatFields,
     HassWindowBlindCoverFields,
 )
 
@@ -292,6 +294,65 @@ class HassServiceDispatcher:
         return []
 
     @staticmethod
+    def _thermostat( sim_entity,
+                     domain   : str,
+                     service  : str,
+                     payload  : Dict[ str, Any ],
+                     ) -> List[ Tuple[ str, str ] ]:
+        """Thermostat: routes ``set_temperature`` (with ``temperature``
+        / ``target_temp_low`` / ``target_temp_high``) and
+        ``set_hvac_mode`` to the matching SimStates. HA's
+        ``set_temperature`` service accepts either a single
+        ``temperature`` or the low/high pair depending on the
+        thermostat's active mode — the dispatcher applies whatever
+        the payload carries.
+
+        Incoming temperature values are in the unit the simulator
+        was emitting at request time (profile unit by default; the
+        runtime override's unit when set). SimStates store in the
+        profile's unit, so we reverse-translate here to keep
+        internal storage unit-coherent with each profile's per-
+        entity ``temperature_unit``."""
+        if domain != 'climate':
+            return []
+        updates : List[ Tuple[ str, str ] ] = []
+        if service == 'set_temperature':
+            profile_unit = getattr(
+                sim_entity.sim_entity_fields, 'temperature_unit', None,
+            )
+            emitted_unit = UnitTranslationHelper.emitted_temperature_unit(
+                profile_unit = profile_unit,
+            )
+            for key, sim_state_id in (
+                    ( 'temperature', 'target_temperature' ),
+                    ( 'target_temp_low', 'target_temp_low' ),
+                    ( 'target_temp_high', 'target_temp_high' ),
+            ):
+                if key in payload:
+                    try:
+                        numeric = float( payload[ key ] )
+                    except ( TypeError, ValueError ):
+                        continue
+                    profile_unit_value = UnitTranslationHelper.convert_temperature_value(
+                        numeric,
+                        from_unit = emitted_unit,
+                        to_unit = profile_unit,
+                    )
+                    updates.append( ( sim_state_id, str( profile_unit_value ) ) )
+            return updates
+        if service == 'set_hvac_mode':
+            mode = payload.get( 'hvac_mode' )
+            if not mode:
+                return []
+            return [ ( 'hvac_mode', str( mode ) ) ]
+        if service == 'set_fan_mode':
+            mode = payload.get( 'fan_mode' )
+            if not mode:
+                return []
+            return [ ( 'fan_mode', str( mode ) ) ]
+        return []
+
+    @staticmethod
     def _extract_percentage_value_str( payload : Dict[ str, Any ] ) -> Optional[ str ]:
         """Read fan ``percentage`` from an HA service-call
         payload as a 0-100 integer string. Returns None when the
@@ -334,5 +395,6 @@ HassServiceDispatcher._REGISTRY = {
     HassGenericCoverFields: HassServiceDispatcher._discrete_cover,
     HassLockFields: HassServiceDispatcher._lock,
     HassMultiFeatureFanFields: HassServiceDispatcher._multi_feature_fan,
+    HassThermostatFields: HassServiceDispatcher._thermostat,
     HassWindowBlindCoverFields: HassServiceDispatcher._window_blind_cover,
 }

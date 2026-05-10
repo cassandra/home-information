@@ -16,6 +16,16 @@ A single upstream state may decompose into multiple HI EntityStates when the ups
 - **`IntegrationConverterHelper`** (`hi/integrations/integration_converter_helper.py`): a classmethod helper used by converters that need to compose outbound calls from multiple HI EntityState values. Exposes `get_latest_state_values(integration_keys)` for the runtime cache lookup. Inbound decomposition writes each substate value through `SensorResponse`; outbound recomposition reads it back via this helper.
 - The integration's converter decides which upstream attributes become substates and how they map back to outbound calls. See the HA integration's substate handling for a worked example.
 
+### Unit conversion at the integration boundary
+Integrations whose external system reports values with a unit (HA's `temperature_unit`, sensor `unit_of_measurement`, etc.) MUST normalize at the boundary: convert inbound values to a canonical unit before storing, and convert outbound values from canonical to the external system's required unit. The canonical unit is declared once where the EntityState is created (e.g., HA's climate substate specs declare °C as canonical for temperatures). Downstream code reads `EntityState.units` rather than re-asserting the canonical, so changing the choice propagates through the spec → EntityState chain without code edits at every conversion site.
+
+- **`IntegrationMetadataCache`** (`hi/integrations/integration_metadata_cache.py`) caches `EntityState.units` per `IntegrationKey` so polling-loop unit lookups don't multiply DB queries. Process-wide, lazy-warmed; provides parallel sync and async APIs (use the async variant from monitor coroutines so DB access goes through `sync_to_async`).
+- **`IntegrationConverterHelper.to_entity_state_value` / `from_entity_state_value`** (both with `_async` variants) are the boundary helpers backed by the cache. Inbound (`to_`) takes an external value + external unit and returns the value in the EntityState's stored unit. Outbound (`from_`) takes an EntityState-unit value + target external unit. Both pass through unchanged when units are absent or already match — safe to call uniformly without per-state-type branching.
+
+See `hi/services/hass/hass_converter.py` (climate substate inbound + setpoint outbound dispatch) for a worked example.
+
+The symmetric server ↔ UI boundary uses `ConsoleConverterHelper`; see [Frontend Guidelines](../frontend/frontend-guidelines.md#unit-bearing-values-server--ui-translation).
+
 ### Responsibility Boundaries
 Integrations create `SensorResponse` objects which become `Event` objects with duration. The Event duration is the only accessible duration data - Event objects don't know about underlying integration specifics.
 

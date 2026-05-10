@@ -4,6 +4,15 @@ from hi.apps.console.enums import DisplayUnits
 ureg = UnitRegistry()
 UnitQuantity = ureg.Quantity
 
+
+# HI-wide canonical unit choices. Integration converters that import
+# unit-bearing values normalize to the canonical at the boundary;
+# downstream code reads ``EntityState.units`` (set from these
+# canonicals at creation time) rather than re-asserting the canonical.
+# Adding a new canonical here makes it available cross-integration so
+# multiple integrations don't duplicate the choice.
+CANONICAL_TEMPERATURE_UNIT = '°C'
+
 ureg.define('percent = 1 / 100 = % = pct')
 ureg.define('true = 1 = yes = on')
 ureg.define('false = 0 = no = off')

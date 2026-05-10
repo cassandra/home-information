@@ -29,13 +29,20 @@ class ControllerView( View, ControlViewMixin, ControllerMixin ):
         
     def post( self, request, *args, **kwargs ):
         controller = self.get_controller( request, *args, **kwargs )
-        control_value = request.POST.get( 'value' )
+        display_control_value = request.POST.get( 'value' )
 
         # Checkbox case results in no value, so we need to normalize those
         # binary states based on EntityStateType.
         #
-        if control_value is None:
-            control_value = self._get_value_for_missing_input( controller = controller )
+        if display_control_value is None:
+            display_control_value = self._get_value_for_missing_input(
+                controller = controller,
+            )
+
+        control_value = self.to_entity_state_value(
+            display_value = display_control_value,
+            entity_state = controller.entity_state,
+        )
 
         controller_outcome = self.controller_manager().do_control(
             controller = controller,

@@ -28,6 +28,14 @@
     window.Hi = window.Hi || {};
     Hi.controllers = Hi.controllers || {};
 
+    // Sliders the user is actively dragging. Polling-driven value
+    // updates skip these elements so a server refresh mid-drag
+    // doesn't yank the thumb out from under the operator's
+    // fingers. Cleared on pointerup / change so subsequent polls
+    // resume normally — by definition the change-async submit on
+    // release will reconcile the value at that point.
+    const _activeSliders = new WeakSet();
+
     /**
      * Apply a class-name → controller-value map by finding each
      * matching element and updating the appropriate widget
@@ -53,6 +61,9 @@
         if ( tag === 'INPUT' ) {
             const type = element.type;
             if ( type === 'range' || type === 'number' || type === 'text' ) {
+                if ( type === 'range' && _activeSliders.has( element ) ) {
+                    return;
+                }
                 _setIfDifferent( element, 'value', String( value ) );
                 _syncSliderDisplay( element );
                 return;
@@ -178,6 +189,31 @@
             function() {
                 _syncSliderDisplay( this );
             }
+        );
+
+        // Track active drag so polling-driven value updates can
+        // skip sliders the operator is currently manipulating.
+        // Set on pointer-down (mouse / touch / pen via Pointer
+        // Events). Cleared on pointer release and on ``change``
+        // (the canonical "value committed" signal — covers
+        // keyboard arrow adjustments too).
+        //
+        // Release-side handlers live on ``document``, not ``body``:
+        // a pointer release that happens off the slider element
+        // (or even outside the viewport) still bubbles to document,
+        // ensuring the flag clears so subsequent polls can resume
+        // updating. Listening on body alone would leak the flag if
+        // the user dragged the thumb past the page edge before
+        // releasing.
+        $('body').on(
+            'mousedown touchstart pointerdown',
+            'input[type=range]',
+            function() { _activeSliders.add( this ); }
+        );
+        $(document).on(
+            'mouseup touchend touchcancel pointerup pointercancel change blur',
+            'input[type=range]',
+            function() { _activeSliders.delete( this ); }
         );
     });
 

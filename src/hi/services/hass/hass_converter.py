@@ -15,13 +15,13 @@ from hi.apps.entity.enums import (
     EntityType,
     EntityStateValue,
     HumidityUnit,
-    TemperatureUnit,
 )
 from hi.apps.entity.models import Entity, EntityAttribute, EntityState
 from hi.apps.model_helper import HiModelHelper
 
 from hi.integrations.integration_converter_helper import IntegrationConverterHelper
 from hi.integrations.transient_models import IntegrationKey
+from hi.units import CANONICAL_TEMPERATURE_UNIT
 
 from .enums import HassStateValue
 from .hass_metadata import HassMetaData
@@ -827,6 +827,7 @@ class HassConverter:
                     name = record_name,
                     integration_key = substate_integration_key,
                     value_range_str = value_range_str,
+                    units = spec.units,
                 )
                 controller.integration_payload = cls._substate_integration_payload(
                     hass_state = hass_state,
@@ -841,6 +842,7 @@ class HassConverter:
                     name = record_name,
                     integration_key = substate_integration_key,
                     value_range_str = value_range_str,
+                    units = spec.units,
                 )
                 created.append( sensor )
             continue
@@ -852,12 +854,26 @@ class HassConverter:
             hass_state : HassState,
             spec       : '_SubstateSpec',
     ) -> dict:
-        return {
+        payload = {
             'domain': hass_state.domain,
             'is_controllable': spec.is_controllable,
             'substate': spec.suffix,
             'parent_entity_id': hass_state.entity_id,
         }
+        # Climate temperature substates carry HA's currently reported
+        # native unit so dispatch can convert from the EntityState's
+        # stored unit without fetching the live HA state on every
+        # service call. The HI-side unit is read from the
+        # IntegrationMetadataCache (keyed by IntegrationKey) instead of
+        # being duplicated in the payload.
+        if (
+            hass_state.domain == HassApi.CLIMATE_DOMAIN
+            and spec.entity_state_type == EntityStateType.TEMPERATURE
+        ):
+            payload[ 'native_temperature_unit' ] = (
+                hass_state.attributes.get( 'temperature_unit' )
+            )
+        return payload
 
     @classmethod
     def _create_hass_state_sensor_or_controller( cls,
@@ -1043,10 +1059,20 @@ class HassConverter:
         is_controllable    : bool
         value_range        : Optional[Dict] = None
         label              : Optional[str]  = None
+        units              : Optional[str]  = None
 
         @property
         def display_label(self) -> str:
             return self.label if self.label else self.entity_state_type.label
+
+    # Setpoint slider bounds for thermostat substates, expressed in
+    # ``hi.units.CANONICAL_TEMPERATURE_UNIT``. Climate-specific UX
+    # choices (slightly wider than typical HVAC comfort ranges so
+    # the operator can push edge cases). If the HI-wide canonical
+    # changes, these bounds must also be updated to the equivalent
+    # values in the new unit.
+    _SETPOINT_MIN_CANONICAL  = 5
+    _SETPOINT_MAX_CANONICAL  = 35
 
     # Translation of HA's color_mode attribute values to HI's
     # COLOR_MODE EntityStateValues. HA's ``null`` and explicit
@@ -1082,6 +1108,8 @@ class HassConverter:
             return cls._light_substate_specs( hass_state )
         if hass_state.domain == HassApi.FAN_DOMAIN:
             return cls._fan_substate_specs( hass_state )
+        if hass_state.domain == HassApi.CLIMATE_DOMAIN:
+            return cls._climate_substate_specs( hass_state )
         return []
 
     @classmethod
@@ -1190,20 +1218,155 @@ class HassConverter:
             ))
         return specs
 
+    # HA's well-known set of HVAC action values (what the system
+    # is currently doing). Used as the value range of the
+    # ``hvac_action`` substate so the controller widget displays
+    # human-friendly labels even though the substate is
+    # sensor-only (read from HA, not operator-set).
+    _HVAC_ACTION_CHOICES = {
+        'heating'     : 'Heating',
+        'cooling'     : 'Cooling',
+        'drying'      : 'Drying',
+        'fan'         : 'Fan',
+        'idle'        : 'Idle',
+        'off'         : 'Off',
+        'preheating'  : 'Preheating',
+        'defrosting'  : 'Defrosting',
+    }
+
+    @classmethod
+    def _climate_substate_specs(
+            cls, hass_state: HassState ) -> List[ '_SubstateSpec' ]:
+        """Substates implied by a HA ``climate.x`` state. A climate
+        entity that declares ``hvac_modes`` always decomposes:
+        current_temperature (sensor), hvac_mode (controller from
+        the declared modes list), hvac_action (sensor), plus a
+        setpoint substate set chosen from the supported modes —
+        single ``target_temperature`` for any single-mode
+        operation (heat/cool/off/etc.), low+high pair for
+        ``heat_cool`` mode. Climate entities lacking
+        ``hvac_modes`` fall through to the bare-key TEMPERATURE
+        mapping for backward compatibility."""
+        attrs = hass_state.attributes
+        hvac_modes = attrs.get( 'hvac_modes' )
+        if not isinstance( hvac_modes, list ) or not hvac_modes:
+            return []
+
+        canonical_unit = CANONICAL_TEMPERATURE_UNIT
+        specs = [
+            cls._SubstateSpec(
+                suffix = 'current_temperature',
+                entity_state_type = EntityStateType.TEMPERATURE,
+                is_controllable = False,
+                label = 'Current Temperature',
+                units = canonical_unit,
+            ),
+            cls._SubstateSpec(
+                suffix = 'hvac_mode',
+                entity_state_type = EntityStateType.DISCRETE,
+                is_controllable = True,
+                value_range = { mode: mode for mode in hvac_modes },
+                label = 'HVAC Mode',
+            ),
+            cls._SubstateSpec(
+                suffix = 'hvac_action',
+                entity_state_type = EntityStateType.DISCRETE,
+                is_controllable = False,
+                value_range = dict( cls._HVAC_ACTION_CHOICES ),
+                label = 'HVAC Action',
+            ),
+        ]
+
+        # Setpoint substates: any non-heat_cool mode (heat / cool /
+        # off / dry / fan_only / auto) implies single-setpoint
+        # operation; ``heat_cool`` implies a low/high pair. A
+        # thermostat that supports both creates all three —
+        # which one carries a value at runtime depends on the
+        # active hvac_mode. Bounds are in HI's canonical unit;
+        # display-layer unit conversion happens at render time
+        # against the user's preferred unit.
+        setpoint_range = cls._setpoint_value_range()
+        has_single_mode = any( m != 'heat_cool' for m in hvac_modes )
+        has_dual_mode = 'heat_cool' in hvac_modes
+        if has_single_mode:
+            specs.append( cls._SubstateSpec(
+                suffix = 'target_temperature',
+                entity_state_type = EntityStateType.TEMPERATURE,
+                is_controllable = True,
+                value_range = setpoint_range,
+                label = 'Setpoint',
+                units = canonical_unit,
+            ))
+        if has_dual_mode:
+            specs.append( cls._SubstateSpec(
+                suffix = 'target_temp_low',
+                entity_state_type = EntityStateType.TEMPERATURE,
+                is_controllable = True,
+                value_range = setpoint_range,
+                label = 'Setpoint Low',
+                units = canonical_unit,
+            ))
+            specs.append( cls._SubstateSpec(
+                suffix = 'target_temp_high',
+                entity_state_type = EntityStateType.TEMPERATURE,
+                is_controllable = True,
+                value_range = setpoint_range,
+                label = 'Setpoint High',
+                units = canonical_unit,
+            ))
+
+        # Optional axes that real thermostats commonly expose.
+        # Surfaced only when the live state declares them so HI
+        # doesn't display a "Fan Mode" control on a thermostat
+        # that doesn't have one.
+        fan_modes = attrs.get( 'fan_modes' )
+        if isinstance( fan_modes, list ) and fan_modes:
+            specs.append( cls._SubstateSpec(
+                suffix = 'fan_mode',
+                entity_state_type = EntityStateType.DISCRETE,
+                is_controllable = True,
+                value_range = { mode: mode for mode in fan_modes },
+                label = 'Fan Mode',
+            ))
+        if 'current_humidity' in attrs:
+            specs.append( cls._SubstateSpec(
+                suffix = 'current_humidity',
+                entity_state_type = EntityStateType.HUMIDITY,
+                is_controllable = False,
+                label = 'Current Humidity',
+            ))
+        return specs
+
+    @classmethod
+    def _setpoint_value_range( cls ) -> Dict[ str, float ]:
+        """Slider bounds for thermostat setpoints, in HI's canonical
+        temperature unit. Slightly wider than typical HVAC comfort
+        ranges so the operator can push edge cases. Display layer
+        converts to the user's preferred unit."""
+        return {
+            'min': cls._SETPOINT_MIN_CANONICAL,
+            'max': cls._SETPOINT_MAX_CANONICAL,
+        }
+
     @classmethod
     def _extract_substate_value(
             cls,
             hass_state : HassState,
-            suffix     : str,
+            spec       : '_SubstateSpec',
     ) -> Optional[ str ]:
         """Pull the value for a single substate out of a HA state,
         dispatching per-domain. Returns ``None`` when the relevant
         attribute is absent — callers skip ``None``-valued substates
-        from the response map."""
+        from the response map. The full ``spec`` is passed (rather
+        than just the suffix) so per-domain handlers can read
+        metadata such as the spec's canonical ``units`` when
+        normalizing values at the boundary."""
         if hass_state.domain == HassApi.LIGHT_DOMAIN:
-            return cls._light_substate_value( hass_state, suffix )
+            return cls._light_substate_value( hass_state, spec.suffix )
         if hass_state.domain == HassApi.FAN_DOMAIN:
-            return cls._fan_substate_value( hass_state, suffix )
+            return cls._fan_substate_value( hass_state, spec.suffix )
+        if hass_state.domain == HassApi.CLIMATE_DOMAIN:
+            return cls._climate_substate_value( hass_state, spec )
         return None
 
     @classmethod
@@ -1275,6 +1438,71 @@ class HassConverter:
         if suffix == 'preset':
             return attrs.get( 'preset_mode' )
         return None
+
+    @classmethod
+    def _climate_substate_value(
+            cls, hass_state : HassState, spec : '_SubstateSpec' ) -> Optional[ str ]:
+        """Climate-domain substate values. Temperature substates emit
+        floats as strings, converted from HA's reported
+        ``temperature_unit`` to the EntityState's stored unit (looked
+        up via the IntegrationMetadataCache) so cached values stay
+        unit-coherent with the EntityState. Mode/action substates
+        emit HA's wire enum strings unchanged. The hvac_mode's value
+        lives on the entity-level ``state`` field (not in attributes),
+        per HA's climate platform contract. Setpoint substates only
+        emit a value when the matching attribute is present in the
+        live state — HA's setpoint shape varies by mode (single
+        ``temperature`` vs ``target_temp_low`` + ``target_temp_high``)
+        and unused setpoints simply aren't reported."""
+        attrs = hass_state.attributes
+        suffix = spec.suffix
+        if suffix == 'hvac_mode':
+            return hass_state.state_value
+        if suffix == 'hvac_action':
+            return attrs.get( 'hvac_action' )
+        if suffix == 'fan_mode':
+            return attrs.get( 'fan_mode' )
+        if suffix == 'current_humidity':
+            return cls._numeric_attr_as_str( attrs, 'current_humidity' )
+        # Temperature-bearing substates: convert from HA's reported
+        # unit to the EntityState's stored unit at the boundary.
+        attr_key_for_suffix = {
+            'current_temperature' : 'current_temperature',
+            'target_temperature'  : 'temperature',
+            'target_temp_low'     : 'target_temp_low',
+            'target_temp_high'    : 'target_temp_high',
+        }
+        attr_key = attr_key_for_suffix.get( suffix )
+        if attr_key is None:
+            return None
+        raw = attrs.get( attr_key )
+        if raw is None:
+            return None
+        try:
+            external_value = float( raw )
+        except ( TypeError, ValueError ):
+            return None
+        substate_integration_key = cls._substate_integration_key(
+            hass_state = hass_state,
+            suffix = suffix,
+        )
+        entity_state_value = IntegrationConverterHelper.to_entity_state_value(
+            external_value = external_value,
+            external_unit = attrs.get( 'temperature_unit' ),
+            integration_key = substate_integration_key,
+        )
+        return str( entity_state_value )
+
+    @staticmethod
+    def _numeric_attr_as_str(
+            attrs : Dict, key : str ) -> Optional[ str ]:
+        raw = attrs.get( key )
+        if raw is None:
+            return None
+        try:
+            return str( float( raw ) )
+        except ( TypeError, ValueError ):
+            return None
 
     @classmethod
     def _substate_integration_key(
@@ -1492,19 +1720,23 @@ class HassConverter:
         """Create appropriate sensor with legacy parameter handling"""
         
         if entity_state_type == EntityStateType.TEMPERATURE:
-            # Handle temperature units from HA data
-            unit_str = hass_state.unit_of_measurement or ''
-            if 'c' in unit_str.lower():
-                temperature_unit = TemperatureUnit.CELSIUS
-            else:
-                temperature_unit = TemperatureUnit.FAHRENHEIT
-            
-            sensor = HiModelHelper.create_temperature_sensor(
+            # HA → HI boundary: HI stores temperatures in the canonical
+            # unit; the inbound state translator converts HA's reported
+            # value at every poll. The EntityState.units is the source
+            # of truth (consulted via IntegrationMetadataCache); HA's
+            # native unit lives in the integration_payload for
+            # outbound dispatch convenience.
+            sensor = HiModelHelper.create_sensor(
                 entity = entity,
-                integration_key = integration_key,
+                entity_state_type = EntityStateType.TEMPERATURE,
                 name = name,
-                temperature_unit = temperature_unit,
+                integration_key = integration_key,
+                units = CANONICAL_TEMPERATURE_UNIT,
             )
+            domain_payload = {
+                **( domain_payload or {} ),
+                'native_temperature_unit': hass_state.unit_of_measurement,
+            }
         elif entity_state_type == EntityStateType.HUMIDITY:
             # Handle humidity units from HA data
             unit_str = hass_state.unit_of_measurement or ''
@@ -1813,7 +2045,33 @@ class HassConverter:
             return cls._cover_to_sensor_value_map( hass_state )
         if domain == HassApi.FAN_DOMAIN:
             return cls._fan_to_sensor_value_map( hass_state )
+        if domain == HassApi.CLIMATE_DOMAIN:
+            return cls._climate_to_sensor_value_map( hass_state )
+        if domain == HassApi.SENSOR_DOMAIN:
+            return cls._sensor_domain_to_sensor_value_map( hass_state )
         return cls._passthrough_to_sensor_value_map( hass_state )
+
+    @classmethod
+    def _sensor_domain_to_sensor_value_map(
+            cls, hass_state : HassState ) -> Dict[ IntegrationKey, str ]:
+        """HA ``sensor.x`` entities. Temperature-class sensors are
+        normalized at this boundary into the EntityState's stored
+        unit (looked up via IntegrationMetadataCache) so cached values
+        stay coherent with the EntityState's units field. Other
+        sensor device classes pass through unchanged."""
+        if hass_state.device_class != HassApi.TEMPERATURE_DEVICE_CLASS:
+            return cls._passthrough_to_sensor_value_map( hass_state )
+        try:
+            external_value = float( hass_state.state_value )
+        except ( TypeError, ValueError ):
+            return {}
+        integration_key = cls.hass_state_to_integration_key( hass_state )
+        entity_state_value = IntegrationConverterHelper.to_entity_state_value(
+            external_value = external_value,
+            external_unit = hass_state.unit_of_measurement,
+            integration_key = integration_key,
+        )
+        return { integration_key : str( entity_state_value ) }
 
     @classmethod
     def _light_to_sensor_value_map(
@@ -1839,7 +2097,7 @@ class HassConverter:
                 result[ cls.hass_state_to_integration_key( hass_state ) ] = brightness_value
             return result
         for spec in substate_specs:
-            value = cls._extract_substate_value( hass_state, spec.suffix )
+            value = cls._extract_substate_value( hass_state, spec )
             if value is None:
                 continue
             substate_key = cls._substate_integration_key(
@@ -1973,7 +2231,7 @@ class HassConverter:
         if substate_specs:
             result : Dict[ IntegrationKey, str ] = {}
             for spec in substate_specs:
-                value = cls._extract_substate_value( hass_state, spec.suffix )
+                value = cls._extract_substate_value( hass_state, spec )
                 if value is None:
                     continue
                 substate_key = cls._substate_integration_key(
@@ -1991,6 +2249,31 @@ class HassConverter:
         except ( TypeError, ValueError ):
             return {}
         return { cls.hass_state_to_integration_key( hass_state ) : str( percentage ) }
+
+    @classmethod
+    def _climate_to_sensor_value_map(
+            cls, hass_state : HassState ) -> Dict[ IntegrationKey, str ]:
+        """Climate domain: a thermostat that declares
+        ``hvac_modes`` decomposes into substates (current
+        temperature, mode, action, setpoint(s)) — each value
+        lands at its suffix-keyed integration_key. Climate
+        entities lacking ``hvac_modes`` (rare but allowed by
+        HA's contract) fall through to passthrough behavior."""
+        substate_specs = cls._substate_specs_for_hass_state( hass_state )
+        if not substate_specs:
+            return cls._passthrough_to_sensor_value_map( hass_state )
+        result : Dict[ IntegrationKey, str ] = {}
+        for spec in substate_specs:
+            value = cls._extract_substate_value( hass_state, spec )
+            if value is None:
+                continue
+            substate_key = cls._substate_integration_key(
+                hass_state = hass_state,
+                suffix = spec.suffix,
+            )
+            result[ substate_key ] = value
+            continue
+        return result
 
     @classmethod
     def _passthrough_to_sensor_value_map(
@@ -2198,6 +2481,111 @@ class HassConverter:
                 domain = domain,
                 hass_substate_id = parent_entity_id,
                 preset_mode = hi_control_value,
+            )
+
+        if substate == 'target_temperature':
+            try:
+                entity_state_temperature = cls.to_ha_numeric_parameter_value(
+                    hi_control_value,
+                )
+            except ( ValueError, TypeError ):
+                raise ValueError(
+                    f'Invalid temperature value: {hi_control_value}'
+                )
+            substate_integration_key = cls._substate_integration_key_for_suffix(
+                parent_entity_id = parent_entity_id,
+                suffix = substate,
+            )
+            temperature = IntegrationConverterHelper.from_entity_state_value(
+                entity_state_value = entity_state_temperature,
+                external_unit = domain_payload.get( 'native_temperature_unit' ),
+                integration_key = substate_integration_key,
+            )
+            return HassServiceComposer.for_temperature(
+                domain = domain,
+                hass_substate_id = parent_entity_id,
+                temperature = temperature,
+                domain_payload = { 'set_service': HassApi.SET_TEMPERATURE_SERVICE },
+            )
+
+        if substate in ( 'target_temp_low', 'target_temp_high' ):
+            try:
+                changed_value = cls.to_ha_numeric_parameter_value( hi_control_value )
+            except ( ValueError, TypeError ):
+                raise ValueError(
+                    f'Invalid {substate} value: {hi_control_value}'
+                )
+            partner_substate = (
+                'target_temp_high' if substate == 'target_temp_low'
+                else 'target_temp_low'
+            )
+            partner_int_key = cls._substate_integration_key_for_suffix(
+                parent_entity_id = parent_entity_id,
+                suffix = partner_substate,
+            )
+            partner_value_str = IntegrationConverterHelper.get_latest_state_values(
+                integration_keys = [ partner_int_key ],
+            ).get( partner_int_key )
+            try:
+                partner_value = (
+                    float( partner_value_str ) if partner_value_str is not None else None
+                )
+            except ( ValueError, TypeError ):
+                partner_value = None
+            # Defaults when the partner has no cached value yet
+            # (e.g., before the first poll cycle): pick a sensible
+            # ordering around the changed value so HA's call doesn't
+            # reject low > high. Both values are in HI's stored unit
+            # (cached values came through the same boundary-converted
+            # translation path); we convert both to external together.
+            if substate == 'target_temp_low':
+                entity_state_low = changed_value
+                entity_state_high = (
+                    partner_value
+                    if partner_value is not None and partner_value >= entity_state_low
+                    else entity_state_low
+                )
+            else:
+                entity_state_high = changed_value
+                entity_state_low = (
+                    partner_value
+                    if partner_value is not None and partner_value <= entity_state_high
+                    else entity_state_high
+                )
+            external_unit = domain_payload.get( 'native_temperature_unit' )
+            substate_integration_key = cls._substate_integration_key_for_suffix(
+                parent_entity_id = parent_entity_id,
+                suffix = substate,
+            )
+            low = IntegrationConverterHelper.from_entity_state_value(
+                entity_state_value = entity_state_low,
+                external_unit = external_unit,
+                integration_key = substate_integration_key,
+            )
+            high = IntegrationConverterHelper.from_entity_state_value(
+                entity_state_value = entity_state_high,
+                external_unit = external_unit,
+                integration_key = substate_integration_key,
+            )
+            return HassServiceComposer.for_temperature_range(
+                domain = domain,
+                hass_substate_id = parent_entity_id,
+                low = low,
+                high = high,
+            )
+
+        if substate == 'hvac_mode':
+            return HassServiceComposer.for_hvac_mode(
+                domain = domain,
+                hass_substate_id = parent_entity_id,
+                hvac_mode = hi_control_value,
+            )
+
+        if substate == 'fan_mode':
+            return HassServiceComposer.for_fan_mode(
+                domain = domain,
+                hass_substate_id = parent_entity_id,
+                fan_mode = hi_control_value,
             )
 
         raise ValueError( f'Unknown substate: {substate}' )

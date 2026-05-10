@@ -45,7 +45,7 @@ by using the AttributeItemEditContext pattern.
     <div class="{{ DIVID.ATTR_V2_ACTION_BAR_CONTENT_CLASS }}">
       <!-- Left Side: UPDATE button and vertically stacked message areas -->
       <div class="attr-v2-action-bar-left">
-        {% if attr_item_context.can_add_custom_attributes %}
+        {% if attr_page_context.allow_edits %}
         <button id="{{ attr_page_context.update_button_html_id }}"
                 type="submit"
                 class="btn btn-outline-primary d-inline-flex align-items-center {{ DIVID.ATTR_V2_UPDATE_BTN_CLASS }}"
@@ -54,10 +54,10 @@ by using the AttributeItemEditContext pattern.
           {% icon "save" size="sm" css_class="hi-icon-left" %}
           {{ attr_page_context.update_button_label }}
         </button>
-        {% elif attr_item_context.externally_managed_message %}
+        {% elif attr_page_context.externally_managed_message %}
         <div class="attr-v2-externally-managed text-muted small d-inline-flex align-items-center">
           {% icon "info-circle" size="sm" css_class="hi-icon-left" %}
-          {{ attr_item_context.externally_managed_message }}
+          {{ attr_page_context.externally_managed_message }}
         </div>
         {% endif %}
         {% block additional_buttons %}
@@ -69,7 +69,7 @@ by using the AttributeItemEditContext pattern.
         free of empty placeholders that the script layer would
         otherwise target.
         {% endcomment %}
-        {% if attr_item_context.can_add_custom_attributes %}
+        {% if attr_page_context.allow_edits %}
         <!-- Vertically stacked message areas -->
         <div class="attr-v2-message-stack">
           <div id="{{ attr_page_context.dirty_msg_html_id }}"
@@ -90,7 +90,7 @@ by using the AttributeItemEditContext pattern.
       <div class="{{ DIVID.ATTR_V2_ACTION_BUTTONS_CLASS }}">
         {% block additional_actions %}
         {% endblock %}
-        {% if attr_item_context.can_add_custom_attributes %}
+        {% if attr_page_context.can_add_custom_attributes %}
         {% block file_upload_button %}
         <button type="button"
                 class="btn btn-sm btn-outline-primary mb-0"

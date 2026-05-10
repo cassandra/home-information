@@ -1,5 +1,5 @@
 import base64
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 import os
 import time
 from typing import ClassVar, Dict, List, Tuple
@@ -1108,6 +1108,442 @@ class HassMultiFeatureFanPresetState( HassState ):
         }
 
 
+# Per-mode display labels for the operator-facing dropdown in
+# the simulator UI. Per-instance ``hvac_modes`` (set on the
+# fields) is filtered against this map to build the choices
+# list — so each thermostat advertises only the modes its
+# fields declare.
+_THERMOSTAT_HVAC_MODE_LABELS = {
+    'heat'      : 'Heat',
+    'cool'      : 'Cool',
+    'heat_cool' : 'Heat/Cool',
+    'off'       : 'Off',
+    'auto'      : 'Auto',
+    'dry'       : 'Dry',
+    'fan_only'  : 'Fan Only',
+}
+_THERMOSTAT_HVAC_ACTION_CHOICES = [
+    ( 'heating', 'Heating' ),
+    ( 'cooling', 'Cooling' ),
+    ( 'idle', 'Idle' ),
+    ( 'off', 'Off' ),
+]
+
+
+@dataclass( frozen = True )
+class HassThermostatFields( SimEntityFields ):
+    """A multi-axis thermostat. Composed of multiple SimStates
+    (current_temperature, target_temperature, target_temp_low,
+    target_temp_high, hvac_mode, hvac_action, fan_mode,
+    current_humidity) collapsed into one HA ``climate.x``
+    entity at emit time.
+
+    ``hvac_modes`` declares the modes this thermostat supports —
+    a heat-only thermostat omits ``heat_cool`` (and HI
+    accordingly creates only the single-setpoint substate, not
+    the low/high pair). ``fan_modes`` declares the available
+    fan settings (when empty, the thermostat doesn't expose a
+    fan-mode axis). ``temperature_unit`` controls °F vs °C
+    handling end-to-end so HI's unit passthrough can be
+    exercised for both."""
+
+    hvac_modes       : list = field(
+        default_factory = lambda : [ 'heat', 'cool', 'heat_cool', 'off' ],
+    )
+    fan_modes        : list = field(
+        default_factory = lambda : [ 'auto', 'low', 'medium', 'high' ],
+    )
+    temperature_unit : str  = '°F'
+
+
+def _thermostat_entity_id( name : str ) -> str:
+    suffix = name.lower().replace( ' ', '_' )
+    return f'climate.{suffix}'
+
+
+class _ThermostatTemperatureDefaultMixin:
+    """Mixin for thermostat temperature SimStates that swaps the
+    Fahrenheit-style class default (e.g., ``'70'``) for a sensible
+    Celsius value when the parent entity is configured °C-native.
+
+    Without this, °C-native profiles (e.g., Zoo Heater) would
+    initialize ``current_temperature = 70`` meaning 70°C — over
+    150°F, which makes the simulator's value confusing on first
+    load. Subclasses set ``_CELSIUS_DEFAULT_VALUE``; the mixin
+    detects the dataclass field default and swaps it in. User-
+    overridden values (set via the simulator UI) bypass the swap
+    because they no longer match the class default."""
+
+    _CELSIUS_DEFAULT_VALUE : str = ''
+
+    # Slider bounds used when temperature_unit is °F (the seed
+    # default) and °C respectively. Picked so both ranges cover
+    # roughly the same physical span (−1°C / 30°F at the low end,
+    # ~38°C / 100°F at the high end), with round numbers in each
+    # unit so the slider looks natural.
+    _FAHRENHEIT_MIN = 30
+    _FAHRENHEIT_MAX = 100
+    _CELSIUS_MIN = 0
+    _CELSIUS_MAX = 40
+
+    def _apply_celsius_default_if_native(self):
+        if not self._CELSIUS_DEFAULT_VALUE:
+            return
+        if getattr( self.sim_entity_fields, 'temperature_unit', None ) != '°C':
+            return
+        class_default = type( self ).__dataclass_fields__[ 'value' ].default
+        if self.value == class_default:
+            self.value = self._CELSIUS_DEFAULT_VALUE
+
+    def _is_celsius_native(self) -> bool:
+        return getattr(
+            self.sim_entity_fields, 'temperature_unit', None,
+        ) == '°C'
+
+    @property
+    def min_value(self):
+        return self._CELSIUS_MIN if self._is_celsius_native() else self._FAHRENHEIT_MIN
+
+    @property
+    def max_value(self):
+        return self._CELSIUS_MAX if self._is_celsius_native() else self._FAHRENHEIT_MAX
+
+    @property
+    def display_unit(self) -> str:
+        """The profile-defined temperature unit. The simulator UI
+        shows ``self.value`` directly — and the SimState always
+        stores in the profile's unit (the runtime override only
+        applies at the wire boundary in the composer/dispatcher).
+        So the slider label should be the profile unit too,
+        regardless of any active override."""
+        return getattr(
+            self.sim_entity_fields, 'temperature_unit', '',
+        ) or ''
+
+
+@dataclass
+class HassThermostatCurrentTemperatureState(
+        _ThermostatTemperatureDefaultMixin, HassState ):
+    """Current temperature reading. Sensor-only in HA terms but
+    operator-controllable in the simulator UI so a tester can
+    drive temperature changes (otherwise there's nothing to
+    test)."""
+
+    sim_entity_fields  : HassThermostatFields
+    sim_state_type     : SimStateType                  = SimStateType.CONTINUOUS
+    sim_state_id       : str                           = 'current_temperature'
+    value              : str                           = '70'
+
+    _CELSIUS_DEFAULT_VALUE = '21'
+
+    def __post_init__(self):
+        super().__post_init__()
+        self._apply_celsius_default_if_native()
+
+    @property
+    def name(self):
+        return f'{self.entity_name} Current Temperature'
+
+    @property
+    def entity_id(self):
+        return _thermostat_entity_id( self.entity_name )
+
+    @property
+    def state(self):
+        # Composer overrides; entity-level state is the hvac_mode.
+        return 'on'
+
+    @property
+    def attributes(self) -> Dict[ str, str ]:
+        try:
+            temp = float( self.value )
+        except ( TypeError, ValueError ):
+            temp = 0.0
+        return { 'current_temperature': temp }
+
+
+@dataclass
+class HassThermostatTargetTemperatureState(
+        _ThermostatTemperatureDefaultMixin, HassState ):
+    """Single setpoint (used when hvac_mode is heat / cool / off
+    / etc., not heat_cool). Composer emits this only when the
+    active mode isn't ``heat_cool``."""
+
+    sim_entity_fields  : HassThermostatFields
+    sim_state_type     : SimStateType                  = SimStateType.CONTINUOUS
+    sim_state_id       : str                           = 'target_temperature'
+    value              : str                           = '72'
+
+    _CELSIUS_DEFAULT_VALUE = '22'
+
+    def __post_init__(self):
+        super().__post_init__()
+        self._apply_celsius_default_if_native()
+
+    @property
+    def name(self):
+        return f'{self.entity_name} Setpoint'
+
+    @property
+    def entity_id(self):
+        return _thermostat_entity_id( self.entity_name )
+
+    @property
+    def state(self):
+        return 'on'
+
+    @property
+    def attributes(self) -> Dict[ str, str ]:
+        try:
+            temp = float( self.value )
+        except ( TypeError, ValueError ):
+            temp = 0.0
+        # Marked partial so the composer can decide whether to
+        # emit it based on the active hvac_mode.
+        return { '_partial_target_temperature': temp }
+
+
+@dataclass
+class HassThermostatTargetTempLowState(
+        _ThermostatTemperatureDefaultMixin, HassState ):
+    """Low setpoint of the heat_cool pair. Emitted by the composer
+    only when the active mode is heat_cool."""
+
+    sim_entity_fields  : HassThermostatFields
+    sim_state_type     : SimStateType                  = SimStateType.CONTINUOUS
+    sim_state_id       : str                           = 'target_temp_low'
+    value              : str                           = '68'
+
+    _CELSIUS_DEFAULT_VALUE = '20'
+
+    def __post_init__(self):
+        super().__post_init__()
+        self._apply_celsius_default_if_native()
+
+    @property
+    def name(self):
+        return f'{self.entity_name} Setpoint Low'
+
+    @property
+    def entity_id(self):
+        return _thermostat_entity_id( self.entity_name )
+
+    @property
+    def state(self):
+        return 'on'
+
+    @property
+    def attributes(self) -> Dict[ str, str ]:
+        try:
+            temp = float( self.value )
+        except ( TypeError, ValueError ):
+            temp = 0.0
+        return { '_partial_target_temp_low': temp }
+
+
+@dataclass
+class HassThermostatTargetTempHighState(
+        _ThermostatTemperatureDefaultMixin, HassState ):
+    """High setpoint of the heat_cool pair. Emitted by the composer
+    only when the active mode is heat_cool."""
+
+    sim_entity_fields  : HassThermostatFields
+    sim_state_type     : SimStateType                  = SimStateType.CONTINUOUS
+    sim_state_id       : str                           = 'target_temp_high'
+    value              : str                           = '75'
+
+    _CELSIUS_DEFAULT_VALUE = '24'
+
+    def __post_init__(self):
+        super().__post_init__()
+        self._apply_celsius_default_if_native()
+
+    @property
+    def name(self):
+        return f'{self.entity_name} Setpoint High'
+
+    @property
+    def entity_id(self):
+        return _thermostat_entity_id( self.entity_name )
+
+    @property
+    def state(self):
+        return 'on'
+
+    @property
+    def attributes(self) -> Dict[ str, str ]:
+        try:
+            temp = float( self.value )
+        except ( TypeError, ValueError ):
+            temp = 0.0
+        return { '_partial_target_temp_high': temp }
+
+
+@dataclass
+class HassThermostatHvacModeState( HassState ):
+    """HVAC mode (DISCRETE, controllable). Active mode drives
+    the entity-level ``state`` field; the composer pulls this
+    state's value into the primary api_dict's state. The
+    available choices and the emitted ``hvac_modes`` attribute
+    both come from the per-thermostat fields, so a heat-only
+    thermostat naturally exposes only ``heat`` / ``off``."""
+
+    sim_entity_fields  : HassThermostatFields
+    sim_state_type     : SimStateType                  = SimStateType.DISCRETE
+    sim_state_id       : str                           = 'hvac_mode'
+    value              : str                           = 'heat'
+
+    @property
+    def name(self):
+        return f'{self.entity_name} HVAC Mode'
+
+    @property
+    def entity_id(self):
+        return _thermostat_entity_id( self.entity_name )
+
+    @property
+    def state(self):
+        # Carries the mode for the composer to lift into the
+        # entity-level ``state`` field.
+        return self.value
+
+    @property
+    def choices(self) -> List[ Tuple[ str, str ] ]:
+        return [
+            ( mode, _THERMOSTAT_HVAC_MODE_LABELS.get( mode, mode ) )
+            for mode in self.sim_entity_fields.hvac_modes
+        ]
+
+    @property
+    def attributes(self) -> Dict[ str, str ]:
+        # The mode is the entity's primary state, not an
+        # attribute. Emit the supported-modes list as the
+        # entity's ``hvac_modes`` attribute so HI's converter
+        # can build the substate value range.
+        return {
+            'hvac_modes': list( self.sim_entity_fields.hvac_modes ),
+        }
+
+
+@dataclass
+class HassThermostatFanModeState( HassState ):
+    """Fan mode (DISCRETE, controllable). Choices come from the
+    per-thermostat ``fan_modes`` field — a thermostat with
+    ``fan_modes=[]`` exposes no choices and the composer drops
+    the attribute. Common HA values: auto / low / medium / high
+    / on / off."""
+
+    sim_entity_fields  : HassThermostatFields
+    sim_state_type     : SimStateType                  = SimStateType.DISCRETE
+    sim_state_id       : str                           = 'fan_mode'
+    value              : str                           = 'auto'
+
+    @property
+    def name(self):
+        return f'{self.entity_name} Fan Mode'
+
+    @property
+    def entity_id(self):
+        return _thermostat_entity_id( self.entity_name )
+
+    @property
+    def state(self):
+        return 'on'
+
+    @property
+    def choices(self) -> List[ Tuple[ str, str ] ]:
+        return [
+            ( mode, mode.title() )
+            for mode in self.sim_entity_fields.fan_modes
+        ]
+
+    @property
+    def attributes(self) -> Dict[ str, str ]:
+        if not self.sim_entity_fields.fan_modes:
+            return {}
+        return {
+            'fan_mode': self.value,
+            'fan_modes': list( self.sim_entity_fields.fan_modes ),
+        }
+
+
+@dataclass
+class HassThermostatCurrentHumidityState( HassState ):
+    """Current humidity reading (CONTINUOUS, sensor-only). The
+    simulator UI lets the operator drive it for testing."""
+
+    sim_entity_fields  : HassThermostatFields
+    sim_state_type     : SimStateType                  = SimStateType.CONTINUOUS
+    sim_state_id       : str                           = 'current_humidity'
+    value              : str                           = '45'
+
+    @property
+    def min_value(self):
+        return 0
+
+    @property
+    def max_value(self):
+        return 100
+
+    @property
+    def name(self):
+        return f'{self.entity_name} Current Humidity'
+
+    @property
+    def entity_id(self):
+        return _thermostat_entity_id( self.entity_name )
+
+    @property
+    def state(self):
+        return 'on'
+
+    @property
+    def attributes(self) -> Dict[ str, str ]:
+        try:
+            humidity = float( self.value )
+        except ( TypeError, ValueError ):
+            humidity = 0.0
+        return { 'current_humidity': humidity }
+
+
+@dataclass
+class HassThermostatHvacActionState( HassState ):
+    """What the HVAC system is currently doing (heating /
+    cooling / idle / off). Sensor-only in HA terms; the
+    simulator exposes the dropdown directly so a tester can
+    drive action transitions without simulating the underlying
+    physics."""
+
+    HVAC_ACTION_CHOICES : ClassVar[ List[ Tuple[ str, str ] ] ] = list(
+        _THERMOSTAT_HVAC_ACTION_CHOICES,
+    )
+
+    sim_entity_fields  : HassThermostatFields
+    sim_state_type     : SimStateType                  = SimStateType.DISCRETE
+    sim_state_id       : str                           = 'hvac_action'
+    value              : str                           = 'idle'
+
+    @property
+    def name(self):
+        return f'{self.entity_name} HVAC Action'
+
+    @property
+    def entity_id(self):
+        return _thermostat_entity_id( self.entity_name )
+
+    @property
+    def state(self):
+        return 'on'
+
+    @property
+    def choices(self) -> List[ Tuple[ str, str ] ]:
+        return self.HVAC_ACTION_CHOICES
+
+    @property
+    def attributes(self) -> Dict[ str, str ]:
+        return { 'hvac_action': self.value }
+
+
 HASS_SIM_ENTITY_DEFINITION_LIST = [
     SimEntityDefinition(
         class_label = 'Insteon Switch',
@@ -1238,6 +1674,21 @@ HASS_SIM_ENTITY_DEFINITION_LIST = [
             HassMultiFeatureFanOscillatingState,
             HassMultiFeatureFanDirectionState,
             HassMultiFeatureFanPresetState,
+        ],
+    ),
+    SimEntityDefinition(
+        class_label = 'Thermostat',
+        sim_entity_type = SimEntityType.THERMOSTAT,
+        sim_entity_fields_class = HassThermostatFields,
+        sim_state_class_list = [
+            HassThermostatCurrentTemperatureState,
+            HassThermostatTargetTemperatureState,
+            HassThermostatTargetTempLowState,
+            HassThermostatTargetTempHighState,
+            HassThermostatHvacModeState,
+            HassThermostatHvacActionState,
+            HassThermostatFanModeState,
+            HassThermostatCurrentHumidityState,
         ],
     ),
 ]
