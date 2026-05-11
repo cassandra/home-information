@@ -30,6 +30,7 @@ class TestStatusView(AsyncViewTestCase):
         self.assertIn('startTimestamp', data)
         self.assertIn('alertData', data)
         self.assertIn('cssClassUpdateMap', data)
+        self.assertIn('entityStateStatusMap', data)
         self.assertIn('idReplaceUpdateMap', data)
         self.assertIn('idReplaceHashMap', data)
         self.assertIn('consoleLocked', data)

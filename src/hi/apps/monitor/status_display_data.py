@@ -102,6 +102,45 @@ class StatusDisplayData:
         )
 
     @property
+    def latest_display_label(self) -> str:
+        """Human-readable display string for the current sensor
+        value — universal source of truth for the polling-refresh
+        display text. Unit-bearing states get the combined
+        magnitude+unit form (``"72.0°F"``); unit-less enum states
+        get the labeled form (wire ``"smoke_detected"`` →
+        ``"Smoke Detected"``); unit-less numeric / free-form
+        values pass through. Matches what the template-render
+        path produces via ``as_display_value`` / ``value_label``
+        so the initial render and the polling refresh agree."""
+        combined = str( self.latest_display_value )
+        if not combined:
+            return ''
+        try:
+            return EntityStateValue.from_name( combined ).label
+        except ValueError:
+            return combined
+
+    def to_polling_update_dict(self) -> dict:
+        """Build the per-EntityState row of ``entityStateStatusMap``
+        — the unified polling-update output that replaces the
+        parallel ``cssClassUpdateMap`` + ``cssControllerValueMap``
+        pipelines. One structure carrying all three pieces the
+        UI needs: DOM attribute updates, controller widget state,
+        and human-readable display text."""
+        display_value = self.latest_display_value
+        display_dict = { 'text': self.latest_display_label }
+        if display_value.unit_symbol:
+            display_dict[ 'magnitude' ] = display_value.magnitude
+            display_dict[ 'unit_symbol' ] = display_value.unit_symbol
+        row = {
+            'attributes': self.attribute_dict,
+            'display_value': display_dict,
+        }
+        if self.controller_data_value is not None:
+            row[ 'controller' ] = { 'value': self.controller_data_value }
+        return row
+
+    @property
     def penultimate_sensor_value(self):
         if len(self.sensor_response_list) > 1:
             return self.sensor_response_list[1].value

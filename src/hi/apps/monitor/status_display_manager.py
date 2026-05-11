@@ -30,6 +30,36 @@ class StatusDisplayManager( Singleton, SensorResponseMixin ):
         )
         return
         
+    def get_entity_state_status_map( self ) -> Dict[ str, dict ]:
+        """Build the unified ``entityStateStatusMap`` consumed by the
+        polling response. Single pass through ``StatusDisplayData``
+        per EntityState, producing all three update pieces
+        (attributes, controller, display_value) in one structure —
+        replaces the parallel ``get_status_css_class_update_map``
+        + ``get_status_controller_value_map`` pipelines that each
+        rebuilt the same data list independently."""
+
+        entity_state_status_data_list = self.get_all_entity_state_status_data_list()
+
+        status_map : Dict[ str, dict ] = {}
+        for entity_state_status_data in entity_state_status_data_list:
+            status_display_data = StatusDisplayData( entity_state_status_data )
+            status_map[ status_display_data.css_class ] = (
+                status_display_data.to_polling_update_dict()
+            )
+            if settings.DEBUG and settings.DEBUG_TRACE_STATE:
+                latest = status_display_data.sensor_response_list[ 0 ]
+                DevOverrideManager.trace_state(
+                    'hi.ui_poll.entity_state.out',
+                    ha_entity_id = latest.integration_key.integration_name,
+                    hi_entity_state_id = status_display_data.entity_state.id,
+                    hi_value = latest.value,
+                    row = status_map[ status_display_data.css_class ],
+                )
+            continue
+
+        return status_map
+
     def get_status_css_class_update_map( self ) -> Dict[ str, str ]:
 
         entity_state_status_data_list = self.get_all_entity_state_status_data_list()
