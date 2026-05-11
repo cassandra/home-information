@@ -111,14 +111,14 @@ class HassServiceComposer:
                 domain = domain,
                 service = HassApi.TURN_ON_SERVICE,
                 hass_entity_id = hass_substate_id,
-                service_data = { 'brightness_pct': brightness_pct },
+                service_data = { HassApi.BRIGHTNESS_PCT_PARAM: brightness_pct },
             )
         if domain == HassApi.CLIMATE_DOMAIN:
             return HassServiceCall(
                 domain = domain,
                 service = HassApi.SET_TEMPERATURE_SERVICE,
                 hass_entity_id = hass_substate_id,
-                service_data = { 'temperature': numeric_value },
+                service_data = { HassApi.TARGET_TEMPERATURE_ATTR: numeric_value },
             )
         if domain == HassApi.COVER_DOMAIN:
             position_pct = int( numeric_value )
@@ -130,7 +130,7 @@ class HassServiceComposer:
                 domain = domain,
                 service = HassApi.SET_COVER_POSITION_SERVICE,
                 hass_entity_id = hass_substate_id,
-                service_data = { 'position': position_pct },
+                service_data = { HassApi.POSITION_PARAM: position_pct },
             )
         if domain == HassApi.MEDIA_PLAYER_DOMAIN:
             if not ( 0.0 <= numeric_value <= 1.0 ):
@@ -141,7 +141,7 @@ class HassServiceComposer:
                 domain = domain,
                 service = HassApi.VOLUME_SET_SERVICE,
                 hass_entity_id = hass_substate_id,
-                service_data = { 'volume_level': numeric_value },
+                service_data = { HassApi.VOLUME_LEVEL_PARAM: numeric_value },
             )
         raise ValueError( f'No numeric control pattern for domain: {domain}' )
 
@@ -161,28 +161,28 @@ class HassServiceComposer:
                 domain_payload = domain_payload,
             )
         parameters = domain_payload.get( 'parameters', {} )
-        if 'temperature' in parameters:
+        if HassApi.TARGET_TEMPERATURE_ATTR in parameters:
             return cls.for_temperature(
                 domain = domain,
                 hass_substate_id = hass_substate_id,
                 temperature = numeric_value,
                 domain_payload = domain_payload,
             )
-        if 'volume_level' in parameters:
+        if HassApi.VOLUME_LEVEL_PARAM in parameters:
             return cls.for_volume(
                 domain = domain,
                 hass_substate_id = hass_substate_id,
                 volume = numeric_value,
                 domain_payload = domain_payload,
             )
-        if 'position' in parameters:
+        if HassApi.POSITION_PARAM in parameters:
             return cls.for_position(
                 domain = domain,
                 hass_substate_id = hass_substate_id,
                 position = numeric_value,
                 domain_payload = domain_payload,
             )
-        if 'percentage' in parameters:
+        if HassApi.PERCENTAGE_ATTR in parameters:
             return cls.for_percentage(
                 domain = domain,
                 hass_substate_id = hass_substate_id,
@@ -215,7 +215,7 @@ class HassServiceComposer:
             service_data = None
         else:
             service = domain_payload.get( 'on_service' )
-            service_data = { 'brightness_pct': brightness_pct }
+            service_data = { HassApi.BRIGHTNESS_PCT_PARAM: brightness_pct }
         if not service:
             raise ValueError( 'No service defined for brightness control' )
         return HassServiceCall(
@@ -240,7 +240,7 @@ class HassServiceComposer:
             domain = domain,
             service = service,
             hass_entity_id = hass_substate_id,
-            service_data = { 'temperature': temperature },
+            service_data = { HassApi.TARGET_TEMPERATURE_ATTR: temperature },
         )
 
     @classmethod
@@ -264,8 +264,8 @@ class HassServiceComposer:
             service = HassApi.SET_TEMPERATURE_SERVICE,
             hass_entity_id = hass_substate_id,
             service_data = {
-                'target_temp_low': low,
-                'target_temp_high': high,
+                HassApi.TARGET_TEMP_LOW_ATTR: low,
+                HassApi.TARGET_TEMP_HIGH_ATTR: high,
             },
         )
 
@@ -282,7 +282,7 @@ class HassServiceComposer:
             domain = domain,
             service = HassApi.SET_HVAC_MODE_SERVICE,
             hass_entity_id = hass_substate_id,
-            service_data = { 'hvac_mode': hvac_mode },
+            service_data = { HassApi.HVAC_MODE_ATTR: hvac_mode },
         )
 
     @classmethod
@@ -298,7 +298,7 @@ class HassServiceComposer:
             domain = domain,
             service = HassApi.SET_FAN_MODE_SERVICE,
             hass_entity_id = hass_substate_id,
-            service_data = { 'fan_mode': fan_mode },
+            service_data = { HassApi.FAN_MODE_ATTR: fan_mode },
         )
 
     @classmethod
@@ -316,7 +316,7 @@ class HassServiceComposer:
             domain = domain,
             service = service,
             hass_entity_id = hass_substate_id,
-            service_data = { 'volume_level': volume },
+            service_data = { HassApi.VOLUME_LEVEL_PARAM: volume },
         )
 
     @classmethod
@@ -337,7 +337,7 @@ class HassServiceComposer:
             domain = domain,
             service = service,
             hass_entity_id = hass_substate_id,
-            service_data = { 'position': position_pct },
+            service_data = { HassApi.POSITION_PARAM: position_pct },
         )
 
     @classmethod
@@ -358,7 +358,7 @@ class HassServiceComposer:
             domain = domain,
             service = service,
             hass_entity_id = hass_substate_id,
-            service_data = { 'percentage': percentage_int },
+            service_data = { HassApi.PERCENTAGE_ATTR: percentage_int },
         )
 
     @classmethod
@@ -372,7 +372,7 @@ class HassServiceComposer:
             domain = domain,
             service = HassApi.OSCILLATE_SERVICE,
             hass_entity_id = hass_substate_id,
-            service_data = { 'oscillating': bool( oscillating ) },
+            service_data = { HassApi.OSCILLATING_ATTR: bool( oscillating ) },
         )
 
     @classmethod
@@ -390,7 +390,7 @@ class HassServiceComposer:
             domain = domain,
             service = HassApi.SET_DIRECTION_SERVICE,
             hass_entity_id = hass_substate_id,
-            service_data = { 'direction': direction },
+            service_data = { HassApi.DIRECTION_ATTR: direction },
         )
 
     @classmethod
@@ -406,7 +406,7 @@ class HassServiceComposer:
             domain = domain,
             service = HassApi.SET_PRESET_MODE_SERVICE,
             hass_entity_id = hass_substate_id,
-            service_data = { 'preset_mode': preset_mode },
+            service_data = { HassApi.PRESET_MODE_ATTR: preset_mode },
         )
 
     @classmethod
@@ -420,7 +420,7 @@ class HassServiceComposer:
             domain = domain,
             service = HassApi.TURN_ON_SERVICE,
             hass_entity_id = parent_entity_id,
-            service_data = { 'color_temp_kelvin': kelvin },
+            service_data = { HassApi.COLOR_TEMP_KELVIN_ATTR: kelvin },
         )
 
     @classmethod
@@ -435,5 +435,5 @@ class HassServiceComposer:
             domain = domain,
             service = HassApi.TURN_ON_SERVICE,
             hass_entity_id = parent_entity_id,
-            service_data = { 'hs_color': [ hue, saturation ] },
+            service_data = { HassApi.HS_COLOR_ATTR: [ hue, saturation ] },
         )

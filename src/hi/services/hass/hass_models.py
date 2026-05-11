@@ -112,7 +112,58 @@ class HassApi:
     OPEN_CLOSE_DEVICE_CLASS_SET = { DOOR_DEVICE_CLASS,
                                     GARAGE_DOOR_DEVICE_CLASS,
                                     WINDOW_DEVICE_CLASS }
-    
+
+    # Climate-domain attributes and wire values.
+    CURRENT_TEMPERATURE_ATTR = 'current_temperature'
+    CURRENT_HUMIDITY_ATTR    = 'current_humidity'
+    TARGET_TEMPERATURE_ATTR  = 'temperature'           # HA's setpoint attribute name
+    TARGET_TEMP_LOW_ATTR     = 'target_temp_low'
+    TARGET_TEMP_HIGH_ATTR    = 'target_temp_high'
+    HVAC_MODE_ATTR           = 'hvac_mode'
+    HVAC_MODES_ATTR          = 'hvac_modes'
+    HVAC_ACTION_ATTR         = 'hvac_action'
+    FAN_MODE_ATTR            = 'fan_mode'
+    FAN_MODES_ATTR           = 'fan_modes'
+    TEMPERATURE_UNIT_ATTR    = 'temperature_unit'
+    HVAC_MODE_HEAT_COOL      = 'heat_cool'             # dual-setpoint mode wire value
+
+    # Light-domain attributes.
+    BRIGHTNESS_ATTR             = 'brightness'
+    BRIGHTNESS_PCT_PARAM        = 'brightness_pct'     # service-call parameter name
+    COLOR_MODE_ATTR             = 'color_mode'
+    COLOR_TEMP_KELVIN_ATTR      = 'color_temp_kelvin'
+    HS_COLOR_ATTR               = 'hs_color'
+    SUPPORTED_COLOR_MODES_ATTR  = 'supported_color_modes'
+
+    # Color mode wire values (the value space of the COLOR_MODE_ATTR).
+    COLOR_MODE_UNKNOWN     = 'unknown'
+    COLOR_MODE_ONOFF       = 'onoff'
+    COLOR_MODE_BRIGHTNESS  = 'brightness'
+    COLOR_MODE_COLOR_TEMP  = 'color_temp'
+    COLOR_MODE_HS          = 'hs'
+    COLOR_MODE_RGB         = 'rgb'
+    COLOR_MODE_RGBW        = 'rgbw'
+    COLOR_MODE_RGBWW       = 'rgbww'
+    COLOR_MODE_WHITE       = 'white'
+    COLOR_MODE_XY          = 'xy'
+
+    # Fan-domain attributes and wire values.
+    PERCENTAGE_ATTR       = 'percentage'
+    OSCILLATING_ATTR      = 'oscillating'
+    DIRECTION_ATTR        = 'direction'
+    PRESET_MODE_ATTR      = 'preset_mode'
+    PRESET_MODES_ATTR     = 'preset_modes'
+    FAN_DIRECTION_FORWARD = 'forward'
+    FAN_DIRECTION_REVERSE = 'reverse'
+
+    # Cover-domain attributes.
+    CURRENT_POSITION_ATTR = 'current_position'
+    POSITION_PARAM        = 'position'                 # service-call parameter name
+
+    # Media-player-domain service parameter.
+    VOLUME_LEVEL_PARAM    = 'volume_level'
+
+
 
 @dataclass
 class HassState:

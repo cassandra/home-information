@@ -272,7 +272,7 @@ class HassConverter:
             'off_service': HassApi.TURN_OFF_SERVICE,
             'set_service': HassApi.TURN_ON_SERVICE,  # For brightness setting
             'parameters': {
-                'brightness_pct': 'percentage',  # 0-100
+                HassApi.BRIGHTNESS_PCT_PARAM: 'percentage',  # 0-100
             },
         },
         
@@ -289,7 +289,7 @@ class HassConverter:
             'off_service': HassApi.CLOSE_COVER_SERVICE,  # 'off' = close
             'set_service': HassApi.SET_COVER_POSITION_SERVICE,
             'parameters': {
-                'position': 'percentage',  # 0-100
+                HassApi.POSITION_PARAM: 'percentage',  # 0-100
             },
         },
         (HassApi.COVER_DOMAIN, EntityStateType.OPEN_CLOSE_POSITION): {
@@ -297,7 +297,7 @@ class HassConverter:
             'off_service': HassApi.CLOSE_COVER_SERVICE,
             'set_service': HassApi.SET_COVER_POSITION_SERVICE,
             'parameters': {
-                'position': 'percentage',  # 0-100
+                HassApi.POSITION_PARAM: 'percentage',  # 0-100
             },
         },
         
@@ -307,7 +307,7 @@ class HassConverter:
             'off_service': HassApi.TURN_OFF_SERVICE,
             'set_service': HassApi.SET_PERCENTAGE_SERVICE,
             'parameters': {
-                'percentage': 'percentage',  # 0-100
+                HassApi.PERCENTAGE_ATTR: 'percentage',  # 0-100
             },
         },
         (HassApi.FAN_DOMAIN, EntityStateType.POWER_LEVEL): {
@@ -315,7 +315,7 @@ class HassConverter:
             'off_service': HassApi.TURN_OFF_SERVICE,
             'set_service': HassApi.SET_PERCENTAGE_SERVICE,
             'parameters': {
-                'percentage': 'percentage',  # 0-100
+                HassApi.PERCENTAGE_ATTR: 'percentage',  # 0-100
             },
         },
         
@@ -340,7 +340,7 @@ class HassConverter:
             'off_service': HassApi.TURN_OFF_SERVICE,
             'set_service': HassApi.VOLUME_SET_SERVICE,
             'parameters': {
-                'volume_level': 'percentage_decimal',  # 0.0-1.0
+                HassApi.VOLUME_LEVEL_PARAM: 'percentage_decimal',  # 0.0-1.0
             },
         },
     }
@@ -872,7 +872,7 @@ class HassConverter:
             and spec.entity_state_type == EntityStateType.TEMPERATURE
         ):
             payload[ 'native_temperature_unit' ] = (
-                hass_state.attributes.get( 'temperature_unit' )
+                hass_state.attributes.get( HassApi.TEMPERATURE_UNIT_ATTR )
             )
         return payload
 
@@ -1016,14 +1016,14 @@ class HassConverter:
     # collapse into the on/off path and lose its dimmer state
     # type on every off→on transition.
     _BRIGHTNESS_SUPPORTING_COLOR_MODES = {
-        'brightness',
-        'color_temp',
-        'hs',
-        'rgb',
-        'rgbw',
-        'rgbww',
-        'white',
-        'xy',
+        HassApi.COLOR_MODE_BRIGHTNESS,
+        HassApi.COLOR_MODE_COLOR_TEMP,
+        HassApi.COLOR_MODE_HS,
+        HassApi.COLOR_MODE_RGB,
+        HassApi.COLOR_MODE_RGBW,
+        HassApi.COLOR_MODE_RGBWW,
+        HassApi.COLOR_MODE_WHITE,
+        HassApi.COLOR_MODE_XY,
     }
 
     # Modes whose presence in ``supported_color_modes`` means the
@@ -1032,11 +1032,11 @@ class HassConverter:
     # ``color_temp`` is excluded — it's white-light Kelvin, a
     # separate axis with its own EntityStateType.
     _CHROMATIC_COLOR_MODES = {
-        'hs',
-        'rgb',
-        'rgbw',
-        'rgbww',
-        'xy',
+        HassApi.COLOR_MODE_HS,
+        HassApi.COLOR_MODE_RGB,
+        HassApi.COLOR_MODE_RGBW,
+        HassApi.COLOR_MODE_RGBWW,
+        HassApi.COLOR_MODE_XY,
     }
 
     # Per-substate metadata. The suffix is appended to the parent
@@ -1082,16 +1082,16 @@ class HassConverter:
     # behavior varies per-integration.
     _HASS_COLOR_MODE_TO_HI_VALUE = {
         None: EntityStateValue.COLOR_MODE_UNKNOWN,
-        'unknown': EntityStateValue.COLOR_MODE_UNKNOWN,
-        'onoff': EntityStateValue.COLOR_MODE_ONOFF,
-        'brightness': EntityStateValue.COLOR_MODE_BRIGHTNESS,
-        'color_temp': EntityStateValue.COLOR_MODE_COLOR_TEMP,
-        'hs': EntityStateValue.COLOR_MODE_HS,
-        'rgb': EntityStateValue.COLOR_MODE_RGB,
-        'rgbw': EntityStateValue.COLOR_MODE_RGBW,
-        'rgbww': EntityStateValue.COLOR_MODE_RGBWW,
-        'xy': EntityStateValue.COLOR_MODE_XY,
-        'white': EntityStateValue.COLOR_MODE_WHITE,
+        HassApi.COLOR_MODE_UNKNOWN: EntityStateValue.COLOR_MODE_UNKNOWN,
+        HassApi.COLOR_MODE_ONOFF: EntityStateValue.COLOR_MODE_ONOFF,
+        HassApi.COLOR_MODE_BRIGHTNESS: EntityStateValue.COLOR_MODE_BRIGHTNESS,
+        HassApi.COLOR_MODE_COLOR_TEMP: EntityStateValue.COLOR_MODE_COLOR_TEMP,
+        HassApi.COLOR_MODE_HS: EntityStateValue.COLOR_MODE_HS,
+        HassApi.COLOR_MODE_RGB: EntityStateValue.COLOR_MODE_RGB,
+        HassApi.COLOR_MODE_RGBW: EntityStateValue.COLOR_MODE_RGBW,
+        HassApi.COLOR_MODE_RGBWW: EntityStateValue.COLOR_MODE_RGBWW,
+        HassApi.COLOR_MODE_XY: EntityStateValue.COLOR_MODE_XY,
+        HassApi.COLOR_MODE_WHITE: EntityStateValue.COLOR_MODE_WHITE,
     }
 
     @classmethod
@@ -1126,17 +1126,17 @@ class HassConverter:
         authoritative, but HI presents both controls. When any color
         axis is present, brightness becomes a peer substate too;
         brightness-only bulbs keep the bare-key single-state model."""
-        supported = hass_state.attributes.get( 'supported_color_modes' )
+        supported = hass_state.attributes.get( HassApi.SUPPORTED_COLOR_MODES_ATTR )
         if not isinstance( supported, list ):
             return []
 
         chromatic_present = any( m in cls._CHROMATIC_COLOR_MODES for m in supported )
-        color_temp_present = 'color_temp' in supported
+        color_temp_present = HassApi.COLOR_MODE_COLOR_TEMP in supported
 
         specs = []
         if chromatic_present or color_temp_present:
             specs.append( cls._SubstateSpec(
-                suffix = 'brightness',
+                suffix = HassApi.BRIGHTNESS_ATTR,
                 entity_state_type = EntityStateType.LIGHT_DIMMER,
                 is_controllable = True,
                 value_range = { 'min': 0, 'max': 100 },
@@ -1156,7 +1156,7 @@ class HassConverter:
             ))
         if color_temp_present:
             specs.append( cls._SubstateSpec(
-                suffix = 'color_temp',
+                suffix = HassApi.COLOR_MODE_COLOR_TEMP,
                 entity_state_type = EntityStateType.COLOR_TEMPERATURE,
                 is_controllable = True,
                 value_range = { 'min': 2000, 'max': 6500 },
@@ -1166,7 +1166,7 @@ class HassConverter:
         # mode has a constant value; skip it.
         if len( supported ) > 1:
             specs.append( cls._SubstateSpec(
-                suffix = 'color_mode',
+                suffix = HassApi.COLOR_MODE_ATTR,
                 entity_state_type = EntityStateType.COLOR_MODE,
                 is_controllable = False,
             ))
@@ -1193,22 +1193,25 @@ class HassConverter:
                 value_range = { 'min': 0, 'max': 100 },
                 label = 'Speed',
             ))
-        if 'oscillating' in attrs:
+        if HassApi.OSCILLATING_ATTR in attrs:
             specs.append( cls._SubstateSpec(
-                suffix = 'oscillating',
+                suffix = HassApi.OSCILLATING_ATTR,
                 entity_state_type = EntityStateType.ON_OFF,
                 is_controllable = True,
                 label = 'Oscillation',
             ))
-        if 'direction' in attrs:
+        if HassApi.DIRECTION_ATTR in attrs:
             specs.append( cls._SubstateSpec(
-                suffix = 'direction',
+                suffix = HassApi.DIRECTION_ATTR,
                 entity_state_type = EntityStateType.DISCRETE,
                 is_controllable = True,
-                value_range = { 'forward': 'Forward', 'reverse': 'Reverse' },
+                value_range = {
+                    HassApi.FAN_DIRECTION_FORWARD: 'Forward',
+                    HassApi.FAN_DIRECTION_REVERSE: 'Reverse',
+                },
                 label = 'Direction',
             ))
-        preset_modes = attrs.get( 'preset_modes' )
+        preset_modes = attrs.get( HassApi.PRESET_MODES_ATTR )
         if isinstance( preset_modes, list ) and preset_modes:
             specs.append( cls._SubstateSpec(
                 suffix = 'preset',
@@ -1249,28 +1252,28 @@ class HassConverter:
         ``hvac_modes`` fall through to the bare-key TEMPERATURE
         mapping for backward compatibility."""
         attrs = hass_state.attributes
-        hvac_modes = attrs.get( 'hvac_modes' )
+        hvac_modes = attrs.get( HassApi.HVAC_MODES_ATTR )
         if not isinstance( hvac_modes, list ) or not hvac_modes:
             return []
 
         canonical_unit = CANONICAL_TEMPERATURE_UNIT
         specs = [
             cls._SubstateSpec(
-                suffix = 'current_temperature',
+                suffix = HassApi.CURRENT_TEMPERATURE_ATTR,
                 entity_state_type = EntityStateType.TEMPERATURE,
                 is_controllable = False,
                 label = 'Current Temperature',
                 units = canonical_unit,
             ),
             cls._SubstateSpec(
-                suffix = 'hvac_mode',
+                suffix = HassApi.HVAC_MODE_ATTR,
                 entity_state_type = EntityStateType.DISCRETE,
                 is_controllable = True,
                 value_range = { mode: mode for mode in hvac_modes },
                 label = 'HVAC Mode',
             ),
             cls._SubstateSpec(
-                suffix = 'hvac_action',
+                suffix = HassApi.HVAC_ACTION_ATTR,
                 entity_state_type = EntityStateType.DISCRETE,
                 is_controllable = False,
                 value_range = dict( cls._HVAC_ACTION_CHOICES ),
@@ -1287,8 +1290,8 @@ class HassConverter:
         # display-layer unit conversion happens at render time
         # against the user's preferred unit.
         setpoint_range = cls._setpoint_value_range()
-        has_single_mode = any( m != 'heat_cool' for m in hvac_modes )
-        has_dual_mode = 'heat_cool' in hvac_modes
+        has_single_mode = any( m != HassApi.HVAC_MODE_HEAT_COOL for m in hvac_modes )
+        has_dual_mode = HassApi.HVAC_MODE_HEAT_COOL in hvac_modes
         if has_single_mode:
             specs.append( cls._SubstateSpec(
                 suffix = 'target_temperature',
@@ -1300,7 +1303,7 @@ class HassConverter:
             ))
         if has_dual_mode:
             specs.append( cls._SubstateSpec(
-                suffix = 'target_temp_low',
+                suffix = HassApi.TARGET_TEMP_LOW_ATTR,
                 entity_state_type = EntityStateType.TEMPERATURE,
                 is_controllable = True,
                 value_range = setpoint_range,
@@ -1308,7 +1311,7 @@ class HassConverter:
                 units = canonical_unit,
             ))
             specs.append( cls._SubstateSpec(
-                suffix = 'target_temp_high',
+                suffix = HassApi.TARGET_TEMP_HIGH_ATTR,
                 entity_state_type = EntityStateType.TEMPERATURE,
                 is_controllable = True,
                 value_range = setpoint_range,
@@ -1320,18 +1323,18 @@ class HassConverter:
         # Surfaced only when the live state declares them so HI
         # doesn't display a "Fan Mode" control on a thermostat
         # that doesn't have one.
-        fan_modes = attrs.get( 'fan_modes' )
+        fan_modes = attrs.get( HassApi.FAN_MODES_ATTR )
         if isinstance( fan_modes, list ) and fan_modes:
             specs.append( cls._SubstateSpec(
-                suffix = 'fan_mode',
+                suffix = HassApi.FAN_MODE_ATTR,
                 entity_state_type = EntityStateType.DISCRETE,
                 is_controllable = True,
                 value_range = { mode: mode for mode in fan_modes },
                 label = 'Fan Mode',
             ))
-        if 'current_humidity' in attrs:
+        if HassApi.CURRENT_HUMIDITY_ATTR in attrs:
             specs.append( cls._SubstateSpec(
-                suffix = 'current_humidity',
+                suffix = HassApi.CURRENT_HUMIDITY_ATTR,
                 entity_state_type = EntityStateType.HUMIDITY,
                 is_controllable = False,
                 label = 'Current Humidity',
@@ -1381,10 +1384,10 @@ class HassConverter:
         last-known chromaticity and relaying it as the
         hue/saturation HI state is correct."""
         attrs = hass_state.attributes
-        if suffix == 'brightness':
+        if suffix == HassApi.BRIGHTNESS_ATTR:
             return cls._dimmer_brightness_value( hass_state )
         if suffix == 'hue':
-            hs = attrs.get( 'hs_color' )
+            hs = attrs.get( HassApi.HS_COLOR_ATTR )
             if isinstance( hs, list ) and len( hs ) >= 1:
                 try:
                     return str( round( float( hs[ 0 ] ) ) )
@@ -1392,25 +1395,25 @@ class HassConverter:
                     return None
             return None
         if suffix == 'saturation':
-            hs = attrs.get( 'hs_color' )
+            hs = attrs.get( HassApi.HS_COLOR_ATTR )
             if isinstance( hs, list ) and len( hs ) >= 2:
                 try:
                     return str( round( float( hs[ 1 ] ) ) )
                 except ( TypeError, ValueError ):
                     return None
             return None
-        if suffix == 'color_temp':
-            kelvin = attrs.get( 'color_temp_kelvin' )
+        if suffix == HassApi.COLOR_MODE_COLOR_TEMP:
+            kelvin = attrs.get( HassApi.COLOR_TEMP_KELVIN_ATTR )
             if kelvin is not None:
                 try:
                     return str( int( float( kelvin ) ) )
                 except ( TypeError, ValueError ):
                     return None
             return None
-        if suffix == 'color_mode':
-            if 'color_mode' not in attrs:
+        if suffix == HassApi.COLOR_MODE_ATTR:
+            if HassApi.COLOR_MODE_ATTR not in attrs:
                 return None
-            ha_value = attrs[ 'color_mode' ]
+            ha_value = attrs[ HassApi.COLOR_MODE_ATTR ]
             hi_value = cls._HASS_COLOR_MODE_TO_HI_VALUE.get(
                 ha_value, EntityStateValue.COLOR_MODE_UNKNOWN,
             )
@@ -1423,22 +1426,22 @@ class HassConverter:
         """Fan-domain substate values."""
         attrs = hass_state.attributes
         if suffix == 'speed':
-            raw = attrs.get( 'percentage' )
+            raw = attrs.get( HassApi.PERCENTAGE_ATTR )
             if raw is None:
                 return None
             try:
                 return str( int( float( raw ) ) )
             except ( TypeError, ValueError ):
                 return None
-        if suffix == 'oscillating':
-            osc = attrs.get( 'oscillating' )
+        if suffix == HassApi.OSCILLATING_ATTR:
+            osc = attrs.get( HassApi.OSCILLATING_ATTR )
             if osc is None:
                 return None
             return str( EntityStateValue.ON ) if osc else str( EntityStateValue.OFF )
-        if suffix == 'direction':
-            return attrs.get( 'direction' )
+        if suffix == HassApi.DIRECTION_ATTR:
+            return attrs.get( HassApi.DIRECTION_ATTR )
         if suffix == 'preset':
-            return attrs.get( 'preset_mode' )
+            return attrs.get( HassApi.PRESET_MODE_ATTR )
         return None
 
     @classmethod
@@ -1458,21 +1461,21 @@ class HassConverter:
         and unused setpoints simply aren't reported."""
         attrs = hass_state.attributes
         suffix = spec.suffix
-        if suffix == 'hvac_mode':
+        if suffix == HassApi.HVAC_MODE_ATTR:
             return hass_state.state_value
-        if suffix == 'hvac_action':
-            return attrs.get( 'hvac_action' )
-        if suffix == 'fan_mode':
-            return attrs.get( 'fan_mode' )
-        if suffix == 'current_humidity':
-            return cls._numeric_attr_as_str( attrs, 'current_humidity' )
+        if suffix == HassApi.HVAC_ACTION_ATTR:
+            return attrs.get( HassApi.HVAC_ACTION_ATTR )
+        if suffix == HassApi.FAN_MODE_ATTR:
+            return attrs.get( HassApi.FAN_MODE_ATTR )
+        if suffix == HassApi.CURRENT_HUMIDITY_ATTR:
+            return cls._numeric_attr_as_str( attrs, HassApi.CURRENT_HUMIDITY_ATTR )
         # Temperature-bearing substates: convert from HA's reported
         # unit to the EntityState's stored unit at the boundary.
         attr_key_for_suffix = {
-            'current_temperature' : 'current_temperature',
-            'target_temperature'  : 'temperature',
-            'target_temp_low'     : 'target_temp_low',
-            'target_temp_high'    : 'target_temp_high',
+            HassApi.CURRENT_TEMPERATURE_ATTR : HassApi.CURRENT_TEMPERATURE_ATTR,
+            'target_temperature'             : HassApi.TARGET_TEMPERATURE_ATTR,
+            HassApi.TARGET_TEMP_LOW_ATTR     : HassApi.TARGET_TEMP_LOW_ATTR,
+            HassApi.TARGET_TEMP_HIGH_ATTR    : HassApi.TARGET_TEMP_HIGH_ATTR,
         }
         attr_key = attr_key_for_suffix.get( suffix )
         if attr_key is None:
@@ -1490,7 +1493,7 @@ class HassConverter:
         )
         entity_state_value = IntegrationConverterHelper.to_entity_state_value(
             external_value = external_value,
-            external_unit = attrs.get( 'temperature_unit' ),
+            external_unit = attrs.get( HassApi.TEMPERATURE_UNIT_ATTR ),
             integration_key = substate_integration_key,
         )
         return str( entity_state_value )
@@ -1543,14 +1546,14 @@ class HassConverter:
             return False
 
         attributes = hass_state.attributes
-        if 'brightness' in attributes or 'brightness_pct' in attributes:
+        if HassApi.BRIGHTNESS_ATTR in attributes or HassApi.BRIGHTNESS_PCT_PARAM in attributes:
             return True
 
         # The brightness attribute is omitted in HA's off-state
         # output even for known-dimmable lights; consult the
         # capability declaration in ``supported_color_modes`` so
         # the dimmer path keeps firing across on/off transitions.
-        supported_color_modes = attributes.get('supported_color_modes')
+        supported_color_modes = attributes.get( HassApi.SUPPORTED_COLOR_MODES_ATTR )
         if isinstance(supported_color_modes, list):
             for mode in supported_color_modes:
                 if mode in cls._BRIGHTNESS_SUPPORTING_COLOR_MODES:
@@ -1563,13 +1566,13 @@ class HassConverter:
         meaning the cover is a continuous-position device (blind,
         slider shade) rather than a binary open/close (garage,
         door)."""
-        return hass_state.attributes.get( 'current_position' ) is not None
+        return hass_state.attributes.get( HassApi.CURRENT_POSITION_ATTR ) is not None
 
     @classmethod
     def _has_percentage_capability( cls, hass_state: HassState ) -> bool:
         """True when an HA fan state reports ``percentage``, meaning
         the fan exposes a continuous speed dimension."""
-        return hass_state.attributes.get( 'percentage' ) is not None
+        return hass_state.attributes.get( HassApi.PERCENTAGE_ATTR ) is not None
 
     @classmethod
     def _fan_has_multi_features( cls, hass_state: HassState ) -> bool:
@@ -1580,9 +1583,9 @@ class HassConverter:
         actually supports them."""
         attrs = hass_state.attributes
         return (
-            'oscillating' in attrs
-            or 'direction' in attrs
-            or 'preset_modes' in attrs
+            HassApi.OSCILLATING_ATTR in attrs
+            or HassApi.DIRECTION_ATTR in attrs
+            or HassApi.PRESET_MODES_ATTR in attrs
         )
 
     @classmethod
@@ -2174,7 +2177,7 @@ class HassConverter:
         if sv == HassStateValue.OFF:
             return "0"
         if sv == HassStateValue.ON:
-            brightness = hass_state.attributes.get( 'brightness' )
+            brightness = hass_state.attributes.get( HassApi.BRIGHTNESS_ATTR )
             if brightness is None:
                 return "100"
             try:
@@ -2274,7 +2277,7 @@ class HassConverter:
         the closed style for unrecognized values."""
         if cls._has_position_capability( hass_state ):
             try:
-                position = int( float( hass_state.attributes[ 'current_position' ] ) )
+                position = int( float( hass_state.attributes[ HassApi.CURRENT_POSITION_ATTR ] ) )
             except ( TypeError, ValueError ):
                 return {}
             return { cls.hass_state_to_integration_key( hass_state ) : str( position ) }
@@ -2303,7 +2306,7 @@ class HassConverter:
                 result[ substate_key ] = value
                 continue
             return result
-        raw_percentage = hass_state.attributes.get( 'percentage' )
+        raw_percentage = hass_state.attributes.get( HassApi.PERCENTAGE_ATTR )
         if raw_percentage is None:
             return cls._passthrough_to_sensor_value_map( hass_state )
         try:
@@ -2444,7 +2447,7 @@ class HassConverter:
         parent_entity_id = domain_payload[ 'parent_entity_id' ]
         domain = domain_payload[ 'domain' ]
 
-        if substate == 'brightness':
+        if substate == HassApi.BRIGHTNESS_ATTR:
             try:
                 numeric_value = cls.to_ha_numeric_parameter_value( hi_control_value )
             except ( ValueError, TypeError ):
@@ -2457,7 +2460,7 @@ class HassConverter:
                 numeric_value = numeric_value,
             )
 
-        if substate == 'color_temp':
+        if substate == HassApi.COLOR_MODE_COLOR_TEMP:
             try:
                 kelvin = int( round( cls.to_ha_numeric_parameter_value( hi_control_value ) ) )
             except ( ValueError, TypeError ):
@@ -2524,14 +2527,14 @@ class HassConverter:
                 domain_payload = { 'set_service': HassApi.SET_PERCENTAGE_SERVICE },
             )
 
-        if substate == 'oscillating':
+        if substate == HassApi.OSCILLATING_ATTR:
             return HassServiceComposer.for_oscillating(
                 domain = domain,
                 hass_substate_id = parent_entity_id,
                 oscillating = cls.to_ha_on_off_intent( hi_control_value ) == ControlIntent.ON,
             )
 
-        if substate == 'direction':
+        if substate == HassApi.DIRECTION_ATTR:
             return HassServiceComposer.for_direction(
                 domain = domain,
                 hass_substate_id = parent_entity_id,
@@ -2570,7 +2573,7 @@ class HassConverter:
                 domain_payload = { 'set_service': HassApi.SET_TEMPERATURE_SERVICE },
             )
 
-        if substate in ( 'target_temp_low', 'target_temp_high' ):
+        if substate in ( HassApi.TARGET_TEMP_LOW_ATTR, HassApi.TARGET_TEMP_HIGH_ATTR ):
             try:
                 changed_value = cls.to_ha_numeric_parameter_value( hi_control_value )
             except ( ValueError, TypeError ):
@@ -2578,8 +2581,8 @@ class HassConverter:
                     f'Invalid {substate} value: {hi_control_value}'
                 )
             partner_substate = (
-                'target_temp_high' if substate == 'target_temp_low'
-                else 'target_temp_low'
+                HassApi.TARGET_TEMP_HIGH_ATTR if substate == HassApi.TARGET_TEMP_LOW_ATTR
+                else HassApi.TARGET_TEMP_LOW_ATTR
             )
             partner_int_key = cls._substate_integration_key_for_suffix(
                 parent_entity_id = parent_entity_id,
@@ -2600,7 +2603,7 @@ class HassConverter:
             # reject low > high. Both values are in HI's stored unit
             # (cached values came through the same boundary-converted
             # translation path); we convert both to external together.
-            if substate == 'target_temp_low':
+            if substate == HassApi.TARGET_TEMP_LOW_ATTR:
                 entity_state_low = changed_value
                 entity_state_high = (
                     partner_value
@@ -2636,14 +2639,14 @@ class HassConverter:
                 high = high,
             )
 
-        if substate == 'hvac_mode':
+        if substate == HassApi.HVAC_MODE_ATTR:
             return HassServiceComposer.for_hvac_mode(
                 domain = domain,
                 hass_substate_id = parent_entity_id,
                 hvac_mode = hi_control_value,
             )
 
-        if substate == 'fan_mode':
+        if substate == HassApi.FAN_MODE_ATTR:
             return HassServiceComposer.for_fan_mode(
                 domain = domain,
                 hass_substate_id = parent_entity_id,
