@@ -308,6 +308,7 @@ class EntityStyle:
         EntityType.IRRIGATION_CONTROLLER,
         EntityType.LAWN_MOWER,
         EntityType.LEAF_BLOWER,
+        EntityType.LEAK_SENSOR,
         EntityType.LIGHT,
         EntityType.LIGHT_SENSOR,
         EntityType.MICROWAVE_OVEN,
@@ -517,6 +518,41 @@ class StatusStyle:
         fill_opacity = 0.5,
     )
     SmokeClear = SvgStatusStyle(
+        status_value = 'idle',
+        stroke_color = STATUS_OK_COLOR,
+        stroke_width = DEFAULT_STROKE_WIDTH,
+        stroke_dasharray = DEFAULT_STROKE_DASHARRAY,
+        fill_color = STATUS_OK_COLOR,
+        fill_opacity = 0.15,
+    )
+    # Moisture (water-leak) decay parallels smoke — both are
+    # property-damage events with operator-significant recent /
+    # past visual reminders.
+    MoistureDetected = SvgStatusStyle(
+        status_value = 'active',
+        stroke_color = STATUS_ACTIVE_COLOR,
+        stroke_width = DEFAULT_STROKE_WIDTH,
+        stroke_dasharray = DEFAULT_STROKE_DASHARRAY,
+        fill_color = STATUS_ACTIVE_COLOR,
+        fill_opacity = 0.5,
+    )
+    MoistureRecent = SvgStatusStyle(
+        status_value = 'recent',
+        stroke_color = STATUS_RECENT_COLOR,
+        stroke_width = DEFAULT_STROKE_WIDTH,
+        stroke_dasharray = DEFAULT_STROKE_DASHARRAY,
+        fill_color = STATUS_RECENT_COLOR,
+        fill_opacity = 0.5,
+    )
+    MoisturePast = SvgStatusStyle(
+        status_value = 'past',
+        stroke_color = STATUS_PAST_COLOR,
+        stroke_width = DEFAULT_STROKE_WIDTH,
+        stroke_dasharray = DEFAULT_STROKE_DASHARRAY,
+        fill_color = STATUS_PAST_COLOR,
+        fill_opacity = 0.5,
+    )
+    MoistureClear = SvgStatusStyle(
         status_value = 'idle',
         stroke_color = STATUS_OK_COLOR,
         stroke_width = DEFAULT_STROKE_WIDTH,

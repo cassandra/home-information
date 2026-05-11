@@ -519,6 +519,8 @@ class HassColorSmartBulbBrightnessState( HassState ):
             'friendly_name': self.entity_name,
             'icon': 'mdi:lightbulb',
             'supported_color_modes': [ 'hs', 'color_temp', 'rgb' ],
+            'min_color_temp_kelvin': 2200,
+            'max_color_temp_kelvin': 6500,
         }
         brightness = HassBrightnessHelper.value_to_attr( self.value )
         if brightness is not None:
@@ -936,6 +938,10 @@ class HassComboMotionSensorBatteryState( HassState ):
     def max_value(self):
         return 100
 
+    @property
+    def display_unit(self) -> str:
+        return '%'
+
 
 @dataclass
 class HassComboMotionSensorIlluminanceState( HassState ):
@@ -971,6 +977,10 @@ class HassComboMotionSensorIlluminanceState( HassState ):
     @property
     def max_value(self):
         return 10000
+
+    @property
+    def display_unit(self) -> str:
+        return 'lx'
 
 
 # --------------------------------------------------------------------------
@@ -1312,6 +1322,525 @@ class HassTempHumiditySensorHumidityState( HassState ):
     @property
     def max_value(self):
         return 100
+
+
+# --------------------------------------------------------------------------
+# Stand-alone binary sensors (presence, opening)
+# --------------------------------------------------------------------------
+
+
+@dataclass( frozen = True )
+class HassPresenceSensorFields( SimEntityFields ):
+    """A presence sensor (``binary_sensor`` with
+    ``device_class=presence``). Maps to ``EntityType.PRESENCE_SENSOR``
+    in HI, distinct from motion sensors (PRESENCE has its own
+    decay styling)."""
+    pass
+
+
+@dataclass
+class HassPresenceSensorState( HassState ):
+    sim_entity_fields  : HassPresenceSensorFields
+    sim_state_type     : SimStateType                  = SimStateType.ON_OFF
+    sim_state_id       : str                           = 'presence'
+    value              : str                           = 'off'
+
+    @property
+    def name(self):
+        return f'{self.entity_name} Presence'
+
+    @property
+    def entity_id(self):
+        return _binary_sensor_entity_id( self.entity_name )
+
+    @property
+    def state(self):
+        return 'on' if str_to_bool( self.value ) else 'off'
+
+    @property
+    def attributes(self) -> Dict[ str, str ]:
+        return {
+            'device_class': 'presence',
+            'friendly_name': self.entity_name,
+            'icon': 'mdi:home-account',
+        }
+
+
+@dataclass( frozen = True )
+class HassOpeningSensorFields( SimEntityFields ):
+    """A generic-opening sensor (``binary_sensor`` with
+    ``device_class=opening``). HA's catch-all for any
+    open/closed binary not specifically door / window / garage."""
+    pass
+
+
+@dataclass
+class HassOpeningSensorState( HassState ):
+    sim_entity_fields  : HassOpeningSensorFields
+    sim_state_type     : SimStateType                  = SimStateType.OPEN_CLOSE
+    sim_state_id       : str                           = 'opening'
+    value              : str                           = 'off'
+
+    @property
+    def name(self):
+        return f'{self.entity_name} Opening'
+
+    @property
+    def entity_id(self):
+        return _binary_sensor_entity_id( self.entity_name )
+
+    @property
+    def state(self):
+        return 'on' if str_to_bool( self.value ) else 'off'
+
+    @property
+    def attributes(self) -> Dict[ str, str ]:
+        return {
+            'device_class': 'opening',
+            'friendly_name': self.entity_name,
+            'icon': 'mdi:gesture-tap',
+        }
+
+
+# --------------------------------------------------------------------------
+# Power meter (numeric ``sensor.x`` with ``device_class=power``)
+# --------------------------------------------------------------------------
+
+
+@dataclass( frozen = True )
+class HassPowerMeterFields( SimEntityFields ):
+    """A power meter — single ``sensor.x`` with
+    ``device_class=power``. Operator-drivable so the simulator
+    UI exposes a numeric slider; the unit ('W') passes through
+    to HI's display path."""
+    pass
+
+
+@dataclass
+class HassPowerMeterState( HassState ):
+    sim_entity_fields  : HassPowerMeterFields
+    sim_state_type     : SimStateType                  = SimStateType.CONTINUOUS
+    sim_state_id       : str                           = 'power'
+    value              : str                           = '350'
+
+    @property
+    def name(self):
+        return f'{self.entity_name} Power'
+
+    @property
+    def entity_id(self):
+        return _sensor_entity_id( self.entity_name )
+
+    @property
+    def state(self):
+        return self.value
+
+    @property
+    def attributes(self) -> Dict[ str, str ]:
+        return {
+            'device_class'       : 'power',
+            'friendly_name'      : self.entity_name,
+            'unit_of_measurement': 'W',
+        }
+
+    @property
+    def min_value(self):
+        return 0
+
+    @property
+    def max_value(self):
+        return 5000
+
+    @property
+    def display_unit(self) -> str:
+        return 'W'
+
+
+# --------------------------------------------------------------------------
+# Weather station (5-state combo: temperature + humidity + pressure +
+# wind_speed + illuminance)
+# --------------------------------------------------------------------------
+#
+# Five ``sensor.x`` entities sharing one device, exercising HI's
+# multi-state grouping with mixed device classes. Each state's
+# entity_id carries the matching ``_<device_class>`` suffix so
+# HI's converter strips them to the same short_name and groups
+# all five under one HassDevice / one HI Entity.
+
+
+@dataclass( frozen = True )
+class HassWeatherStationFields( SimEntityFields ):
+    """Multi-quantity outdoor sensor (Netatmo / Bresser shape).
+    ``temperature_unit`` toggles °F vs °C so the simulator can
+    exercise the unit pass-through path for the temperature
+    component."""
+    temperature_unit : str = '°F'
+
+
+@dataclass
+class HassWeatherStationTemperatureState( HassState ):
+    sim_entity_fields  : HassWeatherStationFields
+    sim_state_type     : SimStateType                  = SimStateType.CONTINUOUS
+    sim_state_id       : str                           = 'temperature'
+    value              : str                           = '68'
+
+    @property
+    def name(self):
+        return f'{self.entity_name} Temperature'
+
+    @property
+    def entity_id(self):
+        return _sensor_entity_id( self.entity_name, suffix = '_temperature' )
+
+    @property
+    def state(self):
+        return self.value
+
+    @property
+    def attributes(self) -> Dict[ str, str ]:
+        return {
+            'device_class'       : 'temperature',
+            'friendly_name'      : f'{self.entity_name} Temperature',
+            'unit_of_measurement': self.sim_entity_fields.temperature_unit,
+        }
+
+    @property
+    def min_value(self):
+        if self.sim_entity_fields.temperature_unit == '°C':
+            return -20
+        return 0
+
+    @property
+    def max_value(self):
+        if self.sim_entity_fields.temperature_unit == '°C':
+            return 50
+        return 120
+
+    @property
+    def display_unit(self) -> str:
+        return self.sim_entity_fields.temperature_unit
+
+
+@dataclass
+class HassWeatherStationHumidityState( HassState ):
+    sim_entity_fields  : HassWeatherStationFields
+    sim_state_type     : SimStateType                  = SimStateType.CONTINUOUS
+    sim_state_id       : str                           = 'humidity'
+    value              : str                           = '55'
+
+    @property
+    def name(self):
+        return f'{self.entity_name} Humidity'
+
+    @property
+    def entity_id(self):
+        return _sensor_entity_id( self.entity_name, suffix = '_humidity' )
+
+    @property
+    def state(self):
+        return self.value
+
+    @property
+    def attributes(self) -> Dict[ str, str ]:
+        return {
+            'device_class'       : 'humidity',
+            'friendly_name'      : f'{self.entity_name} Humidity',
+            'unit_of_measurement': '%',
+        }
+
+    @property
+    def min_value(self):
+        return 0
+
+    @property
+    def max_value(self):
+        return 100
+
+    @property
+    def display_unit(self) -> str:
+        return '%'
+
+
+@dataclass
+class HassWeatherStationPressureState( HassState ):
+    sim_entity_fields  : HassWeatherStationFields
+    sim_state_type     : SimStateType                  = SimStateType.CONTINUOUS
+    sim_state_id       : str                           = 'pressure'
+    value              : str                           = '1013'
+
+    @property
+    def name(self):
+        return f'{self.entity_name} Pressure'
+
+    @property
+    def entity_id(self):
+        return _sensor_entity_id( self.entity_name, suffix = '_pressure' )
+
+    @property
+    def state(self):
+        return self.value
+
+    @property
+    def attributes(self) -> Dict[ str, str ]:
+        return {
+            'device_class'       : 'pressure',
+            'friendly_name'      : f'{self.entity_name} Pressure',
+            'unit_of_measurement': 'hPa',
+        }
+
+    @property
+    def min_value(self):
+        return 950
+
+    @property
+    def max_value(self):
+        return 1050
+
+    @property
+    def display_unit(self) -> str:
+        return 'hPa'
+
+
+@dataclass
+class HassWeatherStationWindSpeedState( HassState ):
+    sim_entity_fields  : HassWeatherStationFields
+    sim_state_type     : SimStateType                  = SimStateType.CONTINUOUS
+    sim_state_id       : str                           = 'wind_speed'
+    value              : str                           = '12'
+
+    @property
+    def name(self):
+        return f'{self.entity_name} Wind Speed'
+
+    @property
+    def entity_id(self):
+        return _sensor_entity_id( self.entity_name, suffix = '_wind_speed' )
+
+    @property
+    def state(self):
+        return self.value
+
+    @property
+    def attributes(self) -> Dict[ str, str ]:
+        return {
+            'device_class'       : 'wind_speed',
+            'friendly_name'      : f'{self.entity_name} Wind Speed',
+            'unit_of_measurement': 'km/h',
+        }
+
+    @property
+    def min_value(self):
+        return 0
+
+    @property
+    def max_value(self):
+        return 150
+
+    @property
+    def display_unit(self) -> str:
+        return 'km/h'
+
+
+@dataclass
+class HassWeatherStationIlluminanceState( HassState ):
+    sim_entity_fields  : HassWeatherStationFields
+    sim_state_type     : SimStateType                  = SimStateType.CONTINUOUS
+    sim_state_id       : str                           = 'illuminance'
+    value              : str                           = '8500'
+
+    @property
+    def name(self):
+        return f'{self.entity_name} Illuminance'
+
+    @property
+    def entity_id(self):
+        return _sensor_entity_id( self.entity_name, suffix = '_illuminance' )
+
+    @property
+    def state(self):
+        return self.value
+
+    @property
+    def attributes(self) -> Dict[ str, str ]:
+        return {
+            'device_class'       : 'illuminance',
+            'friendly_name'      : f'{self.entity_name} Illuminance',
+            'unit_of_measurement': 'lx',
+        }
+
+    @property
+    def min_value(self):
+        return 0
+
+    @property
+    def max_value(self):
+        return 100000
+
+    @property
+    def display_unit(self) -> str:
+        return 'lx'
+
+
+# --------------------------------------------------------------------------
+# Occupancy + light sensor (2-state combo)
+# --------------------------------------------------------------------------
+#
+# A room-presence sensor with ambient light measurement —
+# common in smart-home automation devices (Aqara P1 etc.).
+
+
+@dataclass( frozen = True )
+class HassOccupancyLightSensorFields( SimEntityFields ):
+    """Combo occupancy + illuminance sensor."""
+    pass
+
+
+@dataclass
+class HassOccupancyLightSensorOccupancyState( HassState ):
+    sim_entity_fields  : HassOccupancyLightSensorFields
+    sim_state_type     : SimStateType                  = SimStateType.ON_OFF
+    sim_state_id       : str                           = 'occupancy'
+    value              : str                           = 'off'
+
+    @property
+    def name(self):
+        return f'{self.entity_name} Occupancy'
+
+    @property
+    def entity_id(self):
+        return _binary_sensor_entity_id( self.entity_name, suffix = '_occupancy' )
+
+    @property
+    def state(self):
+        return 'on' if str_to_bool( self.value ) else 'off'
+
+    @property
+    def attributes(self) -> Dict[ str, str ]:
+        return {
+            'device_class': 'occupancy',
+            'friendly_name': f'{self.entity_name} Occupancy',
+            'icon': 'mdi:home-account',
+        }
+
+
+@dataclass
+class HassOccupancyLightSensorIlluminanceState( HassState ):
+    sim_entity_fields  : HassOccupancyLightSensorFields
+    sim_state_type     : SimStateType                  = SimStateType.CONTINUOUS
+    sim_state_id       : str                           = 'illuminance'
+    value              : str                           = '180'
+
+    @property
+    def name(self):
+        return f'{self.entity_name} Illuminance'
+
+    @property
+    def entity_id(self):
+        return _sensor_entity_id( self.entity_name, suffix = '_illuminance' )
+
+    @property
+    def state(self):
+        return self.value
+
+    @property
+    def attributes(self) -> Dict[ str, str ]:
+        return {
+            'device_class'       : 'illuminance',
+            'friendly_name'      : f'{self.entity_name} Illuminance',
+            'unit_of_measurement': 'lx',
+        }
+
+    @property
+    def min_value(self):
+        return 0
+
+    @property
+    def max_value(self):
+        return 1000
+
+    @property
+    def display_unit(self) -> str:
+        return 'lx'
+
+
+# --------------------------------------------------------------------------
+# Water leak sensor (2-state combo: moisture + battery)
+# --------------------------------------------------------------------------
+
+
+@dataclass( frozen = True )
+class HassWaterLeakSensorFields( SimEntityFields ):
+    """Water-leak sensor with battery readout — common shape
+    for Zigbee leak sensors."""
+    pass
+
+
+@dataclass
+class HassWaterLeakSensorMoistureState( HassState ):
+    sim_entity_fields  : HassWaterLeakSensorFields
+    sim_state_type     : SimStateType                  = SimStateType.ON_OFF
+    sim_state_id       : str                           = 'moisture'
+    value              : str                           = 'off'
+
+    @property
+    def name(self):
+        return f'{self.entity_name} Moisture'
+
+    @property
+    def entity_id(self):
+        return _binary_sensor_entity_id( self.entity_name, suffix = '_moisture' )
+
+    @property
+    def state(self):
+        return 'on' if str_to_bool( self.value ) else 'off'
+
+    @property
+    def attributes(self) -> Dict[ str, str ]:
+        return {
+            'device_class': 'moisture',
+            'friendly_name': f'{self.entity_name} Moisture',
+            'icon': 'mdi:water-alert',
+        }
+
+
+@dataclass
+class HassWaterLeakSensorBatteryState( HassState ):
+    sim_entity_fields  : HassWaterLeakSensorFields
+    sim_state_type     : SimStateType                  = SimStateType.CONTINUOUS
+    sim_state_id       : str                           = 'battery'
+    value              : str                           = '85'
+
+    @property
+    def name(self):
+        return f'{self.entity_name} Battery'
+
+    @property
+    def entity_id(self):
+        return _sensor_entity_id( self.entity_name, suffix = '_battery' )
+
+    @property
+    def state(self):
+        return self.value
+
+    @property
+    def attributes(self) -> Dict[ str, str ]:
+        return {
+            'device_class'       : 'battery',
+            'friendly_name'      : f'{self.entity_name} Battery',
+            'unit_of_measurement': '%',
+        }
+
+    @property
+    def min_value(self):
+        return 0
+
+    @property
+    def max_value(self):
+        return 100
+
+    @property
+    def display_unit(self) -> str:
+        return '%'
 
 
 @dataclass( frozen = True )
@@ -2330,6 +2859,60 @@ HASS_SIM_ENTITY_DEFINITION_LIST = [
             HassComboMotionSensorMotionState,
             HassComboMotionSensorBatteryState,
             HassComboMotionSensorIlluminanceState,
+        ],
+    ),
+    SimEntityDefinition(
+        class_label = 'Presence Sensor',
+        sim_entity_type = SimEntityType.PRESENCE_SENSOR,
+        sim_entity_fields_class = HassPresenceSensorFields,
+        sim_state_class_list = [
+            HassPresenceSensorState,
+        ],
+    ),
+    SimEntityDefinition(
+        class_label = 'Opening Sensor',
+        sim_entity_type = SimEntityType.OPEN_CLOSE_SENSOR,
+        sim_entity_fields_class = HassOpeningSensorFields,
+        sim_state_class_list = [
+            HassOpeningSensorState,
+        ],
+    ),
+    SimEntityDefinition(
+        class_label = 'Power Meter',
+        sim_entity_type = SimEntityType.ELECTRICY_METER,
+        sim_entity_fields_class = HassPowerMeterFields,
+        sim_state_class_list = [
+            HassPowerMeterState,
+        ],
+    ),
+    SimEntityDefinition(
+        class_label = 'Weather Station (temperature + humidity + pressure + wind + illuminance)',
+        sim_entity_type = SimEntityType.BAROMETER,
+        sim_entity_fields_class = HassWeatherStationFields,
+        sim_state_class_list = [
+            HassWeatherStationTemperatureState,
+            HassWeatherStationHumidityState,
+            HassWeatherStationPressureState,
+            HassWeatherStationWindSpeedState,
+            HassWeatherStationIlluminanceState,
+        ],
+    ),
+    SimEntityDefinition(
+        class_label = 'Occupancy + Light Sensor',
+        sim_entity_type = SimEntityType.PRESENCE_SENSOR,
+        sim_entity_fields_class = HassOccupancyLightSensorFields,
+        sim_state_class_list = [
+            HassOccupancyLightSensorOccupancyState,
+            HassOccupancyLightSensorIlluminanceState,
+        ],
+    ),
+    SimEntityDefinition(
+        class_label = 'Water Leak Sensor (moisture + battery)',
+        sim_entity_type = SimEntityType.LEAK_SENSOR,
+        sim_entity_fields_class = HassWaterLeakSensorFields,
+        sim_state_class_list = [
+            HassWaterLeakSensorMoistureState,
+            HassWaterLeakSensorBatteryState,
         ],
     ),
     SimEntityDefinition(

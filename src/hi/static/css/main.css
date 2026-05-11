@@ -769,6 +769,9 @@ g[status="low"] {
 g[status="smoke_detected"] {
     filter: drop-shadow(0 0 5px var(--status-bad-color));
 }
+g[status="moisture_detected"] {
+    filter: drop-shadow(0 0 5px var(--status-bad-color));
+}
 
 
 div[status] {
@@ -829,6 +832,14 @@ div[status="smoke_clear"] {
     background-color: var(--status-ok-color);
 }
 div[status="smoke_detected"] {
+    color: var(--on-status-bad-color);
+    background-color: var(--status-bad-color);
+}
+div[status="moisture_clear"] {
+    color: var(--on-status-ok-color);
+    background-color: var(--status-ok-color);
+}
+div[status="moisture_detected"] {
     color: var(--on-status-bad-color);
     background-color: var(--status-bad-color);
 }

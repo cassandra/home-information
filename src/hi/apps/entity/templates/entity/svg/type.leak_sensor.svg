@@ -1,0 +1,5 @@
+<rect class="hi-entity-bg" x="0" y="0" width="64" height="64" fill="none"/>
+<circle cx="32" cy="32" r="24" fill="#f0f0f0" stroke="#333333" stroke-width="2"/>
+<circle cx="32" cy="32" r="20" fill="#e0e0e0" stroke="#333333" stroke-width="1"/>
+<path d="M 32 14 C 26 24 22 30 22 36 C 22 42 26 46 32 46 C 38 46 42 42 42 36 C 42 30 38 24 32 14 Z" fill="#3399ff" stroke="#005bb5" stroke-width="1"/>
+<path d="M 28 32 C 28 28 30 26 32 22" fill="none" stroke="#ffffff" stroke-width="1.5" stroke-linecap="round" opacity="0.8"/>

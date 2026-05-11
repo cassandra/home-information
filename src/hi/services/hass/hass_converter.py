@@ -137,10 +137,14 @@ class HassConverter:
         HassApi.HUMIDITY_ID_SUFFIX,
         HassApi.ILLUMINANCE_ID_SUFFIX,
         HassApi.LIGHT_ID_SUFFIX,
+        HassApi.MOISTURE_ID_SUFFIX,
         HassApi.MOTION_ID_SUFFIX,
+        HassApi.OCCUPANCY_ID_SUFFIX,
+        HassApi.PRESSURE_ID_SUFFIX,
         HassApi.STATE_ID_SUFFIX,
         HassApi.STATUS_ID_SUFFIX,
         HassApi.TEMPERATURE_ID_SUFFIX,
+        HassApi.WIND_SPEED_ID_SUFFIX,
 
         # Sun
         HassApi.NEXT_SETTING_ID_SUFFIX,
@@ -244,7 +248,7 @@ class HassConverter:
         (HassApi.BINARY_SENSOR_DOMAIN, HassApi.OPENING_DEVICE_CLASS, None): EntityStateType.OPEN_CLOSE,
         (HassApi.BINARY_SENSOR_DOMAIN, HassApi.WINDOW_DEVICE_CLASS, None): EntityStateType.OPEN_CLOSE,
         (HassApi.BINARY_SENSOR_DOMAIN, HassApi.SMOKE_DEVICE_CLASS, None): EntityStateType.SMOKE,
-        (HassApi.BINARY_SENSOR_DOMAIN, HassApi.MOISTURE_DEVICE_CLASS, None): EntityStateType.ON_OFF,
+        (HassApi.BINARY_SENSOR_DOMAIN, HassApi.MOISTURE_DEVICE_CLASS, None): EntityStateType.MOISTURE,
         (HassApi.BINARY_SENSOR_DOMAIN, None, None): EntityStateType.ON_OFF,  # Generic binary sensor
         
         # Sensor Domain (read-only sensors)
@@ -1935,6 +1939,18 @@ class HassConverter:
                     entity_state = sensor.entity_state,
                     integration_key = integration_key,
                 )
+        elif entity_state_type == EntityStateType.MOISTURE:
+            sensor = HiModelHelper.create_moisture_sensor(
+                entity = entity,
+                integration_key = integration_key,
+                name = name,
+            )
+            if add_alarm_events:
+                HiModelHelper.create_moisture_event_definition(
+                    name = f'{sensor.name} Alarm',
+                    entity_state = sensor.entity_state,
+                    integration_key = integration_key,
+                )
         else:
             # Default fallback
             sensor = HiModelHelper.create_blob_sensor(
@@ -2098,6 +2114,19 @@ class HassConverter:
             return EntityType.PRESENCE_SENSOR
         if HassApi.SMOKE_DEVICE_CLASS in device_class_set:
             return EntityType.SMOKE_DETECTOR
+        if HassApi.MOISTURE_DEVICE_CLASS in device_class_set:
+            return EntityType.LEAK_SENSOR
+        # Multi-quantity outdoor sensors (Netatmo etc.) report
+        # pressure and/or wind_speed alongside other readings.
+        # Either signal is rare in indoor devices.
+        if device_class_set.intersection({
+                HassApi.PRESSURE_DEVICE_CLASS,
+                HassApi.WIND_SPEED_DEVICE_CLASS,
+        }):
+            return EntityType.WEATHER_STATION
+        if ( HassApi.SENSOR_DOMAIN in domain_set
+             and HassApi.POWER_DEVICE_CLASS in device_class_set ):
+            return EntityType.ELECTRICITY_METER
         if ( HassApi.LIGHT_DOMAIN in domain_set
              or HassApi.LIGHT_DEVICE_CLASS in device_class_set ):
             return EntityType.LIGHT
@@ -2322,6 +2351,8 @@ class HassConverter:
                 return str( EntityStateValue.OPEN )
             if dc == HassApi.SMOKE_DEVICE_CLASS:
                 return str( EntityStateValue.SMOKE_DETECTED )
+            if dc == HassApi.MOISTURE_DEVICE_CLASS:
+                return str( EntityStateValue.MOISTURE_DETECTED )
             if dc == HassApi.CONNECTIVITY_DEVICE_CLASS:
                 return str( EntityStateValue.CONNECTED )
             return str( EntityStateValue.ON )
@@ -2334,6 +2365,8 @@ class HassConverter:
                 return str( EntityStateValue.CLOSED )
             if dc == HassApi.SMOKE_DEVICE_CLASS:
                 return str( EntityStateValue.SMOKE_CLEAR )
+            if dc == HassApi.MOISTURE_DEVICE_CLASS:
+                return str( EntityStateValue.MOISTURE_CLEAR )
             if dc == HassApi.CONNECTIVITY_DEVICE_CLASS:
                 return str( EntityStateValue.DISCONNECTED )
             return str( EntityStateValue.OFF )

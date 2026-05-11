@@ -71,6 +71,7 @@ class EntityType(LabeledEnum):
     IRRIGATION_CONTROLLER = ( 'Irrigation Controller', '' )
     LAWN_MOWER           = ( 'Lawn Mower', '' )
     LEAF_BLOWER          = ( 'Leaf Blower', '' )
+    LEAK_SENSOR          = ( 'Leak Sensor', '' )
     LIGHT                = ( 'Light', '' )
     LIGHT_SENSOR         = ( 'Light Sensor', '' )
     MICROWAVE_OVEN       = ( 'Microwave Oven', '' )
@@ -217,6 +218,9 @@ class EntityStateValue(LabeledEnum):
     SMOKE_DETECTED = ( 'Smoke Detected', '' )
     SMOKE_CLEAR    = ( 'Clear', '' )
 
+    MOISTURE_DETECTED = ( 'Moisture Detected', '' )
+    MOISTURE_CLEAR    = ( 'Clear', '' )
+
     # COLOR_MODE values — modes a smart bulb can be in. UNKNOWN
     # covers integrations that don't report a mode and cases where
     # the bulb hasn't yet declared one. Names follow HA's modes;
@@ -317,8 +321,9 @@ class EntityStateType(LabeledEnum):
                          [] )
     LIGHT_LEVEL      = ( 'Light Level'      , '',
                          [] )
-    MOISTURE         = ( 'Moisture'         , '',
-                         [] )
+    MOISTURE         = ( 'Moisture'         , 'Binary leak / moisture detected state',
+                         [ EntityStateValue.MOISTURE_DETECTED,
+                           EntityStateValue.MOISTURE_CLEAR ] )
     MOVEMENT         = ( 'Movement'         , '',
                          [ EntityStateValue.ACTIVE,
                            EntityStateValue.IDLE ] )    

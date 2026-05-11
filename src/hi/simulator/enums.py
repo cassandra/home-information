@@ -105,6 +105,7 @@ class SimEntityType(LabeledEnum):
     HUMIDIFIER           = ( 'Humidifier', '' )  # Controls area
     HYGROMETER           = ( 'Hygrometer', '' )
     LIGHT                = ( 'Light', '' )
+    LEAK_SENSOR          = ( 'Leak Sensor', '' )
     LIGHT_SENSOR         = ( 'Light Sensor', '' )
     MOTION_SENSOR        = ( 'Motion Sensor', '' )
     NETWORK_SWITCH       = ( 'Network Switch', '' )

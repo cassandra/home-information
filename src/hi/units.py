@@ -34,10 +34,20 @@ ureg.define("geopotential_meter = meter = gpm")
 ureg.define("hectopascal_per_3_hours = 100 * pascal / (3 * hour) = hPa_per_3h = hPa/3h")
 ureg.define("meter_two_thirds_per_second = meter ** (2/3) / second = m^(2/3)/s = m2/3/s")
 
+
+# Keys/values must be pint ``Unit`` objects so dict lookups against a
+# ``Quantity.units`` match. ``ureg("km/h")`` returns a ``Quantity``
+# (magnitude 1 + unit) whose hash differs from the equivalent ``Unit``,
+# so we route compound expressions through ``ureg.parse_units`` to land
+# on a ``Unit`` consistently.
+def _unit( expr ):
+    return ureg.parse_units( expr )
+
+
 IMPERIAL_TO_METRIC_UNITS = {
-    ureg('inches'): ureg.mm,
+    _unit('inch'): ureg.mm,
     ureg.ft: ureg.m,
-    ureg.mph: ureg("km/h"),
+    ureg.mph: _unit('km/h'),
     ureg.degF: ureg.degC,
     ureg.inHg: ureg.hPa,
     ureg.mi: ureg.km,
@@ -45,12 +55,12 @@ IMPERIAL_TO_METRIC_UNITS = {
     ureg.lb: ureg.kg,
     ureg.BTU: ureg.J,
     ureg.hp: ureg.W,
-    ureg("lbf*ft"): ureg("N*m"),
+    _unit('lbf*ft'): _unit('N*m'),
     ureg.lbf: ureg.N,
-    ureg("ft/s^2"): ureg("m/s^2"),
-    ureg("lb/ft^3"): ureg("kg/m^3"),
-    ureg("gal/min"): ureg("L/min"),
-    ureg.rpm: ureg("rad/s"),
+    _unit('ft/s^2'): _unit('m/s^2'),
+    _unit('lb/ft^3'): _unit('kg/m^3'),
+    _unit('gal/min'): _unit('L/min'),
+    ureg.rpm: _unit('rad/s'),
 }
 
 DisplayUnitsConversionMaps = {

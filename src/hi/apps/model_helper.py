@@ -50,6 +50,10 @@ class HiModelHelper:
     DEFAULT_SMOKE_EVENT_WINDOW_SECS = 180
     DEFAULT_SMOKE_DEDUPE_WINDOW_SECS = 300
     DEFAULT_SMOKE_ALARM_LIFETIME_SECS = Alarm.MAX_LIFETIME_SECS
+
+    DEFAULT_MOISTURE_EVENT_WINDOW_SECS = 180
+    DEFAULT_MOISTURE_DEDUPE_WINDOW_SECS = 300
+    DEFAULT_MOISTURE_ALARM_LIFETIME_SECS = Alarm.MAX_LIFETIME_SECS
     
     @classmethod
     def create_blob_sensor( cls,
@@ -223,6 +227,20 @@ class HiModelHelper:
         return cls.create_sensor(
             entity = entity,
             entity_state_type = EntityStateType.SMOKE,
+            name = name,
+            integration_key = integration_key,
+        )
+
+    @classmethod
+    def create_moisture_sensor( cls,
+                                entity              : Entity,
+                                integration_key     : IntegrationKey  = None,
+                                name                : str             = None ) -> Sensor:
+        if not name:
+            name = f'{entity.name} Moisture'
+        return cls.create_sensor(
+            entity = entity,
+            entity_state_type = EntityStateType.MOISTURE,
             name = name,
             integration_key = integration_key,
         )
@@ -533,6 +551,31 @@ class HiModelHelper:
             event_window_secs = cls.DEFAULT_SMOKE_EVENT_WINDOW_SECS,
             dedupe_window_secs = cls.DEFAULT_SMOKE_DEDUPE_WINDOW_SECS,
             alarm_lifetime_secs = cls.DEFAULT_SMOKE_ALARM_LIFETIME_SECS,
+            integration_key = integration_key,
+        )
+
+    @classmethod
+    def create_moisture_event_definition(
+            cls,
+            name                 : str,
+            entity_state         : EntityState,
+            integration_key      : IntegrationKey  = None ) -> EventDefinition:
+
+        # Water leaks are property-damage events: both security
+        # levels map to CRITICAL so the operator sees the alarm
+        # regardless of HOME / AWAY posture.
+        return EventManager().create_simple_alarm_event_definition(
+            name = name,
+            event_type = EventType.SECURITY,
+            entity_state = entity_state,
+            value = EntityStateValue.MOISTURE_DETECTED,
+            security_to_alarm_level = {
+                SecurityLevel.HIGH: AlarmLevel.CRITICAL,
+                SecurityLevel.LOW: AlarmLevel.CRITICAL,
+            },
+            event_window_secs = cls.DEFAULT_MOISTURE_EVENT_WINDOW_SECS,
+            dedupe_window_secs = cls.DEFAULT_MOISTURE_DEDUPE_WINDOW_SECS,
+            alarm_lifetime_secs = cls.DEFAULT_MOISTURE_ALARM_LIFETIME_SECS,
             integration_key = integration_key,
         )
 
