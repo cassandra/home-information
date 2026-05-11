@@ -274,20 +274,15 @@ class EntityStateType(LabeledEnum):
                          [] )
     # COLOR_MODE reports which lighting mode a smart bulb is
     # currently in (e.g., HS color, white temperature, basic
-    # on/off). Read-only sensor; HA derives the value from
-    # whichever attribute was most recently written. The value
-    # set is the ``COLOR_MODE_*`` family of EntityStateValues.
+    # on/off). The per-device supported subset is declared by HA
+    # in ``supported_color_modes`` and captured in
+    # ``value_range_str`` at import time, so ``choices()`` reads
+    # from there rather than enumerating every COLOR_MODE_*
+    # member here. The COLOR_MODE_* EntityStateValue members
+    # still provide authoritative labels for display via
+    # ``to_display_label``.
     COLOR_MODE       = ( 'Color Mode'       , 'Active lighting color mode',
-                         [ EntityStateValue.COLOR_MODE_UNKNOWN,
-                           EntityStateValue.COLOR_MODE_ONOFF,
-                           EntityStateValue.COLOR_MODE_BRIGHTNESS,
-                           EntityStateValue.COLOR_MODE_COLOR_TEMP,
-                           EntityStateValue.COLOR_MODE_HS,
-                           EntityStateValue.COLOR_MODE_RGB,
-                           EntityStateValue.COLOR_MODE_RGBW,
-                           EntityStateValue.COLOR_MODE_RGBWW,
-                           EntityStateValue.COLOR_MODE_XY,
-                           EntityStateValue.COLOR_MODE_WHITE ] )
+                         [] )
     # COLOR_TEMPERATURE is the white-light Kelvin scale
     # (warm 2000K to cool 6500K); distinct from a chromatic
     # color (HUE+SATURATION) since the underlying physics and

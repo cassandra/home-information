@@ -1,4 +1,5 @@
 import logging
+from datetime import datetime
 from unittest.mock import Mock, patch
 
 from hi.apps.entity.models import Entity, EntityState
@@ -219,18 +220,51 @@ class TestStatusDisplayManager(BaseTestCase):
         entity1 = Entity.objects.create(name='Entity 1', entity_type_str='CAMERA')
         entity2 = Entity.objects.create(name='Entity 2', entity_type_str='LIGHT')
         entity3 = Entity.objects.create(name='Entity 3', entity_type_str='SENSOR')
-        
+
         entities = [entity1, entity2, entity3]
-        
+
         manager = StatusDisplayManager()
-        
+
         with patch.object(manager, '_get_entity_to_entity_status_data') as mock_method:
             mock_method.return_value = {}  # Empty results
-            
+
             result_list = manager.get_entity_status_data_list(entities)
-            
+
             # Should maintain same order as input
             self.assertEqual(len(result_list), 3)
             self.assertEqual(result_list[0].entity, entity1)
             self.assertEqual(result_list[1].entity, entity2)
             self.assertEqual(result_list[2].entity, entity3)
+
+    def test_get_entity_state_status_map_includes_states_without_svg_style(self):
+        # The unified map emits a row for every EntityState with a
+        # response, even those whose value produces no
+        # ``svg_status_style`` (e.g., ON_OFF with an unrecognized
+        # value). The pre-refactor ``cssClassUpdateMap`` skipped
+        # these; the unified shape carries display_value and
+        # (when applicable) controller updates which remain useful
+        # independent of icon styling, so they're always
+        # emitted with an empty ``attributes`` dict.
+        entity = Entity.objects.create(
+            name='Unrecognized State', entity_type_str='SENSOR',
+        )
+        entity_state = EntityState.objects.create(
+            entity=entity, entity_state_type_str='ON_OFF',
+        )
+        response = Mock(spec=SensorResponse)
+        response.value = 'INVALID'    # not 'on' / 'off' → no svg_status_style
+        response.timestamp = datetime.now()
+        status_data = EntityStateStatusData(
+            entity_state=entity_state,
+            sensor_response_list=[response],
+            controller_data_list=[],
+        )
+
+        manager = StatusDisplayManager()
+        with patch.object(
+                manager, 'get_all_entity_state_status_data_list',
+                return_value=[status_data]):
+            result = manager.get_entity_state_status_map()
+
+        self.assertIn(entity_state.css_class, result)
+        self.assertEqual(result[entity_state.css_class]['attributes'], {})
