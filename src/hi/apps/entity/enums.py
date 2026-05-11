@@ -1,6 +1,7 @@
 from typing import List, Set, Tuple
 
 from hi.apps.common.enums import LabeledEnum
+from hi.apps.common.utils import get_humanized_name
 
 
 class EntityType(LabeledEnum):
@@ -188,6 +189,15 @@ class EntityType(LabeledEnum):
                     
     
 class EntityStateValue(LabeledEnum):
+    # Alarm-style values (e.g., ACTIVE, OPEN, SMOKE_DETECTED) are
+    # rendered as the ``status`` attribute on both the SVG icon
+    # ``g`` element and the sensor card ``div``. Each new pair
+    # needs matching ``g[status="..."]`` and ``div[status="..."]``
+    # rules in main.css for the resting and alarmed states (the
+    # resting state may legitimately omit the ``g`` rule when no
+    # glow is wanted). Missing rules surface as a first-paint
+    # color flash that disappears on the first poll once the
+    # bucketed StatusStyle value gets applied.
 
     ACTIVE         = ( 'Active', '' )
     IDLE           = ( 'Idle', '' )
@@ -221,6 +231,23 @@ class EntityStateValue(LabeledEnum):
     COLOR_MODE_RGBWW       = ( 'RGBWW Color', '' )
     COLOR_MODE_XY          = ( 'XY Color', '' )
     COLOR_MODE_WHITE       = ( 'White', '' )
+
+    @classmethod
+    def to_display_label( cls, wire_value : str ) -> str:
+        """Resolve a stored wire value to a display label. Known
+        enum members return their authoritative ``.label``;
+        free-form wire values (e.g., HA's ``'heating'``,
+        ``'fan_only'``) are humanized into title case. Numeric
+        values pass through unchanged so the humanizer doesn't
+        mangle them."""
+        if not wire_value:
+            return wire_value
+        try:
+            return cls.from_name( wire_value ).label
+        except ValueError:
+            if wire_value[ 0 ].isdigit():
+                return wire_value
+            return get_humanized_name( wire_value )
 
 
 class EntityStateType(LabeledEnum):

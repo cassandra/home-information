@@ -1335,6 +1335,7 @@ class HassConverter:
                 entity_state_type = EntityStateType.HUMIDITY,
                 is_controllable = False,
                 label = 'Current Humidity',
+                units = str(HumidityUnit.PERCENT),
             ))
         return specs
 

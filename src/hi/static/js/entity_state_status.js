@@ -25,6 +25,9 @@
             if ( entry.attributes ) {
                 _applyAttributes( cssClass, entry.attributes );
             }
+            if ( entry.display_value ) {
+                _applyDisplay( cssClass, entry.display_value );
+            }
             if ( entry.controller ) {
                 controllerSubMap[ cssClass ] = entry.controller;
             }
@@ -35,9 +38,10 @@
     function _applyAttributes( cssClass, attrMap ) {
         // When a matched element does not carry the named
         // attribute directly, the ``status`` attribute is
-        // forwarded to descendent ``div[status]`` elements (set as
-        // both the attribute and the visible text). Other
-        // attribute names are silently ignored on that element.
+        // forwarded to descendent ``div[status]`` elements so CSS
+        // selectors keyed on ``[status="..."]`` match through the
+        // wrapper. Other attribute names are silently ignored on
+        // that element.
         const elements = $( '.' + cssClass );
         for ( const attrName in attrMap ) {
             const attrValue = attrMap[ attrName ];
@@ -48,13 +52,34 @@
                         $( this ).attr( attrName, attrValue );
                     }
                 } else if ( attrName == 'status' ) {
-                    $( this ).find( 'div[status]' ).each( function( index, element ) {
-                        $( element ).attr( attrName, attrValue );
-                        $( element ).text( attrValue );
-                    });
+                    $( this ).find( 'div[status]' ).attr( attrName, attrValue );
                 }
             });
         }
+    }
+
+    function _applyDisplay( cssClass, displayValue ) {
+        // Templates opt in to display refresh by tagging the
+        // target element with one of ``display-text``,
+        // ``display-magnitude``, ``display-unit``. The attribute
+        // is presence-only; the polled ``display_value`` field of
+        // the same name supplies the text. Fields absent on the
+        // server side (e.g., ``magnitude`` for unit-less states)
+        // leave the target element's existing text untouched.
+        const $scope = $( '.' + cssClass );
+        _setTextWhereAttr( $scope, 'display-text', displayValue.text );
+        _setTextWhereAttr( $scope, 'display-magnitude', displayValue.magnitude );
+        _setTextWhereAttr( $scope, 'display-unit', displayValue.unit_symbol );
+    }
+
+    function _setTextWhereAttr( $scope, attrName, text ) {
+        if ( text == null ) return;
+        const selector = '[' + attrName + ']';
+        $scope.find( selector ).addBack( selector ).each( function() {
+            if ( $( this ).text() !== text ) {
+                $( this ).text( text );
+            }
+        });
     }
 
 })();

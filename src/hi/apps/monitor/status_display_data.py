@@ -106,19 +106,11 @@ class StatusDisplayData:
         """Human-readable display string for the current sensor
         value — universal source of truth for the polling-refresh
         display text. Unit-bearing states get the combined
-        magnitude+unit form (``"72.0°F"``); unit-less enum states
-        get the labeled form (wire ``"smoke_detected"`` →
-        ``"Smoke Detected"``); unit-less numeric / free-form
-        values pass through. Matches what the template-render
-        path produces via ``as_display_value`` / ``value_label``
-        so the initial render and the polling refresh agree."""
+        magnitude+unit form (``"72.0°F"``); other values resolve
+        through ``EntityStateValue.to_display_label`` (enum label,
+        humanized free-form, or numeric pass-through)."""
         combined = str( self.latest_display_value )
-        if not combined:
-            return ''
-        try:
-            return EntityStateValue.from_name( combined ).label
-        except ValueError:
-            return combined
+        return EntityStateValue.to_display_label( combined )
 
     def to_polling_update_dict(self) -> dict:
         """Build the per-EntityState row of ``entityStateStatusMap``.
