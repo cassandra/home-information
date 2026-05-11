@@ -291,6 +291,7 @@ PIPELINE = {
         'js_hi_grid_content': {
             'source_filenames': (
                 'js/svg-utils.js',
+                'js/entity_state_status.js',
                 'js/status.js',
                 'js/auto-view.js',
                 'js/edit-dragdrop.js',
