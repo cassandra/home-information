@@ -235,12 +235,16 @@ class HassConverter:
         
         # Binary Sensor Domain (read-only sensors)
         (HassApi.BINARY_SENSOR_DOMAIN, HassApi.MOTION_DEVICE_CLASS, None): EntityStateType.MOVEMENT,
+        (HassApi.BINARY_SENSOR_DOMAIN, HassApi.OCCUPANCY_DEVICE_CLASS, None): EntityStateType.MOVEMENT,
+        (HassApi.BINARY_SENSOR_DOMAIN, HassApi.PRESENCE_DEVICE_CLASS, None): EntityStateType.PRESENCE,
         (HassApi.BINARY_SENSOR_DOMAIN, HassApi.CONNECTIVITY_DEVICE_CLASS, None): EntityStateType.CONNECTIVITY,
         (HassApi.BINARY_SENSOR_DOMAIN, HassApi.BATTERY_DEVICE_CLASS, None): EntityStateType.HIGH_LOW,
         (HassApi.BINARY_SENSOR_DOMAIN, HassApi.DOOR_DEVICE_CLASS, None): EntityStateType.OPEN_CLOSE,
         (HassApi.BINARY_SENSOR_DOMAIN, HassApi.GARAGE_DOOR_DEVICE_CLASS, None): EntityStateType.OPEN_CLOSE,
+        (HassApi.BINARY_SENSOR_DOMAIN, HassApi.OPENING_DEVICE_CLASS, None): EntityStateType.OPEN_CLOSE,
         (HassApi.BINARY_SENSOR_DOMAIN, HassApi.WINDOW_DEVICE_CLASS, None): EntityStateType.OPEN_CLOSE,
         (HassApi.BINARY_SENSOR_DOMAIN, HassApi.SMOKE_DEVICE_CLASS, None): EntityStateType.SMOKE,
+        (HassApi.BINARY_SENSOR_DOMAIN, HassApi.MOISTURE_DEVICE_CLASS, None): EntityStateType.ON_OFF,
         (HassApi.BINARY_SENSOR_DOMAIN, None, None): EntityStateType.ON_OFF,  # Generic binary sensor
         
         # Sensor Domain (read-only sensors)
@@ -248,6 +252,9 @@ class HassConverter:
         (HassApi.SENSOR_DOMAIN, HassApi.HUMIDITY_DEVICE_CLASS, None): EntityStateType.HUMIDITY,
         (HassApi.SENSOR_DOMAIN, HassApi.BATTERY_DEVICE_CLASS, None): EntityStateType.BATTERY_LEVEL,
         (HassApi.SENSOR_DOMAIN, HassApi.ILLUMINANCE_DEVICE_CLASS, None): EntityStateType.LIGHT_LEVEL,
+        (HassApi.SENSOR_DOMAIN, HassApi.POWER_DEVICE_CLASS, None): EntityStateType.ELECTRIC_USAGE,
+        (HassApi.SENSOR_DOMAIN, HassApi.PRESSURE_DEVICE_CLASS, None): EntityStateType.AIR_PRESSURE,
+        (HassApi.SENSOR_DOMAIN, HassApi.WIND_SPEED_DEVICE_CLASS, None): EntityStateType.WIND_SPEED,
         (HassApi.SENSOR_DOMAIN, HassApi.TIMESTAMP_DEVICE_CLASS, None): EntityStateType.DATETIME,
         (HassApi.SENSOR_DOMAIN, HassApi.ENUM_DEVICE_CLASS, None): EntityStateType.DISCRETE,
         (HassApi.SENSOR_DOMAIN, None, None): EntityStateType.BLOB,  # Generic sensor
@@ -1790,6 +1797,23 @@ class HassConverter:
                 integration_key = integration_key,
                 units = hass_state.unit_of_measurement or 'lx',
             )
+        elif entity_state_type in (
+                EntityStateType.ELECTRIC_USAGE,
+                EntityStateType.AIR_PRESSURE,
+                EntityStateType.WIND_SPEED,
+        ):
+            # Generic numeric sensor with a unit pulled verbatim
+            # from HA. Used for power (W/kW), pressure (hPa/mbar),
+            # wind speed (km/h, mph). No unit conversion at the HI
+            # boundary — the user's display-unit preference applies
+            # at template-render time via the canonical Pint path.
+            sensor = HiModelHelper.create_sensor(
+                entity = entity,
+                entity_state_type = entity_state_type,
+                name = name,
+                integration_key = integration_key,
+                units = hass_state.unit_of_measurement or '',
+            )
         elif entity_state_type == EntityStateType.DISCRETE:
             # Handle enum device class with options
             name_label_dict = { x: x for x in hass_state.options } if hass_state.options else {}
@@ -1835,6 +1859,17 @@ class HassConverter:
                     entity_state = sensor.entity_state,
                     integration_key = integration_key,
                 )
+        elif entity_state_type == EntityStateType.PRESENCE:
+            # PRESENCE shares the [ACTIVE, IDLE] EntityStateValue
+            # vocabulary with MOVEMENT but renders under its own
+            # state-type label and styling decay (see
+            # ``StatusDisplayData._get_presence_status_style``).
+            sensor = HiModelHelper.create_sensor(
+                entity = entity,
+                entity_state_type = EntityStateType.PRESENCE,
+                name = name,
+                integration_key = integration_key,
+            )
         elif entity_state_type == EntityStateType.HIGH_LOW:
             sensor = HiModelHelper.create_high_low_sensor(
                 entity = entity,
@@ -2031,8 +2066,13 @@ class HassConverter:
         if ( HassApi.BINARY_SENSOR_DOMAIN in domain_set
              and device_class_set.intersection( HassApi.OPEN_CLOSE_DEVICE_CLASS_SET )):
             return EntityType.OPEN_CLOSE_SENSOR
-        if HassApi.MOTION_DEVICE_CLASS in device_class_set:
+        if device_class_set.intersection({
+                HassApi.MOTION_DEVICE_CLASS,
+                HassApi.OCCUPANCY_DEVICE_CLASS,
+        }):
             return EntityType.MOTION_SENSOR
+        if HassApi.PRESENCE_DEVICE_CLASS in device_class_set:
+            return EntityType.PRESENCE_SENSOR
         if HassApi.SMOKE_DEVICE_CLASS in device_class_set:
             return EntityType.SMOKE_DETECTOR
         if ( HassApi.LIGHT_DOMAIN in domain_set
@@ -2120,6 +2160,13 @@ class HassConverter:
         plus hue, saturation, and color temperature entries.
         Domain-specific value extraction lives in the per-domain
         helpers this method dispatches to."""
+        # HA emits ``state='unknown'`` before the first report
+        # and ``state='unavailable'`` when the entity is offline.
+        # Treat both as "no value" so sensor history doesn't
+        # accrue placeholder records that would surface as
+        # labeled text in the polling refresh.
+        if hass_state.state_value in HassStateValue.NO_VALUE_STATES:
+            return {}
         domain = hass_state.domain
         if domain == HassApi.LIGHT_DOMAIN:
             return cls._light_to_sensor_value_map( hass_state )
@@ -2244,7 +2291,7 @@ class HassConverter:
         sv = hass_state.state_value.lower()
         dc = hass_state.device_class
         if sv == HassStateValue.ON:
-            if dc == HassApi.MOTION_DEVICE_CLASS:
+            if dc in HassApi.MOTION_LIKE_DEVICE_CLASS_SET:
                 return str( EntityStateValue.ACTIVE )
             if dc == HassApi.BATTERY_DEVICE_CLASS:
                 return str( EntityStateValue.LOW )
@@ -2256,7 +2303,7 @@ class HassConverter:
                 return str( EntityStateValue.CONNECTED )
             return str( EntityStateValue.ON )
         if sv == HassStateValue.OFF:
-            if dc == HassApi.MOTION_DEVICE_CLASS:
+            if dc in HassApi.MOTION_LIKE_DEVICE_CLASS_SET:
                 return str( EntityStateValue.IDLE )
             if dc == HassApi.BATTERY_DEVICE_CLASS:
                 return str( EntityStateValue.HIGH )

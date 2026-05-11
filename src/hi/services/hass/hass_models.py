@@ -104,16 +104,28 @@ class HassApi:
     HUMIDITY_DEVICE_CLASS = 'humidity'
     ILLUMINANCE_DEVICE_CLASS = 'illuminance'
     LIGHT_DEVICE_CLASS = 'light'
+    MOISTURE_DEVICE_CLASS = 'moisture'
     MOTION_DEVICE_CLASS = 'motion'
+    OCCUPANCY_DEVICE_CLASS = 'occupancy'
+    OPENING_DEVICE_CLASS = 'opening'
     OUTLET_DEVICE_CLASS = 'outlet'
+    POWER_DEVICE_CLASS = 'power'
+    PRESENCE_DEVICE_CLASS = 'presence'
+    PRESSURE_DEVICE_CLASS = 'pressure'
     SMOKE_DEVICE_CLASS = 'smoke'
     TEMPERATURE_DEVICE_CLASS = 'temperature'
     TIMESTAMP_DEVICE_CLASS = 'timestamp'
+    WIND_SPEED_DEVICE_CLASS = 'wind_speed'
     WINDOW_DEVICE_CLASS = 'window'
 
     OPEN_CLOSE_DEVICE_CLASS_SET = { DOOR_DEVICE_CLASS,
                                     GARAGE_DOOR_DEVICE_CLASS,
+                                    OPENING_DEVICE_CLASS,
                                     WINDOW_DEVICE_CLASS }
+
+    MOTION_LIKE_DEVICE_CLASS_SET = { MOTION_DEVICE_CLASS,
+                                     OCCUPANCY_DEVICE_CLASS,
+                                     PRESENCE_DEVICE_CLASS }
 
     # Climate-domain attributes and wire values.
     CURRENT_TEMPERATURE_ATTR = 'current_temperature'

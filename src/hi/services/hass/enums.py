@@ -60,3 +60,12 @@ class HassStateValue:
     CLOSED = 'closed'
     OPENING = 'opening'
     CLOSING = 'closing'
+
+    # Special states HA emits when an entity is offline or
+    # hasn't reported yet. Treat as "no value" at the boundary
+    # so they don't pollute sensor history with placeholder
+    # strings that would later display as labels.
+    UNKNOWN = 'unknown'
+    UNAVAILABLE = 'unavailable'
+
+    NO_VALUE_STATES = frozenset({ UNKNOWN, UNAVAILABLE })
