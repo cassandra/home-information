@@ -30,6 +30,15 @@ class StatusDisplayData:
         self._sensor_response_list = entity_state_status_data.sensor_response_list
         self._controller_data_list = entity_state_status_data.controller_data_list
 
+        # Compute once at init — every downstream consumer
+        # (svg_status_style fallback, controller_data_value,
+        # latest_display_label, to_polling_update_dict) reads
+        # this through the property, so the ConsoleConverterHelper
+        # lookup runs only once per instance.
+        self._latest_display_value = ConsoleConverterHelper.from_entity_state_value(
+            entity_state_value = self.latest_sensor_value,
+            entity_state = self._entity_state,
+        )
         self._svg_status_style = self._get_svg_status_style()
         self._controller_data_value = self._get_controller_data_value()
         return
@@ -96,10 +105,36 @@ class StatusDisplayData:
         magnitude and unit_symbol so consumers can format per
         their need (slider's numeric ``value=`` uses ``.magnitude``;
         status text uses ``str(...)`` which combines both)."""
-        return ConsoleConverterHelper.from_entity_state_value(
-            entity_state_value = self.latest_sensor_value,
-            entity_state = self._entity_state,
-        )
+        return self._latest_display_value
+
+    @property
+    def latest_display_label(self) -> str:
+        """Human-readable display string for the current sensor
+        value — universal source of truth for the polling-refresh
+        display text. Unit-bearing states get the combined
+        magnitude+unit form (``"72.0°F"``); other values resolve
+        through ``EntityStateValue.to_display_label`` (enum label,
+        humanized free-form, or numeric pass-through)."""
+        combined = str( self.latest_display_value )
+        return EntityStateValue.to_display_label( combined )
+
+    def to_polling_update_dict(self) -> dict:
+        """Build the per-EntityState row of ``entityStateStatusMap``.
+        Carries the three UI update pieces: DOM attributes,
+        controller widget state, and the human-readable display
+        text."""
+        display_value = self.latest_display_value
+        display_dict = { 'text': self.latest_display_label }
+        if display_value.unit_symbol:
+            display_dict[ 'magnitude' ] = display_value.magnitude
+            display_dict[ 'unit_symbol' ] = display_value.unit_symbol
+        row = {
+            'attributes': self.attribute_dict,
+            'display_value': display_dict,
+        }
+        if self.controller_data_value is not None:
+            row[ 'controller' ] = { 'value': self.controller_data_value }
+        return row
 
     @property
     def penultimate_sensor_value(self):

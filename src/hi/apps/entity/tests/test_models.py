@@ -447,5 +447,55 @@ class TestEntityState(BaseTestCase):
         self.assertFalse(EntityAttribute.objects.filter(id=specs_attr_id).exists())
         self.assertFalse(EntityState.objects.filter(id=power_state_id).exists())
         self.assertFalse(EntityState.objects.filter(id=temp_state_id).exists())
-        
+
         return
+
+
+class TestEntityStateChoices(BaseTestCase):
+    """``EntityState.choices()`` derives labels for the discrete
+    controller dropdown. Two paths: enum-bound state types use
+    EntityStateValue labels directly; free-form discrete state
+    types humanize wire values."""
+
+    def setUp(self):
+        super().setUp()
+        self.entity = Entity.objects.create(
+            name='Test', entity_type_str=str(EntityType.OTHER),
+        )
+
+    def test_enum_bound_state_type_uses_entity_state_value_labels(self):
+        # OPEN_CLOSE has an authoritative EntityStateValue list;
+        # labels come from those members, not from value_range_str.
+        state = EntityState.objects.create(
+            entity=self.entity,
+            entity_state_type_str=str(EntityStateType.OPEN_CLOSE),
+            name='Door',
+        )
+        self.assertEqual(
+            state.choices(),
+            [('open', 'Open'), ('closed', 'Closed')],
+        )
+
+    def test_discrete_state_humanizes_wire_values(self):
+        # DISCRETE has no enum-bound value list. Wire values
+        # captured in value_range_str (e.g., HA hvac_mode names)
+        # get humanized into readable labels — the dropdown shows
+        # "Heat Cool" / "Fan Only" instead of the snake_case wire.
+        state = EntityState.objects.create(
+            entity=self.entity,
+            entity_state_type_str=str(EntityStateType.DISCRETE),
+            name='HVAC Mode',
+            value_range_str=json.dumps({
+                'heat_cool': 'heat_cool',
+                'fan_only': 'fan_only',
+                'off': 'off',
+            }),
+        )
+        self.assertEqual(
+            state.choices(),
+            [
+                ('heat_cool', 'Heat Cool'),
+                ('fan_only', 'Fan Only'),
+                ('off', 'Off'),
+            ],
+        )

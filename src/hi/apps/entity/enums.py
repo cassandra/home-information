@@ -1,6 +1,7 @@
 from typing import List, Set, Tuple
 
 from hi.apps.common.enums import LabeledEnum
+from hi.apps.common.utils import get_humanized_name
 
 
 class EntityType(LabeledEnum):
@@ -188,6 +189,15 @@ class EntityType(LabeledEnum):
                     
     
 class EntityStateValue(LabeledEnum):
+    # Alarm-style values (e.g., ACTIVE, OPEN, SMOKE_DETECTED) are
+    # rendered as the ``status`` attribute on both the SVG icon
+    # ``g`` element and the sensor card ``div``. Each new pair
+    # needs matching ``g[status="..."]`` and ``div[status="..."]``
+    # rules in main.css for the resting and alarmed states (the
+    # resting state may legitimately omit the ``g`` rule when no
+    # glow is wanted). Missing rules surface as a first-paint
+    # color flash that disappears on the first poll once the
+    # bucketed StatusStyle value gets applied.
 
     ACTIVE         = ( 'Active', '' )
     IDLE           = ( 'Idle', '' )
@@ -222,6 +232,23 @@ class EntityStateValue(LabeledEnum):
     COLOR_MODE_XY          = ( 'XY Color', '' )
     COLOR_MODE_WHITE       = ( 'White', '' )
 
+    @classmethod
+    def to_display_label( cls, wire_value : str ) -> str:
+        """Resolve a stored wire value to a display label. Known
+        enum members return their authoritative ``.label``;
+        free-form wire values (e.g., HA's ``'heating'``,
+        ``'fan_only'``) are humanized into title case. Numeric
+        values pass through unchanged so the humanizer doesn't
+        mangle them."""
+        if not wire_value:
+            return wire_value
+        try:
+            return cls.from_name( wire_value ).label
+        except ValueError:
+            if wire_value[ 0 ].isdigit():
+                return wire_value
+            return get_humanized_name( wire_value )
+
 
 class EntityStateType(LabeledEnum):
     
@@ -247,20 +274,15 @@ class EntityStateType(LabeledEnum):
                          [] )
     # COLOR_MODE reports which lighting mode a smart bulb is
     # currently in (e.g., HS color, white temperature, basic
-    # on/off). Read-only sensor; HA derives the value from
-    # whichever attribute was most recently written. The value
-    # set is the ``COLOR_MODE_*`` family of EntityStateValues.
+    # on/off). The per-device supported subset is declared by HA
+    # in ``supported_color_modes`` and captured in
+    # ``value_range_str`` at import time, so ``choices()`` reads
+    # from there rather than enumerating every COLOR_MODE_*
+    # member here. The COLOR_MODE_* EntityStateValue members
+    # still provide authoritative labels for display via
+    # ``to_display_label``.
     COLOR_MODE       = ( 'Color Mode'       , 'Active lighting color mode',
-                         [ EntityStateValue.COLOR_MODE_UNKNOWN,
-                           EntityStateValue.COLOR_MODE_ONOFF,
-                           EntityStateValue.COLOR_MODE_BRIGHTNESS,
-                           EntityStateValue.COLOR_MODE_COLOR_TEMP,
-                           EntityStateValue.COLOR_MODE_HS,
-                           EntityStateValue.COLOR_MODE_RGB,
-                           EntityStateValue.COLOR_MODE_RGBW,
-                           EntityStateValue.COLOR_MODE_RGBWW,
-                           EntityStateValue.COLOR_MODE_XY,
-                           EntityStateValue.COLOR_MODE_WHITE ] )
+                         [] )
     # COLOR_TEMPERATURE is the white-light Kelvin scale
     # (warm 2000K to cool 6500K); distinct from a chromatic
     # color (HUE+SATURATION) since the underlying physics and

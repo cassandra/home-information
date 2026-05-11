@@ -23,11 +23,17 @@ class TestValueLabel(BaseTestCase):
         self.assertEqual( value_label( 'active' ), 'Active' )
         self.assertEqual( value_label( 'closed' ), 'Closed' )
 
-    def test_unknown_value_passes_through(self):
-        # Numeric / free-form values (e.g., temperatures, raw
-        # device strings) aren't enum members and must not raise.
+    def test_numeric_value_passes_through(self):
+        # Temperatures and other numeric values must not get
+        # mangled by humanization.
         self.assertEqual( value_label( '72.5' ), '72.5' )
-        self.assertEqual( value_label( 'arbitrary' ), 'arbitrary' )
+
+    def test_non_enum_name_value_humanized(self):
+        # Free-form wire values that aren't enum members (e.g., HA
+        # hvac_action values like 'heating') get humanized into a
+        # readable label.
+        self.assertEqual( value_label( 'heating' ), 'Heating' )
+        self.assertEqual( value_label( 'fan_only' ), 'Fan Only' )
 
     def test_empty_and_none_pass_through(self):
         self.assertEqual( value_label( '' ), '' )

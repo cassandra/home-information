@@ -8,19 +8,12 @@
  *      provides (e.g., the dimmer's Off / Full convenience
  *      buttons that drive the brightness slider).
  *
- *   2. Apply server-pushed controller values to widgets via
- *      ``Hi.controllers.applyValueMap`` — called by the polling
- *      layer with the ``cssControllerValueMap`` from the status
- *      response. Each map entry is a class-name → value pair;
- *      every element matching the class gets its widget property
- *      updated (slider ``.value``, checkbox ``.checked``,
- *      ``<select>`` ``.value``, etc.).
- *
- * The controller-value path is parallel to the existing CSS-class
- * status path (status drives icon styling via attributes; values
- * drive interactive widget state via DOM properties). Replaces
- * the older checkbox+select special-cases that were inlined in
- * status.js's CSS-class-update handler.
+ *   2. Apply server-pushed controller widget state via
+ *      ``Hi.controllers.applyValueMap``. Each map entry is keyed
+ *      by CSS class and carries a controller-state dict
+ *      ({value, ...}); every element matching the class gets its
+ *      widget property updated (slider ``.value``, checkbox
+ *      ``.checked``, ``<select>`` ``.value``, etc.).
  */
 (function() {
     'use strict';
@@ -37,18 +30,19 @@
     const _activeSliders = new WeakSet();
 
     /**
-     * Apply a class-name → controller-value map by finding each
+     * Apply a class-name → controller-state map by finding each
      * matching element and updating the appropriate widget
      * property. Only applies updates when the new value differs
      * from the widget's current state — avoids interfering with
      * an in-progress user interaction (e.g., a slider mid-drag
      * whose optimistic update already matches the polled value).
      *
-     * @param {Object} controllerValueMap - { className: value }
+     * @param {Object} controllerMap - { className: { value, ... } }
      */
-    Hi.controllers.applyValueMap = function( controllerValueMap ) {
-        if ( !controllerValueMap ) return;
-        Object.entries( controllerValueMap ).forEach( function( [ cssClass, value ] ) {
+    Hi.controllers.applyValueMap = function( controllerMap ) {
+        if ( !controllerMap ) return;
+        Object.entries( controllerMap ).forEach( function( [ cssClass, controllerDict ] ) {
+            const value = controllerDict.value;
             const $elements = $( '.' + cssClass );
             $elements.each( function() {
                 _applyValueToElement( this, value );

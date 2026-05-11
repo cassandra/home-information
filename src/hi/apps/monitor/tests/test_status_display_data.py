@@ -598,7 +598,196 @@ class TestStatusDisplayData(BaseTestCase):
         response1 = self._create_mock_sensor_response('VALUE1')
         response2 = self._create_mock_sensor_response('VALUE2')
         status_data = self._create_entity_state_status_data('ON_OFF', [response1, response2])
-        
+
         display_data = StatusDisplayData(status_data)
-        
+
         self.assertEqual(display_data.penultimate_sensor_value, 'VALUE2')
+
+
+class TestLatestDisplayLabel(BaseTestCase):
+    """``latest_display_label`` is the universal source of truth for
+    the polling-refresh display text. Unit-bearing states get the
+    combined ``DisplayValue`` string; unit-less enum states get the
+    labeled form; unit-less numeric / free-form passes through."""
+
+    def setUp(self):
+        super().setUp()
+        self.entity = Entity.objects.create(
+            name='Test Entity',
+            entity_type_str='SENSOR',
+        )
+
+    def _make_display_data(self, entity_state_type_str, value, units=None):
+        entity_state = EntityState.objects.create(
+            entity = self.entity,
+            entity_state_type_str = entity_state_type_str,
+            units = units,
+        )
+        response = Mock(spec=SensorResponse)
+        response.value = value
+        response.timestamp = datetime.now()
+        status_data = EntityStateStatusData(
+            entity_state = entity_state,
+            sensor_response_list = [ response ],
+            controller_data_list = [],
+        )
+        return StatusDisplayData( status_data )
+
+    def test_unit_less_enum_value_returns_labeled_form(self):
+        # ``smoke_detected`` (wire form) → ``Smoke Detected``
+        # (human-readable label) — matches what the ``value_label``
+        # template filter produces on initial render.
+        display_data = self._make_display_data(
+            'SMOKE', str(EntityStateValue.SMOKE_DETECTED),
+        )
+        self.assertEqual( display_data.latest_display_label, 'Smoke Detected' )
+
+    def test_unit_less_enum_movement_active_returns_active(self):
+        display_data = self._make_display_data(
+            'MOVEMENT', str(EntityStateValue.ACTIVE),
+        )
+        self.assertEqual( display_data.latest_display_label, 'Active' )
+
+    def test_unit_bearing_temperature_returns_combined_form(self):
+        # Stored canonical °C; default display unit is °F unless
+        # the test environment overrides. The exact magnitude depends
+        # on the user-preference test default — pin the structural
+        # contract (non-empty string containing a temperature unit
+        # symbol) rather than the exact magnitude.
+        display_data = self._make_display_data(
+            'TEMPERATURE', '21', units = '°C',
+        )
+        label = display_data.latest_display_label
+        self.assertTrue( label )
+        self.assertTrue(
+            '°F' in label or '°C' in label,
+            f'expected temperature unit symbol in label, got {label!r}',
+        )
+
+    def test_unit_less_numeric_passes_through(self):
+        # A POWER_LEVEL or LIGHT_DIMMER raw value like ``"75"`` isn't
+        # an enum member; the label must equal the input unchanged.
+        display_data = self._make_display_data( 'POWER_LEVEL', '75' )
+        self.assertEqual( display_data.latest_display_label, '75' )
+
+    def test_empty_value_returns_empty_string(self):
+        # Defensive: a sensor with no responses yet has empty
+        # latest_sensor_value → label is empty (no crash, no enum
+        # lookup attempt).
+        entity_state = EntityState.objects.create(
+            entity = self.entity, entity_state_type_str = 'MOVEMENT',
+        )
+        status_data = EntityStateStatusData(
+            entity_state = entity_state,
+            sensor_response_list = [],
+            controller_data_list = [],
+        )
+        display_data = StatusDisplayData( status_data )
+        self.assertEqual( display_data.latest_display_label, '' )
+
+
+class TestToPollingUpdateDict(BaseTestCase):
+    """``to_polling_update_dict`` builds the per-EntityState row of
+    the unified ``entityStateStatusMap``. Pins the contract for
+    each kind of EntityState the polling path sees: sensor-only
+    (no ``controller`` key), unit-bearing (``magnitude`` and
+    ``unit_symbol`` present in display_value), unit-less enum
+    (``magnitude``/``unit_symbol`` absent), and the always-present
+    ``attributes`` and ``display_value`` keys."""
+
+    def setUp(self):
+        super().setUp()
+        self.entity = Entity.objects.create(
+            name = 'Test Entity', entity_type_str = 'SENSOR',
+        )
+
+    def _make_display_data(self, entity_state_type_str, value,
+                           units=None, with_controller=False):
+        entity_state = EntityState.objects.create(
+            entity = self.entity,
+            entity_state_type_str = entity_state_type_str,
+            units = units,
+        )
+        response = Mock(spec=SensorResponse)
+        response.value = value
+        response.timestamp = datetime.now()
+        controller_data_list = []
+        if with_controller:
+            controller = Mock()
+            controller.entity_state = entity_state
+            controller_data_list = [ Mock(controller=controller) ]
+        status_data = EntityStateStatusData(
+            entity_state = entity_state,
+            sensor_response_list = [ response ],
+            controller_data_list = controller_data_list,
+        )
+        return StatusDisplayData( status_data )
+
+    def test_sensor_only_row_omits_controller_key(self):
+        display_data = self._make_display_data(
+            'MOVEMENT', str(EntityStateValue.ACTIVE),
+        )
+        row = display_data.to_polling_update_dict()
+        self.assertNotIn( 'controller', row )
+
+    def test_controller_bearing_row_has_controller_value_dict(self):
+        display_data = self._make_display_data(
+            'ON_OFF', str(EntityStateValue.ON), with_controller=True,
+        )
+        row = display_data.to_polling_update_dict()
+        self.assertIn( 'controller', row )
+        self.assertIn( 'value', row[ 'controller' ] )
+
+    def test_unit_bearing_display_value_includes_magnitude_and_unit(self):
+        display_data = self._make_display_data(
+            'TEMPERATURE', '21', units = '°C',
+        )
+        row = display_data.to_polling_update_dict()
+        display_value = row[ 'display_value' ]
+        self.assertIn( 'text', display_value )
+        self.assertIn( 'magnitude', display_value )
+        self.assertIn( 'unit_symbol', display_value )
+
+    def test_unit_less_display_value_omits_magnitude_and_unit(self):
+        display_data = self._make_display_data(
+            'MOVEMENT', str(EntityStateValue.ACTIVE),
+        )
+        row = display_data.to_polling_update_dict()
+        display_value = row[ 'display_value' ]
+        self.assertIn( 'text', display_value )
+        self.assertNotIn( 'magnitude', display_value )
+        self.assertNotIn( 'unit_symbol', display_value )
+
+    def test_display_value_text_is_human_readable_label(self):
+        # Same source of truth as ``value_label`` template filter —
+        # JS sets element.textContent to this string.
+        display_data = self._make_display_data(
+            'SMOKE', str(EntityStateValue.SMOKE_DETECTED),
+        )
+        row = display_data.to_polling_update_dict()
+        self.assertEqual(
+            row[ 'display_value' ][ 'text' ], 'Smoke Detected',
+        )
+
+    def test_display_value_text_humanizes_free_form_wire_value(self):
+        # DISCRETE-typed states (HA hvac_action, fan preset, etc.)
+        # carry free-form wire values not bound to an
+        # EntityStateValue member. The polling map's
+        # ``display_value.text`` humanizes them so the sensor card
+        # displays a readable label on poll refresh — the headline
+        # behavior of #310.
+        display_data = self._make_display_data( 'DISCRETE', 'heating' )
+        row = display_data.to_polling_update_dict()
+        self.assertEqual(
+            row[ 'display_value' ][ 'text' ], 'Heating',
+        )
+
+    def test_attributes_always_present(self):
+        # Even for unrecognized values where there's no SVG style,
+        # ``attributes`` is always emitted (possibly as an empty
+        # dict) — the JS dispatcher iterates whatever keys it
+        # finds and is safe with an empty mapping.
+        display_data = self._make_display_data( 'ON_OFF', 'INVALID' )
+        row = display_data.to_polling_update_dict()
+        self.assertIn( 'attributes', row )
+        self.assertIsInstance( row[ 'attributes' ], dict )

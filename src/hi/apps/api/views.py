@@ -33,8 +33,7 @@ class StatusView( View,
     ServerTimestampAttr = 'timestamp'
     LastServerTimestampAttr = 'lastTimestamp'
     AlertStatusDataAttr = 'alertData'
-    CssClassUpdateMapAttr = 'cssClassUpdateMap'
-    CssControllerValueMapAttr = 'cssControllerValueMap'
+    EntityStateStatusMapAttr = 'entityStateStatusMap'
     IdReplaceUpdateMapAttr = 'idReplaceUpdateMap'
     IdReplaceHashMapAttr = 'idReplaceHashMap'
     ConsoleLockedAttr = 'consoleLocked'
@@ -70,10 +69,7 @@ class StatusView( View,
         id_replace_map.update( self.security_manager().get_status_id_replace_map( request = request ) )
         id_replace_map.update( self.weather_manager().get_status_id_replace_map( request = request ) )
 
-        css_class_update_map = dict()
-        css_class_update_map.update( StatusDisplayManager().get_status_css_class_update_map() )
-
-        css_controller_value_map = StatusDisplayManager().get_status_controller_value_map()
+        entity_state_status_map = StatusDisplayManager().get_entity_state_status_map()
 
         # Hash provided for client to prevent unneeded DOM updates since
         # they can interfer with user interactions.
@@ -93,8 +89,7 @@ class StatusView( View,
             self.ServerStartTimestampAttr: server_start_datetime.isoformat(),
             self.ServerTimestampAttr: server_datetime.isoformat(),
             self.AlertStatusDataAttr: alert_status_data.to_dict( request = request ),
-            self.CssClassUpdateMapAttr: css_class_update_map,
-            self.CssControllerValueMapAttr: css_controller_value_map,
+            self.EntityStateStatusMapAttr: entity_state_status_map,
             self.IdReplaceUpdateMapAttr: id_replace_map,
             self.IdReplaceHashMapAttr: id_replace_hash_map,
             self.ConsoleLockedAttr: request.session.get(

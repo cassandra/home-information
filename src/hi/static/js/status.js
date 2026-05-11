@@ -30,8 +30,7 @@
     const ServerStartTimestampAttr = 'startTimestamp';
     const ServerTimestampAttr = 'timestamp';
     const LastServerTimestampAttr = 'lastTimestamp';
-    const CssClassUpdateMapAttr = 'cssClassUpdateMap';
-    const CssControllerValueMapAttr = 'cssControllerValueMap';
+    const EntityStateStatusMapAttr = 'entityStateStatusMap';
     const IdReplaceUpdateMapAttr = 'idReplaceUpdateMap';
     const IdReplaceHashMapAttr = 'idReplaceHashMap';
     const ConsoleLockedAttr = 'consoleLocked';
@@ -146,11 +145,8 @@
             handleIdReplacements( respObj[IdReplaceUpdateMapAttr],
                                   respObj[IdReplaceHashMapAttr] );
         }
-        if ( CssClassUpdateMapAttr in respObj ) {
-            handleCssClassUpdates( respObj[CssClassUpdateMapAttr] );
-        }
-        if ( CssControllerValueMapAttr in respObj ) {
-            Hi.controllers.applyValueMap( respObj[CssControllerValueMapAttr] );
+        if ( EntityStateStatusMapAttr in respObj ) {
+            Hi.entityStateStatus.apply( respObj[EntityStateStatusMapAttr] );
         }
         if ( TransientViewSuggestionAttr in respObj ) {
             handleTransientViewSuggestion( respObj[TransientViewSuggestionAttr] );
@@ -239,43 +235,6 @@
                 $(`#${html_id}`).attr( 'hi-id-replace-hash', contentHash );
             }
         }
-    }
-    
-    function handleCssClassUpdates( updateMap ) {
-        // Apply attribute updates (the bucketed status string and
-        // peers) for CSS-driven visual styling. Widget-state
-        // updates (slider position, checkbox checked, select value)
-        // come through the parallel controller-value path; see
-        // ``Hi.controllers.applyValueMap`` in controllers.js.
-        // The descendent ``div[status]`` text-update branch is
-        // preserved here because its purpose is visual (showing
-        // the bucketed status as text), not widget control.
-        for ( let cssClass in updateMap ) {
-            let elements = getElementsByCssClass( cssClass );
-            let attrMap = updateMap[cssClass];
-            for ( let attrName in attrMap ) {
-                let attrValue = attrMap[attrName];
-                elements.each( function() {
-                    if (this.hasAttribute(attrName)) {
-                        let currentValue = $(this).attr(attrName);
-                        if ( attrValue != null && ( currentValue !== String(attrValue) )) {
-                            $(this).attr( attrName, attrValue );
-                        }
-                    } else if ( attrName == 'status' ) {
-                        $(this).find('div[status]').each( function(index, element) {
-                            $(element).attr( attrName, attrValue );
-                            $(element).text( attrValue );
-                        });
-                    }
-                });
-            }
-        }
-    }
-
-    function getElementsByCssClass( cssClass ) {
-
-        let elements = $(`.${cssClass}`);
-        return elements;
     }
     
     function handlePollingError() {

@@ -824,6 +824,14 @@ div[status="low"] {
     color: var(--on-status-bad-color);
     background-color: var(--status-bad-color);
 }
+div[status="smoke_clear"] {
+    color: var(--on-status-ok-color);
+    background-color: var(--status-ok-color);
+}
+div[status="smoke_detected"] {
+    color: var(--on-status-bad-color);
+    background-color: var(--status-bad-color);
+}
 
 g[hover] {
     filter: drop-shadow(0 0 10px var(--status-hover-color)) !important;
