@@ -708,9 +708,11 @@ class HassColorSmartBulbColorModeState( HassState ):
 # different simulator-side UI control.
 
 
-def _binary_sensor_entity_id( name : str ) -> str:
-    suffix = name.lower().replace( ' ', '_' )
-    return f'binary_sensor.{suffix}'
+def _binary_sensor_entity_id( name : str, suffix : str = '' ) -> str:
+    slug = name.lower().replace( ' ', '_' )
+    if suffix:
+        return f'binary_sensor.{slug}{suffix}'
+    return f'binary_sensor.{slug}'
 
 
 @dataclass( frozen = True )
@@ -858,6 +860,117 @@ class HassMotionSensorState( HassState ):
             'friendly_name': self.entity_name,
             'icon': 'mdi:motion-sensor',
         }
+
+
+@dataclass( frozen = True )
+class HassComboMotionSensorFields( SimEntityFields ):
+    """Multi-feature motion sensor (Z-Wave / Zigbee shape): a
+    ``binary_sensor.x`` for motion plus ``sensor.x`` entities for
+    battery percentage and ambient illuminance. Real devices
+    expose these as three separate entities sharing a device
+    group; HI's converter collapses them via the suffix-strip
+    grouping into one Entity with three EntityStates."""
+    pass
+
+
+@dataclass
+class HassComboMotionSensorMotionState( HassState ):
+    sim_entity_fields  : HassComboMotionSensorFields
+    sim_state_type     : SimStateType                  = SimStateType.ON_OFF
+    sim_state_id       : str                           = 'motion'
+    value              : str                           = 'off'
+
+    @property
+    def name(self):
+        return f'{self.entity_name} Motion'
+
+    @property
+    def entity_id(self):
+        return _binary_sensor_entity_id( self.entity_name, suffix = '_motion' )
+
+    @property
+    def state(self):
+        return 'on' if str_to_bool( self.value ) else 'off'
+
+    @property
+    def attributes(self) -> Dict[ str, str ]:
+        return {
+            'device_class': 'motion',
+            'friendly_name': f'{self.entity_name} Motion',
+            'icon': 'mdi:motion-sensor',
+        }
+
+
+@dataclass
+class HassComboMotionSensorBatteryState( HassState ):
+    sim_entity_fields  : HassComboMotionSensorFields
+    sim_state_type     : SimStateType                  = SimStateType.CONTINUOUS
+    sim_state_id       : str                           = 'battery'
+    value              : str                           = '85'
+
+    @property
+    def name(self):
+        return f'{self.entity_name} Battery'
+
+    @property
+    def entity_id(self):
+        return _sensor_entity_id( self.entity_name, suffix = '_battery' )
+
+    @property
+    def state(self):
+        return self.value
+
+    @property
+    def attributes(self) -> Dict[ str, str ]:
+        return {
+            'device_class'       : 'battery',
+            'friendly_name'      : f'{self.entity_name} Battery',
+            'unit_of_measurement': '%',
+        }
+
+    @property
+    def min_value(self):
+        return 0
+
+    @property
+    def max_value(self):
+        return 100
+
+
+@dataclass
+class HassComboMotionSensorIlluminanceState( HassState ):
+    sim_entity_fields  : HassComboMotionSensorFields
+    sim_state_type     : SimStateType                  = SimStateType.CONTINUOUS
+    sim_state_id       : str                           = 'illuminance'
+    value              : str                           = '120'
+
+    @property
+    def name(self):
+        return f'{self.entity_name} Illuminance'
+
+    @property
+    def entity_id(self):
+        return _sensor_entity_id( self.entity_name, suffix = '_illuminance' )
+
+    @property
+    def state(self):
+        return self.value
+
+    @property
+    def attributes(self) -> Dict[ str, str ]:
+        return {
+            'device_class'       : 'illuminance',
+            'friendly_name'      : f'{self.entity_name} Illuminance',
+            'unit_of_measurement': 'lx',
+        }
+
+    @property
+    def min_value(self):
+        return 0
+
+    @property
+    def max_value(self):
+        return 10000
 
 
 # --------------------------------------------------------------------------
@@ -2162,6 +2275,16 @@ HASS_SIM_ENTITY_DEFINITION_LIST = [
         sim_entity_fields_class = HassMotionSensorFields,
         sim_state_class_list = [
             HassMotionSensorState,
+        ],
+    ),
+    SimEntityDefinition(
+        class_label = 'Motion Sensor (combo with battery + illuminance)',
+        sim_entity_type = SimEntityType.MOTION_SENSOR,
+        sim_entity_fields_class = HassComboMotionSensorFields,
+        sim_state_class_list = [
+            HassComboMotionSensorMotionState,
+            HassComboMotionSensorBatteryState,
+            HassComboMotionSensorIlluminanceState,
         ],
     ),
     SimEntityDefinition(

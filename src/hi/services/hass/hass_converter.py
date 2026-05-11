@@ -135,6 +135,7 @@ class HassConverter:
         HassApi.BATTERY_ID_SUFFIX,
         HassApi.EVENTS_last_HOUR_ID_SUFFIX,
         HassApi.HUMIDITY_ID_SUFFIX,
+        HassApi.ILLUMINANCE_ID_SUFFIX,
         HassApi.LIGHT_ID_SUFFIX,
         HassApi.MOTION_ID_SUFFIX,
         HassApi.STATE_ID_SUFFIX,
@@ -245,6 +246,8 @@ class HassConverter:
         # Sensor Domain (read-only sensors)
         (HassApi.SENSOR_DOMAIN, HassApi.TEMPERATURE_DEVICE_CLASS, None): EntityStateType.TEMPERATURE,
         (HassApi.SENSOR_DOMAIN, HassApi.HUMIDITY_DEVICE_CLASS, None): EntityStateType.HUMIDITY,
+        (HassApi.SENSOR_DOMAIN, HassApi.BATTERY_DEVICE_CLASS, None): EntityStateType.BATTERY_LEVEL,
+        (HassApi.SENSOR_DOMAIN, HassApi.ILLUMINANCE_DEVICE_CLASS, None): EntityStateType.LIGHT_LEVEL,
         (HassApi.SENSOR_DOMAIN, HassApi.TIMESTAMP_DEVICE_CLASS, None): EntityStateType.DATETIME,
         (HassApi.SENSOR_DOMAIN, HassApi.ENUM_DEVICE_CLASS, None): EntityStateType.DISCRETE,
         (HassApi.SENSOR_DOMAIN, None, None): EntityStateType.BLOB,  # Generic sensor
@@ -1755,7 +1758,7 @@ class HassConverter:
                 humidity_unit = HumidityUnit.GRAMS_PER_KILOGRAM
             elif 'g' in unit_str.lower():
                 humidity_unit = HumidityUnit.GRAMS_PER_CUBIN_METER
-            else:  
+            else:
                 humidity_unit = HumidityUnit.PERCENT
 
             sensor = HiModelHelper.create_humidity_sensor(
@@ -1763,6 +1766,29 @@ class HassConverter:
                 integration_key = integration_key,
                 name = name,
                 humidity_unit = humidity_unit,
+            )
+        elif entity_state_type == EntityStateType.BATTERY_LEVEL:
+            # HA's battery sensor reports a 0-100 percentage with
+            # ``unit_of_measurement='%'``. Store the unit verbatim
+            # so the display path renders ``"85%"`` rather than the
+            # bare magnitude.
+            sensor = HiModelHelper.create_sensor(
+                entity = entity,
+                entity_state_type = EntityStateType.BATTERY_LEVEL,
+                name = name,
+                integration_key = integration_key,
+                units = hass_state.unit_of_measurement or '%',
+            )
+        elif entity_state_type == EntityStateType.LIGHT_LEVEL:
+            # HA's illuminance sensor reports lux ("lx") as the
+            # standard unit; some integrations omit the attribute,
+            # in which case we fall back to lux.
+            sensor = HiModelHelper.create_sensor(
+                entity = entity,
+                entity_state_type = EntityStateType.LIGHT_LEVEL,
+                name = name,
+                integration_key = integration_key,
+                units = hass_state.unit_of_measurement or 'lx',
             )
         elif entity_state_type == EntityStateType.DISCRETE:
             # Handle enum device class with options

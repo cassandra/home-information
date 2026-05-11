@@ -272,6 +272,8 @@ class EntityStateType(LabeledEnum):
                          [] )
     BANDWIDTH_USAGE  = ( 'Bandwidth Usage'  , '',
                          [] )
+    BATTERY_LEVEL    = ( 'Battery'          , 'Battery level as a percentage (0-100)',
+                         [] )
     # COLOR_MODE reports which lighting mode a smart bulb is
     # currently in (e.g., HS color, white temperature, basic
     # on/off). The per-device supported subset is declared by HA

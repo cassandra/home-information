@@ -85,6 +85,7 @@ from hi.simulator.services.hass.sim_models import (
     HassInsteonMotionDetectorFields,
     HassInsteonOpenCloseSensorFields,
     HassInsteonOutletFields,
+    HassComboMotionSensorFields,
     HassLockFields,
     HassMotionSensorFields,
     HassMultiFeatureFanFields,
@@ -361,6 +362,7 @@ class Command(BaseCommand):
         self._add_hass_outlet(         profile, 'Zoo Insteon Outlet'           , '01.BB.06' )
         self._add_hass_switch(         profile, 'Zoo Switch' )
         self._add_hass_motion_sensor(  profile, 'Zoo Motion' )
+        self._add_hass_combo_motion_sensor( profile, 'Zoo Smart Motion' )
         self._add_hass_basic_outlet(   profile, 'Zoo Outlet' )
         self._add_hass_smart_bulb(     profile, 'Zoo Smart Bulb' )
         self._add_hass_color_smart_bulb( profile, 'Zoo Color Bulb' )
@@ -549,6 +551,15 @@ class Command(BaseCommand):
             profile = profile,
             simulator_id = 'hass',
             fields_class = HassMotionSensorFields,
+            sim_entity_type = SimEntityType.MOTION_SENSOR,
+            fields_kwargs = {'name': name},
+        )
+
+    def _add_hass_combo_motion_sensor(self, profile, name):
+        self._create_db_entity(
+            profile = profile,
+            simulator_id = 'hass',
+            fields_class = HassComboMotionSensorFields,
             sim_entity_type = SimEntityType.MOTION_SENSOR,
             fields_kwargs = {'name': name},
         )

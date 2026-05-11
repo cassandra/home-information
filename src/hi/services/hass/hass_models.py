@@ -72,6 +72,7 @@ class HassApi:
     BATTERY_ID_SUFFIX = '_battery'
     EVENTS_last_HOUR_ID_SUFFIX = '_events_last_hour'
     HUMIDITY_ID_SUFFIX = '_humidity'
+    ILLUMINANCE_ID_SUFFIX = '_illuminance'
     LIGHT_ID_SUFFIX = '_light'
     MOTION_ID_SUFFIX = '_motion'
     STATE_ID_SUFFIX = '_state'
@@ -101,6 +102,7 @@ class HassApi:
     GARAGE_DEVICE_CLASS = 'garage'  # cover domain
     GARAGE_DOOR_DEVICE_CLASS = 'garage_door'  # binary_sensor domain
     HUMIDITY_DEVICE_CLASS = 'humidity'
+    ILLUMINANCE_DEVICE_CLASS = 'illuminance'
     LIGHT_DEVICE_CLASS = 'light'
     MOTION_DEVICE_CLASS = 'motion'
     OUTLET_DEVICE_CLASS = 'outlet'

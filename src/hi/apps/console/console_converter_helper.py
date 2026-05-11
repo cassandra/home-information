@@ -46,6 +46,16 @@ class DisplayValue:
     unit_symbol  : str = ''
 
     def __str__(self):
+        if not self.unit_symbol:
+            return self.magnitude
+        if not self.magnitude:
+            return self.unit_symbol
+        # NIST/SI convention: a space separates magnitude from
+        # alphabetic unit abbreviations (``120 lx``, ``5 kg``).
+        # Symbol-style units (``°F``, ``°C``, ``%``) attach
+        # directly per common typographic practice.
+        if self.unit_symbol[0].isalpha():
+            return f'{self.magnitude} {self.unit_symbol}'
         return f'{self.magnitude}{self.unit_symbol}'
 
 
