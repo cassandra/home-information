@@ -31,13 +31,10 @@ class StatusDisplayManager( Singleton, SensorResponseMixin ):
         return
         
     def get_entity_state_status_map( self ) -> Dict[ str, dict ]:
-        """Build the unified ``entityStateStatusMap`` consumed by the
-        polling response. Single pass through ``StatusDisplayData``
-        per EntityState, producing all three update pieces
-        (attributes, controller, display_value) in one structure —
-        replaces the parallel ``get_status_css_class_update_map``
-        + ``get_status_controller_value_map`` pipelines that each
-        rebuilt the same data list independently."""
+        """Build the per-EntityState polling-update map consumed by
+        the client. One pass through ``StatusDisplayData`` per
+        EntityState produces all three UI update pieces
+        (attributes, controller, display_value) in one structure."""
 
         entity_state_status_data_list = self.get_all_entity_state_status_data_list()
 
@@ -60,60 +57,7 @@ class StatusDisplayManager( Singleton, SensorResponseMixin ):
 
         return status_map
 
-    def get_status_css_class_update_map( self ) -> Dict[ str, str ]:
 
-        entity_state_status_data_list = self.get_all_entity_state_status_data_list()
-        status_display_data_list = [ StatusDisplayData(x) for x in entity_state_status_data_list ]
-
-        css_class_update_map = dict()
-        for status_display_data in status_display_data_list:
-            if status_display_data.should_skip:
-                continue
-            css_class_update_map[status_display_data.css_class] = status_display_data.attribute_dict
-            if settings.DEBUG and settings.DEBUG_TRACE_STATE:
-                latest = status_display_data.sensor_response_list[ 0 ]
-                DevOverrideManager.trace_state(
-                    'hi.ui_poll.sensor.out',
-                    ha_entity_id = latest.integration_key.integration_name,
-                    hi_entity_state_id = status_display_data.entity_state.id,
-                    hi_value = latest.value,
-                    attribute_dict = status_display_data.attribute_dict,
-                )
-            continue
-
-        return css_class_update_map
-
-    def get_status_controller_value_map( self ) -> Dict[ str, object ]:
-        """Build the class-to-controller-value map consumed by the
-        polling response's ``cssControllerValueMap`` key. Parallel
-        to ``get_status_css_class_update_map`` but for value-bearing
-        controller widgets (slider, checkbox, select, future color
-        picker) rather than CSS-driven visual styling. States with
-        no controller (read-only sensors) are skipped — see
-        ``StatusDisplayData.controller_data_value``."""
-
-        entity_state_status_data_list = self.get_all_entity_state_status_data_list()
-        status_display_data_list = [ StatusDisplayData(x) for x in entity_state_status_data_list ]
-
-        controller_value_map = dict()
-        for status_display_data in status_display_data_list:
-            controller_value = status_display_data.controller_data_value
-            if controller_value is None:
-                continue
-            controller_value_map[ status_display_data.css_class ] = controller_value
-            if settings.DEBUG and settings.DEBUG_TRACE_STATE:
-                latest = status_display_data.sensor_response_list[ 0 ]
-                DevOverrideManager.trace_state(
-                    'hi.ui_poll.controller.out',
-                    ha_entity_id = latest.integration_key.integration_name,
-                    hi_entity_state_id = status_display_data.entity_state.id,
-                    hi_value = controller_value,
-                    raw_value = latest.value,
-                )
-            continue
-
-        return controller_value_map
-        
     def get_all_entity_state_status_data_list( self ) -> List[ EntityStateStatusData ]:
         """
         Gets the latest sensor responses for all EntityStates.  Used by client

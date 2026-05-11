@@ -121,12 +121,10 @@ class StatusDisplayData:
             return combined
 
     def to_polling_update_dict(self) -> dict:
-        """Build the per-EntityState row of ``entityStateStatusMap``
-        — the unified polling-update output that replaces the
-        parallel ``cssClassUpdateMap`` + ``cssControllerValueMap``
-        pipelines. One structure carrying all three pieces the
-        UI needs: DOM attribute updates, controller widget state,
-        and human-readable display text."""
+        """Build the per-EntityState row of ``entityStateStatusMap``.
+        Carries the three UI update pieces: DOM attributes,
+        controller widget state, and the human-readable display
+        text."""
         display_value = self.latest_display_value
         display_dict = { 'text': self.latest_display_label }
         if display_value.unit_symbol:
