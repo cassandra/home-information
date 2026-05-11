@@ -1773,6 +1773,9 @@ class HassThermostatFields( SimEntityFields ):
     fan_modes        : list = field(
         default_factory = lambda : [ 'auto', 'low', 'medium', 'high' ],
     )
+    preset_modes     : list = field(
+        default_factory = lambda : [ 'eco', 'away', 'home', 'sleep' ],
+    )
     temperature_unit : str  = '°F'
 
 
@@ -2088,6 +2091,48 @@ class HassThermostatFanModeState( HassState ):
 
 
 @dataclass
+class HassThermostatPresetState( HassState ):
+    """Preset mode (DISCRETE, controllable). Choices come from
+    the per-thermostat ``preset_modes`` field. HA's built-in
+    preset vocabulary includes eco / away / home / sleep /
+    boost / comfort / activity; thermostats with
+    ``preset_modes=[]`` skip the attribute entirely."""
+
+    sim_entity_fields  : HassThermostatFields
+    sim_state_type     : SimStateType                  = SimStateType.DISCRETE
+    sim_state_id       : str                           = 'preset_mode'
+    value              : str                           = 'home'
+
+    @property
+    def name(self):
+        return f'{self.entity_name} Preset'
+
+    @property
+    def entity_id(self):
+        return _thermostat_entity_id( self.entity_name )
+
+    @property
+    def state(self):
+        return 'on'
+
+    @property
+    def choices(self) -> List[ Tuple[ str, str ] ]:
+        return [
+            ( mode, mode.title() )
+            for mode in self.sim_entity_fields.preset_modes
+        ]
+
+    @property
+    def attributes(self) -> Dict[ str, str ]:
+        if not self.sim_entity_fields.preset_modes:
+            return {}
+        return {
+            'preset_mode': self.value,
+            'preset_modes': list( self.sim_entity_fields.preset_modes ),
+        }
+
+
+@dataclass
 class HassThermostatCurrentHumidityState( HassState ):
     """Current humidity reading (CONTINUOUS, sensor-only). The
     simulator UI lets the operator drive it for testing."""
@@ -2391,6 +2436,7 @@ HASS_SIM_ENTITY_DEFINITION_LIST = [
             HassThermostatHvacModeState,
             HassThermostatHvacActionState,
             HassThermostatFanModeState,
+            HassThermostatPresetState,
             HassThermostatCurrentHumidityState,
         ],
     ),

@@ -147,6 +147,8 @@ class HassApi:
     COLOR_MODE_ATTR             = 'color_mode'
     COLOR_TEMP_KELVIN_ATTR      = 'color_temp_kelvin'
     HS_COLOR_ATTR               = 'hs_color'
+    MIN_COLOR_TEMP_KELVIN_ATTR  = 'min_color_temp_kelvin'
+    MAX_COLOR_TEMP_KELVIN_ATTR  = 'max_color_temp_kelvin'
     SUPPORTED_COLOR_MODES_ATTR  = 'supported_color_modes'
 
     # Color mode wire values (the value space of the COLOR_MODE_ATTR).

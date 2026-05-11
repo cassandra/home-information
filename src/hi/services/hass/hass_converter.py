@@ -1165,11 +1165,23 @@ class HassConverter:
                 value_range = { 'min': 0, 'max': 100 },
             ))
         if color_temp_present:
+            # Real bulbs have device-specific Kelvin ranges (e.g.,
+            # 2700-5000K for warm-white LEDs, 2000-6500K for
+            # color-capable bulbs). HA declares the device's
+            # actual bounds in ``min_color_temp_kelvin`` /
+            # ``max_color_temp_kelvin`` when known; the broad
+            # fallback covers integrations that don't report.
+            min_k = hass_state.attributes.get(
+                HassApi.MIN_COLOR_TEMP_KELVIN_ATTR, 2000,
+            )
+            max_k = hass_state.attributes.get(
+                HassApi.MAX_COLOR_TEMP_KELVIN_ATTR, 6500,
+            )
             specs.append( cls._SubstateSpec(
                 suffix = HassApi.COLOR_MODE_COLOR_TEMP,
                 entity_state_type = EntityStateType.COLOR_TEMPERATURE,
                 is_controllable = True,
-                value_range = { 'min': 2000, 'max': 6500 },
+                value_range = { 'min': min_k, 'max': max_k },
             ))
         # COLOR_MODE only adds information when there's actual
         # mode-switching to track. A bulb with a single supported
@@ -1224,7 +1236,7 @@ class HassConverter:
         preset_modes = attrs.get( HassApi.PRESET_MODES_ATTR )
         if isinstance( preset_modes, list ) and preset_modes:
             specs.append( cls._SubstateSpec(
-                suffix = 'preset',
+                suffix = HassApi.PRESET_MODE_ATTR,
                 entity_state_type = EntityStateType.DISCRETE,
                 is_controllable = True,
                 value_range = { mode: mode for mode in preset_modes },
@@ -1342,6 +1354,15 @@ class HassConverter:
                 value_range = { mode: mode for mode in fan_modes },
                 label = 'Fan Mode',
             ))
+        preset_modes = attrs.get( HassApi.PRESET_MODES_ATTR )
+        if isinstance( preset_modes, list ) and preset_modes:
+            specs.append( cls._SubstateSpec(
+                suffix = HassApi.PRESET_MODE_ATTR,
+                entity_state_type = EntityStateType.DISCRETE,
+                is_controllable = True,
+                value_range = { mode: mode for mode in preset_modes },
+                label = 'Preset',
+            ))
         if HassApi.CURRENT_HUMIDITY_ATTR in attrs:
             specs.append( cls._SubstateSpec(
                 suffix = HassApi.CURRENT_HUMIDITY_ATTR,
@@ -1450,7 +1471,7 @@ class HassConverter:
             return str( EntityStateValue.ON ) if osc else str( EntityStateValue.OFF )
         if suffix == HassApi.DIRECTION_ATTR:
             return attrs.get( HassApi.DIRECTION_ATTR )
-        if suffix == 'preset':
+        if suffix == HassApi.PRESET_MODE_ATTR:
             return attrs.get( HassApi.PRESET_MODE_ATTR )
         return None
 
@@ -1477,6 +1498,8 @@ class HassConverter:
             return attrs.get( HassApi.HVAC_ACTION_ATTR )
         if suffix == HassApi.FAN_MODE_ATTR:
             return attrs.get( HassApi.FAN_MODE_ATTR )
+        if suffix == HassApi.PRESET_MODE_ATTR:
+            return attrs.get( HassApi.PRESET_MODE_ATTR )
         if suffix == HassApi.CURRENT_HUMIDITY_ATTR:
             return cls._numeric_attr_as_str( attrs, HassApi.CURRENT_HUMIDITY_ATTR )
         # Temperature-bearing substates: convert from HA's reported
@@ -2614,7 +2637,7 @@ class HassConverter:
                 direction = hi_control_value,
             )
 
-        if substate == 'preset':
+        if substate == HassApi.PRESET_MODE_ATTR:
             return HassServiceComposer.for_preset_mode(
                 domain = domain,
                 hass_substate_id = parent_entity_id,
