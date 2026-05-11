@@ -769,6 +769,19 @@ class TestToPollingUpdateDict(BaseTestCase):
             row[ 'display_value' ][ 'text' ], 'Smoke Detected',
         )
 
+    def test_display_value_text_humanizes_free_form_wire_value(self):
+        # DISCRETE-typed states (HA hvac_action, fan preset, etc.)
+        # carry free-form wire values not bound to an
+        # EntityStateValue member. The polling map's
+        # ``display_value.text`` humanizes them so the sensor card
+        # displays a readable label on poll refresh — the headline
+        # behavior of #310.
+        display_data = self._make_display_data( 'DISCRETE', 'heating' )
+        row = display_data.to_polling_update_dict()
+        self.assertEqual(
+            row[ 'display_value' ][ 'text' ], 'Heating',
+        )
+
     def test_attributes_always_present(self):
         # Even for unrecognized values where there's no SVG style,
         # ``attributes`` is always emitted (possibly as an empty
