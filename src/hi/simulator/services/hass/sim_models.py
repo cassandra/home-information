@@ -823,6 +823,130 @@ class HassSmokeDetectorState( HassState ):
         }
 
 
+@dataclass( frozen = True )
+class HassMotionSensorFields( SimEntityFields ):
+    """A motion sensor (``binary_sensor`` with
+    ``device_class=motion``). Single ON_OFF SimState whose value
+    drives HA's ``state`` (``'on'`` = motion detected, ``'off'`` =
+    idle, per HA convention)."""
+    pass
+
+
+@dataclass
+class HassMotionSensorState( HassState ):
+    sim_entity_fields  : HassMotionSensorFields
+    sim_state_type     : SimStateType                  = SimStateType.ON_OFF
+    sim_state_id       : str                           = 'motion'
+    value              : str                           = 'off'
+
+    @property
+    def name(self):
+        return f'{self.entity_name} Motion'
+
+    @property
+    def entity_id(self):
+        return _binary_sensor_entity_id( self.entity_name )
+
+    @property
+    def state(self):
+        return 'on' if str_to_bool( self.value ) else 'off'
+
+    @property
+    def attributes(self) -> Dict[ str, str ]:
+        return {
+            'device_class': 'motion',
+            'friendly_name': self.entity_name,
+            'icon': 'mdi:motion-sensor',
+        }
+
+
+# --------------------------------------------------------------------------
+# Switch domain (non-Insteon)
+# --------------------------------------------------------------------------
+#
+# HA ``switch.x`` entities. Two shapes:
+#
+# 1. Generic switch (no ``device_class``) — maps to
+#    ``EntityType.ON_OFF_SWITCH`` or one of the name-inferred
+#    types (LIGHT / CEILING_FAN / ELECTRICAL_OUTLET).
+# 2. Outlet (``device_class=outlet``) — maps directly to
+#    ``EntityType.ELECTRICAL_OUTLET``.
+
+
+def _switch_entity_id( name : str ) -> str:
+    suffix = name.lower().replace( ' ', '_' )
+    return f'switch.{suffix}'
+
+
+@dataclass( frozen = True )
+class HassSwitchFields( SimEntityFields ):
+    """Generic on/off switch (``switch.x`` with no
+    ``device_class``)."""
+    pass
+
+
+@dataclass
+class HassSwitchState( HassState ):
+    sim_entity_fields  : HassSwitchFields
+    sim_state_type     : SimStateType                  = SimStateType.ON_OFF
+    sim_state_id       : str                           = 'switch'
+    value              : str                           = 'off'
+
+    @property
+    def name(self):
+        return f'{self.entity_name} Switch'
+
+    @property
+    def entity_id(self):
+        return _switch_entity_id( self.entity_name )
+
+    @property
+    def state(self):
+        return 'on' if str_to_bool( self.value ) else 'off'
+
+    @property
+    def attributes(self) -> Dict[ str, str ]:
+        return {
+            'friendly_name': self.entity_name,
+            'icon': 'mdi:toggle-switch',
+        }
+
+
+@dataclass( frozen = True )
+class HassOutletFields( SimEntityFields ):
+    """Electrical outlet (``switch.x`` with
+    ``device_class=outlet``)."""
+    pass
+
+
+@dataclass
+class HassOutletState( HassState ):
+    sim_entity_fields  : HassOutletFields
+    sim_state_type     : SimStateType                  = SimStateType.ON_OFF
+    sim_state_id       : str                           = 'outlet'
+    value              : str                           = 'off'
+
+    @property
+    def name(self):
+        return f'{self.entity_name} Outlet'
+
+    @property
+    def entity_id(self):
+        return _switch_entity_id( self.entity_name )
+
+    @property
+    def state(self):
+        return 'on' if str_to_bool( self.value ) else 'off'
+
+    @property
+    def attributes(self) -> Dict[ str, str ]:
+        return {
+            'device_class': 'outlet',
+            'friendly_name': self.entity_name,
+            'icon': 'mdi:power-socket-us',
+        }
+
+
 # --------------------------------------------------------------------------
 # Numeric sensors (``sensor.x`` with explicit device_class)
 # --------------------------------------------------------------------------
@@ -2030,6 +2154,30 @@ HASS_SIM_ENTITY_DEFINITION_LIST = [
         sim_entity_fields_class = HassSmokeDetectorFields,
         sim_state_class_list = [
             HassSmokeDetectorState,
+        ],
+    ),
+    SimEntityDefinition(
+        class_label = 'Motion Sensor',
+        sim_entity_type = SimEntityType.MOTION_SENSOR,
+        sim_entity_fields_class = HassMotionSensorFields,
+        sim_state_class_list = [
+            HassMotionSensorState,
+        ],
+    ),
+    SimEntityDefinition(
+        class_label = 'Switch',
+        sim_entity_type = SimEntityType.WALL_SWITCH,
+        sim_entity_fields_class = HassSwitchFields,
+        sim_state_class_list = [
+            HassSwitchState,
+        ],
+    ),
+    SimEntityDefinition(
+        class_label = 'Outlet',
+        sim_entity_type = SimEntityType.ELECTRICAL_OUTLET,
+        sim_entity_fields_class = HassOutletFields,
+        sim_state_class_list = [
+            HassOutletState,
         ],
     ),
     SimEntityDefinition(

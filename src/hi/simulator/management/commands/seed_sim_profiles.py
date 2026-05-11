@@ -86,9 +86,12 @@ from hi.simulator.services.hass.sim_models import (
     HassInsteonOpenCloseSensorFields,
     HassInsteonOutletFields,
     HassLockFields,
+    HassMotionSensorFields,
     HassMultiFeatureFanFields,
+    HassOutletFields,
     HassSmartBulbFields,
     HassSmokeDetectorFields,
+    HassSwitchFields,
     HassTemperatureSensorFields,
     HassTempHumiditySensorFields,
     HassThermostatFields,
@@ -350,12 +353,15 @@ class Command(BaseCommand):
 
     def _build_hass_zoo(self, profile: SimProfile) -> int:
         # One of every HASS sim entity definition type.
-        self._add_hass_light_switch(   profile, 'Zoo Light Switch'     , '01.BB.01' )
-        self._add_hass_dimmer(         profile, 'Zoo Dimmer'           , '01.BB.02' )
-        self._add_hass_dual_band(      profile, 'Zoo Dual Band Switch' , '01.BB.03' )
-        self._add_hass_motion(         profile, 'Zoo Motion'           , '01.BB.04' )
-        self._add_hass_open_close(     profile, 'Zoo Open/Close'       , '01.BB.05' )
-        self._add_hass_outlet(         profile, 'Zoo Outlet'           , '01.BB.06' )
+        self._add_hass_light_switch(   profile, 'Zoo Insteon Light Switch'     , '01.BB.01' )
+        self._add_hass_dimmer(         profile, 'Zoo Insteon Dimmer'           , '01.BB.02' )
+        self._add_hass_dual_band(      profile, 'Zoo Insteon Dual Band Switch' , '01.BB.03' )
+        self._add_hass_motion(         profile, 'Zoo Insteon Motion'           , '01.BB.04' )
+        self._add_hass_open_close(     profile, 'Zoo Insteon Open/Close'       , '01.BB.05' )
+        self._add_hass_outlet(         profile, 'Zoo Insteon Outlet'           , '01.BB.06' )
+        self._add_hass_switch(         profile, 'Zoo Switch' )
+        self._add_hass_motion_sensor(  profile, 'Zoo Motion' )
+        self._add_hass_basic_outlet(   profile, 'Zoo Outlet' )
         self._add_hass_smart_bulb(     profile, 'Zoo Smart Bulb' )
         self._add_hass_color_smart_bulb( profile, 'Zoo Color Bulb' )
         self._add_hass_door_contact(   profile, 'Zoo Door Contact' )
@@ -535,6 +541,33 @@ class Command(BaseCommand):
             simulator_id = 'hass',
             fields_class = HassSmokeDetectorFields,
             sim_entity_type = SimEntityType.SMOKE_DETECTOR,
+            fields_kwargs = {'name': name},
+        )
+
+    def _add_hass_motion_sensor(self, profile, name):
+        self._create_db_entity(
+            profile = profile,
+            simulator_id = 'hass',
+            fields_class = HassMotionSensorFields,
+            sim_entity_type = SimEntityType.MOTION_SENSOR,
+            fields_kwargs = {'name': name},
+        )
+
+    def _add_hass_switch(self, profile, name):
+        self._create_db_entity(
+            profile = profile,
+            simulator_id = 'hass',
+            fields_class = HassSwitchFields,
+            sim_entity_type = SimEntityType.WALL_SWITCH,
+            fields_kwargs = {'name': name},
+        )
+
+    def _add_hass_basic_outlet(self, profile, name):
+        self._create_db_entity(
+            profile = profile,
+            simulator_id = 'hass',
+            fields_class = HassOutletFields,
+            sim_entity_type = SimEntityType.ELECTRICAL_OUTLET,
             fields_kwargs = {'name': name},
         )
 
