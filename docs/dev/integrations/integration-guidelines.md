@@ -64,7 +64,9 @@ The model-level factories in `hi.apps.model_helper.HiModelHelper` (`create_movem
 
 Use this for the common case of sharing the sensor's integration_key with its alarm event. If an integration needs a *different* integration_key for the alarm event (e.g., ZoneMinder's separate `MOVEMENT_EVENT_PREFIX`), leave the flag False and call the matching `create_*_event_definition` explicitly with the alternate key.
 
-The default alarm definitions are a starting point — the user can customize windows, dedupe, levels, etc. after import. The integration's role is to provide a reasonable default, not a final policy.
+The default alarm definitions are a starting point — the user can customize entity_state, value, operator, windows, dedupe, and alarm levels through the event-definition edit UI. The integration's role is to provide a reasonable default, not a final policy.
+
+For continuous-value EntityStateTypes (`BATTERY_LEVEL` percentage, future temperature / humidity out-of-range, etc.), `EventClause` carries an `EventClauseOperator` (`EQ` / `LT` / `LTE` / `GT` / `GTE`) so alarms can fire on threshold crossings instead of exact-value matches. The integration uses a dedicated factory like `create_battery_level_event_definition`; the operator and threshold are otherwise transparent.
 
 ## Integration Setup Process
 

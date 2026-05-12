@@ -59,6 +59,9 @@
         setEntityStateValueSelect: function( valueFieldId, instanceName, instanceId ) {
             return _setEntityStateValueSelect( valueFieldId, instanceName, instanceId );
         },
+        setEventClauseValueOperatorWidget: function( operatorFieldId, valueFieldId ) {
+            return _setEventClauseValueOperatorWidget( operatorFieldId, valueFieldId );
+        },
         getScreenCenterPoint: function( element ) {
             return _getScreenCenterPoint( element );
         },
@@ -217,6 +220,28 @@
         }
     }
     
+    function _setEventClauseValueOperatorWidget( operatorFieldId, valueFieldId ) {
+        // EventClause operator change handler. For non-EQ operators
+        // (LT / LTE / GT / GTE) the value is a numeric threshold —
+        // swap the value field to a number input so users can enter
+        // one even when the entity_state has discrete choices. EQ
+        // leaves the existing widget alone; the entity_state-driven
+        // choice swap is the authoritative source for that case.
+        const op = $(`#${operatorFieldId}`).val().toLowerCase();
+        if (op === 'eq') {
+            return;
+        }
+        const valueElement = $(`#${valueFieldId}`);
+        const currentValue = valueElement.val();
+        const numericInput = $('<input>')
+            .attr( 'type', 'number' )
+            .attr( 'step', 'any' )
+            .attr( 'id', valueElement.attr('id') )
+            .attr( 'name', valueElement.attr('name') )
+            .val( currentValue );
+        valueElement.replaceWith( numericInput );
+    }
+
     function _setEntityStateValueSelect( valueFieldId, instanceName, instanceId ) {
         $.ajax({
             type: 'GET',

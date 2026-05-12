@@ -46,6 +46,15 @@
 
     <div class="input-group mb-2 mr-sm-2 w-100">
       <div class="input-group-prepend" >
+        <label for="{{ event_clause_form.value_operator_str.id_for_label }}"
+               class="input-group-text" >{{ event_clause_form.value_operator_str.label }}</label>
+        {{ event_clause_form.value_operator_str }}
+        <small class="form-error text-danger" >{{ event_clause_form.value_operator_str.errors }}</small>
+      </div>
+    </div>
+
+    <div class="input-group mb-2 mr-sm-2 w-100">
+      <div class="input-group-prepend" >
         <label for="{{ event_clause_form.value.id_for_label }}"
                class="input-group-text" >{{ event_clause_form.value.label }}</label>
         {{ event_clause_form.value }}
