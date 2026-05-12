@@ -111,7 +111,7 @@ class TestFanSubstateSpecs(TestCase):
     def test_single_state_fan_has_no_substates(self):
         # Speed-only fan stays single-state at the bare key.
         hass_state = _make_fan_hass_state( percentage=50 )
-        specs = HassConverter._substate_specs_for_hass_state( hass_state )
+        specs = HassConverter._state_specs_for_hass_state( hass_state )
         self.assertEqual( specs, [] )
 
     def test_full_multi_feature_fan_has_four_substates(self):
@@ -119,7 +119,7 @@ class TestFanSubstateSpecs(TestCase):
             percentage=50, oscillating=True,
             direction='forward', preset_modes=[ 'auto', 'sleep' ],
         )
-        specs = HassConverter._substate_specs_for_hass_state( hass_state )
+        specs = HassConverter._state_specs_for_hass_state( hass_state )
         suffixes = [ s.suffix for s in specs ]
         self.assertEqual( suffixes, [ 'speed', 'oscillating', 'direction', 'preset_mode' ] )
 
@@ -127,7 +127,7 @@ class TestFanSubstateSpecs(TestCase):
         # Fan declares oscillating but no percentage — only
         # oscillating substate (no speed peer to add).
         hass_state = _make_fan_hass_state( oscillating=False )
-        specs = HassConverter._substate_specs_for_hass_state( hass_state )
+        specs = HassConverter._state_specs_for_hass_state( hass_state )
         suffixes = [ s.suffix for s in specs ]
         self.assertEqual( suffixes, [ 'oscillating' ] )
 
@@ -135,7 +135,7 @@ class TestFanSubstateSpecs(TestCase):
         hass_state = _make_fan_hass_state(
             percentage=50, oscillating=True,
         )
-        specs = HassConverter._substate_specs_for_hass_state( hass_state )
+        specs = HassConverter._state_specs_for_hass_state( hass_state )
         speed = next( s for s in specs if s.suffix == 'speed' )
         self.assertEqual( speed.entity_state_type, EntityStateType.POWER_LEVEL )
         self.assertEqual( speed.display_label, 'Speed' )
@@ -145,7 +145,7 @@ class TestFanSubstateSpecs(TestCase):
         hass_state = _make_fan_hass_state(
             preset_modes=[ 'auto', 'sleep', 'eco' ],
         )
-        specs = HassConverter._substate_specs_for_hass_state( hass_state )
+        specs = HassConverter._state_specs_for_hass_state( hass_state )
         preset = next( s for s in specs if s.suffix == 'preset_mode' )
         self.assertEqual(
             preset.value_range,

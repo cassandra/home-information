@@ -11,6 +11,7 @@ from hi.apps.attribute.enums import (
     AttributeValueType,
 )
 from hi.apps.entity.enums import (
+    EntityStateRole,
     EntityStateType,
     EntityType,
     EntityStateValue,
@@ -641,10 +642,10 @@ class HassConverter:
                 # controller payloads so payload-shape changes
                 # propagate to existing records.
                 any_existing_substate = False
-                for substate_spec in cls._substate_specs_for_hass_state( hass_state ):
+                for state_spec in cls._state_specs_for_hass_state( hass_state ):
                     sub_key = cls._substate_integration_key(
                         hass_state = hass_state,
-                        suffix = substate_spec.suffix,
+                        suffix = state_spec.suffix,
                     )
                     seen_state_integration_keys.add( sub_key )
                     sub_controller = entiity_controllers.get( sub_key )
@@ -654,7 +655,7 @@ class HassConverter:
                     if sub_controller:
                         sub_payload = cls._substate_integration_payload(
                             hass_state = hass_state,
-                            spec = substate_spec,
+                            spec = state_spec,
                         )
                         changed_fields = sub_controller.update_integration_payload( sub_payload )
                         if changed_fields:
@@ -777,8 +778,8 @@ class HassConverter:
                 and ( hass_state.domain in ignore_light_state_prefixes )):
                 continue
 
-            substate_specs = cls._substate_specs_for_hass_state( hass_state )
-            if substate_specs:
+            state_specs = cls._state_specs_for_hass_state( hass_state )
+            if state_specs:
                 # Multi-substate decomposition: ALL EntityStates
                 # are created as peer substates (no asymmetric
                 # bare-key parent). The Entity itself is still
@@ -814,7 +815,7 @@ class HassConverter:
         exist. Pass the entity's existing
         ``Controller``/``Sensor`` maps so re-sync avoids
         re-creation. Returns the list of newly-created models."""
-        specs = cls._substate_specs_for_hass_state( hass_state )
+        specs = cls._state_specs_for_hass_state( hass_state )
         if not specs:
             return []
         if existing_controllers is None:
@@ -845,6 +846,7 @@ class HassConverter:
                     integration_key = substate_integration_key,
                     value_range_str = value_range_str,
                     units = spec.units,
+                    entity_state_role = spec.role,
                 )
                 controller.integration_payload = cls._substate_integration_payload(
                     hass_state = hass_state,
@@ -860,6 +862,7 @@ class HassConverter:
                     integration_key = substate_integration_key,
                     value_range_str = value_range_str,
                     units = spec.units,
+                    entity_state_role = spec.role,
                 )
                 created.append( sensor )
             continue
@@ -869,7 +872,7 @@ class HassConverter:
     def _substate_integration_payload(
             cls,
             hass_state : HassState,
-            spec       : '_SubstateSpec',
+            spec       : '_StateSpec',
     ) -> dict:
         payload = {
             'domain': hass_state.domain,
@@ -1070,13 +1073,19 @@ class HassConverter:
     # context (e.g., "Speed" for a fan POWER_LEVEL substate
     # rather than the generic "Power Level").
     @dataclass(frozen=True)
-    class _SubstateSpec:
+    class _StateSpec:
         suffix             : str
         entity_state_type  : EntityStateType
         is_controllable    : bool
         value_range        : Optional[Dict] = None
         label              : Optional[str]  = None
         units              : Optional[str]  = None
+        # Refined EntityStateRole; ``None`` falls back to the
+        # EntityStateType's default role at creation time. Set when
+        # the spec carries domain semantics beyond the bare type
+        # (e.g., distinguishing current vs. target temperature on a
+        # thermostat where both are EntityStateType.TEMPERATURE).
+        role               : Optional[EntityStateRole] = None
 
         @property
         def display_label(self) -> str:
@@ -1111,8 +1120,8 @@ class HassConverter:
     }
 
     @classmethod
-    def _substate_specs_for_hass_state(
-            cls, hass_state: HassState ) -> List[ '_SubstateSpec' ]:
+    def _state_specs_for_hass_state(
+            cls, hass_state: HassState ) -> List[ '_StateSpec' ]:
         """Return the substate specs for a HA state that decomposes
         into multiple HI EntityStates, or an empty list when the
         state maps to a single bare-key EntityState. Each domain
@@ -1122,16 +1131,16 @@ class HassConverter:
         ``hass_state`` actually reports.
         """
         if hass_state.domain == HassApi.LIGHT_DOMAIN:
-            return cls._light_substate_specs( hass_state )
+            return cls._light_state_specs( hass_state )
         if hass_state.domain == HassApi.FAN_DOMAIN:
-            return cls._fan_substate_specs( hass_state )
+            return cls._fan_state_specs( hass_state )
         if hass_state.domain == HassApi.CLIMATE_DOMAIN:
-            return cls._climate_substate_specs( hass_state )
+            return cls._climate_state_specs( hass_state )
         return []
 
     @classmethod
-    def _light_substate_specs(
-            cls, hass_state: HassState ) -> List[ '_SubstateSpec' ]:
+    def _light_state_specs(
+            cls, hass_state: HassState ) -> List[ '_StateSpec' ]:
         """Color-related substates implied by a HA ``light.x`` state's
         ``supported_color_modes`` declaration. A bulb supporting HS
         (or RGB / XY, alternate representations of HS chromaticity)
@@ -1151,24 +1160,27 @@ class HassConverter:
 
         specs = []
         if chromatic_present or color_temp_present:
-            specs.append( cls._SubstateSpec(
+            specs.append( cls._StateSpec(
                 suffix = HassApi.BRIGHTNESS_ATTR,
                 entity_state_type = EntityStateType.LIGHT_DIMMER,
                 is_controllable = True,
                 value_range = { 'min': 0, 'max': 100 },
+                role = EntityStateRole.LIGHT_BRIGHTNESS,
             ))
         if chromatic_present:
-            specs.append( cls._SubstateSpec(
+            specs.append( cls._StateSpec(
                 suffix = 'hue',
                 entity_state_type = EntityStateType.HUE,
                 is_controllable = True,
                 value_range = { 'min': 0, 'max': 360 },
+                role = EntityStateRole.LIGHT_HUE,
             ))
-            specs.append( cls._SubstateSpec(
+            specs.append( cls._StateSpec(
                 suffix = 'saturation',
                 entity_state_type = EntityStateType.SATURATION,
                 is_controllable = True,
                 value_range = { 'min': 0, 'max': 100 },
+                role = EntityStateRole.LIGHT_SATURATION,
             ))
         if color_temp_present:
             # Real bulbs have device-specific Kelvin ranges (e.g.,
@@ -1183,26 +1195,28 @@ class HassConverter:
             max_k = hass_state.attributes.get(
                 HassApi.MAX_COLOR_TEMP_KELVIN_ATTR, 6500,
             )
-            specs.append( cls._SubstateSpec(
+            specs.append( cls._StateSpec(
                 suffix = HassApi.COLOR_MODE_COLOR_TEMP,
                 entity_state_type = EntityStateType.COLOR_TEMPERATURE,
                 is_controllable = True,
                 value_range = { 'min': min_k, 'max': max_k },
+                role = EntityStateRole.LIGHT_COLOR_TEMPERATURE,
             ))
         # COLOR_MODE only adds information when there's actual
         # mode-switching to track. A bulb with a single supported
         # mode has a constant value; skip it.
         if len( supported ) > 1:
-            specs.append( cls._SubstateSpec(
+            specs.append( cls._StateSpec(
                 suffix = HassApi.COLOR_MODE_ATTR,
                 entity_state_type = EntityStateType.COLOR_MODE,
                 is_controllable = False,
+                role = EntityStateRole.LIGHT_COLOR_MODE,
             ))
         return specs
 
     @classmethod
-    def _fan_substate_specs(
-            cls, hass_state: HassState ) -> List[ '_SubstateSpec' ]:
+    def _fan_state_specs(
+            cls, hass_state: HassState ) -> List[ '_StateSpec' ]:
         """Substates implied by a HA ``fan.x`` state when it reports
         any of the multi-axis features (oscillating / direction /
         preset_modes). Speed becomes a peer ``~speed`` POWER_LEVEL
@@ -1214,22 +1228,24 @@ class HassConverter:
         attrs = hass_state.attributes
         specs = []
         if cls._has_percentage_capability( hass_state ):
-            specs.append( cls._SubstateSpec(
+            specs.append( cls._StateSpec(
                 suffix = 'speed',
                 entity_state_type = EntityStateType.POWER_LEVEL,
                 is_controllable = True,
                 value_range = { 'min': 0, 'max': 100 },
                 label = 'Speed',
+                role = EntityStateRole.FAN_SPEED,
             ))
         if HassApi.OSCILLATING_ATTR in attrs:
-            specs.append( cls._SubstateSpec(
+            specs.append( cls._StateSpec(
                 suffix = HassApi.OSCILLATING_ATTR,
                 entity_state_type = EntityStateType.ON_OFF,
                 is_controllable = True,
                 label = 'Oscillation',
+                role = EntityStateRole.FAN_OSCILLATION,
             ))
         if HassApi.DIRECTION_ATTR in attrs:
-            specs.append( cls._SubstateSpec(
+            specs.append( cls._StateSpec(
                 suffix = HassApi.DIRECTION_ATTR,
                 entity_state_type = EntityStateType.DISCRETE,
                 is_controllable = True,
@@ -1238,15 +1254,17 @@ class HassConverter:
                     HassApi.FAN_DIRECTION_REVERSE: 'Reverse',
                 },
                 label = 'Direction',
+                role = EntityStateRole.FAN_DIRECTION,
             ))
         preset_modes = attrs.get( HassApi.PRESET_MODES_ATTR )
         if isinstance( preset_modes, list ) and preset_modes:
-            specs.append( cls._SubstateSpec(
+            specs.append( cls._StateSpec(
                 suffix = HassApi.PRESET_MODE_ATTR,
                 entity_state_type = EntityStateType.DISCRETE,
                 is_controllable = True,
                 value_range = { mode: mode for mode in preset_modes },
                 label = 'Preset',
+                role = EntityStateRole.FAN_PRESET_MODE,
             ))
         return specs
 
@@ -1267,8 +1285,8 @@ class HassConverter:
     }
 
     @classmethod
-    def _climate_substate_specs(
-            cls, hass_state: HassState ) -> List[ '_SubstateSpec' ]:
+    def _climate_state_specs(
+            cls, hass_state: HassState ) -> List[ '_StateSpec' ]:
         """Substates implied by a HA ``climate.x`` state. A climate
         entity that declares ``hvac_modes`` always decomposes:
         current_temperature (sensor), hvac_mode (controller from
@@ -1286,26 +1304,29 @@ class HassConverter:
 
         canonical_unit = CANONICAL_TEMPERATURE_UNIT
         specs = [
-            cls._SubstateSpec(
+            cls._StateSpec(
                 suffix = HassApi.CURRENT_TEMPERATURE_ATTR,
                 entity_state_type = EntityStateType.TEMPERATURE,
                 is_controllable = False,
                 label = 'Current Temperature',
                 units = canonical_unit,
+                role = EntityStateRole.THERMOSTAT_CURRENT_TEMPERATURE,
             ),
-            cls._SubstateSpec(
+            cls._StateSpec(
                 suffix = HassApi.HVAC_MODE_ATTR,
                 entity_state_type = EntityStateType.DISCRETE,
                 is_controllable = True,
                 value_range = { mode: mode for mode in hvac_modes },
                 label = 'HVAC Mode',
+                role = EntityStateRole.HVAC_MODE,
             ),
-            cls._SubstateSpec(
+            cls._StateSpec(
                 suffix = HassApi.HVAC_ACTION_ATTR,
                 entity_state_type = EntityStateType.DISCRETE,
                 is_controllable = False,
                 value_range = dict( cls._HVAC_ACTION_CHOICES ),
                 label = 'HVAC Action',
+                role = EntityStateRole.HVAC_ACTION,
             ),
         ]
 
@@ -1321,30 +1342,33 @@ class HassConverter:
         has_single_mode = any( m != HassApi.HVAC_MODE_HEAT_COOL for m in hvac_modes )
         has_dual_mode = HassApi.HVAC_MODE_HEAT_COOL in hvac_modes
         if has_single_mode:
-            specs.append( cls._SubstateSpec(
+            specs.append( cls._StateSpec(
                 suffix = 'target_temperature',
                 entity_state_type = EntityStateType.TEMPERATURE,
                 is_controllable = True,
                 value_range = setpoint_range,
                 label = 'Setpoint',
                 units = canonical_unit,
+                role = EntityStateRole.THERMOSTAT_TARGET_TEMPERATURE,
             ))
         if has_dual_mode:
-            specs.append( cls._SubstateSpec(
+            specs.append( cls._StateSpec(
                 suffix = HassApi.TARGET_TEMP_LOW_ATTR,
                 entity_state_type = EntityStateType.TEMPERATURE,
                 is_controllable = True,
                 value_range = setpoint_range,
                 label = 'Setpoint Low',
                 units = canonical_unit,
+                role = EntityStateRole.THERMOSTAT_TARGET_TEMPERATURE_LOW,
             ))
-            specs.append( cls._SubstateSpec(
+            specs.append( cls._StateSpec(
                 suffix = HassApi.TARGET_TEMP_HIGH_ATTR,
                 entity_state_type = EntityStateType.TEMPERATURE,
                 is_controllable = True,
                 value_range = setpoint_range,
                 label = 'Setpoint High',
                 units = canonical_unit,
+                role = EntityStateRole.THERMOSTAT_TARGET_TEMPERATURE_HIGH,
             ))
 
         # Optional axes that real thermostats commonly expose.
@@ -1353,24 +1377,26 @@ class HassConverter:
         # that doesn't have one.
         fan_modes = attrs.get( HassApi.FAN_MODES_ATTR )
         if isinstance( fan_modes, list ) and fan_modes:
-            specs.append( cls._SubstateSpec(
+            specs.append( cls._StateSpec(
                 suffix = HassApi.FAN_MODE_ATTR,
                 entity_state_type = EntityStateType.DISCRETE,
                 is_controllable = True,
                 value_range = { mode: mode for mode in fan_modes },
                 label = 'Fan Mode',
+                role = EntityStateRole.FAN_MODE,
             ))
         preset_modes = attrs.get( HassApi.PRESET_MODES_ATTR )
         if isinstance( preset_modes, list ) and preset_modes:
-            specs.append( cls._SubstateSpec(
+            specs.append( cls._StateSpec(
                 suffix = HassApi.PRESET_MODE_ATTR,
                 entity_state_type = EntityStateType.DISCRETE,
                 is_controllable = True,
                 value_range = { mode: mode for mode in preset_modes },
                 label = 'Preset',
+                role = EntityStateRole.PRESET_MODE,
             ))
         if HassApi.CURRENT_HUMIDITY_ATTR in attrs:
-            specs.append( cls._SubstateSpec(
+            specs.append( cls._StateSpec(
                 suffix = HassApi.CURRENT_HUMIDITY_ATTR,
                 entity_state_type = EntityStateType.HUMIDITY,
                 is_controllable = False,
@@ -1394,7 +1420,7 @@ class HassConverter:
     def _extract_substate_value(
             cls,
             hass_state : HassState,
-            spec       : '_SubstateSpec',
+            spec       : '_StateSpec',
     ) -> Optional[ str ]:
         """Pull the value for a single substate out of a HA state,
         dispatching per-domain. Returns ``None`` when the relevant
@@ -1483,7 +1509,7 @@ class HassConverter:
 
     @classmethod
     def _climate_substate_value(
-            cls, hass_state : HassState, spec : '_SubstateSpec' ) -> Optional[ str ]:
+            cls, hass_state : HassState, spec : '_StateSpec' ) -> Optional[ str ]:
         """Climate-domain substate values. Temperature substates emit
         floats as strings, converted from HA's reported
         ``temperature_unit`` to the EntityState's stored unit (looked
@@ -2272,13 +2298,13 @@ class HassConverter:
         lights brightness is itself a peer substate (suffixed
         key); for single-state lights it goes at the bare key."""
         result : Dict[ IntegrationKey, str ] = {}
-        substate_specs = cls._substate_specs_for_hass_state( hass_state )
-        if not substate_specs:
+        state_specs = cls._state_specs_for_hass_state( hass_state )
+        if not state_specs:
             brightness_value = cls._dimmer_brightness_value( hass_state )
             if brightness_value:
                 result[ cls.hass_state_to_integration_key( hass_state ) ] = brightness_value
             return result
-        for spec in substate_specs:
+        for spec in state_specs:
             value = cls._extract_substate_value( hass_state, spec )
             if value is None:
                 continue
@@ -2426,10 +2452,10 @@ class HassConverter:
         fans get a single bare-key POWER_LEVEL value with the
         numeric percentage. Fans without percentage stay ON_OFF
         and pass HA's discrete ``'on'``/``'off'`` state through."""
-        substate_specs = cls._substate_specs_for_hass_state( hass_state )
-        if substate_specs:
+        state_specs = cls._state_specs_for_hass_state( hass_state )
+        if state_specs:
             result : Dict[ IntegrationKey, str ] = {}
-            for spec in substate_specs:
+            for spec in state_specs:
                 value = cls._extract_substate_value( hass_state, spec )
                 if value is None:
                     continue
@@ -2458,11 +2484,11 @@ class HassConverter:
         lands at its suffix-keyed integration_key. Climate
         entities lacking ``hvac_modes`` (rare but allowed by
         HA's contract) fall through to passthrough behavior."""
-        substate_specs = cls._substate_specs_for_hass_state( hass_state )
-        if not substate_specs:
+        state_specs = cls._state_specs_for_hass_state( hass_state )
+        if not state_specs:
             return cls._passthrough_to_sensor_value_map( hass_state )
         result : Dict[ IntegrationKey, str ] = {}
-        for spec in substate_specs:
+        for spec in state_specs:
             value = cls._extract_substate_value( hass_state, spec )
             if value is None:
                 continue

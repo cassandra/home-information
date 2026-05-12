@@ -5,6 +5,15 @@ from hi.apps.entity.enums import EntityStateType
 
 
 class LocationViewType(LabeledEnum):
+    """Per-view EntityStateType priority list. After #319 introduced
+    role-based per-entity primary-state selection
+    (``ENTITY_PRIMARY_STATE_ORDERING``), the icon path no longer
+    consults this list. It is still consumed by
+    ``OneClickControlService._find_controller`` and may capture
+    legitimate view-context intent ("Security view emphasizes
+    motion/openings; Automation view emphasizes controls"). Revisit
+    whether this list is replaced by view-specific role-ordering
+    instances once one-click migrates to role-based selection."""
 
     def __init__( self,
                   label                            : str,

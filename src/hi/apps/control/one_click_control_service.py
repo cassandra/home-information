@@ -72,6 +72,15 @@ class OneClickControlService:
         We only want one-click controls to apply the entity state being
         used in the display status.  Thus, we make sure we use the same
         logic to pick the entity state, then see if it has a controller.
+
+        After #319 introduced role-based primary-state selection
+        (``ENTITY_PRIMARY_STATE_ORDERING``), this method still uses
+        the legacy ``LocationViewType.entity_state_type_priority_list``
+        type-priority filter. A future
+        ``ENTITY_CONTROL_STATE_ORDERING`` instance — parallel to
+        ``ENTITY_PRIMARY_STATE_ORDERING`` but with its own per-
+        EntityType overrides for "best controller to invoke" — would
+        replace this filter. Reserved for a follow-up issue.
         """
 
         if not location_view_type:

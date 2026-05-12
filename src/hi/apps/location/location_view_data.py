@@ -3,6 +3,7 @@ from typing import Dict, Generator, List, Set
 
 from hi.apps.collection.models import Collection, CollectionPath, CollectionPosition
 from hi.apps.common.svg_models import SvgIconItem, SvgPathItem
+from hi.apps.entity.entity_state_role_order import ENTITY_PRIMARY_STATE_ORDERING
 from hi.apps.entity.models import Entity, EntityPosition, EntityPath
 from hi.apps.location.svg_item_factory import SvgItemFactory
 from hi.apps.monitor.status_display_data import StatusDisplayData
@@ -28,8 +29,13 @@ class LocationViewData:
     
     def __post_init__(self):
         self._svg_item_factory = SvgItemFactory()
-        self._css_class_map = self._get_css_class_map()
+        # Primary-state map is computed first; the CSS class map is
+        # derived from it so the entity's ``<g>`` element carries
+        # exactly one ``hi-entity-state-*`` class (the primary).
+        # That keeps the polling update path's per-state CSS class
+        # selectors from clobbering the icon's ``status`` attribute.
         self._latest_entity_state_status_data_map = self._get_latest_entity_state_status_data_map()
+        self._css_class_map = self._get_css_class_map()
         return
     
     def svg_icon_items(self) -> Generator[ SvgIconItem, None, None ]:
@@ -103,16 +109,24 @@ class LocationViewData:
         return
 
     def _get_css_class_map(self):
+        # One ``hi-entity-state-*`` class per entity — the primary
+        # state's class. Entities without a primary state (no states
+        # with sensor responses) get no class.
         css_class_map = dict()
-        for entity, entity_state_status_data_list in self.entity_to_entity_state_status_data_list.items():
-            if not entity_state_status_data_list:
-                continue
-            entity_states = [ x.entity_state for x in entity_state_status_data_list ]
-            css_class_map[entity] = ' '.join([ x.css_class for x in entity_states ])
+        for entity, picked in self._latest_entity_state_status_data_map.items():
+            css_class_map[entity] = picked.entity_state.css_class
             continue
         return css_class_map
 
     def _get_latest_entity_state_status_data_map(self):
+        # Per-entity primary-state selection: among states with a
+        # sensor response, pick the one whose role ranks highest in
+        # ``ENTITY_PRIMARY_STATE_ORDERING`` for the entity's
+        # EntityType. The picked state's value drives the entity's
+        # rendered ``status`` attribute (and from there, the CSS-bound
+        # visual styling). Multi-sensor correctness is inherited: each
+        # EntityStateStatusData.latest_sensor_response already reflects
+        # the time-latest response across all of that state's sensors.
         latest_entity_state_status_data_map = dict()
         for entity, entity_state_status_data_list in self.entity_to_entity_state_status_data_list.items():
             if not entity_state_status_data_list:
@@ -120,8 +134,11 @@ class LocationViewData:
             with_responses_list = [ x for x in entity_state_status_data_list if x.latest_sensor_response ]
             if not with_responses_list:
                 continue
-            with_responses_list.sort( key = lambda item : item.latest_sensor_response.timestamp,
-                                      reverse = True )
+            with_responses_list.sort(
+                key = lambda d: ENTITY_PRIMARY_STATE_ORDERING.sort_key(
+                    d.entity_state.entity_state_role, entity.entity_type,
+                ),
+            )
             latest_entity_state_status_data_map[entity] = with_responses_list[0]
             continue
         return latest_entity_state_status_data_map

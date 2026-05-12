@@ -41,6 +41,19 @@ class TestEntityStateType(BaseTestCase):
         return
 
 
+class TestEntityStateTypeDefaultRole(BaseTestCase):
+
+    def test_every_entity_state_type_resolves_to_a_role(self):
+        # Locks in the type-default coverage convention: every
+        # EntityStateType has a same-named EntityStateRole member.
+        # Adding an EntityStateType without the matching role would
+        # KeyError at runtime; this test surfaces that at test time.
+        for entity_state_type in EntityStateType:
+            role = entity_state_type.default_role()
+            self.assertEqual( role.name, entity_state_type.name )
+        return
+
+
 class TestEntityGroupType(BaseTestCase):
 
     def test_entity_type_to_group_mapping_supports_logical_ui_organization(self):

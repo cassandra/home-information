@@ -347,7 +347,6 @@ class LocationManager(Singleton):
         if include_status_display_data:
             manager = StatusDisplayManager()
             entity_to_entity_state_status_data_list = manager.get_entity_to_entity_state_status_data_list(
-                location_view = location_view,
                 entities = displayed_entities,
             )
         else:

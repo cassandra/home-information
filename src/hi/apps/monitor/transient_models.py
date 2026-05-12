@@ -3,6 +3,7 @@ from typing import List
 
 from hi.apps.control.transient_models import ControllerData
 from hi.apps.common.svg_models import SvgIconItem
+from hi.apps.entity.entity_state_role_order import ENTITY_STATUS_VIEW_ORDERING
 from hi.apps.entity.models import Entity, EntityState
 from hi.apps.sense.transient_models import SensorResponse
 
@@ -43,9 +44,22 @@ class EntityStatusData:
         return
     
     def to_template_context(self):
+        # ``state_status_data_list`` is the EntityStatusView listing
+        # order — keyed on EntityStateRole and the entity's
+        # EntityType via ``ENTITY_STATUS_VIEW_ORDERING``. The
+        # underlying ``entity_state_status_data_list`` field on the
+        # dataclass stays order-neutral; other consumers (update
+        # paths that key on per-state CSS classes) read the field
+        # directly when they don't want listing order applied.
+        state_status_data_list = sorted(
+            self.entity_state_status_data_list,
+            key = lambda d: ENTITY_STATUS_VIEW_ORDERING.sort_key(
+                d.entity_state.entity_state_role, self.entity.entity_type,
+            ),
+        )
         context = {
             'entity': self.entity,
-            'entity_state_status_data_list': self.entity_state_status_data_list,
+            'state_status_data_list': state_status_data_list,
             'entity_for_video': self.entity_for_video,
             'display_only_svg_icon_item': self.display_only_svg_icon_item,
             'display_category': self.display_category,

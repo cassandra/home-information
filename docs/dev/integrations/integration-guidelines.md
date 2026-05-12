@@ -29,6 +29,22 @@ The symmetric server ↔ UI boundary uses `ConsoleConverterHelper`; see [Fronten
 ### Responsibility Boundaries
 Integrations create `SensorResponse` objects which become `Event` objects with duration. The Event duration is the only accessible duration data - Event objects don't know about underlying integration specifics.
 
+### EntityStateType vs. EntityStateRole
+Each `EntityState` carries two independent axes:
+
+- **`EntityStateType`** — local value semantics: value storage, unit handling, value-to-label translation, per-value rendering template. Answers "how do I store / interpret / render this value?"
+- **`EntityStateRole`** — the state's contextual identity within its enclosing entity. Answers "what role does this state play in its entity's composite presentation?"
+
+For multi-state entities where multiple `EntityState` instances share the same `EntityStateType` (a thermostat's current vs. target temperatures; a fan's direction vs. preset_mode), the role is what disambiguates them downstream. Every `EntityStateType` has a default `EntityStateRole` with the same name (e.g., `EntityStateType.TEMPERATURE` → `EntityStateRole.TEMPERATURE`), so an `EntityState` saved without an explicit role still has one — automatically.
+
+Two tiers of role member coexist in the same enum:
+- **Type-default roles** — one per `EntityStateType`, name-matched. Applied automatically at `EntityState` save time when no explicit role is set. Unchanged integrations get these for free.
+- **Domain-prefixed refinements** — `THERMOSTAT_CURRENT_TEMPERATURE`, `FAN_SPEED`, `LIGHT_BRIGHTNESS`, etc. Integrations set these explicitly where the domain calls for it (typically in substate spec lists).
+
+The integration's job is to **declare what each state means** via its role. Presentation order is HI's responsibility, applied via per-EntityType `EntityStateRoleOrdering` instances in `hi.apps.entity.entity_state_role_order`. New EntityTypes or new roles get added to those tables as needed.
+
+See `hi/services/hass/hass_converter.py` (climate / fan / light state-spec lists) for the pattern: each `_StateSpec` may carry an explicit `role` field; the spec → `EntityState` creation passes it through.
+
 ## Code Conventions
 
 ### File layout and naming

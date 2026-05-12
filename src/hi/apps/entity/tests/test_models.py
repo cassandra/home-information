@@ -3,7 +3,7 @@ import logging
 from django.db import IntegrityError
 
 from hi.apps.entity.models import Entity, EntityAttribute, EntityState
-from hi.apps.entity.enums import EntityType, EntityStateType
+from hi.apps.entity.enums import EntityStateRole, EntityType, EntityStateType
 from hi.apps.attribute.enums import AttributeValueType
 from hi.testing.base_test_case import BaseTestCase
 
@@ -206,14 +206,61 @@ class TestEntityState(BaseTestCase):
             entity_state_type_str=str(EntityStateType.ON_OFF),
             name='Power State',
         )
-        
+
         # Test getter converts string to enum
         self.assertEqual(state.entity_state_type, EntityStateType.ON_OFF)
-        
+
         # Test setter converts enum to string (lowercase)
         state.entity_state_type = EntityStateType.TEMPERATURE
         self.assertEqual(state.entity_state_type_str, str(EntityStateType.TEMPERATURE).lower())
         self.assertEqual(state.entity_state_type, EntityStateType.TEMPERATURE)
+        return
+
+    def test_save_defaults_role_to_entity_state_type_default(self):
+        # An EntityState created without an explicit role gets the
+        # EntityStateType's default_role at save() time. Locks in the
+        # creation-time defaulting contract so callers that bypass the
+        # HiModelHelper factories (e.g., direct objects.create) still
+        # produce rows with a populated role.
+        state = EntityState.objects.create(
+            entity=self.entity,
+            entity_state_type_str=str(EntityStateType.TEMPERATURE),
+            name='Test Temperature',
+        )
+        self.assertEqual( state.entity_state_role, EntityStateRole.TEMPERATURE )
+        return
+
+    def test_save_preserves_explicit_role(self):
+        # An EntityState created with an explicit role keeps it.
+        state = EntityState(
+            entity=self.entity,
+            entity_state_type_str=str(EntityStateType.TEMPERATURE),
+            name='Thermostat Current',
+        )
+        state.entity_state_role = EntityStateRole.THERMOSTAT_CURRENT_TEMPERATURE
+        state.save()
+        state.refresh_from_db()
+        self.assertEqual(
+            state.entity_state_role, EntityStateRole.THERMOSTAT_CURRENT_TEMPERATURE,
+        )
+        return
+
+    def test_create_sensor_factory_passes_explicit_role(self):
+        # The HiModelHelper.create_sensor factory threads the
+        # entity_state_role kwarg into EntityState creation.
+        # Substate-creating callers (HA converter) rely on this to
+        # assign domain-prefixed roles for multi-of-same-type cases.
+        from hi.apps.model_helper import HiModelHelper
+        sensor = HiModelHelper.create_sensor(
+            entity = self.entity,
+            entity_state_type = EntityStateType.TEMPERATURE,
+            name = 'Setpoint Low',
+            entity_state_role = EntityStateRole.THERMOSTAT_TARGET_TEMPERATURE_LOW,
+        )
+        self.assertEqual(
+            sensor.entity_state.entity_state_role,
+            EntityStateRole.THERMOSTAT_TARGET_TEMPERATURE_LOW,
+        )
         return
 
     def test_value_range_dict_provides_flexible_state_value_handling(self):
