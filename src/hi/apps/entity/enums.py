@@ -252,21 +252,21 @@ class EntityStateValue(LabeledEnum):
     COLOR_MODE_WHITE       = ( 'White', '' )
 
     @classmethod
-    def to_display_label( cls, wire_value : str ) -> str:
-        """Resolve a stored wire value to a display label. Known
-        enum members return their authoritative ``.label``;
-        free-form wire values (e.g., HA's ``'heating'``,
-        ``'fan_only'``) are humanized into title case. Numeric
-        values pass through unchanged so the humanizer doesn't
-        mangle them."""
-        if not wire_value:
-            return wire_value
+    def to_display_label( cls, entity_state_value : str ) -> str:
+        """Resolve a stored EntityState value to a display label.
+        Known enum members return their authoritative ``.label``;
+        free-form values (e.g., HA-derived ``'heating'``,
+        ``'fan_only'`` after integration-boundary normalization)
+        are humanized into title case. Numeric values pass through
+        unchanged so the humanizer doesn't mangle them."""
+        if not entity_state_value:
+            return entity_state_value
         try:
-            return cls.from_name( wire_value ).label
+            return cls.from_name( entity_state_value ).label
         except ValueError:
-            if wire_value[ 0 ].isdigit():
-                return wire_value
-            return get_humanized_name( wire_value )
+            if entity_state_value[ 0 ].isdigit():
+                return entity_state_value
+            return get_humanized_name( entity_state_value )
 
 
 class EntityStateRole(LabeledEnum):

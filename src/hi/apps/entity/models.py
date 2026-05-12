@@ -246,7 +246,7 @@ class EntityState( models.Model ):
         # (OPEN_CLOSE, SMOKE, ON_OFF, ...) carry authoritative
         # labels on their EntityStateValue members. Free-form
         # discrete sets (DISCRETE state type, e.g., HA hvac_mode /
-        # fan preset) store only wire values in
+        # fan preset) store only the value strings in
         # ``value_range_str`` and rely on the humanizer for
         # readable labels.
         type_choices = self.entity_state_type.choices()
@@ -264,12 +264,12 @@ class EntityState( models.Model ):
              and 'max' in value_range ):
             return list()
         if isinstance( value_range, dict ):
-            wire_values = list( value_range.keys() )
+            stored_values = list( value_range.keys() )
         elif isinstance( value_range, list ):
-            wire_values = value_range
+            stored_values = value_range
         else:
             return list()
-        return [ ( str(v), get_humanized_name( str(v) ) ) for v in wire_values ]
+        return [ ( str(v), get_humanized_name( str(v) ) ) for v in stored_values ]
 
     def toggle_values(self) -> List[str]:
         if self.value_range_str:

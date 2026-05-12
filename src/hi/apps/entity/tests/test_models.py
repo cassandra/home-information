@@ -502,7 +502,7 @@ class TestEntityStateChoices(BaseTestCase):
     """``EntityState.choices()`` derives labels for the discrete
     controller dropdown. Two paths: enum-bound state types use
     EntityStateValue labels directly; free-form discrete state
-    types humanize wire values."""
+    types humanize the stored values."""
 
     def setUp(self):
         super().setUp()
