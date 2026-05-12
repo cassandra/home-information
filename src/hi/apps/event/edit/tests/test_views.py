@@ -113,6 +113,7 @@ class TestEventDefinitionEditView(DualModeViewTestCase):
             'event-clause-MIN_NUM_FORMS': '0',
             'event-clause-MAX_NUM_FORMS': '1000',
             'event-clause-0-entity_state': str(self.test_entity_state.id),
+            'event-clause-0-value_operator_str': 'eq',
             'event-clause-0-value': 'on',
             
             # Alarm action formset (required to have at least one alarm or control action)
@@ -176,6 +177,7 @@ class TestEventDefinitionEditView(DualModeViewTestCase):
             'event-clause-MIN_NUM_FORMS': '0',
             'event-clause-MAX_NUM_FORMS': '1000',
             'event-clause-0-entity_state': str(self.test_entity_state.id),
+            'event-clause-0-value_operator_str': 'eq',
             'event-clause-0-value': 'on',
             
             # Alarm action formset
@@ -278,6 +280,7 @@ class TestEventDefinitionEditView(DualModeViewTestCase):
             'event-clause-MIN_NUM_FORMS': '0',
             'event-clause-MAX_NUM_FORMS': '1000',
             'event-clause-0-entity_state': str(self.test_entity_state.id),
+            'event-clause-0-value_operator_str': 'eq',
             'event-clause-0-value': 'on',
             
             # No alarm actions
@@ -401,6 +404,7 @@ class TestEventDefinitionAddView(DualModeViewTestCase):
             'event-clause-MIN_NUM_FORMS': '0',
             'event-clause-MAX_NUM_FORMS': '1000',
             'event-clause-0-entity_state': str(self.test_entity_state.id),
+            'event-clause-0-value_operator_str': 'eq',
             'event-clause-0-value': 'off',
             
             # Alarm action formset (required to have at least one alarm or control action)

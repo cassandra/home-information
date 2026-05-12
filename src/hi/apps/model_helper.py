@@ -12,7 +12,7 @@ from hi.apps.entity.enums import (
     TemperatureUnit,
 )    
 from hi.apps.entity.models import Entity, EntityState
-from hi.apps.event.enums import EventType
+from hi.apps.event.enums import EventClauseOperator, EventType
 from hi.apps.event.event_manager import EventManager
 from hi.apps.event.models import EventDefinition
 from hi.apps.security.enums import SecurityLevel
@@ -50,6 +50,16 @@ class HiModelHelper:
     DEFAULT_BATTERY_EVENT_WINDOW_SECS = 180
     DEFAULT_BATTERY_DEDUPE_WINDOW_SECS = 300
     DEFAULT_BATTERY_ALARM_LIFETIME_SECS = Alarm.MAX_LIFETIME_SECS
+
+    # Threshold-based low-battery alarm for continuous BATTERY_LEVEL
+    # percentage sensors. Distinct from the discrete HIGH_LOW battery
+    # alarm above — the threshold uses EventClauseOperator.LT against
+    # a percentage. Dedupe window is one day so a battery flapping
+    # near the threshold doesn't spam.
+    DEFAULT_BATTERY_LEVEL_THRESHOLD_PERCENT = 20
+    DEFAULT_BATTERY_LEVEL_EVENT_WINDOW_SECS = 180
+    DEFAULT_BATTERY_LEVEL_DEDUPE_WINDOW_SECS = 86400
+    DEFAULT_BATTERY_LEVEL_ALARM_LIFETIME_SECS = Alarm.MAX_LIFETIME_SECS
 
     DEFAULT_SMOKE_EVENT_WINDOW_SECS = 180
     DEFAULT_SMOKE_DEDUPE_WINDOW_SECS = 300
@@ -357,6 +367,35 @@ class HiModelHelper:
         )
         if add_default_alarm:
             cls.create_gas_event_definition(
+                name = f'{sensor.name} Alarm',
+                entity_state = sensor.entity_state,
+                integration_key = integration_key,
+            )
+        return sensor
+
+    @classmethod
+    def create_battery_level_sensor( cls,
+                                     entity              : Entity,
+                                     integration_key     : IntegrationKey  = None,
+                                     name                : str             = None,
+                                     units               : str             = '%',
+                                     add_default_alarm   : bool            = False ) -> Sensor:
+        """Continuous battery-percentage sensor. Mirrors the alarm-bearing
+        sensor factories (smoke / moisture / CO / gas): when
+        ``add_default_alarm`` is True, also wires the canonical
+        low-battery threshold alarm via
+        ``create_battery_level_event_definition``."""
+        if not name:
+            name = f'{entity.name} Battery'
+        sensor = cls.create_sensor(
+            entity = entity,
+            entity_state_type = EntityStateType.BATTERY_LEVEL,
+            name = name,
+            integration_key = integration_key,
+            units = units,
+        )
+        if add_default_alarm:
+            cls.create_battery_level_event_definition(
                 name = f'{sensor.name} Alarm',
                 entity_state = sensor.entity_state,
                 integration_key = integration_key,
@@ -774,7 +813,7 @@ class HiModelHelper:
             name                 : str,
             entity_state         : EntityState,
             integration_key      : IntegrationKey  = None ) -> EventDefinition:
-        
+
         return EventManager().create_simple_alarm_event_definition(
             name = name,
             event_type = EventType.MAINTENANCE,
@@ -787,5 +826,36 @@ class HiModelHelper:
             event_window_secs = cls.DEFAULT_BATTERY_EVENT_WINDOW_SECS,
             dedupe_window_secs = cls.DEFAULT_BATTERY_DEDUPE_WINDOW_SECS,
             alarm_lifetime_secs = cls.DEFAULT_BATTERY_ALARM_LIFETIME_SECS,
+            integration_key = integration_key,
+        )
+
+    @classmethod
+    def create_battery_level_event_definition(
+            cls,
+            name                 : str,
+            entity_state         : EntityState,
+            integration_key      : IntegrationKey  = None,
+            threshold_percent    : int             = None,
+    ) -> EventDefinition:
+        """Threshold low-battery alarm against a continuous
+        BATTERY_LEVEL percentage sensor. Triggers when the reported
+        percent drops below ``threshold_percent`` (default 20).
+        Distinct from ``create_battery_event_definition`` above, which
+        triggers on the discrete HIGH_LOW battery state."""
+        if threshold_percent is None:
+            threshold_percent = cls.DEFAULT_BATTERY_LEVEL_THRESHOLD_PERCENT
+        return EventManager().create_simple_alarm_event_definition(
+            name = name,
+            event_type = EventType.MAINTENANCE,
+            entity_state = entity_state,
+            value = str( threshold_percent ),
+            value_operator = EventClauseOperator.LT,
+            security_to_alarm_level = {
+                SecurityLevel.HIGH: AlarmLevel.INFO,
+                SecurityLevel.LOW: AlarmLevel.INFO,
+            },
+            event_window_secs = cls.DEFAULT_BATTERY_LEVEL_EVENT_WINDOW_SECS,
+            dedupe_window_secs = cls.DEFAULT_BATTERY_LEVEL_DEDUPE_WINDOW_SECS,
+            alarm_lifetime_secs = cls.DEFAULT_BATTERY_LEVEL_ALARM_LIFETIME_SECS,
             integration_key = integration_key,
         )
