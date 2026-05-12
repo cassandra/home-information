@@ -160,6 +160,15 @@ class EventManager( Singleton, AlertMixin, ControllerMixin, SecurityMixin ):
             lhs = float( entity_state_value )
             rhs = float( event_clause.value )
         except ( ValueError, TypeError ):
+            # DEBUG, not WARNING: HA emits transient 'unknown' /
+            # 'unavailable' as sensor values; promoting this would
+            # spam every reconnect cycle. A misconfigured threshold
+            # remains diagnosable by enabling DEBUG on this logger.
+            logger.debug(
+                f'Threshold clause skipped: non-numeric value '
+                f'{entity_state_value!r} vs clause {event_clause.id} '
+                f'target {event_clause.value!r} op {op}.'
+            )
             return False
         if op == EventClauseOperator.LT:
             return lhs < rhs
