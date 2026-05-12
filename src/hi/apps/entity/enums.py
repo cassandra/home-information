@@ -275,7 +275,13 @@ class EntityStateRole(LabeledEnum):
     member) provide a baseline for any EntityState; domain-prefixed
     members refine the role when multiple EntityStates of the same type
     coexist on an entity (e.g., a thermostat's current vs. target
-    temperatures)."""
+    temperatures).
+
+    Some labels collide between a type-default member and a domain
+    refinement (e.g., ON_OFF / LIGHT_ON_OFF both display "On/Off";
+    BRIGHTNESS-like roles share labels). This is intentional: labels
+    describe what the user reads; the enum *name* is the disambiguator
+    used internally (admin, debug, role-priority lookups)."""
 
     # Type defaults. One member per EntityStateType; names match
     # so EntityStateType.default_role() can resolve by name.

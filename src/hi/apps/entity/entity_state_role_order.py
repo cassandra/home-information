@@ -208,6 +208,11 @@ ENTITY_PRIMARY_STATE_ORDERING = EntityStateRoleOrdering(
 # a specific override fall through this list in order. Binary roles
 # come first so they win when both binary and continuous variants
 # exist on the same entity.
+#
+# Sensor-only roles (MOVEMENT, PRESENCE, SMOKE, MOISTURE, CO, GAS,
+# CONNECTIVITY, BATTERY_LEVEL, ...) are intentionally absent: they
+# have no controllers in practice and inclusion would only add dead
+# matches to _find_controller's eligibility walk.
 DEFAULT_CONTROL_STATE_ROLE_ORDER : List[ EntityStateRole ] = [
     EntityStateRole.ON_OFF,
     EntityStateRole.OPEN_CLOSE,

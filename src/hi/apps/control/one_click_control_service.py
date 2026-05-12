@@ -62,7 +62,7 @@ class OneClickControlService:
         ``OneClickNotSupported`` when no listed role yields a
         toggle-eligible controller."""
 
-        all_states = StatusDisplayManager()._all_entity_states_including_delegations(
+        all_states = StatusDisplayManager().all_entity_states_including_delegations(
             entity = entity,
         )
         states_by_role = {}

@@ -1,6 +1,9 @@
 import json
 import logging
+from datetime import datetime, timezone
+from unittest.mock import Mock, patch
 
+from hi.apps.control.controller_manager import ControllerManager
 from hi.apps.control.models import Controller
 from hi.apps.control.one_click_control_service import (
     OneClickControlService,
@@ -8,6 +11,8 @@ from hi.apps.control.one_click_control_service import (
 )
 from hi.apps.entity.enums import EntityStateRole, EntityStateType, EntityType
 from hi.apps.entity.models import Entity, EntityState
+from hi.apps.sense.transient_models import SensorResponse
+from hi.integrations.transient_models import IntegrationControlResult
 from hi.testing.base_test_case import BaseTestCase
 
 logging.disable(logging.CRITICAL)
@@ -178,6 +183,103 @@ class TestOneClickFindController(BaseTestCase):
 
         picked = OneClickControlService()._find_controller( entity = entity )
         self.assertEqual( picked, controller )
+
+    def test_execute_one_click_toggles_on_to_off_through_full_pipeline(self):
+        # End-to-end glue test: a controllable ON_OFF state whose
+        # latest sensor reading is "on" should one-click to "off" via
+        # _find_controller → _get_current_state_value →
+        # _determine_control_value → ControllerManager.do_control.
+        # Mocks at the integration boundary (do_control) and at the
+        # sensor-response boundary (latest reading); everything in
+        # between is exercised for real.
+        entity = Entity.objects.create(
+            name = 'Wall Switch',
+            entity_type_str = str(EntityType.WALL_SWITCH),
+        )
+        state = _make_state( entity, EntityStateType.ON_OFF, EntityStateRole.ON_OFF )
+        controller = Controller.objects.create(
+            entity_state = state,
+            name = 'wall-ctrl',
+            controller_type_str = 'DEFAULT',
+            integration_id = 'home_assistant',
+            integration_name = 'Home Assistant',
+        )
+
+        latest_response = SensorResponse(
+            integration_key = controller.integration_key,
+            value = 'on',
+            timestamp = datetime.now( timezone.utc ),
+        )
+
+        mock_control_result = IntegrationControlResult(
+            new_value = 'off', error_list = [],
+        )
+        mock_integration_controller = Mock()
+        mock_integration_controller.do_control.return_value = mock_control_result
+        mock_integration_gateway = Mock()
+        mock_integration_gateway.get_controller.return_value = mock_integration_controller
+        mock_integration_manager = Mock()
+        mock_integration_manager.get_integration_gateway.return_value = mock_integration_gateway
+
+        with patch.object( ControllerManager, '_instance', None ), \
+             patch( 'hi.apps.control.controller_manager.IntegrationManager',
+                    return_value = mock_integration_manager ), \
+             patch( 'hi.apps.monitor.status_display_manager.StatusDisplayManager'
+                    '.get_latest_sensor_response',
+                    return_value = latest_response ):
+            outcome = OneClickControlService().execute_one_click_control( entity = entity )
+
+        # do_control received the toggle target value derived from the
+        # current "on" sensor reading.
+        call_kwargs = mock_integration_controller.do_control.call_args.kwargs
+        self.assertEqual( call_kwargs[ 'hi_control_value' ], 'off' )
+        self.assertEqual( call_kwargs[ 'integration_details' ].key,
+                          controller.integration_key )
+
+        self.assertFalse( outcome.has_errors )
+        self.assertEqual( outcome.new_value, 'off' )
+        self.assertEqual( outcome.controller, controller )
+
+    def test_execute_one_click_picks_first_value_when_no_sensor_history(self):
+        # When there's no sensor history, _get_current_state_value
+        # returns None and _determine_control_value falls through to
+        # toggle_values()[0]. End-to-end: pipeline still dispatches.
+        entity = Entity.objects.create(
+            name = 'Wall Switch',
+            entity_type_str = str(EntityType.WALL_SWITCH),
+        )
+        state = _make_state( entity, EntityStateType.ON_OFF, EntityStateRole.ON_OFF )
+        controller = Controller.objects.create(
+            entity_state = state,
+            name = 'wall-ctrl',
+            controller_type_str = 'DEFAULT',
+            integration_id = 'home_assistant',
+            integration_name = 'Home Assistant',
+        )
+        first_toggle = state.toggle_values()[ 0 ]
+
+        mock_control_result = IntegrationControlResult(
+            new_value = first_toggle, error_list = [],
+        )
+        mock_integration_controller = Mock()
+        mock_integration_controller.do_control.return_value = mock_control_result
+        mock_integration_gateway = Mock()
+        mock_integration_gateway.get_controller.return_value = mock_integration_controller
+        mock_integration_manager = Mock()
+        mock_integration_manager.get_integration_gateway.return_value = mock_integration_gateway
+
+        with patch.object( ControllerManager, '_instance', None ), \
+             patch( 'hi.apps.control.controller_manager.IntegrationManager',
+                    return_value = mock_integration_manager ), \
+             patch( 'hi.apps.monitor.status_display_manager.StatusDisplayManager'
+                    '.get_latest_sensor_response',
+                    return_value = None ):
+            outcome = OneClickControlService().execute_one_click_control( entity = entity )
+
+        call_kwargs = mock_integration_controller.do_control.call_args.kwargs
+        self.assertEqual( call_kwargs[ 'hi_control_value' ], first_toggle )
+        self.assertFalse( outcome.has_errors )
+        self.assertEqual( outcome.controller, controller )
 
     def test_too_many_toggle_values_disqualifies_state(self):
         # A controllable state with more than ONE_CLICK_CHOICE_LIMIT

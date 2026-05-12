@@ -3,6 +3,7 @@ from cachetools import TTLCache
 from typing import Dict, List, Set, Sequence
 
 from django.conf import settings
+from django.db.models import prefetch_related_objects
 
 from hi.apps.control.transient_models import ControllerData
 from hi.apps.common.singleton import Singleton
@@ -299,10 +300,22 @@ class StatusDisplayManager( Singleton, SensorResponseMixin ):
         ``ENTITY_PRIMARY_STATE_ORDERING`` — no EntityStateType
         pre-filter is applied here."""
 
+        # Batch-prefetch the relations this flow will walk so the
+        # per-entity loop below doesn't issue 2N delegation/states
+        # queries and the downstream sensor/controller fetches don't
+        # add 2M more.
+        prefetch_related_objects(
+            list( entities ),
+            'states__sensors',
+            'states__controllers',
+            'entity_state_delegations__entity_state__sensors',
+            'entity_state_delegations__entity_state__controllers',
+        )
+
         entity_to_entity_state_list = dict()
         all_entity_states = set()
         for entity in entities:
-            entity_states = self._all_entity_states_including_delegations( entity )
+            entity_states = self.all_entity_states_including_delegations( entity )
             if not entity_states:
                 continue
             entity_to_entity_state_list[entity] = entity_states
@@ -325,15 +338,32 @@ class StatusDisplayManager( Singleton, SensorResponseMixin ):
 
         return entity_to_entity_state_status_data_list
 
-    def _all_entity_states_including_delegations(
+    def all_entity_states_including_delegations(
             self, entity : Entity ) -> List[ EntityState ]:
         """All EntityStates the entity exposes for status display:
         its own ``states`` plus any states delegated from principals
-        via ``EntityStateDelegation``."""
-        delegations_queryset = entity.entity_state_delegations.select_related('entity_state').all()
-        entity_states = [ d.entity_state for d in delegations_queryset ]
-        entity_states.extend( entity.states.all() )
-        return entity_states
+        via ``EntityStateDelegation``. Deduplicated to guard against
+        the unusual case of an entity delegating one of its own
+        states or two delegations resolving to the same state.
+
+        ``.all()`` is used (not ``.select_related(...).all()``) so
+        callers that have prefetched ``entity_state_delegations__
+        entity_state`` use the cache. For single-entity callers with
+        no prefetch, the additional FK fetch per delegation is
+        bounded and acceptable."""
+        seen = set()
+        result = []
+        for d in entity.entity_state_delegations.all():
+            if d.entity_state.id in seen:
+                continue
+            seen.add( d.entity_state.id )
+            result.append( d.entity_state )
+        for state in entity.states.all():
+            if state.id in seen:
+                continue
+            seen.add( state.id )
+            result.append( state )
+        return result
 
     def get_latest_sensor_response( self, entity_state : EntityState ) -> SensorResponse:
         sensor_list = list( entity_state.sensors.all() )
