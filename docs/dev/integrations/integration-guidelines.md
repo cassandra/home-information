@@ -29,6 +29,43 @@ The symmetric server ↔ UI boundary uses `ConsoleConverterHelper`; see [Fronten
 ### Responsibility Boundaries
 Integrations create `SensorResponse` objects which become `Event` objects with duration. The Event duration is the only accessible duration data - Event objects don't know about underlying integration specifics.
 
+## Code Conventions
+
+### File layout and naming
+Each integration is a self-contained Django app under `hi/services/<integration_id>/`. Across the existing integrations (`hass/`, `zoneminder/`, `homebox/`) the same role-files appear with parallel naming — use this layout for new integrations so a contributor coming from one integration can find their way around another:
+
+- `integration.py` — `IntegrationGateway` subclass, the registration entry point
+- `<prefix>_metadata.py` — module-level `IntegrationMetaData` instance
+- `<prefix>_client.py` (and/or `<prefix>_client_factory.py`) — outbound API client + credential validation
+- `<prefix>_manager.py` — singleton coordinator (attribute cache, change listeners, health status)
+- `<prefix>_converter.py` — wire-format ↔ HI model translation (the bulk of integration logic)
+- `<prefix>_sync.py` — `IntegrationSynchronizer` subclass driving entity sync
+- `<prefix>_controller.py` — HI control commands → integration service calls
+- `<prefix>_mixins.py` — manager-accessor mixin for views/handlers
+- `<prefix>_manage_view_pane.py` — management UI pane
+- `monitors.py` — `PeriodicMonitor` subclass(es) for polling and health probes
+- `apps.py`, `urls.py`, `views.py` — standard Django wiring
+
+`<prefix>` is a short integration mnemonic (`hass_`, `zm_`, `hb_`). Keep it consistent across all files within the integration.
+
+### Centralize wire-format strings
+Every integration centralizes its wire-format strings — domain/endpoint names, attribute keys, device-class names, service names, special-state sentinels — in a single class per integration. The exemplar is `HassApi` in `hi/services/hass/hass_models.py`; ZoneMinder's equivalent is `hi/services/zoneminder/constants.py`. The converter, sync, controller, and service composer all import their wire strings from this single source.
+
+Rationale:
+- **Typo prevention** — string literals scattered across files don't cross-check; named constants do
+- **Discoverability** — the integration's wire vocabulary lives in one file you can read top-to-bottom
+- **Refactor safety** — renaming a wire-side string becomes a mechanical edit, not a grep-and-pray
+- **Boundary clarity** — when reading the converter, every string that crosses the wire boundary is obviously a wire string
+
+Do not inline raw wire strings outside this centralization module. If you find yourself writing `'climate'` or `'unavailable'` in a converter, hoist it to the constants class first.
+
+### Default alarm wiring
+The model-level factories in `hi.apps.model_helper.HiModelHelper` (`create_movement_sensor`, `create_smoke_sensor`, `create_moisture_sensor`, `create_open_close_sensor`, `create_connectivity_sensor`) accept an `add_default_alarm : bool = False` parameter. When True, the factory also creates the canonical default alarm event definition for that sensor type (using `f'{sensor.name} Alarm'` and the same `integration_key` as the sensor).
+
+Use this for the common case of sharing the sensor's integration_key with its alarm event. If an integration needs a *different* integration_key for the alarm event (e.g., ZoneMinder's separate `MOVEMENT_EVENT_PREFIX`), leave the flag False and call the matching `create_*_event_definition` explicitly with the alternate key.
+
+The default alarm definitions are a starting point — the user can customize windows, dedupe, levels, etc. after import. The integration's role is to provide a reasonable default, not a final policy.
+
 ## Integration Setup Process
 
 ### 1. Create Django App

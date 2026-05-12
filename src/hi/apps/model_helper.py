@@ -87,15 +87,23 @@ class HiModelHelper:
     def create_connectivity_sensor( cls,
                                     entity           : Entity,
                                     integration_key  : IntegrationKey  = None,
-                                    name             : str             = None ) -> Sensor:
+                                    name             : str             = None,
+                                    add_default_alarm : bool           = False ) -> Sensor:
         if not name:
             name = f'{entity.name} Connection'
-        return cls.create_sensor(
+        sensor = cls.create_sensor(
             entity = entity,
             entity_state_type = EntityStateType.CONNECTIVITY,
             name = name,
             integration_key = integration_key,
         )
+        if add_default_alarm:
+            cls.create_connectivity_event_definition(
+                name = f'{sensor.name} Alarm',
+                entity_state = sensor.entity_state,
+                integration_key = integration_key,
+            )
+        return sensor
     
     @classmethod
     def create_datetime_sensor( cls,
@@ -191,59 +199,91 @@ class HiModelHelper:
     def create_open_close_sensor( cls,
                                   entity           : Entity,
                                   integration_key  : IntegrationKey  = None,
-                                  name             : str             = None ) -> Sensor:
+                                  name             : str             = None,
+                                  add_default_alarm : bool           = False ) -> Sensor:
         if not name:
             name = f'{entity.name} Open/Close'
-        return cls.create_sensor(
+        sensor = cls.create_sensor(
             entity = entity,
             entity_state_type = EntityStateType.OPEN_CLOSE,
             name = name,
             integration_key = integration_key,
         )
+        if add_default_alarm:
+            cls.create_open_close_event_definition(
+                name = f'{sensor.name} Alarm',
+                entity_state = sensor.entity_state,
+                integration_key = integration_key,
+            )
+        return sensor
     
     @classmethod
     def create_movement_sensor( cls,
                                 entity              : Entity,
                                 integration_key     : IntegrationKey  = None,
                                 name                : str             = None,
-                                provides_video_stream : bool          = False ) -> Sensor:
+                                provides_video_stream : bool          = False,
+                                add_default_alarm   : bool            = False ) -> Sensor:
         if not name:
             name = f'{entity.name} Motion'
-        return cls.create_sensor(
+        sensor = cls.create_sensor(
             entity = entity,
             entity_state_type = EntityStateType.MOVEMENT,
             name = name,
             integration_key = integration_key,
             provides_video_stream = provides_video_stream,
         )
+        if add_default_alarm:
+            cls.create_movement_event_definition(
+                name = f'{sensor.name} Alarm',
+                entity_state = sensor.entity_state,
+                integration_key = integration_key,
+            )
+        return sensor
 
     @classmethod
     def create_smoke_sensor( cls,
                              entity              : Entity,
                              integration_key     : IntegrationKey  = None,
-                             name                : str             = None ) -> Sensor:
+                             name                : str             = None,
+                             add_default_alarm   : bool            = False ) -> Sensor:
         if not name:
             name = f'{entity.name} Smoke'
-        return cls.create_sensor(
+        sensor = cls.create_sensor(
             entity = entity,
             entity_state_type = EntityStateType.SMOKE,
             name = name,
             integration_key = integration_key,
         )
+        if add_default_alarm:
+            cls.create_smoke_event_definition(
+                name = f'{sensor.name} Alarm',
+                entity_state = sensor.entity_state,
+                integration_key = integration_key,
+            )
+        return sensor
 
     @classmethod
     def create_moisture_sensor( cls,
                                 entity              : Entity,
                                 integration_key     : IntegrationKey  = None,
-                                name                : str             = None ) -> Sensor:
+                                name                : str             = None,
+                                add_default_alarm   : bool            = False ) -> Sensor:
         if not name:
             name = f'{entity.name} Moisture'
-        return cls.create_sensor(
+        sensor = cls.create_sensor(
             entity = entity,
             entity_state_type = EntityStateType.MOISTURE,
             name = name,
             integration_key = integration_key,
         )
+        if add_default_alarm:
+            cls.create_moisture_event_definition(
+                name = f'{sensor.name} Alarm',
+                entity_state = sensor.entity_state,
+                integration_key = integration_key,
+            )
+        return sensor
 
     @classmethod
     def create_on_off_controller( cls,

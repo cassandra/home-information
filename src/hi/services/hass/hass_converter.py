@@ -1855,37 +1855,22 @@ class HassConverter:
                 entity = entity,
                 integration_key = integration_key,
                 name = name,
+                add_default_alarm = add_alarm_events,
             )
-            if add_alarm_events:
-                HiModelHelper.create_connectivity_event_definition(
-                    name = f'{sensor.name} Alarm',
-                    entity_state = sensor.entity_state,
-                    integration_key = integration_key,
-                )
         elif entity_state_type == EntityStateType.OPEN_CLOSE:
             sensor = HiModelHelper.create_open_close_sensor(
                 entity = entity,
                 integration_key = integration_key,
                 name = name,
+                add_default_alarm = add_alarm_events,
             )
-            if add_alarm_events:
-                HiModelHelper.create_open_close_event_definition(
-                    name = f'{sensor.name} Alarm',
-                    entity_state = sensor.entity_state,
-                    integration_key = integration_key,
-                )
         elif entity_state_type == EntityStateType.MOVEMENT:
             sensor = HiModelHelper.create_movement_sensor(
                 entity = entity,
                 integration_key = integration_key,
                 name = name,
+                add_default_alarm = add_alarm_events,
             )
-            if add_alarm_events:
-                HiModelHelper.create_movement_event_definition(
-                    name = f'{sensor.name} Alarm',
-                    entity_state = sensor.entity_state,
-                    integration_key = integration_key,
-                )
         elif entity_state_type == EntityStateType.PRESENCE:
             # PRESENCE shares the [ACTIVE, IDLE] EntityStateValue
             # vocabulary with MOVEMENT but renders under its own
@@ -1932,25 +1917,15 @@ class HassConverter:
                 entity = entity,
                 integration_key = integration_key,
                 name = name,
+                add_default_alarm = add_alarm_events,
             )
-            if add_alarm_events:
-                HiModelHelper.create_smoke_event_definition(
-                    name = f'{sensor.name} Alarm',
-                    entity_state = sensor.entity_state,
-                    integration_key = integration_key,
-                )
         elif entity_state_type == EntityStateType.MOISTURE:
             sensor = HiModelHelper.create_moisture_sensor(
                 entity = entity,
                 integration_key = integration_key,
                 name = name,
+                add_default_alarm = add_alarm_events,
             )
-            if add_alarm_events:
-                HiModelHelper.create_moisture_event_definition(
-                    name = f'{sensor.name} Alarm',
-                    entity_state = sensor.entity_state,
-                    integration_key = integration_key,
-                )
         else:
             # Default fallback
             sensor = HiModelHelper.create_blob_sensor(
