@@ -24,7 +24,7 @@ from hi.apps.security.enums import SecurityLevel
 
 from hi.integrations.models import IntegrationDetailsModel
 
-from .enums import EventType
+from .enums import EventClauseOperator, EventType
 
 
 class EventDefinition( IntegrationDetailsModel ):
@@ -100,6 +100,17 @@ class EventClause( models.Model ):
         'Value',
         max_length = 255
     )
+    # How ``value`` is compared against the live wire reading.
+    # Default ``'EQ'`` keeps every pre-threshold clause matching by
+    # exact string equality (the historical behavior). Numeric
+    # operators (LT / LTE / GT / GTE) enable threshold-based alarms
+    # on continuous EntityStateTypes such as BATTERY_LEVEL.
+    value_operator_str = models.CharField(
+        'Operator',
+        max_length = 8,
+        default = str(EventClauseOperator.default()),
+        null = False, blank = False,
+    )
     created_datetime = models.DateTimeField(
         'Created',
         auto_now_add = True,
@@ -110,10 +121,19 @@ class EventClause( models.Model ):
         auto_now = True,
         blank = True,
     )
-    
+
     class Meta:
         verbose_name = 'Trigger Clause'
         verbose_name_plural = 'Trigger Clauses'
+
+    @property
+    def value_operator(self) -> EventClauseOperator:
+        return EventClauseOperator.from_name_safe( self.value_operator_str )
+
+    @value_operator.setter
+    def value_operator( self, value_operator : EventClauseOperator ):
+        self.value_operator_str = str(value_operator)
+        return
 
 
 class AlarmAction( models.Model ):

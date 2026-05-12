@@ -1805,15 +1805,17 @@ class HassConverter:
             )
         elif entity_state_type == EntityStateType.BATTERY_LEVEL:
             # HA's battery sensor reports a 0-100 percentage with
-            # ``unit_of_measurement='%'``. Store the unit verbatim
-            # so the display path renders ``"85%"`` rather than the
-            # bare magnitude.
-            sensor = HiModelHelper.create_sensor(
+            # ``unit_of_measurement='%'``. Store the unit verbatim so
+            # the display path renders ``"85%"`` rather than the bare
+            # magnitude. With ``add_default_alarm`` the factory also
+            # wires the canonical low-battery threshold alarm
+            # (EventClauseOperator.LT at the default threshold).
+            sensor = HiModelHelper.create_battery_level_sensor(
                 entity = entity,
-                entity_state_type = EntityStateType.BATTERY_LEVEL,
-                name = name,
                 integration_key = integration_key,
+                name = name,
                 units = hass_state.unit_of_measurement or '%',
+                add_default_alarm = add_alarm_events,
             )
         elif entity_state_type == EntityStateType.LIGHT_LEVEL:
             # HA's illuminance sensor reports lux ("lx") as the
