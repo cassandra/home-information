@@ -293,6 +293,7 @@ class EntityStyle:
         EntityType.FREEZER,
         EntityType.GARAGE_DOOR_OPENER,
         EntityType.GARBAGE_DISPOSAL,
+        EntityType.GAS_DETECTOR,
         EntityType.GAS_METER,
         EntityType.GENERATOR,
         EntityType.GRILL,
@@ -553,6 +554,72 @@ class StatusStyle:
         fill_opacity = 0.5,
     )
     MoistureClear = SvgStatusStyle(
+        status_value = 'idle',
+        stroke_color = STATUS_OK_COLOR,
+        stroke_width = DEFAULT_STROKE_WIDTH,
+        stroke_dasharray = DEFAULT_STROKE_DASHARRAY,
+        fill_color = STATUS_OK_COLOR,
+        fill_opacity = 0.15,
+    )
+    # Carbon monoxide and combustible-gas decay parallel smoke —
+    # life-safety events warrant a lingering visual reminder.
+    CoDetected = SvgStatusStyle(
+        status_value = 'active',
+        stroke_color = STATUS_ACTIVE_COLOR,
+        stroke_width = DEFAULT_STROKE_WIDTH,
+        stroke_dasharray = DEFAULT_STROKE_DASHARRAY,
+        fill_color = STATUS_ACTIVE_COLOR,
+        fill_opacity = 0.5,
+    )
+    CoRecent = SvgStatusStyle(
+        status_value = 'recent',
+        stroke_color = STATUS_RECENT_COLOR,
+        stroke_width = DEFAULT_STROKE_WIDTH,
+        stroke_dasharray = DEFAULT_STROKE_DASHARRAY,
+        fill_color = STATUS_RECENT_COLOR,
+        fill_opacity = 0.5,
+    )
+    CoPast = SvgStatusStyle(
+        status_value = 'past',
+        stroke_color = STATUS_PAST_COLOR,
+        stroke_width = DEFAULT_STROKE_WIDTH,
+        stroke_dasharray = DEFAULT_STROKE_DASHARRAY,
+        fill_color = STATUS_PAST_COLOR,
+        fill_opacity = 0.5,
+    )
+    CoClear = SvgStatusStyle(
+        status_value = 'idle',
+        stroke_color = STATUS_OK_COLOR,
+        stroke_width = DEFAULT_STROKE_WIDTH,
+        stroke_dasharray = DEFAULT_STROKE_DASHARRAY,
+        fill_color = STATUS_OK_COLOR,
+        fill_opacity = 0.15,
+    )
+    GasDetected = SvgStatusStyle(
+        status_value = 'active',
+        stroke_color = STATUS_ACTIVE_COLOR,
+        stroke_width = DEFAULT_STROKE_WIDTH,
+        stroke_dasharray = DEFAULT_STROKE_DASHARRAY,
+        fill_color = STATUS_ACTIVE_COLOR,
+        fill_opacity = 0.5,
+    )
+    GasRecent = SvgStatusStyle(
+        status_value = 'recent',
+        stroke_color = STATUS_RECENT_COLOR,
+        stroke_width = DEFAULT_STROKE_WIDTH,
+        stroke_dasharray = DEFAULT_STROKE_DASHARRAY,
+        fill_color = STATUS_RECENT_COLOR,
+        fill_opacity = 0.5,
+    )
+    GasPast = SvgStatusStyle(
+        status_value = 'past',
+        stroke_color = STATUS_PAST_COLOR,
+        stroke_width = DEFAULT_STROKE_WIDTH,
+        stroke_dasharray = DEFAULT_STROKE_DASHARRAY,
+        fill_color = STATUS_PAST_COLOR,
+        fill_opacity = 0.5,
+    )
+    GasClear = SvgStatusStyle(
         status_value = 'idle',
         stroke_color = STATUS_OK_COLOR,
         stroke_width = DEFAULT_STROKE_WIDTH,

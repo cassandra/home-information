@@ -74,9 +74,11 @@ from django.db import transaction
 from hi.simulator.enums import SimEntityType
 from hi.simulator.models import DbSimEntity, SimProfile
 from hi.simulator.services.hass.sim_models import (
+    HassCarbonMonoxideDetectorFields,
     HassColorSmartBulbFields,
     HassFanFields,
     HassGarageCoverFields,
+    HassGasDetectorFields,
     HassGenericCoverFields,
     HassInsteonDimmerLightSwitchFields,
     HassDoorContactSensorFields,
@@ -381,6 +383,8 @@ class Command(BaseCommand):
         self._add_hass_door_contact(   profile, 'Zoo Door Contact' )
         self._add_hass_window_contact( profile, 'Zoo Window Contact' )
         self._add_hass_smoke_detector( profile, 'Zoo Smoke Detector' )
+        self._add_hass_carbon_monoxide_detector( profile, 'Zoo CO Detector' )
+        self._add_hass_gas_detector(   profile, 'Zoo Gas Detector' )
         self._add_hass_temperature_sensor( profile, 'Zoo Thermometer' )
         self._add_hass_temperature_sensor(
             profile, 'Zoo Thermometer Celsius', temperature_unit = '°C',
@@ -555,6 +559,24 @@ class Command(BaseCommand):
             simulator_id = 'hass',
             fields_class = HassSmokeDetectorFields,
             sim_entity_type = SimEntityType.SMOKE_DETECTOR,
+            fields_kwargs = {'name': name},
+        )
+
+    def _add_hass_carbon_monoxide_detector(self, profile, name):
+        self._create_db_entity(
+            profile = profile,
+            simulator_id = 'hass',
+            fields_class = HassCarbonMonoxideDetectorFields,
+            sim_entity_type = SimEntityType.CARBON_MONOXIDE_DETECTOR,
+            fields_kwargs = {'name': name},
+        )
+
+    def _add_hass_gas_detector(self, profile, name):
+        self._create_db_entity(
+            profile = profile,
+            simulator_id = 'hass',
+            fields_class = HassGasDetectorFields,
+            sim_entity_type = SimEntityType.GAS_DETECTOR,
             fields_kwargs = {'name': name},
         )
 

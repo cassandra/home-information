@@ -249,6 +249,8 @@ class HassConverter:
         (HassApi.BINARY_SENSOR_DOMAIN, HassApi.WINDOW_DEVICE_CLASS, None): EntityStateType.OPEN_CLOSE,
         (HassApi.BINARY_SENSOR_DOMAIN, HassApi.SMOKE_DEVICE_CLASS, None): EntityStateType.SMOKE,
         (HassApi.BINARY_SENSOR_DOMAIN, HassApi.MOISTURE_DEVICE_CLASS, None): EntityStateType.MOISTURE,
+        (HassApi.BINARY_SENSOR_DOMAIN, HassApi.CARBON_MONOXIDE_DEVICE_CLASS, None): EntityStateType.CO,
+        (HassApi.BINARY_SENSOR_DOMAIN, HassApi.GAS_DEVICE_CLASS, None): EntityStateType.GAS,
         (HassApi.BINARY_SENSOR_DOMAIN, None, None): EntityStateType.ON_OFF,  # Generic binary sensor
         
         # Sensor Domain (read-only sensors)
@@ -1876,11 +1878,11 @@ class HassConverter:
             # vocabulary with MOVEMENT but renders under its own
             # state-type label and styling decay (see
             # ``StatusDisplayData._get_presence_status_style``).
-            sensor = HiModelHelper.create_sensor(
+            sensor = HiModelHelper.create_presence_sensor(
                 entity = entity,
-                entity_state_type = EntityStateType.PRESENCE,
-                name = name,
                 integration_key = integration_key,
+                name = name,
+                add_default_alarm = add_alarm_events,
             )
         elif entity_state_type == EntityStateType.HIGH_LOW:
             sensor = HiModelHelper.create_high_low_sensor(
@@ -1921,6 +1923,20 @@ class HassConverter:
             )
         elif entity_state_type == EntityStateType.MOISTURE:
             sensor = HiModelHelper.create_moisture_sensor(
+                entity = entity,
+                integration_key = integration_key,
+                name = name,
+                add_default_alarm = add_alarm_events,
+            )
+        elif entity_state_type == EntityStateType.CO:
+            sensor = HiModelHelper.create_co_sensor(
+                entity = entity,
+                integration_key = integration_key,
+                name = name,
+                add_default_alarm = add_alarm_events,
+            )
+        elif entity_state_type == EntityStateType.GAS:
+            sensor = HiModelHelper.create_gas_sensor(
                 entity = entity,
                 integration_key = integration_key,
                 name = name,
@@ -2091,6 +2107,10 @@ class HassConverter:
             return EntityType.SMOKE_DETECTOR
         if HassApi.MOISTURE_DEVICE_CLASS in device_class_set:
             return EntityType.LEAK_SENSOR
+        if HassApi.CARBON_MONOXIDE_DEVICE_CLASS in device_class_set:
+            return EntityType.CARBON_MONOXIDE_DETECTOR
+        if HassApi.GAS_DEVICE_CLASS in device_class_set:
+            return EntityType.GAS_DETECTOR
         # Multi-quantity outdoor sensors (Netatmo etc.) report
         # pressure and/or wind_speed alongside other readings.
         # Either signal is rare in indoor devices.
@@ -2328,6 +2348,10 @@ class HassConverter:
                 return str( EntityStateValue.SMOKE_DETECTED )
             if dc == HassApi.MOISTURE_DEVICE_CLASS:
                 return str( EntityStateValue.MOISTURE_DETECTED )
+            if dc == HassApi.CARBON_MONOXIDE_DEVICE_CLASS:
+                return str( EntityStateValue.CO_DETECTED )
+            if dc == HassApi.GAS_DEVICE_CLASS:
+                return str( EntityStateValue.GAS_DETECTED )
             if dc == HassApi.CONNECTIVITY_DEVICE_CLASS:
                 return str( EntityStateValue.CONNECTED )
             return str( EntityStateValue.ON )
@@ -2342,6 +2366,10 @@ class HassConverter:
                 return str( EntityStateValue.SMOKE_CLEAR )
             if dc == HassApi.MOISTURE_DEVICE_CLASS:
                 return str( EntityStateValue.MOISTURE_CLEAR )
+            if dc == HassApi.CARBON_MONOXIDE_DEVICE_CLASS:
+                return str( EntityStateValue.CO_CLEAR )
+            if dc == HassApi.GAS_DEVICE_CLASS:
+                return str( EntityStateValue.GAS_CLEAR )
             if dc == HassApi.CONNECTIVITY_DEVICE_CLASS:
                 return str( EntityStateValue.DISCONNECTED )
             return str( EntityStateValue.OFF )

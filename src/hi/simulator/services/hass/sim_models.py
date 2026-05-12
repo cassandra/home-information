@@ -828,6 +828,78 @@ class HassSmokeDetectorState( HassState ):
 
 
 @dataclass( frozen = True )
+class HassCarbonMonoxideDetectorFields( SimEntityFields ):
+    """A carbon monoxide detector (``binary_sensor`` with
+    ``device_class=carbon_monoxide``). Single ON_OFF SimState —
+    ``'on'`` means CO detected (alarm), ``'off'`` is clear."""
+    pass
+
+
+@dataclass
+class HassCarbonMonoxideDetectorState( HassState ):
+    sim_entity_fields  : HassCarbonMonoxideDetectorFields
+    sim_state_type     : SimStateType                  = SimStateType.ON_OFF
+    sim_state_id       : str                           = 'carbon_monoxide'
+    value              : str                           = 'off'
+
+    @property
+    def name(self):
+        return f'{self.entity_name} Carbon Monoxide'
+
+    @property
+    def entity_id(self):
+        return _binary_sensor_entity_id( self.entity_name )
+
+    @property
+    def state(self):
+        return 'on' if str_to_bool( self.value ) else 'off'
+
+    @property
+    def attributes(self) -> Dict[ str, str ]:
+        return {
+            'device_class': 'carbon_monoxide',
+            'friendly_name': self.entity_name,
+            'icon': 'mdi:molecule-co',
+        }
+
+
+@dataclass( frozen = True )
+class HassGasDetectorFields( SimEntityFields ):
+    """A combustible-gas detector (``binary_sensor`` with
+    ``device_class=gas``). Single ON_OFF SimState — ``'on'``
+    means gas detected (alarm), ``'off'`` is clear."""
+    pass
+
+
+@dataclass
+class HassGasDetectorState( HassState ):
+    sim_entity_fields  : HassGasDetectorFields
+    sim_state_type     : SimStateType                  = SimStateType.ON_OFF
+    sim_state_id       : str                           = 'gas'
+    value              : str                           = 'off'
+
+    @property
+    def name(self):
+        return f'{self.entity_name} Gas'
+
+    @property
+    def entity_id(self):
+        return _binary_sensor_entity_id( self.entity_name )
+
+    @property
+    def state(self):
+        return 'on' if str_to_bool( self.value ) else 'off'
+
+    @property
+    def attributes(self) -> Dict[ str, str ]:
+        return {
+            'device_class': 'gas',
+            'friendly_name': self.entity_name,
+            'icon': 'mdi:gas-cylinder',
+        }
+
+
+@dataclass( frozen = True )
 class HassMotionSensorFields( SimEntityFields ):
     """A motion sensor (``binary_sensor`` with
     ``device_class=motion``). Single ON_OFF SimState whose value
@@ -2841,6 +2913,22 @@ HASS_SIM_ENTITY_DEFINITION_LIST = [
         sim_entity_fields_class = HassSmokeDetectorFields,
         sim_state_class_list = [
             HassSmokeDetectorState,
+        ],
+    ),
+    SimEntityDefinition(
+        class_label = 'Carbon Monoxide Detector',
+        sim_entity_type = SimEntityType.CARBON_MONOXIDE_DETECTOR,
+        sim_entity_fields_class = HassCarbonMonoxideDetectorFields,
+        sim_state_class_list = [
+            HassCarbonMonoxideDetectorState,
+        ],
+    ),
+    SimEntityDefinition(
+        class_label = 'Gas Detector',
+        sim_entity_type = SimEntityType.GAS_DETECTOR,
+        sim_entity_fields_class = HassGasDetectorFields,
+        sim_state_class_list = [
+            HassGasDetectorState,
         ],
     ),
     SimEntityDefinition(

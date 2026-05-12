@@ -54,6 +54,7 @@ class EntityType(LabeledEnum):
     GARAGE_DOOR          = ( 'Garage Door', '' )
     GARAGE_DOOR_OPENER   = ( 'Garage Door Opener', '' )
     GARBAGE_DISPOSAL     = ( 'Garbage Disposal', '' )
+    GAS_DETECTOR         = ( 'Gas Detector', '' )
     GAS_LINE             = ( 'Gas Line', '' )
     GAS_METER            = ( 'Gas Meter', '' )
     GENERATOR            = ( 'Generator', '' )
@@ -221,6 +222,12 @@ class EntityStateValue(LabeledEnum):
     MOISTURE_DETECTED = ( 'Moisture Detected', '' )
     MOISTURE_CLEAR    = ( 'Clear', '' )
 
+    CO_DETECTED    = ( 'Carbon Monoxide Detected', '' )
+    CO_CLEAR       = ( 'Clear', '' )
+
+    GAS_DETECTED   = ( 'Gas Detected', '' )
+    GAS_CLEAR      = ( 'Clear', '' )
+
     # COLOR_MODE values — modes a smart bulb can be in. UNKNOWN
     # covers integrations that don't report a mode and cases where
     # the bulb hasn't yet declared one. Names follow HA's modes;
@@ -349,6 +356,12 @@ class EntityStateType(LabeledEnum):
     SMOKE            = ( 'Smoke'            , '',
                          [ EntityStateValue.SMOKE_DETECTED,
                            EntityStateValue.SMOKE_CLEAR ] )
+    CO               = ( 'Carbon Monoxide'  , 'Binary carbon monoxide detected state',
+                         [ EntityStateValue.CO_DETECTED,
+                           EntityStateValue.CO_CLEAR ] )
+    GAS              = ( 'Gas'              , 'Binary combustible-gas detected state',
+                         [ EntityStateValue.GAS_DETECTED,
+                           EntityStateValue.GAS_CLEAR ] )
     SOUND_LEVEL      = ( 'Sound Level'      , '',
                          [] )
     TEMPERATURE      = ( 'Temperature'      , '',

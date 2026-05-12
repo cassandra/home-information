@@ -100,11 +100,13 @@ class HassApi:
     
     BATTERY_DEVICE_CLASS = 'battery'
     BLIND_DEVICE_CLASS = 'blind'  # cover domain
+    CARBON_MONOXIDE_DEVICE_CLASS = 'carbon_monoxide'
     CONNECTIVITY_DEVICE_CLASS = 'connectivity'
     DOOR_DEVICE_CLASS = 'door'
     ENUM_DEVICE_CLASS = 'enum'
     GARAGE_DEVICE_CLASS = 'garage'  # cover domain
     GARAGE_DOOR_DEVICE_CLASS = 'garage_door'  # binary_sensor domain
+    GAS_DEVICE_CLASS = 'gas'
     HUMIDITY_DEVICE_CLASS = 'humidity'
     ILLUMINANCE_DEVICE_CLASS = 'illuminance'
     LIGHT_DEVICE_CLASS = 'light'
