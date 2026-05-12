@@ -10,7 +10,11 @@
 
 {% elif entity_state_status_data.sensor_response_list %}
 <div class="text-muted text-center"><small>{{ sensor_response.sensor.name }}</small></div>
-{% include_with_fallback sensor_response.sensor.entity_state.entity_state_type.value_template_name "sense/panes/sensor_response_value_default.html" %}
+{# Per-state CSS class wrapper so polling updates land via the   #}
+{# entity_state_status.js dispatcher (selector: .{css_class}).   #}
+<div class="{{ sensor_response.css_class }}">
+  {% include_with_fallback sensor_response.sensor.entity_state.entity_state_type.value_template_name "sense/panes/sensor_response_value_default.html" %}
+</div>
 
 {% elif entity_state_status_data.has_sensor %}
 <div class="alert alert-info">{{ entity_state_status_data.entity_state.name }}: awaiting sensor reading.</div>

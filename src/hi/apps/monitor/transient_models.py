@@ -43,23 +43,26 @@ class EntityStatusData:
             self.entity_for_video = self.entity
         return
     
-    def to_template_context(self):
-        # ``state_status_data_list`` is the EntityStatusView listing
-        # order — keyed on EntityStateRole and the entity's
-        # EntityType via ``ENTITY_STATUS_VIEW_ORDERING``. The
-        # underlying ``entity_state_status_data_list`` field on the
-        # dataclass stays order-neutral; other consumers (update
-        # paths that key on per-state CSS classes) read the field
-        # directly when they don't want listing order applied.
-        state_status_data_list = sorted(
+    @property
+    def state_status_data_list(self) -> List[ EntityStateStatusData ]:
+        """Display-ordered EntityStateStatusData list, sorted by
+        ``ENTITY_STATUS_VIEW_ORDERING`` for the entity's EntityType.
+        Use this in templates and other consumers that need the
+        canonical display order. The underlying
+        ``entity_state_status_data_list`` field stays order-neutral
+        for consumers (e.g., per-state CSS-class update paths) that
+        don't care about listing order."""
+        return sorted(
             self.entity_state_status_data_list,
             key = lambda d: ENTITY_STATUS_VIEW_ORDERING.sort_key(
                 d.entity_state.entity_state_role, self.entity.entity_type,
             ),
         )
+
+    def to_template_context(self):
         context = {
             'entity': self.entity,
-            'state_status_data_list': state_status_data_list,
+            'state_status_data_list': self.state_status_data_list,
             'entity_for_video': self.entity_for_video,
             'display_only_svg_icon_item': self.display_only_svg_icon_item,
             'display_category': self.display_category,
