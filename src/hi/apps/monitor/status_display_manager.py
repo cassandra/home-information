@@ -6,7 +6,6 @@ from django.conf import settings
 
 from hi.apps.control.transient_models import ControllerData
 from hi.apps.common.singleton import Singleton
-from hi.apps.entity.enums import EntityStateType
 from hi.apps.entity.models import Entity, EntityState
 from hi.apps.location.svg_item_factory import SvgItemFactory
 from hi.apps.sense.models import Sensor
@@ -335,62 +334,6 @@ class StatusDisplayManager( Singleton, SensorResponseMixin ):
         entity_states = [ d.entity_state for d in delegations_queryset ]
         entity_states.extend( entity.states.all() )
         return entity_states
-
-    def get_entity_state_list_for_status(
-            self,
-            entity                           : Entity,
-            entity_state_type_priority_list  : List[ EntityStateType ] ) -> List[ EntityState ]:
-        """Picks the entity's states matching the highest-priority
-        EntityStateType in ``entity_state_type_priority_list``. Used
-        by ``OneClickControlService`` to identify candidate states
-        for one-click control; the LocationView icon path no longer
-        consults this filter (see
-        ``get_entity_to_entity_state_status_data_list``)."""
-
-        all_entity_states = self._all_entity_states_including_delegations( entity )
-
-        # Gather all possible EntityStateType for the Entity and its principals.
-        entity_state_list_map = dict()
-        for entity_state in all_entity_states:
-            if entity_state.entity_state_type not in entity_state_list_map:
-                entity_state_list_map[entity_state.entity_state_type] = list()
-            entity_state_list_map[entity_state.entity_state_type].append( entity_state )
-            continue
-
-        if not entity_state_list_map:
-            return None
-
-        entity_state_type_for_status = self.get_entity_state_type_for_status(
-            entity_state_types = entity_state_list_map.keys(),
-            entity_state_type_priority_list = entity_state_type_priority_list,
-        )
-        entity_state_list = entity_state_list_map.get( entity_state_type_for_status )
-        return entity_state_list
-
-    def get_entity_state_type_for_status(
-            self,
-            entity_state_types               : Sequence[ EntityStateType ],
-            entity_state_type_priority_list  : List[ EntityStateType ] ) -> EntityStateType:
-        """
-        Determines the single EntityStateType that is the highest display priority
-        from the given priority list.  This defined what status will be visually displayed.
-        """
-
-        for priority_entity_state_type in entity_state_type_priority_list:
-            if priority_entity_state_type in entity_state_types:
-                return priority_entity_state_type
-            continue
-
-        # If no prioritizes state type matches, then fallback to an
-        # arbitrary, but deterministic choice by using all defined values.
-        #
-        for default_entity_state_type in EntityStateType:
-            if default_entity_state_type in entity_state_types:
-                return default_entity_state_type
-            continue
-
-        # This code should not really be reachable. Should always match one in fallback case.
-        return None
 
     def get_latest_sensor_response( self, entity_state : EntityState ) -> SensorResponse:
         sensor_list = list( entity_state.sensors.all() )

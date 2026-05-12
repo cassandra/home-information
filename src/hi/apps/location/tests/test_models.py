@@ -233,13 +233,9 @@ class TestLocationView(BaseTestCase):
         # Test setter conversions work correctly
         location_view.location_view_type = LocationViewType.AUTOMATION
         location_view.svg_style_name = SvgStyleName.COLOR
-        
+
         self.assertEqual(location_view.location_view_type_str, 'automation')
         self.assertEqual(location_view.svg_style_name_str, 'color')
-        
-        # Test that enum business logic is accessible
-        automation_priorities = location_view.location_view_type.entity_state_type_priority_list
-        self.assertGreater(len(automation_priorities), 0)
         return
 
     def test_location_view_cascade_deletion_from_location(self):
