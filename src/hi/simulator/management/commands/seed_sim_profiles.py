@@ -74,9 +74,11 @@ from django.db import transaction
 from hi.simulator.enums import SimEntityType
 from hi.simulator.models import DbSimEntity, SimProfile
 from hi.simulator.services.hass.sim_models import (
+    HassCarbonMonoxideDetectorFields,
     HassColorSmartBulbFields,
     HassFanFields,
     HassGarageCoverFields,
+    HassGasDetectorFields,
     HassGenericCoverFields,
     HassInsteonDimmerLightSwitchFields,
     HassDoorContactSensorFields,
@@ -85,10 +87,20 @@ from hi.simulator.services.hass.sim_models import (
     HassInsteonMotionDetectorFields,
     HassInsteonOpenCloseSensorFields,
     HassInsteonOutletFields,
+    HassComboMotionSensorFields,
     HassLockFields,
+    HassMotionSensorFields,
     HassMultiFeatureFanFields,
+    HassOccupancyLightSensorFields,
+    HassOpeningSensorFields,
+    HassOutletFields,
+    HassPowerMeterFields,
+    HassPresenceSensorFields,
     HassSmartBulbFields,
     HassSmokeDetectorFields,
+    HassSwitchFields,
+    HassWaterLeakSensorFields,
+    HassWeatherStationFields,
     HassTemperatureSensorFields,
     HassTempHumiditySensorFields,
     HassThermostatFields,
@@ -350,17 +362,29 @@ class Command(BaseCommand):
 
     def _build_hass_zoo(self, profile: SimProfile) -> int:
         # One of every HASS sim entity definition type.
-        self._add_hass_light_switch(   profile, 'Zoo Light Switch'     , '01.BB.01' )
-        self._add_hass_dimmer(         profile, 'Zoo Dimmer'           , '01.BB.02' )
-        self._add_hass_dual_band(      profile, 'Zoo Dual Band Switch' , '01.BB.03' )
-        self._add_hass_motion(         profile, 'Zoo Motion'           , '01.BB.04' )
-        self._add_hass_open_close(     profile, 'Zoo Open/Close'       , '01.BB.05' )
-        self._add_hass_outlet(         profile, 'Zoo Outlet'           , '01.BB.06' )
+        self._add_hass_light_switch(   profile, 'Zoo Insteon Light Switch'     , '01.BB.01' )
+        self._add_hass_dimmer(         profile, 'Zoo Insteon Dimmer'           , '01.BB.02' )
+        self._add_hass_dual_band(      profile, 'Zoo Insteon Dual Band Switch' , '01.BB.03' )
+        self._add_hass_motion(         profile, 'Zoo Insteon Motion'           , '01.BB.04' )
+        self._add_hass_open_close(     profile, 'Zoo Insteon Open/Close'       , '01.BB.05' )
+        self._add_hass_outlet(         profile, 'Zoo Insteon Outlet'           , '01.BB.06' )
+        self._add_hass_switch(         profile, 'Zoo Switch' )
+        self._add_hass_motion_sensor(  profile, 'Zoo Motion' )
+        self._add_hass_combo_motion_sensor( profile, 'Zoo Smart Motion' )
+        self._add_hass_basic_outlet(   profile, 'Zoo Outlet' )
+        self._add_hass_presence_sensor(  profile, 'Zoo Presence' )
+        self._add_hass_opening_sensor(   profile, 'Zoo Opening' )
+        self._add_hass_power_meter(      profile, 'Zoo Power Meter' )
+        self._add_hass_weather_station(  profile, 'Zoo Weather Station' )
+        self._add_hass_occupancy_light_sensor( profile, 'Zoo Room Sensor' )
+        self._add_hass_water_leak_sensor( profile, 'Zoo Leak Sensor' )
         self._add_hass_smart_bulb(     profile, 'Zoo Smart Bulb' )
         self._add_hass_color_smart_bulb( profile, 'Zoo Color Bulb' )
         self._add_hass_door_contact(   profile, 'Zoo Door Contact' )
         self._add_hass_window_contact( profile, 'Zoo Window Contact' )
         self._add_hass_smoke_detector( profile, 'Zoo Smoke Detector' )
+        self._add_hass_carbon_monoxide_detector( profile, 'Zoo CO Detector' )
+        self._add_hass_gas_detector(   profile, 'Zoo Gas Detector' )
         self._add_hass_temperature_sensor( profile, 'Zoo Thermometer' )
         self._add_hass_temperature_sensor(
             profile, 'Zoo Thermometer Celsius', temperature_unit = '°C',
@@ -535,6 +559,117 @@ class Command(BaseCommand):
             simulator_id = 'hass',
             fields_class = HassSmokeDetectorFields,
             sim_entity_type = SimEntityType.SMOKE_DETECTOR,
+            fields_kwargs = {'name': name},
+        )
+
+    def _add_hass_carbon_monoxide_detector(self, profile, name):
+        self._create_db_entity(
+            profile = profile,
+            simulator_id = 'hass',
+            fields_class = HassCarbonMonoxideDetectorFields,
+            sim_entity_type = SimEntityType.CARBON_MONOXIDE_DETECTOR,
+            fields_kwargs = {'name': name},
+        )
+
+    def _add_hass_gas_detector(self, profile, name):
+        self._create_db_entity(
+            profile = profile,
+            simulator_id = 'hass',
+            fields_class = HassGasDetectorFields,
+            sim_entity_type = SimEntityType.GAS_DETECTOR,
+            fields_kwargs = {'name': name},
+        )
+
+    def _add_hass_motion_sensor(self, profile, name):
+        self._create_db_entity(
+            profile = profile,
+            simulator_id = 'hass',
+            fields_class = HassMotionSensorFields,
+            sim_entity_type = SimEntityType.MOTION_SENSOR,
+            fields_kwargs = {'name': name},
+        )
+
+    def _add_hass_combo_motion_sensor(self, profile, name):
+        self._create_db_entity(
+            profile = profile,
+            simulator_id = 'hass',
+            fields_class = HassComboMotionSensorFields,
+            sim_entity_type = SimEntityType.MOTION_SENSOR,
+            fields_kwargs = {'name': name},
+        )
+
+    def _add_hass_presence_sensor(self, profile, name):
+        self._create_db_entity(
+            profile = profile,
+            simulator_id = 'hass',
+            fields_class = HassPresenceSensorFields,
+            sim_entity_type = SimEntityType.PRESENCE_SENSOR,
+            fields_kwargs = {'name': name},
+        )
+
+    def _add_hass_opening_sensor(self, profile, name):
+        self._create_db_entity(
+            profile = profile,
+            simulator_id = 'hass',
+            fields_class = HassOpeningSensorFields,
+            sim_entity_type = SimEntityType.OPEN_CLOSE_SENSOR,
+            fields_kwargs = {'name': name},
+        )
+
+    def _add_hass_power_meter(self, profile, name):
+        self._create_db_entity(
+            profile = profile,
+            simulator_id = 'hass',
+            fields_class = HassPowerMeterFields,
+            sim_entity_type = SimEntityType.ELECTRICY_METER,
+            fields_kwargs = {'name': name},
+        )
+
+    def _add_hass_weather_station(self, profile, name, temperature_unit = '°F'):
+        self._create_db_entity(
+            profile = profile,
+            simulator_id = 'hass',
+            fields_class = HassWeatherStationFields,
+            sim_entity_type = SimEntityType.BAROMETER,
+            fields_kwargs = {
+                'name': name,
+                'temperature_unit': temperature_unit,
+            },
+        )
+
+    def _add_hass_occupancy_light_sensor(self, profile, name):
+        self._create_db_entity(
+            profile = profile,
+            simulator_id = 'hass',
+            fields_class = HassOccupancyLightSensorFields,
+            sim_entity_type = SimEntityType.PRESENCE_SENSOR,
+            fields_kwargs = {'name': name},
+        )
+
+    def _add_hass_water_leak_sensor(self, profile, name):
+        self._create_db_entity(
+            profile = profile,
+            simulator_id = 'hass',
+            fields_class = HassWaterLeakSensorFields,
+            sim_entity_type = SimEntityType.LEAK_SENSOR,
+            fields_kwargs = {'name': name},
+        )
+
+    def _add_hass_switch(self, profile, name):
+        self._create_db_entity(
+            profile = profile,
+            simulator_id = 'hass',
+            fields_class = HassSwitchFields,
+            sim_entity_type = SimEntityType.WALL_SWITCH,
+            fields_kwargs = {'name': name},
+        )
+
+    def _add_hass_basic_outlet(self, profile, name):
+        self._create_db_entity(
+            profile = profile,
+            simulator_id = 'hass',
+            fields_class = HassOutletFields,
+            sim_entity_type = SimEntityType.ELECTRICAL_OUTLET,
             fields_kwargs = {'name': name},
         )
 

@@ -85,6 +85,7 @@ class SimEntityType(LabeledEnum):
     AUTOMOBILE           = ( 'Automobile', '' )
     BAROMETER            = ( 'Barometer', '' )
     CAMERA               = ( 'Camera', '' )
+    CARBON_MONOXIDE_DETECTOR = ( 'Carbon Monoxide Detector', '' )
     CEILING_FAN          = ( 'Ceiling Fan', '' )
     COMPUTER             = ( 'Computer', '' )
     CONSUMABLE           = ( 'Consumable', '' )
@@ -97,6 +98,7 @@ class SimEntityType(LabeledEnum):
     ELECTRIC_PANEL       = ( 'Electric Panel', '' )
     ELECTRIC_WIRE        = ( 'Electric Wire', '' )
     FURNITURE            = ( 'Furniture', '' )
+    GAS_DETECTOR         = ( 'Gas Detector', '' )
     HEALTHCHECK          = ( 'Healthcheck', '' )
     HEATER               = ( 'Heater', '' )  # Controls area
     HVAC_AIR_HANDLER     = ( 'HVAC Air Handler', '' )  # Controls area
@@ -105,6 +107,7 @@ class SimEntityType(LabeledEnum):
     HUMIDIFIER           = ( 'Humidifier', '' )  # Controls area
     HYGROMETER           = ( 'Hygrometer', '' )
     LIGHT                = ( 'Light', '' )
+    LEAK_SENSOR          = ( 'Leak Sensor', '' )
     LIGHT_SENSOR         = ( 'Light Sensor', '' )
     MOTION_SENSOR        = ( 'Motion Sensor', '' )
     NETWORK_SWITCH       = ( 'Network Switch', '' )

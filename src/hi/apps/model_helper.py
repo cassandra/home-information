@@ -43,6 +43,10 @@ class HiModelHelper:
     DEFAULT_MOVEMENT_DEDUPE_WINDOW_SECS = 300
     DEFAULT_MOVEMENT_ALARM_LIFETIME_SECS = 600
 
+    DEFAULT_PRESENCE_EVENT_WINDOW_SECS = 180
+    DEFAULT_PRESENCE_DEDUPE_WINDOW_SECS = 300
+    DEFAULT_PRESENCE_ALARM_LIFETIME_SECS = 600
+
     DEFAULT_BATTERY_EVENT_WINDOW_SECS = 180
     DEFAULT_BATTERY_DEDUPE_WINDOW_SECS = 300
     DEFAULT_BATTERY_ALARM_LIFETIME_SECS = Alarm.MAX_LIFETIME_SECS
@@ -50,6 +54,18 @@ class HiModelHelper:
     DEFAULT_SMOKE_EVENT_WINDOW_SECS = 180
     DEFAULT_SMOKE_DEDUPE_WINDOW_SECS = 300
     DEFAULT_SMOKE_ALARM_LIFETIME_SECS = Alarm.MAX_LIFETIME_SECS
+
+    DEFAULT_MOISTURE_EVENT_WINDOW_SECS = 180
+    DEFAULT_MOISTURE_DEDUPE_WINDOW_SECS = 300
+    DEFAULT_MOISTURE_ALARM_LIFETIME_SECS = Alarm.MAX_LIFETIME_SECS
+
+    DEFAULT_CO_EVENT_WINDOW_SECS = 180
+    DEFAULT_CO_DEDUPE_WINDOW_SECS = 300
+    DEFAULT_CO_ALARM_LIFETIME_SECS = Alarm.MAX_LIFETIME_SECS
+
+    DEFAULT_GAS_EVENT_WINDOW_SECS = 180
+    DEFAULT_GAS_DEDUPE_WINDOW_SECS = 300
+    DEFAULT_GAS_ALARM_LIFETIME_SECS = Alarm.MAX_LIFETIME_SECS
     
     @classmethod
     def create_blob_sensor( cls,
@@ -83,15 +99,23 @@ class HiModelHelper:
     def create_connectivity_sensor( cls,
                                     entity           : Entity,
                                     integration_key  : IntegrationKey  = None,
-                                    name             : str             = None ) -> Sensor:
+                                    name             : str             = None,
+                                    add_default_alarm : bool           = False ) -> Sensor:
         if not name:
             name = f'{entity.name} Connection'
-        return cls.create_sensor(
+        sensor = cls.create_sensor(
             entity = entity,
             entity_state_type = EntityStateType.CONNECTIVITY,
             name = name,
             integration_key = integration_key,
         )
+        if add_default_alarm:
+            cls.create_connectivity_event_definition(
+                name = f'{sensor.name} Alarm',
+                entity_state = sensor.entity_state,
+                integration_key = integration_key,
+            )
+        return sensor
     
     @classmethod
     def create_datetime_sensor( cls,
@@ -187,45 +211,157 @@ class HiModelHelper:
     def create_open_close_sensor( cls,
                                   entity           : Entity,
                                   integration_key  : IntegrationKey  = None,
-                                  name             : str             = None ) -> Sensor:
+                                  name             : str             = None,
+                                  add_default_alarm : bool           = False ) -> Sensor:
         if not name:
             name = f'{entity.name} Open/Close'
-        return cls.create_sensor(
+        sensor = cls.create_sensor(
             entity = entity,
             entity_state_type = EntityStateType.OPEN_CLOSE,
             name = name,
             integration_key = integration_key,
         )
+        if add_default_alarm:
+            cls.create_open_close_event_definition(
+                name = f'{sensor.name} Alarm',
+                entity_state = sensor.entity_state,
+                integration_key = integration_key,
+            )
+        return sensor
     
     @classmethod
     def create_movement_sensor( cls,
                                 entity              : Entity,
                                 integration_key     : IntegrationKey  = None,
                                 name                : str             = None,
-                                provides_video_stream : bool          = False ) -> Sensor:
+                                provides_video_stream : bool          = False,
+                                add_default_alarm   : bool            = False ) -> Sensor:
         if not name:
             name = f'{entity.name} Motion'
-        return cls.create_sensor(
+        sensor = cls.create_sensor(
             entity = entity,
             entity_state_type = EntityStateType.MOVEMENT,
             name = name,
             integration_key = integration_key,
             provides_video_stream = provides_video_stream,
         )
+        if add_default_alarm:
+            cls.create_movement_event_definition(
+                name = f'{sensor.name} Alarm',
+                entity_state = sensor.entity_state,
+                integration_key = integration_key,
+            )
+        return sensor
+
+    @classmethod
+    def create_presence_sensor( cls,
+                                entity              : Entity,
+                                integration_key     : IntegrationKey  = None,
+                                name                : str             = None,
+                                add_default_alarm   : bool            = False ) -> Sensor:
+        if not name:
+            name = f'{entity.name} Presence'
+        sensor = cls.create_sensor(
+            entity = entity,
+            entity_state_type = EntityStateType.PRESENCE,
+            name = name,
+            integration_key = integration_key,
+        )
+        if add_default_alarm:
+            cls.create_presence_event_definition(
+                name = f'{sensor.name} Alarm',
+                entity_state = sensor.entity_state,
+                integration_key = integration_key,
+            )
+        return sensor
 
     @classmethod
     def create_smoke_sensor( cls,
                              entity              : Entity,
                              integration_key     : IntegrationKey  = None,
-                             name                : str             = None ) -> Sensor:
+                             name                : str             = None,
+                             add_default_alarm   : bool            = False ) -> Sensor:
         if not name:
             name = f'{entity.name} Smoke'
-        return cls.create_sensor(
+        sensor = cls.create_sensor(
             entity = entity,
             entity_state_type = EntityStateType.SMOKE,
             name = name,
             integration_key = integration_key,
         )
+        if add_default_alarm:
+            cls.create_smoke_event_definition(
+                name = f'{sensor.name} Alarm',
+                entity_state = sensor.entity_state,
+                integration_key = integration_key,
+            )
+        return sensor
+
+    @classmethod
+    def create_moisture_sensor( cls,
+                                entity              : Entity,
+                                integration_key     : IntegrationKey  = None,
+                                name                : str             = None,
+                                add_default_alarm   : bool            = False ) -> Sensor:
+        if not name:
+            name = f'{entity.name} Moisture'
+        sensor = cls.create_sensor(
+            entity = entity,
+            entity_state_type = EntityStateType.MOISTURE,
+            name = name,
+            integration_key = integration_key,
+        )
+        if add_default_alarm:
+            cls.create_moisture_event_definition(
+                name = f'{sensor.name} Alarm',
+                entity_state = sensor.entity_state,
+                integration_key = integration_key,
+            )
+        return sensor
+
+    @classmethod
+    def create_co_sensor( cls,
+                          entity              : Entity,
+                          integration_key     : IntegrationKey  = None,
+                          name                : str             = None,
+                          add_default_alarm   : bool            = False ) -> Sensor:
+        if not name:
+            name = f'{entity.name} Carbon Monoxide'
+        sensor = cls.create_sensor(
+            entity = entity,
+            entity_state_type = EntityStateType.CO,
+            name = name,
+            integration_key = integration_key,
+        )
+        if add_default_alarm:
+            cls.create_co_event_definition(
+                name = f'{sensor.name} Alarm',
+                entity_state = sensor.entity_state,
+                integration_key = integration_key,
+            )
+        return sensor
+
+    @classmethod
+    def create_gas_sensor( cls,
+                           entity              : Entity,
+                           integration_key     : IntegrationKey  = None,
+                           name                : str             = None,
+                           add_default_alarm   : bool            = False ) -> Sensor:
+        if not name:
+            name = f'{entity.name} Gas'
+        sensor = cls.create_sensor(
+            entity = entity,
+            entity_state_type = EntityStateType.GAS,
+            name = name,
+            integration_key = integration_key,
+        )
+        if add_default_alarm:
+            cls.create_gas_event_definition(
+                name = f'{sensor.name} Alarm',
+                entity_state = sensor.entity_state,
+                integration_key = integration_key,
+            )
+        return sensor
 
     @classmethod
     def create_on_off_controller( cls,
@@ -512,6 +648,28 @@ class HiModelHelper:
         )
 
     @classmethod
+    def create_presence_event_definition(
+            cls,
+            name                 : str,
+            entity_state         : EntityState,
+            integration_key      : IntegrationKey  = None ) -> EventDefinition:
+
+        return EventManager().create_simple_alarm_event_definition(
+            name = name,
+            event_type = EventType.SECURITY,
+            entity_state = entity_state,
+            value = EntityStateValue.ACTIVE,
+            security_to_alarm_level = {
+                SecurityLevel.HIGH: AlarmLevel.CRITICAL,
+                SecurityLevel.LOW: AlarmLevel.INFO,
+            },
+            event_window_secs = cls.DEFAULT_PRESENCE_EVENT_WINDOW_SECS,
+            dedupe_window_secs = cls.DEFAULT_PRESENCE_DEDUPE_WINDOW_SECS,
+            alarm_lifetime_secs = cls.DEFAULT_PRESENCE_ALARM_LIFETIME_SECS,
+            integration_key = integration_key,
+        )
+
+    @classmethod
     def create_smoke_event_definition(
             cls,
             name                 : str,
@@ -533,6 +691,80 @@ class HiModelHelper:
             event_window_secs = cls.DEFAULT_SMOKE_EVENT_WINDOW_SECS,
             dedupe_window_secs = cls.DEFAULT_SMOKE_DEDUPE_WINDOW_SECS,
             alarm_lifetime_secs = cls.DEFAULT_SMOKE_ALARM_LIFETIME_SECS,
+            integration_key = integration_key,
+        )
+
+    @classmethod
+    def create_moisture_event_definition(
+            cls,
+            name                 : str,
+            entity_state         : EntityState,
+            integration_key      : IntegrationKey  = None ) -> EventDefinition:
+
+        # Water leaks are property-damage events: both security
+        # levels map to CRITICAL so the operator sees the alarm
+        # regardless of HOME / AWAY posture.
+        return EventManager().create_simple_alarm_event_definition(
+            name = name,
+            event_type = EventType.SECURITY,
+            entity_state = entity_state,
+            value = EntityStateValue.MOISTURE_DETECTED,
+            security_to_alarm_level = {
+                SecurityLevel.HIGH: AlarmLevel.CRITICAL,
+                SecurityLevel.LOW: AlarmLevel.CRITICAL,
+            },
+            event_window_secs = cls.DEFAULT_MOISTURE_EVENT_WINDOW_SECS,
+            dedupe_window_secs = cls.DEFAULT_MOISTURE_DEDUPE_WINDOW_SECS,
+            alarm_lifetime_secs = cls.DEFAULT_MOISTURE_ALARM_LIFETIME_SECS,
+            integration_key = integration_key,
+        )
+
+    @classmethod
+    def create_co_event_definition(
+            cls,
+            name                 : str,
+            entity_state         : EntityState,
+            integration_key      : IntegrationKey  = None ) -> EventDefinition:
+
+        # Carbon monoxide is life-safety: both security levels map to
+        # CRITICAL. CO is odorless and lethal at low concentrations;
+        # the HOME / AWAY posture does not reduce urgency.
+        return EventManager().create_simple_alarm_event_definition(
+            name = name,
+            event_type = EventType.SECURITY,
+            entity_state = entity_state,
+            value = EntityStateValue.CO_DETECTED,
+            security_to_alarm_level = {
+                SecurityLevel.HIGH: AlarmLevel.CRITICAL,
+                SecurityLevel.LOW: AlarmLevel.CRITICAL,
+            },
+            event_window_secs = cls.DEFAULT_CO_EVENT_WINDOW_SECS,
+            dedupe_window_secs = cls.DEFAULT_CO_DEDUPE_WINDOW_SECS,
+            alarm_lifetime_secs = cls.DEFAULT_CO_ALARM_LIFETIME_SECS,
+            integration_key = integration_key,
+        )
+
+    @classmethod
+    def create_gas_event_definition(
+            cls,
+            name                 : str,
+            entity_state         : EntityState,
+            integration_key      : IntegrationKey  = None ) -> EventDefinition:
+
+        # Combustible-gas leaks (natural gas, propane, methane) are
+        # life-safety: both security levels map to CRITICAL.
+        return EventManager().create_simple_alarm_event_definition(
+            name = name,
+            event_type = EventType.SECURITY,
+            entity_state = entity_state,
+            value = EntityStateValue.GAS_DETECTED,
+            security_to_alarm_level = {
+                SecurityLevel.HIGH: AlarmLevel.CRITICAL,
+                SecurityLevel.LOW: AlarmLevel.CRITICAL,
+            },
+            event_window_secs = cls.DEFAULT_GAS_EVENT_WINDOW_SECS,
+            dedupe_window_secs = cls.DEFAULT_GAS_DEDUPE_WINDOW_SECS,
+            alarm_lifetime_secs = cls.DEFAULT_GAS_ALARM_LIFETIME_SECS,
             integration_key = integration_key,
         )
 

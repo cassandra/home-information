@@ -121,7 +121,7 @@ class TestFanSubstateSpecs(TestCase):
         )
         specs = HassConverter._substate_specs_for_hass_state( hass_state )
         suffixes = [ s.suffix for s in specs ]
-        self.assertEqual( suffixes, [ 'speed', 'oscillating', 'direction', 'preset' ] )
+        self.assertEqual( suffixes, [ 'speed', 'oscillating', 'direction', 'preset_mode' ] )
 
     def test_oscillating_only_fan_has_oscillating_substate_no_speed(self):
         # Fan declares oscillating but no percentage — only
@@ -146,7 +146,7 @@ class TestFanSubstateSpecs(TestCase):
             preset_modes=[ 'auto', 'sleep', 'eco' ],
         )
         specs = HassConverter._substate_specs_for_hass_state( hass_state )
-        preset = next( s for s in specs if s.suffix == 'preset' )
+        preset = next( s for s in specs if s.suffix == 'preset_mode' )
         self.assertEqual(
             preset.value_range,
             { 'auto': 'auto', 'sleep': 'sleep', 'eco': 'eco' },
@@ -183,7 +183,7 @@ class TestFanInboundStateTranslation(TestCase):
             'fan.living_room~speed': '60',
             'fan.living_room~oscillating': str( EntityStateValue.ON ),
             'fan.living_room~direction': 'reverse',
-            'fan.living_room~preset': 'sleep',
+            'fan.living_room~preset_mode': 'sleep',
         } )
 
     def test_oscillating_false_emits_canonical_off(self):
@@ -255,7 +255,7 @@ class TestFanImport(TestCase):
 
         self.assertEqual(
             set( controllers_by_suffix.keys() ),
-            { 'speed', 'oscillating', 'direction', 'preset' },
+            { 'speed', 'oscillating', 'direction', 'preset_mode' },
         )
         # Each substate's payload carries domain + parent_entity_id
         # so the outbound dispatcher can compose the right service call.
@@ -284,7 +284,7 @@ class TestFanImport(TestCase):
         self.assertEqual( types_by_suffix[ 'speed' ], EntityStateType.POWER_LEVEL )
         self.assertEqual( types_by_suffix[ 'oscillating' ], EntityStateType.ON_OFF )
         self.assertEqual( types_by_suffix[ 'direction' ], EntityStateType.DISCRETE )
-        self.assertEqual( types_by_suffix[ 'preset' ], EntityStateType.DISCRETE )
+        self.assertEqual( types_by_suffix[ 'preset_mode' ], EntityStateType.DISCRETE )
 
 
 class TestFanOutboundDispatchSpeedOnly(TestCase):
@@ -379,9 +379,9 @@ class TestFanOutboundDispatch(TestCase):
 
     def test_preset_routes_to_set_preset_mode(self):
         call = HassConverter.hi_value_to_hass_service_call(
-            hass_substate_id='fan.smart_fan~preset',
+            hass_substate_id='fan.smart_fan~preset_mode',
             hi_control_value='sleep',
-            domain_payload=self._substate_payload( 'preset' ),
+            domain_payload=self._substate_payload( 'preset_mode' ),
         )
         self.assertEqual( call, HassServiceCall(
             domain=HassApi.FAN_DOMAIN,

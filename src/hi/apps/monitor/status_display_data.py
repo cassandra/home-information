@@ -24,6 +24,20 @@ class StatusDisplayData:
     # operator significance, so the visual reminder lingers.
     RECENT_SMOKE_THRESHOLD_SECS = 600
     PAST_SMOKE_THRESHOLD_SECS = 1800
+
+    # Water-leak decay matches smoke — property-damage events
+    # warrant a long visual reminder so the operator can act
+    # on a recent leak even after the sensor clears.
+    RECENT_MOISTURE_THRESHOLD_SECS = 600
+    PAST_MOISTURE_THRESHOLD_SECS = 1800
+
+    # Carbon-monoxide and combustible-gas decay matches smoke —
+    # life-safety events warrant a long visual reminder so the
+    # operator sees the recent event even after the sensor clears.
+    RECENT_CO_THRESHOLD_SECS = 600
+    PAST_CO_THRESHOLD_SECS = 1800
+    RECENT_GAS_THRESHOLD_SECS = 600
+    PAST_GAS_THRESHOLD_SECS = 1800
     
     def __init__( self, entity_state_status_data : EntityStateStatusData ):
         self._entity_state = entity_state_status_data.entity_state
@@ -206,6 +220,15 @@ class StatusDisplayData:
         if self.entity_state.entity_state_type == EntityStateType.SMOKE:
             return self._get_smoke_status_style()
 
+        if self.entity_state.entity_state_type == EntityStateType.MOISTURE:
+            return self._get_moisture_status_style()
+
+        if self.entity_state.entity_state_type == EntityStateType.CO:
+            return self._get_co_status_style()
+
+        if self.entity_state.entity_state_type == EntityStateType.GAS:
+            return self._get_gas_status_style()
+
         # TODO: These should map the latest value into a continuous range of colors/opacity
         #
         # EntityStateType.AIR_PRESSURE
@@ -273,7 +296,52 @@ class StatusDisplayData:
                 return StatusStyle.SmokePast
 
         return StatusStyle.SmokeClear
-        
+
+    def _get_moisture_status_style( self ):
+
+        if self.latest_sensor_value == str(EntityStateValue.MOISTURE_DETECTED):
+            return StatusStyle.MoistureDetected
+
+        if self.penultimate_sensor_value == str(EntityStateValue.MOISTURE_DETECTED):
+            moisture_timedelta = datetimeproxy.now() - self.penultimate_sensor_timestamp
+            if moisture_timedelta.total_seconds() < self.RECENT_MOISTURE_THRESHOLD_SECS:
+                return StatusStyle.MoistureRecent
+
+            elif moisture_timedelta.total_seconds() < self.PAST_MOISTURE_THRESHOLD_SECS:
+                return StatusStyle.MoisturePast
+
+        return StatusStyle.MoistureClear
+
+    def _get_co_status_style( self ):
+
+        if self.latest_sensor_value == str(EntityStateValue.CO_DETECTED):
+            return StatusStyle.CoDetected
+
+        if self.penultimate_sensor_value == str(EntityStateValue.CO_DETECTED):
+            co_timedelta = datetimeproxy.now() - self.penultimate_sensor_timestamp
+            if co_timedelta.total_seconds() < self.RECENT_CO_THRESHOLD_SECS:
+                return StatusStyle.CoRecent
+
+            elif co_timedelta.total_seconds() < self.PAST_CO_THRESHOLD_SECS:
+                return StatusStyle.CoPast
+
+        return StatusStyle.CoClear
+
+    def _get_gas_status_style( self ):
+
+        if self.latest_sensor_value == str(EntityStateValue.GAS_DETECTED):
+            return StatusStyle.GasDetected
+
+        if self.penultimate_sensor_value == str(EntityStateValue.GAS_DETECTED):
+            gas_timedelta = datetimeproxy.now() - self.penultimate_sensor_timestamp
+            if gas_timedelta.total_seconds() < self.RECENT_GAS_THRESHOLD_SECS:
+                return StatusStyle.GasRecent
+
+            elif gas_timedelta.total_seconds() < self.PAST_GAS_THRESHOLD_SECS:
+                return StatusStyle.GasPast
+
+        return StatusStyle.GasClear
+
     def _get_on_off_status_style( self ):
 
         if self.latest_sensor_value == str(EntityStateValue.ON):

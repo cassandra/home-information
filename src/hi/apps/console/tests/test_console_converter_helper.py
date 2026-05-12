@@ -27,6 +27,15 @@ class TestDisplayValue(BaseTestCase):
             str( DisplayValue( magnitude = '50' ) ), '50',
         )
 
+    def test_str_inserts_space_for_alphabetic_unit(self):
+        # Alphabetic SI-style abbreviations (lx, kg, Pa, Hz, ...)
+        # render with a space; symbol-style units (°F, %) attach
+        # directly per the test above.
+        self.assertEqual(
+            str( DisplayValue( magnitude = '120', unit_symbol = 'lx' ) ),
+            '120 lx',
+        )
+
     def test_default_construction_is_empty(self):
         # Used as the no-value sentinel from ``from_entity_state_value``.
         self.assertEqual( str( DisplayValue() ), '' )
