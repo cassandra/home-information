@@ -4,7 +4,7 @@ from unittest.mock import patch
 from django.test import TestCase
 
 from hi.apps.control.models import Controller
-from hi.apps.entity.enums import EntityStateType, EntityType
+from hi.apps.entity.enums import EntityStateRole, EntityStateType, EntityType
 from hi.apps.entity.models import EntityState
 from hi.services.hass.hass_converter import HassConverter
 from hi.services.hass.hass_models import HassApi, HassDevice, HassServiceCall
@@ -86,7 +86,7 @@ class TestClimateSubstateSpecs(TestCase):
         # Minimal climate without hvac_modes falls through to
         # legacy single-state TEMPERATURE handling.
         hass_state = _make_climate_hass_state( current_temperature=70 )
-        specs = HassConverter._substate_specs_for_hass_state( hass_state )
+        specs = HassConverter._state_specs_for_hass_state( hass_state )
         self.assertEqual( specs, [] )
 
     def test_full_feature_thermostat_has_all_axes(self):
@@ -99,7 +99,7 @@ class TestClimateSubstateSpecs(TestCase):
             current_humidity = 42,
             temperature_unit = '°F',
         )
-        specs = HassConverter._substate_specs_for_hass_state( hass_state )
+        specs = HassConverter._state_specs_for_hass_state( hass_state )
         suffixes = [ s.suffix for s in specs ]
         self.assertEqual( suffixes, [
             'current_temperature',
@@ -112,6 +112,38 @@ class TestClimateSubstateSpecs(TestCase):
             'current_humidity',
         ])
 
+    def test_thermostat_temperature_substates_carry_distinct_roles(self):
+        # The motivating multi-of-same-type case: a thermostat with
+        # heat_cool + heat creates four EntityStateType.TEMPERATURE
+        # substates. Roles disambiguate them; without per-substate
+        # roles, downstream consumers (modal ordering, icon status
+        # selection) couldn't tell current from setpoint-low from
+        # setpoint-high from single-mode setpoint.
+        hass_state = _make_climate_hass_state(
+            hvac_modes = [ 'heat', 'cool', 'heat_cool', 'off' ],
+            current_temperature = 70,
+            target_temp_low = 68, target_temp_high = 75,
+        )
+        specs = HassConverter._state_specs_for_hass_state( hass_state )
+        roles_by_suffix = { s.suffix: s.role for s in specs }
+        self.assertEqual(
+            roles_by_suffix['current_temperature'],
+            EntityStateRole.THERMOSTAT_CURRENT_TEMPERATURE,
+        )
+        self.assertEqual(
+            roles_by_suffix['target_temperature'],
+            EntityStateRole.THERMOSTAT_TARGET_TEMPERATURE,
+        )
+        self.assertEqual(
+            roles_by_suffix['target_temp_low'],
+            EntityStateRole.THERMOSTAT_TARGET_TEMPERATURE_LOW,
+        )
+        self.assertEqual(
+            roles_by_suffix['target_temp_high'],
+            EntityStateRole.THERMOSTAT_TARGET_TEMPERATURE_HIGH,
+        )
+        return
+
     def test_heat_only_thermostat_omits_dual_setpoints(self):
         hass_state = _make_climate_hass_state(
             hvac_modes = [ 'heat', 'off' ],
@@ -119,7 +151,7 @@ class TestClimateSubstateSpecs(TestCase):
             temperature = 22,
             temperature_unit = '°C',
         )
-        specs = HassConverter._substate_specs_for_hass_state( hass_state )
+        specs = HassConverter._state_specs_for_hass_state( hass_state )
         suffixes = [ s.suffix for s in specs ]
         self.assertIn( 'target_temperature', suffixes )
         self.assertNotIn( 'target_temp_low', suffixes )
@@ -132,7 +164,7 @@ class TestClimateSubstateSpecs(TestCase):
             current_temperature = 70,
             target_temp_low = 68, target_temp_high = 75,
         )
-        specs = HassConverter._substate_specs_for_hass_state( hass_state )
+        specs = HassConverter._state_specs_for_hass_state( hass_state )
         suffixes = [ s.suffix for s in specs ]
         self.assertIn( 'target_temp_low', suffixes )
         self.assertIn( 'target_temp_high', suffixes )
@@ -149,7 +181,7 @@ class TestClimateSubstateSpecs(TestCase):
                     hvac_modes = [ 'heat', 'off' ],
                     temperature_unit = ha_unit,
                 )
-                specs = HassConverter._substate_specs_for_hass_state( hass_state )
+                specs = HassConverter._state_specs_for_hass_state( hass_state )
                 setpoint = next( s for s in specs if s.suffix == 'target_temperature' )
                 self.assertEqual(
                     setpoint.value_range,
@@ -169,7 +201,7 @@ class TestClimateSubstateSpecs(TestCase):
             target_temp_low = 68, target_temp_high = 75,
             temperature_unit = '°F',
         )
-        specs = HassConverter._substate_specs_for_hass_state( hass_state )
+        specs = HassConverter._state_specs_for_hass_state( hass_state )
         temperature_suffixes = {
             'current_temperature', 'target_temperature',
             'target_temp_low', 'target_temp_high',
@@ -186,7 +218,7 @@ class TestClimateSubstateSpecs(TestCase):
         hass_state = _make_climate_hass_state(
             hvac_modes = [ 'heat', 'auto', 'off' ],
         )
-        specs = HassConverter._substate_specs_for_hass_state( hass_state )
+        specs = HassConverter._state_specs_for_hass_state( hass_state )
         hvac_mode = next( s for s in specs if s.suffix == 'hvac_mode' )
         self.assertEqual(
             hvac_mode.value_range,
@@ -198,7 +230,7 @@ class TestClimateSubstateSpecs(TestCase):
             hvac_modes = [ 'heat', 'off' ],
             fan_modes = [ 'auto', 'low', 'medium', 'high' ],
         )
-        specs = HassConverter._substate_specs_for_hass_state( hass_state )
+        specs = HassConverter._state_specs_for_hass_state( hass_state )
         fan_mode = next( s for s in specs if s.suffix == 'fan_mode' )
         self.assertEqual(
             fan_mode.value_range,
@@ -209,7 +241,7 @@ class TestClimateSubstateSpecs(TestCase):
         hass_state = _make_climate_hass_state(
             hvac_modes = [ 'heat', 'off' ],
         )
-        specs = HassConverter._substate_specs_for_hass_state( hass_state )
+        specs = HassConverter._state_specs_for_hass_state( hass_state )
         suffixes = [ s.suffix for s in specs ]
         self.assertNotIn( 'fan_mode', suffixes )
 

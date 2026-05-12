@@ -1,70 +1,17 @@
-from typing import List
-
 from hi.apps.common.enums import LabeledEnum
-from hi.apps.entity.enums import EntityStateType
 
 
 class LocationViewType(LabeledEnum):
+    """View-level intent for a LocationView. Drives which interactions
+    are offered: AUTOMATION enables one-click control on entity icons;
+    DEFAULT and SECURITY route the click to the EntityStatus modal.
+    Per-entity state selection (visual primary, one-click target) is
+    handled by the role-based orderings in
+    ``hi.apps.entity.entity_state_role_order``."""
 
-    def __init__( self,
-                  label                            : str,
-                  description                      : str,
-                  entity_state_type_priority_list  : List[ EntityStateType ] ):
-        super().__init__( label, description )
-        self.entity_state_type_priority_list = entity_state_type_priority_list
-        return
-    
-    DEFAULT = (
-        'Default',
-        '',
-        [ EntityStateType.MOVEMENT,
-          EntityStateType.PRESENCE,
-          EntityStateType.OPEN_CLOSE,
-          EntityStateType.ON_OFF,
-          EntityStateType.LIGHT_DIMMER,
-          EntityStateType.LIGHT_LEVEL,
-          EntityStateType.SOUND_LEVEL,
-          EntityStateType.TEMPERATURE,
-          EntityStateType.HIGH_LOW,
-          EntityStateType.HUMIDITY,
-          EntityStateType.MOISTURE,
-          EntityStateType.WIND_SPEED,
-          EntityStateType.AIR_PRESSURE,
-          EntityStateType.ELECTRIC_USAGE,
-          EntityStateType.WATER_FLOW,
-          EntityStateType.HIGH_LOW,
-          ],
-
-    )
-    SECURITY = (
-        'Security',
-        '',
-        [ EntityStateType.MOVEMENT,
-          EntityStateType.PRESENCE,
-          EntityStateType.OPEN_CLOSE,
-          EntityStateType.OPEN_CLOSE_POSITION,
-          EntityStateType.ON_OFF,
-          EntityStateType.LIGHT_DIMMER,
-          ],
-    )
-    AUTOMATION = (
-        'Automation',
-        '',
-        [ EntityStateType.MOVEMENT,
-          EntityStateType.PRESENCE,
-          EntityStateType.OPEN_CLOSE,
-          EntityStateType.OPEN_CLOSE_POSITION,
-          EntityStateType.ON_OFF,
-          EntityStateType.LIGHT_DIMMER,
-          EntityStateType.POWER_LEVEL,
-          EntityStateType.LIGHT_LEVEL,
-          EntityStateType.CONNECTIVITY,
-          EntityStateType.HIGH_LOW,
-          EntityStateType.SOUND_LEVEL,
-          EntityStateType.DISCRETE,
-          EntityStateType.CONTINUOUS,
-          ],
-    )
+    DEFAULT    = ( 'Default'   , '' )
+    SECURITY   = ( 'Security'  , '' )
+    AUTOMATION = ( 'Automation', '' )
 
 
 class SvgItemType(LabeledEnum):

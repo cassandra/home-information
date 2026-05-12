@@ -137,7 +137,6 @@ class LocationItemStatusView( View, LocationViewMixin, EntityViewMixin ):
             logger.debug( f'Trying one-click: {entity}' )
             controller_outcome = OneClickControlService().execute_one_click_control(
                 entity = entity,
-                location_view_type = location_view.location_view_type,
             )
             if controller_outcome.has_errors:
                 raise OneClickError(

@@ -7,14 +7,14 @@ logging.disable(logging.CRITICAL)
 
 
 class TestValueLabel(BaseTestCase):
-    """``value_label`` resolves a stored EntityStateValue wire string
+    """``value_label`` resolves a stored EntityStateValue string
     (the lowercased enum name) to its human-readable label so
     template-rendered sensor displays show ``"Smoke Detected"``
     rather than ``"smoke_detected"``."""
 
     def test_resolves_underscore_separated_value(self):
-        # The motivating case: multi-word values that look broken
-        # in their wire form.
+        # The motivating case: multi-word stored values that look
+        # broken in their raw form.
         self.assertEqual( value_label( 'smoke_detected' ), 'Smoke Detected' )
 
     def test_resolves_single_word_value(self):
@@ -29,9 +29,10 @@ class TestValueLabel(BaseTestCase):
         self.assertEqual( value_label( '72.5' ), '72.5' )
 
     def test_non_enum_name_value_humanized(self):
-        # Free-form wire values that aren't enum members (e.g., HA
-        # hvac_action values like 'heating') get humanized into a
-        # readable label.
+        # Free-form values that aren't enum members (e.g., HA
+        # hvac_action values like 'heating' after integration-
+        # boundary normalization) get humanized into a readable
+        # label.
         self.assertEqual( value_label( 'heating' ), 'Heating' )
         self.assertEqual( value_label( 'fan_only' ), 'Fan Only' )
 

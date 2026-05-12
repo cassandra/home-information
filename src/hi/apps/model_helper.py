@@ -6,11 +6,12 @@ from hi.apps.alert.enums import AlarmLevel
 from hi.apps.control.enums import ControllerType
 from hi.apps.control.models import Controller
 from hi.apps.entity.enums import (
+    EntityStateRole,
     EntityStateType,
     EntityStateValue,
     HumidityUnit,
     TemperatureUnit,
-)    
+)
 from hi.apps.entity.models import Entity, EntityState
 from hi.apps.event.enums import EventClauseOperator, EventType
 from hi.apps.event.event_manager import EventManager
@@ -538,17 +539,21 @@ class HiModelHelper:
                        integration_key    : IntegrationKey    = None,
                        value_range_str    : str               = '',
                        units              : str               = None,
+                       entity_state_role  : EntityStateRole   = None,
                        provides_video_stream : bool           = False ) -> Sensor:
         if not name:
             name = f'{entity.name}'
 
-        entity_state = EntityState.objects.create(
+        entity_state_kwargs = dict(
             entity = entity,
             entity_state_type_str = str( entity_state_type ),
             name = name,
             value_range_str = value_range_str,
             units = units,
         )
+        if entity_state_role is not None:
+            entity_state_kwargs['role_str'] = str( entity_state_role )
+        entity_state = EntityState.objects.create( **entity_state_kwargs )
         sensor = Sensor(
             entity_state = entity_state,
             name = name,
@@ -559,7 +564,7 @@ class HiModelHelper:
         sensor.integration_key = integration_key
         sensor.save()
         return sensor
-    
+
     @classmethod
     def create_controller( cls,
                            entity             : Entity,
@@ -569,17 +574,21 @@ class HiModelHelper:
                            is_sensed          : bool              = True,
                            integration_key    : IntegrationKey    = None,
                            value_range_str    : str               = '',
-                           units              : str               = None ) -> Controller:
+                           units              : str               = None,
+                           entity_state_role  : EntityStateRole   = None ) -> Controller:
         if not name:
             name = f'{entity.name}'
-            
-        entity_state = EntityState.objects.create(
+
+        entity_state_kwargs = dict(
             entity = entity,
             entity_state_type_str = str( entity_state_type ),
             name = name,
             value_range_str = value_range_str,
             units = units,
         )
+        if entity_state_role is not None:
+            entity_state_kwargs['role_str'] = str( entity_state_role )
+        entity_state = EntityState.objects.create( **entity_state_kwargs )
 
         return cls.add_controller(
             entity = entity,

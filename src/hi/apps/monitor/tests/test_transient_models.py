@@ -149,12 +149,12 @@ class TestEntityStatusData(BaseTestCase):
         )
         
         context = status_data.to_template_context()
-        
+
         # Should include all data needed for template rendering
         self.assertIn('entity', context)
-        self.assertIn('entity_state_status_data_list', context)
+        self.assertIn('state_status_data_list', context)
         self.assertEqual(context['entity'], entity)
-        self.assertEqual(len(context['entity_state_status_data_list']), 2)
+        self.assertEqual(len(context['state_status_data_list']), 2)
 
     def test_entity_status_data_supports_optional_display_icon(self):
         """Test entity status data with optional SVG icon for display."""
@@ -195,7 +195,7 @@ class TestEntityStatusData(BaseTestCase):
         # Template context should still be valid
         context = status_data.to_template_context()
         self.assertEqual(context['entity'], entity)
-        self.assertEqual(len(context['entity_state_status_data_list']), 0)
+        self.assertEqual(len(context['state_status_data_list']), 0)
 
     def test_entity_status_data_aggregates_multiple_state_types(self):
         """Test entity status data aggregation across different state types."""

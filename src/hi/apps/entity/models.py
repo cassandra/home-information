@@ -17,6 +17,7 @@ from hi.enums import ItemType
 
 from .enums import (
     EntityType,
+    EntityStateRole,
     EntityStateType,
 )
 
@@ -157,6 +158,11 @@ class EntityState( models.Model ):
         null = False, blank = False,
         db_index = True,
     )
+    role_str = models.CharField(
+        'Role',
+        max_length = 64,
+        null = False, blank = False,
+    )
     name = models.CharField(
         'Name',
         max_length = 64,
@@ -186,6 +192,16 @@ class EntityState( models.Model ):
     def __repr__(self):
         return self.__str__()
     
+    def save(self, *args, **kwargs):
+        # Default the role to the EntityStateType's default when not
+        # explicitly set. Catches direct ``EntityState.objects.create``
+        # paths; the factory layer also sets it explicitly when callers
+        # don't provide one.
+        if not self.role_str and self.entity_state_type_str:
+            self.role_str = str( self.entity_state_type.default_role() )
+        super().save( *args, **kwargs )
+        return
+
     @property
     def entity_state_type(self):
         return EntityStateType.from_name_safe( self.entity_state_type_str )
@@ -193,6 +209,15 @@ class EntityState( models.Model ):
     @entity_state_type.setter
     def entity_state_type( self, entity_state_type : EntityStateType ):
         self.entity_state_type_str = str(entity_state_type)
+        return
+
+    @property
+    def entity_state_role(self) -> EntityStateRole:
+        return EntityStateRole.from_name_safe( self.role_str )
+
+    @entity_state_role.setter
+    def entity_state_role( self, entity_state_role : EntityStateRole ):
+        self.role_str = str(entity_state_role)
         return
 
     @property
@@ -221,7 +246,7 @@ class EntityState( models.Model ):
         # (OPEN_CLOSE, SMOKE, ON_OFF, ...) carry authoritative
         # labels on their EntityStateValue members. Free-form
         # discrete sets (DISCRETE state type, e.g., HA hvac_mode /
-        # fan preset) store only wire values in
+        # fan preset) store only the value strings in
         # ``value_range_str`` and rely on the humanizer for
         # readable labels.
         type_choices = self.entity_state_type.choices()
@@ -239,12 +264,12 @@ class EntityState( models.Model ):
              and 'max' in value_range ):
             return list()
         if isinstance( value_range, dict ):
-            wire_values = list( value_range.keys() )
+            stored_values = list( value_range.keys() )
         elif isinstance( value_range, list ):
-            wire_values = value_range
+            stored_values = value_range
         else:
             return list()
-        return [ ( str(v), get_humanized_name( str(v) ) ) for v in wire_values ]
+        return [ ( str(v), get_humanized_name( str(v) ) ) for v in stored_values ]
 
     def toggle_values(self) -> List[str]:
         if self.value_range_str:
