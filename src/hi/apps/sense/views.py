@@ -7,6 +7,7 @@ from hi.apps.common.pagination import compute_pagination_from_queryset
 from hi.hi_async_view import HiModalView
 
 from .models import SensorHistory
+from .transient_models import SensorResponse
 from .view_mixins import SenseViewMixin
 
 logger = logging.getLogger(__name__)
@@ -31,10 +32,13 @@ class SensorHistoryView( HiModalView, SenseViewMixin ):
                                                        page_size = self.SENSOR_HISTORY_PAGE_SIZE,
                                                        async_urls = True )
         sensor_history_list = queryset[pagination.start_offset:pagination.end_offset + 1]
+        sensor_response_list = [
+            SensorResponse.from_sensor_history( h ) for h in sensor_history_list
+        ]
 
         context = {
             'sensor': sensor,
-            'sensor_history_list': sensor_history_list,
+            'sensor_response_list': sensor_response_list,
             'pagination': pagination,
         }
         return self.modal_response( request, context )
@@ -51,7 +55,6 @@ class SensorHistoryDetailsView( HiModalView, SenseViewMixin ):
         # Create SensorResponse from sensor_history for video URL generation
         sensor_response = None
         try:
-            from .transient_models import SensorResponse
             sensor_response = SensorResponse.from_sensor_history(sensor_history)
         except Exception as e:
             logger.error(f"Error creating SensorResponse from sensor_history: {e}")

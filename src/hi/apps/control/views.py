@@ -11,6 +11,7 @@ from hi.hi_async_view import HiModalView
 
 from .control_mixins import ControllerMixin
 from .models import Controller, ControllerHistory
+from .transient_models import ControllerHistoryResponse
 from .view_mixins import ControlViewMixin
 
 logger = logging.getLogger(__name__)
@@ -109,10 +110,13 @@ class ControllerHistoryView( HiModalView, ControlViewMixin ):
                                                        page_size = self.CONTROLLER_HISTORY_PAGE_SIZE,
                                                        async_urls = True )
         controller_history_list = queryset[pagination.start_offset:pagination.end_offset + 1]
+        controller_response_list = [
+            ControllerHistoryResponse.from_controller_history( h ) for h in controller_history_list
+        ]
 
         context = {
             'controller': controller,
-            'controller_history_list': controller_history_list,
+            'controller_response_list': controller_response_list,
             'pagination': pagination,
         }
         return self.modal_response( request, context )
