@@ -12,32 +12,22 @@ logging.disable(logging.CRITICAL)
 
 class TestEntityStateType(BaseTestCase):
 
-    def test_template_name_generation_supports_ui_customization(self):
-        """Test template name generation - enables state-specific UI rendering."""
-        # Test that different state types generate distinct template paths
+    def test_value_template_name_generation_supports_ui_customization(self):
+        """``value_template_name`` is the model-layer template-dispatch
+        primitive for read-only value display. Per-state-type templates
+        are resolved by the lowercased enum name."""
         on_off_template = EntityStateType.ON_OFF.value_template_name()
         temperature_template = EntityStateType.TEMPERATURE.value_template_name()
-        
-        # Should generate different templates for different state types
+
         self.assertNotEqual(on_off_template, temperature_template)
-        
-        # Templates should follow consistent naming pattern
+
         self.assertTrue(on_off_template.startswith('sense/panes/sensor_response_value_'))
         self.assertTrue(on_off_template.endswith('.html'))
-        
-        # Controller templates should use different namespace
-        controller_template = EntityStateType.TEMPERATURE.controller_template_name()
-        self.assertTrue(controller_template.startswith('control/panes/controller_'))
-        self.assertTrue(controller_template.endswith('.html'))
-        
-        # Value and controller templates should be different
-        self.assertNotEqual(temperature_template, controller_template)
-        
-        # Complex state types should work correctly
+
         multivalued_template = EntityStateType.MULTIVALUED.value_template_name()
         self.assertTrue(multivalued_template.startswith('sense/panes/sensor_response_value_'))
         self.assertIn('multivalued', multivalued_template)
-        
+
         return
 
 

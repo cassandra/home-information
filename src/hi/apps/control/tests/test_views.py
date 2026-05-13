@@ -207,7 +207,7 @@ class TestControllerHistoryView(DualModeViewTestCase):
 
         self.assertSuccessResponse(response)
         self.assertEqual(response.context['controller'], self.controller)
-        self.assertIn('controller_history_list', response.context)
+        self.assertIn('controller_response_list', response.context)
         self.assertIn('pagination', response.context)
 
     def test_pagination_context(self):
@@ -248,11 +248,11 @@ class TestControllerHistoryView(DualModeViewTestCase):
         response = self.client.get(url)
 
         self.assertSuccessResponse(response)
-        history_list = response.context['controller_history_list']
+        history_list = response.context['controller_response_list']
         
-        # All history entries should belong to our controller
-        for history_entry in history_list:
-            self.assertEqual(history_entry.controller, self.controller)
+        # All adapted responses should reference our controller
+        for response_entry in history_list:
+            self.assertEqual(response_entry.controller, self.controller)
 
     def test_nonexistent_controller_returns_404(self):
         """Test that accessing nonexistent controller returns 404."""
@@ -275,7 +275,7 @@ class TestControllerHistoryView(DualModeViewTestCase):
         response = self.client.get(url)
 
         self.assertSuccessResponse(response)
-        history_list = response.context['controller_history_list']
+        history_list = response.context['controller_response_list']
         
         # Should be limited by page size (25)
         self.assertLessEqual(len(history_list), 25)
@@ -286,4 +286,42 @@ class TestControllerHistoryView(DualModeViewTestCase):
         response = self.client.post(url)
 
         self.assertEqual(response.status_code, 405)
+
+
+class TestControllerHistoryRendering(DualModeViewTestCase):
+    """Controller history dispatches each row through
+    ``EntityStateType.value_template_name`` (the read-only value
+    display) — not ``controller_template_name``'s old role
+    (interactive widget). Discrete-enum stored values render as
+    their human-readable labels."""
+
+    def test_discrete_value_renders_as_human_readable_label(self):
+        import json
+        entity = Entity.objects.create( name = 'Switch', entity_type_str = 'WALL_SWITCH' )
+        state = EntityState.objects.create(
+            entity = entity,
+            name = 'on_off',
+            entity_state_type_str = 'ON_OFF',
+            value_range_str = json.dumps([ 'on', 'off' ]),
+        )
+        controller = Controller.objects.create(
+            entity_state = state,
+            controller_type_str = 'DEFAULT',
+            integration_payload = '{"device_id": "sw1"}',
+        )
+        ControllerHistory.objects.create(
+            controller = controller, value = 'on',
+            created_datetime = '2024-03-01T12:00:00Z',
+        )
+
+        url = reverse( 'control_controller_history',
+                       kwargs = { 'controller_id': controller.id } )
+        response = self.client.get( url )
+        self.assertSuccessResponse( response )
+        body = response.content.decode()
+        # 'on' is an EntityStateValue enum member → its label is 'On'.
+        self.assertIn( 'On', body )
+        # The interactive widget chrome (the toggle switch class from
+        # controller_on_off.html) must NOT appear in history rendering.
+        self.assertNotIn( 'switch-modern', body )
         

@@ -1,36 +1,34 @@
 {% load tz %}
+{% load common_tags %}
 {% timezone USER_TIMEZONE %}
 <div class="table-responsive">
   <table class="table table-striped">
     <tbody>
-      {% for sensor_history in sensor_history_list %}
-      {% if sensor_history.has_video_stream %}
+      {% for sensor_response in sensor_response_list %}
+      {% if sensor_response.has_video_stream %}
         <tr>
           <td>
-            <a href="{{ sensor_history.video_browse_url }}" data-async="true">
-              <div class="text-center" status="{{ sensor_history.value }}">
-                {{ sensor_history.value }}
-              </div>
+            <a href="{{ sensor_response.video_browse_url }}" data-async="true">
+              {% include_with_fallback sensor_response.sensor.entity_state.entity_state_type.value_template_name "sense/panes/sensor_response_value_default.html" %}
             </a>
           </td>
-          <td>{{ sensor_history.response_datetime|localtime }}</td>
+          <td>{{ sensor_response.timestamp|localtime }}</td>
         </tr>
-      </a>
-      {% elif sensor_history.details %}
+      {% elif sensor_response.has_details %}
         <tr>
           <td>
-            <a href="{{ sensor_history.details_url }}" data-async="true">
-              <div class="text-center" status="{{ sensor_history.value }}">
-                {{ sensor_history.value }}
-              </div>
+            <a href="{{ sensor_response.details_url }}" data-async="true">
+              {% include_with_fallback sensor_response.sensor.entity_state.entity_state_type.value_template_name "sense/panes/sensor_response_value_default.html" %}
             </a>
           </td>
-          <td>{{ sensor_history.response_datetime|localtime }}</td>
+          <td>{{ sensor_response.timestamp|localtime }}</td>
         </tr>
       {% else %}
       <tr>
-        <td><div class="text-center" status="{{ sensor_history.value }}"> {{ sensor_history.value }}</div></td>
-        <td>{{ sensor_history.response_datetime|localtime }}</td>
+        <td>
+          {% include_with_fallback sensor_response.sensor.entity_state.entity_state_type.value_template_name "sense/panes/sensor_response_value_default.html" %}
+        </td>
+        <td>{{ sensor_response.timestamp|localtime }}</td>
       </tr>
       {% endif %}
       {% empty %}
@@ -39,8 +37,8 @@
     </tbody>
   </table>
 </div>
-    
-{% if show_all_link and sensor_history_list %}
+
+{% if show_all_link and sensor_response_list %}
 <div>
   {% if sensor.provides_video_stream %}
   <a href="{% url 'console_entity_video_sensor_history' entity_id=sensor.entity_state.entity.id sensor_id=sensor.id %}"

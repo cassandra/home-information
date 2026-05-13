@@ -1,3 +1,4 @@
+import json
 import logging
 
 from django.urls import reverse
@@ -69,11 +70,11 @@ class TestSensorHistoryView(DualModeViewTestCase):
 
         self.assertSuccessResponse(response)
         self.assertEqual(response.context['sensor'], self.sensor)
-        self.assertIn('sensor_history_list', response.context)
+        self.assertIn('sensor_response_list', response.context)
         self.assertIn('pagination', response.context)
         
         # Should have our test entries
-        history_list = response.context['sensor_history_list']
+        history_list = response.context['sensor_response_list']
         self.assertEqual(len(history_list), 5)
 
     def test_pagination_context(self):
@@ -114,11 +115,11 @@ class TestSensorHistoryView(DualModeViewTestCase):
         response = self.client.get(url)
 
         self.assertSuccessResponse(response)
-        history_list = response.context['sensor_history_list']
+        history_list = response.context['sensor_response_list']
         
-        # All history entries should belong to our sensor
-        for history_entry in history_list:
-            self.assertEqual(history_entry.sensor, self.sensor)
+        # All response entries should belong to our sensor
+        for sensor_response in history_list:
+            self.assertEqual(sensor_response.sensor, self.sensor)
 
     def test_pagination_with_many_entries(self):
         """Test pagination when there are many sensor history entries."""
@@ -134,7 +135,7 @@ class TestSensorHistoryView(DualModeViewTestCase):
         response = self.client.get(url)
 
         self.assertSuccessResponse(response)
-        history_list = response.context['sensor_history_list']
+        history_list = response.context['sensor_response_list']
         
         # Should be limited by page size (25)
         self.assertLessEqual(len(history_list), 25)
@@ -144,7 +145,7 @@ class TestSensorHistoryView(DualModeViewTestCase):
         from hi.apps.sense.views import SensorHistoryView
         self.assertEqual(SensorHistoryView.SENSOR_HISTORY_PAGE_SIZE, 25)
 
-    def test_empty_sensor_history_list(self):
+    def test_empty_sensor_response_list(self):
         """Test page displays correctly when no sensor history exists."""
         # Delete all sensor history
         SensorHistory.objects.all().delete()
@@ -153,7 +154,7 @@ class TestSensorHistoryView(DualModeViewTestCase):
         response = self.client.get(url)
 
         self.assertSuccessResponse(response)
-        history_list = response.context['sensor_history_list']
+        history_list = response.context['sensor_response_list']
         self.assertEqual(len(history_list), 0)
 
     def test_pagination_with_page_parameter(self):
@@ -171,7 +172,7 @@ class TestSensorHistoryView(DualModeViewTestCase):
 
         self.assertSuccessResponse(response)
         # Should still return valid response for page 2
-        self.assertIn('sensor_history_list', response.context)
+        self.assertIn('sensor_response_list', response.context)
 
     def test_nonexistent_sensor_returns_404(self):
         """Test that accessing nonexistent sensor returns 404."""
@@ -288,4 +289,37 @@ class TestSensorHistoryDetailsView(DualModeViewTestCase):
         self.assertSuccessResponse(response)
         self.assertEqual(response.context['sensor_history'], other_history)
         self.assertNotEqual(response.context['sensor_history'], self.sensor_history)
-        
+
+
+class TestSensorHistoryRendering(DualModeViewTestCase):
+    """The history list dispatches per row through
+    ``EntityStateType.value_template_name``, so discrete-enum stored
+    values render as their human-readable labels in the rendered HTML
+    rather than the raw stored string."""
+
+    def test_discrete_value_renders_as_human_readable_label(self):
+        entity = Entity.objects.create( name = 'Motion', entity_type_str = 'MOTION_SENSOR' )
+        state = EntityState.objects.create(
+            entity = entity,
+            name = 'movement',
+            entity_state_type_str = 'MOVEMENT',
+            value_range_str = json.dumps([ 'active', 'idle' ]),
+        )
+        sensor = Sensor.objects.create(
+            entity_state = state,
+            sensor_type_str = 'MOTION',
+            integration_payload = '{"device_id": "m1"}',
+        )
+        SensorHistory.objects.create(
+            sensor = sensor, value = 'active',
+            response_datetime = '2024-03-01T12:00:00Z',
+        )
+
+        url = reverse( 'sense_sensor_history', kwargs = { 'sensor_id': sensor.id } )
+        response = self.client.get( url )
+        self.assertSuccessResponse( response )
+        body = response.content.decode()
+        # The raw stored value 'active' is humanized to 'Active' by the
+        # value_template_name dispatch's default template.
+        self.assertIn( 'Active', body )
+

@@ -7,8 +7,10 @@ from django.views.generic import View
 from hi.apps.attribute.view_mixins import AttributeEditViewMixin
 from hi.apps.attribute.edit_response_renderer import AttributeEditResponseRenderer
 from hi.apps.control.controller_history_manager import ControllerHistoryManager
+from hi.apps.control.transient_models import ControllerHistoryResponse
 from hi.apps.monitor.status_display_manager import StatusDisplayManager
 from hi.apps.sense.sensor_history_manager import SensorHistoryMixin
+from hi.apps.sense.transient_models import SensorResponse
 
 from hi.views import page_not_found_response
 from hi.hi_async_view import HiModalView
@@ -58,11 +60,19 @@ class EntityStateHistoryView( HiModalView, EntityViewMixin, SensorHistoryMixin )
         controller_history_list_map = ControllerHistoryManager().get_latest_entity_controller_history(
             entity = entity,
             max_items = self.ENTITY_STATE_HISTORY_ITEM_MAX,
-        )        
+        )
+        sensor_response_list_map = {
+            sensor: [ SensorResponse.from_sensor_history( h ) for h in history_list ]
+            for sensor, history_list in sensor_history_list_map.items()
+        }
+        controller_response_list_map = {
+            controller: [ ControllerHistoryResponse.from_controller_history( h ) for h in history_list ]
+            for controller, history_list in controller_history_list_map.items()
+        }
         entity_state_history_data = EntityStateHistoryData(
             entity = entity,
-            sensor_history_list_map = sensor_history_list_map,
-            controller_history_list_map = controller_history_list_map,
+            sensor_response_list_map = sensor_response_list_map,
+            controller_response_list_map = controller_response_list_map,
         )
         context: Dict[str, Any] = entity_state_history_data.to_template_context()
         return self.modal_response( request, context )

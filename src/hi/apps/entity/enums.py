@@ -479,15 +479,6 @@ class EntityStateType(LabeledEnum):
         """
         return f'sense/panes/sensor_response_value_{self.name.lower()}.html'
 
-    def controller_template_name(self):
-        """
-        Template used to render a controllers for this state. Create the
-        template at the given location to define a state-specific rendering, else
-        it will fallback to the default template of
-        "entity/panes/controller_value_default.html"
-        """
-        return f'control/panes/controller_{self.name.lower()}.html'
-
     def default_role(self) -> EntityStateRole:
         """The default EntityStateRole for an EntityState of this type.
         Type-default ``EntityStateRole`` members share their name with
