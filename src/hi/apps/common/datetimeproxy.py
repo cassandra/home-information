@@ -101,6 +101,22 @@ def datetime_to_rfc2822( the_dt = None ):
     return format_datetime(the_dt)
 
 
+def iso_str_to_datetime( iso_string : str ):
+    """Parse an ISO 8601 string into a timezone-aware datetime.
+    Raises ValueError if not parsable. Naive inputs are interpreted
+    as UTC to match the convention used elsewhere in this module."""
+    parsed = datetime.datetime.fromisoformat( iso_string )
+    if parsed.tzinfo is None:
+        parsed = parsed.replace( tzinfo = pytz.utc )
+    return parsed
+
+
+def datetime_to_iso_str( the_dt : datetime.datetime ) -> str:
+    """Format a datetime for URL-safe cursor passing. Round-trips
+    with ``iso_str_to_datetime``."""
+    return the_dt.isoformat()
+
+
 def rfc2822_to_datetime(rfc2822_string):
     """
     Parses a date/time string in the RFC 2822 format into a time-aware

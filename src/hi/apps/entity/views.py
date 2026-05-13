@@ -1,8 +1,11 @@
 import logging
-from typing import Any, Dict
+from datetime import datetime
+from typing import Any, Dict, Optional
 
 from django.http import HttpRequest, HttpResponse
 from django.views.generic import View
+
+from hi.apps.common import datetimeproxy
 
 from hi.apps.attribute.view_mixins import AttributeEditViewMixin
 from hi.apps.attribute.edit_response_renderer import AttributeEditResponseRenderer
@@ -16,9 +19,10 @@ from hi.views import page_not_found_response
 from hi.hi_async_view import HiModalView
 from hi.apps.entity.edit.entity_type_transition_handler import EntityTypeTransitionHandler
 
+from .entity_state_history import get_entity_state_history_page
 from .models import Entity, EntityAttribute
 from .transient_models import EntityStateHistoryData
-from .view_mixins import EntityViewMixin
+from .view_mixins import EntityStateViewMixin, EntityViewMixin
 from .entity_attribute_edit_context import EntityAttributeItemEditContext
 
 
@@ -76,6 +80,67 @@ class EntityStateHistoryView( HiModalView, EntityViewMixin, SensorHistoryMixin )
         )
         context: Dict[str, Any] = entity_state_history_data.to_template_context()
         return self.modal_response( request, context )
+
+
+class EntityStateMergedHistoryView( HiModalView, EntityStateViewMixin ):
+    """Paginated per-EntityState merged history. The "History" anchor
+    in the EntityStatus modal (both sensor and controller rows) and
+    elsewhere lands here. Pagination is next/prev only, anchored on
+    sensor observation timestamps with controller intents fetched in
+    the same time range."""
+
+    PAGE_SIZE = 25
+
+    def get_template_name( self ) -> str:
+        return 'entity/modals/entity_state_merged_history.html'
+
+    def get( self, request, *args, **kwargs ):
+        entity_state = self.get_entity_state( request, *args, **kwargs )
+
+        before = _parse_iso_cursor( request.GET.get( 'before' ) )
+
+        rows = get_entity_state_history_page(
+            entity_state = entity_state,
+            page_size = self.PAGE_SIZE,
+            before = before,
+        )
+
+        # Multi-instrument source annotation surfaces only when the
+        # state has more than one sensor or more than one controller,
+        # i.e., when the row's instrument identity is ambiguous.
+        multi_sensor = entity_state.sensors.count() > 1
+        multi_controller = entity_state.controllers.count() > 1
+        annotate_sources = multi_sensor or multi_controller
+
+        # The oldest row's timestamp drives the "older" navigation
+        # link; the cursor we paged from drives the "newer" link
+        # back toward the most-recent page.
+        older_cursor : Optional[ str ] = (
+            datetimeproxy.datetime_to_iso_str( rows[ -1 ].timestamp )
+            if rows else None
+        )
+        newer_cursor : Optional[ str ] = (
+            datetimeproxy.datetime_to_iso_str( before )
+            if before is not None else None
+        )
+
+        context = {
+            'entity_state'      : entity_state,
+            'history_rows'      : rows,
+            'annotate_sources'  : annotate_sources,
+            'older_cursor'      : older_cursor,
+            'newer_cursor'      : newer_cursor,
+        }
+        return self.modal_response( request, context )
+
+
+def _parse_iso_cursor( raw : Optional[ str ] ) -> Optional[ datetime ]:
+    if not raw:
+        return None
+    try:
+        return datetimeproxy.iso_str_to_datetime( raw )
+    except ValueError:
+        return None
 
 
 class EntityEditView( HiModalView, EntityViewMixin, AttributeEditViewMixin ):

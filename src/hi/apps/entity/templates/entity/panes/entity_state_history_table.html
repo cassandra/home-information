@@ -1,0 +1,22 @@
+{% load tz %}
+{% load static %}
+{% load common_tags %}
+{% load humanize %}
+{% load icons %}
+{% timezone USER_TIMEZONE %}
+{% if history_rows %}
+  <div class="timeline-items">
+    {% for row in history_rows %}
+      {% include "entity/panes/entity_state_history_row.html" with row=row annotate_sources=annotate_sources %}
+    {% endfor %}
+  </div>
+{% else %}
+  <div class="card border-0 bg-light">
+    <div class="card-body text-center py-4">
+      {% icon "clock" size="xl" color="muted" css_class="mb-3" %}
+      <h6 class="text-muted">No History</h6>
+      <p class="text-muted mb-0">No observations or control actions recorded for this state yet.</p>
+    </div>
+  </div>
+{% endif %}
+{% endtimezone %}

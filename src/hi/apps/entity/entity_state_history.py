@@ -79,6 +79,59 @@ class EntityStateHistoryValue:
     matched_intent      : Optional[ MatchedIntent ] = None
 
 
+def get_entity_state_history_page(
+        entity_state    : EntityState,
+        page_size       : int                = 25,
+        before          : Optional[datetime] = None,
+        window_seconds  : int                = MERGE_WINDOW_SECONDS,
+) -> List[ EntityStateHistoryValue ]:
+    """Sensor-anchored page of merged history for ``entity_state``.
+
+    Fetches the ``page_size`` most-recent observations older than
+    ``before`` (or most-recent overall if None), then fetches every
+    controller intent older than ``before`` and not older than the
+    page's oldest observation (minus the merge-window buffer so
+    in-window intents at the page's tail can still match).
+
+    Falls back to controller-only when the state has no observations
+    in range: returns the ``page_size`` most-recent intents older
+    than ``before``.
+
+    Returned rows are descending by timestamp; the caller derives
+    the next-page cursor from the oldest row's timestamp."""
+
+    obs_query = SensorHistory.objects.filter( sensor__entity_state = entity_state )
+    if before is not None:
+        obs_query = obs_query.filter( response_datetime__lt = before )
+    observation_rows = list(
+        obs_query.order_by( '-response_datetime' )[ : page_size ]
+    )
+
+    intent_query = ControllerHistory.objects.filter(
+        controller__entity_state = entity_state,
+    )
+    if before is not None:
+        intent_query = intent_query.filter( created_datetime__lt = before )
+
+    if observation_rows:
+        t_oldest = min( o.response_datetime for o in observation_rows )
+        intent_query = intent_query.filter(
+            created_datetime__gte = t_oldest - timedelta( seconds = window_seconds ),
+        )
+        intent_rows = list( intent_query )
+    else:
+        intent_rows = list(
+            intent_query.order_by( '-created_datetime' )[ : page_size ]
+        )
+
+    return merge_history(
+        entity_state     = entity_state,
+        observation_rows = observation_rows,
+        intent_rows      = intent_rows,
+        window_seconds   = window_seconds,
+    )
+
+
 def merge_history(
         entity_state      : EntityState,
         observation_rows  : List[ SensorHistory ],

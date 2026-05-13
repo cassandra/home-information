@@ -1,7 +1,7 @@
 from django.core.exceptions import BadRequest
 from django.http import Http404
 
-from hi.apps.entity.models import Entity
+from hi.apps.entity.models import Entity, EntityState
 
 
 class EntityViewMixin:
@@ -15,4 +15,18 @@ class EntityViewMixin:
         try:
             return Entity.objects.get( id = entity_id )
         except Entity.DoesNotExist:
+            raise Http404( request )
+
+
+class EntityStateViewMixin:
+
+    def get_entity_state( self, request, *args, **kwargs ) -> EntityState:
+        """ Assumes there is a required entity_state_id in kwargs """
+        try:
+            entity_state_id = int( kwargs.get( 'entity_state_id' ))
+        except (TypeError, ValueError):
+            raise BadRequest( 'Invalid entity state id.' )
+        try:
+            return EntityState.objects.get( id = entity_state_id )
+        except EntityState.DoesNotExist:
             raise Http404( request )

@@ -24,8 +24,8 @@
 
 {% if show_all_link and controller_response_list %}
 <div>
-  <a href="{% url 'control_controller_history' controller_id=controller.id %}"
-     data-async="true">&gt;&gt; See All</a>
+  <a href="{% url 'entity_state_merged_history' entity_state_id=controller.entity_state.id %}"
+     data-async="modal">&gt;&gt; See All</a>
 </div>
 {% endif %}
 {% endtimezone %}

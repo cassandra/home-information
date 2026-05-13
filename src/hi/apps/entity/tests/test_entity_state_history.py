@@ -5,6 +5,7 @@ from hi.apps.control.models import Controller, ControllerHistory
 from hi.apps.entity.entity_state_history import (
     InstrumentType,
     StateHistoryValueType,
+    get_entity_state_history_page,
     merge_history,
 )
 from hi.apps.entity.models import Entity, EntityState
@@ -343,3 +344,152 @@ class TestMergeHistory( BaseTestCase ):
 
         timestamps = [ r.timestamp for r in result ]
         self.assertEqual( timestamps, sorted( timestamps, reverse = True ) )
+
+
+class TestGetEntityStateHistoryPage( BaseTestCase ):
+    """``get_entity_state_history_page`` is the sensor-anchored page
+    fetcher that the per-EntityState merged history view consumes.
+    Bounds the controller-history fetch to the observation page's
+    time range so the merge sees a coherent window of both sides."""
+
+    def setUp(self):
+        super().setUp()
+        self.entity = Entity.objects.create(
+            name = 'Test Entity', entity_type_str = 'WALL_SWITCH',
+        )
+        self.state = EntityState.objects.create(
+            entity = self.entity,
+            name = 'on_off',
+            entity_state_type_str = 'ON_OFF',
+        )
+        self.sensor = Sensor.objects.create(
+            entity_state = self.state,
+            name = 'sw-sensor',
+            sensor_type_str = 'DEFAULT',
+            integration_payload = '{}',
+        )
+        self.controller = Controller.objects.create(
+            entity_state = self.state,
+            name = 'sw-ctrl',
+            controller_type_str = 'DEFAULT',
+            integration_payload = '{}',
+        )
+
+    def _observation( self, value : str, at : datetime ):
+        return SensorHistory.objects.create(
+            sensor = self.sensor, value = value, response_datetime = at,
+        )
+
+    def _intent( self, value : str, at : datetime ):
+        h = ControllerHistory.objects.create( controller = self.controller, value = value )
+        ControllerHistory.objects.filter( pk = h.pk ).update( created_datetime = at )
+        h.refresh_from_db()
+        return h
+
+    def test_empty_state_returns_empty(self):
+        result = get_entity_state_history_page(
+            entity_state = self.state, page_size = 25,
+        )
+        self.assertEqual( result, [] )
+
+    def test_page_returns_descending_observations_and_matching_intents(self):
+        # Five observations recent; two intents matching the first
+        # two observations within window.
+        obs_recent = [ self._observation( f'v{i}', _at( 100 - i ) ) for i in range( 5 ) ]
+        # observations: v0 at 100, v1 at 99, v2 at 98, v3 at 97, v4 at 96
+        # Match intents to the two oldest observations in the page.
+        self._intent( 'v4', _at( 90 ) )    # within 10s of v4@96
+        self._intent( 'v3', _at( 89 ) )    # within 10s of v3@97 (97-89=8)
+
+        rows = get_entity_state_history_page(
+            entity_state = self.state, page_size = 5,
+        )
+
+        self.assertEqual( len( rows ), 5 )
+        # Descending timestamps: 100, 99, 98, 97, 96.
+        timestamps = [ r.timestamp for r in rows ]
+        self.assertEqual( timestamps, sorted( timestamps, reverse = True ) )
+        # The two oldest rows in the page carry intent annotations.
+        annotated = [ r for r in rows if r.matched_intent is not None ]
+        self.assertEqual( len( annotated ), 2 )
+        # Smoke-check: the page's observations are the ones we created.
+        observation_values = [ r.value for r in rows ]
+        self.assertEqual( observation_values, [ 'v0', 'v1', 'v2', 'v3', 'v4' ] )
+        # And we didn't accidentally drop them — keep tied to fixture.
+        for obs in obs_recent:
+            self.assertIn( obs.value, observation_values )
+
+    def test_before_cursor_filters_older_rows(self):
+        # Ten observations spaced 10 seconds apart; ask for 3 older
+        # than a cursor in the middle.
+        for i in range( 10 ):
+            self._observation( f'v{i}', _at( 100 + 10 * i ) )
+        cursor = _at( 150 )    # corresponds to v5
+
+        rows = get_entity_state_history_page(
+            entity_state = self.state, page_size = 3, before = cursor,
+        )
+
+        self.assertEqual( len( rows ), 3 )
+        # All returned rows must be strictly older than the cursor.
+        for r in rows:
+            self.assertLess( r.timestamp, cursor )
+        # The newest of the three is the observation at T=140 (v4).
+        self.assertEqual( rows[ 0 ].value, 'v4' )
+
+    def test_state_with_controllers_only_falls_back_to_intent_anchored(self):
+        # No sensors / no observations exist — only intents. The
+        # function returns up to page_size most-recent intents.
+        for i in range( 5 ):
+            self._intent( f'i{i}', _at( 100 - i * 10 ) )
+
+        rows = get_entity_state_history_page(
+            entity_state = self.state, page_size = 3,
+        )
+
+        self.assertEqual( len( rows ), 3 )
+        for r in rows:
+            self.assertEqual( r.history_value_type, StateHistoryValueType.INTENT )
+            self.assertEqual( r.instrument.instrument_type, InstrumentType.CONTROLLER )
+
+    def test_gap_intents_between_observation_and_cursor_appear_in_page(self):
+        # Page's newest observation is at T=50; an unmatched intent
+        # fires at T=80 — between the page's observations and the
+        # before-cursor (T=100). It must appear on this page rather
+        # than disappear into a coverage gap.
+        self._observation( 'on', _at( 50 ) )
+        self._observation( 'on', _at( 40 ) )
+        gap_intent = self._intent( 'mystery', _at( 80 ) )
+
+        rows = get_entity_state_history_page(
+            entity_state = self.state, page_size = 5, before = _at( 100 ),
+        )
+
+        intents = [ r for r in rows if r.history_value_type == StateHistoryValueType.INTENT ]
+        self.assertEqual( len( intents ), 1 )
+        self.assertEqual( intents[ 0 ].timestamp, gap_intent.created_datetime )
+
+    def test_other_entity_state_history_is_not_returned(self):
+        # A second EntityState with its own instruments should not
+        # leak into the queried state's page.
+        other_entity = Entity.objects.create( name = 'Other', entity_type_str = 'WALL_SWITCH' )
+        other_state = EntityState.objects.create(
+            entity = other_entity, name = 'on_off', entity_state_type_str = 'ON_OFF',
+        )
+        other_sensor = Sensor.objects.create(
+            entity_state = other_state, name = 'other-sensor',
+            sensor_type_str = 'DEFAULT', integration_payload = '{}',
+        )
+        SensorHistory.objects.create(
+            sensor = other_sensor, value = 'should-not-appear',
+            response_datetime = _at( 0 ),
+        )
+        self._observation( 'mine', _at( 0 ) )
+
+        rows = get_entity_state_history_page(
+            entity_state = self.state, page_size = 25,
+        )
+
+        values = [ r.value for r in rows ]
+        self.assertIn( 'mine', values )
+        self.assertNotIn( 'should-not-appear', values )

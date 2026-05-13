@@ -1151,3 +1151,81 @@ class TestEntityEditViewFileUploadIntegration(DualModeViewTestCase):
         
         # Verify no file attributes were created due to transaction rollback
         self.assertEqual(self.entity.attributes.filter(value_type_str=str(AttributeValueType.FILE)).count(), 0)
+
+
+class TestEntityStateMergedHistoryView(DualModeViewTestCase):
+    """The per-EntityState merged history modal renders observations
+    and unmatched intents through the value_template_name dispatch
+    and supports next/prev cursor navigation."""
+
+    def setUp(self):
+        super().setUp()
+        import json
+        self.entity = Entity.objects.create(
+            name = 'Switch', entity_type_str = 'WALL_SWITCH',
+        )
+        from hi.apps.entity.models import EntityState
+        self.state = EntityState.objects.create(
+            entity = self.entity,
+            name = 'on_off',
+            entity_state_type_str = 'ON_OFF',
+            value_range_str = json.dumps([ 'on', 'off' ]),
+        )
+        from hi.apps.sense.models import Sensor, SensorHistory
+        from hi.apps.control.models import Controller, ControllerHistory
+        self.sensor = Sensor.objects.create(
+            entity_state = self.state, name = 'sw-sensor',
+            sensor_type_str = 'DEFAULT', integration_payload = '{}',
+        )
+        self.controller = Controller.objects.create(
+            entity_state = self.state, name = 'sw-ctrl',
+            controller_type_str = 'DEFAULT', integration_payload = '{}',
+        )
+        SensorHistory.objects.create(
+            sensor = self.sensor, value = 'on',
+            response_datetime = '2024-03-01T12:00:00Z',
+        )
+        ControllerHistory.objects.create(
+            controller = self.controller, value = 'off',
+        )
+
+    def test_renders_observation_with_human_readable_label(self):
+        """The stored value 'on' renders as the EntityStateValue label 'On'."""
+        url = reverse(
+            'entity_state_merged_history',
+            kwargs = { 'entity_state_id': self.state.id },
+        )
+        response = self.client.get(url)
+        self.assertSuccessResponse(response)
+        body = response.content.decode()
+        self.assertIn( 'On', body )
+
+    def test_returns_404_for_unknown_entity_state(self):
+        url = reverse(
+            'entity_state_merged_history',
+            kwargs = { 'entity_state_id': 999999 },
+        )
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 404)
+
+    def test_pagination_cursor_filters_older(self):
+        """A `before` query param filters rows to those strictly
+        older than the given ISO timestamp."""
+        from hi.apps.sense.models import SensorHistory
+        SensorHistory.objects.all().delete()
+        for i in range(5):
+            SensorHistory.objects.create(
+                sensor = self.sensor, value = 'on',
+                response_datetime = f'2024-03-0{i+1}T12:00:00Z',
+            )
+
+        url = reverse(
+            'entity_state_merged_history',
+            kwargs = { 'entity_state_id': self.state.id },
+        )
+        # Cursor at 2024-03-04 should yield only rows from days 1-3.
+        response = self.client.get(url, { 'before': '2024-03-04T00:00:00+00:00' })
+        self.assertSuccessResponse(response)
+        rows = response.context['history_rows']
+        for row in rows:
+            self.assertLess( row.timestamp.isoformat(), '2024-03-04T00:00:00+00:00' )

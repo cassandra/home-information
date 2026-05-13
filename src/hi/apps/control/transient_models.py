@@ -24,9 +24,9 @@ class ControllerData:
         return self.controller.entity_state
 
     @property
-    def controller_history_url(self):
-        return reverse( 'control_controller_history',
-                        kwargs = { 'controller_id': self.controller.id })        
+    def entity_state_history_url(self):
+        return reverse( 'entity_state_merged_history',
+                        kwargs = { 'entity_state_id': self.controller.entity_state.id })
         
     @property
     def css_class(self):
