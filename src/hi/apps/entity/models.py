@@ -11,7 +11,7 @@ from hi.apps.location.models import (
     LocationView,
 )
 from hi.apps.attribute.models import AttributeModel, SoftDeleteAttributeModel, AttributeValueHistoryModel
-from hi.apps.common.utils import get_humanized_name
+from hi.apps.common.utils import get_humanized_name, strip_parent_name_prefix
 from hi.integrations.models import IntegrationDetailsModel
 from hi.enums import ItemType
 
@@ -227,18 +227,8 @@ class EntityState( models.Model ):
     @property
     def short_name(self):
         """Name suitable for display when the entity name is already
-        visible elsewhere. Strips a leading entity-name prefix
-        (case-insensitive) plus a separator. Falls back to the full
-        name when stripping would leave nothing meaningful."""
-        full = self.name or ''
-        entity_name = self.entity.name or ''
-        if not entity_name:
-            return full
-        if full.lower().startswith( entity_name.lower() ):
-            remainder = full[ len( entity_name ): ].lstrip( ' -:_/' ).strip()
-            if remainder:
-                return remainder
-        return full
+        visible elsewhere in the surrounding chrome."""
+        return strip_parent_name_prefix( self.name, self.entity.name )
 
     @property
     def value_range_dict(self):

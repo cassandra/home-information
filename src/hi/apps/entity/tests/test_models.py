@@ -498,43 +498,6 @@ class TestEntityState(BaseTestCase):
         return
 
 
-class TestEntityStateShortName(BaseTestCase):
-    """``short_name`` strips a leading entity-name prefix when present
-    so list contexts that already display the entity name don't
-    repeat it on every state row."""
-
-    def _state( self, entity_name : str, state_name : str ) -> EntityState:
-        entity = Entity.objects.create(
-            name = entity_name, entity_type_str = 'WALL_SWITCH',
-        )
-        return EntityState.objects.create(
-            entity = entity, name = state_name,
-            entity_state_type_str = 'ON_OFF',
-        )
-
-    def test_strips_leading_entity_name_with_space_separator(self):
-        state = self._state( 'Zoo Heater', 'Zoo Heater Fan Mode' )
-        self.assertEqual( state.short_name, 'Fan Mode' )
-
-    def test_strips_leading_entity_name_with_dash_separator(self):
-        state = self._state( 'Zoo Heater', 'Zoo Heater - Fan Mode' )
-        self.assertEqual( state.short_name, 'Fan Mode' )
-
-    def test_case_insensitive_prefix_match(self):
-        state = self._state( 'Zoo Heater', 'zoo heater fan mode' )
-        self.assertEqual( state.short_name, 'fan mode' )
-
-    def test_returns_full_name_when_no_prefix_match(self):
-        state = self._state( 'Zoo Heater', 'Outdoor Temperature' )
-        self.assertEqual( state.short_name, 'Outdoor Temperature' )
-
-    def test_returns_full_name_when_stripping_leaves_nothing(self):
-        # Defensive: if the state name is exactly the entity name (or
-        # only the prefix + separators), don't return an empty label.
-        state = self._state( 'Zoo Heater', 'Zoo Heater' )
-        self.assertEqual( state.short_name, 'Zoo Heater' )
-
-
 class TestEntityStateChoices(BaseTestCase):
     """``EntityState.choices()`` derives labels for the discrete
     controller dropdown. Two paths: enum-bound state types use
