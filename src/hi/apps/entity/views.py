@@ -16,6 +16,7 @@ from hi.hi_async_view import HiModalView
 from hi.apps.entity.edit.entity_type_transition_handler import EntityTypeTransitionHandler
 
 from .entity_state_history import get_entity_state_history_page
+from .entity_state_role_order import ENTITY_STATUS_VIEW_ORDERING
 from .models import Entity, EntityAttribute
 from .transient_models import EntityHistoryData
 from .view_mixins import EntityStateViewMixin, EntityViewMixin
@@ -63,6 +64,10 @@ class EntityHistoryView( HiModalView, EntityViewMixin ):
             if delegation.entity_state not in states:
                 states.append( delegation.entity_state )
             continue
+
+        states.sort( key = lambda s: ENTITY_STATUS_VIEW_ORDERING.sort_key(
+            s.entity_state_role, entity.entity_type,
+        ))
 
         state_to_rows : Dict[ Any, List[ Any ] ] = {}
         for state in states:

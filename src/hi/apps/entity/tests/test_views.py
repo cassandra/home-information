@@ -1202,3 +1202,25 @@ class TestEntityStateHistoryView(DualModeViewTestCase):
         rows = response.context['history_rows']
         for row in rows:
             self.assertLess( row.timestamp.isoformat(), '2024-03-04T00:00:00+00:00' )
+
+    def test_older_link_uses_url_encoded_cursor(self):
+        """The HTML link for "Older" must URL-encode the ISO cursor;
+        an unencoded ``+`` becomes a space when re-parsed and the
+        next page falls back to most-recent."""
+        from hi.apps.sense.models import SensorHistory
+        for i in range(30):
+            SensorHistory.objects.create(
+                sensor = self.sensor, value = 'on',
+                response_datetime = f'2024-03-0{(i % 9) + 1}T12:00:00Z',
+            )
+
+        url = reverse(
+            'entity_state_history',
+            kwargs = { 'entity_state_id': self.state.id },
+        )
+        response = self.client.get(url)
+        self.assertSuccessResponse(response)
+        body = response.content.decode()
+        # Encoded "+" is "%2B"; the cursor in the Older link must be
+        # encoded so the round-trip through the query parser preserves it.
+        self.assertIn( '%2B00%3A00', body )

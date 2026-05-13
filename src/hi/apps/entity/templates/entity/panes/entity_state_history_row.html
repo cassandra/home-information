@@ -16,18 +16,18 @@
         </div>
         <div class="col-md-5 col-sm-7">
           <div class="d-flex align-items-center">
-            {% if row.history_value_type.name == 'INTENT' or row.matched_intent %}
-              <img src="{% static 'img/hi-icon-16x16.png' %}"
-                   alt="HI"
-                   title="{% if row.history_value_type.name == 'INTENT' %}HI command — no matching observation{% else %}Observation confirmed an HI command{% endif %}"
-                   class="mr-2"
-                   width="16" height="16">
-            {% endif %}
-            <div>
+            <div class="flex-grow-1">
               {% with sensor_response=row %}
                 {% include_with_fallback row.entity_state.entity_state_type.value_template_name "sense/panes/sensor_response_value_default.html" %}
               {% endwith %}
             </div>
+            {% if row.history_value_type.name == 'INTENT' or row.matched_intent %}
+              <img src="{% static 'img/hi-icon-16x16.png' %}"
+                   alt="HI"
+                   title="{% if row.history_value_type.name == 'INTENT' %}HI command — no matching observation{% else %}Observation confirmed an HI command{% endif %}"
+                   class="ml-2"
+                   width="16" height="16">
+            {% endif %}
           </div>
         </div>
         <div class="col-md-3 col-12">
