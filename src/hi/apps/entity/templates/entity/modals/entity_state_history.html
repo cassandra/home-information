@@ -1,54 +1,54 @@
-{% extends "modals/action_3.html" %}
-{% load common_tags %}
+{% extends "modals/action_done.html" %}
 {% load icons %}
 
+{% block modal_dialog_class %}hi-modal-dialog-800{% endblock %}
+
 {% block title_text %}
-{{ entity.name }}: History
+{{ entity_state.entity.name }} — {{ entity_state.name }}
 {% endblock %}
 
 {% block body %}
-
-{% if sensor_response_list_map %}
-<div>
-  {% for sensor, sensor_response_list in sensor_response_list_map.items %}
-  <div>
-    <div class="h5">{{ sensor.name }} <small class="text-muted">[sensor]</small></div>
-    {% include "sense/panes/sensor_history_list.html" with sensor_response_list=sensor_response_list show_all_link=True %}
+<div class="container-fluid px-0">
+  <div class="row mb-3">
+    <div class="col-12">
+      <h5 class="mb-0">
+        {% icon "history" size="sm" color="primary" css_class="hi-icon-left" %}
+        State History
+      </h5>
+      <small class="text-muted">Observations and HI-initiated actions on this state</small>
+    </div>
   </div>
-  {% endfor %}
-</div>
-{% endif %}
 
-{% if controller_response_list_map %}
-<div>
-  {% for controller, controller_response_list in controller_response_list_map.items %}
-  <div>
-    <div class="h5">{{ controller.name }} <small class="text-muted">[controller]</small></div>
-    {% include "control/panes/controller_history_list.html" with controller_response_list=controller_response_list show_all_link=True %}
+  <div class="row">
+    <div class="col-12">
+      {% include "entity/panes/entity_state_history_table.html" with history_rows=history_rows annotate_sources=annotate_sources %}
+    </div>
   </div>
-  {% endfor %}
+
+  {% if older_cursor or newer_cursor %}
+  <div class="row mt-3">
+    <div class="col-12 d-flex justify-content-between">
+      {% if newer_cursor %}
+        <a class="btn btn-sm btn-outline-primary"
+           href="{% url 'entity_state_history' entity_state_id=entity_state.id %}"
+           data-async="modal">
+          {% icon "chevron-double-left" size="sm" css_class="hi-icon-left" %}Newest
+        </a>
+      {% else %}
+        <span></span>
+      {% endif %}
+
+      {% if older_cursor %}
+        <a class="btn btn-sm btn-outline-primary"
+           href="{% url 'entity_state_history' entity_state_id=entity_state.id %}?before={{ older_cursor }}"
+           data-async="modal">
+          Older{% icon "chevron-right" size="sm" css_class="hi-icon-right" %}
+        </a>
+      {% else %}
+        <span></span>
+      {% endif %}
+    </div>
+  </div>
+  {% endif %}
 </div>
-{% endif %}
-
-{% endblock %}
-
-{% block action_left %}
-<a class="btn btn-primary"
-   href="{% url 'entity_edit' entity_id=entity.id %}"
-   data-async="modal">
-  {% icon "edit" size="sm" css_class="hi-icon-left" %}EDIT
-</a>
-{% endblock %}
-
-{% block action_center %}
-<a class="btn btn-primary"
-   href="{% url 'entity_status' entity_id=entity.id %}"
-   data-async="modal">
-  {% icon "info-circle" size="sm" css_class="hi-icon-left" %}STATUS
-</a>
-{% endblock %}
-
-{% block action_right %}
-<a id="hi-modal-done" role="button" {% if autofocus %}autofocus="autofocus"{% endif %}
-   class="btn btn-primary" href="#" data-dismiss="modal">DONE</a>
 {% endblock %}

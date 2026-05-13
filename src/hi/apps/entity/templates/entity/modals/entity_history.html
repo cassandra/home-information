@@ -1,0 +1,56 @@
+{% extends "modals/action_3.html" %}
+{% load common_tags %}
+{% load icons %}
+
+{% block modal_dialog_class %}hi-modal-dialog-800{% endblock %}
+
+{% block title_text %}
+{{ entity.name }}: History
+{% endblock %}
+
+{% block body %}
+{% if state_to_rows %}
+  {% for state, rows in state_to_rows.items %}
+    <div class="mb-4">
+      <div class="d-flex justify-content-between align-items-center mb-2">
+        <h6 class="mb-0">{{ state.name }}</h6>
+        <a class="btn btn-sm btn-outline-primary"
+           href="{% url 'entity_state_history' entity_state_id=state.id %}"
+           data-async="modal">
+          {% icon "history" size="sm" css_class="hi-icon-left" %}See All
+        </a>
+      </div>
+      {% include "entity/panes/entity_state_history_table.html" with history_rows=rows annotate_sources=False %}
+    </div>
+  {% endfor %}
+{% else %}
+  <div class="card border-0 bg-light">
+    <div class="card-body text-center py-4">
+      {% icon "clock" size="xl" color="muted" css_class="mb-3" %}
+      <h6 class="text-muted">No States</h6>
+      <p class="text-muted mb-0">This entity has no states to show history for.</p>
+    </div>
+  </div>
+{% endif %}
+{% endblock %}
+
+{% block action_left %}
+<a class="btn btn-primary"
+   href="{% url 'entity_edit' entity_id=entity.id %}"
+   data-async="modal">
+  {% icon "edit" size="sm" css_class="hi-icon-left" %}EDIT
+</a>
+{% endblock %}
+
+{% block action_center %}
+<a class="btn btn-primary"
+   href="{% url 'entity_status' entity_id=entity.id %}"
+   data-async="modal">
+  {% icon "info-circle" size="sm" css_class="hi-icon-left" %}STATUS
+</a>
+{% endblock %}
+
+{% block action_right %}
+<a id="hi-modal-done" role="button" {% if autofocus %}autofocus="autofocus"{% endif %}
+   class="btn btn-primary" href="#" data-dismiss="modal">DONE</a>
+{% endblock %}

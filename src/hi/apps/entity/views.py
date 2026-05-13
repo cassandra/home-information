@@ -1,6 +1,6 @@
 import logging
 from datetime import datetime
-from typing import Any, Dict, Optional
+from typing import Any, Dict, List, Optional
 
 from django.http import HttpRequest, HttpResponse
 from django.views.generic import View
@@ -9,11 +9,7 @@ from hi.apps.common import datetimeproxy
 
 from hi.apps.attribute.view_mixins import AttributeEditViewMixin
 from hi.apps.attribute.edit_response_renderer import AttributeEditResponseRenderer
-from hi.apps.control.controller_history_manager import ControllerHistoryManager
-from hi.apps.control.transient_models import ControllerHistoryResponse
 from hi.apps.monitor.status_display_manager import StatusDisplayManager
-from hi.apps.sense.sensor_history_manager import SensorHistoryMixin
-from hi.apps.sense.transient_models import SensorResponse
 
 from hi.views import page_not_found_response
 from hi.hi_async_view import HiModalView
@@ -21,7 +17,7 @@ from hi.apps.entity.edit.entity_type_transition_handler import EntityTypeTransit
 
 from .entity_state_history import get_entity_state_history_page
 from .models import Entity, EntityAttribute
-from .transient_models import EntityStateHistoryData
+from .transient_models import EntityHistoryData
 from .view_mixins import EntityStateViewMixin, EntityViewMixin
 from .entity_attribute_edit_context import EntityAttributeItemEditContext
 
@@ -48,51 +44,54 @@ class EntityStatusView( HiModalView, EntityViewMixin ):
         return self.modal_response( request, context )
 
 
-class EntityStateHistoryView( HiModalView, EntityViewMixin, SensorHistoryMixin ):
+class EntityHistoryView( HiModalView, EntityViewMixin ):
+    """Per-entity overview modal. Renders one block per EntityState
+    (the entity's own states plus delegated states) showing each
+    state's most recent merged history rows. Each block links to
+    the per-state EntityStateHistoryView for deeper navigation."""
 
-    ENTITY_STATE_HISTORY_ITEM_MAX = 5
-    
+    PER_STATE_ROW_COUNT = 5
+
     def get_template_name( self ) -> str:
-        return 'entity/modals/entity_state_history.html'
+        return 'entity/modals/entity_history.html'
 
-    def get( self, request,*args, **kwargs ):
+    def get( self, request, *args, **kwargs ):
         entity: Entity = self.get_entity( request, *args, **kwargs )
-        sensor_history_list_map = self.sensor_history_manager().get_latest_entity_sensor_history(
+
+        states = list( entity.states.all() )
+        for delegation in entity.entity_state_delegations.select_related('entity_state').all():
+            if delegation.entity_state not in states:
+                states.append( delegation.entity_state )
+            continue
+
+        state_to_rows : Dict[ Any, List[ Any ] ] = {}
+        for state in states:
+            rows = get_entity_state_history_page(
+                entity_state = state,
+                page_size = self.PER_STATE_ROW_COUNT,
+            )
+            state_to_rows[ state ] = rows[ : self.PER_STATE_ROW_COUNT ]
+            continue
+
+        entity_history_data = EntityHistoryData(
             entity = entity,
-            max_items = self.ENTITY_STATE_HISTORY_ITEM_MAX,
+            state_to_rows = state_to_rows,
         )
-        controller_history_list_map = ControllerHistoryManager().get_latest_entity_controller_history(
-            entity = entity,
-            max_items = self.ENTITY_STATE_HISTORY_ITEM_MAX,
-        )
-        sensor_response_list_map = {
-            sensor: [ SensorResponse.from_sensor_history( h ) for h in history_list ]
-            for sensor, history_list in sensor_history_list_map.items()
-        }
-        controller_response_list_map = {
-            controller: [ ControllerHistoryResponse.from_controller_history( h ) for h in history_list ]
-            for controller, history_list in controller_history_list_map.items()
-        }
-        entity_state_history_data = EntityStateHistoryData(
-            entity = entity,
-            sensor_response_list_map = sensor_response_list_map,
-            controller_response_list_map = controller_response_list_map,
-        )
-        context: Dict[str, Any] = entity_state_history_data.to_template_context()
+        context: Dict[ str, Any ] = entity_history_data.to_template_context()
         return self.modal_response( request, context )
 
 
-class EntityStateMergedHistoryView( HiModalView, EntityStateViewMixin ):
+class EntityStateHistoryView( HiModalView, EntityStateViewMixin ):
     """Paginated per-EntityState merged history. The "History" anchor
     in the EntityStatus modal (both sensor and controller rows) and
-    elsewhere lands here. Pagination is next/prev only, anchored on
-    sensor observation timestamps with controller intents fetched in
-    the same time range."""
+    the "See All" link in the EntityHistoryView land here. Pagination
+    is next/prev only, anchored on sensor observation timestamps with
+    controller intents fetched in the same time range."""
 
     PAGE_SIZE = 25
 
     def get_template_name( self ) -> str:
-        return 'entity/modals/entity_state_merged_history.html'
+        return 'entity/modals/entity_state_history.html'
 
     def get( self, request, *args, **kwargs ):
         entity_state = self.get_entity_state( request, *args, **kwargs )

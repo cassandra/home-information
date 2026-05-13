@@ -75,7 +75,7 @@ class SensorResponse:
     
     @property
     def entity_state_history_url(self) -> str:
-        return reverse( 'entity_state_merged_history',
+        return reverse( 'entity_state_history',
                         kwargs = { 'entity_state_id': self.sensor.entity_state.id })
 
     @property

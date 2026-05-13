@@ -7,7 +7,7 @@ from asgiref.sync import sync_to_async
 from django.utils import timezone
 from hi.testing.async_task_utils import AsyncTaskTestCase
 
-from hi.apps.entity.models import Entity, EntityState, EntityStateDelegation
+from hi.apps.entity.models import Entity, EntityState
 from hi.apps.sense.models import Sensor, SensorHistory
 from hi.apps.sense.sensor_history_manager import SensorHistoryManager
 from hi.apps.sense.transient_models import SensorResponse
@@ -220,121 +220,6 @@ class AsyncSensorHistoryManagerTestCase(AsyncTaskTestCase):
             self.assertEqual(history2.value, 'value2')
 
         self.run_async(async_test_logic())
-
-    def test_get_latest_entity_sensor_history_direct_states(self):
-        """Test retrieval of sensor history for entity's direct states."""
-        # Create history records
-        SensorHistory.objects.create(
-            sensor=self.sensor,
-            value='value1',
-            response_datetime=timezone.make_aware(datetime(2023, 1, 1, 12, 0, 0))
-        )
-        SensorHistory.objects.create(
-            sensor=self.sensor,
-            value='value2', 
-            response_datetime=timezone.make_aware(datetime(2023, 1, 1, 13, 0, 0))
-        )
-        
-        result = self.manager.get_latest_entity_sensor_history(self.entity, max_items=5)
-        
-        self.assertIn(self.sensor, result)
-        history_list = result[self.sensor]
-        self.assertEqual(len(history_list), 2)
-        # Should be ordered by most recent first
-        self.assertEqual(history_list[0].value, 'value2')
-        self.assertEqual(history_list[1].value, 'value1')
-
-    def test_get_latest_entity_sensor_history_with_delegations(self):
-        """Test retrieval includes sensors from delegated entity states."""
-        # Create delegated entity and state
-        delegated_entity = Entity.objects.create(
-            name='Delegated Entity',
-            entity_type_str='SENSOR'
-        )
-        delegated_state = EntityState.objects.create(
-            entity=delegated_entity,
-            entity_state_type_str='NUMERIC'
-        )
-        delegated_sensor = Sensor.objects.create(
-            name='Delegated Sensor',
-            entity_state=delegated_state,
-            sensor_type_str='DEFAULT',
-            integration_id='delegated_123',
-            integration_name='test_integration'
-        )
-        
-        # Create delegation relationship
-        EntityStateDelegation.objects.create(
-            entity_state=delegated_state,
-            delegate_entity=self.entity
-        )
-        
-        # Create history for delegated sensor
-        SensorHistory.objects.create(
-            sensor=delegated_sensor,
-            value='delegated_value',
-            response_datetime=timezone.now()
-        )
-        
-        result = self.manager.get_latest_entity_sensor_history(self.entity, max_items=5)
-        
-        # Should include both direct and delegated sensors
-        sensor_keys = list(result.keys())
-        self.assertIn(self.sensor, sensor_keys)
-        self.assertIn(delegated_sensor, sensor_keys)
-
-    def test_get_latest_entity_sensor_history_respects_max_items(self):
-        """Test max_items parameter limits history records per sensor."""
-        # Create multiple history records
-        for i in range(10):
-            SensorHistory.objects.create(
-                sensor=self.sensor,
-                value=f'value_{i}',
-                response_datetime=timezone.make_aware(datetime(2023, 1, 1, 12, i, 0))
-            )
-        
-        result = self.manager.get_latest_entity_sensor_history(self.entity, max_items=3)
-        
-        self.assertIn(self.sensor, result)
-        history_list = result[self.sensor]
-        self.assertEqual(len(history_list), 3)
-        # Should return most recent records
-        self.assertEqual(history_list[0].value, 'value_9')
-
-    def test_get_latest_entity_sensor_history_handles_no_sensors(self):
-        """Test handles entities with no sensors gracefully."""
-        entity_no_sensors = Entity.objects.create(
-            name='No Sensors Entity',
-            entity_type_str='LIGHT'
-        )
-        
-        result = self.manager.get_latest_entity_sensor_history(entity_no_sensors)
-        
-        self.assertEqual(result, {})
-
-    def test_get_latest_entity_sensor_history_query_optimization(self):
-        """Test query uses select_related for performance optimization."""
-        # Create delegation to test select_related usage
-        delegated_entity = Entity.objects.create(
-            name='Delegated Entity',
-            entity_type_str='SENSOR'
-        )
-        delegated_state = EntityState.objects.create(
-            entity=delegated_entity,
-            entity_state_type_str='NUMERIC'
-        )
-        EntityStateDelegation.objects.create(
-            entity_state=delegated_state,
-            delegate_entity=self.entity
-        )
-        
-        with patch('hi.apps.entity.models.Entity.entity_state_delegations') as mock_delegations:
-            mock_delegations.select_related.return_value.all.return_value = []
-            
-            self.manager.get_latest_entity_sensor_history(self.entity)
-            
-            # Verify select_related is used for optimization
-            mock_delegations.select_related.assert_called_once_with('entity_state')
 
     def test_concurrent_history_addition_thread_safety(self):
         """Test manager handles concurrent access safely."""
