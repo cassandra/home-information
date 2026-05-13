@@ -9,12 +9,10 @@ from django.test import override_settings
 from django.urls import reverse
 
 from hi.apps.attribute.enums import AttributeValueType
-from hi.apps.control.controller_history_manager import ControllerHistoryManager
 from hi.apps.entity.enums import EntityType, EntityStateType
 from hi.apps.entity.models import Entity, EntityAttribute
 from hi.apps.location.models import Location, LocationView
 from hi.apps.location.enums import LocationViewType
-from hi.apps.sense.sensor_history_manager import SensorHistoryManager
 from hi.enums import ViewType
 from hi.testing.view_test_base import SyncViewTestCase, DualModeViewTestCase
 from .synthetic_data import EntityAttributeSyntheticData
@@ -708,83 +706,58 @@ class TestEntityStatusView(DualModeViewTestCase):
         self.assertEqual(response.status_code, 405)
 
 
-class TestEntityStateHistoryView(DualModeViewTestCase):
-    """
-    Tests for EntityStateHistoryView - demonstrates history data testing.
-    This view displays sensor and controller history for an entity.
-    """
+class TestEntityHistoryView(DualModeViewTestCase):
+    """EntityHistoryView is the per-entity overview modal showing
+    each state's most recent merged history rows."""
 
     def setUp(self):
         super().setUp()
-        # Create test entity
         self.entity = Entity.objects.create(
             integration_id='test.entity',
             integration_name='test_integration',
             name='Test Entity',
-            entity_type_str=str(EntityType.THERMOSTAT)
+            entity_type_str=str(EntityType.THERMOSTAT),
         )
 
     def test_get_history_sync(self):
-        """Test getting entity state history with synchronous request."""
-        # Test the view responds appropriately without complex mocking
-        url = reverse('entity_state_history', kwargs={'entity_id': self.entity.id})
+        url = reverse('entity_history', kwargs={'entity_id': self.entity.id})
         response = self.client.get(url)
+        self.assertSuccessResponse(response)
 
-        # View should respond (may be 500 due to manager issues, but shouldn't crash)
-        self.assertIn(response.status_code, [200, 500])  # Accept either for now
-
-    @patch.object(SensorHistoryManager, 'get_latest_entity_sensor_history')
-    @patch.object(ControllerHistoryManager, 'get_latest_entity_controller_history')
-    def test_get_history_async(self, mock_get_controller_history, mock_get_sensor_history):
-        """Test getting entity state history with AJAX request."""
-        # Mock history data
-        mock_get_sensor_history.return_value = {}
-        mock_get_controller_history.return_value = {}
-
-        url = reverse('entity_state_history', kwargs={'entity_id': self.entity.id})
+    def test_get_history_async(self):
+        url = reverse('entity_history', kwargs={'entity_id': self.entity.id})
         response = self.async_get(url)
-
         self.assertSuccessResponse(response)
         self.assertJsonResponse(response)
-        
-        # HiModalView returns JSON with modal content for AJAX requests
         data = response.json()
         self.assertIn('modal', data)
 
-    @patch.object(SensorHistoryManager, 'get_latest_entity_sensor_history')
-    @patch.object(ControllerHistoryManager, 'get_latest_entity_controller_history')
-    def test_history_uses_correct_max_items(self, mock_get_controller_history, mock_get_sensor_history):
-        """Test that history requests use the correct max items limit."""
-        mock_get_sensor_history.return_value = {}
-        mock_get_controller_history.return_value = {}
+    def test_renders_one_block_per_state(self):
+        """Each EntityState produces an entry in state_to_rows."""
+        from hi.apps.entity.models import EntityState
+        EntityState.objects.create(
+            entity=self.entity, name='temperature',
+            entity_state_type_str='TEMPERATURE',
+        )
+        EntityState.objects.create(
+            entity=self.entity, name='hvac_mode',
+            entity_state_type_str='DISCRETE',
+        )
 
-        url = reverse('entity_state_history', kwargs={'entity_id': self.entity.id})
+        url = reverse('entity_history', kwargs={'entity_id': self.entity.id})
         response = self.client.get(url)
-
         self.assertSuccessResponse(response)
-        
-        # Both managers should be called with max_items=5
-        mock_get_sensor_history.assert_called_once_with(
-            entity=self.entity,
-            max_items=5
-        )
-        mock_get_controller_history.assert_called_once_with(
-            entity=self.entity,
-            max_items=5
-        )
+        state_to_rows = response.context['state_to_rows']
+        self.assertEqual(len(state_to_rows), 2)
 
     def test_nonexistent_entity_returns_404(self):
-        """Test that accessing nonexistent entity returns 404."""
-        url = reverse('entity_state_history', kwargs={'entity_id': 99999})
+        url = reverse('entity_history', kwargs={'entity_id': 99999})
         response = self.client.get(url)
-
         self.assertEqual(response.status_code, 404)
 
     def test_post_not_allowed(self):
-        """Test that POST requests are not allowed."""
-        url = reverse('entity_state_history', kwargs={'entity_id': self.entity.id})
+        url = reverse('entity_history', kwargs={'entity_id': self.entity.id})
         response = self.client.post(url)
-
         self.assertEqual(response.status_code, 405)
 
 
@@ -1151,3 +1124,103 @@ class TestEntityEditViewFileUploadIntegration(DualModeViewTestCase):
         
         # Verify no file attributes were created due to transaction rollback
         self.assertEqual(self.entity.attributes.filter(value_type_str=str(AttributeValueType.FILE)).count(), 0)
+
+
+class TestEntityStateHistoryView(DualModeViewTestCase):
+    """The per-EntityState history modal renders observations and
+    unmatched intents through the value_template_name dispatch and
+    supports next/prev cursor navigation."""
+
+    def setUp(self):
+        super().setUp()
+        import json
+        self.entity = Entity.objects.create(
+            name = 'Switch', entity_type_str = 'WALL_SWITCH',
+        )
+        from hi.apps.entity.models import EntityState
+        self.state = EntityState.objects.create(
+            entity = self.entity,
+            name = 'on_off',
+            entity_state_type_str = 'ON_OFF',
+            value_range_str = json.dumps([ 'on', 'off' ]),
+        )
+        from hi.apps.sense.models import Sensor, SensorHistory
+        from hi.apps.control.models import Controller, ControllerHistory
+        self.sensor = Sensor.objects.create(
+            entity_state = self.state, name = 'sw-sensor',
+            sensor_type_str = 'DEFAULT', integration_payload = '{}',
+        )
+        self.controller = Controller.objects.create(
+            entity_state = self.state, name = 'sw-ctrl',
+            controller_type_str = 'DEFAULT', integration_payload = '{}',
+        )
+        SensorHistory.objects.create(
+            sensor = self.sensor, value = 'on',
+            response_datetime = '2024-03-01T12:00:00Z',
+        )
+        ControllerHistory.objects.create(
+            controller = self.controller, value = 'off',
+        )
+
+    def test_renders_observation_with_human_readable_label(self):
+        """The stored value 'on' renders as the EntityStateValue label 'On'."""
+        url = reverse(
+            'entity_state_history',
+            kwargs = { 'entity_state_id': self.state.id },
+        )
+        response = self.client.get(url)
+        self.assertSuccessResponse(response)
+        body = response.content.decode()
+        self.assertIn( 'On', body )
+
+    def test_returns_404_for_unknown_entity_state(self):
+        url = reverse(
+            'entity_state_history',
+            kwargs = { 'entity_state_id': 999999 },
+        )
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 404)
+
+    def test_pagination_cursor_filters_older(self):
+        """A `before` query param filters rows to those strictly
+        older than the given ISO timestamp."""
+        from hi.apps.sense.models import SensorHistory
+        SensorHistory.objects.all().delete()
+        for i in range(5):
+            SensorHistory.objects.create(
+                sensor = self.sensor, value = 'on',
+                response_datetime = f'2024-03-0{i+1}T12:00:00Z',
+            )
+
+        url = reverse(
+            'entity_state_history',
+            kwargs = { 'entity_state_id': self.state.id },
+        )
+        # Cursor at 2024-03-04 should yield only rows from days 1-3.
+        response = self.client.get(url, { 'before': '2024-03-04T00:00:00+00:00' })
+        self.assertSuccessResponse(response)
+        rows = response.context['history_rows']
+        for row in rows:
+            self.assertLess( row.timestamp.isoformat(), '2024-03-04T00:00:00+00:00' )
+
+    def test_older_link_uses_url_encoded_cursor(self):
+        """The HTML link for "Older" must URL-encode the ISO cursor;
+        an unencoded ``+`` becomes a space when re-parsed and the
+        next page falls back to most-recent."""
+        from hi.apps.sense.models import SensorHistory
+        for i in range(30):
+            SensorHistory.objects.create(
+                sensor = self.sensor, value = 'on',
+                response_datetime = f'2024-03-0{(i % 9) + 1}T12:00:00Z',
+            )
+
+        url = reverse(
+            'entity_state_history',
+            kwargs = { 'entity_state_id': self.state.id },
+        )
+        response = self.client.get(url)
+        self.assertSuccessResponse(response)
+        body = response.content.decode()
+        # Encoded "+" is "%2B"; the cursor in the Older link must be
+        # encoded so the round-trip through the query parser preserves it.
+        self.assertIn( '%2B00%3A00', body )

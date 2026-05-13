@@ -1,17 +1,12 @@
 import logging
 
-from django.urls import reverse
 from django.views.generic import View
 
-from hi.apps.common.pagination import compute_pagination_from_queryset
 from hi.apps.entity.enums import EntityStateType, EntityStateValue
 from hi.apps.monitor.status_display_manager import StatusDisplayManager
 
-from hi.hi_async_view import HiModalView
-
 from .control_mixins import ControllerMixin
-from .models import Controller, ControllerHistory
-from .transient_models import ControllerHistoryResponse
+from .models import Controller
 from .view_mixins import ControlViewMixin
 
 logger = logging.getLogger(__name__)
@@ -89,34 +84,3 @@ class ControllerView( View, ControlViewMixin, ControllerMixin ):
         if controller.entity_state.entity_state_type in self.MISSING_VALUE_MAP:
             return str( self.MISSING_VALUE_MAP.get( controller.entity_state.entity_state_type ))
         return 'unknown'
-
-
-class ControllerHistoryView( HiModalView, ControlViewMixin ):
-
-    CONTROLLER_HISTORY_PAGE_SIZE = 25
-    
-    def get_template_name( self ) -> str:
-        return 'control/modals/controller_history.html'
-
-    def get( self, request, *args, **kwargs ):
-
-        controller = self.get_controller( request, *args, **kwargs )
-        base_url = reverse( 'control_controller_history', kwargs = { 'controller_id': controller.id } )
-
-        queryset = ControllerHistory.objects.filter( controller = controller )
-        pagination = compute_pagination_from_queryset( request = request,
-                                                       queryset = queryset,
-                                                       base_url = base_url,
-                                                       page_size = self.CONTROLLER_HISTORY_PAGE_SIZE,
-                                                       async_urls = True )
-        controller_history_list = queryset[pagination.start_offset:pagination.end_offset + 1]
-        controller_response_list = [
-            ControllerHistoryResponse.from_controller_history( h ) for h in controller_history_list
-        ]
-
-        context = {
-            'controller': controller,
-            'controller_response_list': controller_response_list,
-            'pagination': pagination,
-        }
-        return self.modal_response( request, context )

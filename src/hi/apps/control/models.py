@@ -1,5 +1,6 @@
 from django.db import models
 
+from hi.apps.common.utils import strip_parent_name_prefix
 from hi.apps.entity.models import EntityState
 from hi.integrations.models import IntegrationDetailsModel
 
@@ -58,6 +59,12 @@ class Controller( IntegrationDetailsModel ):
     @property
     def choices(self):
         return self.entity_state.choices()
+
+    @property
+    def short_name(self):
+        """Name with the leading entity-name prefix stripped, for
+        display contexts where the entity name is already visible."""
+        return strip_parent_name_prefix( self.name, self.entity_state.entity.name )
 
         
 class ControllerHistory(models.Model):

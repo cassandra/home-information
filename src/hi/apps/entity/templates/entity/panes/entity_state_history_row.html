@@ -1,0 +1,48 @@
+{% load tz %}
+{% load static %}
+{% load common_tags %}
+{% load humanize %}
+{% load icons %}
+<div class="timeline-item mb-2">
+  <div class="card{% if row.history_value_type.name == 'INTENT' %} border-left-warning{% else %} border-left-primary{% endif %}">
+    <div class="card-body py-2 px-3">
+      <div class="row align-items-center">
+        <div class="col-md-4 col-sm-5">
+          <div class="text-center">
+            <strong class="text-primary d-block">{{ row.timestamp|localtime|date:"l, M j" }}</strong>
+            <span class="text-primary">{{ row.timestamp|localtime|date:"g:i:s A" }}</span>
+            <small class="text-muted d-block">{{ row.timestamp|localtime|naturaltime }}</small>
+          </div>
+        </div>
+        <div class="col-md-5 col-sm-7">
+          <div class="d-flex align-items-center">
+            <div class="flex-grow-1">
+              {% with sensor_response=row %}
+                {% include_with_fallback row.entity_state.entity_state_type.value_template_name "sense/panes/sensor_response_value_default.html" %}
+              {% endwith %}
+            </div>
+            {% if row.history_value_type.name == 'INTENT' or row.matched_intent %}
+              <img src="{% static 'img/hi-icon-16x16.png' %}"
+                   alt="HI"
+                   title="{% if row.history_value_type.name == 'INTENT' %}HI command — no matching observation{% else %}Observation confirmed an HI command{% endif %}"
+                   class="ml-2"
+                   width="16" height="16">
+            {% endif %}
+          </div>
+        </div>
+        <div class="col-md-3 col-12">
+          {% if annotate_sources %}
+            <small class="text-muted d-block text-md-right mt-1 mt-md-0">
+              {{ row.instrument.name }}
+            </small>
+          {% endif %}
+          {% if row.matched_intent and annotate_sources %}
+            <small class="text-muted d-block text-md-right">
+              commanded by {{ row.matched_intent.instrument.name }}
+            </small>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

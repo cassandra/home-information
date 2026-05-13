@@ -190,4 +190,20 @@ def to_dict_or_none( obj ):
         return None
     return obj.to_dict()
 
+
+def strip_parent_name_prefix( full_name : str, parent_name : str ) -> str:
+    """Strip a leading parent-name prefix from ``full_name``
+    (case-insensitive, tolerating common separator characters).
+    Falls back to ``full_name`` when stripping would leave nothing
+    meaningful. Used by display contexts where the parent name is
+    already visible elsewhere in the surrounding chrome."""
+    full = full_name or ''
+    if not parent_name:
+        return full
+    if full.lower().startswith( parent_name.lower() ):
+        remainder = full[ len( parent_name ): ].lstrip( ' -:_/' ).strip()
+        if remainder:
+            return remainder
+    return full
+
     

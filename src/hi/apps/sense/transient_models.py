@@ -74,9 +74,9 @@ class SensorResponse:
         return None
     
     @property
-    def sensor_history_url(self) -> str:
-        return reverse( 'sense_sensor_history',
-                        kwargs = { 'sensor_id': self.sensor.id })        
+    def entity_state_history_url(self) -> str:
+        return reverse( 'entity_state_history',
+                        kwargs = { 'entity_state_id': self.sensor.entity_state.id })
 
     @property
     def click_url(self):
@@ -84,7 +84,7 @@ class SensorResponse:
             return self.video_browse_url
         if self.sensor_history_id and self.has_details:
             return self.details_url
-        return self.sensor_history_url
+        return self.entity_state_history_url
         
     def to_dict(self):
         return {

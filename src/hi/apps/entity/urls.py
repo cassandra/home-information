@@ -13,8 +13,12 @@ urlpatterns = [
              views.EntityStatusView.as_view(), 
              name='entity_status' ),
 
-    re_path( r'^state/history/(?P<entity_id>\d+)$', 
-             views.EntityStateHistoryView.as_view(), 
+    re_path( r'^history/(?P<entity_id>\d+)$',
+             views.EntityHistoryView.as_view(),
+             name='entity_history' ),
+
+    re_path( r'^state/(?P<entity_state_id>\d+)/history$',
+             views.EntityStateHistoryView.as_view(),
              name='entity_state_history' ),
 
     re_path( r'^attribute/upload/(?P<entity_id>\d+)$', 

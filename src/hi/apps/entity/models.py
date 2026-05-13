@@ -11,7 +11,7 @@ from hi.apps.location.models import (
     LocationView,
 )
 from hi.apps.attribute.models import AttributeModel, SoftDeleteAttributeModel, AttributeValueHistoryModel
-from hi.apps.common.utils import get_humanized_name
+from hi.apps.common.utils import get_humanized_name, strip_parent_name_prefix
 from hi.integrations.models import IntegrationDetailsModel
 from hi.enums import ItemType
 
@@ -223,6 +223,12 @@ class EntityState( models.Model ):
     @property
     def css_class(self):
         return f'hi-entity-state-{self.id}'
+
+    @property
+    def short_name(self):
+        """Name suitable for display when the entity name is already
+        visible elsewhere in the surrounding chrome."""
+        return strip_parent_name_prefix( self.name, self.entity.name )
 
     @property
     def value_range_dict(self):

@@ -2209,6 +2209,16 @@ g[hover] {
     border-left-color: var(--danger-color);
 }
 
+/* Light primary-tinted banner used as a section header (e.g., the
+   entity-history modal's per-state group headers). Uses the same
+   tint as ``.timeline-item:hover`` so the section header reads as
+   part of the same visual family as the cards it groups. */
+.hi-section-banner {
+    background-color: var(--info-bg-light);
+    border-left: 3px solid var(--primary-color);
+    border-radius: 0.25rem;
+}
+
 .hi-sync-result-item-list {
     max-height: 160px;
     overflow-y: auto;
