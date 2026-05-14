@@ -1,3 +1,4 @@
+{% load state_panel_tags %}
 <div class="card h-100">
   <div class="card-body">
     <div class="d-flex">
@@ -10,10 +11,9 @@
       </div>
       {% else %}
       <div class="entity-content-section flex-grow-1 ml-3">
-        {% include "collection/panes/entity_state_list.html" with entity_state_status_data_list=entity_status_data.state_status_data_list %}
+        {% render_entity_status_panel entity_status_data.entity "list" %}
       </div>
       {% endif %}
     </div>
   </div>
 </div>
-

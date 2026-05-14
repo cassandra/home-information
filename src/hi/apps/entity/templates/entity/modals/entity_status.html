@@ -1,6 +1,7 @@
 {% extends "modals/action_3.html" %}
 {% load icons %}
 {% load common_tags %}
+{% load state_panel_tags %}
 
 {% block modal_dialog_class %}hi-modal-dialog-600{% endblock %}
 
@@ -9,7 +10,7 @@ Status
 {% endblock %}
 
 {% block body %}
-{% include_with_fallback entity.entity_type.entity_status_template_name "entity/modals/entity_status_default.html" %}
+{% render_entity_status_panel entity "modal" %}
 {% endblock %}
 
 {% block action_left %}

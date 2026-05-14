@@ -17,6 +17,18 @@
     window.Hi = window.Hi || {};
     Hi.entityStateStatus = Hi.entityStateStatus || {};
 
+    // EntityStatusPanel JS that needs to react to polling updates
+    // beyond what CSS keyed on the ``status`` attribute can do
+    // registers a handler here. Handlers receive the full statusMap
+    // and scope their work using the ``.hi-state-panel-<name>`` and
+    // ``.hi-entity-state-<id>`` classes already present in the DOM.
+    const _panelHandlers = [];
+    Hi.statePanels = Hi.statePanels || {
+        register: function( handler ) {
+            if ( typeof handler === 'function' ) _panelHandlers.push( handler );
+        }
+    };
+
     Hi.entityStateStatus.apply = function( statusMap ) {
         if ( ! statusMap ) return;
         const controllerSubMap = {};
@@ -33,6 +45,13 @@
             }
         }
         Hi.controllers.applyValueMap( controllerSubMap );
+        for ( const handler of _panelHandlers ) {
+            try {
+                handler( statusMap );
+            } catch ( e ) {
+                console.error( 'EntityStatusPanel handler error:', e );
+            }
+        }
     };
 
     function _applyAttributes( cssClass, attrMap ) {
@@ -52,7 +71,7 @@
                         $( this ).attr( attrName, attrValue );
                     }
                 } else if ( attrName == 'status' ) {
-                    $( this ).find( 'div[status]' ).attr( attrName, attrValue );
+                    $( this ).find( '[status]' ).attr( attrName, attrValue );
                 }
             });
         }

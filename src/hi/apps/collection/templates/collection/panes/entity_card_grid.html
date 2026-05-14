@@ -1,3 +1,4 @@
+{% load state_panel_tags %}
 <div class="card h-100">
   <div class="card-body p-3">
     {% include "collection/panes/entity_card_title.html" with entity_status_data=entity_status_data %}
@@ -6,7 +7,7 @@
       {% include "console/panes/entity_video_stream_w_link.html" with entity=entity_status_data.entity %}
     </div>
     {% else %}
-    {% include "collection/panes/entity_state_list.html" with entity_state_status_data_list=entity_status_data.state_status_data_list %}
+    {% render_entity_status_panel entity_status_data.entity "grid" %}
     {% endif %}
   </div>
 </div>
