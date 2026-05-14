@@ -6,6 +6,6 @@ the ``as_display_value`` filter goes through ``ConsoleConverterHelper``
 to produce a ``DisplayValue`` whose ``__str__`` combines the
 user-display magnitude and unit symbol.
 {% endcomment %}
-<div class="text-center px-2" status="{{ sensor_response.value }}" display-text>
+<div class="{{ sensor_response.sensor.entity_state.css_class }} text-center px-2" status="{{ sensor_response.value }}" display-text>
   {{ sensor_response.value|as_display_value:sensor_response.entity_state }}
 </div>
