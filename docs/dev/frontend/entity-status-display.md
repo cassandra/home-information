@@ -136,6 +136,19 @@ The server returns status updates in a standardized JSON format:
 
 The polling system uses CSS class names and data attributes to target elements:
 
+### Icon vs path update shape
+
+LocationView SVG icons and SVG paths react to status updates through different opt-ins, and the asymmetry is intentional.
+
+- **Icons** (`<g>` elements) declare `data-status`. The polling dispatcher writes only the `status` attribute; CSS rules keyed on `g[status="..."]` (and nested selectors like `g[status="off"] path.hi-state-bg`) supply the visual styling.
+- **Paths** (`<path>` elements) declare `data-svg-style`. The dispatcher writes the full bundle (`status`, `stroke`, `stroke-width`, `fill`, `fill-opacity`, `stroke-dasharray`) as inline SVG attributes; CSS only adds drop-shadow on top.
+
+Icons can't safely receive the full bundle because they are multi-element. A typical icon `<g>` wraps several primitives — body, outline, background plate — each of which may want differentiated styling for a given status. If the dispatcher pushed `fill="red"` onto the parent `<g>`, SVG attribute inheritance would paint every child red, overriding child-specific CSS. Per-child selectors are the only mechanism that gives each child independent control, which is why icons confine themselves to pushing the `status` attribute and letting CSS branch from there.
+
+Paths can use the full bundle because they are single-element — one `<path>` per region, no inheritance hazard — and their per-entity-type palette (movement vs smoke vs open/close, each with its own colors) is naturally expressed by Python's `StatusStyle` rather than as a Cartesian product of CSS rules. The attribute-driven path also leaves room for future continuous-value visuals (e.g., opacity proportional to a numeric magnitude) which closed-set CSS rules can't express.
+
+When adding a new visual, copy from an existing icon or path of the same shape — the right opt-in comes along.
+
 ## Workflow 1: Adding Status Display to New Entity Template
 
 **Scenario**: You have a new entity type (smart thermostat) that needs status display functionality in location views.
