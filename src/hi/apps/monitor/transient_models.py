@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import List
+from typing import Dict, List
 
 from hi.apps.control.transient_models import ControllerData
 from hi.apps.common.svg_models import SvgIconItem
@@ -59,10 +59,27 @@ class EntityStatusData:
             ),
         )
 
+    @property
+    def state_status_data_by_role( self ) -> Dict[ str, EntityStateStatusData ]:
+        """Role-keyed lookup of EntityStateStatusData for panel
+        templates that pull a specific state by its semantic role
+        (e.g., ``state_status_data_by_role.smoke`` on a smoke detector;
+        ``state_status_data_by_role.thermostat_current_temperature``
+        on a thermostat). Keys are the lowercase EntityStateRole
+        name. When two states on the entity share a role (rare; not
+        the normal model), the later one wins — panel access is
+        about the canonical state for a role on the entity."""
+        return {
+            data.entity_state.entity_state_role.name.lower(): data
+            for data in self.entity_state_status_data_list
+        }
+
     def to_template_context(self):
         context = {
             'entity': self.entity,
+            'entity_status_data': self,
             'state_status_data_list': self.state_status_data_list,
+            'state_status_data_by_role': self.state_status_data_by_role,
             'entity_for_video': self.entity_for_video,
             'display_only_svg_icon_item': self.display_only_svg_icon_item,
             'display_category': self.display_category,

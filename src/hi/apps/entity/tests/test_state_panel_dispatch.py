@@ -24,7 +24,7 @@ class TestResolvePanelTemplate(BaseTestCase):
         # SMOKE_DETECTOR has no panel templates in Phase 1; resolution
         # lands on the framework fallback for the modal context.
         template_obj = resolve_panel_template(
-            entity_type = EntityType.SMOKE_DETECTOR,
+            entity_type = EntityType.OTHER,
             display_context_name = 'modal',
         )
         self.assertEqual(
@@ -34,7 +34,7 @@ class TestResolvePanelTemplate(BaseTestCase):
 
     def test_falls_back_to_framework_default_for_list_context(self):
         template_obj = resolve_panel_template(
-            entity_type = EntityType.SMOKE_DETECTOR,
+            entity_type = EntityType.OTHER,
             display_context_name = 'list',
         )
         self.assertEqual(
@@ -44,7 +44,7 @@ class TestResolvePanelTemplate(BaseTestCase):
 
     def test_falls_back_to_framework_default_for_grid_context(self):
         template_obj = resolve_panel_template(
-            entity_type = EntityType.SMOKE_DETECTOR,
+            entity_type = EntityType.OTHER,
             display_context_name = 'grid',
         )
         self.assertEqual(
@@ -119,7 +119,7 @@ class TestResolvePanelTemplate(BaseTestCase):
     def test_unsupported_context_raises(self):
         with self.assertRaises( ValueError ):
             resolve_panel_template(
-                entity_type = EntityType.SMOKE_DETECTOR,
+                entity_type = EntityType.OTHER,
                 display_context_name = 'sidebar',
             )
 
@@ -128,7 +128,7 @@ class TestResolvePanelTemplate(BaseTestCase):
         # fallback template that actually exists.
         for context_name in SUPPORTED_DISPLAY_CONTEXTS:
             template_obj = resolve_panel_template(
-                entity_type = EntityType.SMOKE_DETECTOR,
+                entity_type = EntityType.OTHER,
                 display_context_name = context_name,
             )
             self.assertEqual(

@@ -238,3 +238,63 @@ class TestEntityStatusData(BaseTestCase):
         self.assertIn('ON_OFF', state_types)
         self.assertIn('MOTION', state_types)
         self.assertIn('RECORDING', state_types)
+
+
+class TestStateStatusDataByRole(BaseTestCase):
+    """``EntityStatusData.state_status_data_by_role`` indexes the
+    state-status entries by the lowercase EntityStateRole name so
+    panel templates can pull a specific state by semantic role."""
+
+    def test_keys_are_lowercase_role_names(self):
+        from hi.apps.entity.enums import EntityStateRole, EntityType
+        from hi.apps.entity.models import EntityState
+
+        entity = Entity.objects.create(
+            name='Smoke Test',
+            entity_type_str=str(EntityType.SMOKE_DETECTOR),
+        )
+        smoke_state = EntityState.objects.create(
+            entity=entity, name='Smoke',
+            entity_state_type_str='SMOKE',
+            role_str=str(EntityStateRole.SMOKE),
+        )
+        battery_state = EntityState.objects.create(
+            entity=entity, name='Battery',
+            entity_state_type_str='BATTERY_LEVEL',
+            role_str=str(EntityStateRole.BATTERY_LEVEL),
+        )
+
+        smoke_data = Mock(spec=EntityStateStatusData)
+        smoke_data.entity_state = smoke_state
+        battery_data = Mock(spec=EntityStateStatusData)
+        battery_data.entity_state = battery_state
+
+        status_data = EntityStatusData(
+            entity=entity,
+            entity_state_status_data_list=[smoke_data, battery_data],
+        )
+
+        by_role = status_data.state_status_data_by_role
+        self.assertIn('smoke', by_role)
+        self.assertIn('battery_level', by_role)
+        self.assertIs(by_role['smoke'], smoke_data)
+        self.assertIs(by_role['battery_level'], battery_data)
+
+    def test_empty_when_no_states(self):
+        entity = Entity.objects.create(
+            name='Empty', entity_type_str='OTHER',
+        )
+        status_data = EntityStatusData(
+            entity=entity, entity_state_status_data_list=[],
+        )
+        self.assertEqual(status_data.state_status_data_by_role, {})
+
+    def test_template_context_includes_by_role_map(self):
+        entity = Entity.objects.create(
+            name='Ctx Test', entity_type_str='OTHER',
+        )
+        status_data = EntityStatusData(
+            entity=entity, entity_state_status_data_list=[],
+        )
+        context = status_data.to_template_context()
+        self.assertIn('state_status_data_by_role', context)

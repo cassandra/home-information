@@ -26,13 +26,16 @@ register = template.Library()
 
 
 @register.simple_tag( takes_context = True )
-def render_entity_status_panel( context, entity : Entity, display_context_name : str ):
-    """Render the panel for ``entity`` in ``display_context_name``.
+def render_entity_status_panel( context, entity_status_data, display_context_name : str ):
+    """Render the panel for ``entity_status_data.entity`` in
+    ``display_context_name``.
 
-    The parent context is flattened and passed through; the panel
-    template can read the same variables its call site had in scope
-    (e.g., ``entity_status_data`` from the EntityStatusView modal,
-    ``entity_state_status_data_list`` from collection cards)."""
+    The panel template's context is the parent's flattened context
+    merged with the entity_status_data's ``to_template_context()``
+    fields, so panel templates have ``entity``,
+    ``state_status_data_list``, ``state_status_data_by_role``, and the
+    other display fields at the top level regardless of which call
+    site (modal / list card / grid card) invokes the tag."""
 
     if display_context_name not in SUPPORTED_DISPLAY_CONTEXTS:
         raise ValueError(
@@ -41,11 +44,11 @@ def render_entity_status_panel( context, entity : Entity, display_context_name :
         )
 
     template_obj = resolve_panel_template(
-        entity_type = entity.entity_type,
+        entity_type = entity_status_data.entity.entity_type,
         display_context_name = display_context_name,
     )
     flat = context.flatten()
-    flat[ 'entity' ] = entity
+    flat.update( entity_status_data.to_template_context() )
     flat[ 'display_context_name' ] = display_context_name
     return template_obj.render( flat )
 
