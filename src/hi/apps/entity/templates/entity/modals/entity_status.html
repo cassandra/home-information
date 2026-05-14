@@ -41,6 +41,7 @@
 {% endblock %}
 
 {% block body %}
+{% integration_health_banner entity.integration_id "Values shown may be stale; controls may not respond." %}
 {% render_entity_status_panel entity_status_data "modal" %}
 {% endblock %}
 
