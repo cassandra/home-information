@@ -4,10 +4,8 @@
 <div id="hi-controller-{{ controller_data.controller.id }}-{{ unique_id }}">
   <form action="{% url 'control_controller' controller_id=controller_data.controller.id %}"
         method="post"
-        class="form" data-async="#hi-controller-{{ controller_data.controller.id }}-{{ unique_id }}" data-mode="replace"{% if in_modal_context %} data-stay-in-modal="true"{% endif %}>
+        class="form" data-async="#hi-controller-{{ controller_data.controller.id }}-{{ unique_id }}" data-mode="replace" data-stay-in-modal="true">
     {% csrf_token %}
-    <input type="hidden" name="response_context" value="{% if in_modal_context %}modal{% else %}page{% endif %}">
-    
     {% include_controller_widget controller_data.controller %}
     {% if controller_data.error_list %}
     <div class="text-danger">
