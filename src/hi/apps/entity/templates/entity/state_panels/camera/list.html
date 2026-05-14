@@ -1,0 +1,16 @@
+{# Camera EntityStatusPanel — collection list card context. #}
+<div class="hi-state-panel-camera hi-state-panel-camera--list">
+
+  <div class="stream">
+    {% if entity.has_video_stream %}
+      {% include "console/panes/entity_video_stream_w_link.html" with entity=entity %}
+    {% else %}
+      <div class="stream-unavailable">Offline</div>
+    {% endif %}
+  </div>
+
+  <div class="list-meta">
+    <div class="entity-name">{{ entity.name }}</div>
+  </div>
+
+</div>

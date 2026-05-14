@@ -2209,6 +2209,17 @@ g[hover] {
     border-left-color: var(--danger-color);
 }
 
+/* Framework subheader rendered between the modal title bar and the
+   panel body. Shows entity-type icon + label on the left, integration
+   logo centered, and the modal-type label on the right. Panels
+   render below this strip and don't repeat any of this identifying
+   chrome. */
+.hi-entity-status-subheader__type-icon .hi-entity-display-only-icon {
+    width: 18px;
+    height: 18px;
+    vertical-align: middle;
+}
+
 /* Light primary-tinted banner used as a section header (e.g., the
    entity-history modal's per-state group headers). Uses the same
    tint as ``.timeline-item:hover`` so the section header reads as

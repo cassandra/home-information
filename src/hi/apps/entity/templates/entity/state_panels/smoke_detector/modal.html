@@ -8,11 +8,6 @@
 <div class="hi-state-panel-smoke_detector hi-state-panel-smoke_detector--modal{% if smoke_data %} hi-entity-state-{{ smoke_data.entity_state.id }}{% endif %}"
      {% if smoke_data %}status="{{ smoke_data.latest_sensor_value }}"{% endif %}>
 
-  <div class="header">
-    <div class="entity-name">{{ entity.name }}</div>
-    <div class="entity-type">{{ entity.entity_type.label }}</div>
-  </div>
-
   {% if smoke_data %}
   <div class="hero">
     <div class="badge">

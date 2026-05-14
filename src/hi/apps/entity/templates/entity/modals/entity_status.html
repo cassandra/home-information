@@ -1,12 +1,43 @@
 {% extends "modals/action_3.html" %}
 {% load icons %}
 {% load common_tags %}
+{% load static %}
 {% load state_panel_tags %}
+{% load integration_tags %}
 
 {% block modal_dialog_class %}hi-modal-dialog-600{% endblock %}
 
 {% block title_text %}
-Status
+{{ entity.name }}
+{% endblock %}
+
+{# Framework-level subheader: entity type icon + label on the left, #}
+{# integration logo centered (when present), "Status" label on the  #}
+{# right. Panels render their body below without repeating any of   #}
+{# this identifying chrome.                                          #}
+{% block subheader %}
+<div class="hi-entity-status-subheader d-flex align-items-center px-3 py-1 border-bottom">
+  <div class="hi-entity-status-subheader__left d-flex align-items-center">
+    {% if display_only_svg_icon_item %}
+      <span class="hi-entity-status-subheader__type-icon mr-2">
+        {% include "entity/panes/entity_display_only_svg_icon.html" with svg_icon_item=display_only_svg_icon_item %}
+      </span>
+    {% endif %}
+    <small class="text-muted text-uppercase">{{ entity.entity_type.label }}</small>
+  </div>
+  <div class="hi-entity-status-subheader__center flex-grow-1 text-center">
+    {% if entity.integration_id %}
+      {% integration_logo_path entity as logo_path %}
+      {% if logo_path %}<img src="{% static logo_path %}" alt="" class="hi-integration-logo--inline">{% endif %}
+    {% elif entity.previous_integration_id %}
+      {% previous_integration_logo_path entity as prev_logo_path %}
+      {% if prev_logo_path %}<img src="{% static prev_logo_path %}" alt="" class="hi-integration-logo--detached">{% endif %}
+    {% endif %}
+  </div>
+  <div class="hi-entity-status-subheader__right">
+    <small class="text-muted text-uppercase">Status</small>
+  </div>
+</div>
 {% endblock %}
 
 {% block body %}

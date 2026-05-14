@@ -101,22 +101,6 @@
 /* Modal layout                                                   */
 /* ============================================================== */
 
-.hi-state-panel-smoke_detector--modal .header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    border-bottom: 1px solid var(--line-color, #d0d7de);
-    padding-bottom: 12px;
-    margin-bottom: 20px;
-}
-.hi-state-panel-smoke_detector--modal .entity-name { font-size: 18px; font-weight: 600; }
-.hi-state-panel-smoke_detector--modal .entity-type {
-    font-size: 12px;
-    color: var(--text-muted, #6c757d);
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-}
-
 .hi-state-panel-smoke_detector--modal .hero {
     padding: 24px 20px;
     display: flex;

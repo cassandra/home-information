@@ -1,0 +1,17 @@
+{# Camera EntityStatusPanel — collection grid card context. Video fills #}
+{# the cell with a name overlay along the bottom.                       #}
+<div class="hi-state-panel-camera hi-state-panel-camera--grid">
+
+  <div class="stream">
+    {% if entity.has_video_stream %}
+      {% include "console/panes/entity_video_stream_w_link.html" with entity=entity %}
+    {% else %}
+      <div class="stream-unavailable">Offline</div>
+    {% endif %}
+  </div>
+
+  <div class="grid-overlay">
+    <div class="entity-name">{{ entity.name }}</div>
+  </div>
+
+</div>

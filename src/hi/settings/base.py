@@ -248,6 +248,7 @@ PIPELINE = {
                 'css/stream-browser.css',
                 'css/control.css',
                 'state_panels/smoke_detector/smoke_detector.css',
+                'state_panels/camera/camera.css',
             ),
             'output_filename': 'css/css_head.css',
         },

@@ -1,0 +1,102 @@
+/* EntityStatusPanel for CAMERA entities.
+ *
+ * All rules nested under .hi-state-panel-camera. The panel composes
+ * existing video-stream and state-status partials; this CSS supplies
+ * the per-context layout (modal / list / grid) around them.
+ */
+
+:root {
+    --hi-camera-offline-color: #6b7280;
+    --hi-camera-offline-bg: #2c2c2c;
+}
+
+.hi-state-panel-camera .stream {
+    position: relative;
+    overflow: hidden;
+    background: #1a1a1a;
+}
+
+.hi-state-panel-camera .stream-unavailable {
+    background: var(--hi-camera-offline-bg);
+    color: var(--hi-camera-offline-color);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    font-size: 11px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+    min-height: 60px;
+}
+
+/* The existing entity_video_stream wrapper renders an anchor + img. */
+.hi-state-panel-camera .stream a {
+    display: block;
+    text-decoration: none;
+}
+.hi-state-panel-camera .stream .video-container img,
+.hi-state-panel-camera .stream img.img-fluid {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+
+/* ============================================================== */
+/* Modal layout                                                   */
+/* ============================================================== */
+
+.hi-state-panel-camera--modal .stream {
+    aspect-ratio: 16 / 9;
+    margin-bottom: 16px;
+}
+
+/* ============================================================== */
+/* List card layout                                               */
+/* ============================================================== */
+
+.hi-state-panel-camera--list {
+    display: grid;
+    grid-template-columns: 160px 1fr;
+    gap: 12px;
+    align-items: center;
+}
+.hi-state-panel-camera--list .stream {
+    width: 160px;
+    aspect-ratio: 16 / 9;
+}
+.hi-state-panel-camera--list .list-meta { min-width: 0; }
+.hi-state-panel-camera--list .entity-name {
+    font-size: 13px; font-weight: 600; line-height: 1.2;
+}
+
+/* ============================================================== */
+/* Grid card layout — video fills, name overlay along the bottom. */
+/* ============================================================== */
+
+.hi-state-panel-camera--grid {
+    position: relative;
+    width: 100%;
+    height: 100%;
+}
+.hi-state-panel-camera--grid .stream {
+    width: 100%;
+    height: 100%;
+}
+.hi-state-panel-camera--grid .grid-overlay {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    padding: 8px 8px 6px;
+    background: linear-gradient(180deg, rgba(0,0,0,0) 0%, rgba(0,0,0,0.75) 100%);
+    color: white;
+}
+.hi-state-panel-camera--grid .entity-name {
+    font-size: 11px;
+    font-weight: 600;
+    line-height: 1.2;
+    text-shadow: 0 0 4px rgba(0,0,0,0.6);
+}
