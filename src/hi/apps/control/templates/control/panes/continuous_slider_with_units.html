@@ -35,7 +35,9 @@ Optional (forwarded to slider chrome):
            max="{{ display_max.magnitude }}"
            {% if slider_step %}step="{{ slider_step }}"{% endif %}
            value="{{ display_value.magnitude }}"
-           class="{{ controller_data.css_class }} {{ DIVID.CONTROLLER_SLIDER_CLASS }} {{ slider_class }}"
+           class="{{ DIVID.CONTROLLER_SLIDER_CLASS }} {{ slider_class }}"
+           data-state-id="{{ controller_data.entity_state.id }}"
+           data-controller-value
            {{ DIVID.CONTROLLER_DISPLAY_TARGET_ATTR }}=".hi-continuous-slider-value"
            {{ DIVID.CONTROLLER_DISPLAY_FORMAT_ATTR }}="{n}{{ display_value.unit_symbol }}"
            onchange-async="true"

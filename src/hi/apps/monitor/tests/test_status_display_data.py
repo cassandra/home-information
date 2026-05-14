@@ -5,16 +5,16 @@ from unittest.mock import Mock, patch
 from hi.apps.entity.models import Entity, EntityState
 from hi.apps.entity.enums import EntityStateValue
 from hi.apps.sense.transient_models import SensorResponse
-from hi.apps.monitor.status_display_data import StatusDisplayData
-from hi.apps.monitor.transient_models import EntityStateStatusData
+from hi.apps.monitor.display_data import EntityStateDisplayData
+from hi.apps.monitor.status_data import EntityStateStatusData
 from hi.hi_styles import StatusStyle
 from hi.testing.base_test_case import BaseTestCase
 
 logging.disable(logging.CRITICAL)
 
 
-class TestStatusDisplayData(BaseTestCase):
-    """Test StatusDisplayData business logic and style calculations."""
+class TestEntityStateDisplayData(BaseTestCase):
+    """Test EntityStateDisplayData business logic and style calculations."""
 
     def setUp(self):
         super().setUp()
@@ -53,7 +53,7 @@ class TestStatusDisplayData(BaseTestCase):
         sensor_response = self._create_mock_sensor_response(str(EntityStateValue.ON))
         status_data = self._create_entity_state_status_data('ON_OFF', [sensor_response])
         
-        display_data = StatusDisplayData(status_data)
+        display_data = EntityStateDisplayData(status_data)
         
         self.assertEqual(display_data.svg_status_style, StatusStyle.On)
         self.assertFalse(display_data.should_skip)
@@ -63,7 +63,7 @@ class TestStatusDisplayData(BaseTestCase):
         sensor_response = self._create_mock_sensor_response(str(EntityStateValue.OFF))
         status_data = self._create_entity_state_status_data('ON_OFF', [sensor_response])
         
-        display_data = StatusDisplayData(status_data)
+        display_data = EntityStateDisplayData(status_data)
         
         self.assertEqual(display_data.svg_status_style, StatusStyle.Off)
         self.assertFalse(display_data.should_skip)
@@ -73,7 +73,7 @@ class TestStatusDisplayData(BaseTestCase):
         sensor_response = self._create_mock_sensor_response('INVALID')
         status_data = self._create_entity_state_status_data('ON_OFF', [sensor_response])
         
-        display_data = StatusDisplayData(status_data)
+        display_data = EntityStateDisplayData(status_data)
         
         self.assertIsNone(display_data.svg_status_style)
         self.assertTrue(display_data.should_skip)
@@ -85,7 +85,7 @@ class TestStatusDisplayData(BaseTestCase):
         sensor_response = self._create_mock_sensor_response(str(EntityStateValue.CONNECTED))
         status_data = self._create_entity_state_status_data('CONNECTIVITY', [sensor_response])
         
-        display_data = StatusDisplayData(status_data)
+        display_data = EntityStateDisplayData(status_data)
         
         self.assertEqual(display_data.svg_status_style, StatusStyle.Connected)
 
@@ -94,7 +94,7 @@ class TestStatusDisplayData(BaseTestCase):
         sensor_response = self._create_mock_sensor_response(str(EntityStateValue.DISCONNECTED))
         status_data = self._create_entity_state_status_data('CONNECTIVITY', [sensor_response])
         
-        display_data = StatusDisplayData(status_data)
+        display_data = EntityStateDisplayData(status_data)
         
         self.assertEqual(display_data.svg_status_style, StatusStyle.Disconnected)
 
@@ -105,7 +105,7 @@ class TestStatusDisplayData(BaseTestCase):
         sensor_response = self._create_mock_sensor_response(str(EntityStateValue.HIGH))
         status_data = self._create_entity_state_status_data('HIGH_LOW', [sensor_response])
         
-        display_data = StatusDisplayData(status_data)
+        display_data = EntityStateDisplayData(status_data)
         
         self.assertEqual(display_data.svg_status_style, StatusStyle.High)
 
@@ -114,7 +114,7 @@ class TestStatusDisplayData(BaseTestCase):
         sensor_response = self._create_mock_sensor_response(str(EntityStateValue.LOW))
         status_data = self._create_entity_state_status_data('HIGH_LOW', [sensor_response])
         
-        display_data = StatusDisplayData(status_data)
+        display_data = EntityStateDisplayData(status_data)
         
         self.assertEqual(display_data.svg_status_style, StatusStyle.Low)
 
@@ -128,7 +128,7 @@ class TestStatusDisplayData(BaseTestCase):
         sensor_response = self._create_mock_sensor_response(str(EntityStateValue.ACTIVE))
         status_data = self._create_entity_state_status_data('MOVEMENT', [sensor_response])
         
-        display_data = StatusDisplayData(status_data)
+        display_data = EntityStateDisplayData(status_data)
         
         self.assertEqual(display_data.svg_status_style, StatusStyle.MovementActive)
 
@@ -150,7 +150,7 @@ class TestStatusDisplayData(BaseTestCase):
         
         status_data = self._create_entity_state_status_data('MOVEMENT', [recent_response, past_response])
         
-        display_data = StatusDisplayData(status_data)
+        display_data = EntityStateDisplayData(status_data)
         
         self.assertEqual(display_data.svg_status_style, StatusStyle.MovementRecent)
 
@@ -172,7 +172,7 @@ class TestStatusDisplayData(BaseTestCase):
         
         status_data = self._create_entity_state_status_data('MOVEMENT', [recent_response, past_response])
         
-        display_data = StatusDisplayData(status_data)
+        display_data = EntityStateDisplayData(status_data)
         
         self.assertEqual(display_data.svg_status_style, StatusStyle.MovementPast)
 
@@ -194,7 +194,7 @@ class TestStatusDisplayData(BaseTestCase):
         
         status_data = self._create_entity_state_status_data('MOVEMENT', [recent_response, past_response])
         
-        display_data = StatusDisplayData(status_data)
+        display_data = EntityStateDisplayData(status_data)
         
         self.assertEqual(display_data.svg_status_style, StatusStyle.MovementIdle)
 
@@ -213,7 +213,7 @@ class TestStatusDisplayData(BaseTestCase):
         )
         status_data = self._create_entity_state_status_data('SMOKE', [sensor_response])
 
-        display_data = StatusDisplayData(status_data)
+        display_data = EntityStateDisplayData(status_data)
 
         self.assertEqual(display_data.svg_status_style, StatusStyle.SmokeDetected)
 
@@ -236,7 +236,7 @@ class TestStatusDisplayData(BaseTestCase):
             'SMOKE', [recent_response, past_response],
         )
 
-        display_data = StatusDisplayData(status_data)
+        display_data = EntityStateDisplayData(status_data)
 
         self.assertEqual(display_data.svg_status_style, StatusStyle.SmokeRecent)
 
@@ -259,7 +259,7 @@ class TestStatusDisplayData(BaseTestCase):
             'SMOKE', [recent_response, past_response],
         )
 
-        display_data = StatusDisplayData(status_data)
+        display_data = EntityStateDisplayData(status_data)
 
         self.assertEqual(display_data.svg_status_style, StatusStyle.SmokePast)
 
@@ -281,7 +281,7 @@ class TestStatusDisplayData(BaseTestCase):
             'SMOKE', [recent_response, past_response],
         )
 
-        display_data = StatusDisplayData(status_data)
+        display_data = EntityStateDisplayData(status_data)
 
         self.assertEqual(display_data.svg_status_style, StatusStyle.SmokeClear)
 
@@ -295,7 +295,7 @@ class TestStatusDisplayData(BaseTestCase):
         sensor_response = self._create_mock_sensor_response(str(EntityStateValue.ACTIVE))
         status_data = self._create_entity_state_status_data('PRESENCE', [sensor_response])
         
-        display_data = StatusDisplayData(status_data)
+        display_data = EntityStateDisplayData(status_data)
         
         # PRESENCE reuses Movement styles in the implementation
         self.assertEqual(display_data.svg_status_style, StatusStyle.MovementActive)
@@ -308,7 +308,7 @@ class TestStatusDisplayData(BaseTestCase):
         sensor_response = self._create_mock_sensor_response(str(EntityStateValue.IDLE))
         status_data = self._create_entity_state_status_data('PRESENCE', [sensor_response])
         
-        display_data = StatusDisplayData(status_data)
+        display_data = EntityStateDisplayData(status_data)
         
         # Should return MovementIdle for inactive presence
         self.assertEqual(display_data.svg_status_style, StatusStyle.MovementIdle)
@@ -323,7 +323,7 @@ class TestStatusDisplayData(BaseTestCase):
         sensor_response = self._create_mock_sensor_response(str(EntityStateValue.OPEN))
         status_data = self._create_entity_state_status_data('OPEN_CLOSE', [sensor_response])
         
-        display_data = StatusDisplayData(status_data)
+        display_data = EntityStateDisplayData(status_data)
         
         self.assertEqual(display_data.svg_status_style, StatusStyle.Open)
 
@@ -345,7 +345,7 @@ class TestStatusDisplayData(BaseTestCase):
         
         status_data = self._create_entity_state_status_data('OPEN_CLOSE', [recent_response, past_response])
         
-        display_data = StatusDisplayData(status_data)
+        display_data = EntityStateDisplayData(status_data)
         
         self.assertEqual(display_data.svg_status_style, StatusStyle.OpenRecent)
 
@@ -367,7 +367,7 @@ class TestStatusDisplayData(BaseTestCase):
         
         status_data = self._create_entity_state_status_data('OPEN_CLOSE', [recent_response, past_response])
         
-        display_data = StatusDisplayData(status_data)
+        display_data = EntityStateDisplayData(status_data)
         
         self.assertEqual(display_data.svg_status_style, StatusStyle.OpenPast)
 
@@ -389,7 +389,7 @@ class TestStatusDisplayData(BaseTestCase):
         
         status_data = self._create_entity_state_status_data('OPEN_CLOSE', [recent_response, past_response])
         
-        display_data = StatusDisplayData(status_data)
+        display_data = EntityStateDisplayData(status_data)
         
         self.assertEqual(display_data.svg_status_style, StatusStyle.Closed)
 
@@ -401,7 +401,7 @@ class TestStatusDisplayData(BaseTestCase):
             'OPEN_CLOSE_POSITION', [ sensor_response ],
         )
 
-        display_data = StatusDisplayData( status_data )
+        display_data = EntityStateDisplayData( status_data )
 
         self.assertEqual( display_data.svg_status_style, StatusStyle.Closed )
 
@@ -415,7 +415,7 @@ class TestStatusDisplayData(BaseTestCase):
                     'OPEN_CLOSE_POSITION', [ sensor_response ],
                 )
 
-                display_data = StatusDisplayData( status_data )
+                display_data = EntityStateDisplayData( status_data )
 
                 self.assertEqual( display_data.svg_status_style, StatusStyle.OpenPartial )
 
@@ -427,7 +427,7 @@ class TestStatusDisplayData(BaseTestCase):
                     'OPEN_CLOSE_POSITION', [ sensor_response ],
                 )
 
-                display_data = StatusDisplayData( status_data )
+                display_data = EntityStateDisplayData( status_data )
 
                 self.assertEqual( display_data.svg_status_style, StatusStyle.Open )
 
@@ -439,7 +439,7 @@ class TestStatusDisplayData(BaseTestCase):
             'OPEN_CLOSE_POSITION', [ sensor_response ],
         )
 
-        display_data = StatusDisplayData( status_data )
+        display_data = EntityStateDisplayData( status_data )
 
         self.assertEqual( display_data.svg_status_style, StatusStyle.Closed )
 
@@ -454,7 +454,7 @@ class TestStatusDisplayData(BaseTestCase):
             'POWER_LEVEL', [ sensor_response ],
         )
 
-        display_data = StatusDisplayData( status_data )
+        display_data = EntityStateDisplayData( status_data )
 
         self.assertEqual( display_data.svg_status_style.status_value, 'off' )
 
@@ -465,7 +465,7 @@ class TestStatusDisplayData(BaseTestCase):
             'POWER_LEVEL', [ sensor_response ],
         )
 
-        display_data = StatusDisplayData( status_data )
+        display_data = EntityStateDisplayData( status_data )
 
         self.assertEqual( display_data.svg_status_style.status_value, 'dim' )
 
@@ -475,7 +475,7 @@ class TestStatusDisplayData(BaseTestCase):
             'POWER_LEVEL', [ sensor_response ],
         )
 
-        display_data = StatusDisplayData( status_data )
+        display_data = EntityStateDisplayData( status_data )
 
         self.assertEqual( display_data.svg_status_style.status_value, 'dim' )
 
@@ -486,7 +486,7 @@ class TestStatusDisplayData(BaseTestCase):
             'POWER_LEVEL', [ sensor_response ],
         )
 
-        display_data = StatusDisplayData( status_data )
+        display_data = EntityStateDisplayData( status_data )
 
         self.assertEqual( display_data.svg_status_style.status_value, 'on' )
 
@@ -496,7 +496,7 @@ class TestStatusDisplayData(BaseTestCase):
             'POWER_LEVEL', [ sensor_response ],
         )
 
-        display_data = StatusDisplayData( status_data )
+        display_data = EntityStateDisplayData( status_data )
 
         self.assertEqual( display_data.svg_status_style.status_value, 'on' )
 
@@ -508,7 +508,7 @@ class TestStatusDisplayData(BaseTestCase):
             'POWER_LEVEL', [ sensor_response ],
         )
 
-        display_data = StatusDisplayData( status_data )
+        display_data = EntityStateDisplayData( status_data )
 
         self.assertEqual( display_data.svg_status_style.status_value, 'off' )
 
@@ -518,7 +518,7 @@ class TestStatusDisplayData(BaseTestCase):
         """Test default style is returned when no sensor data exists."""
         status_data = self._create_entity_state_status_data('TEMPERATURE', [])
         
-        display_data = StatusDisplayData(status_data)
+        display_data = EntityStateDisplayData(status_data)
         
         # Should use default style with DEFAULT_STATUS_VALUE when no sensor data
         self.assertIsNotNone(display_data.svg_status_style)
@@ -533,7 +533,7 @@ class TestStatusDisplayData(BaseTestCase):
             expected_style = Mock()
             mock_default.return_value = expected_style
             
-            display_data = StatusDisplayData(status_data)
+            display_data = EntityStateDisplayData(status_data)
             
             mock_default.assert_called_once_with(status_value='25.5')
             self.assertEqual(display_data.svg_status_style, expected_style)
@@ -543,7 +543,7 @@ class TestStatusDisplayData(BaseTestCase):
         sensor_response = self._create_mock_sensor_response(str(EntityStateValue.IDLE))
         status_data = self._create_entity_state_status_data('MOVEMENT', [sensor_response])
         
-        display_data = StatusDisplayData(status_data)
+        display_data = EntityStateDisplayData(status_data)
         
         # Should return idle since no penultimate active state
         self.assertEqual(display_data.svg_status_style, StatusStyle.MovementIdle)
@@ -555,7 +555,7 @@ class TestStatusDisplayData(BaseTestCase):
     def test_css_class_delegates_to_entity_state(self):
         """Test css_class property delegates to entity_state."""
         status_data = self._create_entity_state_status_data('ON_OFF', [])
-        display_data = StatusDisplayData(status_data)
+        display_data = EntityStateDisplayData(status_data)
         
         # Entity state css_class should be accessible
         css_class = display_data.css_class
@@ -567,7 +567,7 @@ class TestStatusDisplayData(BaseTestCase):
         sensor_response = self._create_mock_sensor_response(str(EntityStateValue.ON))
         status_data = self._create_entity_state_status_data('ON_OFF', [sensor_response])
         
-        display_data = StatusDisplayData(status_data)
+        display_data = EntityStateDisplayData(status_data)
         
         # Should return the style's to_dict() result
         attr_dict = display_data.attribute_dict
@@ -579,7 +579,7 @@ class TestStatusDisplayData(BaseTestCase):
         sensor_response = self._create_mock_sensor_response('INVALID')
         status_data = self._create_entity_state_status_data('ON_OFF', [sensor_response])
         
-        display_data = StatusDisplayData(status_data)
+        display_data = EntityStateDisplayData(status_data)
         
         self.assertEqual(display_data.attribute_dict, {})
 
@@ -589,7 +589,7 @@ class TestStatusDisplayData(BaseTestCase):
         response2 = self._create_mock_sensor_response('VALUE2')
         status_data = self._create_entity_state_status_data('ON_OFF', [response1, response2])
         
-        display_data = StatusDisplayData(status_data)
+        display_data = EntityStateDisplayData(status_data)
         
         self.assertEqual(display_data.latest_sensor_value, 'VALUE1')
 
@@ -599,7 +599,7 @@ class TestStatusDisplayData(BaseTestCase):
         response2 = self._create_mock_sensor_response('VALUE2')
         status_data = self._create_entity_state_status_data('ON_OFF', [response1, response2])
 
-        display_data = StatusDisplayData(status_data)
+        display_data = EntityStateDisplayData(status_data)
 
         self.assertEqual(display_data.penultimate_sensor_value, 'VALUE2')
 
@@ -631,7 +631,7 @@ class TestLatestDisplayLabel(BaseTestCase):
             sensor_response_list = [ response ],
             controller_data_list = [],
         )
-        return StatusDisplayData( status_data )
+        return EntityStateDisplayData( status_data )
 
     def test_unit_less_enum_value_returns_labeled_form(self):
         # ``smoke_detected`` (wire form) → ``Smoke Detected``
@@ -682,7 +682,7 @@ class TestLatestDisplayLabel(BaseTestCase):
             sensor_response_list = [],
             controller_data_list = [],
         )
-        display_data = StatusDisplayData( status_data )
+        display_data = EntityStateDisplayData( status_data )
         self.assertEqual( display_data.latest_display_label, '' )
 
 
@@ -690,10 +690,11 @@ class TestToPollingUpdateDict(BaseTestCase):
     """``to_polling_update_dict`` builds the per-EntityState row of
     the unified ``entityStateStatusMap``. Pins the contract for
     each kind of EntityState the polling path sees: sensor-only
-    (no ``controller`` key), unit-bearing (``magnitude`` and
-    ``unit_symbol`` present in display_value), unit-less enum
-    (``magnitude``/``unit_symbol`` absent), and the always-present
-    ``attributes`` and ``display_value`` keys."""
+    (no ``controller``), unit-bearing (``magnitude`` and ``unit``
+    present in ``display``), unit-less enum (``magnitude``/``unit``
+    absent), the always-present ``display`` key, and the optional
+    ``status`` / ``svg_style`` bundle for elements that opt in via
+    ``[data-status]`` / ``[data-svg-style]``."""
 
     def setUp(self):
         super().setUp()
@@ -721,7 +722,7 @@ class TestToPollingUpdateDict(BaseTestCase):
             sensor_response_list = [ response ],
             controller_data_list = controller_data_list,
         )
-        return StatusDisplayData( status_data )
+        return EntityStateDisplayData( status_data )
 
     def test_sensor_only_row_omits_controller_key(self):
         display_data = self._make_display_data(
@@ -738,56 +739,65 @@ class TestToPollingUpdateDict(BaseTestCase):
         self.assertIn( 'controller', row )
         self.assertIn( 'value', row[ 'controller' ] )
 
-    def test_unit_bearing_display_value_includes_magnitude_and_unit(self):
+    def test_unit_bearing_display_includes_magnitude_and_unit(self):
         display_data = self._make_display_data(
             'TEMPERATURE', '21', units = '°C',
         )
         row = display_data.to_polling_update_dict()
-        display_value = row[ 'display_value' ]
-        self.assertIn( 'text', display_value )
-        self.assertIn( 'magnitude', display_value )
-        self.assertIn( 'unit_symbol', display_value )
+        display = row[ 'display' ]
+        self.assertIn( 'text', display )
+        self.assertIn( 'magnitude', display )
+        self.assertIn( 'unit', display )
 
-    def test_unit_less_display_value_omits_magnitude_and_unit(self):
+    def test_unit_less_display_omits_magnitude_and_unit(self):
         display_data = self._make_display_data(
             'MOVEMENT', str(EntityStateValue.ACTIVE),
         )
         row = display_data.to_polling_update_dict()
-        display_value = row[ 'display_value' ]
-        self.assertIn( 'text', display_value )
-        self.assertNotIn( 'magnitude', display_value )
-        self.assertNotIn( 'unit_symbol', display_value )
+        display = row[ 'display' ]
+        self.assertIn( 'text', display )
+        self.assertNotIn( 'magnitude', display )
+        self.assertNotIn( 'unit', display )
 
-    def test_display_value_text_is_human_readable_label(self):
+    def test_display_text_is_human_readable_label(self):
         # Same source of truth as ``value_label`` template filter —
         # JS sets element.textContent to this string.
         display_data = self._make_display_data(
             'SMOKE', str(EntityStateValue.SMOKE_DETECTED),
         )
         row = display_data.to_polling_update_dict()
-        self.assertEqual(
-            row[ 'display_value' ][ 'text' ], 'Smoke Detected',
-        )
+        self.assertEqual( row[ 'display' ][ 'text' ], 'Smoke Detected' )
 
-    def test_display_value_text_humanizes_free_form_wire_value(self):
+    def test_display_text_humanizes_free_form_wire_value(self):
         # DISCRETE-typed states (HA hvac_action, fan preset, etc.)
         # carry free-form wire values not bound to an
-        # EntityStateValue member. The polling map's
-        # ``display_value.text`` humanizes them so the sensor card
-        # displays a readable label on poll refresh — the headline
-        # behavior of #310.
+        # EntityStateValue member. The polling map's display text
+        # humanizes them so the sensor card displays a readable
+        # label on poll refresh — the headline behavior of #310.
         display_data = self._make_display_data( 'DISCRETE', 'heating' )
         row = display_data.to_polling_update_dict()
-        self.assertEqual(
-            row[ 'display_value' ][ 'text' ], 'Heating',
-        )
+        self.assertEqual( row[ 'display' ][ 'text' ], 'Heating' )
 
-    def test_attributes_always_present(self):
-        # Even for unrecognized values where there's no SVG style,
-        # ``attributes`` is always emitted (possibly as an empty
-        # dict) — the JS dispatcher iterates whatever keys it
-        # finds and is safe with an empty mapping.
+    def test_status_present_when_svg_style_present(self):
+        # SVG-styled states publish both a top-level ``status`` (for
+        # ``[data-status]`` consumers like panel roots) and the full
+        # ``svg_style`` bundle (for ``[data-svg-style]`` consumers
+        # like LocationView icon ``<g>`` elements).
+        display_data = self._make_display_data(
+            'MOVEMENT', str(EntityStateValue.ACTIVE),
+        )
+        row = display_data.to_polling_update_dict()
+        self.assertIn( 'status', row )
+        self.assertIn( 'svg_style', row )
+        self.assertEqual( row[ 'status' ], row[ 'svg_style' ][ 'status' ] )
+
+    def test_status_and_svg_style_omitted_when_no_svg_style(self):
+        # When the value produces no svg_status_style (e.g., ON_OFF
+        # with an unrecognized value), both the top-level status and
+        # the svg_style bundle are absent. ``display`` is still
+        # present so display-text consumers keep refreshing.
         display_data = self._make_display_data( 'ON_OFF', 'INVALID' )
         row = display_data.to_polling_update_dict()
-        self.assertIn( 'attributes', row )
-        self.assertIsInstance( row[ 'attributes' ], dict )
+        self.assertNotIn( 'status', row )
+        self.assertNotIn( 'svg_style', row )
+        self.assertIn( 'display', row )

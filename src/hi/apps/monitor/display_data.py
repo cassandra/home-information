@@ -1,17 +1,34 @@
+"""Display-level projections of raw monitor data.
+
+The raw classes ``EntityStateStatusData`` and ``EntityStatusData`` (in
+``status_data``) are pure data containers — cheap to construct,
+free of display-format work. Templates and other rendering call sites
+go through the wrapping ``EntityStateDisplayData`` /
+``EntityDisplayData`` here, which add display-ready accessors (unit
+conversion, formatted labels, SVG status styles, role-keyed lookup,
+etc.). Manager produces raw; views project."""
+
+from dataclasses import dataclass
+from typing import Dict, List, Optional
+
 import hi.apps.common.datetimeproxy as datetimeproxy
 
+from hi.apps.common.svg_models import SvgIconItem
 from hi.apps.console.console_converter_helper import (
     ConsoleConverterHelper,
     DisplayValue,
 )
+from hi.apps.entity.entity_state_role_order import ENTITY_STATUS_VIEW_ORDERING
 from hi.apps.entity.enums import EntityStateType, EntityStateValue
+from hi.apps.entity.models import Entity
 
 from hi.hi_styles import StatusStyle
 
-from .transient_models import EntityStateStatusData
+from .enums import EntityDisplayCategory
+from .status_data import EntityStateStatusData, EntityStatusData
 
-    
-class StatusDisplayData:
+
+class EntityStateDisplayData:
 
     RECENT_MOVEMENT_THRESHOLD_SECS = 90
     PAST_MOVEMENT_THRESHOLD_SECS = 180
@@ -40,6 +57,7 @@ class StatusDisplayData:
     PAST_GAS_THRESHOLD_SECS = 1800
     
     def __init__( self, entity_state_status_data : EntityStateStatusData ):
+        self._raw = entity_state_status_data
         self._entity_state = entity_state_status_data.entity_state
         self._sensor_response_list = entity_state_status_data.sensor_response_list
         self._controller_data_list = entity_state_status_data.controller_data_list
@@ -56,6 +74,17 @@ class StatusDisplayData:
         self._svg_status_style = self._get_svg_status_style()
         self._controller_data_value = self._get_controller_data_value()
         return
+
+    def __getattr__( self, name ):
+        # Fall through to the wrapped raw data for any accessor not
+        # defined here (e.g. ``latest_sensor_response``, ``has_sensor``,
+        # ``has_controller``). Lets mainline templates that take a raw
+        # ``EntityStateStatusData`` also accept this display wrapper
+        # without per-template breakage. Properties defined on this
+        # class take precedence — ``__getattr__`` only fires for misses.
+        if name.startswith( '_' ):
+            raise AttributeError( name )
+        return getattr( self._raw, name )
 
     @property
     def entity_state(self):
@@ -134,18 +163,39 @@ class StatusDisplayData:
 
     def to_polling_update_dict(self) -> dict:
         """Build the per-EntityState row of ``entityStateStatusMap``.
-        Carries the three UI update pieces: DOM attributes,
-        controller widget state, and the human-readable display
-        text."""
+
+        Shape consumed by the JS dispatcher; each top-level key feeds
+        one element-level declaration:
+
+        - ``status``    → for ``[data-status]``    (singular status
+                          attribute push, e.g., panel root driving
+                          ``[status="..."]`` CSS)
+        - ``controller``→ for ``[data-controller-value]`` (form value
+                          push to sliders / checkboxes / selects)
+        - ``display``   → for ``[data-display-text]`` /
+                          ``[data-display-magnitude]`` /
+                          ``[data-display-unit]``
+        - ``svg_style`` → for ``[data-svg-style]`` (bundled SVG
+                          attribute push: status, stroke, fill, etc.,
+                          for LocationView icon and path elements)
+
+        ``status`` and ``svg_style.status`` carry the same value;
+        consumers pick the bundle that matches their opt-in. Fields
+        are present only when meaningful — sensor-only states omit
+        ``controller``; unit-less states omit
+        ``display.magnitude``/``display.unit``; states with no SVG
+        styling omit ``svg_style``."""
+        svg_style_dict = self.attribute_dict       # may be {} for unrecognized values
         display_value = self.latest_display_value
         display_dict = { 'text': self.latest_display_label }
         if display_value.unit_symbol:
             display_dict[ 'magnitude' ] = display_value.magnitude
-            display_dict[ 'unit_symbol' ] = display_value.unit_symbol
-        row = {
-            'attributes': self.attribute_dict,
-            'display_value': display_dict,
-        }
+            display_dict[ 'unit' ] = display_value.unit_symbol
+        row = { 'display': display_dict }
+        if svg_style_dict:
+            row[ 'svg_style' ] = svg_style_dict
+            if 'status' in svg_style_dict:
+                row[ 'status' ] = svg_style_dict[ 'status' ]
         if self.controller_data_value is not None:
             row[ 'controller' ] = { 'value': self.controller_data_value }
         return row
@@ -401,3 +451,70 @@ class StatusDisplayData:
             return StatusStyle.Low
         return None
     
+
+
+@dataclass
+class EntityDisplayData:
+    """Display projection of an ``EntityStatusData``. Wraps the raw
+    entity-level status data and exposes the accessors templates
+    need: a role-keyed map of per-state display projections, an
+    ordered list of the same, plus pass-through to the basic
+    ``entity`` / ``entity_for_video`` / ``display_only_svg_icon_item``
+    references. Constructed once per render at the view layer; the
+    per-state wrapping happens lazily on first access."""
+
+    entity_status_data : EntityStatusData
+
+    @property
+    def entity(self) -> Entity:
+        return self.entity_status_data.entity
+
+    @property
+    def entity_for_video(self) -> Optional[Entity]:
+        return self.entity_status_data.entity_for_video
+
+    @property
+    def display_only_svg_icon_item(self) -> Optional[SvgIconItem]:
+        return self.entity_status_data.display_only_svg_icon_item
+
+    @property
+    def display_category(self) -> EntityDisplayCategory:
+        return self.entity_status_data.display_category
+
+    @property
+    def state_status_data_list(self) -> List['EntityStateDisplayData']:
+        """Display-ordered list of per-state display projections,
+        sorted by ``ENTITY_STATUS_VIEW_ORDERING`` for the entity's
+        type. Each item wraps the corresponding raw
+        ``EntityStateStatusData``."""
+        ordered_raw = sorted(
+            self.entity_status_data.entity_state_status_data_list,
+            key = lambda d: ENTITY_STATUS_VIEW_ORDERING.sort_key(
+                d.entity_state.entity_state_role,
+                self.entity_status_data.entity.entity_type,
+            ),
+        )
+        return [ EntityStateDisplayData( d ) for d in ordered_raw ]
+
+    @property
+    def state_status_data_by_role(self) -> Dict[str, 'EntityStateDisplayData']:
+        """Role-keyed lookup for panel templates that pull a
+        specific state by semantic role. Keys are the lowercase
+        ``EntityStateRole`` name. Values are
+        ``EntityStateDisplayData`` so panel templates get the
+        display-ready accessors directly."""
+        return {
+            d.entity_state.entity_state_role.name.lower(): EntityStateDisplayData( d )
+            for d in self.entity_status_data.entity_state_status_data_list
+        }
+
+    def to_template_context(self) -> Dict:
+        return {
+            'entity': self.entity,
+            'entity_status_data': self,
+            'state_status_data_list': self.state_status_data_list,
+            'state_status_data_by_role': self.state_status_data_by_role,
+            'entity_for_video': self.entity_for_video,
+            'display_only_svg_icon_item': self.display_only_svg_icon_item,
+            'display_category': self.display_category,
+        }

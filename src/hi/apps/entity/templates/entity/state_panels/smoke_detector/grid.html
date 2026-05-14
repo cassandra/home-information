@@ -1,7 +1,7 @@
 {% with smoke_data=state_status_data_by_role.smoke battery_data=state_status_data_by_role.battery_level %}
 
-<div class="hi-state-panel-smoke_detector hi-state-panel-smoke_detector--grid{% if smoke_data %} hi-entity-state-{{ smoke_data.entity_state.id }}{% endif %}"
-     {% if smoke_data %}status="{{ smoke_data.latest_sensor_value }}"{% endif %}>
+<div class="hi-state-panel-smoke_detector hi-state-panel-smoke_detector--grid"
+     {% if smoke_data %}data-state-id="{{ smoke_data.entity_state.id }}" data-status status="{{ smoke_data.latest_sensor_value }}"{% endif %}>
 
   {% if smoke_data %}
   <div class="badge">

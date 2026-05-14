@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 from decimal import Decimal, ROUND_HALF_UP
-from typing import List
+from typing import List, Optional
                 
 from django.core.exceptions import ValidationError
 from django.db import models
@@ -110,7 +110,7 @@ class SvgIconItem:
     """
     
     html_id        : str
-    css_class      : str
+    state_id       : Optional[ int ]
     status_value   : str
     template_name  : str
     bounding_box   : SvgViewBox
@@ -154,7 +154,7 @@ class SvgPathItem:
     """
 
     html_id           : str
-    css_class         : str
+    state_id          : Optional[ int ]
     svg_path          : str
     stroke_color      : str
     stroke_width      : float

@@ -2,23 +2,40 @@
  * Home Information — Entity-state polling-update dispatcher.
  *
  * Consumes the ``entityStateStatusMap`` from the polling response
- * and applies per-EntityState DOM updates. The map is keyed by
- * CSS class (the per-state ``hi-entity-state-{id}`` marker); each
- * entry may carry attribute updates, display-value updates, and
- * controller-widget value updates. All three are applied in one
- * pass per CSS class.
+ * and applies per-EntityState DOM updates. The map is keyed by the
+ * EntityState id (as a string); each entry may carry a status
+ * value, a controller value, a display projection, and an SVG
+ * style bundle.
  *
- * Scoping contract: an element receives an update only when it has
- * BOTH the matching CSS class AND the marker attribute (``status``,
- * ``display-text``, etc.) on the same element. No descendant
- * propagation. Templates put the CSS class on the same element that
- * carries the display attribute the update should touch.
+ * Element-level contract: every DOM element that wants polling
+ * updates carries ``data-state-id="<entity_state_id>"`` plus one or
+ * more declaration attributes. Each declaration is presence-only:
+ *
+ *   data-status            → set the element's ``status`` attr to
+ *                            ``entry.status`` (singular status push;
+ *                            CSS rules elsewhere react to it).
+ *   data-controller-value  → set the form value / checked / selected
+ *                            from ``entry.controller.value``.
+ *   data-display-text      → set element text to ``entry.display.text``.
+ *   data-display-magnitude → set element text to ``entry.display.magnitude``.
+ *   data-display-unit      → set element text to ``entry.display.unit``.
+ *   data-svg-style         → set every attribute in ``entry.svg_style``
+ *                            (status, stroke, fill, stroke-width,
+ *                            fill-opacity, stroke-dasharray) on this
+ *                            element. Used by LocationView SVG icon /
+ *                            path elements.
+ *
+ * The dispatcher walks ``[data-state-id]`` once, looks up the
+ * entry, and applies each declaration the element opts into. No
+ * descendant traversal and no class-based join — each element is
+ * self-describing, so authors place the markers on whichever
+ * element they want updated.
  *
  * After the universal apply pass, registered EntityStatusPanel
  * handlers run. Panels that need behavior beyond what the universal
  * dispatcher handles (e.g., a thermostat dial whose SVG marker
  * angles are computed from numeric values) register a handler via
- * ``Hi.statePanels.register``. The fallback flat-list rendering is
+ * ``Hi.statePanels.registerUpdate``. The fallback flat-list rendering is
  * itself a panel; its panel JS registers a handler for the
  * flat-list-specific behaviors (checkbox status-text mirror, dimmer
  * preset buttons, etc.).
@@ -31,16 +48,42 @@
 
     // EntityStatusPanel JS that wants to react to polling updates
     // beyond what CSS keyed on the ``status`` attribute can do
-    // registers a handler here. Handlers receive the full statusMap
-    // and scope their own work using the ``.hi-state-panel-<name>``
-    // and ``.hi-entity-state-<id>`` classes already present in the
-    // DOM. Handlers run after the universal apply pass.
-    const panelHandlers = [];
+    // registers an update handler via ``registerUpdate``. Update
+    // handlers receive the full statusMap keyed by state id and
+    // scope their own work using ``data-state-id`` on the elements
+    // they manage. They run after the universal apply pass on each
+    // polling tick.
+    //
+    // Panels that need a per-insertion init step (e.g., a thermostat
+    // dial that has to position SVG markers from server-rendered
+    // ``data-temp-value`` attributes before any polling tick) register
+    // an init handler via ``registerInit``. Init handlers fire at
+    // jQuery ready for the initial page render AND after every async
+    // content insertion (via antinode), so panels in dynamically-loaded
+    // modals get a chance to initialize before the first polling tick.
+    // Init handlers must be idempotent — they re-scan the whole
+    // document on each call and should be safe to invoke on already-
+    // initialized elements.
+    const panelUpdateHandlers = [];
+    const panelInitHandlers = [];
     Hi.statePanels = Hi.statePanels || {
-        register: function( handler ) {
-            if ( typeof handler === 'function' ) panelHandlers.push( handler );
+        registerUpdate: function( handler ) {
+            if ( typeof handler === 'function' ) panelUpdateHandlers.push( handler );
+        },
+        registerInit: function( handler ) {
+            if ( typeof handler === 'function' ) panelInitHandlers.push( handler );
         }
     };
+
+    function runPanelInitHandlers() {
+        for ( const handler of panelInitHandlers ) {
+            try {
+                handler();
+            } catch ( e ) {
+                console.error( 'EntityStatusPanel init handler error:', e );
+            }
+        }
+    }
 
     // Sliders the user is actively dragging. Polling-driven value
     // updates skip these elements so a server refresh mid-drag
@@ -49,15 +92,42 @@
 
     Hi.entityStateStatus.apply = function( statusMap ) {
         if ( ! statusMap ) return;
-        for ( const cssClass in statusMap ) {
-            const entry = statusMap[ cssClass ];
-            const $elements = $( '.' + cssClass );
-            if ( $elements.length === 0 ) continue;
-            if ( entry.attributes ) applyAttributes( $elements, entry.attributes );
-            if ( entry.display_value ) applyDisplay( $elements, entry.display_value );
-            if ( entry.controller ) applyControllerValue( $elements, entry.controller );
-        }
-        for ( const handler of panelHandlers ) {
+        $( '[data-state-id]' ).each( function() {
+            const $el = $( this );
+            const entry = statusMap[ $el.attr( 'data-state-id' ) ];
+            if ( ! entry ) return;
+
+            if ( entry.status != null && this.hasAttribute( 'data-status' ) ) {
+                setAttrIfDifferent( this, 'status', entry.status );
+            }
+            if ( entry.svg_style && this.hasAttribute( 'data-svg-style' ) ) {
+                for ( const attrName in entry.svg_style ) {
+                    const attrValue = entry.svg_style[ attrName ];
+                    if ( attrValue == null ) continue;
+                    setAttrIfDifferent( this, attrName, attrValue );
+                }
+            }
+            if ( entry.display ) {
+                if ( entry.display.text != null
+                     && this.hasAttribute( 'data-display-text' ) ) {
+                    setTextIfDifferent( this, entry.display.text );
+                }
+                if ( entry.display.magnitude != null
+                     && this.hasAttribute( 'data-display-magnitude' ) ) {
+                    setTextIfDifferent( this, String( entry.display.magnitude ) );
+                }
+                if ( entry.display.unit != null
+                     && this.hasAttribute( 'data-display-unit' ) ) {
+                    setTextIfDifferent( this, entry.display.unit );
+                }
+            }
+            if ( entry.controller
+                 && this.hasAttribute( 'data-controller-value' ) ) {
+                applyControllerValue( this, entry.controller.value );
+            }
+        });
+
+        for ( const handler of panelUpdateHandlers ) {
             try {
                 handler( statusMap );
             } catch ( e ) {
@@ -66,58 +136,26 @@
         }
     };
 
-    function applyAttributes( $elements, attrMap ) {
-        for ( const attrName in attrMap ) {
-            const attrValue = attrMap[ attrName ];
-            if ( attrValue == null ) continue;
-            $elements.filter( '[' + attrName + ']' ).each( function() {
-                if ( $( this ).attr( attrName ) !== String( attrValue ) ) {
-                    $( this ).attr( attrName, attrValue );
-                }
-            });
+    function setAttrIfDifferent( element, attrName, attrValue ) {
+        const newValue = String( attrValue );
+        if ( element.getAttribute( attrName ) !== newValue ) {
+            element.setAttribute( attrName, newValue );
         }
     }
 
-    function applyDisplay( $elements, displayValue ) {
-        // Templates opt in to display refresh by tagging the same
-        // element with the per-state CSS class AND one of
-        // ``display-text``, ``display-magnitude``, ``display-unit``.
-        // The attribute is presence-only; the polled
-        // ``display_value`` field of the same name supplies the
-        // text.
-        if ( displayValue.text != null ) {
-            setTextOnAttr( $elements, 'display-text', displayValue.text );
-        }
-        if ( displayValue.magnitude != null ) {
-            setTextOnAttr( $elements, 'display-magnitude', String( displayValue.magnitude ) );
-        }
-        if ( displayValue.unit_symbol != null ) {
-            setTextOnAttr( $elements, 'display-unit', displayValue.unit_symbol );
+    function setTextIfDifferent( element, text ) {
+        if ( element.textContent !== text ) {
+            element.textContent = text;
         }
     }
 
-    function setTextOnAttr( $elements, attrName, text ) {
-        $elements.filter( '[' + attrName + ']' ).each( function() {
-            if ( $( this ).text() !== text ) {
-                $( this ).text( text );
-            }
-        });
-    }
-
-    function applyControllerValue( $elements, controllerDict ) {
-        const value = controllerDict.value;
-        $elements.each( function() {
-            applyValueToElement( this, value );
-        });
-    }
-
-    function applyValueToElement( element, value ) {
+    function applyControllerValue( element, value ) {
         const tag = element.tagName;
         if ( tag === 'INPUT' ) {
             const type = element.type;
             if ( type === 'range' || type === 'number' || type === 'text' ) {
                 if ( type === 'range' && activeSliders.has( element ) ) return;
-                setIfDifferent( element, 'value', String( value ) );
+                setPropIfDifferent( element, 'value', String( value ) );
                 syncSliderDisplay( element );
                 return;
             }
@@ -128,16 +166,14 @@
             }
         }
         if ( tag === 'SELECT' ) {
-            setIfDifferent( element, 'value', String( value ) );
+            setPropIfDifferent( element, 'value', String( value ) );
             return;
         }
         // Other shapes (color picker, etc.) get their own branches
-        // here as widgets are added. Silently no-op for unrelated
-        // class-targeted elements (e.g., wrapper divs sharing the
-        // class for CSS purposes) so they're unaffected.
+        // here as widgets are added.
     }
 
-    function setIfDifferent( element, prop, newValue ) {
+    function setPropIfDifferent( element, prop, newValue ) {
         if ( element[ prop ] !== newValue ) element[ prop ] = newValue;
     }
 
@@ -205,6 +241,21 @@
             'input[type=range]',
             function() { activeSliders.delete( this ); }
         );
+
+        // Initial pass for the first page render. Async-loaded
+        // fragments piggyback on antinode's afterAsyncRender hook
+        // (for HTML and set-attribute responses) and its dedicated
+        // afterModalRender hook (for JSON-delivered modals, which
+        // are inserted after afterAsyncRender fires).
+        runPanelInitHandlers();
+        if ( window.AN ) {
+            if ( typeof window.AN.addAfterAsyncRenderFunction === 'function' ) {
+                window.AN.addAfterAsyncRenderFunction( runPanelInitHandlers );
+            }
+            if ( typeof window.AN.addAfterModalRenderFunction === 'function' ) {
+                window.AN.addAfterModalRenderFunction( runPanelInitHandlers );
+            }
+        }
     });
 
 })();

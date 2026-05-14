@@ -73,7 +73,7 @@ class TestSmokeBinarySensor(TestCase):
         # previously had no SMOKE branch and fell through to
         # ``create_blob_sensor`` — the EntityState ended up with
         # ``entity_state_type_str='blob'``, breaking every smoke-
-        # specific dispatch downstream (StatusDisplayData,
+        # specific dispatch downstream (EntityStateDisplayData,
         # rendering, etc.).
         device, _ = _build_binary_sensor_device(
             'kitchen_smoke', device_class = 'smoke',

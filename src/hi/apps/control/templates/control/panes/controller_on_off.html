@@ -3,7 +3,9 @@
   <label class="switch-modern">
     <input type="checkbox"
            name="value"
-           class="{{ controller_data.css_class }} switch-input"
+           class="switch-input"
+           data-state-id="{{ controller_data.entity_state.id }}"
+           data-status data-controller-value
            {% if controller_data.latest_sensor_response.is_on %}checked="true"{% endif %}
            status="{{ controller_data.latest_sensor_response.value }}"
            data-on-text="{{ on_text }}"

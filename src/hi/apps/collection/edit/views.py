@@ -228,7 +228,6 @@ class CollectionPositionEditView( View, CollectionViewMixin ):
         svg_icon_item = SvgItemFactory().create_svg_icon_item(
             item = collection_position.collection,
             position = collection_position,
-            css_class = '',
         )
         set_attributes_map = {
             svg_icon_item.html_id: {

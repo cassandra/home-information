@@ -85,13 +85,13 @@ class TestSvgItemFactory(BaseTestCase):
         icon_item = factory.create_svg_icon_item(
             item=entity,
             position=position,
-            css_class='entity-icon'
+            state_id=42,
         )
-        
+
         # Should create proper SvgIconItem
         self.assertIsInstance(icon_item, SvgIconItem)
         self.assertEqual(icon_item.html_id, 'entity-123')
-        self.assertEqual(icon_item.css_class, 'entity-icon')
+        self.assertEqual(icon_item.state_id, 42)
         self.assertEqual(icon_item.position_x, 100.0)
         self.assertEqual(icon_item.position_y, 200.0)
         self.assertEqual(icon_item.rotate, 45.0)
@@ -126,13 +126,13 @@ class TestSvgItemFactory(BaseTestCase):
         path_item = factory.create_svg_path_item(
             item=entity,
             path=path,
-            css_class='entity-path'
+            state_id=42,
         )
-        
+
         # Should create proper SvgPathItem
         self.assertIsInstance(path_item, SvgPathItem)
         self.assertEqual(path_item.html_id, 'entity-456')
-        self.assertEqual(path_item.css_class, 'entity-path')
+        self.assertEqual(path_item.state_id, 42)
         self.assertEqual(path_item.svg_path, 'M 10,10 L 50,50 L 10,50 Z')
         self.assertEqual(path_item.stroke_color, '#ff0000')
         self.assertEqual(path_item.stroke_width, 2.0)
@@ -253,7 +253,7 @@ class TestSvgItemFactory(BaseTestCase):
         # Test that display icon has no positioning or status
         self.assertIsInstance(display_icon, SvgIconItem)
         self.assertIsNone(display_icon.html_id)
-        self.assertIsNone(display_icon.css_class)
+        self.assertIsNone(display_icon.state_id)
         self.assertIsNone(display_icon.status_value)
         self.assertIsNone(display_icon.position_x)
         self.assertIsNone(display_icon.position_y)

@@ -5,8 +5,8 @@
 {# (``smoke_clear`` / ``smoke_detected``); polling overwrites with   #}
 {# the decay-aware value (``idle`` / ``active`` / ``recent`` /       #}
 {# ``past``). CSS handles both vocabularies.                         #}
-<div class="hi-state-panel-smoke_detector hi-state-panel-smoke_detector--modal{% if smoke_data %} hi-entity-state-{{ smoke_data.entity_state.id }}{% endif %}"
-     {% if smoke_data %}status="{{ smoke_data.latest_sensor_value }}"{% endif %}>
+<div class="hi-state-panel-smoke_detector hi-state-panel-smoke_detector--modal"
+     {% if smoke_data %}data-state-id="{{ smoke_data.entity_state.id }}" data-status status="{{ smoke_data.latest_sensor_value }}"{% endif %}>
 
   {% if smoke_data %}
   <div class="hero">
@@ -31,9 +31,11 @@
 
   {% if battery_data %}
   <div class="auxiliary">
-    <div class="aux-item hi-entity-state-{{ battery_data.entity_state.id }}">
+    <div class="aux-item">
       <div class="aux-label">Battery</div>
-      <div class="aux-value" display-text>{{ battery_data.latest_display_label }}</div>
+      <div class="aux-value"
+           data-state-id="{{ battery_data.entity_state.id }}"
+           data-display-text>{{ battery_data.latest_display_label }}</div>
     </div>
   </div>
   {% endif %}

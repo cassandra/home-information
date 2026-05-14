@@ -37,10 +37,10 @@
     // Registers with the framework's post-apply hook so the caption
     // mirror runs after the universal dispatcher has already updated
     // each checkbox's ``.checked`` state.
-    if ( window.Hi && Hi.statePanels && typeof Hi.statePanels.register === 'function' ) {
-        Hi.statePanels.register( function( statusMap ) {
-            for ( const cssClass in statusMap ) {
-                $( '.' + cssClass + '[type="checkbox"]' ).each( function() {
+    if ( window.Hi && Hi.statePanels && typeof Hi.statePanels.registerUpdate === 'function' ) {
+        Hi.statePanels.registerUpdate( function( statusMap ) {
+            for ( const stateId in statusMap ) {
+                $( `[data-state-id="${stateId}"][type="checkbox"]` ).each( function() {
                     syncCheckboxStatusText( this );
                 });
             }

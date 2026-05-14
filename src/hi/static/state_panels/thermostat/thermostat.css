@@ -1,0 +1,162 @@
+/* EntityStatusPanel for THERMOSTAT entities.
+ *
+ * All rules nested under .hi-state-panel-thermostat. The dial's
+ * SVG markers (setpoint, current temperature) are positioned by
+ * thermostat.js because their angle depends on the numeric
+ * magnitude of the temperature values — CSS can't compute that.
+ * Color tint and the HVAC-action text label are CSS-driven from
+ * the ``status`` attribute the polling system maintains on the
+ * panel root (which carries the HVAC_ACTION state's CSS class).
+ */
+
+:root {
+    --hi-thermo-idle-color: #6c757d;
+    --hi-thermo-heating-color: #d9430d;
+    --hi-thermo-heating-bg: rgba(244, 95, 54, 0.10);
+    --hi-thermo-cooling-color: #1a73c2;
+    --hi-thermo-cooling-bg: rgba(45, 130, 220, 0.10);
+}
+
+/* ============================================================== */
+/* Dial — shared across modal and list contexts.                  */
+/* ============================================================== */
+
+.hi-state-panel-thermostat .dial {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    background: rgba(0, 0, 0, 0.03);
+    transition: background-color 0.4s ease;
+    flex-shrink: 0;
+}
+.hi-state-panel-thermostat[status="heating"] .dial { background: var(--hi-thermo-heating-bg); }
+.hi-state-panel-thermostat[status="cooling"] .dial { background: var(--hi-thermo-cooling-bg); }
+
+.hi-state-panel-thermostat .dial-svg {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+}
+.hi-state-panel-thermostat .dial-track {
+    stroke: rgba(0, 0, 0, 0.10);
+}
+
+.hi-state-panel-thermostat .dial-setpoint-marker line {
+    stroke: var(--hi-thermo-idle-color);
+}
+.hi-state-panel-thermostat[status="heating"] .dial-setpoint-marker line { stroke: var(--hi-thermo-heating-color); }
+.hi-state-panel-thermostat[status="cooling"] .dial-setpoint-marker line { stroke: var(--hi-thermo-cooling-color); }
+
+.hi-state-panel-thermostat .dial-current-marker circle {
+    fill: var(--hi-thermo-idle-color);
+}
+.hi-state-panel-thermostat[status="heating"] .dial-current-marker circle { fill: var(--hi-thermo-heating-color); }
+.hi-state-panel-thermostat[status="cooling"] .dial-current-marker circle { fill: var(--hi-thermo-cooling-color); }
+
+.hi-state-panel-thermostat .dial-center {
+    text-align: center;
+    z-index: 1;
+}
+.hi-state-panel-thermostat .dial-temp {
+    font-weight: 300;
+    line-height: 1;
+    display: block;
+    color: #1f2328;
+}
+
+/* HVAC-action label: only the variant matching the current status renders. */
+.hi-state-panel-thermostat .dial-mode-label { display: none; }
+.hi-state-panel-thermostat[status="idle"]    .dial-mode-label[for-status="idle"],
+.hi-state-panel-thermostat[status="heating"] .dial-mode-label[for-status="heating"],
+.hi-state-panel-thermostat[status="cooling"] .dial-mode-label[for-status="cooling"],
+.hi-state-panel-thermostat[status="off"]     .dial-mode-label[for-status="off"] {
+    display: inline;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    font-weight: 600;
+}
+.hi-state-panel-thermostat[status="idle"]    .dial-mode-label { color: var(--hi-thermo-idle-color); }
+.hi-state-panel-thermostat[status="heating"] .dial-mode-label { color: var(--hi-thermo-heating-color); }
+.hi-state-panel-thermostat[status="cooling"] .dial-mode-label { color: var(--hi-thermo-cooling-color); }
+.hi-state-panel-thermostat[status="off"]     .dial-mode-label { color: var(--hi-thermo-idle-color); }
+
+/* ============================================================== */
+/* Modal layout                                                   */
+/* ============================================================== */
+
+.hi-state-panel-thermostat--modal {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+.hi-state-panel-thermostat--modal .dial {
+    width: 220px;
+    height: 220px;
+    margin-bottom: 16px;
+}
+.hi-state-panel-thermostat--modal .dial-temp { font-size: 56px; }
+.hi-state-panel-thermostat--modal .dial-mode-label { margin-top: 6px; }
+.hi-state-panel-thermostat--modal .states {
+    width: 100%;
+}
+
+/* ============================================================== */
+/* List card layout                                               */
+/* ============================================================== */
+
+.hi-state-panel-thermostat--list {
+    display: grid;
+    grid-template-columns: 96px 1fr;
+    gap: 14px;
+    align-items: center;
+}
+.hi-state-panel-thermostat--list .dial {
+    width: 96px;
+    height: 96px;
+}
+.hi-state-panel-thermostat--list .dial-temp { font-size: 26px; }
+.hi-state-panel-thermostat--list .entity-name {
+    font-size: 14px; font-weight: 600; line-height: 1.2;
+}
+.hi-state-panel-thermostat--list .setpoint-summary {
+    font-size: 12px; color: var(--text-muted, #6c757d); margin-top: 2px;
+}
+
+/* ============================================================== */
+/* Grid card layout — flat number, color-tinted background.       */
+/* ============================================================== */
+
+.hi-state-panel-thermostat--grid {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 8px;
+    height: 100%;
+}
+.hi-state-panel-thermostat--grid[status="heating"] { background: var(--hi-thermo-heating-bg); }
+.hi-state-panel-thermostat--grid[status="cooling"] { background: var(--hi-thermo-cooling-bg); }
+.hi-state-panel-thermostat--grid .grid-temp {
+    font-size: 44px;
+    font-weight: 300;
+    line-height: 1;
+}
+.hi-state-panel-thermostat--grid .entity-name {
+    font-size: 11px; color: var(--text-muted, #6c757d);
+    margin-top: 6px; line-height: 1.2;
+}
+.hi-state-panel-thermostat--grid .setpoint-line {
+    font-size: 9px;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--text-muted, #6c757d);
+    margin-top: 3px;
+    font-weight: 600;
+}
+.hi-state-panel-thermostat--grid[status="heating"] .setpoint-line { color: var(--hi-thermo-heating-color); }
+.hi-state-panel-thermostat--grid[status="cooling"] .setpoint-line { color: var(--hi-thermo-cooling-color); }

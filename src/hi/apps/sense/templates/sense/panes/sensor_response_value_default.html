@@ -1,2 +1,2 @@
 {% load entity_tags units %}
-<div class="{{ sensor_response.sensor.entity_state.css_class }} text-center px-2" status="{{ sensor_response.value }}" display-text>{% if sensor_response.entity_state.units %}{{ sensor_response.value|as_display_value:sensor_response.entity_state }}{% else %}{{ sensor_response.value|value_label }}{% endif %}</div>
+<div class="hi-status-display text-center px-2" data-state-id="{{ sensor_response.sensor.entity_state.id }}" data-status data-display-text status="{{ sensor_response.value }}">{% if sensor_response.entity_state.units %}{{ sensor_response.value|as_display_value:sensor_response.entity_state }}{% else %}{{ sensor_response.value|value_label }}{% endif %}</div>

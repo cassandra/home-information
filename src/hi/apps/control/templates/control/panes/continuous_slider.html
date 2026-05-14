@@ -33,7 +33,9 @@ Parameters:
            max="{{ slider_max }}"
            {% if slider_step %}step="{{ slider_step }}"{% endif %}
            value="{{ controller_data.latest_sensor_response.value|default_if_none:slider_default }}"
-           class="{{ controller_data.css_class }} {{ DIVID.CONTROLLER_SLIDER_CLASS }} {{ slider_class }}"
+           class="{{ DIVID.CONTROLLER_SLIDER_CLASS }} {{ slider_class }}"
+           data-state-id="{{ controller_data.entity_state.id }}"
+           data-controller-value
            {{ DIVID.CONTROLLER_DISPLAY_TARGET_ATTR }}=".hi-continuous-slider-value"
            {{ DIVID.CONTROLLER_DISPLAY_FORMAT_ATTR }}="{n}{{ display_unit }}"
            onchange-async="true"
