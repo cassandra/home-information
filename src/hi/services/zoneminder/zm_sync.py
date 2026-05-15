@@ -332,6 +332,7 @@ class ZoneMinderSynchronizer( IntegrationSynchronizer, ZoneMinderMixin ):
             entity.integration_key = entity_integration_key
             entity.can_user_delete = ZmMetaData.allow_entity_deletion
             entity.has_video_stream = True
+            entity.has_video_snapshot = True
             entity.save()
 
             movement_sensor = HiModelHelper.create_movement_sensor(
