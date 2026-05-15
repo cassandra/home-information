@@ -4,7 +4,7 @@ from django.urls import resolve
 from .views import UserSigninView
 
 
-class AuthenticationMiddleware(object):
+class AuthenticationMiddleware:
 
     EXEMPT_VIEW_URL_NAMES = {
         'admin',

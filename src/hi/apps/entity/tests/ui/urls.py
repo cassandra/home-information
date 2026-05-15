@@ -1,12 +1,12 @@
-from django.urls import re_path
+from django.urls import path
 from . import views
 
 urlpatterns = [
-    re_path(r'^$',
-            views.TestUiEntityHomeView.as_view(),
-            name='entity_tests_ui'),
+    path('',
+         views.TestUiEntityHomeView.as_view(),
+         name='entity_tests_ui'),
 
-    re_path(r'^visual-browser/$',
-            views.TestUiEntityTypeVisualBrowserView.as_view(),
-            name='test_entity_type_visual_browser'),
+    path('visual-browser/',
+         views.TestUiEntityTypeVisualBrowserView.as_view(),
+         name='test_entity_type_visual_browser'),
 ]

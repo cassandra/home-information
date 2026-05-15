@@ -38,7 +38,7 @@ class ViewMiddleware:
         return
 
     
-class ExceptionMiddleware(object):
+class ExceptionMiddleware:
 
     def __init__(self, get_response):
         self.get_response = get_response
@@ -55,7 +55,7 @@ class ExceptionMiddleware(object):
         return None
     
     def process_exception( self, request, exception ):
-        ip_address = request.META.get( 'HTTP_X_FORWARDED_FOR' )  # nginx forwarded
+        ip_address = request.headers.get( 'x-forwarded-for' )  # nginx forwarded
         logger.warning( f'Exception caught in middleware [{ip_address}]: {exception}' )
         
         if isinstance( exception, BadRequest ):

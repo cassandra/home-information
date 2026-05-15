@@ -43,7 +43,7 @@ class TestEditStartView(SyncViewTestCase):
         self.setSessionViewType(ViewType.LOCATION_VIEW)
         
         url = reverse('edit_start')
-        response = self.client.get(url, HTTP_REFERER='/test/page/')
+        response = self.client.get(url, headers={"referer": '/test/page/'})
 
         # Should redirect to referer
         self.assertEqual(response.status_code, 302)
@@ -75,7 +75,7 @@ class TestEditStartView(SyncViewTestCase):
         self.setSessionViewType(ViewType.CONFIGURATION)
         
         url = reverse('edit_start')
-        response = self.client.get(url, HTTP_REFERER='/config/page/')
+        response = self.client.get(url, headers={"referer": '/config/page/'})
 
         # Should redirect to home instead of referer
         home_url = reverse('home')
@@ -106,7 +106,7 @@ class TestEditEndView(SyncViewTestCase):
         
         url = reverse('edit_end')
         referer_url = '/location/view/1?details=/item/details/123'
-        response = self.client.get(url, HTTP_REFERER=referer_url)
+        response = self.client.get(url, headers={"referer": referer_url})
 
         # Should redirect and clear sidebar parameter
         self.assertEqual(response.status_code, 302)
@@ -140,7 +140,7 @@ class TestEditEndView(SyncViewTestCase):
         
         url = reverse('edit_end')
         referer_url = '/location/view/1?page=2&details=/item/details/123&sort=name'
-        response = self.client.get(url, HTTP_REFERER=referer_url)
+        response = self.client.get(url, headers={"referer": referer_url})
 
         # Should redirect and preserve other params while clearing details
         self.assertEqual(response.status_code, 302)

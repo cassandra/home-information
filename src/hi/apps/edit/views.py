@@ -39,7 +39,7 @@ class EditStartView( View ):
         # state mode.
         
         if request.view_parameters.view_type.allows_edit_mode:
-            redirect_url = request.META.get('HTTP_REFERER')
+            redirect_url = request.headers.get('referer')
         else:
             redirect_url = None
         if not redirect_url:
@@ -66,7 +66,7 @@ class EditEndView( View ):
         request.view_parameters.to_session( request )
 
         # Do a page refresh, but remove any side bar url set during editing.
-        referrer_url = request.META.get('HTTP_REFERER')
+        referrer_url = request.headers.get('referer')
         if referrer_url:
             parsed_url = urllib.parse.urlparse( referrer_url )
             query_params = urllib.parse.parse_qs( parsed_url.query )

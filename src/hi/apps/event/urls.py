@@ -1,18 +1,19 @@
-from django.urls import include, re_path
+from django.urls import path
+from django.urls import include
 
 from . import views
 
 
 urlpatterns = [
 
-    re_path( r'^definitions$', 
-             views.EventDefinitionsView.as_view(), 
-             name='event_definitions'),
+    path( 'definitions', 
+          views.EventDefinitionsView.as_view(), 
+          name='event_definitions'),
 
-    re_path( r'^history$', 
-             views.EventHistoryView.as_view(), 
-             name='event_history'),
+    path( 'history', 
+          views.EventHistoryView.as_view(), 
+          name='event_history'),
 
-    re_path( r'^edit/', include('hi.apps.event.edit.urls' )),
+    path( 'edit/', include('hi.apps.event.edit.urls' )),
 
 ]

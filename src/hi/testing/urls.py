@@ -1,15 +1,16 @@
-from django.urls import include, re_path
+from django.urls import path
+from django.urls import include
 
 from . import views
 
 
 urlpatterns = [
 
-    re_path( r'^$', 
-             views.TestingHomeView.as_view(), 
-             name='testing_home'),
+    path( '', 
+          views.TestingHomeView.as_view(), 
+          name='testing_home'),
 
-    re_path( r'^ui/', include('hi.testing.ui.urls' )),
-    re_path( r'^devtools/', include('hi.testing.devtools.urls' )),
+    path( 'ui/', include('hi.testing.ui.urls' )),
+    path( 'devtools/', include('hi.testing.devtools.urls' )),
 
 ]

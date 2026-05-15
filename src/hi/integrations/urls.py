@@ -1,4 +1,5 @@
 from django.apps import apps
+from django.urls import path
 from django.urls import re_path, include
 
 from hi.apps.common.module_utils import import_module_safe
@@ -7,13 +8,13 @@ from . import views
 
 
 urlpatterns = [
-    re_path( r'^$', 
-             views.IntegrationHomeView.as_view(), 
-             name='integrations_home' ),
+    path( '', 
+          views.IntegrationHomeView.as_view(), 
+          name='integrations_home' ),
 
-    re_path( r'^select$', 
-             views.IntegrationSelectView.as_view(), 
-             name='integrations_select' ),
+    path( 'select', 
+          views.IntegrationSelectView.as_view(), 
+          name='integrations_select' ),
 
     re_path( r'^enable/(?P<integration_id>[\w\-]+)$', 
              views.IntegrationEnableView.as_view(), 
@@ -47,21 +48,21 @@ urlpatterns = [
              views.IntegrationPlacementView.as_view(),
              name='integrations_placement' ),
 
-    re_path( r'^refine/(?P<location_view_id>\d+)$',
-             views.IntegrationRefineView.as_view(),
-             name='integrations_refine' ),
+    path( 'refine/<int:location_view_id>',
+          views.IntegrationRefineView.as_view(),
+          name='integrations_refine' ),
 
     re_path( r'^manage/(?P<integration_id>[\w\-]*)$', 
              views.IntegrationManageView.as_view(), 
              name='integrations_manage' ),
     
-    re_path( r'^attribute/history/(?P<integration_id>\d+)/(?P<attribute_id>\d+)/$', 
-             views.IntegrationAttributeHistoryInlineView.as_view(), 
-             name='integration_attribute_history_inline'),
+    path( 'attribute/history/<int:integration_id>/<int:attribute_id>/', 
+          views.IntegrationAttributeHistoryInlineView.as_view(), 
+          name='integration_attribute_history_inline'),
     
-    re_path( r'^attribute/restore/(?P<integration_id>\d+)/(?P<attribute_id>\d+)/(?P<history_id>\d+)/$', 
-             views.IntegrationAttributeRestoreInlineView.as_view(),
-             name='integration_attribute_restore_inline'),
+    path( 'attribute/restore/<int:integration_id>/<int:attribute_id>/<int:history_id>/', 
+          views.IntegrationAttributeRestoreInlineView.as_view(),
+          name='integration_attribute_restore_inline'),
 ]
 
 

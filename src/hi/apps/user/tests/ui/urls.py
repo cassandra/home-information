@@ -1,3 +1,4 @@
+from django.urls import path
 from django.urls import re_path
 
 from . import views
@@ -5,9 +6,9 @@ from . import views
 
 urlpatterns = [
 
-    re_path( r'^$',
-             views.TestUiUserHomeView.as_view(), 
-             name='user_tests_ui'),
+    path( '',
+          views.TestUiUserHomeView.as_view(), 
+          name='user_tests_ui'),
 
     re_path( r'^email/signin/view/(?P<email_type>\w+)$',
              views.TestUiViewSigninEmailView.as_view(), 

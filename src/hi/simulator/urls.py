@@ -14,41 +14,41 @@ logger = logging.getLogger(__name__)
 urlpatterns = [
     path( 'admin/', admin.site.urls ),
 
-    re_path( r'^$',
-             views.HomeView.as_view(),
-             name = 'simulator_home' ),
+    path( '',
+          views.HomeView.as_view(),
+          name = 'simulator_home' ),
     
-    re_path( r'^profile/create$',
-             views.ProfileCreateView.as_view(),
-             name = 'simulator_profile_create' ),
+    path( 'profile/create',
+          views.ProfileCreateView.as_view(),
+          name = 'simulator_profile_create' ),
     
-    re_path( r'^profile/edit/(?P<profile_id>\d+)$',
-             views.ProfileEditView.as_view(),
-             name = 'simulator_profile_edit' ),
+    path( 'profile/edit/<int:profile_id>',
+          views.ProfileEditView.as_view(),
+          name = 'simulator_profile_edit' ),
     
-    re_path( r'^profile/delete/(?P<profile_id>\d+)$',
-             views.ProfileDeleteView.as_view(),
-             name = 'simulator_profile_delete' ),
+    path( 'profile/delete/<int:profile_id>',
+          views.ProfileDeleteView.as_view(),
+          name = 'simulator_profile_delete' ),
 
-    re_path( r'^profile/clone/(?P<profile_id>\d+)$',
-             views.ProfileCloneView.as_view(),
-             name = 'simulator_profile_clone' ),
+    path( 'profile/clone/<int:profile_id>',
+          views.ProfileCloneView.as_view(),
+          name = 'simulator_profile_clone' ),
     
-    re_path( r'^profile/switch/(?P<profile_id>\d+)$',
-             views.ProfileSwitchView.as_view(),
-             name = 'simulator_profile_switch' ),
+    path( 'profile/switch/<int:profile_id>',
+          views.ProfileSwitchView.as_view(),
+          name = 'simulator_profile_switch' ),
     
     re_path( r'^entity/add/(?P<simulator_id>[\w_\-\.\:]+)/(?P<class_id>[\w\.\_]+)$',
              views.SimEntityAddView.as_view(),
              name = 'simulator_entity_add' ),
     
-    re_path( r'^entity/edit/(?P<sim_entity_id>\d+)$',
-             views.SimEntityEditView.as_view(),
-             name = 'simulator_entity_edit' ),
+    path( 'entity/edit/<int:sim_entity_id>',
+          views.SimEntityEditView.as_view(),
+          name = 'simulator_entity_edit' ),
     
-    re_path( r'^entity/delete/(?P<sim_entity_id>\d+)$',
-             views.SimEntityDeleteView.as_view(),
-             name = 'simulator_entity_delete' ),
+    path( 'entity/delete/<int:sim_entity_id>',
+          views.SimEntityDeleteView.as_view(),
+          name = 'simulator_entity_delete' ),
     
     re_path( r'^entity/state/set/(?P<simulator_id>[\w_\-\.\:]+)/(?P<sim_entity_id>\d+)/(?P<sim_state_id>[\w\-]+)$',
              views.SimStateSetView.as_view(),
@@ -58,9 +58,9 @@ urlpatterns = [
              views.SetSimulatorFaultModeView.as_view(),
              name = 'simulator_fault_mode_set' ),
 
-    re_path( r'^runtime/temperature-unit-override$',
-             views.TemperatureUnitOverrideSetView.as_view(),
-             name = 'simulator_temperature_unit_override_set' ),
+    path( 'runtime/temperature-unit-override',
+          views.TemperatureUnitOverrideSetView.as_view(),
+          name = 'simulator_temperature_unit_override_set' ),
 ]
 
 
