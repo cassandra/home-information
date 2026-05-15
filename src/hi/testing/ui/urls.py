@@ -1,6 +1,7 @@
 import importlib
 
 from django.apps import apps
+from django.urls import path
 from django.urls import include, re_path
 
 from . import views
@@ -20,9 +21,9 @@ def get_tests_ui_urls():
 
 
 urlpatterns = [
-    re_path( r'^$',
-             views.TestingHomeView.as_view(), 
-             name='testing_ui_home'),
+    path( '',
+          views.TestingHomeView.as_view(), 
+          name='testing_ui_home'),
 ]
 
 urlpatterns += get_tests_ui_urls()

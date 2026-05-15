@@ -1,11 +1,11 @@
-from django.urls import re_path
+from django.urls import path
 
 from . import views
 
 
 urlpatterns = [
 
-    re_path( r'^permission-guidance$', 
-             views.AudioPermissionGuidanceView.as_view(),
-             name='audio_permission_guidance' ),
+    path( 'permission-guidance', 
+          views.AudioPermissionGuidanceView.as_view(),
+          name='audio_permission_guidance' ),
 ]

@@ -86,7 +86,7 @@ class HiSideView( HiAsyncView ):
     
     def get_push_url( self, request ):
 
-        referrer_url_str = request.META.get('HTTP_REFERER', '')
+        referrer_url_str = request.headers.get('referer', '')
         if not referrer_url_str:
             return None
 

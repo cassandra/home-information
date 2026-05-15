@@ -1,42 +1,43 @@
-from django.urls import include, re_path
+from django.urls import path
+from django.urls import include
 
 from . import views
 
 
 urlpatterns = [
 
-    re_path( r'^entity/edit/(?P<entity_id>\d+)$', 
-             views.EntityEditView.as_view(), 
-             name='entity_edit'),
+    path( 'entity/edit/<int:entity_id>', 
+          views.EntityEditView.as_view(), 
+          name='entity_edit'),
 
-    re_path( r'^status/(?P<entity_id>\d+)$', 
-             views.EntityStatusView.as_view(), 
-             name='entity_status' ),
+    path( 'status/<int:entity_id>', 
+          views.EntityStatusView.as_view(), 
+          name='entity_status' ),
 
-    re_path( r'^history/(?P<entity_id>\d+)$',
-             views.EntityHistoryView.as_view(),
-             name='entity_history' ),
+    path( 'history/<int:entity_id>',
+          views.EntityHistoryView.as_view(),
+          name='entity_history' ),
 
-    re_path( r'^state/(?P<entity_state_id>\d+)/history$',
-             views.EntityStateHistoryView.as_view(),
-             name='entity_state_history' ),
+    path( 'state/<int:entity_state_id>/history',
+          views.EntityStateHistoryView.as_view(),
+          name='entity_state_history' ),
 
-    re_path( r'^attribute/upload/(?P<entity_id>\d+)$', 
-             views.EntityAttributeUploadView.as_view(), 
-             name='entity_attribute_upload' ),
+    path( 'attribute/upload/<int:entity_id>', 
+          views.EntityAttributeUploadView.as_view(), 
+          name='entity_attribute_upload' ),
 
-    re_path( r'^attribute/history/(?P<entity_id>\d+)/(?P<attribute_id>\d+)/$', 
-             views.EntityAttributeHistoryInlineView.as_view(), 
-             name='entity_attribute_history_inline' ),
+    path( 'attribute/history/<int:entity_id>/<int:attribute_id>/', 
+          views.EntityAttributeHistoryInlineView.as_view(), 
+          name='entity_attribute_history_inline' ),
     
-    re_path( r'^attribute/restore/(?P<entity_id>\d+)/(?P<attribute_id>\d+)/(?P<history_id>\d+)/$', 
-             views.EntityAttributeRestoreInlineView.as_view(), 
-             name='entity_attribute_restore_inline' ),
+    path( 'attribute/restore/<int:entity_id>/<int:attribute_id>/<int:history_id>/', 
+          views.EntityAttributeRestoreInlineView.as_view(), 
+          name='entity_attribute_restore_inline' ),
 
-    re_path( r'^attribute/restore-deleted/(?P<entity_id>\d+)/(?P<attribute_id>\d+)/$',
-             views.EntityAttributeRestoreDeletedInlineView.as_view(),
-             name='entity_attribute_restore_deleted_inline' ),
+    path( 'attribute/restore-deleted/<int:entity_id>/<int:attribute_id>/',
+          views.EntityAttributeRestoreDeletedInlineView.as_view(),
+          name='entity_attribute_restore_deleted_inline' ),
 
-    re_path( r'^edit/', include('hi.apps.entity.edit.urls' )),
+    path( 'edit/', include('hi.apps.entity.edit.urls' )),
 
 ]

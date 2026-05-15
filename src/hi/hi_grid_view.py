@@ -165,7 +165,7 @@ class HiGridView( View ):
         return template.render( context, request = request )
 
     def get_push_url( self, request ):
-        referrer_url = request.META.get('HTTP_REFERER', '')
+        referrer_url = request.headers.get('referer', '')
         if referrer_url:
             parsed_url = urllib.parse.urlparse( referrer_url )
             query_params = urllib.parse.parse_qs( parsed_url.query )

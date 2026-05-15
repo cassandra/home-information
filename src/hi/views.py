@@ -37,7 +37,7 @@ def error_response( request             : HttpRequest,
     if 'message' in context:
         context['error_message'] = context['message']
         
-    if force_json or ( request.META.get('HTTP_ACCEPT', '') == 'application/json' ):
+    if force_json or ( request.headers.get('accept', '') == 'application/json' ):
         return HttpResponse( json.dumps( context ),
                              content_type = "application/json",
                              status = status_code )

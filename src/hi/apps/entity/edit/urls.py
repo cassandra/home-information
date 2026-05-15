@@ -1,43 +1,43 @@
-from django.urls import re_path
+from django.urls import path
 
 from . import views
 
 
 urlpatterns = [
 
-    re_path( r'^add$', 
-             views.EntityAddView.as_view(), 
-             name='entity_edit_entity_add' ),
+    path( 'add', 
+          views.EntityAddView.as_view(), 
+          name='entity_edit_entity_add' ),
 
-    re_path( r'^delete/(?P<entity_id>\d+)$', 
-             views.EntityDeleteView.as_view(), 
-             name='entity_edit_entity_delete' ),
+    path( 'delete/<int:entity_id>', 
+          views.EntityDeleteView.as_view(), 
+          name='entity_edit_entity_delete' ),
 
-    re_path( r'^position/(?P<entity_id>\d+)$', 
-             views.EntityPositionEditView.as_view(), 
-             name='entity_position_edit' ),
+    path( 'position/<int:entity_id>', 
+          views.EntityPositionEditView.as_view(), 
+          name='entity_position_edit' ),
 
-    re_path( r'^principal/manage/(?P<entity_id>\d+)$', 
-             views.ManagePairingsView.as_view(), 
-             name='entity_edit_manage_pairings' ),
+    path( 'principal/manage/<int:entity_id>', 
+          views.ManagePairingsView.as_view(), 
+          name='entity_edit_manage_pairings' ),
 
-    re_path( r'^edit-mode/(?P<entity_id>\d+)$', 
-             views.EntityEditModeView.as_view(), 
-             name='entity_edit_mode' ),
+    path( 'edit-mode/<int:entity_id>', 
+          views.EntityEditModeView.as_view(), 
+          name='entity_edit_mode' ),
 
-    re_path( r'^properties/edit/(?P<entity_id>\d+)$',
-             views.EntityPropertiesEditView.as_view(),
-             name='entity_properties_edit'),
+    path( 'properties/edit/<int:entity_id>',
+          views.EntityPropertiesEditView.as_view(),
+          name='entity_properties_edit'),
 
-    re_path( r'^archive/(?P<entity_id>\d+)$',
-             views.EntityArchiveView.as_view(),
-             name='entity_edit_entity_archive' ),
+    path( 'archive/<int:entity_id>',
+          views.EntityArchiveView.as_view(),
+          name='entity_edit_entity_archive' ),
 
-    re_path( r'^archive-list/$',
-             views.EntityArchiveListView.as_view(),
-             name='entity_edit_archive_list' ),
+    path( 'archive-list/',
+          views.EntityArchiveListView.as_view(),
+          name='entity_edit_archive_list' ),
 
-    re_path( r'^archive-detail/(?P<archived_entity_id>\d+)$',
-             views.EntityArchiveDetailView.as_view(),
-             name='entity_edit_archive_detail' ),
+    path( 'archive-detail/<int:archived_entity_id>',
+          views.EntityArchiveDetailView.as_view(),
+          name='entity_edit_archive_detail' ),
 ]

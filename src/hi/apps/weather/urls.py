@@ -1,23 +1,23 @@
-from django.urls import re_path
+from django.urls import path
 
 from . import views
 
 
 urlpatterns = [
 
-    re_path( r'^current-conditions/details$', 
-             views.CurrentConditionsDetailsView.as_view(), 
-             name='weather_current_conditions_details'),
+    path( 'current-conditions/details', 
+          views.CurrentConditionsDetailsView.as_view(), 
+          name='weather_current_conditions_details'),
 
-    re_path( r'^todays-astronomical/details$', 
-             views.TodaysAstronomicalDetailsView.as_view(), 
-             name='weather_todays_astronomical_details'),
+    path( 'todays-astronomical/details', 
+          views.TodaysAstronomicalDetailsView.as_view(), 
+          name='weather_todays_astronomical_details'),
 
-    re_path( r'^forecast$', 
-             views.ForecastView.as_view(), 
-             name='weather_forecast'),
+    path( 'forecast', 
+          views.ForecastView.as_view(), 
+          name='weather_forecast'),
 
-    re_path( r'^history$',
-             views.HistoryView.as_view(),
-             name='weather_history'),
+    path( 'history',
+          views.HistoryView.as_view(),
+          name='weather_history'),
 ]

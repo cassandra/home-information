@@ -585,7 +585,7 @@ class TestVideoStreamBrowsingHelper(TransactionTestCase):
         SensorHistory.objects.create(
             sensor=self.video_sensor,
             value='extreme_past',
-            response_datetime=timezone.datetime(1970, 1, 1, tzinfo=timezone.utc),
+            response_datetime=datetime(1970, 1, 1, tzinfo=UTC),
             has_video_stream=True
         )
         

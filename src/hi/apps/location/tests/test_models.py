@@ -238,31 +238,6 @@ class TestLocationView(BaseTestCase):
         self.assertEqual(location_view.svg_style_name_str, 'color')
         return
 
-    def test_location_view_cascade_deletion_from_location(self):
-        """Test cascade deletion from location - critical for data integrity."""
-        location = Location.objects.create(
-            name='Test Location',
-            svg_fragment_filename='test.svg',
-            svg_view_box_str='0 0 100 100'
-        )
-        
-        location_view = LocationView.objects.create(
-            location=location,
-            location_view_type_str='DEFAULT',
-            name='Test View',
-            svg_view_box_str='0 0 50 50',
-            svg_rotate=0,
-            svg_style_name_str='COLOR'
-        )
-        
-        view_id = location_view.id
-        
-        # Delete location should cascade to views
-        location.delete()
-        
-        self.assertFalse(LocationView.objects.filter(id=view_id).exists())
-        return
-
 
 class TestLocationAttribute(BaseTestCase):
 

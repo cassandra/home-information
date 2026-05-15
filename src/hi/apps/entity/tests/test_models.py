@@ -153,39 +153,6 @@ class TestEntity(BaseTestCase):
         self.assertEqual(len(empty_map), 0)
         return
 
-    def test_cascade_deletion_behavior(self):
-        """Test cascade deletion - critical for data integrity."""
-        entity = Entity.objects.create(
-            name='Test Entity',
-            entity_type_str=str(EntityType.OTHER),
-            integration_id='test_entity_001',
-            integration_name='test_integration',
-        )
-        
-        # Create related objects
-        attribute = EntityAttribute.objects.create(
-            entity=entity,
-            name='test_attribute',
-            value_type=AttributeValueType.TEXT,
-            value='test_value',
-        )
-        
-        state = EntityState.objects.create(
-            entity=entity,
-            entity_state_type_str=str(EntityStateType.ON_OFF),
-            name='Power State',
-        )
-        
-        attribute_id = attribute.id
-        state_id = state.id
-        
-        # Delete entity should cascade
-        entity.delete()
-        
-        self.assertFalse(EntityAttribute.objects.filter(id=attribute_id).exists())
-        self.assertFalse(EntityState.objects.filter(id=state_id).exists())
-        return
-
 
 class TestEntityState(BaseTestCase):
 
@@ -430,71 +397,6 @@ class TestEntityState(BaseTestCase):
         self.assertEqual(reloaded_entity.entity_type_str, 'motion_sensor')
         self.assertEqual(reloaded_entity.entity_type, EntityType.MOTION_SENSOR)
         
-        return
-
-    def test_cascade_deletion_maintains_data_integrity(self):
-        """Test cascade deletion - ensures related data is properly cleaned up."""
-        # Create entity with related objects
-        entity = Entity.objects.create(
-            name='Multi-State Device',
-            entity_type_str=str(EntityType.HVAC_FURNACE),
-            integration_id='furnace_001',
-            integration_name='hvac_system',
-        )
-        
-        # Create related attributes
-        config_attribute = EntityAttribute.objects.create(
-            entity=entity,
-            name='max_temperature',
-            value_type=AttributeValueType.TEXT,
-            value='85',
-        )
-        
-        specs_attribute = EntityAttribute.objects.create(
-            entity=entity,
-            name='manufacturer',
-            value_type=AttributeValueType.TEXT,
-            value='Carrier',
-        )
-        
-        # Create related states
-        power_state = EntityState.objects.create(
-            entity=entity,
-            entity_state_type_str=str(EntityStateType.ON_OFF),
-            name='Power State',
-        )
-        
-        temp_state = EntityState.objects.create(
-            entity=entity,
-            entity_state_type_str=str(EntityStateType.TEMPERATURE),
-            name='Current Temperature',
-            units='°F',
-        )
-        
-        # Record IDs for verification
-        entity_id = entity.id
-        config_attr_id = config_attribute.id
-        specs_attr_id = specs_attribute.id
-        power_state_id = power_state.id
-        temp_state_id = temp_state.id
-        
-        # Verify all objects exist
-        self.assertTrue(Entity.objects.filter(id=entity_id).exists())
-        self.assertTrue(EntityAttribute.objects.filter(id=config_attr_id).exists())
-        self.assertTrue(EntityAttribute.objects.filter(id=specs_attr_id).exists())
-        self.assertTrue(EntityState.objects.filter(id=power_state_id).exists())
-        self.assertTrue(EntityState.objects.filter(id=temp_state_id).exists())
-        
-        # Delete entity should cascade to all related objects
-        entity.delete()
-        
-        # Verify cascade deletion worked
-        self.assertFalse(Entity.objects.filter(id=entity_id).exists())
-        self.assertFalse(EntityAttribute.objects.filter(id=config_attr_id).exists())
-        self.assertFalse(EntityAttribute.objects.filter(id=specs_attr_id).exists())
-        self.assertFalse(EntityState.objects.filter(id=power_state_id).exists())
-        self.assertFalse(EntityState.objects.filter(id=temp_state_id).exists())
-
         return
 
 

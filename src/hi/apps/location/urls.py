@@ -1,3 +1,4 @@
+from django.urls import path
 from django.urls import include, re_path
 
 from . import views
@@ -5,42 +6,42 @@ from . import views
 
 urlpatterns = [
 
-    re_path( r'^switch/(?P<location_id>\d+)$', 
-             views.LocationSwitchView.as_view(), 
-             name='location_switch'),
+    path( 'switch/<int:location_id>', 
+          views.LocationSwitchView.as_view(), 
+          name='location_switch'),
 
-    re_path( r'^edit/(?P<location_id>\d+)$', 
-             views.LocationEditView.as_view(), 
-             name='location_edit_location_edit'),
+    path( 'edit/<int:location_id>', 
+          views.LocationEditView.as_view(), 
+          name='location_edit_location_edit'),
         
-    re_path( r'^view/(?P<location_view_id>\d+)$', 
-             views.LocationViewView.as_view(), 
-             name='location_view'),
+    path( 'view/<int:location_view_id>', 
+          views.LocationViewView.as_view(), 
+          name='location_view'),
 
-    re_path( r'^view$', 
-             views.LocationViewDefaultView.as_view(), 
-             name='location_view_default'),
+    path( 'view', 
+          views.LocationViewDefaultView.as_view(), 
+          name='location_view_default'),
 
     re_path( r'^item/status/(?P<html_id>[\w\-]+)$', 
              views.LocationItemStatusView.as_view(), 
              name='location_item_status' ),
 
-    re_path( r'^attribute/upload/(?P<location_id>\d+)$', 
-             views.LocationAttributeUploadView.as_view(), 
-             name='location_attribute_upload'),
+    path( 'attribute/upload/<int:location_id>', 
+          views.LocationAttributeUploadView.as_view(), 
+          name='location_attribute_upload'),
     
-    re_path( r'^attribute/history/(?P<location_id>\d+)/(?P<attribute_id>\d+)$', 
-             views.LocationAttributeHistoryInlineView.as_view(), 
-             name='location_attribute_history_inline'),
+    path( 'attribute/history/<int:location_id>/<int:attribute_id>', 
+          views.LocationAttributeHistoryInlineView.as_view(), 
+          name='location_attribute_history_inline'),
     
-    re_path( r'^attribute/restore/(?P<location_id>\d+)/(?P<attribute_id>\d+)/(?P<history_id>\d+)$', 
-             views.LocationAttributeRestoreInlineView.as_view(), 
-             name='location_attribute_restore_inline'),
+    path( 'attribute/restore/<int:location_id>/<int:attribute_id>/<int:history_id>', 
+          views.LocationAttributeRestoreInlineView.as_view(), 
+          name='location_attribute_restore_inline'),
 
-    re_path( r'^attribute/restore-deleted/(?P<location_id>\d+)/(?P<attribute_id>\d+)/$',
-             views.LocationAttributeRestoreDeletedInlineView.as_view(),
-             name='location_attribute_restore_deleted_inline'),
+    path( 'attribute/restore-deleted/<int:location_id>/<int:attribute_id>/',
+          views.LocationAttributeRestoreDeletedInlineView.as_view(),
+          name='location_attribute_restore_deleted_inline'),
     
-    re_path( r'^edit/', include('hi.apps.location.edit.urls' )),
+    path( 'edit/', include('hi.apps.location.edit.urls' )),
 
 ]

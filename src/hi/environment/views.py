@@ -25,15 +25,7 @@ class EnvironmentHomeView(View):
             'EMAIL_USE_TLS': settings.EMAIL_USE_TLS,
             'EMAIL_USE_SSL': settings.EMAIL_USE_SSL,
             'CORS_ALLOWED_ORIGINS': settings.CORS_ALLOWED_ORIGINS,
-            'CSP_DEFAULT_SRC': settings.CSP_DEFAULT_SRC,
-            'CSP_CONNECT_SRC': settings.CSP_CONNECT_SRC,
-            'CSP_FRAME_SRC': settings.CSP_FRAME_SRC,
-            'CSP_SCRIPT_SRC': settings.CSP_SCRIPT_SRC,
-            'CSP_STYLE_SRC': settings.CSP_STYLE_SRC,
-            'CSP_MEDIA_SRC': settings.CSP_MEDIA_SRC,
-            'CSP_IMG_SRC': settings.CSP_IMG_SRC,
-            'CSP_CHILD_SRC': settings.CSP_CHILD_SRC,
-            'CSP_FONT_SRC': settings.CSP_FONT_SRC,
+            'CONTENT_SECURITY_POLICY': settings.CONTENT_SECURITY_POLICY,
         }
         
     def get(self, request, *args, **kwargs):

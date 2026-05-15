@@ -1,11 +1,11 @@
-from django.urls import re_path
+from django.urls import path
 
 from . import views
 
 
 urlpatterns = [
 
-    re_path( r'^state/action/(?P<action>.+)$', 
-             views.SecurityStateActionView.as_view(), 
-             name='security_state_action'),
+    path( 'state/action/<path:action>', 
+          views.SecurityStateActionView.as_view(), 
+          name='security_state_action'),
 ]
