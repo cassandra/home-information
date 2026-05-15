@@ -48,6 +48,36 @@ class TestHbConverter(TestCase):
         self.assertEqual(entity.integration_payload.get('location', {}).get('name'), 'Garage')
         self.assertEqual(entity.integration_payload.get('labels')[0].get('name'), 'Tools')
 
+    def test_create_models_with_existing_entity_does_not_create_new_and_preserves_name(self):
+        """Issue #281 reconnect contract: when an existing Entity is
+        passed in, repopulate its integration-owned fields without
+        creating a new row and without overwriting the (possibly
+        user-edited) name."""
+        existing = Entity.objects.create(
+            name='User Renamed Item',
+            entity_type_str=str(EntityType.SERVICE),
+        )
+        baseline_count = Entity.objects.count()
+        item = self._mock_item(item_id='item-reconnect', name='Upstream Drill Name')
+
+        returned = HbConverter.create_models_for_hb_item(
+            hb_item=item,
+            entity=existing,
+        )
+
+        self.assertEqual(Entity.objects.count(), baseline_count)
+        self.assertEqual(returned.id, existing.id)
+        existing.refresh_from_db()
+        # Name preserved (NOT 'Upstream Drill Name').
+        self.assertEqual(existing.name, 'User Renamed Item')
+        # Integration-owned fields repopulated from upstream.
+        self.assertEqual(existing.integration_id, HbMetaData.integration_id)
+        self.assertEqual(existing.integration_name, 'item-reconnect')
+        self.assertEqual(
+            existing.integration_payload.get('location', {}).get('name'),
+            'Garage',
+        )
+
     def test_update_models_for_hb_item_updates_name_type_and_payload(self):
         entity = Entity.objects.create(
             name='Old Name',
@@ -162,3 +192,56 @@ class TestHbConverter(TestCase):
         created_attribute.refresh_from_db()
         self.assertEqual(created_attribute.order_id, 1)
         self.assertEqual(created_attribute.file_value.name, original_name)
+
+
+
+class TestHbConverterPayloadTimestampOmission(TestCase):
+    """Regression coverage for the timestamp-omission contract on
+    ``hb_item_to_entity_payload``.
+
+    Timestamps are deliberately excluded from the payload — they
+    are metadata about *when* a change happened, not *what*
+    changed. Including them caused spurious 'updated' reports on
+    every refresh because real HomeBox can tick ``updatedAt`` for
+    housekeeping events the operator doesn't care about. These
+    tests pin the contract so a future re-add (e.g., 'for
+    completeness') silently re-introducing the bug fails loudly."""
+
+    def _mock_item(self, **api_overrides):
+        api_dict = {
+            'id': 'item-1',
+            'name': 'Item 1',
+            'description': 'desc',
+            'quantity': 1,
+            'createdAt': '2026-01-01T00:00:00+00:00',
+            'updatedAt': '2026-01-01T00:00:00+00:00',
+            'location': {'id': 'loc-1', 'name': 'Garage'},
+            'labels': [{'id': 'lab-1', 'name': 'Tools'}],
+            'fields': [],
+            'attachments': [],
+        }
+        api_dict.update(api_overrides)
+        return HbItem(api_dict=api_dict, client=Mock())
+
+    def test_payload_excludes_timestamp_keys(self):
+        item = self._mock_item()
+        payload = HbConverter.hb_item_to_entity_payload(hb_item=item)
+        self.assertNotIn('created_at', payload)
+        self.assertNotIn('updated_at', payload)
+
+    def test_payloads_compare_equal_when_only_timestamps_differ(self):
+        """The change-detection signal: two payloads identical
+        except for timestamps must compare equal so a refresh
+        against unchanged upstream content reports zero updates."""
+        earlier = self._mock_item(
+            createdAt='2026-01-01T00:00:00+00:00',
+            updatedAt='2026-01-01T00:00:00+00:00',
+        )
+        later = self._mock_item(
+            createdAt='2026-04-15T12:34:56+00:00',
+            updatedAt='2026-05-04T08:00:00+00:00',
+        )
+        self.assertEqual(
+            HbConverter.hb_item_to_entity_payload(hb_item=earlier),
+            HbConverter.hb_item_to_entity_payload(hb_item=later),
+        )

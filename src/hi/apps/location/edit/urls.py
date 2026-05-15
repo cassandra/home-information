@@ -1,3 +1,4 @@
+from django.urls import path
 from django.urls import re_path
 
 from . import views
@@ -5,57 +6,61 @@ from . import views
 
 urlpatterns = [
 
-    re_path( r'^add$', 
-             views.LocationAddView.as_view(), 
-             name='location_edit_location_add'),
+    path( 'add',
+          views.LocationAddView.as_view(),
+          name='location_edit_location_add'),
 
-    re_path( r'^edit-mode/(?P<location_id>\d+)$', 
-             views.LocationEditModeView.as_view(), 
-             name='location_edit_mode' ),
+    path( 'add-first',
+          views.LocationAddFirstView.as_view(),
+          name='location_edit_location_add_first'),
 
-    re_path( r'^view/edit-mode/(?P<location_view_id>\d+)$', 
-             views.LocationViewEditModeView.as_view(), 
-             name='location_view_edit_mode' ),
+    path( 'edit-mode/<int:location_id>', 
+          views.LocationEditModeView.as_view(), 
+          name='location_edit_mode' ),
+
+    path( 'view/edit-mode/<int:location_view_id>', 
+          views.LocationViewEditModeView.as_view(), 
+          name='location_view_edit_mode' ),
 
     re_path( r'^item/edit-mode/(?P<html_id>[\w\-]+)$', 
              views.LocationItemEditModeView.as_view(), 
              name='location_item_edit_mode' ),
 
-    re_path( r'^location/properties/edit/(?P<location_id>\d+)$', 
-             views.LocationPropertiesEditView.as_view(), 
-             name='location_properties_edit'),
+    path( 'location/properties/edit/<int:location_id>', 
+          views.LocationPropertiesEditView.as_view(), 
+          name='location_properties_edit'),
 
-    re_path( r'^svg/replace/(?P<location_id>\d+)$', 
-             views.LocationSvgReplaceView.as_view(), 
-             name='location_edit_svg_replace'),
+    path( 'svg/replace/<int:location_id>', 
+          views.LocationSvgReplaceView.as_view(), 
+          name='location_edit_svg_replace'),
 
-    re_path( r'^delete/(?P<location_id>\d+)$', 
-             views.LocationDeleteView.as_view(), 
-             name='location_edit_location_delete' ),
+    path( 'delete/<int:location_id>', 
+          views.LocationDeleteView.as_view(), 
+          name='location_edit_location_delete' ),
 
-    re_path( r'^view/add$', 
-             views.LocationViewAddView.as_view(), 
-             name='location_edit_location_view_add' ),
+    path( 'view/add', 
+          views.LocationViewAddView.as_view(), 
+          name='location_edit_location_view_add' ),
 
-    re_path( r'^view/geometry/(?P<location_view_id>\d+)$', 
-             views.LocationViewGeometryView.as_view(), 
-             name='location_edit_location_view_geometry' ),
+    path( 'view/geometry/<int:location_view_id>', 
+          views.LocationViewGeometryView.as_view(), 
+          name='location_edit_location_view_geometry' ),
 
-    re_path( r'^view/delete/(?P<location_view_id>\d+)$', 
-             views.LocationViewDeleteView.as_view(), 
-             name='location_edit_location_view_delete' ),
+    path( 'view/delete/<int:location_view_id>', 
+          views.LocationViewDeleteView.as_view(), 
+          name='location_edit_location_view_delete' ),
 
-    re_path( r'^view/manage-item$', 
-             views.LocationViewManageItemsView.as_view(), 
-             name='location_edit_location_view_manage_items' ),
+    path( 'view/manage-item', 
+          views.LocationViewManageItemsView.as_view(), 
+          name='location_edit_location_view_manage_items' ),
 
-    re_path( r'^view/entity/toggle/(?P<location_view_id>\d+)/(?P<entity_id>\d+)$', 
-             views.LocationViewEntityToggleView.as_view(), 
-             name='location_edit_location_view_entity_toggle' ),
+    path( 'view/entity/toggle/<int:location_view_id>/<int:entity_id>', 
+          views.LocationViewEntityToggleView.as_view(), 
+          name='location_edit_location_view_entity_toggle' ),
 
-    re_path( r'^view/collection/toggle/(?P<location_view_id>\d+)/(?P<collection_id>\d+)$', 
-             views.LocationViewCollectionToggleView.as_view(), 
-             name='location_edit_location_view_collection_toggle' ),
+    path( 'view/collection/toggle/<int:location_view_id>/<int:collection_id>', 
+          views.LocationViewCollectionToggleView.as_view(), 
+          name='location_edit_location_view_collection_toggle' ),
 
     re_path( r'^item/position/(?P<html_id>[\w\-]+)$', 
              views.LocationItemPositionView.as_view(), 
@@ -65,4 +70,44 @@ urlpatterns = [
              views.LocationItemPathView.as_view(), 
              name='location_edit_location_item_path' ),
     
+    path( 'svg/background/<int:location_id>',
+          views.LocationSvgBackgroundView.as_view(),
+          name='location_svg_background'),
+
+    path( 'svg/template/<int:location_id>',
+          views.LocationSvgTemplateSelectView.as_view(),
+          name='location_svg_template_select'),
+
+    path( 'svg/edit/<int:location_id>',
+          views.LocationSvgEditView.as_view(),
+          name='location_edit_svg_edit'),
+
+    path( 'svg/edit/cancel/<int:location_id>', 
+          views.LocationSvgEditCancelView.as_view(), 
+          name='location_svg_edit_cancel'),
+
+    path( 'svg/edit/exit/<int:location_id>',
+          views.LocationSvgEditExitView.as_view(),
+          name='location_svg_edit_exit'),
+
+    path( 'svg/edit/viewbox/<int:location_id>',
+          views.LocationSvgEditViewBoxView.as_view(),
+          name='location_svg_edit_viewbox'),
+
+    path( 'svg/edit/revert/<int:location_id>',
+          views.LocationSvgEditRevertView.as_view(),
+          name='location_svg_edit_revert'),
+
+    path( 'svg/edit/save/<int:location_id>',
+          views.LocationSvgEditSaveView.as_view(),
+          name='location_svg_edit_save'),
+
+    path( 'svg/edit/export/<int:location_id>',
+          views.LocationSvgEditExportView.as_view(),
+          name='location_svg_edit_export'),
+
+    path( 'svg/edit/help',
+          views.LocationSvgEditHelpView.as_view(),
+          name='location_svg_edit_help'),
+
 ]

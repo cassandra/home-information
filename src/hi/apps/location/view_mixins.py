@@ -1,12 +1,16 @@
+import urllib.parse
+
 from django.core.exceptions import BadRequest
 from django.http import Http404, HttpResponse
+from django.urls import reverse
 
 import hi.apps.common.antinode as antinode
 from hi.apps.entity.models import Entity
 from hi.apps.location.location_manager import LocationManager
 from hi.apps.location.models import Location, LocationView
-from hi.apps.monitor.status_display_data import StatusDisplayData
+from hi.apps.monitor.display_data import EntityStateDisplayData
 from hi.apps.monitor.status_display_manager import StatusDisplayManager
+from hi.hi_async_view import HiSideView
 
 
 class LocationViewMixin:
@@ -41,6 +45,15 @@ class LocationViewMixin:
         except LocationView.DoesNotExist:
             raise Http404( request )
 
+    def redirect_to_location_edit_side_view( self, location : Location ) -> HttpResponse:
+        """ Redirect to home with the location edit sidebar loaded alongside. """
+        side_url = reverse( 'location_edit_mode', kwargs={ 'location_id': location.id } )
+        redirect_url = (
+            reverse( 'home' )
+            + '?' + urllib.parse.urlencode({ HiSideView.SIDE_URL_PARAM_NAME: side_url })
+        )
+        return antinode.redirect_response( redirect_url )
+
     def get_entity_svg_update_reponse( self, entity : Entity ) -> HttpResponse:
         """ For updating a single entity in the location view vis antinode reponse """
 
@@ -49,10 +62,10 @@ class LocationViewMixin:
         )
         set_attributes_map = dict()
         for entity_state_status_data in entity_status_data.entity_state_status_data_list:
-            status_display_data = StatusDisplayData(
+            status_display_data = EntityStateDisplayData(
                 entity_state_status_data = entity_state_status_data,
             )
-            selector = f'.{status_display_data.css_class}'
+            selector = f'[data-state-id="{status_display_data.entity_state.id}"]'
             set_attributes_map.update({
                 selector: status_display_data.attribute_dict
             })

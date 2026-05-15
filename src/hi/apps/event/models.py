@@ -1,3 +1,20 @@
+"""
+Event-system models.
+
+Lifecycle note (Issue #288): EventDefinition is integration-attached
+(inherits IntegrationDetailsModel). Integration-owned rows
+(``integration_id IS NOT NULL``) are cleaned up at the integration
+disconnect / sync-removal boundary by
+``hi.integrations.event_definition_operations.EventDefinitionOperations``,
+not by a generalized "EntityState delete cascades to parent" rule.
+User-owned rows are not touched by integration cleanup; the existing
+``on_delete=CASCADE`` on ``EventClause.entity_state`` and
+``ControlAction.controller`` continues to apply, which can leave a
+user-owned EventDefinition silently semantically changed (clauseless,
+or with reduced clauses) — that broader UX is deferred to a separate
+redesign.
+"""
+
 from django.db import models
 
 from hi.apps.alert.enums import AlarmLevel
@@ -7,7 +24,7 @@ from hi.apps.security.enums import SecurityLevel
 
 from hi.integrations.models import IntegrationDetailsModel
 
-from .enums import EventType
+from .enums import EventClauseOperator, EventType
 
 
 class EventDefinition( IntegrationDetailsModel ):
@@ -83,6 +100,17 @@ class EventClause( models.Model ):
         'Value',
         max_length = 255
     )
+    # How ``value`` is compared against the live wire reading.
+    # Default ``'EQ'`` keeps every pre-threshold clause matching by
+    # exact string equality (the historical behavior). Numeric
+    # operators (LT / LTE / GT / GTE) enable threshold-based alarms
+    # on continuous EntityStateTypes such as BATTERY_LEVEL.
+    value_operator_str = models.CharField(
+        'Operator',
+        max_length = 8,
+        default = str(EventClauseOperator.default()),
+        null = False, blank = False,
+    )
     created_datetime = models.DateTimeField(
         'Created',
         auto_now_add = True,
@@ -93,10 +121,19 @@ class EventClause( models.Model ):
         auto_now = True,
         blank = True,
     )
-    
+
     class Meta:
         verbose_name = 'Trigger Clause'
         verbose_name_plural = 'Trigger Clauses'
+
+    @property
+    def value_operator(self) -> EventClauseOperator:
+        return EventClauseOperator.from_name_safe( self.value_operator_str )
+
+    @value_operator.setter
+    def value_operator( self, value_operator : EventClauseOperator ):
+        self.value_operator_str = str(value_operator)
+        return
 
 
 class AlarmAction( models.Model ):
@@ -118,9 +155,11 @@ class AlarmAction( models.Model ):
         null = False, blank = False,
     )
 
-    # How long will this alarm be relevant to the user.  Alarms exist until
-    # they expire or are acknowledged.  Set this to zero for ann alarm that
-    # will only be dismissed by a user acknowledgement.
+    # How long will this alarm be relevant to the user. Alarms exist
+    # until they expire or are acknowledged. Use ``Alarm.MAX_LIFETIME_SECS``
+    # for an alarm that should remain visible until the user
+    # acknowledges it (zero would expire immediately and is rejected
+    # by ``Alarm.__post_init__``).
     #
     alarm_lifetime_secs = models.PositiveIntegerField(
         'Lifetime Secs',

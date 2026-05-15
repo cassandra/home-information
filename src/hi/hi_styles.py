@@ -293,6 +293,7 @@ class EntityStyle:
         EntityType.FREEZER,
         EntityType.GARAGE_DOOR_OPENER,
         EntityType.GARBAGE_DISPOSAL,
+        EntityType.GAS_DETECTOR,
         EntityType.GAS_METER,
         EntityType.GENERATOR,
         EntityType.GRILL,
@@ -308,6 +309,7 @@ class EntityStyle:
         EntityType.IRRIGATION_CONTROLLER,
         EntityType.LAWN_MOWER,
         EntityType.LEAF_BLOWER,
+        EntityType.LEAK_SENSOR,
         EntityType.LIGHT,
         EntityType.LIGHT_SENSOR,
         EntityType.MICROWAVE_OVEN,
@@ -316,6 +318,7 @@ class EntityStyle:
         EntityType.MOTOR,
         EntityType.NETWORK_SWITCH,
         EntityType.ON_OFF_SWITCH,
+        EntityType.OPEN_CLOSE_ACTUATOR,
         EntityType.OPEN_CLOSE_SENSOR,
         EntityType.OVEN,
         EntityType.PLANT,
@@ -486,6 +489,144 @@ class StatusStyle:
         fill_color = STATUS_OK_COLOR,
         fill_opacity = 0.15,
     )
+    # Smoke alarm reuses the movement / open-close ``active`` /
+    # ``recent`` / ``past`` / ``idle`` status_value vocabulary so
+    # the existing g[status="…"] / div[status="…"] CSS rules
+    # apply unchanged. The state-type-specific labeling lives in
+    # the ``EntityStateValue`` enum, not the SVG status attribute.
+    SmokeDetected = SvgStatusStyle(
+        status_value = 'active',
+        stroke_color = STATUS_ACTIVE_COLOR,
+        stroke_width = DEFAULT_STROKE_WIDTH,
+        stroke_dasharray = DEFAULT_STROKE_DASHARRAY,
+        fill_color = STATUS_ACTIVE_COLOR,
+        fill_opacity = 0.5,
+    )
+    SmokeRecent = SvgStatusStyle(
+        status_value = 'recent',
+        stroke_color = STATUS_RECENT_COLOR,
+        stroke_width = DEFAULT_STROKE_WIDTH,
+        stroke_dasharray = DEFAULT_STROKE_DASHARRAY,
+        fill_color = STATUS_RECENT_COLOR,
+        fill_opacity = 0.5,
+    )
+    SmokePast = SvgStatusStyle(
+        status_value = 'past',
+        stroke_color = STATUS_PAST_COLOR,
+        stroke_width = DEFAULT_STROKE_WIDTH,
+        stroke_dasharray = DEFAULT_STROKE_DASHARRAY,
+        fill_color = STATUS_PAST_COLOR,
+        fill_opacity = 0.5,
+    )
+    SmokeClear = SvgStatusStyle(
+        status_value = 'idle',
+        stroke_color = STATUS_OK_COLOR,
+        stroke_width = DEFAULT_STROKE_WIDTH,
+        stroke_dasharray = DEFAULT_STROKE_DASHARRAY,
+        fill_color = STATUS_OK_COLOR,
+        fill_opacity = 0.15,
+    )
+    # Moisture (water-leak) decay parallels smoke — both are
+    # property-damage events with operator-significant recent /
+    # past visual reminders.
+    MoistureDetected = SvgStatusStyle(
+        status_value = 'active',
+        stroke_color = STATUS_ACTIVE_COLOR,
+        stroke_width = DEFAULT_STROKE_WIDTH,
+        stroke_dasharray = DEFAULT_STROKE_DASHARRAY,
+        fill_color = STATUS_ACTIVE_COLOR,
+        fill_opacity = 0.5,
+    )
+    MoistureRecent = SvgStatusStyle(
+        status_value = 'recent',
+        stroke_color = STATUS_RECENT_COLOR,
+        stroke_width = DEFAULT_STROKE_WIDTH,
+        stroke_dasharray = DEFAULT_STROKE_DASHARRAY,
+        fill_color = STATUS_RECENT_COLOR,
+        fill_opacity = 0.5,
+    )
+    MoisturePast = SvgStatusStyle(
+        status_value = 'past',
+        stroke_color = STATUS_PAST_COLOR,
+        stroke_width = DEFAULT_STROKE_WIDTH,
+        stroke_dasharray = DEFAULT_STROKE_DASHARRAY,
+        fill_color = STATUS_PAST_COLOR,
+        fill_opacity = 0.5,
+    )
+    MoistureClear = SvgStatusStyle(
+        status_value = 'idle',
+        stroke_color = STATUS_OK_COLOR,
+        stroke_width = DEFAULT_STROKE_WIDTH,
+        stroke_dasharray = DEFAULT_STROKE_DASHARRAY,
+        fill_color = STATUS_OK_COLOR,
+        fill_opacity = 0.15,
+    )
+    # Carbon monoxide and combustible-gas decay parallel smoke —
+    # life-safety events warrant a lingering visual reminder.
+    CoDetected = SvgStatusStyle(
+        status_value = 'active',
+        stroke_color = STATUS_ACTIVE_COLOR,
+        stroke_width = DEFAULT_STROKE_WIDTH,
+        stroke_dasharray = DEFAULT_STROKE_DASHARRAY,
+        fill_color = STATUS_ACTIVE_COLOR,
+        fill_opacity = 0.5,
+    )
+    CoRecent = SvgStatusStyle(
+        status_value = 'recent',
+        stroke_color = STATUS_RECENT_COLOR,
+        stroke_width = DEFAULT_STROKE_WIDTH,
+        stroke_dasharray = DEFAULT_STROKE_DASHARRAY,
+        fill_color = STATUS_RECENT_COLOR,
+        fill_opacity = 0.5,
+    )
+    CoPast = SvgStatusStyle(
+        status_value = 'past',
+        stroke_color = STATUS_PAST_COLOR,
+        stroke_width = DEFAULT_STROKE_WIDTH,
+        stroke_dasharray = DEFAULT_STROKE_DASHARRAY,
+        fill_color = STATUS_PAST_COLOR,
+        fill_opacity = 0.5,
+    )
+    CoClear = SvgStatusStyle(
+        status_value = 'idle',
+        stroke_color = STATUS_OK_COLOR,
+        stroke_width = DEFAULT_STROKE_WIDTH,
+        stroke_dasharray = DEFAULT_STROKE_DASHARRAY,
+        fill_color = STATUS_OK_COLOR,
+        fill_opacity = 0.15,
+    )
+    GasDetected = SvgStatusStyle(
+        status_value = 'active',
+        stroke_color = STATUS_ACTIVE_COLOR,
+        stroke_width = DEFAULT_STROKE_WIDTH,
+        stroke_dasharray = DEFAULT_STROKE_DASHARRAY,
+        fill_color = STATUS_ACTIVE_COLOR,
+        fill_opacity = 0.5,
+    )
+    GasRecent = SvgStatusStyle(
+        status_value = 'recent',
+        stroke_color = STATUS_RECENT_COLOR,
+        stroke_width = DEFAULT_STROKE_WIDTH,
+        stroke_dasharray = DEFAULT_STROKE_DASHARRAY,
+        fill_color = STATUS_RECENT_COLOR,
+        fill_opacity = 0.5,
+    )
+    GasPast = SvgStatusStyle(
+        status_value = 'past',
+        stroke_color = STATUS_PAST_COLOR,
+        stroke_width = DEFAULT_STROKE_WIDTH,
+        stroke_dasharray = DEFAULT_STROKE_DASHARRAY,
+        fill_color = STATUS_PAST_COLOR,
+        fill_opacity = 0.5,
+    )
+    GasClear = SvgStatusStyle(
+        status_value = 'idle',
+        stroke_color = STATUS_OK_COLOR,
+        stroke_width = DEFAULT_STROKE_WIDTH,
+        stroke_dasharray = DEFAULT_STROKE_DASHARRAY,
+        fill_color = STATUS_OK_COLOR,
+        fill_opacity = 0.15,
+    )
     On = SvgStatusStyle(
         status_value = 'on',
         stroke_color = 'yellow',
@@ -524,6 +665,18 @@ class StatusStyle:
         stroke_width = DEFAULT_STROKE_WIDTH,
         stroke_dasharray = DEFAULT_STROKE_DASHARRAY,
         fill_color = STATUS_PAST_COLOR,
+        fill_opacity = 0.5,
+    )
+    # Partially-open spatial state for continuous-position covers.
+    # Distinct from ``OpenRecent`` (temporal decay after a recent
+    # open) so spatial and temporal semantics don't share a name,
+    # even though the visual palette is intentionally aligned.
+    OpenPartial = SvgStatusStyle(
+        status_value = 'partial',
+        stroke_color = STATUS_RECENT_COLOR,
+        stroke_width = DEFAULT_STROKE_WIDTH,
+        stroke_dasharray = DEFAULT_STROKE_DASHARRAY,
+        fill_color = STATUS_RECENT_COLOR,
         fill_opacity = 0.5,
     )
     Closed = SvgStatusStyle(

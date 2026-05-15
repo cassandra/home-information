@@ -4,7 +4,7 @@ from typing import List
 from hi.apps.collection.edit.forms import CollectionEditForm, CollectionPositionForm
 from hi.apps.entity.enums import EntityGroupType
 from hi.apps.entity.models import Entity
-from hi.apps.monitor.transient_models import EntityStatusData
+from hi.apps.monitor.display_data import EntityDisplayData
 
 from .models import Collection
 
@@ -13,7 +13,7 @@ from .models import Collection
 class CollectionData:
 
     collection               : Collection
-    entity_status_data_list  : List[ EntityStatusData ]
+    entity_status_data_list  : List[ EntityDisplayData ]
     
     def to_template_context(self):
         return {

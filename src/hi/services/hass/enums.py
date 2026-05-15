@@ -30,7 +30,7 @@ class HassAttributeType( IntegrationAttributeType ):
         True,
     )
     IMPORT_ALLOWLIST = (
-        'Import Allowlist',
+        'Allowed Item Types',
         'HA domains and device classes to import (one per line). '
         'Use "domain" for all classes, or "domain:class" for specific ones.',
         AttributeValueType.TEXT,
@@ -54,3 +54,18 @@ class HassStateValue:
 
     ON = 'on'
     OFF = 'off'
+    LOCKED = 'locked'
+    UNLOCKED = 'unlocked'
+    OPEN = 'open'
+    CLOSED = 'closed'
+    OPENING = 'opening'
+    CLOSING = 'closing'
+
+    # Special states HA emits when an entity is offline or
+    # hasn't reported yet. Treat as "no value" at the boundary
+    # so they don't pollute sensor history with placeholder
+    # strings that would later display as labels.
+    UNKNOWN = 'unknown'
+    UNAVAILABLE = 'unavailable'
+
+    NO_VALUE_STATES = frozenset({ UNKNOWN, UNAVAILABLE })

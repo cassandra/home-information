@@ -1,5 +1,14 @@
 # Weather Integration
 
+> **Note:** Weather is an internal data source, not a user-configured
+> integration on the Settings → Integrations page. The
+> per-integration documentation structure described in
+> [`integration-guidelines.md`](integration-guidelines.md) does not
+> apply here — Weather has no user-facing setup doc and follows a
+> different runtime architecture (auto-discovered weather sources
+> rather than the gateway/manager/sync pattern). This document is
+> the only doc you need for the Weather subsystem.
+
 ## Weather Data Source Architecture
 
 The weather system uses a pluggable integration architecture designed to support multiple external weather APIs without dependencies on any single source.

@@ -1,13 +1,12 @@
 from dataclasses import dataclass, field
 from typing import Any, Dict, List
 
-from hi.apps.control.models import Controller, ControllerHistory
 from hi.apps.entity.edit.forms import EntityPositionForm
-from hi.apps.sense.models import Sensor, SensorHistory
 
+from .entity_state_history import EntityStateHistoryValue
 from .enums import EntityGroupType, EntityPairingType, VideoStreamType
 from .forms import EntityForm
-from .models import Entity
+from .models import Entity, EntityState
 
 
 @dataclass
@@ -83,17 +82,14 @@ class EntityEditModeData:
 
     
 @dataclass
-class EntityStateHistoryData:
+class EntityHistoryData:
 
-    entity                       : Entity
-    sensor_history_list_map      : Dict[ Sensor, List[ SensorHistory ] ]
-    controller_history_list_map  : Dict[ Controller, List[ ControllerHistory ] ]
-    
+    entity         : Entity
+    state_to_rows  : Dict[ EntityState, List[ EntityStateHistoryValue ] ]
+
     def to_template_context(self):
-        context = {
+        return {
             'entity': self.entity,
-            'sensor_history_list_map': self.sensor_history_list_map,
-            'controller_history_list_map': self.controller_history_list_map,
+            'state_to_rows': self.state_to_rows,
         }
-        return context
 

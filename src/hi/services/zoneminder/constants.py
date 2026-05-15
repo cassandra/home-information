@@ -35,9 +35,12 @@ class ZmTimeouts:
     HEALTH_CHECK_INTERVAL_SECS = 30  # Regular health status updates
     MONITOR_HEARTBEAT_TIMEOUT_SECS = 20  # 5x polling interval = reasonable timeout for heartbeat
 
-    # Cache refresh intervals (from zm_manager.py)
-    STATE_REFRESH_INTERVAL_SECS = 300
-    MONITOR_REFRESH_INTERVAL_SECS = 300
+    # Cache refresh intervals (from zm_manager.py).
+    # Kept short because these lists carry live operator-controlled
+    # state (monitor function, run state) — long caches make those
+    # changes feel like they have stopped working.
+    STATE_REFRESH_INTERVAL_SECS = 10
+    MONITOR_REFRESH_INTERVAL_SECS = 10
 
     # Performance thresholds for alerting
     API_RESPONSE_WARNING_THRESHOLD_SECS = 5.0  # Warn if API calls take longer than this

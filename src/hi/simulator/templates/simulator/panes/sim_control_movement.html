@@ -1,7 +1,7 @@
 IDLE
 <label class="switch">
   <input type="checkbox" name="value"
-	 {% if sim_state.value %}checked="true"{% endif %}
+	 {% if sim_state.is_on %}checked="true"{% endif %}
 	 onchange-async="true" >
   <span class="slider"></span>
 </label>

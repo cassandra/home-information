@@ -24,6 +24,7 @@ class IntegrationAdmin(admin.ModelAdmin):
     list_display = (
         'integration_id',
         'is_enabled',
+        'is_paused',
         'created_datetime',
         'updated_datetime',
     )

@@ -2,35 +2,41 @@
 
 # Integrations
 
-We will add more integrations as there is demand, but presently the current supported integrations are:
-- **Home Assistant** - General home automation platform for many types of devices and protocols. Requires installation and setup.
-- **ZoneMinder** - For managing security cameras with motion detection. Requires installation and setup.
-- **HomeBox** - Home inventory management system for tracking household items, warranties, and documentation. Requires installation and setup.
+Home Information (HI) can optionally connect to external systems to
+import items from them — alongside your own items and items from any
+other integrations you enable. Integrations are not required; HI
+works without any of them. Each integration has its own setup steps,
+credentials, and caveats — see the per-integration page for details.
 
-To enable an integration, go to "Settings > Integrations > Add Integrations".
+You will need credentials for the upstream service before starting;
+the per-integration pages below cover what to obtain and where to
+enter it.
 
-When you enable one of these integrations, you will need to provide the necessary connection information, usually in the way of API endpoints and credentials. 
+## Enabling an integration
 
-## Home Assistant
+1. In HI, click **CONFIGURE** at the bottom of the screen.
+2. Select the **Integrations** tab.
+3. Open the integrations picker:
+   - If no integrations are configured yet, click **CONFIGURE
+     INTEGRATIONS** in the main panel.
+   - If at least one integration is already configured, click
+     **INTEGRATIONS** at the top of the sidebar.
+4. Choose the integration you want to add and follow the
+   configuration steps on its per-integration page below.
 
-You will need install and set this up by following all their documentation. Start at the [Home Assistant Home Page](https://www.home-assistant.io/).
+## Available integrations
 
-## ZoneMinder
+- **[Home Assistant](integrations/home-assistant.md)** — general-purpose
+  home automation platform. Imports HA entities (lights, switches,
+  sensors, cameras, climate devices, and more) and dispatches control
+  actions back to HA.
+- **[ZoneMinder](integrations/zoneminder.md)** — open-source video
+  surveillance. Imports ZM monitors as cameras with motion sensors and
+  function controllers; provides live stream playback in HI.
+- **[HomeBox](integrations/homebox.md)** — home inventory tracking.
+  Imports HomeBox items as read-only HI items with custom fields and
+  attached files (manuals, receipts, photos).
 
-You will need install and set this up by following all their documentation. Start at the [ZoneMinder Home Page](https://zoneminder.com//).
-
-## HomeBox
-
-You will need to install and set this up by following all their documentation. Start at the [HomeBox Home Page](https://homebox.software/). The API credentials are the same username and password you use to log into the HomeBox web interface.
-
-### CORS Issues
-
-If you are going to use the ZoneMinder integration, then viewing the camera video streams requires the server to authorize the browser to allow the ZoneMinder server to be an allowed off-site "origin".  You will need to add the ZoneMinder URL to an envirornment variable to have Django server up the right headers to the browser:
-``` shell
-export HI_EXTRA_CSP_URLS="${SCHEME}://${HOST}:${PORT}"
-```
-
-### HTTPS/SSL Issues
-
-Another potential issue with viewing the ZoneMinder camera streams can happen if your Home Information server runs trhrough HTTP and the ZoneMinder server streams are served thruogh HTTPS/SSL.  Browsers prevent that due to the security implications.  This can be made worse if the ZoneMinder server is using a self-signed SSL cert (the default?). A workaround we found was to stand up an nginx server to proxy the HTTPS/SSL urls and serve them as plain HTTP in Home Information pages by changing the ZoneMinder setting "Portal URL".
-
+More integrations will be added as demand arises. The per-integration
+pages each carry their own troubleshooting section that accretes
+real-world fixes over time — start there if something is not working.

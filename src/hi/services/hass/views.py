@@ -1,17 +1,10 @@
-from hi.hi_async_view import HiModalView
+"""
+Per-integration view extension point.
 
-from .hass_sync import HassSynchronizer
+The framework owns lifecycle, configure, sync, and manage views for
+every integration (see hi/integrations/views.py). Define Home
+Assistant-specific views here only when an integration genuinely
+needs UI the framework does not provide.
 
-
-class HassSyncView( HiModalView ):
-
-    def get_template_name( self ) -> str:
-        return 'common/modals/processing_result.html'
-
-    def post(self, request, *args, **kwargs):
-
-        processing_result = HassSynchronizer().sync()
-        context = {
-            'processing_result': processing_result,
-        }
-        return self.modal_response( request, context )
+Currently no integration-specific views are required.
+"""

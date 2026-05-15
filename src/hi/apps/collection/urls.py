@@ -1,18 +1,19 @@
-from django.urls import include, re_path
+from django.urls import path
+from django.urls import include
 
 from . import views
 
 
 urlpatterns = [
 
-    re_path( r'^view/(?P<collection_id>\d+)$', 
-             views.CollectionViewView.as_view(), 
-             name='collection_view'),
+    path( 'view/<int:collection_id>', 
+          views.CollectionViewView.as_view(), 
+          name='collection_view'),
 
-    re_path( r'^view$', 
-             views.CollectionViewDefaultView.as_view(), 
-             name='collection_view_default'),
+    path( 'view', 
+          views.CollectionViewDefaultView.as_view(), 
+          name='collection_view_default'),
 
 
-    re_path( r'^edit/', include('hi.apps.collection.edit.urls' )),
+    path( 'edit/', include('hi.apps.collection.edit.urls' )),
 ]

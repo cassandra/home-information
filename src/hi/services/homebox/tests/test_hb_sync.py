@@ -4,10 +4,12 @@ from unittest.mock import ANY, Mock, patch
 
 from django.test import SimpleTestCase
 
-from hi.apps.common.processing_result import ProcessingResult
+from hi.apps.entity.models import Entity
+from hi.integrations.sync_result import IntegrationSyncResult
 from hi.integrations.transient_models import IntegrationKey
 from hi.services.homebox.hb_metadata import HbMetaData
 from hi.services.homebox.hb_sync import HomeBoxSynchronizer
+from hi.testing.async_task_utils import AsyncTaskTestCase
 
 
 logging.disable(logging.CRITICAL)
@@ -28,11 +30,11 @@ class TestHomeBoxSynchronizer(SimpleTestCase):
         manager.fetch_hb_items_from_api.return_value = [Mock(), Mock(), Mock()]
 
         with patch.object(synchronizer, 'hb_manager', return_value=manager), \
-                patch.object(synchronizer, '_sync_helper_entities') as sync_entities_mock:
-            result = synchronizer._sync_helper()
+                patch.object(synchronizer, '_sync_helper_entities', return_value=[]) as sync_entities_mock:
+            result = synchronizer._sync_impl(is_initial_import=True)
 
-        self.assertIsInstance(result, ProcessingResult)
-        self.assertIn('Found 3 current HomeBox items.', result.message_list)
+        self.assertIsInstance(result, IntegrationSyncResult)
+        self.assertIn('Found 3 current HomeBox items.', result.info_list)
         sync_entities_mock.assert_called_once_with(
             item_list=manager.fetch_hb_items_from_api.return_value,
             result=result,
@@ -40,7 +42,7 @@ class TestHomeBoxSynchronizer(SimpleTestCase):
 
     def test_sync_helper_entities_create_update_remove_entities(self):
         synchronizer = HomeBoxSynchronizer()
-        result = ProcessingResult(title='HomeBox Import Result')
+        result = IntegrationSyncResult(title='HomeBox Import Result')
 
         item_new = Mock(name='item_new')
         item_existing = Mock(name='item_existing')
@@ -100,6 +102,15 @@ class TestHomeBoxSynchronizer(SimpleTestCase):
             sync_attrs_mock = stack.enter_context(
                 patch.object(synchronizer, '_sync_helper_entity_attributes')
             )
+            # Reconnect pre-pass (Issue #281) is framework-level on
+            # IntegrationSynchronizer.reconnect_disconnected_items and
+            # does its own DB query; this SimpleTestCase doesn't allow
+            # DB access, so stub it out. The reconnect logic itself
+            # is covered by FindReconnectCandidatesTests in
+            # test_entity_operations.py.
+            stack.enter_context(
+                patch.object(synchronizer, 'reconnect_disconnected_items')
+            )
 
             synchronizer._sync_helper_entities(
                 item_list=[item_new, item_existing, item_invalid],
@@ -135,13 +146,13 @@ class TestHomeBoxSynchronizer(SimpleTestCase):
             item_existing,
         )
 
-        self.assertIn('Found 2 existing HomeBox entities.', result.message_list)
+        self.assertIn('Found 2 existing HomeBox items.', result.info_list)
         self.assertTrue(any('Ignoring HomeBox item due to missing/invalid id' in message
                             for message in result.error_list))
 
     def test_sync_helper_entity_attributes_create_update_remove_fields_and_attachments(self):
         synchronizer = HomeBoxSynchronizer()
-        result = ProcessingResult(title='HomeBox Import Result')
+        result = IntegrationSyncResult(title='HomeBox Import Result')
 
         entity = Mock(name='entity')
         entity.id = 10
@@ -287,8 +298,202 @@ class TestHomeBoxSynchronizer(SimpleTestCase):
         stale_attr.delete.assert_called_once()
         foreign_attr.delete.assert_not_called()
 
-        self.assertEqual(len(result.message_list), 1)
-        self.assertIn('Updated HomeBox entity attributes', result.message_list[0])
-        self.assertIn('Field attribute added: Field New', result.message_list[0])
-        self.assertIn('Attachment attribute added: Attachment New', result.message_list[0])
-        self.assertIn('Field attribute removed: Stale Field', result.message_list[0])
+        # Per-attribute change detail is no longer surfaced in the
+        # sync result (counts at the entity level capture the
+        # operator-relevant signal). The persistence behavior above
+        # — created/updated/deleted attribute records — remains the
+        # contract this test pins.
+        self.assertEqual(result.info_list, [])
+
+
+class TestHomeBoxSynchronizerSyncResultGrouping(SimpleTestCase):
+    """Phase 2 grouping behavior: HomeBox has no domain notion of
+    grouping, so every imported item lands in `ungrouped_items`.
+    `groups` stays empty. The framework's placement modal decides
+    how to surface ungrouped items at render time."""
+
+    def test_sync_impl_populates_ungrouped_items_only(self):
+        synchronizer = HomeBoxSynchronizer()
+        manager = Mock()
+        manager.hb_client = object()
+        manager.fetch_hb_items_from_api.return_value = [Mock(), Mock()]
+
+        entity_a = Mock()
+        entity_a.name = 'Cordless Drill'
+        entity_a.integration_key = IntegrationKey(
+            integration_id=HbMetaData.integration_id,
+            integration_name='item.42',
+        )
+        entity_a.id = 0
+        entity_b = Mock()
+        entity_b.name = 'Stud Finder'
+        entity_b.integration_key = IntegrationKey(
+            integration_id=HbMetaData.integration_id,
+            integration_name='item.43',
+        )
+        entity_b.id = 0
+
+        with patch.object(synchronizer, 'hb_manager', return_value=manager), \
+             patch.object(synchronizer, '_sync_helper_entities',
+                          return_value=[entity_a, entity_b]):
+            result = synchronizer._sync_impl(is_initial_import=True)
+
+        self.assertIsNotNone(result.placement_input)
+        self.assertEqual(result.placement_input.groups, [])
+        self.assertEqual(len(result.placement_input.ungrouped_items), 2)
+        labels = [item.label for item in result.placement_input.ungrouped_items]
+        self.assertEqual(labels, ['Cordless Drill', 'Stud Finder'])
+        keys = [item.key for item in result.placement_input.ungrouped_items]
+        self.assertEqual(
+            keys,
+            [
+                f'{HbMetaData.integration_id}:item.42',
+                f'{HbMetaData.integration_id}:item.43',
+            ],
+        )
+
+    def test_sync_impl_emits_empty_when_no_items_imported(self):
+        synchronizer = HomeBoxSynchronizer()
+        manager = Mock()
+        manager.hb_client = object()
+        manager.fetch_hb_items_from_api.return_value = []
+
+        with patch.object(synchronizer, 'hb_manager', return_value=manager), \
+                patch.object(synchronizer, '_sync_helper_entities', return_value=[]):
+            result = synchronizer._sync_impl(is_initial_import=True)
+
+        # No newly-created entities → placement_input is None.
+        self.assertIsNone(result.placement_input)
+
+
+class TestHomeBoxSynchronizerRebuildIntegrationComponents(SimpleTestCase):
+    """
+    Issue #281: the per-integration ``_rebuild_integration_components``
+    override is the only piece each synchronizer contributes to the
+    framework-level reconnect path. This test verifies that
+    HomeBoxSynchronizer's override dispatches to ``HbConverter`` with
+    the existing-entity argument set. Framework-level behavior
+    (find candidates, strip prefix, clear previous identity, update
+    entity map, info_list note) is covered by tests of
+    IntegrationSynchronizer.reconnect_disconnected_items. End-to-end
+    DB cycle is exercised in Phase 6.
+    """
+
+    def test_dispatches_to_converter_with_existing_entity(self):
+        synchronizer = HomeBoxSynchronizer()
+        result = IntegrationSyncResult(title='HomeBox Test')
+        existing_entity = Mock(name='existing_entity')
+        upstream = Mock(name='hb_item')
+
+        with patch(
+                'hi.services.homebox.hb_sync.HbConverter.create_models_for_hb_item'
+        ) as mock_converter:
+            synchronizer._rebuild_integration_components(
+                entity=existing_entity,
+                upstream=upstream,
+                result=result,
+            )
+
+        mock_converter.assert_called_once_with(
+            hb_item=upstream,
+            entity=existing_entity,
+        )
+
+
+class TestHomeBoxSynchronizerCheckNeedsSync(AsyncTaskTestCase):
+    """Issue #283 — sync-check probe shape for HomeBox.
+
+    Uses a real DB so the probe's ``Entity.objects.filter(...)``
+    query path is exercised end-to-end. Only the upstream HTTP
+    boundary is mocked (the manager's
+    ``fetch_hb_items_summary_from_api_async`` coroutine), which is
+    the appropriate seam — internal accessors like
+    ``_get_current_integration_keys`` run for real.
+
+    Inherits ``AsyncTaskTestCase`` (a ``TransactionTestCase``
+    subclass with a shared event loop) — required because the
+    probe's ``sync_to_async`` DB query runs on a different thread
+    than the test's transaction-wrapped writes, which deadlocks
+    under SQLite when using a plain ``TestCase``.
+    """
+
+    def _hb_key(self, name: str):
+        return IntegrationKey(
+            integration_id=HbMetaData.integration_id,
+            integration_name=name,
+        )
+
+    def _make_hb_entities(self, integration_names):
+        for name in integration_names:
+            Entity.objects.create(
+                name=f'HomeBox Item {name}',
+                entity_type_str='LIGHT',
+                integration_id=HbMetaData.integration_id,
+                integration_name=name,
+            )
+
+    def _run_check(self, summary_list):
+        synchronizer = HomeBoxSynchronizer()
+        manager = Mock()
+
+        async def fetch_summary():
+            return summary_list
+
+        manager.fetch_hb_items_summary_from_api_async = fetch_summary
+
+        async def get_manager():
+            return manager
+
+        with patch.object(synchronizer, 'hb_manager_async', side_effect=get_manager):
+            return self.run_async(synchronizer.check_needs_sync())
+
+    def test_in_sync_when_upstream_matches_hi(self):
+        self._make_hb_entities(['1', '2'])
+        delta = self._run_check(summary_list=[{'id': 1}, {'id': 2}])
+        self.assertFalse(delta.needs_sync)
+
+    def test_upstream_added_appears_in_delta(self):
+        self._make_hb_entities(['1', '2'])
+        delta = self._run_check(summary_list=[{'id': 1}, {'id': 2}, {'id': 3}])
+        self.assertEqual(delta.added, {self._hb_key('3')})
+        self.assertEqual(delta.removed, set())
+
+    def test_upstream_removed_appears_in_delta(self):
+        self._make_hb_entities(['1', '2'])
+        delta = self._run_check(summary_list=[{'id': 1}])
+        self.assertEqual(delta.added, set())
+        self.assertEqual(delta.removed, {self._hb_key('2')})
+
+    def test_summary_items_missing_id_are_skipped(self):
+        # Defensive: a HomeBox item with no id (corrupted upstream
+        # response) does not crash the probe — it is just dropped
+        # from the upstream set.
+        self._make_hb_entities(['1', '3'])
+        delta = self._run_check(
+            summary_list=[{'id': 1}, {'name': 'no-id'}, {'id': 3}],
+        )
+        self.assertFalse(delta.needs_sync)
+
+    def test_returns_none_when_manager_not_ready(self):
+        synchronizer = HomeBoxSynchronizer()
+
+        async def get_manager():
+            return None
+
+        with patch.object(synchronizer, 'hb_manager_async', side_effect=get_manager):
+            result = self.run_async(synchronizer.check_needs_sync())
+
+        self.assertIsNone(result)
+
+    def test_other_integrations_entities_are_ignored(self):
+        # An entity from a different integration must not pollute
+        # the HI key set the HomeBox probe compares against.
+        self._make_hb_entities(['1'])
+        Entity.objects.create(
+            name='Other Integration Entity',
+            entity_type_str='LIGHT',
+            integration_id='hass',
+            integration_name='other.entity',
+        )
+        delta = self._run_check(summary_list=[{'id': 1}])
+        self.assertFalse(delta.needs_sync)

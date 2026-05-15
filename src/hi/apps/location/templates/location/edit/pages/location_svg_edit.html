@@ -1,0 +1,109 @@
+{% extends "pages/base.html" %}
+{% load pipeline %}
+{% load icons %}
+
+{% block head_title %}Background Editor — Home Information{% endblock %}
+
+{% block head_css %}
+{% stylesheet 'css_location_svg_edit' %}
+{% endblock %}
+
+{% block content %}
+<div id="{{ DIVID.LOCATION_SVG_EDIT_TOP }}" class="fixed-top">
+  <div class="d-flex align-items-center">
+    <div id="{{ DIVID.LOCATION_SVG_EDIT_PALETTE }}" class="hi-palette-container flex-grow-1">
+    </div>
+
+    <div class="hi-svg-edit-buttons d-flex flex-nowrap align-items-center">
+      <a href="{% url 'location_svg_edit_cancel' location_id=location.id %}"
+         id="hi-location-svg-edit-cancel-link" class="btn btn-outline-tertiary mx-1" role="button"
+         data-async="true">
+        {% icon "delete" size="sm" css_class="hi-icon-left" %}DISCARD
+      </a>
+      <a href="{% url 'location_svg_edit_exit' location_id=location.id %}"
+         id="hi-location-svg-edit-exit-link" class="btn btn-primary mx-1" role="button"
+         data-async="true">
+        {% icon "save" size="sm" css_class="hi-icon-left" %}DONE
+      </a>
+    </div>
+  </div>
+</div>
+
+<div id="{{ DIVID.LOCATION_SVG_EDIT_BOTTOM }}" class="fixed-bottom">
+  <div class="d-flex justify-content-between align-items-center px-3 h-100">
+    <div class="d-flex align-items-center">
+      <span class="mr-3" style="line-height: 1.2;">
+        <span class="d-block text-muted" style="font-size: 0.7rem; font-weight: 600; letter-spacing: 0.03em;">BACKGROUND EDITOR</span>
+        <span class="d-block" style="font-size: 1rem; font-weight: 600; color: var(--svg-editor-border-color);">{{ location.name }}</span>
+      </span>
+      <span class="text-muted mx-2" style="font-size: 0.85rem;">|</span>
+    <form action="{% url 'location_svg_edit_viewbox' location_id=location.id %}"
+          method="post" class="form d-flex align-items-center"
+          data-async="#{{ DIVID.LOCATION_SVG_EDIT_CANVAS_CONTAINER }}">
+      {% csrf_token %}
+      <label class="me-2 mb-0 mx-1" style="font-size: 0.85rem;"><b>Canvas Size:</b></label>
+      <label class="me-1 mb-0 mx-1" style="font-size: 0.85rem;">W</label>
+      <input type="number" name="width" class="form-control form-control-sm"
+             style="width: 6rem;" value="{{ svg_view_box.width|floatformat:0 }}" min="100" step="50">
+      <label class="ms-2 me-1 mb-0 mx-1" style="font-size: 0.85rem;">H</label>
+      <input type="number" name="height" class="form-control form-control-sm"
+             style="width: 6rem;" value="{{ svg_view_box.height|floatformat:0 }}" min="100" step="50">
+      <button type="submit" class="btn btn-sm btn-outline-primary ms-2 mx-1">Apply</button>
+    </form>
+      <span class="text-muted mx-2" style="font-size: 0.85rem;">|</span>
+      <label class="me-1 mb-0 mx-1" style="font-size: 0.85rem;"><b>Snap:</b></label>
+      <input type="number" id="hi-svg-edit-snap-grid" class="form-control form-control-sm"
+             style="width: 4rem;" value="5" min="0" max="50" step="1"
+             title="Snap grid in screen pixels (0 to disable, hold Shift for fine mode)">
+      <label class="ms-1 mb-0" style="font-size: 0.85rem;">px</label>
+    </div>
+    <div class="d-flex flex-nowrap gap-2 align-items-center">
+      <a href="{% url 'location_svg_edit_revert' location_id=location.id %}"
+         id="hi-location-svg-edit-revert-link" class="btn btn-sm btn-outline-secondary text-nowrap mx-1" role="button"
+         data-async="true">
+        {% icon "undo" size="sm" css_class="hi-icon-left" %}REVERT
+      </a>
+      <a href="{% url 'location_svg_edit_export' location_id=location.id %}"
+         class="btn btn-sm btn-outline-primary text-nowrap mx-1" role="button">
+        {% icon "download" size="sm" css_class="hi-icon-left" %}EXPORT
+      </a>
+      <a href="{% url 'location_svg_edit_help' %}"
+         class="btn btn-tertiary text-nowrap mx-1" role="button"
+         data-async="true">
+        {% icon "question-circle" size="sm" css_class="hi-icon-left" %}HELP
+      </a>
+    </div>
+  </div>
+</div>
+
+<div id="hi-svg-edit-warnings" class="hi-svg-edit-warnings"
+     style="margin-top: var(--svg-editor-top-height);">
+  {% if draft_resumed %}
+  <div class="alert alert-info alert-dismissible fade show m-0 py-1 px-3 rounded-0" role="alert" style="font-size: 0.85rem;">
+    {% icon "info-circle" size="sm" css_class="hi-icon-left" %}
+    Resumed draft from previous session. Use CANCEL to discard.
+    <button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+  </div>
+  {% endif %}
+  <div id="{{ DIVID.LOCATION_SVG_EDIT_CONFORMANCE_WARNING }}" class="alert alert-warning alert-dismissible fade show m-0 py-1 px-3 rounded-0" role="alert" style="font-size: 0.85rem; display: none;">
+    {% icon "warning" size="sm" css_class="hi-icon-left" %}
+    Not all elements in this background are editable. It contains some imported content. Only elements added in this editor are editable.
+    <button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+  </div>
+</div>
+
+<div id="{{ DIVID.LOCATION_SVG_EDIT_MAIN }}" class="container-fluid"
+     style="margin-bottom: var(--svg-editor-bottom-height);">
+  <div id="{{ DIVID.LOCATION_SVG_EDIT_CANVAS_CONTAINER }}">
+    {% include "location/edit/panes/location_svg_edit_canvas.html" %}
+  </div>
+</div>
+{% endblock %}
+
+{% block footer_post_javascript %}
+{% javascript 'js_location_svg_edit' %}
+<script>
+  Hi.SvgEdit.saveUrl = "{% url 'location_svg_edit_save' location_id=location.id %}";
+  Hi.SvgEdit.csrfToken = "{{ csrf_token }}";
+</script>
+{% endblock %}

@@ -1,12 +1,12 @@
-from django.urls import re_path
+from django.urls import path
 
 from . import views
 
 
 urlpatterns = [
 
-    re_path( r'^status$', 
-             views.StatusView.as_view(), 
-             name='api_status'),
+    path( 'status', 
+          views.StatusView.as_view(), 
+          name='api_status'),
 
 ]

@@ -5,9 +5,9 @@
     <div class="">
       <strong>Welcome to Edit Mode!</strong>
     </div>
-    <button type="button" 
-            class="btn btn-sm btn-secondary btn-link p-0" 
-            data-toggle="collapse" 
+    <button type="button"
+            class="btn btn-sm btn-secondary btn-link p-0"
+            data-toggle="collapse"
             data-target="#edit-mode-welcome-content"
             aria-expanded="false"
             aria-controls="edit-mode-welcome-content">
@@ -17,38 +17,51 @@
   <div class="collapse getting-started-guide mx-2" id="edit-mode-welcome-content">
 
     <div class="guide-content p-2">
-      
+
       <div class="steps">
-        <div class="step">
-          <div class="step-icon">
-            {% icon "move" color="primary" aria_label="Add items" %}
-          </div>
-          <div class="step-content">
-            <div><strong>Adjust the Layout</strong></div>
-            <p class="small mb-0">Drag, rotate and zoom items.</p>
-          </div>
-        </div>
         <div class="step">
           <div class="step-icon">
             {% icon "plus" color="primary" aria_label="Add items" %}
           </div>
           <div class="step-content">
             <div><strong>Manage Items</strong></div>
-            <p class="small mb-0">Add/remove items from your home.</p>
+            <p class="small mb-0">Add and remove items from your home.</p>
           </div>
         </div>
         <div class="step">
           <div class="step-icon">
-            {% icon "eye" color="primary" aria_label="Add items" %}
+            {% icon "move" color="primary" aria_label="Move items" %}
+          </div>
+          <div class="step-content">
+            <div><strong>Move Items</strong></div>
+            <p class="small mb-0">Drag, rotate and zoom items on the layout.</p>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-icon">
+            {% icon "layers" color="primary" aria_label="Background editor" %}
+          </div>
+          <div class="step-content">
+            <div><strong>Customize Background</strong></div>
+            <p class="small mb-0">
+              <a href="{% url 'location_svg_background' location_id=request.view_parameters.location.id %}"
+                 data-async="true">
+                Customize the background</a> to match your home.
+            </p>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-icon">
+            {% icon "eye" color="primary" aria_label="Exit edit mode" %}
           </div>
           <div class="step-content">
             <div><strong>Exit to View Mode</strong></div>
-            <p class="small mb-0">Exit to resume managing your home's information..</p>
+            <p class="small mb-0">Exit to resume managing your home's information.</p>
           </div>
         </div>
-        
+
       </div>
-      
+
       <a class="plain" href="{% url 'profiles_edit_reference_help' %}" data-async="modal">
         <div class="help-hint">
           {% icon "question-circle" size="sm" color="muted" %}

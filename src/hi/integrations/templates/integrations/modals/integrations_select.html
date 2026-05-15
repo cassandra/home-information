@@ -1,10 +1,10 @@
-{% extends "modals/action_done.html" %}
+{% extends "modals/action_ok.html" %}
 {% load icons static %}
 
-{% block modal_dialog_class %}hi-modal-dialog-600{% endblock %}
+{% block modal_dialog_class %}hi-modal-dialog-700{% endblock %}
 
 {% block title_text %}
-Select Integrations
+All Integrations
 {% endblock %}
 
 {% block body %}
@@ -14,18 +14,21 @@ Select Integrations
   <div class="col-6 d-flex align-items-center">
     <img src="{% static integration_data.integration_metadata.logo_static_path %}"
          alt="{{ integration_data.integration_metadata.label }}"
-         class="img-fluid mr-2"
-         style="max-height: 24px; width: auto;">
+         class="img-fluid mr-2 hi-integration-logo">
     {{ integration_data.integration_metadata.label }}
   </div>
   <div class="col-3">
-    {% if integration_data.integration.is_enabled %}
-    <span class="text-weight-bold text-primary">
-      {% icon "save" size="sm" css_class="hi-icon-left" %}ENABLED
+    {% if not integration_data.integration.is_enabled %}
+    <span class="text-muted">
+      {% icon "disabled" size="sm" css_class="hi-icon-left" %}Not configured
+    </span>
+    {% elif integration_data.integration.is_paused %}
+    <span class="font-weight-bold text-secondary">
+      {% icon "pause" size="sm" css_class="hi-icon-left" %}Paused
     </span>
     {% else %}
-    <span class="text-secondary">
-      {% icon "eye-off" size="sm" css_class="hi-icon-left" %}DISABLED
+    <span class="font-weight-bold text-primary">
+      {% icon "check-circle" size="sm" css_class="hi-icon-left" %}Running
     </span>
     {% endif %}
   </div>
@@ -33,14 +36,13 @@ Select Integrations
   <div class="col-3">
     {% if integration_data.integration.is_enabled %}
     <a href="{% url 'integrations_disable' integration_id=integration_data.integration.integration_id %}"
-       role="button" class="btn btn-secondary btn-control" data-async="modal">
-      {% icon "eye-off" size="sm" css_class="hi-icon-left" %}DISABLE
+       role="button" class="btn btn-danger btn-control" data-async="modal">
+      {% icon "delete" size="sm" css_class="hi-icon-left" %}DISABLE
     </a>
-    
     {% else %}
     <a href="{% url 'integrations_enable' integration_id=integration_data.integration.integration_id %}"
        class="btn btn-primary btn-control" role="button" data-async="modal">
-      {% icon "eye" size="sm" css_class="hi-icon-left" %}ENABLE
+      {% icon "settings" size="sm" css_class="hi-icon-left" %}CONFIGURE
     </a>
     {% endif %}
   </div>

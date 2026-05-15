@@ -1,0 +1,3 @@
+{% with value_range=controller_data.entity_state.value_range_dict %}
+{% include "control/panes/continuous_slider.html" with slider_min=value_range.min|default:2000 slider_max=value_range.max|default:6500 slider_step=100 slider_default=4000 display_unit="K" slider_class="color-temperature-slider" %}
+{% endwith %}

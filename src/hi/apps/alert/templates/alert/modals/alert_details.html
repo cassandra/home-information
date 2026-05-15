@@ -59,7 +59,10 @@
         </h6>
       </div>
       <div class="card-body p-2">
-        <img class="img-fluid" src="{{ video_stream.source_url }}" alt="{{ alert_visual_content.alarm.title }}">
+        <div class="hi-video-recording">
+          <img class="img-fluid" data-video-recording src="{{ video_stream.source_url }}" alt="{{ alert_visual_content.alarm.title }}">
+          {% include "console/panes/video_recording_replay_button.html" %}
+        </div>
         {% if not alert_visual_content.is_from_latest %}
         <small class="text-muted d-block mt-1">From: {{ alert_visual_content.alarm.timestamp|localtime|date:"M j, Y H:i" }}</small>
         {% endif %}
@@ -113,7 +116,10 @@
                   <small class="text-muted">Source {{ video_source.index }} - {{ video_source.alarm.timestamp|localtime|date:"M j H:i" }}</small>
                 </div>
                 <div class="card-body p-2">
-                  <img class="img-fluid" src="{{ video_stream.source_url }}" alt="Source {{ video_source.index }}">
+                  <div class="hi-video-recording">
+                    <img class="img-fluid" data-video-recording src="{{ video_stream.source_url }}" alt="Source {{ video_source.index }}">
+                    {% include "console/panes/video_recording_replay_button.html" %}
+                  </div>
                 </div>
               </div>
               {% endif %}

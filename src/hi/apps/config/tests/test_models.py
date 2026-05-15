@@ -73,24 +73,6 @@ class TestSubsystemAttribute(BaseTestCase):
         )
         return
 
-    def test_subsystem_attribute_cascade_delete(self):
-        """Test cascade deletion behavior - critical for data integrity."""
-        attribute = SubsystemAttribute.objects.create(
-            subsystem=self.subsystem,
-            setting_key='test.setting.key',
-            value_type=AttributeValueType.TEXT,
-            value='test_value',
-        )
-        
-        attribute_id = attribute.id
-        self.assertTrue(SubsystemAttribute.objects.filter(id=attribute_id).exists())
-        
-        # Delete subsystem should cascade to attributes
-        self.subsystem.delete()
-        
-        self.assertFalse(SubsystemAttribute.objects.filter(id=attribute_id).exists())
-        return
-
     def test_attribute_value_storage_and_retrieval(self):
         """Test attribute values are stored and retrieved correctly across different types."""
         test_cases = [

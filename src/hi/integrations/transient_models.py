@@ -39,10 +39,26 @@ class IntegrationKey:
     integration_name  : str  # Name or identifier that is used by the external source.
 
     def __post_init__(self):
-        # Want to make matching more robust, so convert to lowercase
-        self.integration_id = self.integration_id.lower()
-        self.integration_name = self.integration_name.lower()
+        # Make matching more robust by canonicalizing both fields.
+        # The exact rule (currently lowercase) lives in normalize() so
+        # external callers comparing raw strings against stored
+        # integration_name values can apply the same rule without
+        # constructing a full IntegrationKey.
+        self.integration_id = self.normalize( self.integration_id )
+        self.integration_name = self.normalize( self.integration_name )
         return
+
+    @staticmethod
+    def normalize( value : str ) -> str:
+        """Canonical normalization applied to ``integration_id`` and
+        ``integration_name``. Exposed so callers that need to compare
+        raw strings against stored values can apply exactly the same
+        rule without constructing full IntegrationKey instances. Most
+        comparisons should go through full ``IntegrationKey`` objects
+        and rely on the dataclass's ``__hash__`` / ``__eq__`` (which
+        also use this rule); this static is the escape hatch for
+        cases where a one-shot string normalization is enough."""
+        return value.lower()
     
     def __str__(self):
         return self.integration_key_str
@@ -79,6 +95,54 @@ class IntegrationDetails:
 
 
 @dataclass
+class IntegrationRemovalSummary:
+    """
+    Classification of an integration's attached entities for the Remove
+    confirmation dialog. Raw counts only; derived values are properties so
+    the object stays consistent.
+    """
+
+    total_count: int
+    user_data_count: int
+
+    @property
+    def deletable_count(self) -> int:
+        return self.total_count - self.user_data_count
+
+    @property
+    def has_mixed_state(self) -> bool:
+        """
+        True when at least one entity has user data. Drives the dialog
+        decision between a single DELETE action and the DELETE SAFE /
+        DELETE ALL variants.
+        """
+        return self.user_data_count > 0
+
+
+@dataclass
+class ConnectionTestResult:
+    """
+    Result from a live integration connection probe.
+
+    Distinct from IntegrationValidationResult, which represents schema-level
+    validation outcomes. ConnectionTestResult specifically reports whether
+    a network probe against the proposed configuration succeeded within a
+    bounded timeout.
+    """
+
+    is_success     : bool
+    message        : Optional[str] = None
+
+    @classmethod
+    def success(cls, message: Optional[str] = None) -> 'ConnectionTestResult':
+        return cls(is_success=True, message=message)
+
+    @classmethod
+    def failure(cls, message: str) -> 'ConnectionTestResult':
+        return cls(is_success=False, message=message)
+
+
+@dataclass
 class IntegrationValidationResult:
     """Result from integration configuration validation."""
 
@@ -108,3 +172,4 @@ class IntegrationValidationResult:
             status=status,
             error_message=error_message
         )
+

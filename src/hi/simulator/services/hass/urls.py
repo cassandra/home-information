@@ -1,12 +1,13 @@
-from django.urls import include, re_path
+from django.urls import path
+from django.urls import include
 
 from . import views
 
 urlpatterns = [
 
-    re_path( r'^$',
-             views.HomeView.as_view(),
-             name = 'hass_home' ),
+    path( '',
+          views.HomeView.as_view(),
+          name = 'hass_home' ),
 
-    re_path( r'^api/', include('hi.simulator.services.hass.api.urls' )),
+    path( 'api/', include('hi.simulator.services.hass.api.urls' )),
 ]

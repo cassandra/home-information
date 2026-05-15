@@ -3,10 +3,11 @@ from typing import Dict, Generator, List, Set
 
 from hi.apps.collection.models import Collection, CollectionPath, CollectionPosition
 from hi.apps.common.svg_models import SvgIconItem, SvgPathItem
+from hi.apps.entity.entity_state_role_order import ENTITY_PRIMARY_STATE_ORDERING
 from hi.apps.entity.models import Entity, EntityPosition, EntityPath
 from hi.apps.location.svg_item_factory import SvgItemFactory
-from hi.apps.monitor.status_display_data import StatusDisplayData
-from hi.apps.monitor.transient_models import EntityStateStatusData
+from hi.apps.monitor.display_data import EntityStateDisplayData
+from hi.apps.monitor.status_data import EntityStateStatusData
 
 from .models import LocationView
 
@@ -28,40 +29,44 @@ class LocationViewData:
     
     def __post_init__(self):
         self._svg_item_factory = SvgItemFactory()
-        self._css_class_map = self._get_css_class_map()
+        # Primary-state map is computed first; the state-id map is
+        # derived from it so the entity's ``<g>`` element carries
+        # exactly one ``data-state-id`` (the primary state). That
+        # gives the polling dispatcher a single anchor for SVG
+        # styling updates on this entity's icon.
         self._latest_entity_state_status_data_map = self._get_latest_entity_state_status_data_map()
+        self._state_id_map = self._get_state_id_map()
         return
-    
+
     def svg_icon_items(self) -> Generator[ SvgIconItem, None, None ]:
 
         for entity_position in self.entity_positions:
 
-            css_class = self._css_class_map.get( entity_position.entity, '' )
+            state_id = self._state_id_map.get( entity_position.entity )
             latest_entity_state_status_data = self._latest_entity_state_status_data_map.get(
                 entity_position.entity,
             )
             if latest_entity_state_status_data:
-                status_display_data = StatusDisplayData(
+                status_display_data = EntityStateDisplayData(
                     entity_state_status_data = latest_entity_state_status_data,
                 )
                 svg_status_style = status_display_data.svg_status_style
             else:
                 svg_status_style = None
-            
+
             svg_icon_item = self._svg_item_factory.create_svg_icon_item(
                 item = entity_position.entity,
                 position = entity_position,
-                css_class = css_class,
+                state_id = state_id,
                 svg_status_style = svg_status_style,
             )
             yield svg_icon_item
             continue
-        
+
         for collection_position in self.collection_positions:
             svg_icon_item = self._svg_item_factory.create_svg_icon_item(
                 item = collection_position.collection,
                 position = collection_position,
-                css_class = '',
             )
             yield svg_icon_item
             continue
@@ -71,48 +76,57 @@ class LocationViewData:
 
         for entity_path in self.entity_paths:
 
-            css_class = self._css_class_map.get( entity_path.entity, '' )
+            state_id = self._state_id_map.get( entity_path.entity )
             latest_entity_state_status_data = self._latest_entity_state_status_data_map.get(
                 entity_path.entity,
             )
             if latest_entity_state_status_data:
-                status_display_data = StatusDisplayData(
+                status_display_data = EntityStateDisplayData(
                     entity_state_status_data = latest_entity_state_status_data,
                 )
                 svg_status_style = status_display_data.svg_status_style
             else:
                 svg_status_style = None
-                
+
             svg_path_item = self._svg_item_factory.create_svg_path_item(
                 item = entity_path.entity,
                 path = entity_path,
-                css_class = css_class,
+                state_id = state_id,
                 svg_status_style = svg_status_style,
             )
             yield svg_path_item
             continue
-        
+
         for collection_path in self.collection_paths:
             svg_path_item = self._svg_item_factory.create_svg_path_item(
                 item = collection_path.collection,
                 path = collection_path,
-                css_class = '',
             )
             yield svg_path_item
             continue
         return
 
-    def _get_css_class_map(self):
-        css_class_map = dict()
-        for entity, entity_state_status_data_list in self.entity_to_entity_state_status_data_list.items():
-            if not entity_state_status_data_list:
-                continue
-            entity_states = [ x.entity_state for x in entity_state_status_data_list ]
-            css_class_map[entity] = ' '.join([ x.css_class for x in entity_states ])
+    def _get_state_id_map(self):
+        # One state id per entity — the primary state's id. Drives
+        # the ``data-state-id`` attribute on the SVG icon / path
+        # elements so the polling dispatcher can target them.
+        # Entities without a primary state (no states with sensor
+        # responses) get no entry and render without data-state-id.
+        state_id_map = dict()
+        for entity, picked in self._latest_entity_state_status_data_map.items():
+            state_id_map[entity] = picked.entity_state.id
             continue
-        return css_class_map
+        return state_id_map
 
     def _get_latest_entity_state_status_data_map(self):
+        # Per-entity primary-state selection: among states with a
+        # sensor response, pick the one whose role ranks highest in
+        # ``ENTITY_PRIMARY_STATE_ORDERING`` for the entity's
+        # EntityType. The picked state's value drives the entity's
+        # rendered ``status`` attribute (and from there, the CSS-bound
+        # visual styling). Multi-sensor correctness is inherited: each
+        # EntityStateStatusData.latest_sensor_response already reflects
+        # the time-latest response across all of that state's sensors.
         latest_entity_state_status_data_map = dict()
         for entity, entity_state_status_data_list in self.entity_to_entity_state_status_data_list.items():
             if not entity_state_status_data_list:
@@ -120,8 +134,11 @@ class LocationViewData:
             with_responses_list = [ x for x in entity_state_status_data_list if x.latest_sensor_response ]
             if not with_responses_list:
                 continue
-            with_responses_list.sort( key = lambda item : item.latest_sensor_response.timestamp,
-                                      reverse = True )
+            with_responses_list.sort(
+                key = lambda d: ENTITY_PRIMARY_STATE_ORDERING.sort_key(
+                    d.entity_state.entity_state_role, entity.entity_type,
+                ),
+            )
             latest_entity_state_status_data_map[entity] = with_responses_list[0]
             continue
         return latest_entity_state_status_data_map

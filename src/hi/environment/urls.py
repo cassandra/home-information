@@ -1,10 +1,10 @@
-from django.urls import re_path
+from django.urls import path
 
 from . import views
 
 
 urlpatterns = [
-    re_path(r'^$', 
-            views.EnvironmentHomeView.as_view(), 
-            name='env_home'),
+    path('', 
+         views.EnvironmentHomeView.as_view(), 
+         name='env_home'),
 ]

@@ -1,22 +1,26 @@
 import logging
-from typing import Any, Dict
+from datetime import datetime
+from typing import Any, Dict, List, Optional
 
 from django.http import HttpRequest, HttpResponse
 from django.views.generic import View
 
+from hi.apps.common import datetimeproxy
+
 from hi.apps.attribute.view_mixins import AttributeEditViewMixin
 from hi.apps.attribute.edit_response_renderer import AttributeEditResponseRenderer
-from hi.apps.control.controller_history_manager import ControllerHistoryManager
+from hi.apps.monitor.display_data import EntityDisplayData
 from hi.apps.monitor.status_display_manager import StatusDisplayManager
-from hi.apps.sense.sensor_history_manager import SensorHistoryMixin
 
 from hi.views import page_not_found_response
 from hi.hi_async_view import HiModalView
 from hi.apps.entity.edit.entity_type_transition_handler import EntityTypeTransitionHandler
 
+from .entity_state_history import get_entity_state_history_page
+from .entity_state_role_order import ENTITY_STATUS_VIEW_ORDERING
 from .models import Entity, EntityAttribute
-from .transient_models import EntityStateHistoryData
-from .view_mixins import EntityViewMixin
+from .transient_models import EntityHistoryData
+from .view_mixins import EntityStateViewMixin, EntityViewMixin
 from .entity_attribute_edit_context import EntityAttributeItemEditContext
 
 
@@ -37,35 +41,112 @@ class EntityStatusView( HiModalView, EntityViewMixin ):
         entity_status_data = StatusDisplayManager().get_entity_status_data( entity = entity )
         if not entity_status_data.entity_state_status_data_list:
             return EntityEditView().get( request, *args, **kwargs )
-        
-        context = entity_status_data.to_template_context()
+
+        entity_display_data = EntityDisplayData( entity_status_data = entity_status_data )
+        context = entity_display_data.to_template_context()
         return self.modal_response( request, context )
 
 
-class EntityStateHistoryView( HiModalView, EntityViewMixin, SensorHistoryMixin ):
+class EntityHistoryView( HiModalView, EntityViewMixin ):
+    """Per-entity overview modal. Renders one block per EntityState
+    (the entity's own states plus delegated states) showing each
+    state's most recent merged history rows. Each block links to
+    the per-state EntityStateHistoryView for deeper navigation."""
 
-    ENTITY_STATE_HISTORY_ITEM_MAX = 5
-    
+    PER_STATE_ROW_COUNT = 5
+
+    def get_template_name( self ) -> str:
+        return 'entity/modals/entity_history.html'
+
+    def get( self, request, *args, **kwargs ):
+        entity: Entity = self.get_entity( request, *args, **kwargs )
+
+        states = list( entity.states.all() )
+        for delegation in entity.entity_state_delegations.select_related('entity_state').all():
+            if delegation.entity_state not in states:
+                states.append( delegation.entity_state )
+            continue
+
+        states.sort( key = lambda s: ENTITY_STATUS_VIEW_ORDERING.sort_key(
+            s.entity_state_role, entity.entity_type,
+        ))
+
+        state_to_rows : Dict[ Any, List[ Any ] ] = {}
+        for state in states:
+            rows = get_entity_state_history_page(
+                entity_state = state,
+                page_size = self.PER_STATE_ROW_COUNT,
+            )
+            state_to_rows[ state ] = rows[ : self.PER_STATE_ROW_COUNT ]
+            continue
+
+        entity_history_data = EntityHistoryData(
+            entity = entity,
+            state_to_rows = state_to_rows,
+        )
+        context: Dict[ str, Any ] = entity_history_data.to_template_context()
+        return self.modal_response( request, context )
+
+
+class EntityStateHistoryView( HiModalView, EntityStateViewMixin ):
+    """Paginated per-EntityState merged history. The "History" anchor
+    in the EntityStatus modal (both sensor and controller rows) and
+    the "See All" link in the EntityHistoryView land here. Pagination
+    is next/prev only, anchored on sensor observation timestamps with
+    controller intents fetched in the same time range."""
+
+    PAGE_SIZE = 25
+
     def get_template_name( self ) -> str:
         return 'entity/modals/entity_state_history.html'
 
-    def get( self, request,*args, **kwargs ):
-        entity: Entity = self.get_entity( request, *args, **kwargs )
-        sensor_history_list_map = self.sensor_history_manager().get_latest_entity_sensor_history(
-            entity = entity,
-            max_items = self.ENTITY_STATE_HISTORY_ITEM_MAX,
+    def get( self, request, *args, **kwargs ):
+        entity_state = self.get_entity_state( request, *args, **kwargs )
+
+        before = _parse_iso_cursor( request.GET.get( 'before' ) )
+
+        rows = get_entity_state_history_page(
+            entity_state = entity_state,
+            page_size = self.PAGE_SIZE,
+            before = before,
         )
-        controller_history_list_map = ControllerHistoryManager().get_latest_entity_controller_history(
-            entity = entity,
-            max_items = self.ENTITY_STATE_HISTORY_ITEM_MAX,
-        )        
-        entity_state_history_data = EntityStateHistoryData(
-            entity = entity,
-            sensor_history_list_map = sensor_history_list_map,
-            controller_history_list_map = controller_history_list_map,
+
+        # Multi-instrument source annotation surfaces only when the
+        # state has more than one sensor or more than one controller,
+        # i.e., when the row's instrument identity is ambiguous.
+        multi_sensor = entity_state.sensors.count() > 1
+        multi_controller = entity_state.controllers.count() > 1
+        annotate_sources = multi_sensor or multi_controller
+
+        # The oldest row's timestamp drives the "older" navigation
+        # link; the cursor we paged from drives the "newer" link
+        # back toward the most-recent page.
+        older_cursor : Optional[ str ] = (
+            datetimeproxy.datetime_to_iso_str( rows[ -1 ].timestamp )
+            if rows else None
         )
-        context: Dict[str, Any] = entity_state_history_data.to_template_context()
+        newer_cursor : Optional[ str ] = (
+            datetimeproxy.datetime_to_iso_str( before )
+            if before is not None else None
+        )
+
+        context = {
+            'entity_state'      : entity_state,
+            'history_rows'      : rows,
+            'annotate_sources'  : annotate_sources,
+            'older_cursor'      : older_cursor,
+            'newer_cursor'      : newer_cursor,
+        }
         return self.modal_response( request, context )
+
+
+def _parse_iso_cursor( raw : Optional[ str ] ) -> Optional[ datetime ]:
+    if not raw:
+        return None
+    try:
+        return datetimeproxy.iso_str_to_datetime( raw )
+    except ValueError:
+        return None
 
 
 class EntityEditView( HiModalView, EntityViewMixin, AttributeEditViewMixin ):

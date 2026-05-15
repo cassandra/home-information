@@ -33,7 +33,7 @@ class EntityVideoStreamDispatchView( View, EntityViewMixin ):
         entity = self.get_entity( request, *args, **kwargs )
         
         # Get video dispatch decision based on referrer context
-        referrer_url = request.META.get('HTTP_REFERER', '')
+        referrer_url = request.headers.get('referer', '')
         dispatch_result = VideoStreamBrowsingHelper.get_video_dispatch_result(
             entity = entity,
             referrer_url = referrer_url,

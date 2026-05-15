@@ -18,11 +18,3 @@
   {{ location_add_form.name }}
   <small class="form-error text-danger">{{ location_add_form.name.errors }}</small>
 </div>
-
-<p class="my-3">
-  You may optionally add an image (SVG format) showing your property and/or house layout.
-</p>
-{% include "common/panes/svg_file_form.html" with svg_file_form=location_add_form %}
-<p class="my-2 text-muted">
-  If you skip adding an image now, we'll uses a predefined image for you. You can update the location's image at any time.
-</p>

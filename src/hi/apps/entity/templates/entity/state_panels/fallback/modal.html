@@ -1,0 +1,15 @@
+{# Framework fallback for the modal context: renders any entity     #}
+{# whose type has no panel registered. The surrounding              #}
+{# ``entity_status.html`` modal supplies the identifying chrome     #}
+{# (icon, entity name, integration logo, type label) in its         #}
+{# subheader block, so this panel body only renders the video       #}
+{# stream (when present) and the flat state list.                   #}
+{% if entity_for_video %}
+<div>
+  {% include "console/panes/entity_video_stream_w_link.html" with entity=entity_for_video %}
+</div>
+{% endif %}
+
+{% if state_status_data_list %}
+{% include "entity/state_panels/fallback/state_list.html" with entity_state_status_data_list=state_status_data_list %}
+{% endif %}

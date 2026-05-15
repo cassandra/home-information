@@ -1,21 +1,22 @@
 {% load common_tags %}
+{% load control_tags %}
+{% load icons %}
 {% generate_uuid as unique_id %}
-<div id="hi-controller-{{ controller_data.controller.id }}-{{ unique_id }}"
-     class="{{ controller_data.css_class }}" >
+<div id="hi-controller-{{ controller_data.controller.id }}-{{ unique_id }}">
   <form action="{% url 'control_controller' controller_id=controller_data.controller.id %}"
         method="post"
-        class="form" data-async="#hi-controller-{{ controller_data.controller.id }}-{{ unique_id }}" data-mode="replace"{% if in_modal_context %} data-stay-in-modal="true"{% endif %}>
+        class="form" data-async="#hi-controller-{{ controller_data.controller.id }}-{{ unique_id }}" data-mode="replace" data-stay-in-modal="true">
     {% csrf_token %}
-    <input type="hidden" name="response_context" value="{% if in_modal_context %}modal{% else %}page{% endif %}">
-    
-    {% include_with_fallback controller_data.controller.entity_state.entity_state_type.controller_template_name "control/panes/controller_default.html" %}
+    {% include_controller_widget controller_data.controller %}
     {% if controller_data.error_list %}
-    <div class="text-danger">
-      <ul>
+    <div class="alert alert-danger d-flex align-items-start mt-2 py-2 small"
+         role="alert">
+      {% icon "warning" size="sm" css_class="mr-2 mt-1" %}
+      <div>
         {% for msg in controller_data.error_list %}
-        <li>{{ msg }}</li>
+        <div>{{ msg }}</div>
         {% endfor %}
-      </ul>
+      </div>
     </div>
     {% endif %}
   </form>

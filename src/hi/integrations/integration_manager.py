@@ -15,9 +15,12 @@ from hi.apps.attribute.enums import AttributeType
 from hi.apps.common.delayed_signal_processor import DelayedSignalProcessor
 from hi.apps.common.singleton import Singleton
 from hi.apps.common.module_utils import import_module_safe
+from hi.apps.entity.models import Entity
 from hi.apps.system.health_status_provider import HealthStatusProvider
 
-from .enums import IntegrationAttributeType
+from .entity_operations import EntityIntegrationOperations
+from .enums import IntegrationAttributeType, IntegrationDisableMode
+from .exceptions import IntegrationConnectionError
 from .integration_data import IntegrationData
 from .integration_gateway import IntegrationGateway
 from .transient_models import IntegrationKey
@@ -31,15 +34,38 @@ class IntegrationManager( Singleton ):
 
     START_DELAY_INTERVAL_SECS = 2
 
+    # Bounded timeout (in seconds) used when an integration's gateway
+    # test_connection() probe is invoked synchronously during attribute-save
+    # validation or before relaunching monitors. Kept short for interactive
+    # save-time UX; can be promoted to a user-tunable setting later if
+    # demand emerges.
+    HEALTH_CHECK_TIMEOUT_SECS = 5
+
     def __new__(cls):
         return super().__new__(cls)
     
     def __init_singleton__( self ):
         self._integration_data_map : Dict[ str, IntegrationData ] = dict()
         self._monitor_map = dict()
+        self._sync_check_monitor = None
         self._initialized = False
         self._data_lock = threading.Lock()
         self._monitor_event_loop = None
+        return
+
+    def reset_for_testing(self):
+        """
+        Reset the manager's in-memory state. Intended for use in tests only,
+        to provide isolation from singleton state that persists across test
+        methods (integration data map, monitor map).
+        """
+        self._integration_data_map.clear()
+        self._monitor_map.clear()
+        with self._data_lock:
+            sync_check_monitor = self._sync_check_monitor
+            self._sync_check_monitor = None
+        if sync_check_monitor is not None:
+            sync_check_monitor.stop()
         return
 
     def get_integration_data_list( self, enabled_only = False ) -> List[ IntegrationData ]:
@@ -83,6 +109,9 @@ class IntegrationManager( Singleton ):
                 if provider.get_provider_info().provider_id == provider_id:
                     return provider
                 continue
+            if ( self._sync_check_monitor is not None
+                 and self._sync_check_monitor.get_provider_info().provider_id == provider_id ):
+                return self._sync_check_monitor
         raise KeyError( f'Unknown provider id: "{provider_id}".' )
 
     def get_health_status_by_monitor_id( self,
@@ -92,11 +121,42 @@ class IntegrationManager( Singleton ):
                 if monitor.id == monitor_id:
                     return monitor
                 continue
+            if ( self._sync_check_monitor is not None
+                 and self._sync_check_monitor.id == monitor_id ):
+                return self._sync_check_monitor
         raise KeyError( f'Unknown monitor id: "{monitor_id}".' )
 
     def get_health_status_providers(self) -> List[HealthStatusProvider]:
         with self._data_lock:
-            return list( self._monitor_map.values() )
+            providers = list( self._monitor_map.values() )
+            if self._sync_check_monitor is not None:
+                providers.append( self._sync_check_monitor )
+            return providers
+
+    def get_framework_health_status_providers(self) -> List[HealthStatusProvider]:
+        """Framework-level monitors owned by ``IntegrationManager`` itself
+        rather than by any one integration. These are the integration
+        framework's own background workers (currently just the
+        Issue #283 sync-check monitor); the System Info page renders
+        them alongside the per-integration list so they don't go
+        invisible. Returned in a stable order; missing entries simply
+        mean those monitors have not been started yet."""
+        with self._data_lock:
+            if self._sync_check_monitor is None:
+                return []
+            return [ self._sync_check_monitor ]
+
+    def get_health_status_provider_map(self) -> Dict[str, HealthStatusProvider]:
+        """Snapshot of running monitors keyed by integration_id.
+
+        Callers that want to pair every configured integration with
+        its monitor (when present) — e.g., the system-info page —
+        use this alongside ``get_integration_data_list``. A missing
+        key for a configured integration means no live monitor
+        (the integration is paused or its monitor failed to start).
+        """
+        with self._data_lock:
+            return dict( self._monitor_map )
         
     async def initialize( self, event_loop ) -> None:
         """
@@ -110,18 +170,27 @@ class IntegrationManager( Singleton ):
             self._initialized = True
 
             self._monitor_event_loop = event_loop
-           
+
             logger.info("Discovering and starting integration monitors...")
             await self._load_integration_data()
             await self._start_all_integration_monitors()
+            await self._start_sync_check_monitor()
         return
-        
+
     async def shutdown(self) -> None:
         logger.info("Stopping all integration monitors...")
         for integration_id, monitor in self._monitor_map.items():
             logger.debug( f'Stopping integration monitor: {integration_id}' )
             monitor.stop()
             continue
+        # Snapshot the slot under the lock; release before calling
+        # stop() so we don't hold the threading lock across a
+        # stop() that just toggles a flag (cheap, but kept clean).
+        with self._data_lock:
+            sync_check_monitor = self._sync_check_monitor
+        if sync_check_monitor is not None:
+            logger.debug( 'Stopping sync-check monitor.' )
+            sync_check_monitor.stop()
         return
         
     async def _load_integration_data(self) -> None:
@@ -164,6 +233,41 @@ class IntegrationManager( Singleton ):
             await asyncio.sleep( self.START_DELAY_INTERVAL_SECS )
             await self._start_integration_monitor( integration_data = integration_data )
             continue
+        return
+
+    async def _start_sync_check_monitor(self) -> None:
+        """
+        Start the framework-level sync-check monitor (Issue #283). Singular
+        across all integrations: iterates enabled+unpaused integrations,
+        gets each integration's synchronizer via gateway.get_synchronizer(),
+        and dispatches to its check_needs_sync. Sync-check rides on the
+        same opt-in surface as full sync — integrations without a
+        synchronizer naturally opt out. Started after the per-integration
+        health monitors so the integration data map is already populated;
+        per-integration probe failures inside the cycle are caught
+        individually so a not-yet-ready integration cannot abort the cycle.
+        """
+        # Local import keeps the module-import-time graph clean — the
+        # monitor module imports IntegrationManager lazily inside its
+        # do_work, but the manager only needs the class here for
+        # construction.
+        from .monitors import IntegrationSyncCheckMonitor
+
+        if settings.DEBUG and settings.SUPPRESS_MONITORS:
+            logger.debug( 'Skipping sync-check monitor. See SUPPRESS_MONITORS = True' )
+            return
+
+        # No explicit lock: ``initialize`` is the sole caller and
+        # already holds ``self._data_lock`` for its entire async
+        # body. ``_data_lock`` is a non-reentrant ``threading.Lock``,
+        # so re-acquiring it here would deadlock the initialization
+        # path.
+        self._sync_check_monitor = IntegrationSyncCheckMonitor()
+        logger.debug( 'Starting sync-check monitor.' )
+        asyncio.create_task(
+            self._sync_check_monitor.start(),
+            name = 'IntegrationSyncCheckMonitor',
+        )
         return
 
     def _launch_integration_monitor_task( self, integration_data : IntegrationData ):
@@ -295,6 +399,12 @@ class IntegrationManager( Singleton ):
                     new_attribute_types.append( attribute_type )
                 else:
                     existing_attr = existing_attributes[integration_key]
+                    if existing_attr.name != attribute_type.label:
+                        existing_attr.name = attribute_type.label
+                        existing_attr.save(
+                            update_fields = ['name'],
+                            track_history = False,
+                        )
                     description = attribute_type.description or ''
                     if existing_attr.description != description:
                         existing_attr.description = description
@@ -337,22 +447,177 @@ class IntegrationManager( Singleton ):
         return
                 
     def enable_integration( self, integration_data : IntegrationData ):
+        """
+        Idempotent: enabling an already-enabled integration is a no-op.
+
+        The is_enabled re-read happens inside the data lock and atomic
+        transaction so the disabled→enabled transition (which also
+        un-pauses) cannot race with another caller. Callers can invoke
+        this unconditionally without first checking is_enabled, which
+        avoids a TOCTOU window between caller check and manager write.
+        """
         with self._data_lock:
             with transaction.atomic():
+                # Re-read fresh state inside the lock; another caller
+                # may have enabled the integration between the caller's
+                # check (if any) and our acquiring this lock.
+                integration_data.integration.refresh_from_db()
+                if integration_data.integration.is_enabled:
+                    return
                 integration_data.integration.is_enabled = True
+                integration_data.integration.is_paused = False
                 integration_data.integration.save()
             self.refresh_integrations_from_db()
             self._launch_integration_monitor_task(
                 integration_data = integration_data,
             )
         return
-                
-    def disable_integration( self, integration_data : IntegrationData ):
+
+    def disable_integration( self,
+                             integration_data : IntegrationData,
+                             mode             : IntegrationDisableMode = None ):
+        """
+        Remove an integration: stop monitors, handle attached entities per
+        mode, flip state flags. Configuration attributes (IntegrationAttribute
+        rows) are retained so a subsequent Configure can reuse them.
+
+        Mode semantics:
+          SAFE (default): delete entities without user-created data; preserve
+          entities with user-created data by detaching them from the
+          integration (via EntityIntegrationOperations.preserve_with_user_data).
+          Preserved entities surface as "Detached from <integration>" in
+          the entity-detail UI and become candidates for the auto-reconnect
+          path on a subsequent re-Configure + sync.
+
+          ALL: hard-delete all entities attached to this integration
+          regardless of user data.
+
+        Monitors are stopped first to avoid races with in-flight sync work.
+        """
+        if mode is None:
+            mode = IntegrationDisableMode.default()
+
+        with self._data_lock:
+            # Stop monitors before any entity changes to avoid races with
+            # in-flight sync work.
+            self._stop_integration_monitor( integration_data = integration_data )
+
+        integration_id = integration_data.integration_id
+
+        # DB-level entity removal does not need the manager's data
+        # lock — it operates on rows, not on the in-memory monitor
+        # map, and transaction.atomic() handles row-level
+        # concurrency. Holding _data_lock across the closure walk
+        # and cascading deletes would block all other lifecycle
+        # calls on every integration for the duration of a wide
+        # removal.
+        with transaction.atomic():
+            # Seed: every entity attached to this integration. The
+            # closure walk inside the helper picks up delegate
+            # entities (e.g., Area entities auto-created when a
+            # motion sensor was placed in a view) that would be
+            # orphaned by the removal.
+            seed_entity_ids = list(
+                Entity.objects
+                .filter( integration_id = integration_id )
+                .values_list( 'id', flat = True )
+            )
+            EntityIntegrationOperations.remove_entities_with_closure(
+                seed_entity_ids = seed_entity_ids,
+                integration_name = integration_id,
+                preserve_user_data = ( mode != IntegrationDisableMode.ALL ),
+            )
+
+        with self._data_lock:
+            # Re-read inside the lock: a concurrent lifecycle call
+            # may have touched the row while we were doing the
+            # lock-free DB removal. The disable intent still wins
+            # (entities are gone), so we unconditionally flip both
+            # flags to the disabled state — but refresh first so
+            # we don't clobber unrelated fields a concurrent caller
+            # may have written.
+            integration_data.integration.refresh_from_db()
+            integration_data.integration.is_enabled = False
+            integration_data.integration.is_paused = False
+            integration_data.integration.save()
+        return
+
+    def pause_integration( self, integration_data : IntegrationData ):
+        """
+        Stop the integration's monitors while leaving is_enabled, entities,
+        and configuration intact. No-op if the integration is not enabled or
+        is already paused. The DB flag represents user intent: once set, a
+        failed monitor stop does not re-trigger on a subsequent pause call.
+        """
+        if not integration_data.integration.is_enabled:
+            return
+        if integration_data.integration.is_paused:
+            return
         with self._data_lock:
             with transaction.atomic():
-                integration_data.integration.is_enabled = False
+                integration_data.integration.is_paused = True
                 integration_data.integration.save()
+            self.refresh_integrations_from_db()
             self._stop_integration_monitor( integration_data = integration_data )
+        return
+
+    def resume_integration( self, integration_data : IntegrationData ):
+        """
+        Relaunch the integration's monitors after a pause. No-op if the
+        integration is not enabled. Unlike pause, resume always attempts the
+        monitor launch regardless of the is_paused flag, so that a prior
+        failed launch can be retried by invoking resume again.
+        _launch_integration_monitor_task is idempotent when the monitor is
+        already running.
+
+        Probes upstream connectivity via the gateway's test_connection
+        before relaunching, so we fail fast (with a meaningful error to
+        the caller) rather than spinning up monitors that will immediately
+        error against an unreachable service. Raises
+        IntegrationConnectionError on probe failure.
+
+        The probe runs OUTSIDE the data lock — we don't want to hold the
+        lock for ~5 seconds while a network probe is in flight, since
+        that would block all other lifecycle operations on every
+        integration. The trade-off is a TOCTOU window between the
+        outside-lock is_enabled check and the inside-lock state write:
+        another caller could disable_integration() during the probe.
+        We close that window by re-checking is_enabled inside the lock
+        and aborting if the integration was disabled while we probed.
+        """
+        if not integration_data.integration.is_enabled:
+            return
+
+        integration_attributes = list(
+            integration_data.integration.attributes.all()
+        )
+        test_result = integration_data.integration_gateway.test_connection(
+            integration_attributes = integration_attributes,
+            timeout_secs = self.HEALTH_CHECK_TIMEOUT_SECS,
+        )
+        if not test_result.is_success:
+            raise IntegrationConnectionError(
+                test_result.message or 'Connection test failed during resume.'
+            )
+
+        with self._data_lock:
+            # Re-check is_enabled inside the lock to close the TOCTOU
+            # window opened by running the probe lock-free above. If
+            # another caller disabled the integration while we were
+            # probing, abandon the resume — surfacing the cause to the
+            # caller so the UI can communicate why nothing happened.
+            integration_data.integration.refresh_from_db()
+            if not integration_data.integration.is_enabled:
+                raise IntegrationConnectionError(
+                    'Integration was disabled while resume was probing upstream.'
+                )
+            with transaction.atomic():
+                integration_data.integration.is_paused = False
+                integration_data.integration.save()
+            self.refresh_integrations_from_db()
+            self._launch_integration_monitor_task(
+                integration_data = integration_data,
+            )
         return
     
     def notify_integration_settings_changed(self):

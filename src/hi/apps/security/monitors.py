@@ -1,6 +1,7 @@
 import logging
 
 import hi.apps.common.datetimeproxy as datetimeproxy
+from hi.apps.alert.enums import AlarmLevel
 from hi.apps.console.console_helper import ConsoleSettingsHelper
 from hi.apps.config.settings_mixins import SettingsMixin
 from hi.apps.monitor.periodic_monitor import PeriodicMonitor
@@ -34,6 +35,13 @@ class SecurityMonitor( PeriodicMonitor, SettingsMixin, SecurityMixin ):
             description = 'Security state monitoring',
             expected_heartbeat_interval_secs = cls.SECURITY_POLLING_INTERVAL_SECS,
         )
+
+    def alarm_ceiling(self):
+        # The security monitor drives automatic DAY/NIGHT transitions.
+        # If it fails, the home can be left in the wrong security mode,
+        # which mis-gates alarm and notification delivery for ALL other
+        # subsystems — treat health failures here as serious.
+        return AlarmLevel.CRITICAL
 
     async def do_work(self):
         try:

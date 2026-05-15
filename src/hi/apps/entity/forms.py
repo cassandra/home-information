@@ -22,7 +22,25 @@ class EntityForm( forms.ModelForm ):
         widget = forms.Select( attrs = { 'class' : 'custom-select' } ),
     )
 
-    
+
+class EntityAddForm( EntityForm ):
+
+    MAX_BULK_ADD_QUANTITY = 100
+
+    quantity = forms.IntegerField(
+        label = 'Quantity',
+        required = True,
+        min_value = 1,
+        max_value = MAX_BULK_ADD_QUANTITY,
+        initial = 1,
+        widget = forms.NumberInput( attrs = {
+            'min': 1,
+            'max': MAX_BULK_ADD_QUANTITY,
+            'step': 1,
+        }),
+    )
+
+
 class EntityAttributeForm( AttributeForm ):
     class Meta( AttributeForm.Meta ):
         model = EntityAttribute
@@ -57,7 +75,7 @@ class EntityAttributeRegularFormSet(RegularAttributeBaseFormSet):
             )
             if has_new_data:
                 raise forms.ValidationError(
-                    'New attributes cannot be added for this entity because attributes are managed externally.'
+                    'New attributes cannot be added for this item because attributes are managed externally.'
                 )
 
 

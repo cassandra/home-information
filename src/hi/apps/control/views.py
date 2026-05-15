@@ -1,16 +1,12 @@
 import logging
 
-from django.urls import reverse
 from django.views.generic import View
 
-from hi.apps.common.pagination import compute_pagination_from_queryset
 from hi.apps.entity.enums import EntityStateType, EntityStateValue
 from hi.apps.monitor.status_display_manager import StatusDisplayManager
 
-from hi.hi_async_view import HiModalView
-
 from .control_mixins import ControllerMixin
-from .models import Controller, ControllerHistory
+from .models import Controller
 from .view_mixins import ControlViewMixin
 
 logger = logging.getLogger(__name__)
@@ -29,13 +25,20 @@ class ControllerView( View, ControlViewMixin, ControllerMixin ):
         
     def post( self, request, *args, **kwargs ):
         controller = self.get_controller( request, *args, **kwargs )
-        control_value = request.POST.get( 'value' )
+        display_control_value = request.POST.get( 'value' )
 
         # Checkbox case results in no value, so we need to normalize those
         # binary states based on EntityStateType.
         #
-        if control_value is None:
-            control_value = self._get_value_for_missing_input( controller = controller )
+        if display_control_value is None:
+            display_control_value = self._get_value_for_missing_input(
+                controller = controller,
+            )
+
+        control_value = self.to_entity_state_value(
+            display_value = display_control_value,
+            entity_state = controller.entity_state,
+        )
 
         controller_outcome = self.controller_manager().do_control(
             controller = controller,
@@ -66,46 +69,14 @@ class ControllerView( View, ControlViewMixin, ControllerMixin ):
                 override_value = override_sensor_value,
             )
 
-        response_context = request.POST.get('response_context', 'page')
-        in_modal_context = bool( response_context == 'modal' )
-        
         return self.controller_data_response(
             request = request,
             controller = controller,
             error_list = controller_outcome.error_list,
             override_sensor_value = override_sensor_value,
-            in_modal_context = in_modal_context,
         )
     
     def _get_value_for_missing_input( self, controller : Controller ) -> str:
         if controller.entity_state.entity_state_type in self.MISSING_VALUE_MAP:
             return str( self.MISSING_VALUE_MAP.get( controller.entity_state.entity_state_type ))
         return 'unknown'
-
-
-class ControllerHistoryView( HiModalView, ControlViewMixin ):
-
-    CONTROLLER_HISTORY_PAGE_SIZE = 25
-    
-    def get_template_name( self ) -> str:
-        return 'control/modals/controller_history.html'
-
-    def get( self, request, *args, **kwargs ):
-
-        controller = self.get_controller( request, *args, **kwargs )
-        base_url = reverse( 'control_controller_history', kwargs = { 'controller_id': controller.id } )
-
-        queryset = ControllerHistory.objects.filter( controller = controller )
-        pagination = compute_pagination_from_queryset( request = request,
-                                                       queryset = queryset,
-                                                       base_url = base_url,
-                                                       page_size = self.CONTROLLER_HISTORY_PAGE_SIZE,
-                                                       async_urls = True )
-        controller_history_list = queryset[pagination.start_offset:pagination.end_offset + 1]
-
-        context = {
-            'controller': controller,
-            'controller_history_list': controller_history_list,
-            'pagination': pagination,
-        }
-        return self.modal_response( request, context )

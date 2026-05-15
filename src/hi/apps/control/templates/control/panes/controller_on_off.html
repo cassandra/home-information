@@ -1,17 +1,23 @@
+{% with on_text="On" off_text="Off" %}
 <div class="on-off-control">
   <label class="switch-modern">
-    <input type="checkbox" 
-           name="value" 
-           class="{{ controller_data.css_class }} switch-input"
+    <input type="checkbox"
+           name="value"
+           class="switch-input"
+           data-state-id="{{ controller_data.entity_state.id }}"
+           data-status data-controller-value
            {% if controller_data.latest_sensor_response.is_on %}checked="true"{% endif %}
            status="{{ controller_data.latest_sensor_response.value }}"
+           data-on-text="{{ on_text }}"
+           data-off-text="{{ off_text }}"
            onchange-async="true"
            data-controller-id="{{ controller_data.controller.id }}">
     <span class="switch-slider"></span>
   </label>
   <div class="switch-status">
     <span class="status-text">
-      {% if controller_data.latest_sensor_response.is_on %}On{% else %}Off{% endif %}
+      {% if controller_data.latest_sensor_response.is_on %}{{ on_text }}{% else %}{{ off_text }}{% endif %}
     </span>
   </div>
 </div>
+{% endwith %}

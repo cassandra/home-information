@@ -204,17 +204,21 @@ make docker-run                    # Background
 make docker-stop
 ```
 
-### Documentation
+### Documentation Preview
 
-Use `grip` for previewing GitHub markdown documents locally.
+To preview GitHub-flavored markdown locally before committing, we recommend
+VS Code with the
+[Markdown Preview Github Styling](https://marketplace.visualstudio.com/items?itemName=bierner.markdown-preview-github-styles)
+extension. It renders markdown with GitHub's CSS locally — no API calls or
+additional dependencies needed.
 
-```
-sudo apt install grip
-cd $PROJ_DIR
-grip
+If you already use VS Code for this project, install the extension and open
+any `.md` file with `Ctrl+Shift+V` to preview (or `Ctrl+K V` for side-by-side).
 
-# Then visit:
-http://localhost:6419
+If you use a different editor for development, you can open this project in
+a separate VS Code window just for markdown editing:
+```bash
+code -n $PROJ_DIR
 ```
 
 ## Getting Started

@@ -11,6 +11,10 @@ from hi.integrations.transient_models import IntegrationKey
 
 from .models import Sensor, SensorHistory
 from .enums import CorrelationRole
+from .sensor_history_urls import (
+    sensor_history_details_url,
+    sensor_history_video_browse_url,
+)
 
 
 @dataclass
@@ -50,30 +54,30 @@ class SensorResponse:
     def is_on(self):
         return bool( self.value == str(EntityStateValue.ON) )
 
+    def is_open(self):
+        return bool( self.value == str(EntityStateValue.OPEN) )
+
     @property
-    def video_browse_url(self) -> str:
-        if self.has_video_stream and self.sensor_history_id:
-            return reverse( 'console_entity_video_sensor_history_detail',
-                            kwargs = { 'entity_id': self.entity.id,
-                                       'sensor_id': self.sensor.id,
-                                       'sensor_history_id': self.sensor_history_id })
-        if self.sensor.provides_video_stream:
-            return reverse( 'console_entity_video_sensor_history',
-                            kwargs = { 'entity_id': self.entity.id,
-                                       'sensor_id': self.sensor.id })        
-        return None
+    def video_browse_url(self) -> Optional[ str ]:
+        return sensor_history_video_browse_url(
+            entity_id = self.entity.id,
+            sensor_id = self.sensor.id,
+            sensor_history_id = self.sensor_history_id,
+            has_video_stream = self.has_video_stream,
+            provides_video_stream = self.sensor.provides_video_stream,
+        )
+
+    @property
+    def details_url(self) -> Optional[ str ]:
+        return sensor_history_details_url(
+            sensor_history_id = self.sensor_history_id,
+            has_details = self.has_details,
+        )
     
     @property
-    def details_url(self) -> str:
-        if self.has_details:
-            return reverse( 'sense_sensor_history_details',
-                            kwargs = { 'sensor_history_id': self.sensor_history_id })        
-        return None
-    
-    @property
-    def sensor_history_url(self) -> str:
-        return reverse( 'sense_sensor_history',
-                        kwargs = { 'sensor_id': self.sensor.id })        
+    def entity_state_history_url(self) -> str:
+        return reverse( 'entity_state_history',
+                        kwargs = { 'entity_state_id': self.sensor.entity_state.id })
 
     @property
     def click_url(self):
@@ -81,7 +85,7 @@ class SensorResponse:
             return self.video_browse_url
         if self.sensor_history_id and self.has_details:
             return self.details_url
-        return self.sensor_history_url
+        return self.entity_state_history_url
         
     def to_dict(self):
         return {

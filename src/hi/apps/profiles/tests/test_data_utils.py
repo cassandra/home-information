@@ -23,7 +23,7 @@ class ProfileTestDataGenerator:
         
         # Corrupt first location's SVG file reference
         if data.get('locations') and len(data['locations']) > 0:
-            data['locations'][0]['svg_fragment_filename'] = 'location/svg/nonexistent-file.svg'
+            data['locations'][0]['svg_template_name'] = 'location/svg/nonexistent-file.svg'
         
         return data
     
@@ -78,7 +78,7 @@ class ProfileTestDataGenerator:
         
         # Make all locations reference non-existent SVG files
         for location in data.get('locations', []):
-            location['svg_fragment_filename'] = f'location/svg/invalid-{location.get("name", "unknown")}.svg'
+            location['svg_template_name'] = f'location/svg/invalid-{location.get("name", "unknown")}.svg'
         
         return data
     
@@ -99,7 +99,7 @@ class ProfileTestDataGenerator:
         # Corrupt some but not all locations (ensure at least 1 remains valid)
         locations = data.get('locations', [])
         if len(locations) > 1:
-            locations[0]['svg_fragment_filename'] = 'location/svg/invalid-first.svg'  # Make first invalid
+            locations[0]['svg_template_name'] = 'location/svg/invalid-first.svg'  # Make first invalid
             # Leave others valid
         
         # Corrupt some but not all entities (ensure at least 1 remains valid)

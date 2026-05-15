@@ -1,222 +1,124 @@
-# Entity Status Display
+# Entity Status Display — Polling-Update Contract
 
-## Quick Reference
+Reference for the polling-update contract that connects backend state to live DOM. Covers the server payload shape, the per-element declaration grammar, the status-value vocabulary, the color palette, and the icon-vs-path asymmetry.
 
-### Key Files
-- **CSS**: Status colors defined in CSS custom properties (`:root` section)
-- **JavaScript**: `polling.js` handles real-time updates via `/api/status`
-- **Templates**: Entity elements need `data-entity-id` attributes for updates
-- **Backend**: `StatusDisplayManager` calculates display states from sensor data
+If you're new to entity display, start with [`entity-display-overview.md`](entity-display-overview.md). For consuming the contract from authoring contexts, see [`entity-status-panels.md`](entity-status-panels.md) (panel authoring) and [`entity-visual-configuration.md`](entity-visual-configuration.md) (SVG asset authoring).
 
-## Overview
+## The flow in one paragraph
 
-The entity status display system provides visual feedback for entity states through dynamic CSS classes, SVG styling, and real-time updates. This document covers the frontend implementation details for displaying entity status visually.
+On every `/api/status` poll, [`StatusDisplayManager`](../../../src/hi/apps/monitor/status_display_manager.py) builds an `entityStateStatusMap` keyed by `EntityState.id` (as a string). The JS dispatcher in [`entity_state_status.js`](../../../src/hi/static/js/entity_state_status.js) walks every DOM element carrying `data-state-id="<id>"`, looks up the row for that state, and writes whatever subset the element opted into via declaration attributes. No descendant traversal, no class-as-join — each element opts in directly.
 
-## Visual Display Implementation
+## Server payload shape
 
-Entity visual representation is implemented through three main approaches:
+Per-state row, built by [`EntityStateDisplayData.to_polling_update_dict`](../../../src/hi/apps/monitor/display_data.py):
 
-### 1. CSS Class Mapping
-
-The system takes normalized sensor values and applies them as CSS class names to SVG elements. This allows CSS rules to dynamically adjust visual display for well-known sensor values.
-
-```css
-/* Entity state CSS classes */
-.entity-svg.state-active {
-  fill: var(--status-active);
-  fill-opacity: 0.8;
-}
-
-.entity-svg.state-recent {
-  fill: var(--status-recent);
-  fill-opacity: 0.6;
-}
-
-.entity-svg.state-past {
-  fill: var(--status-past);
-  fill-opacity: 0.4;
-}
-
-.entity-svg.state-idle {
-  fill: var(--status-idle);
-  fill-opacity: 0.3;
-}
-
-.entity-svg.state-unknown {
-  fill: var(--status-unknown);
-  fill-opacity: 0.2;
+```python
+"42": {                                # key: str(entity_state.id)
+    "status":    "active",             # singular status value (for [data-status])
+    "controller": { "value": "on" },   # controller widget value (for [data-controller-value])
+    "display": {
+        "magnitude": 72.0,             # numeric magnitude (for [data-display-magnitude])
+        "unit":      "°F",             # unit symbol (for [data-display-unit])
+        "text":      "72.0°F",         # combined human-readable label (for [data-display-text])
+    },
+    "svg_style": {                     # full SVG attribute bundle (for [data-svg-style])
+        "status":           "active",
+        "stroke":           "red",
+        "stroke-width":     4.0,
+        "fill":             "red",
+        "fill-opacity":     0.5,
+        "stroke-dasharray": "2,4",     # optional
+    },
 }
 ```
 
-### 2. Predefined Icon Variants
+Fields are present only when meaningful — sensor-only states omit `controller`; unit-less states omit `display.magnitude` / `display.unit`; states with no SVG styling omit `svg_style`. `entry.status` and `entry.svg_style.status` carry the same value when both are present; consumers pick the bundle that matches their opt-in.
 
-For well-known sensor values, the system can swap between predefined SVG icons to represent different states:
+## The DOM contract
+
+Every element that wants polling updates carries one **anchor** attribute and one or more **declaration** attributes:
 
 ```html
-<!-- Base entity icon -->
-<use href="#icon-motion-sensor-idle" class="entity-icon" />
-
-<!-- Active state icon -->
-<use href="#icon-motion-sensor-active" class="entity-icon" />
+<element data-state-id="<entity_state.id>"
+         data-status                    ← presence-only opt-in
+         data-display-text              ← presence-only opt-in
+         ...>
 ```
 
-### 3. Color Scheme Mapping
+The anchor identifies which state this element listens to. Each declaration is presence-only — the attribute being present opts the element in; the dispatcher provides the value from the matching row. Server-rendered initial values stay where they are; the dispatcher just keeps them current.
 
-The system maps sensor values to color schemes applied via SVG fill, stroke, and opacity attributes. This is predominantly used for area entities (closed SVG paths) to show activity levels.
+### Declaration grammar
 
-```javascript
-// Color scheme application
-function applyColorScheme(element, colorData) {
-    element.style.fill = colorData.fillColor;
-    element.style.stroke = colorData.strokeColor;
-    element.style.opacity = colorData.opacity;
-    element.style.strokeWidth = colorData.strokeWidth;
-}
-```
+| Declaration | What the dispatcher writes | Source field |
+|---|---|---|
+| `data-status` | Sets the `status` HTML attribute to the **status value** | `entry.status` |
+| `data-controller-value` | Sets form `value` / `checked` / `selected` (per element type) | `entry.controller.value` |
+| `data-display-magnitude` | Replaces text content with the **magnitude** | `entry.display.magnitude` |
+| `data-display-unit` | Replaces text content with the **unit symbol** | `entry.display.unit` |
+| `data-display-text` | Replaces text content with the combined **user-facing string** | `entry.display.text` |
+| `data-svg-style` | Sets *all* keys in `entry.svg_style` as element attributes | `entry.svg_style` |
 
-## Status Color System
+Sliders are special-cased: the dispatcher skips a `<input type="range">` that the user is actively dragging so a polling refresh doesn't yank the thumb out from under them.
 
-### Color Variables
+### Status value vocabulary
 
-Define status colors using CSS custom properties:
+The `status` value is a bucketed, CSS-friendly token derived from raw sensor data by per-state-type logic in [`EntityStateDisplayData._get_svg_status_style`](../../../src/hi/apps/monitor/display_data.py). CSS rules key on `[status="..."]` to apply visual styling. Common tokens used across multiple state types (so the same CSS rules cover several domains):
+
+- `active`, `idle` — base states for binary alarms (movement, smoke, moisture, CO, gas), open/close, and HVAC action.
+- `recent`, `past` — decay buckets for sensors that visually "cool off" after activity (movement, open/close, smoke, etc.).
+- `on`, `off`, `dim` — binary power / light states.
+- `open`, `closed`, `partial` — open/close discrete states.
+- `connected`, `disconnected` — connectivity state.
+- `high`, `low` — discrete range state.
+- `smoke_detected`, `smoke_clear`, `moisture_detected`, `moisture_clear`, `co_detected`, `co_clear`, `gas_detected`, `gas_clear` — alarm-specific values, kept distinct from generic `active`/`idle` where the surface needs domain-specific styling.
+
+Adding a new state type that needs its own status token also requires adding matching CSS rules. The complete authoritative palette is in [`StatusStyle`](../../../src/hi/hi_styles.py) on the backend and the `g[status="..."]` / `.hi-status-display[status="..."]` rule blocks in [`main.css`](../../../src/hi/static/css/main.css) on the frontend.
+
+## Color palette
+
+CSS custom properties in [`main.css`](../../../src/hi/static/css/main.css)'s `:root`:
 
 ```css
-:root {
-  /* Status colors following traffic light metaphor */
-  --status-active: #dc3545;      /* Red - Active/Alert */
-  --status-recent: #fd7e14;      /* Orange - Recently active */
-  --status-past: #ffc107;        /* Yellow - Past activity */
-  --status-idle: #28a745;        /* Green - Idle/Safe */
-  --status-unknown: #6c757d;     /* Gray - Unknown/Offline */
-}
+--status-active-color   /* alarmed / detected — red */
+--status-recent-color   /* recently alarmed — orange */
+--status-past-color     /* past alarm decaying — yellow */
+--status-ok-color       /* nominal / connected — green */
+--status-bad-color      /* fault — dark red */
+--status-idle-color     /* default / neutral — gray */
+--status-on-color       /* powered on — yellow */
+--status-off-color      /* powered off — gray */
 ```
 
-### Visual State Progression
+Each has an `--on-status-*-color` companion for foreground text against the corresponding background.
 
-The value decaying system creates a visual "cooling off" effect through color transitions:
+The decay sequence used by recently-active sensors moves through `active → recent → past → idle` as time passes since the last activation; the thresholds live in [`EntityStateDisplayData`](../../../src/hi/apps/monitor/display_data.py) (`RECENT_*_THRESHOLD_SECS`, `PAST_*_THRESHOLD_SECS`).
 
-**Color Progression**: Active (red) → Recent (orange) → Past (yellow) → Idle (green/gray)
+## Icon vs path update shape
 
-```css
-/* Smooth transitions between states */
-.entity-svg {
-  transition: fill 0.3s ease, opacity 0.3s ease;
-}
+LocationView SVG icons and SVG paths react to status updates through different opt-ins, and the asymmetry is intentional.
 
-/* State-specific styling with opacity variations */
-.entity-active { 
-  fill: var(--status-active); 
-  opacity: 1.0; 
-}
-.entity-recent { 
-  fill: var(--status-recent); 
-  opacity: 0.8; 
-}
-.entity-past { 
-  fill: var(--status-past); 
-  opacity: 0.6; 
-}
-.entity-idle { 
-  fill: var(--status-idle); 
-  opacity: 0.4; 
-}
-```
+- **Icons** (`<g>` elements) declare `data-status`. The polling dispatcher writes only the `status` attribute; CSS rules keyed on `g[status="..."]` (and nested selectors like `g[status="off"] path.hi-state-bg`) supply the visual styling.
+- **Paths** (`<path>` elements) declare `data-svg-style`. The dispatcher writes the full bundle (`status`, `stroke`, `stroke-width`, `fill`, `fill-opacity`, `stroke-dasharray`) as inline SVG attributes; CSS only adds drop-shadow on top.
 
-## Client-Server Status Updates
+Icons can't safely receive the full bundle because they are multi-element. A typical icon `<g>` wraps several primitives — body, outline, background plate — each of which may want differentiated styling for a given status. If the dispatcher pushed `fill="red"` onto the parent `<g>`, SVG attribute inheritance would paint every child red, overriding child-specific CSS. Per-child selectors are the only mechanism that gives each child independent control, which is why icons confine themselves to pushing the `status` attribute and letting CSS branch from there.
 
-### Polling System Implementation
+Paths can use the full bundle because they are single-element — one `<path>` per region, no inheritance hazard — and their per-entity-type palette (movement vs smoke vs open/close, each with its own colors) is naturally expressed by Python's `StatusStyle` rather than as a Cartesian product of CSS rules. The attribute-driven path also leaves room for future continuous-value visuals (e.g., opacity proportional to a numeric magnitude) which closed-set CSS rules can't express.
 
-The JavaScript `polling.js` module handles real-time status updates through server polling:
+When adding a new visual, copy from an existing icon or path of the same shape — the right opt-in comes along.
 
-### Server Response Format
+## Panel JS hooks
 
-The server returns status updates in a standardized JSON format:
+Surfaces that need per-tick behavior beyond what the declarative contract expresses (e.g., a thermostat dial whose SVG marker angles are computed from numeric magnitudes) register a handler:
 
-### Element Targeting and Updates
+- **`Hi.statePanels.registerUpdate(handler)`** — fires after each polling apply pass, receiving the full status map. For refresh-time work the declarative contract can't express.
+- **`Hi.statePanels.registerInit(handler)`** — fires at jQuery ready and after every async content insertion (modal opens, fragment loads). For positioning elements from server-rendered initial data. Handlers must be idempotent — they re-scan the document on each call.
 
-The polling system uses CSS class names and data attributes to target elements:
+See [`entity_state_status.js`](../../../src/hi/static/js/entity_state_status.js) for the API and [`state_panels/thermostat/thermostat.js`](../../../src/hi/static/state_panels/thermostat/thermostat.js) for a canonical example using both hooks.
 
-## Workflow 1: Adding Status Display to New Entity Template
+## Related documentation
 
-**Scenario**: You have a new entity type (smart thermostat) that needs status display functionality in location views.
-
-**Step-by-Step Implementation:**
-
-1. **Plan the Visual States** (Domain consideration)
-   ```python
-   # Thermostat states we want to display:
-   # - heating (red) - actively heating
-   # - cooling (blue) - actively cooling  
-   # - idle (green) - maintaining temperature
-   # - offline (gray) - no communication
-   ```
-
-2. **Define Status CSS Classes** ([CSS Class Mapping](#css-class-mapping))
-   ```css
-   /* Add to your CSS file */
-   .entity-svg.thermostat-heating {
-     fill: var(--status-active);
-     stroke: #cc0000;
-   }
-   
-   .entity-svg.thermostat-cooling {
-     fill: #0066cc;
-     stroke: #004499;
-   }
-   
-   .entity-svg.thermostat-idle {
-     fill: var(--status-idle);
-     stroke: #006600;
-   }
-   
-   .entity-svg.thermostat-offline {
-     fill: var(--status-unknown);
-     stroke: #666666;
-   }
-   ```
-
-3. **Update Backend Status Logic** ([Server Response Format](#server-response-format))
-   ```python
-   # In your entity model or status manager
-   class ThermostatStatusCalculator:
-       def get_status_css_classes(self, thermostat_entity):
-           current_state = thermostat_entity.get_current_state('hvac_mode')
-           
-           if not current_state or current_state.is_stale():
-               return ['thermostat-offline']
-           
-           mode = current_state.value
-           if mode == 'heating':
-               return ['thermostat-heating']
-           elif mode == 'cooling':
-               return ['thermostat-cooling']
-           elif mode == 'idle':
-               return ['thermostat-idle']
-           else:
-               return ['thermostat-offline']
-   ```
-
-4. **Update Template Integration** ([Template Integration](#template-integration))
-   ```django
-   <!-- In your location view template -->
-   <g class="entity-group" data-entity-id="{{ thermostat.id }}">
-     <use href="#icon-thermostat" 
-          class="entity-svg {{ thermostat.get_status_css_classes|join:' ' }}"
-          transform="translate({{ thermostat.position.x }}, {{ thermostat.position.y }})"/>
-   </g>
-   ```
-
-5. **Test Status Updates** ([Polling System Implementation](#polling-system-implementation))
-   ```javascript
-   // Verify polling picks up thermostat status changes
-   // Check browser Network tab for /api/status requests
-   // Manually trigger state change and observe visual update
-   ```
-
-**Expected Result**: Thermostat icons change color in real-time based on heating/cooling state.
-
-## Related Documentation
-- Status calculation logic: [Domain Guidelines](../domain/domain-guidelines.md#status-display-system)
-- Style guidelines: [Style Guidelines](style-guidelines.md)
-- Template conventions: [Template Conventions](template-conventions.md)
-- Frontend patterns: [Frontend Guidelines](frontend-guidelines.md)
+- [Architecture overview](entity-display-overview.md)
+- [Panel authoring](entity-status-panels.md)
+- [SVG asset authoring](entity-visual-configuration.md)
+- [Style guidelines](style-guidelines.md)
+- [Template conventions](template-conventions.md)

@@ -1,0 +1,36 @@
+{% comment %}
+Reusable dropdown options for placement target-selects (LocationViews
++ Collections).
+
+Renders LocationViews first as one <optgroup> per Location (ordered
+by Location.order_id, views within by LocationView.order_id), then
+a single 'Collections' <optgroup>. Option values are *tagged* —
+``view:<id>`` or ``collection:<id>`` — so views and collections can
+share the same select element without colliding on numeric ids.
+
+Optionally honors ``selected_view_id`` / ``selected_collection_id``
+(passed via ``include … with …``) by adding the ``selected``
+attribute to the matching option. Used by the placement's top
+dropdown so the smart-default sticks; group/entity dropdowns don't
+pass them.
+
+Context:
+  location_view_groups   : List[(Location, List[LocationView])]
+  collection_list        : List[Collection]
+  selected_view_id       : Optional[int]
+  selected_collection_id : Optional[int]
+{% endcomment %}
+{% for location, views in location_view_groups %}
+<optgroup label="{{ location.name }} (Views)">
+  {% for view in views %}
+  <option value="view:{{ view.id }}"{% if selected_view_id == view.id %} selected{% endif %}>{{ view.name }}</option>
+  {% endfor %}
+</optgroup>
+{% endfor %}
+{% if collection_list %}
+<optgroup label="Collections">
+  {% for collection in collection_list %}
+  <option value="collection:{{ collection.id }}"{% if selected_collection_id == collection.id %} selected{% endif %}>{{ collection.name }}</option>
+  {% endfor %}
+</optgroup>
+{% endif %}

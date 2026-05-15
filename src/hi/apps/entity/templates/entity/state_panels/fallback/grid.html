@@ -1,0 +1,7 @@
+{# Framework fallback for the collection grid card context: renders #}
+{# the entity's state list. Currently identical to the list-context #}
+{# fallback; panels wanting a denser grid layout provide their own  #}
+{# grid.html.                                                       #}
+{% if state_status_data_list %}
+{% include "entity/state_panels/fallback/state_list.html" with entity_state_status_data_list=state_status_data_list %}
+{% endif %}

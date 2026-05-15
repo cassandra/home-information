@@ -113,6 +113,10 @@ class ZmSimMonitor:
         return int( self.sim_entity.sim_entity_fields.monitor_id )
 
     @property
+    def name(self) -> str:
+        return self.sim_entity.sim_entity_fields.name
+
+    @property
     def width(self):
         return self.sim_entity.sim_entity_fields.width
 

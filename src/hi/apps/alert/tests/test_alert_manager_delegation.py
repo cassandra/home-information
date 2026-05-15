@@ -111,7 +111,7 @@ class TestAlertManagerDelegation(BaseTestCase):
             mock_helper_class.return_value = mock_helper
             
             # Add alarm to create an alert
-            self.run_async_test(self.alert_manager.add_alarm(motion_alarm))
+            self.run_async_test(self.alert_manager.add_alarm_async(motion_alarm))
             
             # Get alert status data (this should trigger delegation to TransientViewManager)
             self.alert_manager.get_alert_status_data(
@@ -254,13 +254,13 @@ class TestAlertManagerDelegation(BaseTestCase):
         )
         
         # Add old alarm first
-        self.run_async_test(self.alert_manager.add_alarm(old_alarm))
+        self.run_async_test(self.alert_manager.add_alarm_async(old_alarm))
         
         # Verify no suggestion exists yet
         self.assertFalse(self.transient_manager.has_suggestion())
         
         # Add new alarm
-        self.run_async_test(self.alert_manager.add_alarm(new_alarm))
+        self.run_async_test(self.alert_manager.add_alarm_async(new_alarm))
         
         # Mock settings to enable auto-view for this test
         with patch('hi.apps.console.transient_view_manager.ConsoleSettingsHelper') as mock_helper_class:

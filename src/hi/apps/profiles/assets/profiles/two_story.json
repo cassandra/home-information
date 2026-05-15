@@ -4,14 +4,12 @@
   "locations": [
     {
       "name": "My Home",
-      "svg_fragment_filename": "location/svg/two_story-0.svg",
-      "svg_view_box_str": "0.0 0.0 2000.0 2000.0",
       "order_id": 0,
       "views": [
         {
           "name": "Interior",
           "location_view_type_str": "default",
-          "svg_view_box_str": "113.22166091814749 449.0580103532524 1775.3292954434396 1342.0739711557344",
+          "svg_view_box_str": "0 0 2000 2000",
           "svg_style_name_str": "color",
           "svg_rotate": 0.0,
           "order_id": 2
@@ -27,28 +25,28 @@
         {
           "name": "Kitchen",
           "location_view_type_str": "default",
-          "svg_view_box_str": "1253.1958944380513 575.77935670453 613.6162989227576 463.8680075717739",
+          "svg_view_box_str": "1103.142981709687 874.7585050264764 767.0925682200003 808.2064433295275",
           "svg_style_name_str": "color",
           "svg_rotate": 0.0,
           "order_id": 6
         }
-      ]
+      ],
+      "svg_template_name": "profiles/svg/backgrounds/two_story-0.svg"
     },
     {
       "name": "Upstairs",
-      "svg_fragment_filename": "location/svg/two_story-1.svg",
-      "svg_view_box_str": "0.0 0.0 2000.0 2000.0",
       "order_id": 1,
       "views": [
         {
           "name": "All",
           "location_view_type_str": "default",
-          "svg_view_box_str": "112.75172814987144 445.5835709547622 1779.080561403294 1344.9097697968793",
+          "svg_view_box_str": "152.88967718626765 97.09804892210309 1743.6768582313691 1837.132740286189",
           "svg_style_name_str": "color",
           "svg_rotate": 0.0,
           "order_id": 0
         }
-      ]
+      ],
+      "svg_template_name": "profiles/svg/backgrounds/two_story-1.svg"
     }
   ],
   "collections": [
@@ -78,7 +76,7 @@
       "paths": [
         {
           "location_name": "My Home",
-          "svg_path": " M 1663.9242553710938,170.9359586858052 L 1837.4561767578125,171.6185758733052 L 1836.6661376953125,330.02465322131366 L 1663.0172729492188,330.59032704943866 Z"
+          "svg_path": " M 840.1774291992188,229.75241071217238 L 1131.2366943359375,229.741088690688 L 1130.4466552734375,293.3379161607668 L 839.8587646484375,291.7162120592043 Z"
         }
       ],
       "visible_in_views": [
@@ -94,9 +92,9 @@
       "positions": [
         {
           "location_name": "My Home",
-          "svg_x": 243.805206,
-          "svg_y": 953.147949,
-          "svg_scale": 1.673368
+          "svg_x": 361.612671,
+          "svg_y": 979.249084,
+          "svg_scale": 2.058968
         }
       ],
       "visible_in_views": [
@@ -106,7 +104,15 @@
     {
       "name": "Blender",
       "entity_type_str": "appliance",
-      "comment": "Entities that are part of collections"
+      "comment": "Entities that are part of collections",
+      "positions": [
+        {
+          "location_name": "My Home",
+          "svg_x": 1486.689266,
+          "svg_y": 1278.861727,
+          "svg_scale": 1.198582
+        }
+      ]
     },
     {
       "name": "Breaker Panel",
@@ -114,14 +120,15 @@
       "positions": [
         {
           "location_name": "My Home",
-          "svg_x": 1777.938843,
-          "svg_y": 1515.282715,
+          "svg_x": 1217.228394,
+          "svg_y": 999.646423,
           "svg_scale": 1.519867
         }
       ],
       "visible_in_views": [
         "Exterior",
-        "Interior"
+        "Interior",
+        "Kitchen"
       ]
     },
     {
@@ -130,8 +137,8 @@
       "positions": [
         {
           "location_name": "My Home",
-          "svg_x": 1568.953735,
-          "svg_y": 1769.295898,
+          "svg_x": 541.721619,
+          "svg_y": 1916.045288,
           "svg_scale": 1.330223,
           "svg_rotate": 269.918069
         }
@@ -146,8 +153,8 @@
       "positions": [
         {
           "location_name": "My Home",
-          "svg_x": 1651.280273,
-          "svg_y": 665.384888,
+          "svg_x": 1629.95752,
+          "svg_y": 1486.761597,
           "svg_scale": 1.526897
         }
       ],
@@ -161,9 +168,9 @@
       "positions": [
         {
           "location_name": "My Home",
-          "svg_x": 1345.305786,
-          "svg_y": 677.450439,
-          "svg_scale": 1.292838
+          "svg_x": 1663.131714,
+          "svg_y": 1162.663574,
+          "svg_scale": 1.695319
         }
       ],
       "visible_in_views": [
@@ -177,13 +184,14 @@
       "positions": [
         {
           "location_name": "My Home",
-          "svg_x": 1777.978882,
-          "svg_y": 1361.411255,
+          "svg_x": 1262.080811,
+          "svg_y": 1324.753906,
           "svg_scale": 1.712929
         }
       ],
       "visible_in_views": [
-        "Interior"
+        "Interior",
+        "Kitchen"
       ]
     },
     {
@@ -192,8 +200,8 @@
       "positions": [
         {
           "location_name": "My Home",
-          "svg_x": 110.966972,
-          "svg_y": 1511.568726,
+          "svg_x": 186.624634,
+          "svg_y": 1424.442993,
           "svg_scale": 1.226173
         }
       ],
@@ -203,7 +211,15 @@
     },
     {
       "name": "Food Processor",
-      "entity_type_str": "appliance"
+      "entity_type_str": "appliance",
+      "positions": [
+        {
+          "location_name": "My Home",
+          "svg_x": 1547.370605,
+          "svg_y": 1489.048096,
+          "svg_scale": 1.198582
+        }
+      ]
     },
     {
       "name": "HVAC",
@@ -217,8 +233,8 @@
         },
         {
           "location_name": "My Home",
-          "svg_x": 151.212189,
-          "svg_y": 803.715515,
+          "svg_x": 1249.603516,
+          "svg_y": 237.49353,
           "svg_scale": 2.182897
         }
       ],
@@ -236,9 +252,9 @@
       "positions": [
         {
           "location_name": "My Home",
-          "svg_x": 1450.717773,
-          "svg_y": 669.122009,
-          "svg_scale": 1.353239
+          "svg_x": 1551.332764,
+          "svg_y": 1142.849121,
+          "svg_scale": 1.774636
         }
       ],
       "visible_in_views": [
@@ -260,13 +276,60 @@
       "positions": [
         {
           "location_name": "My Home",
-          "svg_x": 238.043137,
-          "svg_y": 242.832367,
-          "svg_scale": 4.283128
+          "svg_x": 159.893005,
+          "svg_y": 171.552963,
+          "svg_scale": 3.417176
         }
       ],
       "visible_in_views": [
         "Exterior"
+      ]
+    },
+    {
+      "name": "Main Bath Shower",
+      "entity_type_str": "shower",
+      "positions": [
+        {
+          "location_name": "My Home",
+          "svg_x": 1655.259277,
+          "svg_y": 783.701172,
+          "svg_scale": 2.248753
+        }
+      ],
+      "visible_in_views": [
+        "Interior"
+      ]
+    },
+    {
+      "name": "Main Bath Sink",
+      "entity_type_str": "sink",
+      "positions": [
+        {
+          "location_name": "My Home",
+          "svg_x": 1477.710938,
+          "svg_y": 1024.190308,
+          "svg_scale": 2.075106,
+          "svg_rotate": 179.450907
+        }
+      ],
+      "visible_in_views": [
+        "Interior"
+      ]
+    },
+    {
+      "name": "Main Bath Toilet",
+      "entity_type_str": "toilet",
+      "positions": [
+        {
+          "location_name": "My Home",
+          "svg_x": 1708.455078,
+          "svg_y": 995.356873,
+          "svg_scale": 2.549861,
+          "svg_rotate": 180.518676
+        }
+      ],
+      "visible_in_views": [
+        "Interior"
       ]
     },
     {
@@ -275,8 +338,8 @@
       "positions": [
         {
           "location_name": "My Home",
-          "svg_x": 1761.850586,
-          "svg_y": 671.72168,
+          "svg_x": 1745.810791,
+          "svg_y": 1488.009888,
           "svg_scale": 1.326768
         }
       ],
@@ -291,9 +354,9 @@
       "positions": [
         {
           "location_name": "My Home",
-          "svg_x": 1560.365479,
-          "svg_y": 675.229614,
-          "svg_scale": 1.286659
+          "svg_x": 1431.642334,
+          "svg_y": 1161.077637,
+          "svg_scale": 1.849968
         }
       ],
       "visible_in_views": [
@@ -307,9 +370,9 @@
       "positions": [
         {
           "location_name": "My Home",
-          "svg_x": 1794.635742,
-          "svg_y": 777.043701,
-          "svg_scale": 1.471845
+          "svg_x": 1769.103027,
+          "svg_y": 1188.592773,
+          "svg_scale": 2.796118
         }
       ],
       "visible_in_views": [
@@ -319,7 +382,15 @@
     },
     {
       "name": "Rice Cooker",
-      "entity_type_str": "appliance"
+      "entity_type_str": "appliance",
+      "positions": [
+        {
+          "location_name": "My Home",
+          "svg_x": 1490.207031,
+          "svg_y": 1484.650879,
+          "svg_scale": 1.198582
+        }
+      ]
     },
     {
       "name": "String Trimmer",
@@ -331,9 +402,9 @@
       "positions": [
         {
           "location_name": "My Home",
-          "svg_x": 244.450958,
-          "svg_y": 830.973022,
-          "svg_scale": 1.761753
+          "svg_x": 531.097717,
+          "svg_y": 988.650085,
+          "svg_scale": 2.407921
         }
       ],
       "visible_in_views": [
@@ -346,8 +417,8 @@
       "positions": [
         {
           "location_name": "My Home",
-          "svg_x": 354.805695,
-          "svg_y": 1561.562134,
+          "svg_x": 1214.65564,
+          "svg_y": 875.972107,
           "svg_scale": 1.680121
         }
       ],
@@ -356,13 +427,60 @@
       ]
     },
     {
+      "name": "Upstairs Shower",
+      "entity_type_str": "shower",
+      "positions": [
+        {
+          "location_name": "Upstairs",
+          "svg_x": 940.667786,
+          "svg_y": 403.603363,
+          "svg_scale": 1.908946
+        }
+      ],
+      "visible_in_views": [
+        "All"
+      ]
+    },
+    {
+      "name": "Upstairs Sink",
+      "entity_type_str": "sink",
+      "positions": [
+        {
+          "location_name": "Upstairs",
+          "svg_x": 1187.934448,
+          "svg_y": 420.445404,
+          "svg_scale": 2.265066,
+          "svg_rotate": 89.305133
+        }
+      ],
+      "visible_in_views": [
+        "All"
+      ]
+    },
+    {
+      "name": "Upstairs Toilet",
+      "entity_type_str": "toilet",
+      "positions": [
+        {
+          "location_name": "Upstairs",
+          "svg_x": 1185.335693,
+          "svg_y": 621.433838,
+          "svg_scale": 2.086857,
+          "svg_rotate": 89.717122
+        }
+      ],
+      "visible_in_views": [
+        "All"
+      ]
+    },
+    {
       "name": "Washer",
       "entity_type_str": "clothes_washer",
       "positions": [
         {
           "location_name": "My Home",
-          "svg_x": 1779.282104,
-          "svg_y": 1226.346924,
+          "svg_x": 1263.380249,
+          "svg_y": 1198.834473,
           "svg_scale": 1.683932
         }
       ],
@@ -376,13 +494,14 @@
       "positions": [
         {
           "location_name": "My Home",
-          "svg_x": 1664.889771,
-          "svg_y": 1513.095215,
+          "svg_x": 1316.365601,
+          "svg_y": 992.605286,
           "svg_scale": 1.773727
         }
       ],
       "visible_in_views": [
-        "Interior"
+        "Interior",
+        "Kitchen"
       ]
     },
     {
@@ -406,8 +525,8 @@
       "positions": [
         {
           "location_name": "My Home",
-          "svg_x": 246.357956,
-          "svg_y": 700.745972,
+          "svg_x": 684.302979,
+          "svg_y": 973.593201,
           "svg_scale": 1.351972
         }
       ],

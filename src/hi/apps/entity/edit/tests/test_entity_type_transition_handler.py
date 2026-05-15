@@ -163,7 +163,7 @@ class TestEntityTypeTransitionHandlerTransitionLogic(BaseTestCase):
         # Set the cached location_view so it doesn't need to query the DB
         self.request.view_parameters._location_view = self.location_view
 
-    @patch('hi.apps.entity.edit.entity_type_transition_handler.EntityManager')
+    @patch('hi.apps.entity.edit.entity_type_transition_handler.EntityPlacer')
     def test_handle_entity_type_change_successful_transition(self, mock_entity_manager):
         """Test successful entity type change with transition using real location data."""
         # Only mock the EntityManager's transition method since that's the complex business logic
@@ -181,7 +181,7 @@ class TestEntityTypeTransitionHandlerTransitionLogic(BaseTestCase):
         self.assertIsNotNone(result)
         self.assertIsInstance(result, HttpResponse)
 
-    @patch('hi.apps.entity.edit.entity_type_transition_handler.EntityManager')
+    @patch('hi.apps.entity.edit.entity_type_transition_handler.EntityPlacer')
     def test_handle_entity_type_change_failed_transition(self, mock_entity_manager):
         """Test entity type change when transition fails using real location data."""
         # Mock failed transition
@@ -199,7 +199,7 @@ class TestEntityTypeTransitionHandlerTransitionLogic(BaseTestCase):
         self.assertIsNotNone(result)
         self.assertIsInstance(result, HttpResponse)
 
-    @patch('hi.apps.entity.edit.entity_type_transition_handler.EntityManager')
+    @patch('hi.apps.entity.edit.entity_type_transition_handler.EntityPlacer')
     def test_handle_entity_type_change_exception_handling(self, mock_entity_manager):
         """Test entity type change exception handling with real location data."""
         # Mock entity manager to raise exception during transition
@@ -217,7 +217,7 @@ class TestEntityTypeTransitionHandlerTransitionLogic(BaseTestCase):
         self.assertIsNotNone(result)
         self.assertIsInstance(result, HttpResponse)
 
-    @patch('hi.apps.entity.edit.entity_type_transition_handler.EntityManager')
+    @patch('hi.apps.entity.edit.entity_type_transition_handler.EntityPlacer')
     def test_handle_entity_type_change_path_to_path_transition(self, mock_entity_manager):
         """Test path_to_path transition returns None (sidebar refresh only) with real location data."""
         # Mock successful path_to_path transition
@@ -326,7 +326,7 @@ class TestEntityTypeTransitionHandlerIntegration(BaseTestCase):
         # Set the cached location_view so it doesn't need to query the DB
         self.request.view_parameters._location_view = self.location_view
 
-    @patch('hi.apps.entity.edit.entity_type_transition_handler.EntityManager')
+    @patch('hi.apps.entity.edit.entity_type_transition_handler.EntityPlacer')
     def test_complete_entity_type_change_scenario(self, mock_entity_mgr):
         """Test complete entity type change from LIGHT to WALL_SWITCH using real objects."""
         entity = EntityAttributeSyntheticData.create_test_entity(entity_type_str=str(EntityType.LIGHT))
@@ -365,7 +365,7 @@ class TestEntityTypeTransitionHandlerIntegration(BaseTestCase):
         self.assertIsNotNone(result)
         self.assertIsInstance(result, HttpResponse)
 
-    @patch('hi.apps.entity.edit.entity_type_transition_handler.EntityManager')
+    @patch('hi.apps.entity.edit.entity_type_transition_handler.EntityPlacer')
     def test_transaction_rollback_on_transition_failure(self, mock_entity_mgr):
         """Test that transaction is properly managed even if transition fails using real objects."""
         entity = EntityAttributeSyntheticData.create_test_entity(entity_type_str=str(EntityType.LIGHT))

@@ -10,27 +10,46 @@ from .enums import HealthStatusType, ApiHealthStatusType, HealthAggregationRule
 @dataclass
 class AggregateHealthStatus( HealthStatus ):
     """
-    Extends HealthStatus to add API source tracking and aggregation.
-    The status property returns the aggregated health status combined with base status.
+    Extends HealthStatus to add aggregation across multiple status
+    sources. The `status` property returns the worst-of:
+      - This provider's own base status (set via record_* on itself).
+      - The API source aggregate (api_status_map, with aggregation_rule).
+      - Each registered subordinate provider's current status
+        (subordinate_status_map, populated on read by the
+        AggregateHealthProvider).
+
+    Per-source slots exist because a single status field would alias.
+    A successful reload setting _base_status=HEALTHY must not silently
+    overwrite a separate subordinate (e.g., a polling monitor) that is
+    still reporting ERROR.
     """
     # Current aggregated API health data
-    api_status_map    : Dict[ProviderInfo, ApiHealthStatus] = field(default_factory=dict)
-    aggregation_rule  : HealthAggregationRule     = HealthAggregationRule.ALL_SOURCES_HEALTHY
+    api_status_map         : Dict[ProviderInfo, ApiHealthStatus]  = field(default_factory=dict)
+
+    # Snapshot of subordinate HealthStatusProvider statuses, populated
+    # on read of the parent AggregateHealthProvider. Mirrors
+    # api_status_map's shape: keyed by ProviderInfo, valued by the
+    # subordinate's full HealthStatus so the modal / detail views can
+    # render last_message, heartbeat, error_count, etc.
+    subordinate_status_map : Dict[ProviderInfo, HealthStatus] = field(default_factory=dict)
+
+    aggregation_rule       : HealthAggregationRule  = HealthAggregationRule.ALL_SOURCES_HEALTHY
 
     # Store the base status separately (for provider's own health issues)
-    _base_status      : HealthStatusType = field(default=HealthStatusType.HEALTHY, init=False)
+    _base_status           : HealthStatusType = field(default=HealthStatusType.HEALTHY, init=False)
 
     @property
     def status(self) -> HealthStatusType:
         """
         Override status to return the combined health status.
-        Returns the worst of base status and aggregated API status.
+        Returns the worst of base status, aggregated API status, and
+        every registered subordinate's status.
         """
-        api_health = self.aggregate_health()
+        candidates = [ self._base_status, self.aggregate_health() ]
+        candidates.extend( hs.status for hs in self.subordinate_status_map.values() )
 
-        # Return worst of base status and aggregated API status using priority
         # Lower priority number = worse health
-        return min([ self._base_status, api_health ], key=lambda s: s.priority )
+        return min( candidates, key=lambda s: s.priority )
 
     @status.setter
     def status(self, value: HealthStatusType) -> None:

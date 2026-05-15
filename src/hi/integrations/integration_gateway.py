@@ -8,30 +8,32 @@ from hi.apps.system.health_status_provider import HealthStatusProvider
 
 from .integration_controller import IntegrationController
 from .integration_manage_view_pane import IntegrationManageViewPane
+from .integration_synchronizer import IntegrationSynchronizer
 from .models import IntegrationAttribute
 from .transient_models import (
+    ConnectionTestResult,
     IntegrationMetaData,
     IntegrationValidationResult,
 )
 
 
 class IntegrationGateway:
-    """ 
+    """
     Each integration needs to provide an Integration Manager that implements these methods.
     """
 
     def get_metadata(self) -> IntegrationMetaData:
         raise NotImplementedError('Subclasses must override this method')
-        
+
     def get_manage_view_pane(self) -> IntegrationManageViewPane:
         raise NotImplementedError('Subclasses must override this method')
-    
+
     def get_monitor(self) -> PeriodicMonitor:
         raise NotImplementedError('Subclasses must override this method')
-    
+
     def get_controller(self) -> IntegrationController:
         raise NotImplementedError('Subclasses must override this method')
-    
+
     def notify_settings_changed(self):
         """
         This method is called when Integration or IntegrationAttribute models
@@ -39,14 +41,49 @@ class IntegrationGateway:
         configuration and notify any dependent components.
         """
         raise NotImplementedError('Subclasses must override this method')
-    
+
     def get_health_status_provider(self) -> HealthStatusProvider:
         raise NotImplementedError('Subclasses must override this method')
-    
+
+    def get_synchronizer(self) -> Optional[IntegrationSynchronizer]:
+        """
+        Return the integration's synchronizer when it supports sync;
+        None otherwise. Sync is an opt-in capability — not every
+        integration requires one. The framework owns the sync workflow
+        (pre-sync confirmation, sync execution, post-sync placement);
+        the synchronizer participates by providing the integration-
+        specific work plus a small amount of peripheral metadata.
+
+        The Issue #283 sync-check probe also rides on the synchronizer
+        (see ``IntegrationSynchronizer.check_needs_sync``): integrations
+        without a synchronizer naturally opt out of both full sync and
+        the periodic drift check.
+        """
+        return None
+
     def validate_configuration(
             self,
             integration_attributes: List[IntegrationAttribute]
     ) -> IntegrationValidationResult:
+        """
+        Schema-only validation of the proposed configuration. Must NOT
+        perform network operations. Returns success if the attribute set
+        is structurally usable; returns an error otherwise. For live
+        connection probing, see test_connection().
+        """
+        raise NotImplementedError('Subclasses must override this method')
+
+    def test_connection(
+            self,
+            integration_attributes: List[IntegrationAttribute],
+            timeout_secs: Optional[float],
+    ) -> ConnectionTestResult:
+        """
+        Live connection probe against the proposed configuration. Must
+        respect the bounded timeout. Used at attribute-save time
+        (Configure / Reconfigure) and before relaunching monitors
+        (Resume).
+        """
         raise NotImplementedError('Subclasses must override this method')
     
     def get_entity_video_stream(self, entity: Entity) -> Optional[VideoStream]:

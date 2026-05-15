@@ -1,5 +1,6 @@
 <g id="{{ svg_icon_item.html_id }}"
-   class="hi-icon selectable draggable {{ svg_icon_item.css_class }} hi-svg-icon"
+   class="hi-icon selectable draggable hi-svg-icon"
+   {% if svg_icon_item.state_id %}data-state-id="{{ svg_icon_item.state_id }}" data-status{% endif %}
    status="{{ svg_icon_item.status_value }}"
    data-type="svg-icon"
    onmouseover="this.setAttribute('hover','true');"

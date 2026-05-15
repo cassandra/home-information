@@ -2,7 +2,7 @@
 {% load icons %}
 
 {% block preamble %}
-<form action="{% url 'location_edit_location_add' %}" method="post" enctype="multipart/form-data"
+<form action="{% url 'location_edit_location_add_first' %}" method="post" enctype="multipart/form-data"
       class="form" data-async="modal">
   {% csrf_token %}
 {% endblock %}

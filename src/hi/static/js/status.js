@@ -26,13 +26,15 @@
     const ServerPollingIntervalMs = 3 * 1000;
     const PollingErrorNotifyTimeMs = 60 * 1000;
     const ServerErrorMessageSelector = '#hi-server-error-msg';
-    const ServerPollingUrl = '/api/status';
+    const ServerPollingUrl = Hi.API_STATUS_URL;
     const ServerStartTimestampAttr = 'startTimestamp';
     const ServerTimestampAttr = 'timestamp';
     const LastServerTimestampAttr = 'lastTimestamp';
-    const CssClassUpdateMapAttr = 'cssClassUpdateMap';
+    const EntityStateStatusMapAttr = 'entityStateStatusMap';
     const IdReplaceUpdateMapAttr = 'idReplaceUpdateMap';
     const IdReplaceHashMapAttr = 'idReplaceHashMap';
+    const ConsoleLockedAttr = 'consoleLocked';
+    const ConsoleUnlockUrl = Hi.CONSOLE_UNLOCK_URL;
     const TransientViewSuggestionAttr = 'transientViewSuggestion';
     const TransientViewUrlAttr = 'url';
     const TransientViewDurationSecondsAttr = 'durationSeconds';
@@ -128,6 +130,10 @@
         if ( Hi.DEBUG && TRACE ) { console.log( "Server response: "+JSON.stringify( respObj)); }
 
         doServerStartTimeCheck( respObj );
+
+        if ( ConsoleLockedAttr in respObj ) {
+            handleConsoleLockState( respObj[ConsoleLockedAttr] );
+        }
         
         if ( ServerTimestampAttr in respObj ) {
             gLastServerDate = new Date( respObj[ServerTimestampAttr] );
@@ -139,11 +145,27 @@
             handleIdReplacements( respObj[IdReplaceUpdateMapAttr],
                                   respObj[IdReplaceHashMapAttr] );
         }
-        if ( CssClassUpdateMapAttr in respObj ) {
-            handleCssClassUpdates( respObj[CssClassUpdateMapAttr] );
+        if ( EntityStateStatusMapAttr in respObj ) {
+            Hi.entityStateStatus.apply( respObj[EntityStateStatusMapAttr] );
         }
         if ( TransientViewSuggestionAttr in respObj ) {
             handleTransientViewSuggestion( respObj[TransientViewSuggestionAttr] );
+        }
+    }
+
+    function handleConsoleLockState( isConsoleLocked ) {
+        if ( ! isConsoleLocked ) {
+            return;
+        }
+
+        // Avoid creating a duplicate unlock modal while one is already visible.
+        const unlockModalVisible = $('form[action="' + ConsoleUnlockUrl + '"]').closest('.modal.show').length > 0;
+        if ( unlockModalVisible ) {
+            return;
+        }
+
+        if ( window.AN && window.AN.get ) {
+            window.AN.get( ConsoleUnlockUrl );
         }
     }
 
@@ -213,53 +235,6 @@
                 $(`#${html_id}`).attr( 'hi-id-replace-hash', contentHash );
             }
         }
-    }
-    
-    function handleCssClassUpdates( updateMap ) {
-
-        for ( let cssClass in updateMap ) {
-            let elements = getElementsByCssClass( cssClass );
-            let attrMap = updateMap[cssClass];
-            for ( let attrName in attrMap ) {               
-                let attrValue = attrMap[attrName];
-                elements.each( function() {
-                    if (this.hasAttribute(attrName)) {
-                        let currentValue = $(this).attr(attrName);
-                        if ( attrValue != null && ( currentValue !== String(attrValue) )) {
-                            $(this).attr( attrName, attrValue );
-                        }
-                    } else {
-                        // Special cases:
-                        //    - descendent SELECT tag - assume select value is sensor value
-                        //    - descendent checkbox - assumes status value 'on' when checked
-                        //    - descendent DIV tag with status attr - assume attr and text needs updating
-                        //
-                        if ( attrName == 'status' ) {
-                            $(this).find('select').val( attrValue );
-                            
-                            $(this).find('input[type="checkbox"]').each( function(index, element) {
-                                if ( attrValue == 'on' ) {
-                                    $(element).attr( 'checked', 'true' );
-                                } else {
-                                    $(element).removeAttr( 'checked' );
-                                }
-                            });
-                            
-                            $(this).find('div[status]').each( function(index, element) {
-                                $(element).attr( attrName, attrValue );
-                                $(element).text( attrValue );
-                            });
-                        }
-                    }
-                });
-            }
-        }
-    }
-
-    function getElementsByCssClass( cssClass ) {
-
-        let elements = $(`.${cssClass}`);
-        return elements;
     }
     
     function handlePollingError() {

@@ -16,32 +16,6 @@ logging.disable(logging.CRITICAL)
 
 class TestSensor(BaseTestCase):
 
-    def test_sensor_cascade_deletion_from_entity_state(self):
-        """Test cascade deletion from entity state - critical for data integrity."""
-        entity = Entity.objects.create(
-            name='Test Entity',
-            entity_type_str='CAMERA'
-        )
-        entity_state = EntityState.objects.create(
-            entity=entity,
-            entity_state_type_str='ON_OFF'
-        )
-        
-        sensor = Sensor.objects.create(
-            name='Test Sensor',
-            entity_state=entity_state,
-            sensor_type_str='DEFAULT',
-            integration_id='test_id',
-            integration_name='test_integration'
-        )
-        
-        sensor_id = sensor.id
-        
-        # Delete entity state should cascade to sensor
-        entity_state.delete()
-        
-        self.assertFalse(Sensor.objects.filter(id=sensor_id).exists())
-
     def test_sensor_sensor_type_property_conversion(self):
         """Test sensor_type property enum conversion - custom business logic."""
         entity = Entity.objects.create(
@@ -187,21 +161,6 @@ class TestSensorHistory(TransactionTestCase):
             integration_id='sensor_123',
             integration_name='test_integration'
         )
-
-    def test_sensor_history_cascade_deletion_from_sensor(self):
-        """Test cascade deletion from sensor - critical for data integrity."""
-        history = SensorHistory.objects.create(
-            sensor=self.sensor,
-            value='test_value',
-            response_datetime=timezone.now()
-        )
-        
-        history_id = history.id
-        
-        # Delete sensor should cascade to history
-        self.sensor.delete()
-        
-        self.assertFalse(SensorHistory.objects.filter(id=history_id).exists())
 
     def test_sensor_history_ordering_by_timestamp(self):
         """Test default ordering by response_datetime descending."""

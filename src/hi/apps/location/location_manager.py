@@ -5,9 +5,12 @@ from typing import List
 from django.core.files.storage import default_storage, FileSystemStorage
 from django.db import transaction
 from django.http import HttpRequest
+from django.template.loader import render_to_string
 
+from hi.apps.common.file_utils import derive_new_unique_filename
 from hi.apps.common.singleton import Singleton
 from hi.apps.common.svg_models import SvgViewBox
+from hi.apps.common.svg_utils import process_svg_content
 from hi.apps.monitor.status_display_manager import StatusDisplayManager
 
 from .enums import LocationViewType, SvgStyleName
@@ -93,9 +96,100 @@ class LocationManager(Singleton):
         location.svg_fragment_filename = svg_fragment_filename
         location.svg_view_box_str = str( svg_viewbox )
         location.save()
-        
+
         return
-    
+
+    def render_svg_template_to_media( self, svg_template_name ):
+        """
+        Render an SVG template, process it, and write to MEDIA_ROOT.
+        Returns the result dict from process_svg_content (includes
+        svg_fragment_filename, svg_fragment_content, svg_viewbox).
+        Does NOT update any Location model.
+        """
+        svg_content = render_to_string( svg_template_name )
+        source_filename = os.path.basename( svg_template_name )
+        result = process_svg_content(
+            svg_content = svg_content,
+            media_destination_directory = 'location/svg',
+            source_filename = source_filename,
+        )
+        self._ensure_directory_exists( result['svg_fragment_filename'] )
+        with default_storage.open( result['svg_fragment_filename'], 'w' ) as dest:
+            dest.write( result['svg_fragment_content'] )
+        return result
+
+    def update_location_svg_from_template( self, location, svg_template_name ):
+        """
+        Render an SVG template, process it, write to MEDIA_ROOT, and update
+        the Location model.
+        """
+        result = self.render_svg_template_to_media( svg_template_name )
+        self.update_location_svg(
+            location = location,
+            svg_fragment_filename = result['svg_fragment_filename'],
+            svg_fragment_content = result['svg_fragment_content'],
+            svg_viewbox = result['svg_viewbox'],
+        )
+        return result
+
+    def get_draft_svg_filename( self, location : Location ) -> str:
+        base, ext = os.path.splitext( location.svg_fragment_filename )
+        return f'{base}.draft{ext}'
+
+    def draft_svg_exists( self, location : Location ) -> bool:
+        return default_storage.exists( self.get_draft_svg_filename( location ) )
+
+    def draft_has_changes( self, location : Location ) -> bool:
+        draft_filename = self.get_draft_svg_filename( location )
+        if not default_storage.exists( draft_filename ):
+            return False
+        with default_storage.open( location.svg_fragment_filename, 'r' ) as f:
+            live_content = f.read()
+        with default_storage.open( draft_filename, 'r' ) as f:
+            draft_content = f.read()
+        return bool( live_content != draft_content )
+
+    def delete_draft_svg( self, location : Location ) -> None:
+        draft_filename = self.get_draft_svg_filename( location )
+        if default_storage.exists( draft_filename ):
+            default_storage.delete( draft_filename )
+        return
+
+    def create_draft_svg( self, location : Location ) -> str:
+        draft_filename = self.get_draft_svg_filename( location )
+        self._ensure_directory_exists( draft_filename )
+        with default_storage.open( location.svg_fragment_filename, 'r' ) as source:
+            content = source.read()
+        with default_storage.open( draft_filename, 'w' ) as dest:
+            dest.write( content )
+        return draft_filename
+
+    def save_draft_svg( self, location : Location, content : str ) -> None:
+        draft_filename = self.get_draft_svg_filename( location )
+        self._ensure_directory_exists( draft_filename )
+        with default_storage.open( draft_filename, 'w' ) as dest:
+            dest.write( content )
+        return
+
+    def commit_draft_svg( self, location : Location ) -> None:
+        draft_filename = self.get_draft_svg_filename( location )
+        with default_storage.open( draft_filename, 'r' ) as source:
+            content = source.read()
+
+        # Write to a new unique filename rather than overwriting the original.
+        # This leaves the previous version as an orphan in MEDIA_ROOT,
+        # providing a natural backup in case of accidental changes.
+        new_filename = derive_new_unique_filename( location.svg_fragment_filename )
+        self._ensure_directory_exists( new_filename )
+        with default_storage.open( new_filename, 'w' ) as dest:
+            dest.write( content )
+
+        location.svg_fragment_filename = new_filename
+        location.save()
+
+        default_storage.delete( draft_filename )
+        return
+
     def _ensure_directory_exists( self, filepath ):
         if isinstance( default_storage, FileSystemStorage ):
             directory = os.path.dirname( default_storage.path( filepath ))
@@ -115,22 +209,51 @@ class LocationManager(Singleton):
             location_view_type = LocationViewType.default()
         if svg_style_name is None:
             svg_style_name = SvgStyleName.default()
-            
+
         last_location_view = location.views.order_by( '-order_id' ).first()
         if last_location_view:
             order_id = last_location_view.order_id + 1
         else:
             order_id = 0
-        
+
+        resolved_name = self.resolve_unique_view_name(
+            location = location, requested_name = name,
+        )
+
         return LocationView.objects.create(
             location = location,
             location_view_type_str = str(location_view_type),
-            name = name,
+            name = resolved_name,
             svg_style_name_str = str( svg_style_name ),
             svg_view_box_str = str( location.svg_view_box ),
             svg_rotate = Decimal( 0.0 ),
             order_id = order_id,
         )
+
+    def resolve_unique_view_name( self,
+                                  location        : Location,
+                                  requested_name  : str ) -> str:
+        """Return ``requested_name`` if no LocationView in this
+        Location uses it; otherwise append ``(2)``, ``(3)``, ... until
+        a free name is found.
+
+        LocationView.name is not unique-per-location at the DB level —
+        anyone could create duplicates by direct ORM use — so this
+        helper is the single point that all callers go through to
+        avoid surprise duplicates. Used by the dispatcher's
+        ``+ New view: "<integration label>"`` option (where the
+        operator already has a view with that name) and by the
+        manage-page Add View form (where the operator typed a
+        duplicate by accident)."""
+        existing_names = set( location.views.values_list('name', flat=True) )
+        if requested_name not in existing_names:
+            return requested_name
+        suffix = 2
+        while True:
+            candidate = f'{requested_name} ({suffix})'
+            if candidate not in existing_names:
+                return candidate
+            suffix += 1
     
     def get_location_view( self, request : HttpRequest, location_view_id : int ) -> LocationView:
         """
@@ -224,7 +347,6 @@ class LocationManager(Singleton):
         if include_status_display_data:
             manager = StatusDisplayManager()
             entity_to_entity_state_status_data_list = manager.get_entity_to_entity_state_status_data_list(
-                location_view = location_view,
                 entities = displayed_entities,
             )
         else:

@@ -1,0 +1,66 @@
+{% load units %}
+{% comment %}
+Continuous slider widget for controllers whose value is in
+``EntityState.units`` and must be translated to the user's preferred
+display unit at the render boundary. Translation goes through the
+``to_display`` filter (backed by ``ConsoleConverterHelper``); the
+HTML/JS layer never sees the canonical value.
+
+For unit-agnostic / fixed-suffix sliders (hue, saturation, percent,
+etc.), use ``continuous_slider.html`` instead.
+
+Required parameters:
+- controller_data    : the controller data transient.
+- entity_state       : the EntityState whose ``units`` drives
+                       translation.
+- slider_min,
+  slider_max         : range bounds in EntityState.units (will be
+                       converted to display units for rendering).
+- slider_default     : default value in EntityState.units, used when
+                       no cached sensor response is present.
+
+Optional (forwarded to slider chrome):
+- slider_step        : step in DISPLAY units.
+- slider_class, min_label, max_label, show_presets,
+  min_preset_label, max_preset_label
+{% endcomment %}
+{% with effective_canonical_value=controller_data.latest_sensor_response.value|default_if_none:slider_default %}
+{% with display_min=slider_min|as_display_value:entity_state display_max=slider_max|as_display_value:entity_state display_value=effective_canonical_value|as_display_value:entity_state %}
+<div class="{{ DIVID.CONTROLLER_SLIDER_CONTROL_CLASS }}">
+  <div class="hi-continuous-slider-row">
+    {% if min_label %}<span class="hi-continuous-slider-extreme">{{ min_label }}</span>{% endif %}
+    <input type="range"
+           name="value"
+           min="{{ display_min.magnitude }}"
+           max="{{ display_max.magnitude }}"
+           {% if slider_step %}step="{{ slider_step }}"{% endif %}
+           value="{{ display_value.magnitude }}"
+           class="{{ DIVID.CONTROLLER_SLIDER_CLASS }} {{ slider_class }}"
+           data-state-id="{{ controller_data.entity_state.id }}"
+           data-controller-value
+           {{ DIVID.CONTROLLER_DISPLAY_TARGET_ATTR }}=".hi-continuous-slider-value"
+           {{ DIVID.CONTROLLER_DISPLAY_FORMAT_ATTR }}="{n}{{ display_value.unit_symbol }}"
+           onchange-async="true"
+           data-controller-id="{{ controller_data.controller.id }}">
+    {% if max_label %}<span class="hi-continuous-slider-extreme">{{ max_label }}</span>{% endif %}
+  </div>
+  <div class="hi-continuous-slider-display">
+    <span class="hi-continuous-slider-value">{{ display_value }}</span>
+    {% if show_presets %}
+      <div class="hi-continuous-slider-presets">
+        <button type="button"
+                class="btn btn-sm btn-secondary {{ DIVID.CONTROLLER_PRESET_BTN_CLASS }}"
+                {{ DIVID.DATA_VALUE_ATTR }}="{{ display_min.magnitude }}">
+          {{ min_preset_label|default:"Min" }}
+        </button>
+        <button type="button"
+                class="btn btn-sm btn-primary {{ DIVID.CONTROLLER_PRESET_BTN_CLASS }}"
+                {{ DIVID.DATA_VALUE_ATTR }}="{{ display_max.magnitude }}">
+          {{ max_preset_label|default:"Max" }}
+        </button>
+      </div>
+    {% endif %}
+  </div>
+</div>
+{% endwith %}
+{% endwith %}

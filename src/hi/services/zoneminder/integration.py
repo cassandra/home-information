@@ -12,8 +12,10 @@ from hi.apps.system.health_status_provider import HealthStatusProvider
 from hi.integrations.integration_controller import IntegrationController
 from hi.integrations.integration_gateway import IntegrationGateway
 from hi.integrations.integration_manage_view_pane import IntegrationManageViewPane
+from hi.integrations.integration_synchronizer import IntegrationSynchronizer
 from hi.integrations.models import IntegrationAttribute
 from hi.integrations.transient_models import (
+    ConnectionTestResult,
     IntegrationMetaData,
     IntegrationValidationResult,
 )
@@ -24,6 +26,7 @@ from .zm_controller import ZoneMinderController
 from .zm_manage_view_pane import ZmManageViewPane
 from .zm_manager import ZoneMinderManager
 from .zm_metadata import ZmMetaData
+from .zm_sync import ZoneMinderSynchronizer
 from .monitors import ZoneMinderMonitor
 from .zm_mixins import ZoneMinderMixin
 
@@ -58,15 +61,15 @@ class ZoneMinderGateway( IntegrationGateway, ZoneMinderMixin ):
     
     def get_health_status_provider(self) -> HealthStatusProvider:
         return ZoneMinderManager()
-    
+
+    def get_synchronizer(self) -> IntegrationSynchronizer:
+        return ZoneMinderSynchronizer()
+
     def validate_configuration(
             self,
             integration_attributes: List[IntegrationAttribute]
     ) -> IntegrationValidationResult:
-        """Validate ZoneMinder integration configuration by testing API connectivity.
-
-        Delegates to ZoneMinderManager for configuration validation.
-        """
+        """Schema-only validation; delegates to ZoneMinderManager."""
         try:
             zm_manager = ZoneMinderManager()
             return zm_manager.validate_configuration(integration_attributes)
@@ -76,6 +79,22 @@ class ZoneMinderGateway( IntegrationGateway, ZoneMinderMixin ):
                 status=HealthStatusType.WARNING,
                 error_message=f'Configuration validation failed: {e}'
             )
+
+    def test_connection(
+            self,
+            integration_attributes: List[IntegrationAttribute],
+            timeout_secs: Optional[float],
+    ) -> ConnectionTestResult:
+        """Live connection probe; delegates to ZoneMinderManager."""
+        try:
+            zm_manager = ZoneMinderManager()
+            return zm_manager.test_connection(
+                integration_attributes=integration_attributes,
+                timeout_secs=timeout_secs,
+            )
+        except Exception as e:
+            logger.exception(f'Error in ZoneMinder connection test: {e}')
+            return ConnectionTestResult.failure(f'Connection test error: {e}')
     
     def get_entity_video_stream(self, entity: Entity) -> Optional[VideoStream]:
         """Get entity's primary video stream (typically live)"""

@@ -5,13 +5,9 @@ import xml.etree.ElementTree as ET
 from django import forms
 from django.core.exceptions import ValidationError
 
-from hi.apps.common.file_utils import generate_unique_filename
-from hi.apps.common.svg_models import SvgViewBox
+from hi.apps.common.svg_utils import process_svg_content
 
 logger = logging.getLogger(__name__)
-
-# Need this to avoid library adding "ns0:" namespacing when writing content.
-ET.register_namespace('', 'http://www.w3.org/2000/svg')
 
 
 class SvgDecimalFormField( forms.FloatField ):
@@ -92,18 +88,17 @@ class SvgFileForm(forms.Form):
     def get_media_destination_directory(self):
         # Relative to MEDIA_ROOT.
         raise NotImplementedError( 'Subclasses must override this method.' )
+
+    def get_default_svg_content(self):
+        default_svg_path = os.path.join(
+            self.get_default_source_directory(),
+            self.get_default_basename(),
+        )
+        with open( default_svg_path, 'r' ) as f:
+            return f.read()
     
     MAX_SVG_FILE_SIZE_MEGABYTES = 5
     MAX_SVG_FILE_SIZE_BYTES = MAX_SVG_FILE_SIZE_MEGABYTES * 1024 * 1024
-
-    DANGEROUS_TAGS = {
-        'script', 'foreignObject', 'iframe', 'object',
-        'animation', 'audio', 'video', 'style',
-    }
-    DANGEROUS_ATTRS = {
-        'onload', 'onclick', 'onmouseover', 'xlink:href',
-        'href',
-    }
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -135,13 +130,8 @@ class SvgFileForm(forms.Form):
             if require_svg_file:
                 raise ValidationError( 'You need to re-select the SVG file.' )
 
-            default_svg_path = os.path.join(
-                self.get_default_source_directory(),
-                self.get_default_basename(),
-            )
-            with open( default_svg_path, 'r' ) as f:
-                svg_content = f.read()
-            svg_filename = self.get_default_basename()          
+            svg_content = self.get_default_svg_content()
+            svg_filename = self.get_default_basename()
         else:
             svg_file_handle.seek(0)  # Guard against multiple calls to clean()
             svg_content = svg_file_handle.read().decode('utf-8')
@@ -151,62 +141,33 @@ class SvgFileForm(forms.Form):
             if len(svg_content) > self.MAX_SVG_FILE_SIZE_BYTES:
                 raise ValidationError( f'SVG file too large. Max {self.MAX_SVG_FILE_SIZE_MEGABYTES} MB.' )
 
-            root = ET.fromstring( svg_content )
-            if root.tag != '{http://www.w3.org/2000/svg}svg':
-                raise ValidationError( 'The uploaded file is not a valid SVG file.' )
+            result = process_svg_content(
+                svg_content = svg_content,
+                media_destination_directory = self.get_media_destination_directory(),
+                source_filename = svg_filename,
+                remove_dangerous = bool( remove_dangerous_svg_items ),
+            )
 
-            view_box_str = root.attrib.get( 'viewBox' )
-            if not view_box_str:
-                raise ValidationError( 'The SVG must contain a viewBox attribute.' )
+            self._dangerous_tag_counts = result['dangerous_tag_counts']
+            self._dangerous_attr_counts = result['dangerous_attr_counts']
 
-            svg_viewbox = SvgViewBox.from_attribute_value( view_box_str )
-            cleaned_data['svg_viewbox'] = svg_viewbox
-            
-            # Remove the outer <svg> tag if necessary
-            for element in list( root.iter() ):
-                if element is root:
-                    continue
-            
-                # Remove the namespace from the child elements
-                if element.tag.startswith('{http://www.w3.org/2000/svg}'):
-                    element.tag = element.tag.split('}', 1)[1]  # Strip the namespace
-
-                tag_name = element.tag.split('}')[-1]  # Handle namespaces
-                if tag_name in self.DANGEROUS_TAGS:
-                    logger.debug( f'Removing dangerous SVG tag "{tag_name}"' )
-                    root.remove(element)
-                    self._increment_dangerous_tag_count( tag_name )
-                    continue
-                
-                for attr_name in list(element.attrib):
-                    if attr_name in self.DANGEROUS_ATTRS:
-                        logger.debug(f'Removing dangerous SVG attribute "{attr_name}"')
-                        del element.attrib[attr_name]
-                        self._increment_dangerous_attr_count( attr_name )
-                    continue
-
-                continue
-            
             if ( not remove_dangerous_svg_items
                  and (( len(self._dangerous_tag_counts) + len(self._dangerous_attr_counts) ) > 0 )):
                 self._add_dangerous_messages()
                 self.fields['remove_dangerous_svg_items'].widget.attrs.update( { 'style': '' } )
-                self.data = self.data.copy()  # Need a mutable copy to change this data
+                self.data = self.data.copy()
                 self.data['has_dangerous_svg_items'] = 'true'
                 self._has_dangerous_svg_items = True
-                
-            inner_content = ''.join( ET.tostring( element, encoding = 'unicode' ) for element in root )
-            cleaned_data['svg_fragment_content'] = inner_content
 
-            svg_fragment_filename = os.path.join(
-                self.get_media_destination_directory(),
-                generate_unique_filename( svg_filename ),
-            )
-            cleaned_data['svg_fragment_filename'] = svg_fragment_filename
-            
+            cleaned_data['svg_fragment_content'] = result['svg_fragment_content']
+            cleaned_data['svg_viewbox'] = result['svg_viewbox']
+            cleaned_data['svg_fragment_filename'] = result['svg_fragment_filename']
+
         except ET.ParseError as pe:
             logger.exception( pe )
             raise ValidationError( 'The uploaded file is not a valid XML (SVG) file.' )
+        except ValueError as ve:
+            raise ValidationError( str(ve) )
         except Exception as e:
             logger.exception( e )
             raise ValidationError(f'Error processing the SVG file: {str(e)}' )

@@ -13,7 +13,7 @@ from hi.integrations.transient_models import IntegrationKey
 from hi.testing.base_test_case import BaseTestCase
 from hi.testing.async_task_utils import AsyncTaskTestCase
 
-from hi.apps.event.enums import EventType
+from hi.apps.event.enums import EventClauseOperator, EventType
 from hi.apps.event.event_manager import EventManager
 from hi.apps.event.models import EventDefinition, EventClause, AlarmAction, EventHistory
 from hi.apps.event.transient_models import EntityStateTransition, Event
@@ -535,8 +535,8 @@ class TestEventManagerEventActions(AsyncEventManagerTestCase):
                 await self.manager._do_new_event_action([event])
                 
                 # Examine the results - should have called alert manager with correct alarm
-                mock_alert_manager.add_alarm.assert_called_once()
-                alarm_call_args = mock_alert_manager.add_alarm.call_args[0][0]
+                mock_alert_manager.add_alarm_async.assert_called_once()
+                alarm_call_args = mock_alert_manager.add_alarm_async.call_args[0][0]
                 self.assertEqual(alarm_call_args.title, 'Test Event')
                 self.assertEqual(alarm_call_args.alarm_level, AlarmLevel.CRITICAL)
         
@@ -578,7 +578,7 @@ class TestEventManagerEventActions(AsyncEventManagerTestCase):
                 await self.manager._do_new_event_action([event])
                 
                 # Examine the results - should NOT have called alert manager
-                mock_alert_manager.add_alarm.assert_not_called()
+                mock_alert_manager.add_alarm_async.assert_not_called()
         
         self.run_async(async_test_logic())
         return
@@ -674,4 +674,54 @@ class TestEventManagerHelperMethods(BaseTestCase):
         # Should mark for reload
         self.assertTrue(manager._event_definition_reload_needed)
         return
-    
+
+
+class TestClauseMatchesOperatorDispatch(BaseTestCase):
+    """Direct unit tests for the operator-dispatch in
+    ``EventManager._clause_matches``. The EQ branch is covered
+    end-to-end by ``test_create_event_if_detected_single_clause_match``
+    — the value of this class is exercising the boundary semantics
+    of the numeric operators (LT vs LTE off-by-one risk) and the
+    defensive non-numeric path that prevents transient malformed
+    readings from raising into the matcher."""
+
+    def _clause( self, target_value : str, operator : EventClauseOperator ):
+        clause = EventClause( value = target_value )
+        clause.value_operator = operator
+        return clause
+
+    def test_lt_excludes_boundary( self ):
+        clause = self._clause( '20', EventClauseOperator.LT )
+        self.assertTrue( EventManager._clause_matches( '19', clause ) )
+        self.assertFalse( EventManager._clause_matches( '20', clause ) )
+        self.assertFalse( EventManager._clause_matches( '20.0', clause ) )
+        return
+
+    def test_lte_includes_boundary( self ):
+        clause = self._clause( '20', EventClauseOperator.LTE )
+        self.assertTrue( EventManager._clause_matches( '20', clause ) )
+        self.assertTrue( EventManager._clause_matches( '19', clause ) )
+        self.assertFalse( EventManager._clause_matches( '21', clause ) )
+        return
+
+    def test_gt_excludes_boundary( self ):
+        clause = self._clause( '20', EventClauseOperator.GT )
+        self.assertTrue( EventManager._clause_matches( '21', clause ) )
+        self.assertFalse( EventManager._clause_matches( '20', clause ) )
+        return
+
+    def test_gte_includes_boundary( self ):
+        clause = self._clause( '20', EventClauseOperator.GTE )
+        self.assertTrue( EventManager._clause_matches( '20', clause ) )
+        self.assertTrue( EventManager._clause_matches( '21', clause ) )
+        self.assertFalse( EventManager._clause_matches( '19', clause ) )
+        return
+
+    def test_non_numeric_value_with_numeric_operator_does_not_raise( self ):
+        # A transient malformed entity_state value must not crash the
+        # event-detection loop. Silent False is correct.
+        clause = self._clause( '20', EventClauseOperator.LT )
+        self.assertFalse( EventManager._clause_matches( 'unknown', clause ) )
+        self.assertFalse( EventManager._clause_matches( '', clause ) )
+        return
+

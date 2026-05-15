@@ -9,8 +9,80 @@ Each integration is a Django app in `hi/services/` directory. The `hi.integratio
 - **integration_key**: Associates entities/sensors with external systems
 - **detail_attrs**: Opaque data blob - only the integration uses this data
 
+### One-to-many state composition
+A single upstream state may decompose into multiple HI EntityStates when the upstream protocol packs several independently-controllable values into one entity (e.g., a color light's brightness + hue + saturation + color temperature). The framework supports this via:
+
+- **integration_key suffix convention**: each derived EntityState gets its own integration_key (e.g., `light.x` for the parent, `light.x~hue` / `light.x~saturation` for the substates). The integration controls the suffix scheme.
+- **`IntegrationConverterHelper`** (`hi/integrations/integration_converter_helper.py`): a classmethod helper used by converters that need to compose outbound calls from multiple HI EntityState values. Exposes `get_latest_state_values(integration_keys)` for the runtime cache lookup. Inbound decomposition writes each substate value through `SensorResponse`; outbound recomposition reads it back via this helper.
+- The integration's converter decides which upstream attributes become substates and how they map back to outbound calls. See the HA integration's substate handling for a worked example.
+
+### Unit conversion at the integration boundary
+Integrations whose external system reports values with a unit (HA's `temperature_unit`, sensor `unit_of_measurement`, etc.) MUST normalize at the boundary: convert inbound values to a canonical unit before storing, and convert outbound values from canonical to the external system's required unit. The canonical unit is declared once where the EntityState is created (e.g., HA's climate substate specs declare °C as canonical for temperatures). Downstream code reads `EntityState.units` rather than re-asserting the canonical, so changing the choice propagates through the spec → EntityState chain without code edits at every conversion site.
+
+- **`IntegrationMetadataCache`** (`hi/integrations/integration_metadata_cache.py`) caches `EntityState.units` per `IntegrationKey` so polling-loop unit lookups don't multiply DB queries. Process-wide, lazy-warmed; provides parallel sync and async APIs (use the async variant from monitor coroutines so DB access goes through `sync_to_async`).
+- **`IntegrationConverterHelper.to_entity_state_value` / `from_entity_state_value`** (both with `_async` variants) are the boundary helpers backed by the cache. Inbound (`to_`) takes an external value + external unit and returns the value in the EntityState's stored unit. Outbound (`from_`) takes an EntityState-unit value + target external unit. Both pass through unchanged when units are absent or already match — safe to call uniformly without per-state-type branching.
+
+See `hi/services/hass/hass_converter.py` (climate substate inbound + setpoint outbound dispatch) for a worked example.
+
+The symmetric server ↔ UI boundary uses `ConsoleConverterHelper`; see [Frontend Guidelines](../frontend/frontend-guidelines.md#unit-bearing-values-server--ui-translation).
+
 ### Responsibility Boundaries
 Integrations create `SensorResponse` objects which become `Event` objects with duration. The Event duration is the only accessible duration data - Event objects don't know about underlying integration specifics.
+
+### EntityStateType vs. EntityStateRole
+Each `EntityState` carries two independent axes:
+
+- **`EntityStateType`** — local value semantics: value storage, unit handling, value-to-label translation, per-value rendering template. Answers "how do I store / interpret / render this value?"
+- **`EntityStateRole`** — the state's contextual identity within its enclosing entity. Answers "what role does this state play in its entity's composite presentation?"
+
+For multi-state entities where multiple `EntityState` instances share the same `EntityStateType` (a thermostat's current vs. target temperatures; a fan's direction vs. preset_mode), the role is what disambiguates them downstream. Every `EntityStateType` has a default `EntityStateRole` with the same name (e.g., `EntityStateType.TEMPERATURE` → `EntityStateRole.TEMPERATURE`), so an `EntityState` saved without an explicit role still has one — automatically.
+
+Two tiers of role member coexist in the same enum:
+- **Type-default roles** — one per `EntityStateType`, name-matched. Applied automatically at `EntityState` save time when no explicit role is set. Unchanged integrations get these for free.
+- **Domain-prefixed refinements** — `THERMOSTAT_CURRENT_TEMPERATURE`, `FAN_SPEED`, `LIGHT_BRIGHTNESS`, etc. Integrations set these explicitly where the domain calls for it (typically in substate spec lists).
+
+The integration's job is to **declare what each state means** via its role. Presentation order is HI's responsibility, applied via per-EntityType `EntityStateRoleOrdering` instances in `hi.apps.entity.entity_state_role_order`. New EntityTypes or new roles get added to those tables as needed.
+
+See `hi/services/hass/hass_converter.py` (climate / fan / light state-spec lists) for the pattern: each `_StateSpec` may carry an explicit `role` field; the spec → `EntityState` creation passes it through.
+
+## Code Conventions
+
+### File layout and naming
+Each integration is a self-contained Django app under `hi/services/<integration_id>/`. Across the existing integrations (`hass/`, `zoneminder/`, `homebox/`) the same role-files appear with parallel naming — use this layout for new integrations so a contributor coming from one integration can find their way around another:
+
+- `integration.py` — `IntegrationGateway` subclass, the registration entry point
+- `<prefix>_metadata.py` — module-level `IntegrationMetaData` instance
+- `<prefix>_client.py` (and/or `<prefix>_client_factory.py`) — outbound API client + credential validation
+- `<prefix>_manager.py` — singleton coordinator (attribute cache, change listeners, health status)
+- `<prefix>_converter.py` — wire-format ↔ HI model translation (the bulk of integration logic)
+- `<prefix>_sync.py` — `IntegrationSynchronizer` subclass driving entity sync
+- `<prefix>_controller.py` — HI control commands → integration service calls
+- `<prefix>_mixins.py` — manager-accessor mixin for views/handlers
+- `<prefix>_manage_view_pane.py` — management UI pane
+- `monitors.py` — `PeriodicMonitor` subclass(es) for polling and health probes
+- `apps.py`, `urls.py`, `views.py` — standard Django wiring
+
+`<prefix>` is a short integration mnemonic (`hass_`, `zm_`, `hb_`). Keep it consistent across all files within the integration.
+
+### Centralize wire-format strings
+Every integration centralizes its wire-format strings — domain/endpoint names, attribute keys, device-class names, service names, special-state sentinels — in a single class per integration. The exemplar is `HassApi` in `hi/services/hass/hass_models.py`; ZoneMinder's equivalent is `hi/services/zoneminder/constants.py`. The converter, sync, controller, and service composer all import their wire strings from this single source.
+
+Rationale:
+- **Typo prevention** — string literals scattered across files don't cross-check; named constants do
+- **Discoverability** — the integration's wire vocabulary lives in one file you can read top-to-bottom
+- **Refactor safety** — renaming a wire-side string becomes a mechanical edit, not a grep-and-pray
+- **Boundary clarity** — when reading the converter, every string that crosses the wire boundary is obviously a wire string
+
+Do not inline raw wire strings outside this centralization module. If you find yourself writing `'climate'` or `'unavailable'` in a converter, hoist it to the constants class first.
+
+### Default alarm wiring
+The model-level factories in `hi.apps.model_helper.HiModelHelper` (`create_movement_sensor`, `create_smoke_sensor`, `create_moisture_sensor`, `create_open_close_sensor`, `create_connectivity_sensor`) accept an `add_default_alarm : bool = False` parameter. When True, the factory also creates the canonical default alarm event definition for that sensor type (using `f'{sensor.name} Alarm'` and the same `integration_key` as the sensor).
+
+Use this for the common case of sharing the sensor's integration_key with its alarm event. If an integration needs a *different* integration_key for the alarm event (e.g., ZoneMinder's separate `MOVEMENT_EVENT_PREFIX`), leave the flag False and call the matching `create_*_event_definition` explicitly with the alternate key.
+
+The default alarm definitions are a starting point — the user can customize entity_state, value, operator, windows, dedupe, and alarm levels through the event-definition edit UI. The integration's role is to provide a reasonable default, not a final policy.
+
+For continuous-value EntityStateTypes (`BATTERY_LEVEL` percentage, future temperature / humidity out-of-range, etc.), `EventClause` carries an `EventClauseOperator` (`EQ` / `LT` / `LTE` / `GT` / `GTE`) so alarms can fire on threshold crossings instead of exact-value matches. The integration uses a dedicated factory like `create_battery_level_event_definition`; the operator and threshold are otherwise transparent.
 
 ## Integration Setup Process
 
@@ -35,6 +107,30 @@ Implement `IntegrationGateway` with required methods:
 
 ### 5. Register with Factory
 Add gateway mapping in `hi/integrations/integration_factory.py`
+
+### 6. Write Per-Integration Documentation
+Every user-configured integration MUST ship with two short docs based
+on the templates:
+
+- **User-facing**: copy [`docs/integrations/_template.md`](../../integrations/_template.md)
+  to `docs/integrations/<integration-name>.md` and fill in all seven
+  sections (Overview, Prerequisites, Obtaining credentials,
+  Configuration values, Setup walkthrough, Troubleshooting, Known
+  limitations).
+- **Developer-facing**: copy [`_template.md`](_template.md) to
+  `docs/dev/integrations/<integration-name>.md` and fill in all six
+  sections (Overview, Key modules, API patterns, Implementation
+  notes, Testing approach, References). Keep it high-level and refer
+  to the code for details — the code is the authoritative source.
+
+After creating both docs, add a one-paragraph entry plus a link in
+the user-facing landing page at [`docs/Integrations.md`](../../Integrations.md).
+
+> **Internal data sources** like the Weather subsystem
+> (`docs/dev/integrations/weather-integration.md`) do not require
+> per-integration user-facing docs — they are not user-configured in
+> the integration sense. The template structure above applies only to
+> integrations that appear on the Settings → Integrations page.
 
 ## Gateway Implementation Patterns
 

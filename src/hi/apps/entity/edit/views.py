@@ -1,6 +1,6 @@
 import logging
 import re
-from typing import Any, Dict, Optional
+from typing import Any, Dict, List, Optional
 
 from django.core.exceptions import BadRequest, PermissionDenied
 from django.db import transaction
@@ -14,8 +14,9 @@ from hi.apps.collection.collection_manager import CollectionManager
 import hi.apps.common.antinode as antinode
 from hi.apps.entity.entity_manager import EntityManager
 from hi.apps.entity.entity_pairing_manager import EntityPairingManager, EntityPairingError
+from hi.apps.entity.entity_placement import EntityPlacer
 from hi.apps.entity.edit.entity_type_transition_handler import EntityTypeTransitionHandler
-from hi.apps.entity.forms import EntityForm
+from hi.apps.entity.forms import EntityAddForm, EntityForm
 from hi.apps.entity.models import (
     ArchivedEntity,
     ArchivedEntityAttribute,
@@ -70,12 +71,12 @@ class EntityAddView( HiModalView ):
     
     def get( self, request, *args, **kwargs ):
         context = {
-            'entity_form': EntityForm(),
+            'entity_form': EntityAddForm(),
         }
         return self.modal_response( request, context )
     
     def post( self, request, *args, **kwargs ):
-        entity_form = EntityForm( request.POST )
+        entity_form = EntityAddForm( request.POST )
         if not entity_form.is_valid():
             context = {
                 'entity_form': entity_form,
@@ -83,23 +84,54 @@ class EntityAddView( HiModalView ):
             return self.modal_response( request, context )
 
         with transaction.atomic():
-            entity = entity_form.save()
-            self._add_to_current_view_type(
-                request = request,
-                entity = entity,
-            )
+            created_entities = self._create_entities_bulk( entity_form = entity_form )
+            for i, entity in enumerate( created_entities ):
+                self._add_to_current_view_type(
+                    request = request,
+                    entity = entity,
+                    bulk_grid_index = i,
+                    bulk_grid_total = len( created_entities ),
+                )
+                continue
             
         redirect_url = reverse('home')
         return self.redirect_response( request, redirect_url )
 
-    def _add_to_current_view_type( self, request, entity : Entity ):
+    def _create_entities_bulk(self, entity_form: EntityAddForm) -> List[Entity]:
+        base_name = entity_form.cleaned_data['name']
+        entity_type_str = entity_form.cleaned_data['entity_type_str']
+        quantity = entity_form.cleaned_data['quantity']
+
+        # Use create() in a loop rather than bulk_create() to ensure
+        # save() overrides and post_save signal handlers fire. At the
+        # 100-entity cap this is fast enough and avoids subtle bugs if
+        # save-time side effects are added to Entity in the future.
+        created_entities = []
+        for i in range( 1, quantity + 1 ):
+            entity_name = base_name if quantity == 1 else f'{base_name} ({i})'
+            entity = Entity.objects.create(
+                name=entity_name,
+                entity_type_str=entity_type_str,
+            )
+            created_entities.append(entity)
+            continue
+
+        return created_entities
+
+    def _add_to_current_view_type( self,
+                                   request,
+                                   entity : Entity,
+                                   bulk_grid_index : Optional[int] = None,
+                                   bulk_grid_total : Optional[int] = None ):
         
         if request.view_parameters.view_type.is_location_view:
             try:
                 current_location_view = LocationManager().get_default_location_view( request = request )
-                EntityManager().add_entity_to_view(
+                EntityPlacer().place_entity_in_view(
                     entity = entity,
                     location_view = current_location_view,
+                    bulk_grid_index = bulk_grid_index,
+                    bulk_grid_total = bulk_grid_total,
                 )
             except LocationView.DoesNotExist:
                 logger.warning( 'No current location view to add new entity to.')
@@ -130,7 +162,7 @@ class EntityDeleteView( HiModalView, EntityViewMixin ):
         entity = self.get_entity( request, *args, **kwargs )
 
         if not entity.can_user_delete:
-            raise PermissionDenied( 'This entity cannot be deleted.' )
+            raise PermissionDenied( 'This item cannot be deleted.' )
         
         context = {
             'entity': entity,
@@ -145,7 +177,7 @@ class EntityDeleteView( HiModalView, EntityViewMixin ):
             raise BadRequest( 'Missing confirmation value.' )
 
         if not entity.can_user_delete:
-            raise PermissionDenied( 'This entity cannot be deleted.' )
+            raise PermissionDenied( 'This item cannot be deleted.' )
                 
         entity.delete()
 
@@ -191,7 +223,6 @@ class EntityPositionEditView( View, EntityViewMixin ):
         svg_icon_item = SvgItemFactory().create_svg_icon_item(
             item = entity_position.entity,
             position = entity_position,
-            css_class = '',
         )
         set_attributes_map = {
             svg_icon_item.html_id: {
@@ -313,7 +344,7 @@ class EntityArchiveView( HiModalView, EntityViewMixin ):
         entity = self.get_entity( request, *args, **kwargs )
 
         if entity.integration_id:
-            raise PermissionDenied( 'Integration entities cannot be archived.' )
+            raise PermissionDenied( 'Integration items cannot be archived.' )
 
         context = {
             'entity': entity,
@@ -328,7 +359,7 @@ class EntityArchiveView( HiModalView, EntityViewMixin ):
             raise BadRequest( 'Missing confirmation value.' )
 
         if entity.integration_id:
-            raise PermissionDenied( 'Integration entities cannot be archived.' )
+            raise PermissionDenied( 'Integration items cannot be archived.' )
 
         with transaction.atomic():
             archived_entity = ArchivedEntity.objects.create(
@@ -385,7 +416,7 @@ class EntityArchiveDetailView( HiModalView ):
         try:
             archived_entity = ArchivedEntity.objects.get( pk = archived_entity_id )
         except ArchivedEntity.DoesNotExist:
-            raise Http404( 'Archived entity not found.' )
+            raise Http404( 'Archived item not found.' )
 
         context = {
             'archived_entity': archived_entity,

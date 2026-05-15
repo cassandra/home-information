@@ -9,6 +9,7 @@ from django.db import transaction
 from django.test import TransactionTestCase
 
 from hi.apps.entity.entity_manager import EntityManager
+from hi.apps.entity.entity_placement import EntityPlacer
 from hi.apps.entity.enums import EntityType, EntityTransitionType
 from hi.apps.entity.models import Entity, EntityPath, EntityPosition
 from hi.apps.location.models import Location, LocationView
@@ -24,7 +25,7 @@ class TestEntityTypeTransitions(TransactionTestCase):
         
         # Reset singleton state for test isolation
         EntityManager._instances = {}
-        self.manager = EntityManager()
+        self.placer = EntityPlacer()
         
         # Create test data
         self.location = Location.objects.create(
@@ -63,7 +64,7 @@ class TestEntityTypeTransitions(TransactionTestCase):
         self.entity.save()
         
         # Perform transition
-        transition_occurred, transition_type = self.manager.handle_entity_type_transition(
+        transition_occurred, transition_type = self.placer.handle_entity_type_transition(
             entity = self.entity,
             location_view = self.location_view,
         )
@@ -111,7 +112,7 @@ class TestEntityTypeTransitions(TransactionTestCase):
         self.entity.save()
         
         # Perform transition
-        transition_occurred, transition_type = self.manager.handle_entity_type_transition(
+        transition_occurred, transition_type = self.placer.handle_entity_type_transition(
             entity = self.entity,
             location_view = self.location_view,
         )
@@ -158,7 +159,7 @@ class TestEntityTypeTransitions(TransactionTestCase):
         # Transition icon->path
         self.entity.entity_type_str = str(EntityType.WALL)
         self.entity.save()
-        self.manager.handle_entity_type_transition(
+        self.placer.handle_entity_type_transition(
             entity = self.entity,
             location_view = self.location_view,
         )
@@ -166,7 +167,7 @@ class TestEntityTypeTransitions(TransactionTestCase):
         # Transition path->icon (back to original)
         self.entity.entity_type_str = str(EntityType.LIGHT)
         self.entity.save()
-        transition_occurred, transition_type = self.manager.handle_entity_type_transition(
+        transition_occurred, transition_type = self.placer.handle_entity_type_transition(
             entity = self.entity,
             location_view = self.location_view,
         )
@@ -202,7 +203,7 @@ class TestEntityTypeTransitions(TransactionTestCase):
         )
         
         # Transition to icon type
-        transition_occurred, transition_type = self.manager.handle_entity_type_transition(
+        transition_occurred, transition_type = self.placer.handle_entity_type_transition(
             entity = self.entity,
             location_view = self.location_view,
         )
@@ -214,7 +215,7 @@ class TestEntityTypeTransitions(TransactionTestCase):
         # Transition to path type  
         self.entity.entity_type_str = str(EntityType.WALL)
         self.entity.save()
-        transition_occurred, transition_type = self.manager.handle_entity_type_transition(
+        transition_occurred, transition_type = self.placer.handle_entity_type_transition(
             entity = self.entity,
             location_view = self.location_view,
         )
@@ -244,7 +245,7 @@ class TestEntityTypeTransitions(TransactionTestCase):
         self.entity.entity_type_str = str(EntityType.CAMERA)
         self.entity.save()
         
-        transition_occurred, transition_type = self.manager.handle_entity_type_transition(
+        transition_occurred, transition_type = self.placer.handle_entity_type_transition(
             entity = self.entity,
             location_view = self.location_view,
         )
@@ -274,7 +275,7 @@ class TestEntityTypeTransitions(TransactionTestCase):
         self.entity.entity_type_str = str(EntityType.FENCE)
         self.entity.save()
         
-        transition_occurred, transition_type = self.manager.handle_entity_type_transition(
+        transition_occurred, transition_type = self.placer.handle_entity_type_transition(
             entity = self.entity,
             location_view = self.location_view,
         )
@@ -289,32 +290,13 @@ class TestEntityTypeTransitions(TransactionTestCase):
     
     def test_no_location_view_returns_false(self):
         """Test that transition fails gracefully without location view"""
-        transition_occurred, transition_type = self.manager.handle_entity_type_transition(
+        transition_occurred, transition_type = self.placer.handle_entity_type_transition(
             entity = self.entity,
             location_view = None,
         )
         
         self.assertFalse(transition_occurred)
         self.assertEqual(transition_type, EntityTransitionType.NO_LOCATION_VIEW)
-        return
-    
-    def test_path_center_calculation(self):
-        """Test geometric center calculation for paths"""
-        # Test simple rectangle path
-        svg_path = 'M 100,100 L 300,100 L 300,200 L 100,200 Z'
-        center_x, center_y = self.manager._calculate_path_center(svg_path)
-        
-        # Center should be at (200, 150)
-        self.assertAlmostEqual(center_x, 200.0, places=1)
-        self.assertAlmostEqual(center_y, 150.0, places=1)
-        
-        # Test malformed path
-        bad_path = 'invalid path data'
-        center_x, center_y = self.manager._calculate_path_center(bad_path)
-        
-        # Should return None for invalid paths
-        self.assertIsNone(center_x)
-        self.assertIsNone(center_y)
         return
     
     def test_transaction_rollback_on_transition_failure(self):
@@ -326,18 +308,18 @@ class TestEntityTypeTransitions(TransactionTestCase):
         original_type = self.entity.entity_type_str
         
         # Mock handle_entity_type_transition to raise an exception
-        with patch.object(EntityManager, 'handle_entity_type_transition') as mock_transition:
+        with patch.object(EntityPlacer, 'handle_entity_type_transition') as mock_transition:
             mock_transition.side_effect = Exception("Simulated transition failure")
-            
+
             # Attempt entity update with EntityType change
             try:
                 with transaction.atomic():
                     self.entity.name = "Updated Name"
                     self.entity.entity_type_str = str(EntityType.WALL)
                     self.entity.save()
-                    
+
                     # This should raise exception and rollback transaction
-                    EntityManager().handle_entity_type_transition(
+                    EntityPlacer().handle_entity_type_transition(
                         entity = self.entity,
                         location_view = self.location_view,
                     )

@@ -7,7 +7,7 @@ from hi.apps.control.models import Controller
 from hi.apps.common.forms import CustomBaseFormSet
 from hi.apps.entity.edit.forms import EntityStateSelectModelFormMixin
 from hi.apps.entity.models import EntityState
-from hi.apps.event.enums import EventType
+from hi.apps.event.enums import EventClauseOperator, EventType
 import hi.apps.event.models as models
 from hi.apps.security.enums import SecurityLevel
 
@@ -41,8 +41,17 @@ class EventClauseForm( forms.ModelForm, EntityStateSelectModelFormMixin ):
         model = models.EventClause
         fields = (
             'entity_state',
+            'value_operator_str',
             'value',
         )
+
+    value_operator_str = forms.ChoiceField(
+        label = 'Operator',
+        choices = EventClauseOperator.choices,
+        initial = EventClauseOperator.default_value(),
+        required = True,
+        widget = forms.Select( attrs = { 'class' : 'custom-select' } ),
+    )
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -54,7 +63,35 @@ class EventClauseForm( forms.ModelForm, EntityStateSelectModelFormMixin ):
         )
         self.fields['entity_state'].widget.attrs.update({ 'class': 'custom-select' })
         self.fields['value'].widget.attrs.update({ 'class': 'custom-select' })
+        # When the operator changes, swap the value widget to a numeric
+        # input (for non-EQ) so threshold clauses are editable on the
+        # spot. EQ leaves whatever widget the entity_state-driven swap
+        # rendered (Select for discrete states, text input otherwise).
+        value_field_id = f'id_{self.prefix}-value' if self.prefix else 'id_value'
+        operator_field_id = f'id_{self.prefix}-value_operator_str' if self.prefix else 'id_value_operator_str'
+        self.fields['value_operator_str'].widget.attrs['onchange'] = (
+            f'Hi.setEventClauseValueOperatorWidget('
+            f'"{operator_field_id}", "{value_field_id}");'
+        )
         return
+
+    def clean(self):
+        cleaned = super().clean()
+        op_str = cleaned.get( 'value_operator_str' )
+        value = cleaned.get( 'value' )
+        # Numeric operators require a numeric value. The matcher silently
+        # no-ops on parse failure at runtime; reject at form time so the
+        # user gets immediate feedback instead of a clause that never
+        # fires.
+        if op_str and op_str != str(EventClauseOperator.EQ) and value:
+            try:
+                float( value )
+            except ( ValueError, TypeError ):
+                self.add_error(
+                    'value',
+                    f'Numeric value required for operator "{op_str}".',
+                )
+        return cleaned
     
         
 class AlarmActionForm( forms.ModelForm ):

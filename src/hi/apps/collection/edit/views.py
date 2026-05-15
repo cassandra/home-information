@@ -228,7 +228,6 @@ class CollectionPositionEditView( View, CollectionViewMixin ):
         svg_icon_item = SvgItemFactory().create_svg_icon_item(
             item = collection_position.collection,
             position = collection_position,
-            css_class = '',
         )
         set_attributes_map = {
             svg_icon_item.html_id: {
@@ -273,7 +272,7 @@ class CollectionReorderEntitiesView( View, CollectionViewMixin ):
             raise BadRequest( str(e) )
 
         if not entity_id_list:
-            raise BadRequest( 'Missing entity ids.' )
+            raise BadRequest( 'Missing item ids.' )
 
         CollectionManager().set_collection_entity_order(
             collection = collection,

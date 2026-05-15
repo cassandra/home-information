@@ -11,7 +11,11 @@ from hi.apps.location.edit.views import LocationAddFirstView
 
 from .profile_manager import ProfileManager
 from .enums import ProfileType
-from .session_helpers import mark_profile_initialized, mark_first_location_created
+from .session_helpers import (
+    mark_profile_initialized,
+    mark_first_location_created,
+    dismiss_view_intro_help,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -71,6 +75,14 @@ class ViewReferenceHelpView( HiModalView ):
 
     def get( self, request, *args, **kwargs ):
         return self.modal_response( request )
+
+
+class DismissViewIntroHelpView( View ):
+
+    def post( self, request, *args, **kwargs ):
+        dismiss_view_intro_help( request )
+        redirect_url = reverse( 'home' )
+        return antinode.redirect_response( redirect_url )
 
 
 class EditReferenceHelpView( HiModalView ):

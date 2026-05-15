@@ -3,7 +3,7 @@
 /* Common Control Container Styles */
 .on-off-control,
 .discrete-control,
-.brightness-control {
+.hi-continuous-slider-control {
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -126,16 +126,11 @@
     color: var(--text-color, #333);
 }
 
-/* Light Dimmer Controller Styles */
-.brightness-control {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 0.5rem;
-    padding: 0.5rem;
-}
-
-.brightness-slider {
+/* Continuous-slider widget shared base. Used by brightness,
+   hue, saturation, and color temperature sliders. Per-slider
+   classes contribute the track gradient that gives the operator
+   a visual reference for what the numeric value means. */
+.hi-continuous-slider {
     width: 200px;
     height: 6px;
     border-radius: 3px;
@@ -145,7 +140,7 @@
     cursor: pointer;
 }
 
-.brightness-slider::-webkit-slider-thumb {
+.hi-continuous-slider::-webkit-slider-thumb {
     -webkit-appearance: none;
     appearance: none;
     width: 20px;
@@ -157,7 +152,7 @@
     box-shadow: 0 2px 4px rgba(0,0,0,0.2);
 }
 
-.brightness-slider::-moz-range-thumb {
+.hi-continuous-slider::-moz-range-thumb {
     width: 20px;
     height: 20px;
     border-radius: 50%;
@@ -167,51 +162,85 @@
     box-shadow: 0 2px 4px rgba(0,0,0,0.2);
 }
 
-.brightness-slider::-webkit-slider-track {
+.hi-continuous-slider::-moz-range-track {
     height: 6px;
     border-radius: 3px;
-    background: #ccc;
-}
-
-.brightness-slider::-moz-range-track {
-    height: 6px;
-    border-radius: 3px;
-    background: #ccc;
+    background: inherit;
     border: none;
 }
 
-.brightness-display {
+.hi-continuous-slider:focus {
+    box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
+}
+
+.hi-continuous-slider:hover::-webkit-slider-thumb {
+    transform: scale(1.1);
+}
+
+.hi-continuous-slider:hover::-moz-range-thumb {
+    transform: scale(1.1);
+}
+
+.hi-continuous-slider-row {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding-right: 0.5rem;
+}
+
+.hi-continuous-slider-extreme {
+    font-size: 0.8rem;
+    color: var(--text-color, #333);
+    white-space: nowrap;
+}
+
+.hi-continuous-slider-display {
     display: flex;
     align-items: center;
     gap: 1rem;
 }
 
-.brightness-value {
+.hi-continuous-slider-value {
     font-weight: bold;
     min-width: 3rem;
     text-align: center;
     font-size: 0.9rem;
 }
 
-.brightness-buttons {
+.hi-continuous-slider-presets {
     display: flex;
     gap: 0.5rem;
 }
 
-.brightness-btn {
+.hi-continuous-slider-preset-btn {
     min-width: 3rem;
     font-size: 0.8rem;
 }
 
-/* Focus and active states */
-.brightness-slider:focus {
-    box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
+/* Per-slider track gradients. These give a visual reference
+   for the numeric scale without claiming to depict the bulb's
+   current rendered color (the bulb may be in color_temp mode
+   while the operator is dragging the hue slider). */
+
+.hue-slider {
+    background: linear-gradient(to right,
+        hsl(0, 100%, 50%),
+        hsl(60, 100%, 50%),
+        hsl(120, 100%, 50%),
+        hsl(180, 100%, 50%),
+        hsl(240, 100%, 50%),
+        hsl(300, 100%, 50%),
+        hsl(360, 100%, 50%));
 }
 
-.brightness-slider:hover::-webkit-slider-thumb {
-    transform: scale(1.1);
+.saturation-slider {
+    background: linear-gradient(to right, #999999, #cc4040);
 }
 
-.brightness-slider:hover::-moz-range-thumb {
-    transform: scale(1.1);
+.color-temperature-slider {
+    background: linear-gradient(to right,
+        #ff9d4d 0%,
+        #ffd9b3 33%,
+        #ffffff 66%,
+        #cce0ff 100%);
 }

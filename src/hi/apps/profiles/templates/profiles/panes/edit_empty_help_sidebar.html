@@ -4,31 +4,43 @@
     {% icon "rocket" size="lg" color="primary" %}
     <h5>Getting Started</h5>
   </div>
-  
+
   <div class="guide-content">
     <div class="mode-explanation">
       <span class="badge badge-info">Edit Mode</span>
       <p class="small mb-0">You're in editing mode to set up your home layout.</p>
     </div>
-    
+
     <div class="steps">
       <div class="step">
         <div class="step-number">1</div>
         <div class="step-content">
           <div><strong>Add Your First Item</strong></div>
-          <p class="small mb-0">Click "Add New Item" above to create your first home item.</p>
+          <p class="small mb-0">Click "ADD NEW" button above to create your home's first item.</p>
         </div>
       </div>
-      
+
       <div class="step">
         <div class="step-number">2</div>
+        <div class="step-content">
+          <div><strong>Customize Background</strong></div>
+          <p class="small mb-0">
+            <a href="{% url 'location_svg_background' location_id=request.view_parameters.location.id %}"
+               data-async="true">
+              Customize the background</a> to match your home.
+          </p>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-number">3</div>
         <div class="step-content">
           <div><strong>Switch to View Mode</strong></div>
           <p class="small mb-0">Click "Exit Edit" above when done to start managing your home's information.</p>
         </div>
       </div>
     </div>
-    
+
     <a class="plain" href="{% url 'profiles_edit_reference_help' %}" data-async="modal">
       <div class="help-hint">
         {% icon "question-circle" size="sm" color="muted" %}

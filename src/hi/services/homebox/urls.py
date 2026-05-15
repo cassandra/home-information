@@ -1,14 +1,17 @@
-from django.urls import re_path
+"""
+Per-integration URL extension point.
 
-from . import views
+The framework owns lifecycle, configure, sync, and manage URLs for
+every integration (see hi/integrations/urls.py). Add HomeBox-specific
+URLs here when an integration genuinely needs an endpoint the
+framework does not provide. URLs added here mount under
+``services/homebox/``.
+
+Currently no integration-specific endpoints are required.
+"""
+from django.urls import re_path  # noqa: F401
+
+from . import views  # noqa: F401
 
 
-urlpatterns = [
-
-    re_path(
-        r'^sync$',
-        views.HbSyncView.as_view(),
-        name='hb_sync',
-    ),
-
-]
+urlpatterns = []

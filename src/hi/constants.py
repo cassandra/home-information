@@ -121,10 +121,25 @@ DIVID = {
     'ATTR_V2_TEXT_VALUE_CLASS': 'attr-v2-text-value',
     'ATTR_V2_SECRET_CHECKBOX_CLASS': 'attr-v2-secret-checkbox',
     'ATTR_V2_INLINE_HISTORY_CLASS': 'attr-v2-inline-history',
+    'ATTR_V2_TEXT_READ_MODE_CLASS': 'attr-v2-text-read-mode',
+    'ATTR_V2_TEXT_READ_CONTENT_CLASS': 'attr-v2-text-read-content',
+    'ATTR_V2_TEXT_EDIT_MODE_CLASS': 'attr-v2-text-edit-mode',
+    'ATTR_V2_TEXT_EDIT_FIELD_CLASS': 'attr-v2-text-edit-field',
+    'ATTR_V2_TEXT_EDIT_ACTIONS_CLASS': 'attr-v2-text-edit-actions',
     'ATTR_V2_DISPLAY_FIELD_CLASS': 'display-field',
     'ATTR_V2_SHOW_MORE_TEXT_CLASS': 'show-more-text',
     'ATTR_V2_SHOW_LESS_TEXT_CLASS': 'show-less-text',
     'ATTR_V2_DELETE_FILE_ATTR': 'delete_file_attribute',
+
+    # Controller widgets - Class names and data attributes shared
+    # between controller templates (server-emitted) and
+    # controllers.js (client-side display sync, preset buttons).
+    'CONTROLLER_DISPLAY_TARGET_ATTR': 'data-display-target',
+    'CONTROLLER_DISPLAY_FORMAT_ATTR': 'data-display-format',
+    'CONTROLLER_SLIDER_CLASS': 'hi-continuous-slider',
+    'CONTROLLER_SLIDER_CONTROL_CLASS': 'hi-continuous-slider-control',
+    'CONTROLLER_PRESET_BTN_CLASS': 'hi-continuous-slider-preset-btn',
+    'DATA_VALUE_ATTR': 'data-value',
 
     # Entity Picker - JavaScript dependencies only
     'ENTITY_PICKER_FILTERABLE_ITEM_CLASS': 'filterable-item',
@@ -146,4 +161,17 @@ DIVID = {
 
     # Entity Picker - Filter values
     'ENTITY_PICKER_FILTER_ALL': 'all',
+
+    # Location SVG Editor Grid Structure
+    'LOCATION_SVG_EDIT_TOP': 'hi-location-svg-editor-top',
+    'LOCATION_SVG_EDIT_BOTTOM': 'hi-location-svg-editor-bottom',
+    'LOCATION_SVG_EDIT_MAIN': 'hi-location-svg-editor-main',
+
+    # Location SVG Editor Elements
+    'LOCATION_SVG_EDIT_PALETTE': 'hi-svg-edit-palette',
+    'LOCATION_SVG_EDIT_SVG': 'hi-svg-edit-svg',
+    'LOCATION_SVG_EDIT_CANVAS': 'hi-svg-edit-canvas',
+    'LOCATION_SVG_EDIT_CANVAS_CONTAINER': 'hi-svg-edit-canvas-container',
+    'LOCATION_SVG_EDIT_CONFORMANCE_WARNING': 'hi-svg-edit-conformance-warning',
+
 }

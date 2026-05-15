@@ -1,0 +1,29 @@
+{% extends "modals/action_with_cancel.html" %}
+{% load icons %}
+
+{% block preamble %}
+<form action="{% url 'location_svg_edit_revert' location_id=location.id %}"
+      method="post" class="form" data-async="modal">
+  {% csrf_token %}
+{% endblock %}
+
+{% block title_text %}
+Revert All Changes?
+{% endblock %}
+
+{% block body %}
+<div>
+  <p>This will discard all edits and restore the background to the state it was in when you entered the editor.</p>
+  <p>This cannot be undone.</p>
+</div>
+{% endblock %}
+
+{% block action_right %}
+<button id="hi-location-svg-edit-revert-button" type="submit" class="btn btn-danger">
+  {% icon "undo" size="sm" css_class="hi-icon-left" %}REVERT
+</button>
+{% endblock %}
+
+{% block postamble %}
+</form>
+{% endblock %}

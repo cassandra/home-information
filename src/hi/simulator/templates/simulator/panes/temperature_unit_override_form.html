@@ -1,0 +1,26 @@
+<div id="hi-temperature-unit-override" class="hi-temperature-unit-override-wrap">
+  <form action="{% url 'simulator_temperature_unit_override_set' %}"
+        method="POST" class="form-inline hi-temperature-unit-override-form"
+        data-async="#hi-temperature-unit-override"
+        data-mode="replace">
+    {% csrf_token %}
+    <label class="mr-2 mb-0" for="hi-temperature-unit-override-select">
+      Temperature:
+    </label>
+    <select id="hi-temperature-unit-override-select"
+            name="temperature_unit"
+            class="form-control form-control-sm"
+            onchange-async="true">
+      <option value=""
+              {% if not temperature_unit_override %}selected{% endif %}>
+        Default
+      </option>
+      {% for unit in temperature_unit_choices %}
+      <option value="{{ unit.name }}"
+              {% if temperature_unit_override == unit %}selected{% endif %}>
+        {{ unit.label }}
+      </option>
+      {% endfor %}
+    </select>
+  </form>
+</div>

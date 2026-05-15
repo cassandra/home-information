@@ -16,124 +16,116 @@ Editing Help
     </div>
     
     <div class="editing-help-categories">
-        <!-- Moving -->
+        <!-- General -->
         <div class="help-category">
             <div class="category-header">
                 <div class="category-icon">
                     {% icon "move" size="sm" color="primary" %}
                 </div>
-                <h6 class="category-title">Moving</h6>
+                <h6 class="category-title">General</h6>
             </div>
             <ul class="help-actions">
                 <li>
                     <span class="action-method">Click & Drag</span>
-                    <span class="action-description">Left mouse button</span>
+                    <span class="action-description">Pan the view</span>
                 </li>
                 <li>
-                    <span class="action-method">Touch Drag</span>
-                    <span class="action-description">One finger drag</span>
+                    <span class="action-method">Mouse Wheel / + / -</span>
+                    <span class="action-description">Zoom in/out</span>
+                </li>
+                <li>
+                    <span class="action-method">S + Drag/Wheel</span>
+                    <span class="action-description">Scale mode</span>
+                </li>
+                <li>
+                    <span class="action-method">R + Drag/Wheel</span>
+                    <span class="action-description">Rotate mode</span>
+                </li>
+                <li>
+                    <span class="action-method">SHIFT + Drag</span>
+                    <span class="action-description">Fine positioning (bypass snap)</span>
+                </li>
+                <li>
+                    <span class="action-method">Snap (footer)</span>
+                    <span class="action-description">Set grid size, 0 to disable</span>
                 </li>
             </ul>
         </div>
 
-        <!-- Scaling -->
+        <!-- Icon Editing -->
         <div class="help-category">
             <div class="category-header">
                 <div class="category-icon">
                     {% icon "zoom" size="sm" color="primary" %}
                 </div>
-                <h6 class="category-title">Scaling</h6>
+                <h6 class="category-title">Icon Editing</h6>
             </div>
             <ul class="help-actions">
                 <li>
-                    <span class="action-method">Mouse Wheel</span>
-                    <span class="action-description">Scroll to zoom</span>
+                    <span class="action-method">Click</span>
+                    <span class="action-description">Select entity</span>
                 </li>
                 <li>
-                    <span class="action-method">+ / -</span>
-                    <span class="action-description">Zoom in/out</span>
+                    <span class="action-method">Drag</span>
+                    <span class="action-description">Move entity</span>
                 </li>
                 <li>
-                    <span class="action-method">S + Drag</span>
-                    <span class="action-description">Scale mode</span>
+                    <span class="action-method">S + Drag/Wheel/+/-</span>
+                    <span class="action-description">Scale entity</span>
                 </li>
                 <li>
-                    <span class="action-method">Pinch</span>
-                    <span class="action-description">Two finger gesture</span>
-                </li>
-                <li>
-                    <span class="action-method">ESC</span>
-                    <span class="action-description">End scale mode</span>
-                </li>
-            </ul>
-        </div>
-
-        <!-- Rotating -->
-        <div class="help-category">
-            <div class="category-header">
-                <div class="category-icon">
-                    {% icon "rotate" size="sm" color="primary" %}
-                </div>
-                <h6 class="category-title">Rotating</h6>
-            </div>
-            <ul class="help-actions">
-                <li>
-                    <span class="action-method">R + Drag</span>
-                    <span class="action-description">Rotate mode</span>
-                </li>
-                <li>
-                    <span class="action-method">R + Wheel</span>
-                    <span class="action-description">Rotate with mouse</span>
-                </li>
-                <li>
-                    <span class="action-method">R + +/-</span>
-                    <span class="action-description">Rotate right/left</span>
-                </li>
-                <li>
-                    <span class="action-method">Two Finger</span>
-                    <span class="action-description">Touch rotate</span>
+                    <span class="action-method">R + Drag/Wheel/+/-</span>
+                    <span class="action-description">Rotate entity</span>
                 </li>
                 <li>
                     <span class="action-method">ESC</span>
-                    <span class="action-description">End rotate mode</span>
+                    <span class="action-description">Deselect</span>
                 </li>
             </ul>
         </div>
 
         <!-- Path Editing -->
-        <div class="help-category">
+        <div class="help-category help-category-wide">
             <div class="category-header">
                 <div class="category-icon">
                     {% icon "path" size="sm" color="primary" %}
                 </div>
                 <h6 class="category-title">Path Editing</h6>
             </div>
-            <ul class="help-actions">
-                <li>
-                    <span class="action-method">Click</span>
-                    <span class="action-description">Select area</span>
-                </li>
-                <li>
-                    <span class="action-method">Drag Points</span>
-                    <span class="action-description">Change shape</span>
-                </li>
-                <li>
-                    <span class="action-method">I/INSERT</span>
-                    <span class="action-description">Insert path node</span>
-                </li>
-                <li>
-                    <span class="action-method">X/DEL</span>
-                    <span class="action-description">Delete path node</span>
-                </li>
-                <li>
-                    <span class="action-method">A/+</span>
-                    <span class="action-description">Add new segment</span>
-                </li>
-                <li>
-                    <span class="action-method">ESC</span>
-                    <span class="action-description">End path editing</span>
-                </li>
-            </ul>
+            <div class="help-actions-columns">
+                <ul class="help-actions">
+                    <li>
+                        <span class="action-method">Click</span>
+                        <span class="action-description">Select path to edit vertices</span>
+                    </li>
+                    <li>
+                        <span class="action-method">Drag Point</span>
+                        <span class="action-description">Move single vertex</span>
+                    </li>
+                    <li>
+                        <span class="action-method">CTRL + Drag</span>
+                        <span class="action-description">Move entire path</span>
+                    </li>
+                    <li>
+                        <span class="action-method">I / INSERT</span>
+                        <span class="action-description">Insert vertex</span>
+                    </li>
+                </ul>
+                <ul class="help-actions">
+                    <li>
+                        <span class="action-method">X / DEL</span>
+                        <span class="action-description">Delete vertex</span>
+                    </li>
+                    <li>
+                        <span class="action-method">A / +</span>
+                        <span class="action-description">Add new segment</span>
+                    </li>
+                    <li>
+                        <span class="action-method">ESC</span>
+                        <span class="action-description">Finish path editing</span>
+                    </li>
+                </ul>
+            </div>
         </div>
     </div>
 
@@ -143,7 +135,7 @@ Editing Help
             <h6 class="note-title">Important Note</h6>
         </div>
         <p class="note-content">
-            Background edits are only saved when the "View" editing pane is showing.
+            View pan/zoom/rotate changes are only saved when the "View" editing pane is showing.
         </p>
     </div>
 </div>

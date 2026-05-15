@@ -18,7 +18,7 @@ from hi.apps.security.security_mixins import SecurityMixin
 
 from hi.integrations.transient_models import IntegrationKey
 
-from .enums import EventType
+from .enums import EventClauseOperator, EventType
 from .models import AlarmAction, EventClause, EventDefinition, EventHistory
 from .transient_models import Event, EntityStateTransition
 
@@ -127,7 +127,8 @@ class EventManager( Singleton, AlertMixin, ControllerMixin, SecurityMixin ):
             for transition in self._recent_transitions:
                 if transition.entity_state != event_clause.entity_state:
                     continue
-                if transition.latest_sensor_response.value != event_clause.value:
+                if not self._clause_matches(
+                        transition.latest_sensor_response.value, event_clause ):
                     continue
                 transition_timedelta = current_timestamp - transition.timestamp
                 if transition_timedelta.total_seconds() > event_definition.event_window_secs:
@@ -144,6 +145,41 @@ class EventManager( Singleton, AlertMixin, ControllerMixin, SecurityMixin ):
             sensor_response_list = sensor_response_list,
         )
     
+    @staticmethod
+    def _clause_matches( entity_state_value : str, event_clause : EventClause ) -> bool:
+        """Compare a live EntityState reading against an EventClause
+        target per the clause's operator. EQ is plain string equality
+        (the historical behavior for discrete-value alarms). The
+        numeric operators parse both sides as ``float()`` and silently
+        no-op on parse failure so a transient non-numeric reading
+        never raises into the matcher."""
+        op = event_clause.value_operator
+        if op == EventClauseOperator.EQ:
+            return entity_state_value == event_clause.value
+        try:
+            lhs = float( entity_state_value )
+            rhs = float( event_clause.value )
+        except ( ValueError, TypeError ):
+            # DEBUG, not WARNING: HA emits transient 'unknown' /
+            # 'unavailable' as sensor values; promoting this would
+            # spam every reconnect cycle. A misconfigured threshold
+            # remains diagnosable by enabling DEBUG on this logger.
+            logger.debug(
+                f'Threshold clause skipped: non-numeric value '
+                f'{entity_state_value!r} vs clause {event_clause.id} '
+                f'target {event_clause.value!r} op {op}.'
+            )
+            return False
+        if op == EventClauseOperator.LT:
+            return lhs < rhs
+        if op == EventClauseOperator.LTE:
+            return lhs <= rhs
+        if op == EventClauseOperator.GT:
+            return lhs > rhs
+        if op == EventClauseOperator.GTE:
+            return lhs >= rhs
+        return False
+
     def _purge_old_transitions( self ):
         current_timestamp = datetimeproxy.now()
 
@@ -173,7 +209,7 @@ class EventManager( Singleton, AlertMixin, ControllerMixin, SecurityMixin ):
                 if alarm_action.security_level != current_security_level:
                     continue
                 alarm = event.to_alarm( alarm_action = alarm_action )
-                await alert_manager.add_alarm( alarm )
+                await alert_manager.add_alarm_async( alarm )
                 continue
             
             control_actions = await sync_to_async(list)(event.event_definition.control_actions.all())
@@ -206,7 +242,9 @@ class EventManager( Singleton, AlertMixin, ControllerMixin, SecurityMixin ):
             event_window_secs        : int,
             dedupe_window_secs       : int,
             alarm_lifetime_secs      : int,
-            integration_key          : IntegrationKey  = None ) -> EventDefinition:
+            integration_key          : IntegrationKey       = None,
+            value_operator           : EventClauseOperator  = EventClauseOperator.EQ,
+    ) -> EventDefinition:
 
         with transaction.atomic():
             event_definition = EventDefinition(
@@ -223,6 +261,7 @@ class EventManager( Singleton, AlertMixin, ControllerMixin, SecurityMixin ):
                 event_definition = event_definition,
                 entity_state = entity_state,
                 value = value,
+                value_operator_str = str(value_operator),
             )
             for security_level, alarm_level in security_to_alarm_level.items():
                 _ = AlarmAction.objects.create(

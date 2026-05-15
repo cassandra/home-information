@@ -54,5 +54,13 @@
             <small>Need more help with getting started?</small>
           </div>
         </a>
+
+        <form action="{% url 'profiles_dismiss_view_intro_help' %}"
+              method="post" class="text-center mt-2" data-async="true">
+          {% csrf_token %}
+          <button type="submit" class="btn btn-sm btn-outline-secondary">
+            {% icon "close" size="sm" css_class="hi-icon-left" %}Dismiss
+          </button>
+        </form>
     </div>
 </div>

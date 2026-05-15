@@ -40,6 +40,41 @@ class SimStateType(LabeledEnum):
         return f'simulator/panes/sim_control_{self.name.lower()}.html'
 
     
+class SimulatorFaultMode(LabeledEnum):
+    """
+    Fault-injection state for a simulated service. Set per-simulator from
+    the simulator UI; consumed by SimulatorFaultInjectionMiddleware to
+    short-circuit API responses so the main app's integration
+    test_connection probe paths can be exercised without standing up real
+    misbehaving servers.
+    """
+
+    HEALTHY       = ( 'Healthy'      , 'Pass requests through normally (default).' )
+    AUTH_FAIL     = ( 'Auth Fail'    , 'Return 401 from every API request.' )
+    SERVER_ERROR  = ( 'Server Error' , 'Return 500 from every API request.' )
+    SLOW          = ( 'Slow'         , 'Sleep past the integration probe timeout, then pass through.' )
+    NON_JSON      = ( 'Non-JSON'     , 'Return 200 with text/html body (simulates wrong base URL / proxy).' )
+
+    @classmethod
+    def default(cls):
+        return cls.HEALTHY
+
+
+class SimTemperatureUnit(LabeledEnum):
+    """Integration-agnostic temperature unit choice for the
+    simulator's runtime override. Each integration's composer maps
+    these to its own wire format (e.g., HA uses ``°F`` / ``°C``;
+    other integrations may use ``degF`` / ``degC`` or other
+    conventions)."""
+
+    FAHRENHEIT = ( 'Fahrenheit', '' )
+    CELSIUS    = ( 'Celsius', '' )
+
+    @classmethod
+    def default(cls):
+        return cls.FAHRENHEIT
+
+
 class SimEntityType(LabeledEnum):
 
     AIR_CONDITIONER      = ( 'Air Conditioner', '' )
@@ -50,6 +85,8 @@ class SimEntityType(LabeledEnum):
     AUTOMOBILE           = ( 'Automobile', '' )
     BAROMETER            = ( 'Barometer', '' )
     CAMERA               = ( 'Camera', '' )
+    CARBON_MONOXIDE_DETECTOR = ( 'Carbon Monoxide Detector', '' )
+    CEILING_FAN          = ( 'Ceiling Fan', '' )
     COMPUTER             = ( 'Computer', '' )
     CONSUMABLE           = ( 'Consumable', '' )
     CONTROL_WIRE         = ( 'Control Wire', '' )
@@ -61,6 +98,7 @@ class SimEntityType(LabeledEnum):
     ELECTRIC_PANEL       = ( 'Electric Panel', '' )
     ELECTRIC_WIRE        = ( 'Electric Wire', '' )
     FURNITURE            = ( 'Furniture', '' )
+    GAS_DETECTOR         = ( 'Gas Detector', '' )
     HEALTHCHECK          = ( 'Healthcheck', '' )
     HEATER               = ( 'Heater', '' )  # Controls area
     HVAC_AIR_HANDLER     = ( 'HVAC Air Handler', '' )  # Controls area
@@ -69,16 +107,19 @@ class SimEntityType(LabeledEnum):
     HUMIDIFIER           = ( 'Humidifier', '' )  # Controls area
     HYGROMETER           = ( 'Hygrometer', '' )
     LIGHT                = ( 'Light', '' )
+    LEAK_SENSOR          = ( 'Leak Sensor', '' )
     LIGHT_SENSOR         = ( 'Light Sensor', '' )
     MOTION_SENSOR        = ( 'Motion Sensor', '' )
     NETWORK_SWITCH       = ( 'Network Switch', '' )
+    OPEN_CLOSE_ACTUATOR  = ( 'Open/Close Actuator', '' )
     OPEN_CLOSE_SENSOR    = ( 'Open/Close Sensor', '' )
     OTHER                = ( 'Other', '' )  # Will use generic visual element
     PRESENCE_SENSOR      = ( 'Presence Sensor', '' )
     SEWER_LINE           = ( 'Sewer Wire', '' )
-    SHOWER               = ( 'Shower', '' ) 
-    SINK                 = ( 'Sink', '' ) 
+    SHOWER               = ( 'Shower', '' )
+    SINK                 = ( 'Sink', '' )
     SERVICE              = ( 'Service'         , '' )
+    SMOKE_DETECTOR       = ( 'Smoke Detector', '' )
     SPEAKER              = ( 'Speaker', '' )
     SPINKLER_CONTROLLER  = ( 'Spinkler Controller', '' )
     SPINKLER_VALVE       = ( 'Spinkler Valve', '' )  # Controls sprinkler heads

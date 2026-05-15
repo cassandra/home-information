@@ -1,11 +1,10 @@
 from asgiref.sync import sync_to_async
 import logging
-from typing import Dict, List
+from typing import List
 
 from hi.apps.common.singleton import Singleton
-from hi.apps.entity.models import Entity
 
-from .models import Sensor, SensorHistory
+from .models import SensorHistory
 from .transient_models import SensorResponse
 
 logger = logging.getLogger(__name__)
@@ -80,25 +79,4 @@ class SensorHistoryManager( Singleton ):
         created_objects = await sync_to_async( SensorHistory.objects.bulk_create,
                                                thread_sensitive = True)( sensor_history_list )
         return created_objects
-
-    def get_latest_entity_sensor_history( self,
-                                          entity     : Entity,
-                                          max_items  : int    = 5 ) -> Dict[ Sensor, List[ SensorHistory ] ]:
-
-        entity_state_list = list( entity.states.all() )
-        entity_state_delegations = entity.entity_state_delegations.select_related('entity_state').all()
-        entity_state_list.extend([ x.entity_state for x in entity_state_delegations ])
-
-        sensor_list = list()
-        for entity_state in entity_state_list:
-            sensor_list.extend( entity_state.sensors.all() )
-            continue
-
-        sensor_history_list_map = dict()
-        for sensor in sensor_list:
-            sensor_history_list = SensorHistory.objects.filter( sensor = sensor )[0:max_items]
-            sensor_history_list_map[sensor] = sensor_history_list
-            continue
-
-        return sensor_history_list_map
 

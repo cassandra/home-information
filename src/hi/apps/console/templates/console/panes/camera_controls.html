@@ -6,8 +6,8 @@
       <a href="{% url 'console_entity_video_stream_dispatch' entity_id=camera_data.entity.id %}"
          data-entity-id="{{ camera_data.entity.id }}"
          data-async="#main-content"
-         class="btn btn-primary btn-control btn-camera {% if camera_data.status_entity_state %}{{ camera_data.status_entity_state.css_class }}{% endif %}"
-         {% if camera_data.status_entity_state %}status=""{% endif %}
+         class="btn btn-primary btn-control btn-camera"
+         {% if camera_data.status_entity_state %}data-state-id="{{ camera_data.status_entity_state.id }}" data-status status=""{% endif %}
          role="button">
         {{ camera_data.short_name }}
       </a>

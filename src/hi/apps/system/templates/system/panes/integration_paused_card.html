@@ -1,0 +1,33 @@
+{% load icons %}
+{% comment %}
+  Placeholder card for a configured integration whose monitor is
+  not running (typically because the integration is paused). Mirrors
+  health_status_card.html's visual shape so the system-info grid
+  reads consistently — but with a paused-state badge and a click
+  target that takes the operator to the integration manage page
+  where they can resume it.
+
+  Context:
+    integration_data : IntegrationData (required)
+{% endcomment %}
+<a href="{% url 'integrations_manage' integration_id=integration_data.integration_id %}"
+   class="clickable-card">
+  <div class="card border-warning">
+    <div class="card-body">
+      <div class="d-flex justify-content-between align-items-center mb-2">
+        <h6 class="mb-0">{{ integration_data.label }}</h6>
+        <span class="badge monitor-status-badge badge-warning">
+          {% icon "pause" size="sm" css_class="mr-1" %}Paused
+        </span>
+      </div>
+      <div class="row">
+        <div class="col-12">
+          <small class="text-muted">
+            No active monitor. Resume the integration from its manage page
+            to start collecting status.
+          </small>
+        </div>
+      </div>
+    </div>
+  </div>
+</a>

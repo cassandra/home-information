@@ -142,7 +142,7 @@ class ApiHealthStatus:
             ApiHealthStatusType.HEALTHY: "check-circle",
             ApiHealthStatusType.DEGRADED: "warning",
             ApiHealthStatusType.UNKNOWN: "question-circle",
-            ApiHealthStatusType.FAILING: "times-circle",
+            ApiHealthStatusType.FAILING: "exclamation-circle",
             ApiHealthStatusType.UNAVAILABLE: "exclamation-circle",
             ApiHealthStatusType.DISABLED: "minus-circle"
         }[self.status]

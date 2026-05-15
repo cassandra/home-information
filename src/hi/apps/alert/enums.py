@@ -2,10 +2,12 @@ from hi.apps.common.enums import LabeledEnum
 
 
 class AlarmSource( LabeledEnum ):
-    
-    EVENT          = ( 'Event'      , '' )
-    WEATHER        = ( 'Weather'    , '' )
-    CONSOLE        = ( 'Console'    , '' )
+
+    EVENT          = ( 'Event'         , '' )
+    WEATHER        = ( 'Weather'       , '' )
+    CONSOLE        = ( 'Console'       , '' )
+    HEALTH_STATUS  = ( 'Health Status' , '' )
+    INTEGRATION    = ( 'Integration'   , '' )
 
     
 class AlarmLevel( LabeledEnum ):

@@ -38,6 +38,40 @@ class SimulatorManager( Singleton ):
     def current_sim_profile(self) -> SimProfile:
         return self._current_sim_profile
 
+    @classmethod
+    def clone_sim_profile( cls,
+                           source_profile : SimProfile,
+                           new_name       : str ) -> SimProfile:
+        """Create a new ``SimProfile`` with ``new_name`` populated
+        with copies of every ``DbSimEntity`` row under
+        ``source_profile``. Returns the new profile (caller is
+        responsible for switching to it if desired).
+
+        Pure DB-side clone — does not touch the in-memory simulator
+        state. The caller's subsequent ``set_sim_profile()`` (when
+        they switch to the clone) is what triggers the simulator
+        instances to load the cloned rows.
+
+        Wrap this call in ``transaction.atomic()`` at the call site
+        so a failure mid-clone leaves no partial profile behind.
+        ``DbSimEntity`` JSON blobs are immutable strings — no
+        deep-copy needed; passing ``json`` references between rows
+        is safe because Django's JSONField round-trips through
+        json.dumps on save.
+        """
+        new_profile = SimProfile.objects.create( name = new_name )
+        DbSimEntity.objects.bulk_create([
+            DbSimEntity(
+                sim_profile = new_profile,
+                simulator_id = row.simulator_id,
+                entity_fields_class_id = row.entity_fields_class_id,
+                sim_entity_type_str = row.sim_entity_type_str,
+                sim_entity_fields_json = row.sim_entity_fields_json,
+            )
+            for row in source_profile.db_sim_entities.all()
+        ])
+        return new_profile
+
     def set_sim_profile( self, sim_profile : SimProfile ):
         should_reload_instances = bool( not sim_profile
                                         or ( sim_profile != self._current_sim_profile ))
@@ -178,8 +212,8 @@ class SimulatorManager( Singleton ):
                         )
                     continue                
                 
-            except Exception as e:
-                logger.exception( f'Problem getting simulator for {module_name}.', e )
+            except Exception:
+                logger.exception( f'Problem getting simulator for {module_name}.' )
             continue
 
         return
@@ -233,8 +267,8 @@ class SimulatorManager( Singleton ):
             )
             try:
                 simulator_data.simulator.add_sim_entity( sim_entity = sim_entity )
-            except SimEntityValidationError as ve:
-                logger.exception( 'Could not add DB simulator entity.', ve )
+            except SimEntityValidationError:
+                logger.exception( 'Could not add DB simulator entity.' )
             continue
         
         return

@@ -1,0 +1,30 @@
+{% extends "modals/action_with_cancel.html" %}
+{% load icons %}
+
+{% block preamble %}
+<form action="{% url 'location_svg_edit_cancel' location_id=location.id %}"
+      method="post" enctype="multipart/form-data"
+      class="form" data-async="modal">
+  {% csrf_token %}
+{% endblock %}
+
+{% block title_text %}
+Discard Changes?
+{% endblock %}
+
+{% block body %}
+<div>
+  <p>Any changes you made to the background image for <strong>{{ location.name }}</strong> will be discarded.</p>
+  <p>This cannot be undone.</p>
+</div>
+{% endblock %}
+
+{% block action_right %}
+<button id="hi-location-svg-edit-cancel-button" type="submit" class="btn btn-danger">
+  {% icon "delete" size="sm" css_class="hi-icon-left" %}DISCARD CHANGES
+</button>
+{% endblock %}
+
+{% block postamble %}
+</form>
+{% endblock %}

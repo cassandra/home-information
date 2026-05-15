@@ -2,7 +2,9 @@ from asgiref.sync import sync_to_async
 import asyncio
 from cachetools import TTLCache
 import logging
-from typing import Dict, List
+from typing import Dict, List, Optional
+
+from django.conf import settings
 
 from hi.apps.common.redis_client import get_redis_client
 from hi.apps.common.singleton import Singleton
@@ -10,6 +12,7 @@ from hi.apps.event.event_mixins import EventMixin
 from hi.apps.event.transient_models import EntityStateTransition
 
 from hi.integrations.transient_models import IntegrationKey
+from hi.testing.dev_overrides import DevOverrideManager
 
 from .models import Sensor
 from .sensor_history_manager import SensorHistoryMixin
@@ -82,6 +85,31 @@ class SensorResponseManager( Singleton, SensorHistoryMixin, EventMixin ):
         # Any future heavyweight initializations go here (e.g., any DB operations).
         self._was_initialized = True
         return
+
+    def invalidate_local_sensor_cache(self):
+        """Drop the in-process IntegrationKey → Sensor lookup cache
+        and mark the in-memory latest-responses map stale. Leaves
+        the Redis-backed sensor response data untouched (its keys
+        are integration_key strings, which are stable across
+        re-import).
+
+        Called by the integration framework after any operation that
+        creates, refreshes, or removes Sensors with integration_keys
+        (sync, disable). Symmetric with
+        ``IntegrationMetadataCache.invalidate()``.
+
+        Necessary because ``_sensor_cache`` holds Python ``Sensor``
+        model instances keyed by integration_key. After re-import
+        the integration_key is reused (it's derived from the
+        external ID, which doesn't change) but the underlying DB
+        row has a new PK and a new ``entity_state`` link. Without
+        invalidation, the polling read path returns the stale
+        Sensor object, the status map is keyed by the deleted
+        EntityState's PK, and the client's DOM (rendered with new
+        PKs) silently fails to update for up to the 300s TTL."""
+        self._sensor_cache.clear()
+        self._latest_sensor_data_dirty = True
+        return
     
     async def update_with_latest_sensor_responses(
             self,
@@ -112,6 +140,14 @@ class SensorResponseManager( Singleton, SensorHistoryMixin, EventMixin ):
             if cached_value:
                 previous_sensor_response = SensorResponse.from_string( cached_value )
                 if latest_sensor_response.value == previous_sensor_response.value:
+                    if settings.DEBUG and settings.DEBUG_TRACE_STATE:
+                        sensor = latest_sensor_response.sensor
+                        DevOverrideManager.trace_state(
+                            'hi.sensor.skip',
+                            integration_name = integration_key.integration_name,
+                            hi_entity_state_id = sensor.entity_state.id if sensor else None,
+                            hi_value = latest_sensor_response.value,
+                        )
                     continue
 
                 entity_state_transition = await self._create_entity_state_transition(
@@ -120,7 +156,25 @@ class SensorResponseManager( Singleton, SensorHistoryMixin, EventMixin ):
                 )
                 if entity_state_transition:
                     entity_state_transition_list.append( entity_state_transition )
-                
+
+                if settings.DEBUG and settings.DEBUG_TRACE_STATE:
+                    sensor = latest_sensor_response.sensor
+                    DevOverrideManager.trace_state(
+                        'hi.sensor.commit',
+                        integration_name = integration_key.integration_name,
+                        hi_entity_state_id = sensor.entity_state.id if sensor else None,
+                        hi_value = f'{previous_sensor_response.value} -> {latest_sensor_response.value}',
+                    )
+            else:
+                if settings.DEBUG and settings.DEBUG_TRACE_STATE:
+                    sensor = latest_sensor_response.sensor
+                    DevOverrideManager.trace_state(
+                        'hi.sensor.first',
+                        integration_name = integration_key.integration_name,
+                        hi_entity_state_id = sensor.entity_state.id if sensor else None,
+                        hi_value = latest_sensor_response.value,
+                    )
+
             changed_sensor_response_list.append( latest_sensor_response )
             continue
 
@@ -169,6 +223,25 @@ class SensorResponseManager( Singleton, SensorHistoryMixin, EventMixin ):
 
         return sensor_response_list_map
     
+    def get_latest_sensor_response_map(
+            self, integration_keys : List[ IntegrationKey ],
+    ) -> Dict[ IntegrationKey, Optional[ SensorResponse ] ]:
+        if not integration_keys:
+            return {}
+        list_cache_keys = [ self.to_sensor_response_list_cache_key( k ) for k in integration_keys ]
+        pipeline = self._redis_client.pipeline()
+        for list_cache_key in list_cache_keys:
+            pipeline.lindex( list_cache_key, 0 )
+            continue
+        cached_values = pipeline.execute()
+        result : Dict[ IntegrationKey, Optional[ SensorResponse ] ] = {}
+        for integration_key, cached_value in zip( integration_keys, cached_values ):
+            result[ integration_key ] = (
+                SensorResponse.from_string( cached_value ) if cached_value else None
+            )
+            continue
+        return result
+
     def get_latest_sensor_responses( self,
                                      sensor_list : List[ Sensor ] ) -> Dict[ Sensor, List[ SensorResponse ] ]:
         
@@ -196,8 +269,6 @@ class SensorResponseManager( Singleton, SensorHistoryMixin, EventMixin ):
         if not sensor_response_list:
             return
 
-        self._latest_sensor_data_dirty = True
-
         await self._add_sensors( sensor_response_list = sensor_response_list )
 
         sensor_history_manager = await self.sensor_history_manager_async()
@@ -205,8 +276,8 @@ class SensorResponseManager( Singleton, SensorHistoryMixin, EventMixin ):
         # This also has side effect of populating sensor_history_id
         await sensor_history_manager.add_to_sensor_history(
             sensor_response_list = sensor_response_list,
-        )        
-        
+        )
+
         pipeline = self._redis_client.pipeline()
         for sensor_response in sensor_response_list:
             list_cache_key = self.to_sensor_response_list_cache_key( sensor_response.integration_key )
@@ -217,6 +288,15 @@ class SensorResponseManager( Singleton, SensorHistoryMixin, EventMixin ):
             continue
         pipeline.execute()
 
+        # Flag the in-memory map stale only after Redis is
+        # updated. Setting it earlier opens a window where a
+        # concurrent reader rebuilds the map from pre-update
+        # Redis and clears the flag, leaving the in-memory map
+        # stuck on the stale value until the next commit. A
+        # reader that runs between ``pipeline.execute()`` and
+        # this assignment can still see one stale poll, but
+        # next-call recovery is automatic.
+        self._latest_sensor_data_dirty = True
         return
     
     def to_sensor_response_list_cache_key( self, integration_key : IntegrationKey ) -> str:

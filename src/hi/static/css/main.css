@@ -1,5 +1,5 @@
 /*  Home Information
-    Copyright 2024 by POMDP, Inc.
+    Copyright 2024-2026 by POMDP, LLC
     All Rights Reserved.  
 */
 :root {
@@ -23,6 +23,7 @@
   --error-color: #721817;
   --on-error-color: #ffffff;
   --error-highlight-color: #a01111;
+  --danger-color: var(--error-color);
   --muted-color: #7e7e81;
   --on-muted-color: #ffffff;
   --line-color: #cccccc;
@@ -217,7 +218,7 @@ a.clickable-card:active {
     color: var(--on-primary-color);
 }
 
-.bg-secondary, .btn-secondary {
+.bg-secondary, .btn-secondary, .badge-secondary {
     color: var(--on-secondary-color) !important;
     background-color: var(--secondary-color) !important;
     border-color: var(--secondary-highlight-color) !important;
@@ -641,29 +642,24 @@ input[type="password"],
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
-    padding: 1rem;
     z-index: 1060;
+    padding: 2rem 3rem;
+    min-width: 22rem;
     text-align: center;
-    font-size: 2rem;
-    font-weight: bold;
-    color: var(--warning-color);
-    background-color: #282425;
+    color: var(--on-secondary-color);
+    background-color: var(--secondary-color);
     border-radius: 0.8rem;
-    border: 0.1rem solid #282425;
-    box-shadow: 0 0 1rem rgba(0, 0, 0, 0.5);
+    box-shadow: 0 0.5rem 1.5rem rgba(0, 0, 0, 0.35);
 }
-
-#hi-server-error-msg > div {
-    margin-top: 1rem;
-    padding: 3rem;
-    width: 36rem;
-    height: 14rem;
-    color: #282425;
-    font-size: 4rem;
-    background-color: var(--warning-color);
-    border-bottom-left-radius: 0.8rem;
-    border-bottom-right-radius: 0.8rem;
-    text-align: center;
+#hi-server-error-msg .icon {
+    width: 4rem;
+    height: 4rem;
+    margin-bottom: 1rem;
+}
+#hi-server-error-msg .msg {
+    font-size: 2rem;
+    font-weight: 600;
+    line-height: 1.2;
 }
 
 svg[action-state="move"] {
@@ -711,25 +707,22 @@ path.hover-target[hover] + path.hi-path-open {
 }
 
 g[status="active"] {
-    outline: 2px solid var(--status-active-color);
     filter: drop-shadow(0 0 5px var(--status-active-color));
 }
 g[status="recent"] {
-    outline: 2px solid var(--status-recent-color);
+    filter: drop-shadow(0 0 5px var(--status-recent-color));
+}
+g[status="partial"] {
     filter: drop-shadow(0 0 5px var(--status-recent-color));
 }
 g[status="past"] {
-    outline: 2px solid var(--status-past-color);
     filter: drop-shadow(0 0 5px var(--status-past-color));
 }
 
-g[status="off"] {
-    filter: drop-shadow(0 0 5px var(--status-on-color));
-}
 g[status="off"] path.hi-state-bg  {
     fill: var(--status-off-color);
 }
-div[status="off"] {
+.hi-status-display[status="off"] {
     color: var(--on-status-off-color);
     background-color: var(--status-off-color);
 }
@@ -739,7 +732,7 @@ g[status="on"] {
 g[status="on"] path.hi-state-bg {
     fill: var(--status-on-color);
 }
-div[status="on"] {
+.hi-status-display[status="on"] {
     color: var(--on-status-on-color);
     background-color: var(--status-on-color);
 }
@@ -747,7 +740,7 @@ g[status="dim"] {
     filter: drop-shadow(0 0 5px var(--status-on-color));
     opacity: 0.5;
 }
-div[status="dim"] {
+.hi-status-display[status="dim"] {
     color: var(--on-status-on-color);
     background-color: var(--status-on-color);
     opacity: 0.5;
@@ -768,9 +761,21 @@ g[status="high"] {
 g[status="low"] {
     filter: drop-shadow(0 0 5px var(--status-bad-color));
 }
+g[status="smoke_detected"] {
+    filter: drop-shadow(0 0 5px var(--status-bad-color));
+}
+g[status="moisture_detected"] {
+    filter: drop-shadow(0 0 5px var(--status-bad-color));
+}
+g[status="co_detected"] {
+    filter: drop-shadow(0 0 5px var(--status-bad-color));
+}
+g[status="gas_detected"] {
+    filter: drop-shadow(0 0 5px var(--status-bad-color));
+}
 
 
-div[status] {
+.hi-status-display[status] {
     color: var(--black);
     background-color: var(--white);
     border-color: var(--black);
@@ -778,44 +783,80 @@ div[status] {
     border-width: 2px;
     border-radius: 8px;
 }
-div[status="active"] {
+.hi-status-display[status="active"] {
     color: var(--on-status-active-color);
     background-color: var(--status-active-color);
 }
-div[status="idle"] {
+.hi-status-display[status="idle"] {
     color: var(--on-status-ok-color);
     background-color: var(--status-ok-color);
 }
-div[status="recent"] {
+.hi-status-display[status="recent"] {
     color: var(--on-status-recent-color);
     background-color: var(--status-recent-color);
 }
-div[status="past"] {
+.hi-status-display[status="past"] {
     color: var(--on-status-past-color);
     background-color: var(--status-past-color);
 }
-div[status="open"] {
+.hi-status-display[status="partial"] {
+    color: var(--on-status-recent-color);
+    background-color: var(--status-recent-color);
+}
+.hi-status-display[status="open"] {
     color: var(--on-status-bad-color);
     background-color: var(--status-bad-color);
 }
-div[status="closed"] {
+.hi-status-display[status="closed"] {
     color: var(--on-status-idle-color);
     background-color: var(--status-idle-color);
 }
-div[status="RAID_OK"],
-div[status="connected"] {
+.hi-status-display[status="RAID_OK"],
+.hi-status-display[status="connected"] {
     color: var(--on-status-ok-color);
     background-color: var(--status-ok-color);
 }
-div[status="disconnected"] {
+.hi-status-display[status="disconnected"] {
     color: var(--on-status-bad-color);
     background-color: var(--status-bad-color);
 }
-div[status="high"] {
+.hi-status-display[status="high"] {
     color: var(--on-status-ok-color);
     background-color: var(--status-ok-color);
 }
-div[status="low"] {
+.hi-status-display[status="low"] {
+    color: var(--on-status-bad-color);
+    background-color: var(--status-bad-color);
+}
+.hi-status-display[status="smoke_clear"] {
+    color: var(--on-status-ok-color);
+    background-color: var(--status-ok-color);
+}
+.hi-status-display[status="smoke_detected"] {
+    color: var(--on-status-bad-color);
+    background-color: var(--status-bad-color);
+}
+.hi-status-display[status="moisture_clear"] {
+    color: var(--on-status-ok-color);
+    background-color: var(--status-ok-color);
+}
+.hi-status-display[status="moisture_detected"] {
+    color: var(--on-status-bad-color);
+    background-color: var(--status-bad-color);
+}
+.hi-status-display[status="co_clear"] {
+    color: var(--on-status-ok-color);
+    background-color: var(--status-ok-color);
+}
+.hi-status-display[status="co_detected"] {
+    color: var(--on-status-bad-color);
+    background-color: var(--status-bad-color);
+}
+.hi-status-display[status="gas_clear"] {
+    color: var(--on-status-ok-color);
+    background-color: var(--status-ok-color);
+}
+.hi-status-display[status="gas_detected"] {
     color: var(--on-status-bad-color);
     background-color: var(--status-bad-color);
 }
@@ -1033,6 +1074,13 @@ g[hover] {
     margin-top: 0.25rem;
     line-height: 1.3;
 }
+.getting-started-guide a:not(.plain) {
+    color: var(--primary-color);
+    text-decoration: underline;
+}
+.getting-started-guide a:not(.plain):hover {
+    color: var(--primary-highlight-color);
+}
 
 .getting-started-guide .help-hint {
     display: flex;
@@ -1119,6 +1167,16 @@ g[hover] {
     margin: 0;
     color: var(--black);
     font-size: 1rem;
+}
+
+.editing-help-guide .help-category-wide {
+    grid-column: 1 / -1;
+}
+
+.editing-help-guide .help-actions-columns {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0 1.5rem;
 }
 
 .editing-help-guide .help-actions {
@@ -1214,6 +1272,59 @@ g[hover] {
 .monitor-status-error {
     background-color: var(--error-color);
     color: var(--on-error-color);
+}
+
+/*
+ * Health status badge — used by system/panes/health_status_badge.html
+ * for the expanded button view. One class per HealthStatusType value.
+ */
+.hi-health-badge-healthy {
+    background-color: var(--success-color);
+    color: var(--on-success-color);
+    border-color: var(--success-color);
+}
+.hi-health-badge-warning {
+    background-color: var(--warning-color);
+    color: var(--on-warning-color);
+    border-color: var(--warning-color);
+}
+.hi-health-badge-error {
+    background-color: var(--error-color);
+    color: var(--on-error-color);
+    border-color: var(--error-color);
+}
+.hi-health-badge-disabled {
+    background-color: var(--muted-color);
+    color: var(--on-muted-color, #fff);
+    border-color: var(--muted-color);
+}
+.hi-health-badge-unknown {
+    background-color: transparent;
+    color: var(--muted-color);
+    border-color: var(--muted-color);
+}
+
+/*
+ * Compact integration-status indicator — used by integrations/panes/
+ * integration_status_indicator.html for the sidebar nav-tab. Icon-only,
+ * color drawn from semantic CSS variables. paused is informational
+ * (muted), warning/error draw attention.
+ */
+.hi-integration-indicator {
+    margin-left: 0.4rem;
+    line-height: 1;
+}
+.hi-integration-indicator-error {
+    color: var(--error-color);
+}
+.hi-integration-indicator-warning {
+    color: var(--warning-color);
+}
+.hi-integration-indicator-paused {
+    color: var(--muted-color);
+}
+.hi-integration-indicator-needs-sync {
+    color: var(--info-color);
 }
 
 .text-success-custom {
@@ -1992,4 +2103,203 @@ g[hover] {
     border-radius: 0.25rem;
     font-size: 0.875rem;
     background-color: var(--white);
+}
+
+/* ==================== */
+/* SVG Template Cards   */
+/* ==================== */
+
+.hi-svg-template-card {
+    width: 180px;
+    cursor: pointer;
+    transition: border-color 0.15s, box-shadow 0.15s;
+}
+.hi-svg-template-card:hover {
+    border-color: var(--primary-color) !important;
+    box-shadow: 0 0 0 2px rgba(var(--primary-color-rgb, 13, 110, 253), 0.25);
+}
+.hi-svg-template-thumbnail {
+    width: 160px;
+    height: 120px;
+    background: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 4px;
+    overflow: hidden;
+    margin: 0 auto;
+}
+.hi-svg-template-name {
+    font-size: 0.8rem;
+    font-weight: 600;
+    text-align: center;
+    margin-top: 0.25rem;
+}
+
+/* ==================== */
+/* Integration Sync Result Modal */
+/* ==================== */
+
+.hi-integration-logo {
+    max-height: 24px;
+    /* max-width clamps SVGs that lack intrinsic width/height
+       attributes (browsers default unsized SVGs to ~300x150,
+       which would distort the row layout). */
+    max-width: 24px;
+    width: auto;
+    height: auto;
+}
+
+/* Smaller variant for inline contexts (entity detail badges,
+   list-row item indicators) where 24px is too dominant. */
+.hi-integration-logo--inline {
+    max-height: 18px;
+    max-width: 18px;
+    width: auto;
+    height: auto;
+}
+
+/* Detached variant: same dimensions as --inline, faded to signal
+   the previously-attached state. Paired with the
+   "Detached from <integration>" badge. */
+.hi-integration-logo--detached {
+    max-height: 18px;
+    max-width: 18px;
+    width: auto;
+    height: auto;
+    opacity: 0.6;
+}
+
+.hi-uppercase-label {
+    letter-spacing: 0.05em;
+}
+
+.hi-sync-result-hero-icon {
+    font-size: 2.5rem;
+    line-height: 1;
+}
+
+.hi-sync-result-stat-number {
+    font-size: 2rem;
+    line-height: 1;
+}
+
+/* Color-coded category section borders. The modifier names mirror
+   Bootstrap's text-* utility vocabulary so callers pick the right
+   color by semantic name, but the actual color values come from the
+   project's brand theme variables for consistency with the
+   project-overridden text utilities (e.g. .text-secondary renders
+   --secondary-color, not Bootstrap grey). */
+.hi-category-section {
+    border-left: 3px solid var(--secondary-color);
+}
+.hi-category-section--secondary {
+    border-left-color: var(--secondary-color);
+}
+.hi-category-section--info {
+    border-left-color: var(--info-color);
+}
+.hi-category-section--success {
+    border-left-color: var(--success-color);
+}
+.hi-category-section--danger {
+    border-left-color: var(--danger-color);
+}
+
+/* Framework subheader rendered between the modal title bar and the
+   panel body. Shows entity-type icon + label on the left, integration
+   logo centered, and the modal-type label on the right. Panels
+   render below this strip and don't repeat any of this identifying
+   chrome. */
+.hi-entity-status-subheader__type-icon .hi-entity-display-only-icon {
+    width: 18px;
+    height: 18px;
+    vertical-align: middle;
+}
+
+/* Light primary-tinted banner used as a section header (e.g., the
+   entity-history modal's per-state group headers). Uses the same
+   tint as ``.timeline-item:hover`` so the section header reads as
+   part of the same visual family as the cards it groups. */
+.hi-section-banner {
+    background-color: var(--info-bg-light);
+    border-left: 3px solid var(--primary-color);
+    border-radius: 0.25rem;
+}
+
+.hi-sync-result-item-list {
+    max-height: 160px;
+    overflow-y: auto;
+}
+
+/* Diagnostic-notes list is taller than the per-category item lists
+   because info messages tend to be longer and more numerous. */
+.hi-sync-result-info-list {
+    max-height: 200px;
+    overflow-y: auto;
+}
+
+/* Wrapper around a finite-recording <img> + its replay-from-start
+   overlay button. ``position: relative`` anchors the button to the
+   image's top-right; ``display: block`` and ``line-height: 0`` let
+   the wrapper shrink to the image's actual rendered dimensions so
+   the overlay sits on the image, not on padding around it. */
+.hi-video-recording {
+    position: relative;
+    display: block;
+    line-height: 0;
+}
+
+/* Replay-from-start overlay button. Always visible (touch screens
+   don't reliably support hover-reveal), semi-transparent backdrop
+   so it reads against any video content underneath. */
+.hi-video-recording-replay {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    border: 0;
+    border-radius: 50%;
+    background: rgba(0, 0, 0, 0.55);
+    color: #ffffff;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    opacity: 0.85;
+    transition: opacity 0.15s ease, background-color 0.15s ease,
+                transform 0.05s ease;
+    line-height: 1;
+    z-index: 1;
+
+    /* Touch-friendly behavior on tablets / phones. */
+    touch-action: manipulation;            /* no 300ms tap delay */
+    -webkit-tap-highlight-color: transparent;  /* suppress iOS gray flash */
+    -webkit-touch-callout: none;           /* no long-press callout */
+    user-select: none;
+}
+
+/* Extend the hit area outward to ~48x48 without changing the visual
+   size of the button — meets the WCAG 2.5.5 / Apple HIG / Material
+   touch-target guidance while keeping the icon compact on the video
+   frame. Pseudo-element shares the button's pointer-events, so taps
+   in the extended area dispatch the click handler. */
+.hi-video-recording-replay::before {
+    content: '';
+    position: absolute;
+    top: -8px;
+    left: -8px;
+    right: -8px;
+    bottom: -8px;
+}
+
+.hi-video-recording-replay:hover,
+.hi-video-recording-replay:focus {
+    opacity: 1;
+    background: rgba(0, 0, 0, 0.75);
+    outline: none;
+}
+.hi-video-recording-replay:active {
+    background: rgba(0, 0, 0, 0.9);
+    transform: scale(0.92);
 }

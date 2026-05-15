@@ -11,7 +11,12 @@ Snapshot Generated Successfully
 
 <div class="mb-3">
   <strong>Profile Type:</strong> {{ profile_type_label }}<br>
-  <strong>Output File:</strong> <code>{{ output_path }}</code>
+  <strong>Output Files:</strong>
+  <ul class="list-unstyled mt-1 mb-0">
+    {% for path in output_paths %}
+    <li><code>{{ path }}</code></li>
+    {% endfor %}
+  </ul>
 </div>
 
 {% if output_to_tmp %}

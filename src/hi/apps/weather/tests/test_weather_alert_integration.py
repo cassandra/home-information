@@ -197,10 +197,10 @@ class TestWeatherAlertIntegration(AsyncTaskTestCase):
         self.run_async(test_update())
         
         # Verify alert manager was called to add alarms
-        self.assertEqual(mock_alert_manager.add_alarm.call_count, 2)  # Only 2 should create alarms
+        self.assertEqual(mock_alert_manager.add_alarm_async.call_count, 2)  # Only 2 should create alarms
         
         # Verify the alarms that were created
-        call_args_list = mock_alert_manager.add_alarm.call_args_list
+        call_args_list = mock_alert_manager.add_alarm_async.call_args_list
         alarm1 = call_args_list[0][0][0]  # First alarm
         alarm2 = call_args_list[1][0][0]  # Second alarm
         
@@ -217,10 +217,10 @@ class TestWeatherAlertIntegration(AsyncTaskTestCase):
         """Helper to create test weather alerts."""
         from hi.apps.weather.transient_models import WeatherAlert
         from hi.apps.weather.enums import AlertCategory, AlertStatus, AlertUrgency, AlertCertainty
-        from datetime import datetime
+        from datetime import datetime, UTC
         from django.utils import timezone
-        
-        base_time = timezone.make_aware(datetime(2024, 3, 15, 20, 0, 0), timezone.utc)
+
+        base_time = timezone.make_aware(datetime(2024, 3, 15, 20, 0, 0), UTC)
         
         return WeatherAlert(
             event_type=event_type,

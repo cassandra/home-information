@@ -11,7 +11,8 @@ from django.test import TestCase
 
 from hi.apps.attribute.templatetags.attribute_extras import (
     attribute_preview, file_title_field_name, history_target_id, 
-    history_toggle_id, attr_history_url, attr_restore_url
+    history_toggle_id, attr_history_url, attr_restore_url, attribute_url,
+    attribute_text_has_url, attribute_text_linkify,
 )
 from hi.apps.attribute.edit_context import AttributeItemEditContext
 
@@ -148,6 +149,107 @@ class TestAttributeContextFilters(TestCase):
         self.assertEqual(result, "history-extra-123-456")
 
 
+class TestAttributeUrlFilter(TestCase):
+    """Test display-time URL detection used for attribute value rendering."""
+
+    def test_attribute_url_returns_valid_url(self):
+        self.assertEqual(
+            attribute_url("https://example.com/path?q=1"),
+            "https://example.com/path?q=1"
+        )
+
+    def test_attribute_url_trims_whitespace(self):
+        self.assertEqual(
+            attribute_url("  https://example.com  "),
+            "https://example.com"
+        )
+
+    def test_attribute_url_rejects_invalid_values(self):
+        self.assertEqual(attribute_url("not a url"), "")
+        self.assertEqual(attribute_url(""), "")
+        self.assertEqual(attribute_url(None), "")
+
+
+class TestAttributeTextUrlFilters(TestCase):
+    """Test URL detection and inline linkification for text attributes."""
+
+    def test_attribute_text_has_url_detects_embedded_urls(self):
+        text = "Primary docs: https://example.com/docs and backup: https://backup.example.com"
+        self.assertTrue(attribute_text_has_url(text))
+
+    def test_attribute_text_has_url_rejects_non_url_text(self):
+        self.assertFalse(attribute_text_has_url("example.com without scheme"))
+        self.assertFalse(attribute_text_has_url(""))
+        self.assertFalse(attribute_text_has_url(None))
+
+    def test_attribute_text_has_url_detects_url_with_wrapping_punctuation(self):
+        self.assertTrue(attribute_text_has_url("Open this (https://example.com/docs)."))
+
+    def test_attribute_text_has_url_ignores_invalid_http_candidates(self):
+        self.assertFalse(attribute_text_has_url("Broken candidate: https://bad"))
+
+    def test_attribute_text_linkify_renders_multiple_links_inline(self):
+        rendered = attribute_text_linkify(
+            "See https://example.com and https://example.org/path?q=1 for details"
+        )
+
+        self.assertIn('<a href="https://example.com" target="_blank" rel="noopener noreferrer">https://example.com</a>', rendered)
+        self.assertIn('<a href="https://example.org/path?q=1" target="_blank" rel="noopener noreferrer">https://example.org/path?q=1</a>', rendered)
+
+    def test_attribute_text_linkify_preserves_newlines_with_br(self):
+        rendered = attribute_text_linkify("Line 1\nhttps://example.com\nLine 3")
+        self.assertIn('Line 1<br>', rendered)
+        self.assertIn('</a><br>Line 3', rendered)
+
+    def test_attribute_text_linkify_escapes_non_url_html(self):
+        rendered = attribute_text_linkify('<script>alert(1)</script> https://example.com')
+        self.assertIn('&lt;script&gt;alert(1)&lt;/script&gt;', rendered)
+        self.assertNotIn('<script>', rendered)
+
+    def test_attribute_text_linkify_keeps_trailing_punctuation_outside_link(self):
+        rendered = attribute_text_linkify('Read this (https://example.com/docs).')
+        self.assertIn('<a href="https://example.com/docs" target="_blank" rel="noopener noreferrer">https://example.com/docs</a>).', rendered)
+
+    def test_attribute_text_linkify_keeps_multiple_trailing_punctuation_outside_link(self):
+        rendered = attribute_text_linkify('Open https://example.com/path), right now!')
+        self.assertIn(
+            '<a href="https://example.com/path" target="_blank" rel="noopener noreferrer">https://example.com/path</a>),',
+            rendered,
+        )
+
+    def test_attribute_text_linkify_does_not_link_invalid_candidates(self):
+        rendered = attribute_text_linkify('Broken: https://bad and valid: https://example.com')
+        self.assertIn('Broken: https://bad', rendered)
+        self.assertIn(
+            '<a href="https://example.com" target="_blank" rel="noopener noreferrer">https://example.com</a>',
+            rendered,
+        )
+
+    def test_attribute_text_linkify_filter_renders_anchor_in_template_output(self):
+        template_str = """
+        {% load attribute_extras %}
+        {{ value|attribute_text_linkify }}
+        """
+        template = Template(template_str)
+
+        rendered = template.render(Context({'value': 'See https://example.com'}))
+        self.assertIn('<a href="https://example.com" target="_blank" rel="noopener noreferrer">', rendered)
+        self.assertNotIn('&lt;a href=', rendered)
+
+    def test_attribute_text_has_url_filter_works_in_template_condition(self):
+        template_str = """
+        {% load attribute_extras %}
+        {% if value|attribute_text_has_url %}HAS_URL{% else %}NO_URL{% endif %}
+        """
+        template = Template(template_str)
+
+        rendered_with_url = template.render(Context({'value': 'Link: https://example.com'}))
+        self.assertIn('HAS_URL', rendered_with_url)
+
+        rendered_without_url = template.render(Context({'value': 'No link here'}))
+        self.assertIn('NO_URL', rendered_without_url)
+
+
 class TestAttributeUrlTags(TestCase):
     """Test template tags that generate URLs - URL construction logic."""
     
@@ -222,75 +324,6 @@ class TestAttributeUrlTags(TestCase):
             
         with self.assertRaises(NoReverseMatch):
             attr_restore_url(self.context, self.attribute_id, self.history_id)
-
-
-class TestTemplateIntegration(TestCase):
-    """Test template filters and tags integrated with Django template system."""
-    
-    def setUp(self):
-        self.mock_owner = MockOwner(id=123, name="Test Owner")
-        self.context = AttributeItemEditContext(self.mock_owner, "entity")
-        
-    def test_attribute_preview_filter_in_template(self):
-        """Test attribute_preview filter works in actual template rendering."""
-        template_str = """
-        {% load attribute_extras %}
-        Preview: {{ value|attribute_preview:30 }}
-        """
-        
-        template = Template(template_str)
-        
-        # Test with long multiline value
-        long_value = "This is a very long first line that will be truncated\nSecond line\nThird line"
-        context = Context({'value': long_value})
-        
-        rendered = template.render(context).strip()
-        self.assertIn("Preview:", rendered)
-        self.assertIn("...", rendered)
-        self.assertIn("chars", rendered)
-        self.assertIn("lines", rendered)
-        
-    def test_context_filters_in_template(self):
-        """Test AttributeItemEditContext filters work in template rendering."""
-        template_str = """
-        {% load attribute_extras %}
-        Field: {{ attr_item_context|file_title_field_name:attribute_id }}
-        Target: {{ attr_item_context|history_target_id:attribute_id }}
-        Toggle: {{ attr_item_context|history_toggle_id:attribute_id }}
-        """
-        
-        template = Template(template_str)
-        context = Context({
-            'attr_item_context': self.context,
-            'attribute_id': 456
-        })
-        
-        rendered = template.render(context)
-        self.assertIn("Field: file_title_123_456", rendered)
-        self.assertIn("Target: hi-entity-attr-history-123-456", rendered)
-        self.assertIn("Toggle: history-extra-123-456", rendered)
-        
-    @patch('django.urls.reverse')
-    def test_url_tags_in_template(self, mock_reverse):
-        """Test URL tags work in actual template rendering."""
-        mock_reverse.side_effect = lambda name, kwargs: f"/{name.replace('_', '/')}/{kwargs.get('entity_id', 0)}/{kwargs.get('attribute_id', 0)}/"
-        
-        template_str = """
-        {% load attribute_extras %}
-        History: {% attr_history_url attr_item_context attribute_id %}
-        Restore: {% attr_restore_url attr_item_context attribute_id history_id %}
-        """
-        
-        template = Template(template_str)
-        context = Context({
-            'attr_item_context': self.context,
-            'attribute_id': 456,
-            'history_id': 789
-        })
-        
-        rendered = template.render(context)
-        self.assertIn("History:", rendered)
-        self.assertIn("Restore:", rendered)
         
     def test_template_syntax_error_handling(self):
         """Test template tags handle syntax errors appropriately."""
@@ -334,4 +367,21 @@ class TestTemplateIntegration(TestCase):
         # This should raise an AttributeError which Django templates handle
         with self.assertRaises(AttributeError):
             template_error.render(context_error)
+
+    def test_attribute_url_filter_in_template(self):
+        """Test attribute_url filter renders links only for valid URLs."""
+        template_str = """
+        {% load attribute_extras %}
+        {% with detected=value|attribute_url %}
+        {% if detected %}<a href="{{ detected }}">{{ detected }}</a>{% else %}NO_LINK{% endif %}
+        {% endwith %}
+        """
+
+        template = Template(template_str)
+
+        rendered_valid = template.render(Context({'value': 'https://example.com'}))
+        self.assertIn('href="https://example.com"', rendered_valid)
+
+        rendered_invalid = template.render(Context({'value': 'abc'}))
+        self.assertIn('NO_LINK', rendered_invalid)
             

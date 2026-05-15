@@ -1,18 +1,21 @@
+import dataclasses
 from cachetools import TTLCache
 from typing import Dict, List, Set, Sequence
 
+from django.conf import settings
+from django.db.models import prefetch_related_objects
+
 from hi.apps.control.transient_models import ControllerData
 from hi.apps.common.singleton import Singleton
-from hi.apps.entity.enums import EntityStateType
 from hi.apps.entity.models import Entity, EntityState
-from hi.apps.location.models import LocationView
 from hi.apps.location.svg_item_factory import SvgItemFactory
 from hi.apps.sense.models import Sensor
 from hi.apps.sense.sensor_response_manager import SensorResponseMixin
 from hi.apps.sense.transient_models import SensorResponse
+from hi.testing.dev_overrides import DevOverrideManager
 
-from .status_display_data import StatusDisplayData
-from .transient_models import EntityStatusData, EntityStateStatusData
+from .display_data import EntityStateDisplayData
+from .status_data import EntityStatusData, EntityStateStatusData
 
 
 class StatusDisplayManager( Singleton, SensorResponseMixin ):
@@ -26,20 +29,33 @@ class StatusDisplayManager( Singleton, SensorResponseMixin ):
         )
         return
         
-    def get_status_css_class_update_map( self ) -> Dict[ str, str ]:
+    def get_entity_state_status_map( self ) -> Dict[ str, dict ]:
+        """Build the per-EntityState polling-update map consumed by
+        the client. Keyed by the EntityState id (as a string, since
+        JSON object keys are always strings). The value shape is
+        defined by ``EntityStateDisplayData.to_polling_update_dict``."""
 
         entity_state_status_data_list = self.get_all_entity_state_status_data_list()
-        status_display_data_list = [ StatusDisplayData(x) for x in entity_state_status_data_list ]
 
-        css_class_update_map = dict()
-        for status_display_data in status_display_data_list:
-            if status_display_data.should_skip:
-                continue
-            css_class_update_map[status_display_data.css_class] = status_display_data.attribute_dict
+        status_map : Dict[ str, dict ] = {}
+        for entity_state_status_data in entity_state_status_data_list:
+            status_display_data = EntityStateDisplayData( entity_state_status_data )
+            state_id_key = str( status_display_data.entity_state.id )
+            status_map[ state_id_key ] = status_display_data.to_polling_update_dict()
+            if settings.DEBUG and settings.DEBUG_TRACE_STATE:
+                latest = status_display_data.sensor_response_list[ 0 ]
+                DevOverrideManager.trace_state(
+                    'hi.ui_poll.entity_state.out',
+                    integration_name = latest.integration_key.integration_name,
+                    hi_entity_state_id = status_display_data.entity_state.id,
+                    hi_value = latest.value,
+                    row = status_map[ state_id_key ],
+                )
             continue
 
-        return css_class_update_map
-        
+        return status_map
+
+
     def get_all_entity_state_status_data_list( self ) -> List[ EntityStateStatusData ]:
         """
         Gets the latest sensor responses for all EntityStates.  Used by client
@@ -86,6 +102,11 @@ class StatusDisplayManager( Singleton, SensorResponseMixin ):
                 entity_state = entity_state,
                 sensor_response_list = sensor_response_list,
                 controller_data_list = controller_data_list,
+                # This branch only sees EntityStates that produced
+                # responses, so a sensor must exist; controllers
+                # are explicitly known via the list above.
+                has_sensor = True,
+                has_controller = bool( controller_data_list ),
             )
             entity_state_status_data_list.append( entity_state_status_data )
             continue
@@ -260,6 +281,8 @@ class StatusDisplayManager( Singleton, SensorResponseMixin ):
                 entity_state = entity_state,
                 sensor_response_list = entity_state_sensor_response_list,
                 controller_data_list = controller_data_list,
+                has_sensor = bool( entity_state_to_sensor_list.get( entity_state ) ),
+                has_controller = bool( controller_data_list ),
             )
             entity_state_to_entity_state_status_data_map[entity_state] = entity_state_status_data
             continue
@@ -268,33 +291,43 @@ class StatusDisplayManager( Singleton, SensorResponseMixin ):
 
     def get_entity_to_entity_state_status_data_list(
             self,
-            location_view  : LocationView,
             entities       : Set[ Entity ] ) -> Dict[ Entity, List[ EntityStateStatusData ] ]:
-        """
-        Builds a map from Entity to EntityStateStatusData for the single EntityState
-        that is the highest display priority for the given
-        LocationView. i.e., Picks a single EntityState for each Entity to
-        define the visual display used in the LocationView where we can
-        really only represent one thing at a time (visually).
-        """
-        
-        entity_to_entity_state_list = self._get_entity_to_entity_state_list(
-            location_view = location_view,
-            entities = entities,
+        """Builds a map from Entity to its EntityStateStatusData list
+        (covering all of the entity's states, including any delegated
+        principal states). Per-entity primary-state selection happens
+        downstream in ``LocationViewData`` via
+        ``ENTITY_PRIMARY_STATE_ORDERING`` — no EntityStateType
+        pre-filter is applied here."""
+
+        # Batch-prefetch the relations this flow will walk so the
+        # per-entity loop below doesn't issue 2N delegation/states
+        # queries and the downstream sensor/controller fetches don't
+        # add 2M more.
+        prefetch_related_objects(
+            list( entities ),
+            'states__sensors',
+            'states__controllers',
+            'entity_state_delegations__entity_state__sensors',
+            'entity_state_delegations__entity_state__controllers',
         )
+
+        entity_to_entity_state_list = dict()
         all_entity_states = set()
-        for entity_state_list in entity_to_entity_state_list.values():
-            all_entity_states.update( entity_state_list )
+        for entity in entities:
+            entity_states = self.all_entity_states_including_delegations( entity )
+            if not entity_states:
+                continue
+            entity_to_entity_state_list[entity] = entity_states
+            all_entity_states.update( entity_states )
             continue
-        
+
         entity_state_to_status_data = self._get_entity_state_to_entity_state_status_data(
             entity_states = all_entity_states,
         )
 
         entity_to_entity_state_status_data_list = dict()
         for entity, entity_state_list in entity_to_entity_state_list.items():
-            if entity not in entity_to_entity_state_status_data_list:
-                entity_to_entity_state_status_data_list[entity] = list()
+            entity_to_entity_state_status_data_list[entity] = list()
             for entity_state in entity_state_list:
                 entity_state_status_data = entity_state_to_status_data.get( entity_state )
                 if entity_state_status_data:
@@ -304,88 +337,32 @@ class StatusDisplayManager( Singleton, SensorResponseMixin ):
 
         return entity_to_entity_state_status_data_list
 
-    def _get_entity_to_entity_state_list(
-            self,
-            location_view  : LocationView,
-            entities       : Set[ Entity ] ) -> Dict[ Entity, List[ EntityState ] ]:
-        """
-        A map from Entity to EntityState for the list of EntityState with
-        EntityStateTyoe that is the highest display priority for the given
-        LocationView.
-        """
-        location_view_type = location_view.location_view_type
-        
-        entity_state_type_priority_list = location_view_type.entity_state_type_priority_list
-        
-        entity_to_entity_state_list = dict()
-        for entity in entities:
-            entity_state_list = self.get_entity_state_list_for_status(
-                entity = entity,
-                entity_state_type_priority_list = entity_state_type_priority_list,
-            )
-            if entity_state_list:
-                entity_to_entity_state_list[entity] = entity_state_list
-            continue
-        
-        return entity_to_entity_state_list
+    def all_entity_states_including_delegations(
+            self, entity : Entity ) -> List[ EntityState ]:
+        """All EntityStates the entity exposes for status display:
+        its own ``states`` plus any states delegated from principals
+        via ``EntityStateDelegation``. Deduplicated to guard against
+        the unusual case of an entity delegating one of its own
+        states or two delegations resolving to the same state.
 
-    def get_entity_state_list_for_status(
-            self,
-            entity                           : Entity,
-            entity_state_type_priority_list  : List[ EntityStateType ] ) -> List[ EntityState ]:
-        """
-        Finds all EntityState for the highest priority EntityStateType.
-        """
-
-        # Delegate entities include will include all their principal entity
-        # states, though any direct state will take precendence
-
-        delegations_queryset = entity.entity_state_delegations.select_related('entity_state').all()
-        all_entity_states = [ x.entity_state for x in delegations_queryset ]
-        all_entity_states.extend( entity.states.all() )
-
-        # Gather all possible EntityStateType for the Entity and its principals.
-        entity_state_list_map = dict()
-        for entity_state in all_entity_states:
-            if entity_state.entity_state_type not in entity_state_list_map:
-                entity_state_list_map[entity_state.entity_state_type] = list()
-            entity_state_list_map[entity_state.entity_state_type].append( entity_state )
-            continue
-
-        if not entity_state_list_map:
-            return None
-
-        entity_state_type_for_status = self.get_entity_state_type_for_status(
-            entity_state_types = entity_state_list_map.keys(),
-            entity_state_type_priority_list = entity_state_type_priority_list,
-        )
-        entity_state_list = entity_state_list_map.get( entity_state_type_for_status )
-        return entity_state_list
-
-    def get_entity_state_type_for_status(
-            self,
-            entity_state_types               : Sequence[ EntityStateType ],
-            entity_state_type_priority_list  : List[ EntityStateType ] ) -> EntityStateType:
-        """
-        Determines the single EntityStateType that is the highest display priority
-        from the given priority list.  This defined what status will be visually displayed.
-        """
-
-        for priority_entity_state_type in entity_state_type_priority_list:
-            if priority_entity_state_type in entity_state_types:
-                return priority_entity_state_type
-            continue
-
-        # If no prioritizes state type matches, then fallback to an
-        # arbitrary, but deterministic choice by using all defined values.
-        #
-        for default_entity_state_type in EntityStateType:
-            if default_entity_state_type in entity_state_types:
-                return default_entity_state_type
-            continue
-
-        # This code should not really be reachable. Should always match one in fallback case.
-        return None
+        ``.all()`` is used (not ``.select_related(...).all()``) so
+        callers that have prefetched ``entity_state_delegations__
+        entity_state`` use the cache. For single-entity callers with
+        no prefetch, the additional FK fetch per delegation is
+        bounded and acceptable."""
+        seen = set()
+        result = []
+        for d in entity.entity_state_delegations.all():
+            if d.entity_state.id in seen:
+                continue
+            seen.add( d.entity_state.id )
+            result.append( d.entity_state )
+        for state in entity.states.all():
+            if state.id in seen:
+                continue
+            seen.add( state.id )
+            result.append( state )
+        return result
 
     def get_latest_sensor_response( self, entity_state : EntityState ) -> SensorResponse:
         sensor_list = list( entity_state.sensors.all() )
@@ -418,14 +395,24 @@ class StatusDisplayManager( Singleton, SensorResponseMixin ):
                 sensor_list = sensor_list,
             )
 
+        # Apply overrides into a fresh dict so neither the
+        # SensorResponse objects nor the response lists owned by
+        # SensorResponseManager's cache are touched. Mutating
+        # them would persist the override past its TTL.
+        result = dict()
         for sensor, sensor_response_list in sensor_to_sensor_response_list.items():
             if ( not sensor_response_list
                  or ( sensor.entity_state.id not in self._status_value_overrides )):
+                result[ sensor ] = sensor_response_list
                 continue
-            sensor_response_list[0].value = self._status_value_overrides[sensor.entity_state.id]
+            overridden = dataclasses.replace(
+                sensor_response_list[ 0 ],
+                value = self._status_value_overrides[ sensor.entity_state.id ],
+            )
+            result[ sensor ] = [ overridden, *sensor_response_list[ 1: ] ]
             continue
 
-        return sensor_to_sensor_response_list
+        return result
         
     def add_entity_state_value_override( self,
                                          entity_state    : EntityState,

@@ -32,4 +32,8 @@ class IntegrationData:
     @property
     def is_enabled(self):
         return self.integration.is_enabled
-    
+
+    @property
+    def is_paused(self):
+        return self.integration.is_paused
+

@@ -20,6 +20,10 @@ class Integration( models.Model ):
         'Enabled?',
         default = False,
     )
+    is_paused = models.BooleanField(
+        'Paused?',
+        default = False,
+    )
     created_datetime = models.DateTimeField(
         'Created',
         auto_now_add = True,
@@ -104,9 +108,34 @@ class IntegrationDetailsModel( models.Model ):
         blank = True,
         help_text = 'Integration-specific data (e.g., HA domain, device capabilities)',
     )
+    # The previous_integration_* fields record the integration identity
+    # an instance had at the moment it was disconnected (e.g., via
+    # sync-time preservation or Disable-SAFE). They drive the
+    # auto-reconnect path in IntegrationSynchronizer: when an upstream
+    # entity reappears whose key matches a disconnected entity's
+    # previous identity, the entity is reconnected rather than a
+    # duplicate being created. The previous_integration_id is indexed
+    # because the secondary-match query during sync filters on it.
+    previous_integration_id = models.CharField(
+        'Previous Integration Id',
+        max_length = 32,
+        null = True, blank = True,
+        db_index = True,
+    )
+    previous_integration_name = models.CharField(
+        'Previous Integration Name',
+        max_length = 128,
+        null = True, blank = True,
+    )
 
     @property
     def integration_key(self) -> IntegrationKey:
+        # Symmetric with the setter: returns None when the underlying
+        # fields are unset, so reading the property on a never-attached
+        # or already-disconnected instance is safe (and round-trips
+        # cleanly through the setter as a no-op clear).
+        if self.integration_id is None or self.integration_name is None:
+            return None
         return IntegrationKey(
             integration_id = self.integration_id,
             integration_name = self.integration_name,
@@ -117,10 +146,39 @@ class IntegrationDetailsModel( models.Model ):
         if not integration_key:
             self.integration_id = None
             self.integration_name = None
-            return            
+            return
         self.integration_id = integration_key.integration_id
         self.integration_name = integration_key.integration_name
-        return 
+        # Re-attaching to an active integration invalidates any
+        # prior detached-state record. Clearing here is defensive
+        # against future call sites that set integration_key
+        # without going through reconnect_disconnected_items: a
+        # stale previous_integration_* pair on an active entity
+        # would mis-trigger the "Detached from" UI badge and
+        # confuse any future query that filters disconnected
+        # entities by previous_integration_id alone.
+        self.previous_integration_id = None
+        self.previous_integration_name = None
+        return
+
+    @property
+    def previous_integration_key(self) -> IntegrationKey:
+        if self.previous_integration_id is None or self.previous_integration_name is None:
+            return None
+        return IntegrationKey(
+            integration_id = self.previous_integration_id,
+            integration_name = self.previous_integration_name,
+        )
+
+    @previous_integration_key.setter
+    def previous_integration_key( self, integration_key : IntegrationKey ):
+        if not integration_key:
+            self.previous_integration_id = None
+            self.previous_integration_name = None
+            return
+        self.previous_integration_id = integration_key.integration_id
+        self.previous_integration_name = integration_key.integration_name
+        return
 
     def get_integration_details(self) -> IntegrationDetails:
         return IntegrationDetails(
@@ -131,21 +189,21 @@ class IntegrationDetailsModel( models.Model ):
     def update_integration_payload(self, new_payload: dict) -> list:
         """
         Update integration payload and return list of changed fields.
-        Only reports changes to existing fields (ignores new fields).
-        Returns list of strings describing changes, empty if no existing values changed.
+        Reports modifications to existing fields by name; returns an
+        empty list when nothing changed (no DB write performed).
         """
         old_payload = self.integration_payload or {}
+        if old_payload == new_payload:
+            return []
+
         changed_fields = []
-        
-        # Check for changes to existing fields only
         for key, new_value in new_payload.items():
             if key in old_payload and old_payload[key] != new_value:
                 changed_fields.append(f'{key}: {old_payload[key]} -> {new_value}')
-        
-        # Always update payload (even if no existing fields changed)
+
         self.integration_payload = new_payload
         self.save()
-        
+
         return changed_fields
 
 

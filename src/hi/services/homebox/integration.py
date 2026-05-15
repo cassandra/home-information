@@ -1,5 +1,5 @@
 import logging
-from typing import List
+from typing import List, Optional
 
 from hi.apps.system.enums import HealthStatusType
 from hi.apps.system.health_status_provider import HealthStatusProvider
@@ -7,14 +7,20 @@ from hi.apps.system.health_status_provider import HealthStatusProvider
 from hi.integrations.integration_controller import IntegrationController
 from hi.integrations.integration_gateway import IntegrationGateway
 from hi.integrations.integration_manage_view_pane import IntegrationManageViewPane
+from hi.integrations.integration_synchronizer import IntegrationSynchronizer
 from hi.integrations.models import IntegrationAttribute
-from hi.integrations.transient_models import IntegrationMetaData, IntegrationValidationResult
+from hi.integrations.transient_models import (
+    ConnectionTestResult,
+    IntegrationMetaData,
+    IntegrationValidationResult,
+)
 from hi.apps.monitor.periodic_monitor import PeriodicMonitor
 
 from .hb_controller import HomeBoxController
 from .hb_manage_view_pane import HbManageViewPane
 from .hb_manager import HomeBoxManager
 from .hb_metadata import HbMetaData
+from .hb_sync import HomeBoxSynchronizer
 from .monitors import HomeBoxMonitor
 
 logger = logging.getLogger(__name__)
@@ -48,14 +54,14 @@ class HomeBoxGateway(IntegrationGateway):
     def get_health_status_provider(self) -> HealthStatusProvider:
         return HomeBoxManager()
 
+    def get_synchronizer(self) -> IntegrationSynchronizer:
+        return HomeBoxSynchronizer()
+
     def validate_configuration(
             self,
             integration_attributes: List[IntegrationAttribute]
     ) -> IntegrationValidationResult:
-        """Validate HomeBox integration configuration by testing API connectivity.
-
-        Delegates to HomeBoxManager for configuration validation.
-        """
+        """Schema-only validation; delegates to HomeBoxManager."""
         try:
             hb_manager = HomeBoxManager()
             return hb_manager.validate_configuration(integration_attributes)
@@ -65,3 +71,19 @@ class HomeBoxGateway(IntegrationGateway):
                 status=HealthStatusType.WARNING,
                 error_message=f'Configuration validation failed: {e}'
             )
+
+    def test_connection(
+            self,
+            integration_attributes: List[IntegrationAttribute],
+            timeout_secs: Optional[float],
+    ) -> ConnectionTestResult:
+        """Live connection probe; delegates to HomeBoxManager."""
+        try:
+            hb_manager = HomeBoxManager()
+            return hb_manager.test_connection(
+                integration_attributes = integration_attributes,
+                timeout_secs = timeout_secs,
+            )
+        except Exception as e:
+            logger.exception(f'Error in HomeBox connection test: {e}')
+            return ConnectionTestResult.failure(f'Connection test error: {e}')

@@ -33,60 +33,58 @@ ALLOWED_HOSTS = ENV.ALLOWED_HOSTS
 
 CORS_ALLOWED_ORIGINS = ENV.CORS_ALLOWED_ORIGINS
 
-CSP_DEFAULT_SRC = (
-    "'self'",
-    'data:',
-) + ENV.EXTRA_CSP_URLS
-
-CSP_CONNECT_SRC = (
-    "'self'",
-) + ENV.EXTRA_CSP_URLS
-
-CSP_FRAME_SRC = (
-    "'self'",
-) + ENV.EXTRA_CSP_URLS
-
-CSP_SCRIPT_SRC = (
-    "'self'",
-    "'unsafe-inline'",
-    "'unsafe-eval'",
-) + ENV.EXTRA_CSP_URLS
-
-CSP_STYLE_SRC = (
-    "'self'",
-    "'unsafe-inline'",
-    "'unsafe-eval'",
-) + ENV.EXTRA_CSP_URLS
-
-CSP_MEDIA_SRC = (
-    "'self'",
-    "'unsafe-inline'",
-    "'unsafe-eval'",
-    'data:',
-) + ENV.EXTRA_CSP_URLS
-
-CSP_IMG_SRC = (
-    "'self'",
-    'data:',
-) + ENV.EXTRA_CSP_URLS
-
-CSP_CHILD_SRC = (
-    "'self'",
-) + ENV.EXTRA_CSP_URLS
-
-CSP_FONT_SRC = (
-    "'self'",
-    'data:',
-) + ENV.EXTRA_CSP_URLS
-
-CSP_WORKER_SRC = (
-    "'self'",
-) + ENV.EXTRA_CSP_URLS
+# django-csp 4.x dict-based config. Directive keys are kebab-case
+# without the ``CSP_`` prefix (see django-csp migration guide). Each
+# value concatenates with ENV.EXTRA_CSP_URLS so deployments can extend
+# the allow-lists without editing source.
+CONTENT_SECURITY_POLICY = {
+    'DIRECTIVES': {
+        'default-src': (
+            "'self'",
+            'data:',
+        ) + ENV.EXTRA_CSP_URLS,
+        'connect-src': (
+            "'self'",
+        ) + ENV.EXTRA_CSP_URLS,
+        'frame-src': (
+            "'self'",
+        ) + ENV.EXTRA_CSP_URLS,
+        'script-src': (
+            "'self'",
+            "'unsafe-inline'",
+            "'unsafe-eval'",
+        ) + ENV.EXTRA_CSP_URLS,
+        'style-src': (
+            "'self'",
+            "'unsafe-inline'",
+            "'unsafe-eval'",
+        ) + ENV.EXTRA_CSP_URLS,
+        'media-src': (
+            "'self'",
+            "'unsafe-inline'",
+            "'unsafe-eval'",
+            'data:',
+        ) + ENV.EXTRA_CSP_URLS,
+        'img-src': (
+            "'self'",
+            'data:',
+        ) + ENV.EXTRA_CSP_URLS,
+        'child-src': (
+            "'self'",
+        ) + ENV.EXTRA_CSP_URLS,
+        'font-src': (
+            "'self'",
+            'data:',
+        ) + ENV.EXTRA_CSP_URLS,
+        'worker-src': (
+            "'self'",
+        ) + ENV.EXTRA_CSP_URLS,
+    },
+}
 
 LANGUAGE_CODE = 'en-us'
 TIME_ZONE = 'UTC'
 USE_I18N = True
-USE_L10N = True
 USE_TZ = True
 
 
@@ -247,8 +245,17 @@ PIPELINE = {
                 'css/attribute.css',
                 'css/stream-browser.css',
                 'css/control.css',
+                'state_panels/smoke_detector/smoke_detector.css',
+                'state_panels/camera/camera.css',
+                'state_panels/thermostat/thermostat.css',
             ),
             'output_filename': 'css/css_head.css',
+        },
+        'css_location_svg_edit': {
+            'source_filenames': (
+                'css/location-svg-edit.css',
+            ),
+            'output_filename': 'css/css_location_svg_edit.css',
         },
     },
     'JAVASCRIPT': {
@@ -259,6 +266,8 @@ PIPELINE = {
                 'js/antinode.js',
                 'js/autosize.min.js',
                 'js/main.js',
+                'js/entity_state_status.js',
+                'state_panels/fallback/fallback.js',
             ),
             'output_filename': 'js/js_before_content.js',
         },
@@ -284,16 +293,28 @@ PIPELINE = {
         'js_hi_grid_content': {
             'source_filenames': (
                 'js/svg-utils.js',
+                'state_panels/thermostat/thermostat.js',
                 'js/status.js',
                 'js/auto-view.js',
-                'js/edit.js',
                 'js/edit-dragdrop.js',
-                'js/svg-icon.js',
-                'js/svg-path.js',
-                'js/svg-location.js',
-                'js/svg-event-listeners.js',
+                'js/svg-icon-core.js',
+                'js/svg-path-core.js',
+                'js/svg-pan-zoom-core.js',
+                'js/svg-entity-edit.js',
+                'js/svg-entity-event-listeners.js',
             ),
             'output_filename': 'js/js_hi_grid_content.js',
+        },
+        'js_location_svg_edit': {
+            'source_filenames': (
+                'js/svg-utils.js',
+                'js/svg-pan-zoom-core.js',
+                'js/svg-icon-core.js',
+                'js/svg-path-core.js',
+                'js/svg-bg-edit.js',
+                'js/svg-bg-event-listeners.js',
+            ),
+            'output_filename': 'js/js_location_svg_edit.js',
         },
     }
 }
@@ -312,7 +333,6 @@ CONSTANCE_CONFIG = {
 
 REDIS_HOST = ENV.REDIS_HOST
 REDIS_PORT = ENV.REDIS_PORT
-REDIS_KEY_PREFIX = ENV.REDIS_KEY_PREFIX
 
 CACHES = {
     'default': {
@@ -321,9 +341,11 @@ CACHES = {
         'LOCATION': [
             f'redis://{REDIS_HOST}:{REDIS_PORT}',
         ],
-        "KEY_PREFIX": f'main:{REDIS_KEY_PREFIX}',
+        "KEY_PREFIX": 'main:',
     }
 }
+
+TEST_RUNNER = 'hi.testing.runner.HiTestRunner'
 
 
 AUTH_USER_MODEL = "custom.CustomUser"
@@ -390,3 +412,17 @@ DEBUG_FORCE_TRANSIENT_VIEW_OVERRIDE = False
 
 # For testing UI error display of the various attribute editing form errors.
 DEBUG_INJECT_ATTRIBUTE_FORM_ERRORS = False
+
+# Per-state tracing for debugging value flow across any
+# integration (HA, ZM, etc.) and the simulator. The master switch
+# is ``DEBUG_TRACE_STATE``; main-code call sites short-circuit on
+# it for zero overhead when off. When on, the trace dispatcher
+# consults ``DEBUG_TRACE_INTEGRATION_NAMES`` (matched against
+# the integration_name with any ``~suffix`` stripped, so a single
+# entry like ``cover.x`` catches its substate variants) and
+# ``DEBUG_TRACE_HI_ENTITY_STATE_IDS`` (HI EntityState PKs) for
+# granularity. ``settings.DEBUG`` must also be True. See
+# ``hi.testing.dev_overrides.StateTraceManager``.
+DEBUG_TRACE_STATE = False
+DEBUG_TRACE_INTEGRATION_NAMES = [ ]  # strings / integration_key.name
+DEBUG_TRACE_HI_ENTITY_STATE_IDS = [ ]  # ints / EntityState database ids

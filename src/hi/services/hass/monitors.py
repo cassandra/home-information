@@ -1,10 +1,15 @@
 import logging
 
+from asgiref.sync import sync_to_async
+from django.conf import settings
+
 import hi.apps.common.datetimeproxy as datetimeproxy
+from hi.apps.alert.enums import AlarmLevel
 from hi.apps.monitor.periodic_monitor import PeriodicMonitor
 from hi.apps.sense.sensor_response_manager import SensorResponseMixin
 from hi.apps.sense.transient_models import SensorResponse
 from hi.apps.system.provider_info import ProviderInfo
+from hi.testing.dev_overrides import DevOverrideManager
 
 from .hass_converter import HassConverter
 from .hass_mixins import HassMixin
@@ -29,12 +34,22 @@ class HassMonitor( PeriodicMonitor, HassMixin, SensorResponseMixin ):
     def get_api_timeout(self) -> float:
         return self.HASS_API_TIMEOUT_SECS
 
+    def alarm_ceiling(self):
+        # HA outage in the background masks security and home-automation
+        # state changes. Treat health failures here as serious.
+        return AlarmLevel.CRITICAL
+
     async def _initialize(self):
         hass_manager = await self.hass_manager_async()
         if not hass_manager:
             return
         _ = await self.sensor_response_manager_async()  # Allows async use of self.sensor_response_manager()
         hass_manager.register_change_listener( self.refresh )
+        # Register this monitor as a subordinate health source on the
+        # manager so the manager's aggregated health reflects monitor
+        # outcomes. The manager pulls our current status on each read of
+        # its health_status; we never push.
+        hass_manager.add_subordinate_health_status_provider( self )
         self._was_initialized = True
         return
     
@@ -81,17 +96,35 @@ class HassMonitor( PeriodicMonitor, HassMixin, SensorResponseMixin ):
         current_datetime = datetimeproxy.now()
         sensor_response_latest_map = dict()
         
+        # The converter chain is sync; the IntegrationMetadataCache it
+        # consults may trigger DB queries on cold-cache or new-entity
+        # paths. Wrap each per-state translation through sync_to_async
+        # so any DB work happens in a thread pool rather than raising
+        # SynchronousOnlyOperation in this async monitor context.
+        translate = sync_to_async(
+            HassConverter.hass_state_to_sensor_value_map,
+            thread_sensitive = True,
+        )
         for hass_state in id_to_hass_state_map.values():
-            integration_key = HassConverter.hass_state_to_integration_key( hass_state = hass_state )
-            sensor_value_str = HassConverter.hass_state_to_sensor_value_str( hass_state )
-            if not sensor_value_str:
+            value_map = await translate( hass_state )
+            if settings.DEBUG and settings.DEBUG_TRACE_STATE:
+                DevOverrideManager.trace_state(
+                    'hi.ha_poll.in',
+                    integration_name = hass_state.entity_id,
+                    integration_value = hass_state.state_value,
+                    device_class = hass_state.device_class,
+                    value_map = { str(k): v for k, v in value_map.items() },
+                )
+            for integration_key, sensor_value_str in value_map.items():
+                if not sensor_value_str:
+                    continue
+                sensor_response = SensorResponse(
+                    integration_key = integration_key,
+                    value = sensor_value_str,
+                    timestamp = current_datetime,
+                )
+                sensor_response_latest_map[integration_key] = sensor_response
                 continue
-            sensor_response = SensorResponse(
-                integration_key = integration_key,
-                value = sensor_value_str,
-                timestamp = current_datetime,
-            )
-            sensor_response_latest_map[integration_key] = sensor_response
             continue
 
         await self.sensor_response_manager().update_with_latest_sensor_responses(
@@ -100,6 +133,7 @@ class HassMonitor( PeriodicMonitor, HassMixin, SensorResponseMixin ):
 
         message = f'Processed {len(id_to_hass_state_map)} Home Assistant states.'
         self.record_healthy( message )
-        hass_manager.record_healthy( message )
+        # Manager picks up our status via add_subordinate_health_status_provider
+        # registration; no explicit push needed here.
         return
     

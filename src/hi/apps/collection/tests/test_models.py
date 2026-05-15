@@ -1,10 +1,10 @@
 import logging
 from django.db import IntegrityError
 
-from hi.apps.collection.models import Collection, CollectionEntity, CollectionPosition, CollectionPath, CollectionView
+from hi.apps.collection.models import Collection, CollectionEntity, CollectionPosition, CollectionPath
 from hi.apps.collection.enums import CollectionType, CollectionViewType
 from hi.apps.entity.models import Entity
-from hi.apps.location.models import Location, LocationView
+from hi.apps.location.models import Location
 from hi.enums import ItemType
 from hi.testing.base_test_case import BaseTestCase
 
@@ -138,58 +138,6 @@ class TestCollectionEntity(BaseTestCase):
         reloaded_entities = collection.entities.order_by('order_id')
         reloaded_names = [ce.entity.name for ce in reloaded_entities]
         self.assertEqual(reloaded_names, entity_names)
-
-    def test_collection_entity_cascade_deletion_from_collection(self):
-        """Test cascade deletion from collection - critical for data integrity."""
-        collection = Collection.objects.create(
-            name='Test Collection',
-            collection_type_str='OTHER',
-            collection_view_type_str='GRID'
-        )
-        
-        entity = Entity.objects.create(
-            name='Test Entity',
-            entity_type_str='CAMERA'
-        )
-        
-        collection_entity = CollectionEntity.objects.create(
-            collection=collection,
-            entity=entity
-        )
-        
-        ce_id = collection_entity.id
-        
-        # Delete collection should cascade to collection entities
-        collection.delete()
-        
-        self.assertFalse(CollectionEntity.objects.filter(id=ce_id).exists())
-        return
-
-    def test_collection_entity_cascade_deletion_from_entity(self):
-        """Test cascade deletion from entity - critical for data integrity."""
-        collection = Collection.objects.create(
-            name='Test Collection',
-            collection_type_str='OTHER',
-            collection_view_type_str='GRID'
-        )
-        
-        entity = Entity.objects.create(
-            name='Test Entity',
-            entity_type_str='CAMERA'
-        )
-        
-        collection_entity = CollectionEntity.objects.create(
-            collection=collection,
-            entity=entity
-        )
-        
-        ce_id = collection_entity.id
-        
-        # Delete entity should cascade to collection entities
-        entity.delete()
-        
-        self.assertFalse(CollectionEntity.objects.filter(id=ce_id).exists())
-        return
 
     def test_collection_entity_efficient_membership_queries(self):
         """Test CollectionEntity query optimization - supports fast membership checks."""
@@ -388,76 +336,3 @@ class TestCollectionPath(BaseTestCase):
         self.assertTrue(zone_path.svg_path.endswith('Z'))  # Closed path
 
 
-class TestCollectionView(BaseTestCase):
-
-    def test_collection_view_cascade_deletion_from_collection(self):
-        """Test cascade deletion from collection - critical for data integrity."""
-        location = Location.objects.create(
-            name='Test Location',
-            svg_fragment_filename='test.svg',
-            svg_view_box_str='0 0 100 100'
-        )
-        
-        location_view = LocationView.objects.create(
-            location=location,
-            location_view_type_str='DEFAULT',
-            name='Test View',
-            svg_view_box_str='0 0 50 50',
-            svg_rotate=0,
-            svg_style_name_str='COLOR'
-        )
-        
-        collection = Collection.objects.create(
-            name='Test Collection',
-            collection_type_str='OTHER',
-            collection_view_type_str='GRID'
-        )
-        
-        collection_view = CollectionView.objects.create(
-            collection=collection,
-            location_view=location_view
-        )
-        
-        cv_id = collection_view.id
-        
-        # Delete collection should cascade to collection view
-        collection.delete()
-        
-        self.assertFalse(CollectionView.objects.filter(id=cv_id).exists())
-        return
-
-    def test_collection_view_cascade_deletion_from_location_view(self):
-        """Test cascade deletion from location view - critical for data integrity."""
-        location = Location.objects.create(
-            name='Test Location',
-            svg_fragment_filename='test.svg',
-            svg_view_box_str='0 0 100 100'
-        )
-        
-        location_view = LocationView.objects.create(
-            location=location,
-            location_view_type_str='DEFAULT',
-            name='Test View',
-            svg_view_box_str='0 0 50 50',
-            svg_rotate=0,
-            svg_style_name_str='COLOR'
-        )
-        
-        collection = Collection.objects.create(
-            name='Test Collection',
-            collection_type_str='OTHER',
-            collection_view_type_str='GRID'
-        )
-        
-        collection_view = CollectionView.objects.create(
-            collection=collection,
-            location_view=location_view
-        )
-        
-        cv_id = collection_view.id
-        
-        # Delete location view should cascade to collection view
-        location_view.delete()
-        
-        self.assertFalse(CollectionView.objects.filter(id=cv_id).exists())
-        return

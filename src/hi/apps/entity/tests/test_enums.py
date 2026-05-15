@@ -10,34 +10,16 @@ from hi.testing.base_test_case import BaseTestCase
 logging.disable(logging.CRITICAL)
 
 
-class TestEntityStateType(BaseTestCase):
+class TestEntityStateTypeDefaultRole(BaseTestCase):
 
-    def test_template_name_generation_supports_ui_customization(self):
-        """Test template name generation - enables state-specific UI rendering."""
-        # Test that different state types generate distinct template paths
-        on_off_template = EntityStateType.ON_OFF.value_template_name()
-        temperature_template = EntityStateType.TEMPERATURE.value_template_name()
-        
-        # Should generate different templates for different state types
-        self.assertNotEqual(on_off_template, temperature_template)
-        
-        # Templates should follow consistent naming pattern
-        self.assertTrue(on_off_template.startswith('sense/panes/sensor_response_value_'))
-        self.assertTrue(on_off_template.endswith('.html'))
-        
-        # Controller templates should use different namespace
-        controller_template = EntityStateType.TEMPERATURE.controller_template_name()
-        self.assertTrue(controller_template.startswith('control/panes/controller_'))
-        self.assertTrue(controller_template.endswith('.html'))
-        
-        # Value and controller templates should be different
-        self.assertNotEqual(temperature_template, controller_template)
-        
-        # Complex state types should work correctly
-        multivalued_template = EntityStateType.MULTIVALUED.value_template_name()
-        self.assertTrue(multivalued_template.startswith('sense/panes/sensor_response_value_'))
-        self.assertIn('multivalued', multivalued_template)
-        
+    def test_every_entity_state_type_resolves_to_a_role(self):
+        # Locks in the type-default coverage convention: every
+        # EntityStateType has a same-named EntityStateRole member.
+        # Adding an EntityStateType without the matching role would
+        # KeyError at runtime; this test surfaces that at test time.
+        for entity_state_type in EntityStateType:
+            role = entity_state_type.default_role()
+            self.assertEqual( role.name, entity_state_type.name )
         return
 
 

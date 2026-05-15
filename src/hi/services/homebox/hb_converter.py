@@ -27,24 +27,41 @@ class HbConverter:
     ]
 
     @classmethod
-    def create_models_for_hb_item( cls, hb_item: HbItem ) -> Entity:
-
+    def create_models_for_hb_item( cls,
+                                   hb_item : HbItem,
+                                   entity  : Optional[Entity] = None ) -> Entity:
+        """
+        Create or repopulate the integration-owned components for an
+        HbItem. When ``entity`` is None (the standard import path), a
+        fresh Entity is created from the upstream payload. When
+        ``entity`` is provided (the auto-reconnect path from Issue
+        #281), the integration-owned fields on that entity are
+        repopulated; the entity's ``name`` is deliberately preserved
+        because the user may have edited it before/after the
+        intervening disconnect.
+        """
         with transaction.atomic():
             entity_integration_key = cls.hb_item_to_integration_key( hb_item = hb_item )
-            entity_name = cls.hb_item_to_entity_name( hb_item = hb_item )
-            entity_type = cls.hb_item_to_entity_type( hb_item = hb_item )
-            
-            entity = Entity(
-                name = entity_name,
-                entity_type_str = str(entity_type),
-                can_user_delete = HbMetaData.allow_entity_deletion,
-                can_add_custom_attributes = HbMetaData.can_add_custom_attributes,
-                integration_payload = cls.hb_item_to_entity_payload( hb_item = hb_item ),
-            )
+            entity_payload = cls.hb_item_to_entity_payload( hb_item = hb_item )
 
+            if entity is None:
+                entity = Entity(
+                    name = cls.hb_item_to_entity_name( hb_item = hb_item ),
+                    entity_type_str = str( cls.hb_item_to_entity_type( hb_item = hb_item ) ),
+                )
+
+            # The fields below apply equally to fresh-create and
+            # reconnect: integration_key, integration_payload, and the
+            # integration-managed access flags are all integration-owned
+            # and must reflect the current upstream state. The entity
+            # name and entity_type are intentionally left alone on the
+            # reconnect path (set above only for fresh-create).
             entity.integration_key = entity_integration_key
+            entity.integration_payload = entity_payload
+            entity.can_user_delete = HbMetaData.allow_entity_deletion
+            entity.can_add_custom_attributes = HbMetaData.can_add_custom_attributes
             entity.save()
-            
+
         return entity
 
     @classmethod
@@ -114,12 +131,17 @@ class HbConverter:
 
     @classmethod
     def hb_item_to_entity_payload( cls, hb_item: HbItem ) -> Dict:
+        # Timestamps (createdAt / updatedAt) are deliberately excluded.
+        # They are metadata about *when* a change happened, not the
+        # content of the change — and real HomeBox can tick updatedAt
+        # for housekeeping events (label re-associations, internal
+        # caches) the operator doesn't care about. Including them
+        # would make payload-equality change detection report
+        # spurious updates on every refresh.
         payload: Dict = {
             'quantity': hb_item.quantity,
             'insured': hb_item.insured,
             'archived': hb_item.archived,
-            'created_at': hb_item.created_at,
-            'updated_at': hb_item.updated_at,
             'purchase_price': hb_item.purchase_price,
             'asset_id': hb_item.asset_id,
             'sync_child_items_locations': hb_item.sync_child_items_locations,

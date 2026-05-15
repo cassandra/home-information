@@ -12,7 +12,7 @@ from django.http import HttpRequest, HttpResponse
 import hi.apps.common.antinode as antinode
 from hi.apps.location.location_manager import LocationManager
 from hi.apps.location.models import LocationView
-from hi.apps.entity.entity_manager import EntityManager
+from hi.apps.entity.entity_placement import EntityPlacer
 from hi.apps.entity.enums import EntityTransitionType
 from hi.apps.entity.models import Entity
 from hi.apps.entity.forms import EntityForm, EntityAttributeRegularFormSet
@@ -83,7 +83,7 @@ class EntityTypeTransitionHandler:
             current_location_view: Optional['LocationView'] = LocationManager().get_default_location_view(request=request)
             transition_occurred: bool
             transition_type: EntityTransitionType
-            transition_occurred, transition_type = EntityManager().handle_entity_type_transition(
+            transition_occurred, transition_type = EntityPlacer().handle_entity_type_transition(
                 entity=entity,
                 location_view=current_location_view,
             )

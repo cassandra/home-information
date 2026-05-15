@@ -1,5 +1,6 @@
 import logging
 
+from hi.apps.alert.enums import AlarmLevel
 from hi.apps.monitor.periodic_monitor import PeriodicMonitor
 from hi.apps.system.provider_info import ProviderInfo
 
@@ -9,9 +10,15 @@ logger = logging.getLogger(__name__)
 
 
 class HomeBoxMonitor( PeriodicMonitor, HomeBoxMixin ):
+    """
+    HomeBox does not have real-time per-item state to poll. The monitor's
+    only job is a periodic reachability/health probe so the integration's
+    health status reflects whether the API is currently reachable. Entity
+    creation/update/removal happens only via user-initiated SYNC.
+    """
 
     MONITOR_ID = 'hi.services.homebox.monitor'
-    HOMEBOX_POLLING_INTERVAL_SECS = 30
+    HOMEBOX_POLLING_INTERVAL_SECS = 300
     HOMEBOX_API_TIMEOUT_SECS = 20.0
 
     def __init__( self ):
@@ -25,11 +32,20 @@ class HomeBoxMonitor( PeriodicMonitor, HomeBoxMixin ):
     def get_api_timeout(self) -> float:
         return self.HOMEBOX_API_TIMEOUT_SECS
 
+    def alarm_ceiling(self):
+        # HomeBox tracks inventory data — degraded availability is
+        # informational, not safety-critical, so cap at INFO.
+        return AlarmLevel.INFO
+
     async def _initialize(self):
         hb_manager = await self.hb_manager_async()
         if not hb_manager:
             return
         hb_manager.register_change_listener( self.refresh )
+        # See HassMonitor._initialize for the rationale behind subordinate
+        # registration: aggregated manager health pulls monitor status on
+        # demand, so a healthy reload cannot mask a failing monitor.
+        hb_manager.add_subordinate_health_status_provider( self )
         self._was_initialized = True
         return
 
@@ -61,15 +77,29 @@ class HomeBoxMonitor( PeriodicMonitor, HomeBoxMixin ):
             self.record_error( 'No manager found.' )
             return
 
-        item_list = await self._process_items( hb_manager )
+        try:
+            item_count = await self._check_api_reachable( hb_manager )
+        except Exception as e:
+            # The probe failed (client unavailable, upstream unreachable,
+            # bad response, etc.). Manager picks up our status via
+            # add_subordinate_health_status_provider registration — its
+            # aggregated health will reflect this WARNING the next time
+            # it is read.
+            message = f'HomeBox API probe failed: {e}'
+            logger.warning( message )
+            self.record_warning( message )
+            return
 
-        message = (
-            f'Processed HomeBox resources. '
-            f'items={len(item_list)}'
-        )
+        message = f'HomeBox API reachable. items={item_count}'
         self.record_healthy( message )
-        hb_manager.record_healthy( message )
         return
 
-    async def _process_items(self, hb_manager):
-        return await hb_manager.fetch_hb_items_from_api_async( verbose = False )
+    async def _check_api_reachable(self, hb_manager) -> int:
+        """
+        Lightweight reachability probe: hits the items summary endpoint
+        (one API call, no per-item detail fetches) and returns the count.
+        The count is informational; the probe's purpose is to confirm
+        the API is up and authentication is still valid.
+        """
+        item_list = await hb_manager.fetch_hb_items_summary_from_api_async()
+        return len(item_list)

@@ -6,7 +6,7 @@ Once successfully running (see the [Installation Page](Installation.md)), you wi
 
 <img src="img/getting-started/start-page-1024x768.png" alt="Home Information Start Page" width="400"> 
 
-Choose which home type you want to use. If you choose "Single Story", you will see this initial screen with some common household items pre-populated.
+Choose which home type you want to use. If you choose "Two Story", you will see this initial screen with some common household items pre-populated.
 
 <img src="img/getting-started/initial-view-1024x768.png" alt="initial-view-1024x768" width="400" />
 
@@ -30,7 +30,7 @@ Some information may not be associated with an individual item, but the home ove
 
 ## Multiple Spaces
 
-If you have a multi-story house, basement, attic or even another vacation home or second property, you can create a different "space" for that.  Here we have an extra space defined for the attic.
+If you have a multi-story house, basement, attic or even another vacation home or second property, you can create a different "space" for that.  Here we have an extra space defined for the second floor rooms and crawl spaces.
 
 <img src="img/getting-started/spaces-dropdown-1024x768.png" alt="spaces-dropdown-1024x768" width="250" /> &nbsp; <img src="img/getting-started/view-second-space-1024x768.png" alt="view-second-space-1024x768" width="300" />
 

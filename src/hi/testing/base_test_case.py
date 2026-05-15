@@ -19,7 +19,7 @@ class BaseTestCase(TestCase):
     """
     Common testing utilties.
     """
-    
+
     def setUp(self):
         # With the APPEND_SLASHES feature, you can see a lot of warnings as
         # it does its work to add/remove slashes.  We are not so interested

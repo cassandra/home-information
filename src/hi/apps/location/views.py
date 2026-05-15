@@ -48,7 +48,10 @@ class LocationViewDefaultView( View ):
             )
         except LocationView.DoesNotExist:
             redirect_url = reverse( 'start' )
-            
+
+        query_string = request.META.get( 'QUERY_STRING', '' )
+        if query_string:
+            redirect_url = redirect_url + '?' + query_string
         return HttpResponseRedirect( redirect_url )
 
     
@@ -134,7 +137,6 @@ class LocationItemStatusView( View, LocationViewMixin, EntityViewMixin ):
             logger.debug( f'Trying one-click: {entity}' )
             controller_outcome = OneClickControlService().execute_one_click_control(
                 entity = entity,
-                location_view_type = location_view.location_view_type,
             )
             if controller_outcome.has_errors:
                 raise OneClickError(

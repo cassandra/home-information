@@ -1,3 +1,5 @@
+from django.core.exceptions import BadRequest
+from django.db import transaction
 from django.http import HttpResponseRedirect
 from django.shortcuts import render
 from django.urls import reverse
@@ -5,9 +7,11 @@ from django.views.generic import View
 
 import hi.apps.common.antinode as antinode
 
+from .enums import SimulatorFaultMode, SimTemperatureUnit
 from .exceptions import SimEntityValidationError
 from . import forms
-from .models import DbSimEntity
+from .models import DbSimEntity, SimProfile
+from .runtime_settings import SimulatorRuntimeSettings
 from .simulator_manager import SimulatorManager
 from .sim_entity import SimEntity
 from .view_mixins import SimulatorViewMixin
@@ -24,11 +28,15 @@ class HomeView( View, SimulatorViewMixin ):
             request = request,
             simulator_list = [ x.simulator for x in simulator_data_list ],
         )
+        runtime_settings = SimulatorRuntimeSettings()
         context = {
             'sim_profile_list': sim_profile_list,
             'current_sim_profile': current_sim_profile,
             'simulator_data_list': simulator_data_list,
             'current_simulator': current_simulator,
+            'fault_mode_choices': list( SimulatorFaultMode ),
+            'temperature_unit_choices': list( SimTemperatureUnit ),
+            'temperature_unit_override': runtime_settings.temperature_unit_override,
         }
         return render( request, 'simulator/pages/home.html', context )
 
@@ -85,6 +93,73 @@ class ProfileEditView( View, SimulatorViewMixin ):
         return antinode.refresh_response()
         
     
+class ProfileCloneView( View, SimulatorViewMixin ):
+    """
+    Clone the current profile into a new profile with operator-
+    chosen name. The clone copies the profile row and every
+    DbSimEntity row beneath it; SimState values are not persisted
+    (rebuilt from class defaults on every profile load), so the
+    clone naturally gets fresh state semantics with no extra work.
+
+    The new profile becomes the active profile after creation —
+    matches the Create flow's behavior and gives the operator
+    immediate visual confirmation in the simulator UI.
+    """
+
+    MODAL_TEMPLATE_NAME = 'simulator/modals/sim_profile_clone.html'
+
+    def get(self, request, *args, **kwargs):
+        source_profile = self.get_sim_profile( request, *args, **kwargs )
+        suggested_name = self._suggest_name( source_profile.name )
+        sim_profile_form = forms.SimProfileForm(
+            initial = { 'name': suggested_name },
+        )
+        context = {
+            'source_profile': source_profile,
+            'sim_profile_form': sim_profile_form,
+        }
+        return render( request, self.MODAL_TEMPLATE_NAME, context )
+
+    def post(self, request, *args, **kwargs):
+        source_profile = self.get_sim_profile( request, *args, **kwargs )
+        sim_profile_form = forms.SimProfileForm( request.POST )
+        if not sim_profile_form.is_valid():
+            context = {
+                'source_profile': source_profile,
+                'sim_profile_form': sim_profile_form,
+            }
+            return render( request, self.MODAL_TEMPLATE_NAME, context )
+
+        new_name = sim_profile_form.cleaned_data['name']
+        with transaction.atomic():
+            new_profile = SimulatorManager.clone_sim_profile(
+                source_profile = source_profile,
+                new_name = new_name,
+            )
+        SimulatorManager().set_sim_profile( sim_profile = new_profile )
+        return antinode.refresh_response()
+
+    @staticmethod
+    def _suggest_name( source_name : str ) -> str:
+        """Default new-name suggestion: '<source> (copy)'.
+
+        If that name is already taken, append a numeric suffix
+        ('<source> (copy 2)', '(copy 3)', ...) until a free name
+        is found. Bounded probe — no DB-side lock — because the
+        unique-name constraint at submit time is the actual
+        guard; this is just a friendly default, and a race here
+        means the operator sees a 'name already exists' on submit
+        and edits the field, which is acceptable."""
+        candidate = f'{source_name} (copy)'
+        if not SimProfile.objects.filter( name = candidate ).exists():
+            return candidate
+        for index in range( 2, 100 ):
+            candidate = f'{source_name} (copy {index})'
+            if not SimProfile.objects.filter( name = candidate ).exists():
+                return candidate
+        return f'{source_name} (copy)'
+
+
 class ProfileSwitchView( View, SimulatorViewMixin ):
 
     def get(self, request, *args, **kwargs):
@@ -266,6 +341,38 @@ class SimEntityDeleteView( View, SimulatorViewMixin ):
         return antinode.refresh_response()
 
 
+class SetSimulatorFaultModeView( View, SimulatorViewMixin ):
+    """
+    Operator-driven control to flip a simulator into a fault-injection
+    mode (or back to HEALTHY). Lives at a top-level URL — outside the
+    /services/<short_name>/ subtree — so the fault-injection middleware
+    never intercepts requests to it. This is the operator's escape hatch
+    when a simulator is in any non-HEALTHY mode.
+
+    Returns the fault-mode form HTML fragment so antinode.js can swap it
+    in place (data-async + data-mode=replace), avoiding a full page
+    reload on each toggle.
+    """
+
+    TEMPLATE_NAME = 'simulator/panes/fault_mode_form.html'
+
+    def post( self, request, *args, **kwargs ):
+        simulator = self.get_simulator_by_id(
+            simulator_id = kwargs.get('simulator_id'),
+        )
+        fault_mode_name = request.POST.get('fault_mode')
+        try:
+            fault_mode = SimulatorFaultMode[ fault_mode_name ]
+        except (KeyError, TypeError):
+            raise BadRequest( f'Invalid fault mode: {fault_mode_name}' )
+        simulator.set_fault_mode( fault_mode )
+        context = {
+            'simulator': simulator,
+            'fault_mode_choices': list( SimulatorFaultMode ),
+        }
+        return render( request, self.TEMPLATE_NAME, context )
+
+
 class SimStateSetView( View, SimulatorViewMixin ):
 
     TEMPLATE_NAME = 'simulator/panes/sim_state.html'
@@ -282,6 +389,31 @@ class SimStateSetView( View, SimulatorViewMixin ):
         )
         context = {
             'sim_state': sim_state,
+        }
+        return render( request, self.TEMPLATE_NAME, context )
+
+
+class TemperatureUnitOverrideSetView( View ):
+    """Operator control to flip the simulator's process-wide
+    temperature unit override (or clear it back to per-profile
+    defaults). Returns the dropdown's form fragment so antinode.js
+    can swap it in place — preserves the current integration tab
+    and avoids a full reload."""
+
+    TEMPLATE_NAME = 'simulator/panes/temperature_unit_override_form.html'
+
+    def post( self, request, *args, **kwargs ):
+        raw = ( request.POST.get( 'temperature_unit' ) or '' ).strip()
+        if raw:
+            override = SimTemperatureUnit.from_name_safe( raw )
+            if override is None:
+                raise BadRequest( f'Unknown temperature unit: {raw!r}' )
+        else:
+            override = None
+        SimulatorRuntimeSettings().set_temperature_unit_override( override )
+        context = {
+            'temperature_unit_choices': list( SimTemperatureUnit ),
+            'temperature_unit_override': override,
         }
         return render( request, self.TEMPLATE_NAME, context )
         

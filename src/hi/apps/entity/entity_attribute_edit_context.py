@@ -84,7 +84,19 @@ class EntityAttributeItemEditContext(AttributeItemEditContext):
         return self.entity.can_add_custom_attributes
 
     @property
+    def allow_edits(self) -> bool:
+        # Externally managed entities (e.g., HomeBox-imported) are
+        # fully read-only on this surface — same gate as adding.
+        return self.entity.can_add_custom_attributes
+
+    @property
     def add_attribute_disabled_message(self) -> str:
         if self.can_add_custom_attributes:
             return ''
         return 'New attributes are disabled for externally managed entities.'
+
+    @property
+    def externally_managed_message(self) -> str:
+        if self.can_add_custom_attributes:
+            return ''
+        return 'Attributes are managed externally and cannot be edited here.'

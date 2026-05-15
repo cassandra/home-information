@@ -4,7 +4,14 @@ from .base import *
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = False
 
-STATICFILES_STORAGE = 'pipeline.storage.PipelineManifestStorage'
+STORAGES = {
+    "default": {
+        "BACKEND": "django.core.files.storage.FileSystemStorage",
+    },
+    "staticfiles": {
+        "BACKEND": 'pipeline.storage.PipelineManifestStorage',
+    },
+}
 STATIC_ROOT = '/src/static'
 
 LOGGING = {

@@ -9,6 +9,7 @@ All methods are purely analytical and perform no database operations.
 import logging
 from typing import Set
 
+from hi.apps.attribute.enums import AttributeType
 from hi.apps.entity.models import Entity
 
 logger = logging.getLogger(__name__)
@@ -28,26 +29,32 @@ class EntityUserDataDetector:
     def has_user_created_attributes(entity: Entity) -> bool:
         """
         Check if an entity has user-created attributes that justify preservation.
-        
-        This is the primary decision criteria for whether to preserve an entity
-        during integration sync deletion. Only user-created attributes (those
-        without integration_key_str) are considered significant enough to preserve
-        the entire entity.
-        
+
+        Provenance is determined by ``attribute_type_str``:
+          - ``AttributeType.CUSTOM`` → user-added via the UI.
+          - ``AttributeType.PREDEFINED`` → defined by the system or by an
+            integration's converter.
+
+        ``integration_key_str`` is *not* a provenance signal — it is an
+        optional per-attribute upstream backreference some integrations
+        (e.g., HomeBox) use for fine-grained sync, and is absent for
+        integration-created attributes that have no per-field upstream id
+        (e.g., HA's synthesized Insteon-address attribute).
+
         Args:
             entity: The Entity to check for user-created attributes
-            
+
         Returns:
             True if the entity has user-created attributes, False otherwise
         """
         user_attributes = entity.attributes.filter(
-            integration_key_str__isnull=True
+            attribute_type_str=str(AttributeType.CUSTOM),
         ).exists()
-        
+
         if user_attributes:
             logger.debug(f'Entity {entity} has user-created attributes - should be preserved')
             return True
-        
+
         logger.debug(f'Entity {entity} has no user-created attributes - can be deleted')
         return False
 

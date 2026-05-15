@@ -11,11 +11,13 @@ from hi.apps.location.models import (
     LocationView,
 )
 from hi.apps.attribute.models import AttributeModel, SoftDeleteAttributeModel, AttributeValueHistoryModel
+from hi.apps.common.utils import get_humanized_name, strip_parent_name_prefix
 from hi.integrations.models import IntegrationDetailsModel
 from hi.enums import ItemType
 
 from .enums import (
     EntityType,
+    EntityStateRole,
     EntityStateType,
 )
 
@@ -57,6 +59,15 @@ class Entity( IntegrationDetailsModel, LocationItemModelMixin ):
     has_video_stream = models.BooleanField(
         'Has Video Stream',
         default = False,
+    )
+    is_disabled = models.BooleanField(
+        'Disabled?',
+        default = False,
+        help_text = (
+            'When True, capabilities the entity would normally provide are '
+            'suppressed. Used by the integration disconnect path and any '
+            'future user-initiated "disable" UX.'
+        ),
     )
     created_datetime = models.DateTimeField(
         'Created',
@@ -147,6 +158,11 @@ class EntityState( models.Model ):
         null = False, blank = False,
         db_index = True,
     )
+    role_str = models.CharField(
+        'Role',
+        max_length = 64,
+        null = False, blank = False,
+    )
     name = models.CharField(
         'Name',
         max_length = 64,
@@ -176,6 +192,16 @@ class EntityState( models.Model ):
     def __repr__(self):
         return self.__str__()
     
+    def save(self, *args, **kwargs):
+        # Default the role to the EntityStateType's default when not
+        # explicitly set. Catches direct ``EntityState.objects.create``
+        # paths; the factory layer also sets it explicitly when callers
+        # don't provide one.
+        if not self.role_str and self.entity_state_type_str:
+            self.role_str = str( self.entity_state_type.default_role() )
+        super().save( *args, **kwargs )
+        return
+
     @property
     def entity_state_type(self):
         return EntityStateType.from_name_safe( self.entity_state_type_str )
@@ -186,8 +212,23 @@ class EntityState( models.Model ):
         return
 
     @property
+    def entity_state_role(self) -> EntityStateRole:
+        return EntityStateRole.from_name_safe( self.role_str )
+
+    @entity_state_role.setter
+    def entity_state_role( self, entity_state_role : EntityStateRole ):
+        self.role_str = str(entity_state_role)
+        return
+
+    @property
     def css_class(self):
         return f'hi-entity-state-{self.id}'
+
+    @property
+    def short_name(self):
+        """Name suitable for display when the entity name is already
+        visible elsewhere in the surrounding chrome."""
+        return strip_parent_name_prefix( self.name, self.entity.name )
 
     @property
     def value_range_dict(self):
@@ -207,20 +248,34 @@ class EntityState( models.Model ):
         return
 
     def choices(self) -> List[ Tuple[str,str] ]:
-        if self.value_range_str:
-            try:
-                value_range = json.loads( self.value_range_str )
-                if (( len(value_range) == 2 )
-                    and ( 'min' in value_range )
-                    and ( 'max' in value_range )):
-                    return list()
-                if isinstance( value_range, dict ):
-                    return [ ( str(k), str(v) ) for k, v in value_range.items() ]
-                if isinstance( value_range, list ):
-                    return [ ( str(x), str(x) ) for x in value_range ]
-            except json.JSONDecodeError:
-                pass
-        return self.entity_state_type.choices()
+        # State types whose ``entity_state_value_list`` is populated
+        # (OPEN_CLOSE, SMOKE, ON_OFF, ...) carry authoritative
+        # labels on their EntityStateValue members. Free-form
+        # discrete sets (DISCRETE state type, e.g., HA hvac_mode /
+        # fan preset) store only the value strings in
+        # ``value_range_str`` and rely on the humanizer for
+        # readable labels.
+        type_choices = self.entity_state_type.choices()
+        if type_choices:
+            return type_choices
+        if not self.value_range_str:
+            return list()
+        try:
+            value_range = json.loads( self.value_range_str )
+        except json.JSONDecodeError:
+            return list()
+        if ( isinstance( value_range, dict )
+             and len( value_range ) == 2
+             and 'min' in value_range
+             and 'max' in value_range ):
+            return list()
+        if isinstance( value_range, dict ):
+            stored_values = list( value_range.keys() )
+        elif isinstance( value_range, list ):
+            stored_values = value_range
+        else:
+            return list()
+        return [ ( str(v), get_humanized_name( str(v) ) ) for v in stored_values ]
 
     def toggle_values(self) -> List[str]:
         if self.value_range_str:

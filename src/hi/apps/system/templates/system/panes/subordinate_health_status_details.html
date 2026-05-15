@@ -1,0 +1,63 @@
+{% load icons %}
+{% load tz %}
+{% load humanize %}
+{% comment %}
+Per-subordinate health-status detail block — used inside the
+health-status modal when an AggregateHealthProvider has registered
+subordinate HealthStatusProviders. Mirrors api_health_status_details.html
+in shape but renders only the fields HealthStatus carries (no API
+metrics).
+
+Parameters:
+  subordinate_health_status : HealthStatus instance (required).
+{% endcomment %}
+{% timezone USER_TIMEZONE %}
+
+<div class="{{ subordinate_health_status.border_color_class }} mb-4">
+  <div class="d-flex justify-content-between align-items-center mb-2">
+    <h5 class="mb-0">{{ subordinate_health_status.provider_name }}</h5>
+    <span class="badge {{ subordinate_health_status.status_badge_class }}">
+      {% icon subordinate_health_status.status_icon size="sm" css_class="mr-1" %}{{ subordinate_health_status.status.label }}
+    </span>
+  </div>
+
+  {% if subordinate_health_status.last_message %}
+  <div class="row">
+    <div class="col-sm-3"><strong>Last Message:</strong></div>
+    <div class="col-sm-9">
+      <div class="{{ subordinate_health_status.status_alert_class }} p-2">
+        {{ subordinate_health_status.last_message }}
+      </div>
+    </div>
+  </div>
+  {% endif %}
+
+  {% if subordinate_health_status.heartbeat %}
+  <div class="row mt-2">
+    <div class="col-sm-3"><strong>Heartbeat:</strong></div>
+    <div class="col-sm-9">
+      <span class="heartbeat-indicator {{ subordinate_health_status.heartbeat_css_class }}"></span>
+      <span class="{{ subordinate_health_status.heartbeat_text_class }}">{{ subordinate_health_status.heartbeat_status_text }}</span>
+      <span class="text-muted ml-2">
+        ({{ subordinate_health_status.heartbeat|localtime|naturaltime }})
+      </span>
+    </div>
+  </div>
+  {% endif %}
+
+  <div class="row mt-2">
+    <div class="col-sm-3"><strong>Last Update:</strong></div>
+    <div class="col-sm-9">
+      {{ subordinate_health_status.last_update|localtime|naturaltime }}
+      <span class="text-muted">({{ subordinate_health_status.last_update|localtime|date:"M j, Y H:i:s" }})</span>
+    </div>
+  </div>
+
+  {% if subordinate_health_status.error_count > 1 %}
+  <div class="row mt-2">
+    <div class="col-sm-3"><strong>Error Count:</strong></div>
+    <div class="col-sm-9">{{ subordinate_health_status.error_count }}</div>
+  </div>
+  {% endif %}
+</div>
+{% endtimezone %}

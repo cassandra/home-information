@@ -1,9 +1,12 @@
 from asgiref.sync import sync_to_async
 import logging
 
+from django.conf import settings
+
 from hi.apps.common.singleton import Singleton
 
 from hi.integrations.integration_manager import IntegrationManager
+from hi.testing.dev_overrides import DevOverrideManager
 
 from .controller_history_manager import ControllerHistoryManager
 from .models import Controller
@@ -34,10 +37,19 @@ class ControllerManager( Singleton ):
             integration_id = controller.integration_id,
         )
         integration_controller = integration_gateway.get_controller()
-        
+
+        integration_details = controller.get_integration_details()
+        if settings.DEBUG and settings.DEBUG_TRACE_STATE:
+            DevOverrideManager.trace_state(
+                'hi.control.out',
+                integration_name = integration_details.key.integration_name,
+                hi_entity_state_id = controller.entity_state.id,
+                hi_value = control_value,
+            )
+
         control_result = integration_controller.do_control(
-            integration_details = controller.get_integration_details(),
-            control_value = control_value,
+            integration_details = integration_details,
+            hi_control_value = control_value,
         )
         if not control_result.has_errors:
             ControllerHistoryManager().add_to_controller_history(

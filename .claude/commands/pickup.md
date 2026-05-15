@@ -1,83 +1,73 @@
 ---
-allowed-tools: Bash, Read, TodoWrite, Grep
-description: Pick up a GitHub issue following our development workflow
+allowed-tools: Bash, Read, Write, TodoWrite, Grep, Glob
+description: Pick up a GitHub issue — prepare branch, investigate, and produce a proposed phased work breakdown for review
 argument-hint: [issue-number]
 ---
 
-Pick up GitHub issue #$0 following our development workflow from docs/dev/workflow/workflow-guidelines.md:
+# Pick up GitHub issue #$0
 
-## Issue Pickup Process for #$0
+Prepare an issue for supervised, incremental implementation. This command sets up the branch, investigates the codebase, and produces a **proposed phased work breakdown** that you will review and refine before any implementation begins.
 
-Execute the complete issue pickup workflow:
+This command does NOT write code, commit, or push implementation changes. For ballistic (single-PR) implementation, use `/execute` instead. For multi-issue implementation in one PR, use `/implement` after planning. For supervised incremental implementation after this command, proceed conversationally (e.g., "go to the next step").
 
-1. **Use TodoWrite to plan the pickup process** - Track all workflow steps
-   - Read `docs/CLAUDE.md` for development philosophy and workflow integration
-   - Focus on well-factored solutions and quality over speed
+## Workflow
 
-2. **Read the GitHub issue and all comments** - Understand requirements, context, and discussion using `gh issue view $0`
+1. **Load context.** Read `docs/CLAUDE.md` for development philosophy and standards. Use TodoWrite to track pickup steps.
 
-3. **Complexity Assessment** - Evaluate if pickup is appropriate:
-   - **STOP and use `/plan` if:**
-     - Issue affects multiple apps/systems
-     - Requires breaking changes or major refactoring
-     - Scope unclear or too large for single PR
-     - Epic-level work requiring decomposition
-   - **STOP and use `/investigate` if:**
-     - Implementation approach unclear
-     - Requires significant codebase research
-     - Complex technical challenges or unknowns
-     - Integration between multiple systems
-   - **STOP and use `/design` if:**
-     - Requests "better styling" or "improved layout"
-     - Mentions UI/UX improvements
-     - Needs mockups or wireframes
-     - Visual design decisions required
-   - **ESCALATE to `/execute` if:**
-     - Multiple technical domains require coordination
-     - Issue has functional boundaries divisible among agents
-     - Cross-system impacts need expert specialization
-     - Implementation phases with dependencies between specialties
-     - Work requires backend + frontend + integration coordination
-   - **Continue with pickup if:**
-     - Single domain/file change with clear solution
-     - Bug fix with identified root cause and location
-     - Simple enhancement using existing patterns
-     - Atomic task suitable for single agent
-     - No coordination between technical specialties needed
+2. **Read the issue.** Run `gh issue view $0 --comments`. Understand requirements, context, and any prior design decisions in the thread.
 
-4. **Ensure on latest staging branch** - MANDATORY safety step:
-   - Verify current branch and working directory status
-   - Switch to staging: `git checkout staging`
-   - Pull latest: `git pull origin staging`
-   - Verify clean state: `git status`
+3. **Safety check.** Run `git status`; abort if the working tree is not clean.
 
-5. **Assign issue to yourself** - Use: `gh issue edit $0 --add-assignee @me`
+4. **Prepare staging branch.**
+   - `git checkout staging`
+   - `git pull origin staging`
+   - Verify clean state
 
-6. **Create feature branch immediately** - Use proper naming from `docs/dev/workflow/workflow-guidelines.md`:
-   - Determine branch type from issue labels/content (feature/bugfix/docs/ops/refactor)
-   - Create branch: `git checkout -b [type]/$0-[mnemonic]`
-   - Push branch: `git push -u origin [branch-name]`
+5. **Assign and branch.**
+   - `gh issue edit $0 --add-assignee @me`
+   - Determine branch type (feature/bugfix/docs/ops/refactor) per issue labels/content
+   - `git checkout -b <type>/$0-<mnemonic>`
+   - `git push -u origin <branch>`
 
-7. **Investigation and planning** - Research the codebase:
-   - Search for relevant code, components, and files
-   - Identify affected areas and dependencies
-   - Understand current implementation
-   - Plan implementation approach
+6. **Investigate** (read-only):
+   - Identify affected apps, modules, and file groups
+   - Note existing patterns and utilities the work should follow
+   - Identify dependencies between parts of the work
+   - Flag ambiguities or gaps in the issue
 
-8. **Post investigation comment to GitHub issue** - Document:
-   - Summary of investigation findings
-   - Proposed implementation approach
-   - Key files/components to be modified
-   - Any questions or concerns identified
-   - Multi-phase strategy if applicable (following workflow-guidelines.md)
+7. **Produce a proposed phased work breakdown.**
 
-**Critical requirements:**
-- Follow exact workflow from `docs/dev/workflow/workflow-guidelines.md`
-- Follow branch naming conventions from `docs/dev/workflow/workflow-guidelines.md`
-- Create feature branch BEFORE any investigation work
-- Always verify clean working directory before branch operations
-- Post comprehensive investigation findings to GitHub issue
+   Segment implementation into phases suitable for independent review. Each phase should be a coherent, reviewable chunk that respects dependencies (e.g., DB migration before code using the new field). Simple issues yield a one-phase plan; complex issues yield multiple phases.
+
+   **Each phase specifies:**
+   - Title and brief intent
+   - Files expected to be modified or created
+   - Tests to add or update
+   - Manual verification notes (what the user can check after this phase)
+   - Dependencies on prior phases
+
+8. **Persist the plan in two places.**
+
+   **GitHub issue comment** via `gh issue comment $0 --body-file <path>`, preceded by:
+
+   > **PROPOSED WORK BREAKDOWN — pending user review**
+   >
+   > Generated by `/pickup`. Phases may be added, removed, merged, reordered, or rewritten by the user before implementation begins.
+
+   **Local working copy** at `.claude/state/$0-plan.md` (create `.claude/state/` if needed). Same content as the GH comment, minus the header.
+
+9. **Report and stop.**
+
+   Summarize: branch created, investigation findings, plan posted and written locally. State clearly that the next step is for the user to review and refine the proposed breakdown. Do NOT begin implementation. Do NOT make code changes.
+
+## Critical requirements
+
+- Branch creation MUST precede investigation
+- NO code implementation in this command — investigation and planning only
+- The plan is PROPOSED; the user is expected to review and may substantially revise it
+- Phase definitions must support independent review and manual verification
+- Follow branch naming and workflow conventions in `docs/dev/workflow/workflow-guidelines.md`
 
 **Issue to pick up:** #$0
 
-Begin the pickup process now.
+Begin pickup now. Stop after the plan is posted and await user review of the work breakdown.

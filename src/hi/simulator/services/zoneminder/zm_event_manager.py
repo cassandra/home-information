@@ -36,6 +36,22 @@ class ZmSimEventManager( Singleton ):
         self._update_zm_sim_events( zm_sim_event_list = zm_sim_event_list )
         return zm_sim_event_list
 
+    def find_event_by_id( self, event_id : int ) -> ZmSimEvent:
+        """Walk every monitor's history and return the first event
+        with the given id, or None if no match. Used by the media
+        endpoints (thumbnail / MJPEG playback) to render frames
+        with the right monitor + event metadata baked in. Returns
+        None for unknown ids so the views can fall back to a
+        generic placeholder rather than 404."""
+        with self._data_lock:
+            for zm_event_history in self._zm_sim_events_map.values():
+                for zm_sim_event in zm_event_history._zm_sim_events:
+                    if zm_sim_event.event_id == event_id:
+                        return zm_sim_event
+                    continue
+                continue
+        return None
+
     def _update_zm_sim_events( self, zm_sim_event_list : List[ ZmSimEvent ] ):
         for zm_sim_event in zm_sim_event_list:
             if zm_sim_event.is_active:

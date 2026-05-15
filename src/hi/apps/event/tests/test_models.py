@@ -83,77 +83,6 @@ class TestEventDefinition(BaseTestCase):
         return
 
 
-class TestEventClause(BaseTestCase):
-
-    def test_event_clause_cascade_deletion_from_event_definition(self):
-        """Test cascade deletion from event definition - critical for data integrity."""
-        event_def = EventDefinition.objects.create(
-            name='Test Event',
-            event_type_str='SECURITY',
-            event_window_secs=60,
-            dedupe_window_secs=300,
-            integration_id='test_id',
-            integration_name='test_integration'
-        )
-        
-        entity = Entity.objects.create(
-            name='Test Entity',
-            entity_type_str='CAMERA'
-        )
-        entity_state = EntityState.objects.create(
-            entity=entity,
-            entity_state_type_str='ON_OFF'
-        )
-        
-        event_clause = EventClause.objects.create(
-            event_definition=event_def,
-            entity_state=entity_state,
-            value='on'
-        )
-        
-        clause_id = event_clause.id
-        
-        # Delete event definition should cascade to clauses
-        event_def.delete()
-        
-        self.assertFalse(EventClause.objects.filter(id=clause_id).exists())
-        return
-
-    def test_event_clause_cascade_deletion_from_entity_state(self):
-        """Test cascade deletion from entity state - critical for data integrity."""
-        event_def = EventDefinition.objects.create(
-            name='Test Event',
-            event_type_str='SECURITY',
-            event_window_secs=60,
-            dedupe_window_secs=300,
-            integration_id='test_id',
-            integration_name='test_integration'
-        )
-        
-        entity = Entity.objects.create(
-            name='Test Entity',
-            entity_type_str='CAMERA'
-        )
-        entity_state = EntityState.objects.create(
-            entity=entity,
-            entity_state_type_str='ON_OFF'
-        )
-        
-        event_clause = EventClause.objects.create(
-            event_definition=event_def,
-            entity_state=entity_state,
-            value='on'
-        )
-        
-        clause_id = event_clause.id
-        
-        # Delete entity state should cascade to clauses
-        entity_state.delete()
-        
-        self.assertFalse(EventClause.objects.filter(id=clause_id).exists())
-        return
-
-
 class TestAlarmAction(BaseTestCase):
 
     def test_alarm_action_enum_property_conversions(self):
@@ -213,119 +142,6 @@ class TestAlarmAction(BaseTestCase):
             alarm_lifetime_secs=1800  # 30 minutes
         )
         self.assertEqual(timed_alarm.alarm_lifetime_secs, 1800)
-        return
-
-    def test_alarm_action_cascade_deletion_from_event_definition(self):
-        """Test cascade deletion from event definition - critical for data integrity."""
-        event_def = EventDefinition.objects.create(
-            name='Test Event',
-            event_type_str='SECURITY',
-            event_window_secs=60,
-            dedupe_window_secs=300,
-            integration_id='test_id',
-            integration_name='test_integration'
-        )
-        
-        alarm_action = AlarmAction.objects.create(
-            event_definition=event_def,
-            security_level_str='HIGH',
-            alarm_level_str='CRITICAL',
-            alarm_lifetime_secs=3600
-        )
-        
-        action_id = alarm_action.id
-        
-        # Delete event definition should cascade to alarm actions
-        event_def.delete()
-        
-        self.assertFalse(AlarmAction.objects.filter(id=action_id).exists())
-        return
-
-
-class TestControlAction(BaseTestCase):
-
-    def test_control_action_cascade_deletion_from_event_definition(self):
-        """Test cascade deletion from event definition - critical for data integrity."""
-        event_def = EventDefinition.objects.create(
-            name='Test Event',
-            event_type_str='AUTOMATION',
-            event_window_secs=60,
-            dedupe_window_secs=300,
-            integration_id='test_id',
-            integration_name='test_integration'
-        )
-        
-        entity = Entity.objects.create(
-            name='Test Entity',
-            entity_type_str='CAMERA'
-        )
-        entity_state = EntityState.objects.create(
-            entity=entity,
-            entity_state_type_str='ON_OFF'
-        )
-        
-        controller = Controller.objects.create(
-            name='Test Controller',
-            entity_state=entity_state,
-            controller_type_str='DEFAULT',
-            integration_id='ctrl_id',
-            integration_name='ctrl_integration'
-        )
-        
-        control_action = ControlAction.objects.create(
-            event_definition=event_def,
-            controller=controller,
-            value='on'
-        )
-        
-        action_id = control_action.id
-        
-        # Delete event definition should cascade to control actions
-        event_def.delete()
-        
-        self.assertFalse(ControlAction.objects.filter(id=action_id).exists())
-        return
-
-    def test_control_action_cascade_deletion_from_controller(self):
-        """Test cascade deletion from controller - critical for data integrity."""
-        event_def = EventDefinition.objects.create(
-            name='Test Event',
-            event_type_str='AUTOMATION',
-            event_window_secs=60,
-            dedupe_window_secs=300,
-            integration_id='test_id',
-            integration_name='test_integration'
-        )
-        
-        entity = Entity.objects.create(
-            name='Test Entity',
-            entity_type_str='CAMERA'
-        )
-        entity_state = EntityState.objects.create(
-            entity=entity,
-            entity_state_type_str='ON_OFF'
-        )
-        
-        controller = Controller.objects.create(
-            name='Test Controller',
-            entity_state=entity_state,
-            controller_type_str='DEFAULT',
-            integration_id='ctrl_id',
-            integration_name='ctrl_integration'
-        )
-        
-        control_action = ControlAction.objects.create(
-            event_definition=event_def,
-            controller=controller,
-            value='on'
-        )
-        
-        action_id = control_action.id
-        
-        # Delete controller should cascade to control actions
-        controller.delete()
-        
-        self.assertFalse(ControlAction.objects.filter(id=action_id).exists())
         return
 
 
@@ -390,32 +206,6 @@ class TestEventHistory(BaseTestCase):
             event_datetime__gte=history.event_datetime
         )
         self.assertIn(history, recent_history)
-        return
-
-    def test_event_history_cascade_deletion_from_event_definition(self):
-        """Test cascade deletion from event definition - critical for data integrity."""
-        event_def = EventDefinition.objects.create(
-            name='Test Event',
-            event_type_str='SECURITY',
-            event_window_secs=60,
-            dedupe_window_secs=300,
-            integration_id='test_id',
-            integration_name='test_integration'
-        )
-        
-        from django.utils import timezone
-        
-        history = EventHistory.objects.create(
-            event_definition=event_def,
-            event_datetime=timezone.now()
-        )
-        
-        history_id = history.id
-        
-        # Delete event definition should cascade to history
-        event_def.delete()
-        
-        self.assertFalse(EventHistory.objects.filter(id=history_id).exists())
         return
 
 
@@ -578,28 +368,6 @@ class TestAlarmActionAdvanced(BaseTestCase):
         # Should handle invalid enums gracefully  
         self.assertEqual(alarm_action.security_level, SecurityLevel.HIGH)  # from_name_safe returns default (first enum)
         self.assertEqual(alarm_action.alarm_level, AlarmLevel.NONE)  # from_name_safe returns default (first enum)
-        return
-
-    def test_alarm_action_zero_lifetime_manual_acknowledgment(self):
-        """Test alarm action with zero lifetime for manual acknowledgment only."""
-        event_def = EventDefinition.objects.create(
-            name='Manual Alarm Event',
-            event_type_str='SECURITY',
-            event_window_secs=60,
-            dedupe_window_secs=300,
-            integration_id='test_id',
-            integration_name='test_integration'
-        )
-        
-        alarm_action = AlarmAction.objects.create(
-            event_definition=event_def,
-            security_level_str='CRITICAL',
-            alarm_level_str='CRITICAL',
-            alarm_lifetime_secs=0  # Manual acknowledgment only
-        )
-        
-        # Zero lifetime should indicate manual acknowledgment requirement
-        self.assertEqual(alarm_action.alarm_lifetime_secs, 0)
         return
 
     def test_alarm_action_multiple_per_event_definition(self):

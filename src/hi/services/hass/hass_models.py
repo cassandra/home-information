@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import Dict
+from typing import Dict, Optional
 
 
 class HassApi:
@@ -46,6 +46,10 @@ class HassApi:
     MEDIA_STOP_SERVICE = 'media_stop'
     VOLUME_SET_SERVICE = 'volume_set'
     SET_PERCENTAGE_SERVICE = 'set_percentage'
+    OSCILLATE_SERVICE = 'oscillate'
+    SET_DIRECTION_SERVICE = 'set_direction'
+    SET_PRESET_MODE_SERVICE = 'set_preset_mode'
+    SET_FAN_MODE_SERVICE = 'set_fan_mode'
     
     # Legacy aliases for backward compatibility (remove after migration)
     AUTOMATION_ID_PREFIX = AUTOMATION_DOMAIN
@@ -68,11 +72,16 @@ class HassApi:
     BATTERY_ID_SUFFIX = '_battery'
     EVENTS_last_HOUR_ID_SUFFIX = '_events_last_hour'
     HUMIDITY_ID_SUFFIX = '_humidity'
+    ILLUMINANCE_ID_SUFFIX = '_illuminance'
     LIGHT_ID_SUFFIX = '_light'
+    MOISTURE_ID_SUFFIX = '_moisture'
     MOTION_ID_SUFFIX = '_motion'
+    OCCUPANCY_ID_SUFFIX = '_occupancy'
+    PRESSURE_ID_SUFFIX = '_pressure'
     STATE_ID_SUFFIX = '_state'
     STATUS_ID_SUFFIX = '_status'
     TEMPERATURE_ID_SUFFIX = '_temperature'
+    WIND_SPEED_ID_SUFFIX = '_wind_speed'
     # Sun
     NEXT_DAWN_ID_SUFFIX = '_next_dawn'
     NEXT_DUSK_ID_SUFFIX = '_next_dusk'
@@ -90,22 +99,93 @@ class HassApi:
     UNIT_OF_MEASUREMENT_ATTR = 'unit_of_measurement'
     
     BATTERY_DEVICE_CLASS = 'battery'
+    BLIND_DEVICE_CLASS = 'blind'  # cover domain
+    CARBON_MONOXIDE_DEVICE_CLASS = 'carbon_monoxide'
     CONNECTIVITY_DEVICE_CLASS = 'connectivity'
     DOOR_DEVICE_CLASS = 'door'
     ENUM_DEVICE_CLASS = 'enum'
-    GARAGE_DOOR_DEVICE_CLASS = 'garage_door'
+    GARAGE_DEVICE_CLASS = 'garage'  # cover domain
+    GARAGE_DOOR_DEVICE_CLASS = 'garage_door'  # binary_sensor domain
+    GAS_DEVICE_CLASS = 'gas'
     HUMIDITY_DEVICE_CLASS = 'humidity'
+    ILLUMINANCE_DEVICE_CLASS = 'illuminance'
     LIGHT_DEVICE_CLASS = 'light'
+    MOISTURE_DEVICE_CLASS = 'moisture'
     MOTION_DEVICE_CLASS = 'motion'
+    OCCUPANCY_DEVICE_CLASS = 'occupancy'
+    OPENING_DEVICE_CLASS = 'opening'
     OUTLET_DEVICE_CLASS = 'outlet'
+    POWER_DEVICE_CLASS = 'power'
+    PRESENCE_DEVICE_CLASS = 'presence'
+    PRESSURE_DEVICE_CLASS = 'pressure'
+    SMOKE_DEVICE_CLASS = 'smoke'
     TEMPERATURE_DEVICE_CLASS = 'temperature'
     TIMESTAMP_DEVICE_CLASS = 'timestamp'
+    WIND_SPEED_DEVICE_CLASS = 'wind_speed'
     WINDOW_DEVICE_CLASS = 'window'
 
     OPEN_CLOSE_DEVICE_CLASS_SET = { DOOR_DEVICE_CLASS,
                                     GARAGE_DOOR_DEVICE_CLASS,
+                                    OPENING_DEVICE_CLASS,
                                     WINDOW_DEVICE_CLASS }
-    
+
+    MOTION_LIKE_DEVICE_CLASS_SET = { MOTION_DEVICE_CLASS,
+                                     OCCUPANCY_DEVICE_CLASS,
+                                     PRESENCE_DEVICE_CLASS }
+
+    # Climate-domain attributes and wire values.
+    CURRENT_TEMPERATURE_ATTR = 'current_temperature'
+    CURRENT_HUMIDITY_ATTR    = 'current_humidity'
+    TARGET_TEMPERATURE_ATTR  = 'temperature'           # HA's setpoint attribute name
+    TARGET_TEMP_LOW_ATTR     = 'target_temp_low'
+    TARGET_TEMP_HIGH_ATTR    = 'target_temp_high'
+    HVAC_MODE_ATTR           = 'hvac_mode'
+    HVAC_MODES_ATTR          = 'hvac_modes'
+    HVAC_ACTION_ATTR         = 'hvac_action'
+    FAN_MODE_ATTR            = 'fan_mode'
+    FAN_MODES_ATTR           = 'fan_modes'
+    TEMPERATURE_UNIT_ATTR    = 'temperature_unit'
+    HVAC_MODE_HEAT_COOL      = 'heat_cool'             # dual-setpoint mode wire value
+
+    # Light-domain attributes.
+    BRIGHTNESS_ATTR             = 'brightness'
+    BRIGHTNESS_PCT_PARAM        = 'brightness_pct'     # service-call parameter name
+    COLOR_MODE_ATTR             = 'color_mode'
+    COLOR_TEMP_KELVIN_ATTR      = 'color_temp_kelvin'
+    HS_COLOR_ATTR               = 'hs_color'
+    MIN_COLOR_TEMP_KELVIN_ATTR  = 'min_color_temp_kelvin'
+    MAX_COLOR_TEMP_KELVIN_ATTR  = 'max_color_temp_kelvin'
+    SUPPORTED_COLOR_MODES_ATTR  = 'supported_color_modes'
+
+    # Color mode wire values (the value space of the COLOR_MODE_ATTR).
+    COLOR_MODE_UNKNOWN     = 'unknown'
+    COLOR_MODE_ONOFF       = 'onoff'
+    COLOR_MODE_BRIGHTNESS  = 'brightness'
+    COLOR_MODE_COLOR_TEMP  = 'color_temp'
+    COLOR_MODE_HS          = 'hs'
+    COLOR_MODE_RGB         = 'rgb'
+    COLOR_MODE_RGBW        = 'rgbw'
+    COLOR_MODE_RGBWW       = 'rgbww'
+    COLOR_MODE_WHITE       = 'white'
+    COLOR_MODE_XY          = 'xy'
+
+    # Fan-domain attributes and wire values.
+    PERCENTAGE_ATTR       = 'percentage'
+    OSCILLATING_ATTR      = 'oscillating'
+    DIRECTION_ATTR        = 'direction'
+    PRESET_MODE_ATTR      = 'preset_mode'
+    PRESET_MODES_ATTR     = 'preset_modes'
+    FAN_DIRECTION_FORWARD = 'forward'
+    FAN_DIRECTION_REVERSE = 'reverse'
+
+    # Cover-domain attributes.
+    CURRENT_POSITION_ATTR = 'current_position'
+    POSITION_PARAM        = 'position'                 # service-call parameter name
+
+    # Media-player-domain service parameter.
+    VOLUME_LEVEL_PARAM    = 'volume_level'
+
+
 
 @dataclass
 class HassState:
@@ -169,7 +249,17 @@ class HassState:
             return f'insteon:{self.insteon_address}'
         return None
 
-    
+
+@dataclass
+class HassServiceCall:
+    """Outbound HA service call composed from a HI control value."""
+
+    domain          : str
+    service         : str
+    hass_entity_id  : str
+    service_data    : Optional[Dict] = None
+
+
 class HassDevice:
     """ An aggregate of one or more HassStates associated with a single device. """
     

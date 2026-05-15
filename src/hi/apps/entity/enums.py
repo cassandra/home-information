@@ -1,6 +1,7 @@
 from typing import List, Set, Tuple
 
 from hi.apps.common.enums import LabeledEnum
+from hi.apps.common.utils import get_humanized_name
 
 
 class EntityType(LabeledEnum):
@@ -53,6 +54,7 @@ class EntityType(LabeledEnum):
     GARAGE_DOOR          = ( 'Garage Door', '' )
     GARAGE_DOOR_OPENER   = ( 'Garage Door Opener', '' )
     GARBAGE_DISPOSAL     = ( 'Garbage Disposal', '' )
+    GAS_DETECTOR         = ( 'Gas Detector', '' )
     GAS_LINE             = ( 'Gas Line', '' )
     GAS_METER            = ( 'Gas Meter', '' )
     GENERATOR            = ( 'Generator', '' )
@@ -70,6 +72,7 @@ class EntityType(LabeledEnum):
     IRRIGATION_CONTROLLER = ( 'Irrigation Controller', '' )
     LAWN_MOWER           = ( 'Lawn Mower', '' )
     LEAF_BLOWER          = ( 'Leaf Blower', '' )
+    LEAK_SENSOR          = ( 'Leak Sensor', '' )
     LIGHT                = ( 'Light', '' )
     LIGHT_SENSOR         = ( 'Light Sensor', '' )
     MICROWAVE_OVEN       = ( 'Microwave Oven', '' )
@@ -78,6 +81,7 @@ class EntityType(LabeledEnum):
     MOTOR                = ( 'Motor', '' )
     NETWORK_SWITCH       = ( 'Network Switch', '' )
     ON_OFF_SWITCH        = ( 'On/Off Switch', '' )
+    OPEN_CLOSE_ACTUATOR  = ( 'Open/Close Actuator', '' )  # Controls things that open/close
     OPEN_CLOSE_SENSOR    = ( 'Open/Close Sensor', '' )
     OTHER                = ( 'Other', '' )  # Will use generic visual element
     OVEN                 = ( 'Oven', '' )
@@ -91,6 +95,7 @@ class EntityType(LabeledEnum):
     PRESENCE_SENSOR      = ( 'Presence Sensor', '' )
     PRINTER              = ( 'Printer', '' )
     PUMP                 = ( 'Pump', '' )
+    RADON_DETECTOR       = ( 'Radon Detector', '' )
     RANGE_HOOD           = ( 'Range Hood', '' )
     REFRIGERATOR         = ( 'Refrigerator', '' )
     SATELLITE_DISH       = ( 'Satellite Dish'  , '' )
@@ -100,7 +105,6 @@ class EntityType(LabeledEnum):
     SHOWER               = ( 'Shower', '' )
     SINK                 = ( 'Sink', '' ) 
     SKYLIGHT             = ( 'Skylight', '' )
-    RADON_DETECTOR       = ( 'Radon Detector', '' )
     SMOKE_DETECTOR       = ( 'Smoke Detector', '' )
     SOLAR_PANEL          = ( 'Solar Panel', '' )
     SPEAKER              = ( 'Speaker', '' )
@@ -184,9 +188,26 @@ class EntityType(LabeledEnum):
     def requires_open_path(self) -> bool:
         """True if EntityType requires an open path"""
         return self in self.get_open_path_types()
-                    
-    
+
+    def entity_status_template_name(self) -> str:
+        """Template used to render the EntityStatusView modal's body
+        for this EntityType. Create the template at the returned
+        path to define an EntityType-specific layout (e.g., a
+        graphical thermostat widget); otherwise the dispatcher
+        falls back to the default flat-list rendering."""
+        return f'entity/modals/entity_status_{self.name.lower()}.html'
+
+
 class EntityStateValue(LabeledEnum):
+    # Alarm-style values (e.g., ACTIVE, OPEN, SMOKE_DETECTED) are
+    # rendered as the ``status`` attribute on both the SVG icon
+    # ``g`` element and the sensor card ``div``. Each new pair
+    # needs matching ``g[status="..."]`` and ``div[status="..."]``
+    # rules in main.css for the resting and alarmed states (the
+    # resting state may legitimately omit the ``g`` rule when no
+    # glow is wanted). Missing rules surface as a first-paint
+    # color flash that disappears on the first poll once the
+    # bucketed StatusStyle value gets applied.
 
     ACTIVE         = ( 'Active', '' )
     IDLE           = ( 'Idle', '' )
@@ -202,10 +223,131 @@ class EntityStateValue(LabeledEnum):
 
     HIGH           = ( 'High', '' )
     LOW            = ( 'Low', '' )
- 
-    
+
+    SMOKE_DETECTED = ( 'Smoke Detected', '' )
+    SMOKE_CLEAR    = ( 'Clear', '' )
+
+    MOISTURE_DETECTED = ( 'Moisture Detected', '' )
+    MOISTURE_CLEAR    = ( 'Clear', '' )
+
+    CO_DETECTED    = ( 'Carbon Monoxide Detected', '' )
+    CO_CLEAR       = ( 'Clear', '' )
+
+    GAS_DETECTED   = ( 'Gas Detected', '' )
+    GAS_CLEAR      = ( 'Clear', '' )
+
+    # COLOR_MODE values — modes a smart bulb can be in. UNKNOWN
+    # covers integrations that don't report a mode and cases where
+    # the bulb hasn't yet declared one. Names follow HA's modes;
+    # see EntityStateType.COLOR_MODE for the integration mapping.
+    COLOR_MODE_UNKNOWN     = ( 'Unknown', '' )
+    COLOR_MODE_ONOFF       = ( 'Basic On/Off', '' )
+    COLOR_MODE_BRIGHTNESS  = ( 'Brightness', '' )
+    COLOR_MODE_COLOR_TEMP  = ( 'White Temperature', '' )
+    COLOR_MODE_HS          = ( 'HS Color', '' )
+    COLOR_MODE_RGB         = ( 'RGB Color', '' )
+    COLOR_MODE_RGBW        = ( 'RGBW Color', '' )
+    COLOR_MODE_RGBWW       = ( 'RGBWW Color', '' )
+    COLOR_MODE_XY          = ( 'XY Color', '' )
+    COLOR_MODE_WHITE       = ( 'White', '' )
+
+    @classmethod
+    def to_display_label( cls, entity_state_value : str ) -> str:
+        """Resolve a stored EntityState value to a display label.
+        Known enum members return their authoritative ``.label``;
+        free-form values (e.g., HA-derived ``'heating'``,
+        ``'fan_only'`` after integration-boundary normalization)
+        are humanized into title case. Numeric values pass through
+        unchanged so the humanizer doesn't mangle them."""
+        if not entity_state_value:
+            return entity_state_value
+        try:
+            return cls.from_name( entity_state_value ).label
+        except ValueError:
+            if entity_state_value[ 0 ].isdigit():
+                return entity_state_value
+            return get_humanized_name( entity_state_value )
+
+
+class EntityStateRole(LabeledEnum):
+    """Semantic role an EntityState plays within its enclosing entity's
+    presentation. Type defaults (member name matches an EntityStateType
+    member) provide a baseline for any EntityState; domain-prefixed
+    members refine the role when multiple EntityStates of the same type
+    coexist on an entity (e.g., a thermostat's current vs. target
+    temperatures).
+
+    Some labels collide between a type-default member and a domain
+    refinement (e.g., ON_OFF / LIGHT_ON_OFF both display "On/Off";
+    BRIGHTNESS-like roles share labels). This is intentional: labels
+    describe what the user reads; the enum *name* is the disambiguator
+    used internally (admin, debug, role-priority lookups)."""
+
+    # Type defaults. One member per EntityStateType; names match
+    # so EntityStateType.default_role() can resolve by name.
+    DISCRETE             = ( 'Discrete'           , '' )
+    CONTINUOUS           = ( 'Continuous'         , '' )
+    MULTIVALUED          = ( 'Multi-valued'       , '' )
+    BLOB                 = ( 'Blob'               , '' )
+    AIR_PRESSURE         = ( 'Air Pressure'       , '' )
+    BANDWIDTH_USAGE      = ( 'Bandwidth Usage'    , '' )
+    BATTERY_LEVEL        = ( 'Battery'            , '' )
+    COLOR_MODE           = ( 'Color Mode'         , '' )
+    COLOR_TEMPERATURE    = ( 'Color Temperature'  , '' )
+    CONNECTIVITY         = ( 'Connectivity'       , '' )
+    DATETIME             = ( 'Date/Time'          , '' )
+    ELECTRIC_USAGE       = ( 'Electric Usage'     , '' )
+    HIGH_LOW             = ( 'High/Low'           , '' )
+    HUE                  = ( 'Hue'                , '' )
+    HUMIDITY             = ( 'Humidity'           , '' )
+    LIGHT_DIMMER         = ( 'Light Dimmer'       , '' )
+    LIGHT_LEVEL          = ( 'Light Level'        , '' )
+    MOISTURE             = ( 'Moisture'           , '' )
+    MOVEMENT             = ( 'Movement'           , '' )
+    ON_OFF               = ( 'On/Off'             , '' )
+    OPEN_CLOSE           = ( 'Open/Close'         , '' )
+    OPEN_CLOSE_POSITION  = ( 'Open/Close Position', '' )
+    POWER_LEVEL          = ( 'Power Level'        , '' )
+    PRESENCE             = ( 'Presence'           , '' )
+    SATURATION           = ( 'Saturation'         , '' )
+    SMOKE                = ( 'Smoke'              , '' )
+    CO                   = ( 'Carbon Monoxide'    , '' )
+    GAS                  = ( 'Gas'                , '' )
+    SOUND_LEVEL          = ( 'Sound Level'        , '' )
+    TEMPERATURE          = ( 'Temperature'        , '' )
+    WATER_FLOW           = ( 'Water Flow'         , '' )
+    WIND_SPEED           = ( 'Wind Speed'         , '' )
+
+    # Domain-prefixed refinements for multi-state entities.
+    THERMOSTAT_CURRENT_TEMPERATURE     = ( 'Current Temperature' , '' )
+    THERMOSTAT_TARGET_TEMPERATURE      = ( 'Setpoint'            , '' )
+    THERMOSTAT_TARGET_TEMPERATURE_LOW  = ( 'Setpoint Low'        , '' )
+    THERMOSTAT_TARGET_TEMPERATURE_HIGH = ( 'Setpoint High'       , '' )
+    HVAC_MODE                          = ( 'HVAC Mode'           , '' )
+    HVAC_ACTION                        = ( 'HVAC Action'         , '' )
+    FAN_MODE                           = ( 'Fan Mode'            , '' )
+    PRESET_MODE                        = ( 'Preset Mode'         , '' )
+    SWING_MODE                         = ( 'Swing Mode'          , '' )
+
+    FAN_SPEED                          = ( 'Fan Speed'           , '' )
+    FAN_OSCILLATION                    = ( 'Fan Oscillation'     , '' )
+    FAN_DIRECTION                      = ( 'Fan Direction'       , '' )
+    FAN_PRESET_MODE                    = ( 'Fan Preset Mode'     , '' )
+
+    LIGHT_BRIGHTNESS                   = ( 'Brightness'          , '' )
+    LIGHT_HUE                          = ( 'Hue'                 , '' )
+    LIGHT_SATURATION                   = ( 'Saturation'          , '' )
+    LIGHT_COLOR_TEMPERATURE            = ( 'Color Temperature'   , '' )
+    LIGHT_COLOR_MODE                   = ( 'Color Mode'          , '' )
+    LIGHT_ON_OFF                       = ( 'On/Off'              , '' )
+
+    @classmethod
+    def default(cls):
+        return cls.DISCRETE
+
+
 class EntityStateType(LabeledEnum):
-    
+
     # General types
     DISCRETE         = ( 'Discrete'         , 'Single value, fixed set of possible values',
                          [] )
@@ -226,24 +368,54 @@ class EntityStateType(LabeledEnum):
                          [] )
     BANDWIDTH_USAGE  = ( 'Bandwidth Usage'  , '',
                          [] )
+    BATTERY_LEVEL    = ( 'Battery'          , 'Battery level as a percentage (0-100)',
+                         [] )
+    # COLOR_MODE reports which lighting mode a smart bulb is
+    # currently in (e.g., HS color, white temperature, basic
+    # on/off). The per-device supported subset is declared by HA
+    # in ``supported_color_modes`` and captured in
+    # ``value_range_str`` at import time, so ``choices()`` reads
+    # from there rather than enumerating every COLOR_MODE_*
+    # member here. The COLOR_MODE_* EntityStateValue members
+    # still provide authoritative labels for display via
+    # ``to_display_label``.
+    COLOR_MODE       = ( 'Color Mode'       , 'Active lighting color mode',
+                         [] )
+    # COLOR_TEMPERATURE is the white-light Kelvin scale
+    # (warm 2000K to cool 6500K); distinct from a chromatic
+    # color (HUE+SATURATION) since the underlying physics and
+    # the natural UI affordance are different — a 1-D Kelvin
+    # slider, not a 2-D color picker.
+    COLOR_TEMPERATURE = ( 'Color Temperature', 'White-light temperature in Kelvin',
+                          [] )
     CONNECTIVITY     = ( 'Connectivity'     , '',
                          [ EntityStateValue.CONNECTED,
-                           EntityStateValue.DISCONNECTED ] )    
+                           EntityStateValue.DISCONNECTED ] )
     DATETIME         = ( 'Date/Time'        , '',
                          [] )
     ELECTRIC_USAGE   = ( 'Electric Usage'   , '',
                          [] )
     HIGH_LOW         = ( 'High/Low'         , '',
                          [ EntityStateValue.HIGH,
-                           EntityStateValue.LOW ] )    
+                           EntityStateValue.LOW ] )
+    # HUE and SATURATION are paired in HA's ``hs_color`` 2-tuple
+    # but modeled as separate 1-D EntityStates here so each gets
+    # its own slider; the controller dispatch composes the pair
+    # at the HA service-call boundary. HUE is in degrees (0-360);
+    # SATURATION is a percentage (0-100). Brightness is a third,
+    # independent dimension (LIGHT_DIMMER) — see hi_styles.py
+    # for the chromaticity-vs-intensity rationale.
+    HUE              = ( 'Hue'              , 'Color hue in degrees (0-360)',
+                         [] )
     HUMIDITY         = ( 'Humidity'         , '',
                          [] )
     LIGHT_DIMMER     = ( 'Light Dimmer'     , 'Controllable light brightness (0-100)',
                          [] )
     LIGHT_LEVEL      = ( 'Light Level'      , '',
                          [] )
-    MOISTURE         = ( 'Moisture'         , '',
-                         [] )
+    MOISTURE         = ( 'Moisture'         , 'Binary leak / moisture detected state',
+                         [ EntityStateValue.MOISTURE_DETECTED,
+                           EntityStateValue.MOISTURE_CLEAR ] )
     MOVEMENT         = ( 'Movement'         , '',
                          [ EntityStateValue.ACTIVE,
                            EntityStateValue.IDLE ] )    
@@ -252,10 +424,29 @@ class EntityStateType(LabeledEnum):
                            EntityStateValue.OFF ] )    
     OPEN_CLOSE       = ( 'Open/Close'       , '',
                          [ EntityStateValue.OPEN,
-                           EntityStateValue.CLOSED ] )    
+                           EntityStateValue.CLOSED ] )
+    OPEN_CLOSE_POSITION = ( 'Open/Close Position',
+                            'Continuous open/close position as a percentage (0=closed, 100=open)',
+                            [] )
+    POWER_LEVEL      = ( 'Power Level',
+                         'Generic continuous power/intensity/speed (0-100). Per-context label '
+                         '(e.g., "Speed" for fans, "Aperture" for dampers) is set on the '
+                         'EntityState.',
+                         [] )
     PRESENCE         = ( 'Presence'         , '',
                          [ EntityStateValue.ACTIVE,
                            EntityStateValue.IDLE ] )
+    SATURATION       = ( 'Saturation'       , 'Color saturation as a percentage (0-100)',
+                         [] )
+    SMOKE            = ( 'Smoke'            , '',
+                         [ EntityStateValue.SMOKE_DETECTED,
+                           EntityStateValue.SMOKE_CLEAR ] )
+    CO               = ( 'Carbon Monoxide'  , 'Binary carbon monoxide detected state',
+                         [ EntityStateValue.CO_DETECTED,
+                           EntityStateValue.CO_CLEAR ] )
+    GAS              = ( 'Gas'              , 'Binary combustible-gas detected state',
+                         [ EntityStateValue.GAS_DETECTED,
+                           EntityStateValue.GAS_CLEAR ] )
     SOUND_LEVEL      = ( 'Sound Level'      , '',
                          [] )
     TEMPERATURE      = ( 'Temperature'      , '',
@@ -278,26 +469,14 @@ class EntityStateType(LabeledEnum):
     
     def toggle_values(self) -> List[str]:
         return [ str(x) for x in self.entity_state_value_list ]
-                         
-    def value_template_name(self):
-        """
-        Template used to render a sensor's value for this state. Create the
-        template at the given location to define a state-specific rendering, else
-        it will fallback to the default template of
-        "entity/panes/sensor_response_value_default.html"
-        """
-        return f'sense/panes/sensor_response_value_{self.name.lower()}.html'
 
-    def controller_template_name(self):
-        """
-        Template used to render a controllers for this state. Create the
-        template at the given location to define a state-specific rendering, else
-        it will fallback to the default template of
-        "entity/panes/controller_value_default.html"
-        """
-        return f'control/panes/controller_{self.name.lower()}.html'
-    
-    
+    def default_role(self) -> EntityStateRole:
+        """The default EntityStateRole for an EntityState of this type.
+        Type-default ``EntityStateRole`` members share their name with
+        the matching ``EntityStateType`` member; lookup is by name."""
+        return EntityStateRole[ self.name ]
+
+
 class TemperatureUnit(LabeledEnum):
 
     FAHRENHEIT  = ( 'Fahrenheit', '' )
@@ -413,6 +592,7 @@ class EntityGroupType(LabeledEnum):
         EntityType.WALL_SWITCH,
     })
     OTHER = ( 'Other', '', {
+        EntityType.OPEN_CLOSE_ACTUATOR,
         EntityType.OTHER,
     })
     OUTDOORS = ( 'Outdoors', '', {

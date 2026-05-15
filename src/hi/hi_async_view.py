@@ -86,7 +86,7 @@ class HiSideView( HiAsyncView ):
     
     def get_push_url( self, request ):
 
-        referrer_url_str = request.META.get('HTTP_REFERER', '')
+        referrer_url_str = request.headers.get('referer', '')
         if not referrer_url_str:
             return None
 
@@ -112,22 +112,23 @@ class HiModalView( View ):
     def get( self, request, *args, **kwargs ):
         return self.modal_response( request )
     
-    def modal_response( self, request, context = None, status = 200 ):
+    def modal_response( self, request, context = None, status = 200, template_name = None ):
         if context is None:
             context = dict()
+        modal_template_name = template_name or self.get_template_name()
         if is_ajax( request ):
             modal_response = antinode.modal_from_template(
                 request = request,
-                template_name = self.get_template_name(),
+                template_name = modal_template_name,
                 context = context,
                 status = status,
             )
             return modal_response
 
-        context['initial_modal_template_name'] = self.get_template_name()
-        template_name = self.DEFAULT_PAGE_TEMPLATE_NAME
+        context['initial_modal_template_name'] = modal_template_name
+        page_template_name = self.DEFAULT_PAGE_TEMPLATE_NAME
         return render( request,
-                       template_name,
+                       page_template_name,
                        context,
                        status = status )
 

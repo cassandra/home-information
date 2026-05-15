@@ -1,0 +1,5 @@
+<rect class="hi-entity-bg" x="0" y="0" width="64" height="64" fill="none"/>
+<rect x="12" y="12" width="40" height="40" rx="4" fill="#f0f0f0" stroke="#333333" stroke-width="2"/>
+<rect x="16" y="16" width="32" height="32" rx="2" fill="#e0e0e0" stroke="#333333" stroke-width="1"/>
+<path d="M 32 19 C 28 24 26 28 28 32 C 29 30 30 29 31 28 C 30 32 32 35 35 36 C 39 37 42 34 42 30 C 42 26 38 23 36 19 C 36 22 35 24 33 25 C 33 22 33 21 32 19 Z" fill="#ff7733" stroke="#aa3300" stroke-width="1"/>
+<text x="32" y="46" text-anchor="middle" font-family="sans-serif" font-size="9" font-weight="bold" fill="#333333">GAS</text>

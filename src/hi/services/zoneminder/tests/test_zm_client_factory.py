@@ -101,75 +101,46 @@ class TestZmClientFactory(TestCase):
         self.assertIn('Missing ZM API attribute value', str(context.exception))
         self.assertIn('api_user', str(context.exception))
 
-    @patch('hi.services.zoneminder.pyzm_client.api.ZMApi')
-    def test_test_client_success(self, mock_zmapi_class):
-        """Test successful client connectivity testing."""
-        # Arrange
+    def test_test_client_success_when_authenticated(self):
+        """test_client passes when ZMApi.authenticated is True (login succeeded)."""
         mock_client = Mock()
-        mock_states_collection = Mock()
-        mock_states_collection.list.return_value = [Mock(), Mock()]  # Some states
-        mock_client.states.return_value = mock_states_collection
+        mock_client.authenticated = True
 
-        # Act
         result = self.factory.test_client(mock_client)
 
-        # Assert - Test actual behavior
         self.assertIsInstance(result, IntegrationValidationResult)
         self.assertTrue(result.is_valid)
         self.assertEqual(result.status, HealthStatusType.HEALTHY)
         self.assertIsNone(result.error_message)
 
-        # Verify the client was actually tested
-        mock_client.states.assert_called_once()
-        mock_states_collection.list.assert_called_once()
-
-    @patch('hi.services.zoneminder.pyzm_client.api.ZMApi')
-    def test_test_client_connection_failure(self, mock_zmapi_class):
-        """Test client testing with connection failure."""
-        # Arrange
+    def test_test_client_failure_when_not_authenticated(self):
+        """test_client fails when login attempted but did not authenticate."""
         mock_client = Mock()
-        mock_client.states.side_effect = ConnectionError("Cannot connect to ZoneMinder")
+        mock_client.authenticated = False
 
-        # Act
         result = self.factory.test_client(mock_client)
 
-        # Assert - Test error handling behavior
-        self.assertIsInstance(result, IntegrationValidationResult)
         self.assertFalse(result.is_valid)
         self.assertEqual(result.status, HealthStatusType.ERROR)
-        self.assertIn('Cannot connect to ZoneMinder', result.error_message)
+        self.assertIn('did not authenticate', result.error_message)
 
-    @patch('hi.services.zoneminder.pyzm_client.api.ZMApi')
-    def test_test_client_authentication_failure(self, mock_zmapi_class):
-        """Test client testing with authentication failure."""
-        # Arrange
-        mock_client = Mock()
-        mock_client.states.side_effect = Exception("401 Unauthorized")
+    @patch('hi.services.zoneminder.zm_client_factory.ZMApi')
+    def test_create_client_threads_timeout_to_options(self, mock_zmapi_class):
+        """create_client passes timeout_secs to ZMApi options['timeout']."""
+        attributes = self._create_test_attributes()
 
-        # Act
-        result = self.factory.test_client(mock_client)
+        self.factory.create_client(attributes, timeout_secs=2)
 
-        # Assert - Test error categorization
-        self.assertIsInstance(result, IntegrationValidationResult)
-        self.assertFalse(result.is_valid)
-        self.assertEqual(result.status, HealthStatusType.ERROR)
-        self.assertIn('Authentication failed', result.error_message)
+        kwargs = mock_zmapi_class.call_args.kwargs
+        self.assertEqual(kwargs['options'].get('timeout'), 2)
 
-    @patch('hi.services.zoneminder.pyzm_client.api.ZMApi')
-    def test_test_client_returns_none_states(self, mock_zmapi_class):
-        """Test client testing when states call returns None."""
-        # Arrange
-        mock_client = Mock()
-        mock_states_collection = Mock()
-        mock_states_collection.list.return_value = None
-        mock_client.states.return_value = mock_states_collection
+    @patch('hi.services.zoneminder.zm_client_factory.ZMApi')
+    def test_create_client_omits_timeout_when_unset(self, mock_zmapi_class):
+        """create_client does not set 'timeout' in options when timeout_secs is unset."""
+        attributes = self._create_test_attributes()
 
-        # Act
-        result = self.factory.test_client(mock_client)
+        self.factory.create_client(attributes)
 
-        # Assert
-        self.assertIsInstance(result, IntegrationValidationResult)
-        self.assertFalse(result.is_valid)
-        self.assertEqual(result.status, HealthStatusType.ERROR)
-        self.assertIn('Failed to fetch states from ZoneMinder API', result.error_message)
-        
+        kwargs = mock_zmapi_class.call_args.kwargs
+        self.assertNotIn('timeout', kwargs['options'])
+

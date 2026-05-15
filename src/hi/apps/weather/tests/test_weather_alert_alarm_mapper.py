@@ -3,7 +3,7 @@ Tests for WeatherAlertAlarmMapper - converting weather alerts to system alarms.
 """
 import logging
 from unittest.mock import patch
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, UTC
 
 from django.utils import timezone
 
@@ -30,7 +30,7 @@ class TestWeatherAlertAlarmMapper(BaseTestCase):
     def setUp(self):
         self.mapper = WeatherAlertAlarmMapper()
         # Use timezone-aware datetime like real NWS data
-        self.base_datetime = timezone.make_aware(datetime(2024, 3, 15, 20, 0, 0), timezone.utc)
+        self.base_datetime = timezone.make_aware(datetime(2024, 3, 15, 20, 0, 0), UTC)
     
     def create_test_weather_alert(self, 
                                   event_type: WeatherEventType = WeatherEventType.TORNADO,

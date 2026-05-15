@@ -12,6 +12,10 @@
         DEBUG: window.HiClientConfig?.DEBUG ?? false,
         isEditMode: window.HiClientConfig?.IS_EDIT_MODE ?? false,
 
+        // Server-provided URLs (via ClientConfig context processor)
+        API_STATUS_URL: window.HiClientConfig?.API_STATUS_URL ?? '/api/status',
+        CONSOLE_UNLOCK_URL: window.HiClientConfig?.CONSOLE_UNLOCK_URL ?? '/console/unlock',
+
         MAIN_AREA_SELECTOR: '#hi-main-content',
         LOCATION_VIEW_AREA_SELECTOR: '#hi-location-view-main',
         LOCATION_VIEW_SVG_CLASS: 'hi-location-view-svg',
@@ -54,6 +58,9 @@
         },
         setEntityStateValueSelect: function( valueFieldId, instanceName, instanceId ) {
             return _setEntityStateValueSelect( valueFieldId, instanceName, instanceId );
+        },
+        setEventClauseValueOperatorWidget: function( operatorFieldId, valueFieldId ) {
+            return _setEventClauseValueOperatorWidget( operatorFieldId, valueFieldId );
         },
         getScreenCenterPoint: function( element ) {
             return _getScreenCenterPoint( element );
@@ -108,6 +115,10 @@
         ATTR_V2_AUTO_DISMISS_SELECTOR: '.attr-v2-auto-dismiss',
         ATTR_V2_UPDATE_BTN_SELECTOR: '.attr-v2-update-btn',
         ATTR_V2_DISPLAY_FIELD_SELECTOR: '.display-field',
+        ATTR_V2_TEXT_READ_MODE_SELECTOR: '.attr-v2-text-read-mode',
+        ATTR_V2_TEXT_READ_CONTENT_SELECTOR: '.attr-v2-text-read-content',
+        ATTR_V2_TEXT_EDIT_MODE_SELECTOR: '.attr-v2-text-edit-mode',
+        ATTR_V2_TEXT_EDIT_FIELD_SELECTOR: '.attr-v2-text-edit-field',
         ATTR_V2_SHOW_MORE_TEXT_SELECTOR: '.show-more-text',
         ATTR_V2_SHOW_LESS_TEXT_SELECTOR: '.show-less-text',
         
@@ -118,6 +129,17 @@
         DATA_LINE_COUNT_ATTR: 'data-line-count',
         DATA_ORIGINAL_VALUE_ATTR: 'data-original-value',
         ATTR_V2_DELETE_FILE_ATTR: 'delete_file_attribute',
+
+        // Controller widgets - Class names and data attributes
+        // shared between controller templates (server-emitted)
+        // and controllers.js (client-side display sync, preset
+        // buttons). Mirror of DIVID entries in src/hi/constants.py.
+        CONTROLLER_DISPLAY_TARGET_ATTR: 'data-display-target',
+        CONTROLLER_DISPLAY_FORMAT_ATTR: 'data-display-format',
+        CONTROLLER_SLIDER_CLASS: 'hi-continuous-slider',
+        CONTROLLER_SLIDER_CONTROL_CLASS: 'hi-continuous-slider-control',
+        CONTROLLER_PRESET_BTN_CLASS: 'hi-continuous-slider-preset-btn',
+        DATA_VALUE_ATTR: 'data-value',
 
         // Entity Picker - selectors for JavaScript dependencies
         ENTITY_PICKER_FILTERABLE_ITEM_SELECTOR: '.filterable-item',
@@ -198,6 +220,28 @@
         }
     }
     
+    function _setEventClauseValueOperatorWidget( operatorFieldId, valueFieldId ) {
+        // EventClause operator change handler. For non-EQ operators
+        // (LT / LTE / GT / GTE) the value is a numeric threshold —
+        // swap the value field to a number input so users can enter
+        // one even when the entity_state has discrete choices. EQ
+        // leaves the existing widget alone; the entity_state-driven
+        // choice swap is the authoritative source for that case.
+        const op = $(`#${operatorFieldId}`).val().toLowerCase();
+        if (op === 'eq') {
+            return;
+        }
+        const valueElement = $(`#${valueFieldId}`);
+        const currentValue = valueElement.val();
+        const numericInput = $('<input>')
+            .attr( 'type', 'number' )
+            .attr( 'step', 'any' )
+            .attr( 'id', valueElement.attr('id') )
+            .attr( 'name', valueElement.attr('name') )
+            .val( currentValue );
+        valueElement.replaceWith( numericInput );
+    }
+
     function _setEntityStateValueSelect( valueFieldId, instanceName, instanceId ) {
         $.ajax({
             type: 'GET',

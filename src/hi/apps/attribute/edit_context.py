@@ -132,7 +132,38 @@ class AttributePageEditContext:
     @property
     def update_button_label(self) -> str:
         return 'UPDATE'
-    
+
+    @property
+    def allow_edits(self) -> bool:
+        """Whether existing attribute values may be edited and saved on
+        this surface. Drives UPDATE-button visibility (and the dirty/status
+        message stack tied to the submission flow). Independent of
+        ``can_add_custom_attributes``: a surface may permit editing
+        existing values while disallowing new attributes (e.g., config
+        settings)."""
+        return True
+
+    @property
+    def can_add_custom_attributes(self) -> bool:
+        """Whether the surface allows adding new custom attributes
+        (Add File / Add Info). Independent of ``allow_edits``."""
+        return True
+
+    @property
+    def add_attribute_disabled_message(self) -> str:
+        return ''
+
+    @property
+    def externally_managed_message(self) -> str:
+        """Operator-facing notice rendered in the action bar's
+        UPDATE-button slot when the surface has no UPDATE action
+        (i.e., ``allow_edits`` is False). Returns an empty string by
+        default; owner contexts override to enable the notice. The
+        template only renders the notice when UPDATE is hidden, so an
+        owner can return a non-empty value here without worrying about
+        duplication on the normal editable surface."""
+        return ''
+
     def to_template_context(self) -> Dict[str, Any]:
         return {
             "attr_page_context": self,
@@ -255,14 +286,6 @@ class AttributeItemEditContext( AttributePageEditContext ):
     def add_attribute_button_html_id(self) -> str:
         return f"{DIVID['ATTR_V2_ADD_ATTRIBUTE_BTN_ID']}{self.id_suffix}"
 
-    @property
-    def can_add_custom_attributes(self) -> bool:
-        return True
-
-    @property
-    def add_attribute_disabled_message(self) -> str:
-        return ''
-    
     def to_template_context(self) -> Dict[str, Any]:
         template_context = super().to_template_context()
         template_context.update({

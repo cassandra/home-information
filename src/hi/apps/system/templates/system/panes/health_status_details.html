@@ -101,6 +101,23 @@
   </div>
   {% endif %}
 
+  {% if health_status.subordinate_status_map %}
+  <!-- Subordinate Providers Section -->
+  <div class="row mt-4">
+    <div class="col-12">
+      <h6 class="mb-3">
+        {% icon "tasks" size="sm" css_class="mr-2" %}
+        Components
+      </h6>
+
+      {% for subordinate_health_status in health_status.subordinate_status_map.values %}
+      <hr />
+      {% include "system/panes/subordinate_health_status_details.html" with subordinate_health_status=subordinate_health_status %}
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+
   {% if health_status_provider.get_provider_info.description %}
   <div class="row">
     <div class="col-12">

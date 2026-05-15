@@ -70,11 +70,11 @@ def get_redis_client():
 
 
 def clear_redis_client():
-    global _g_global_redis_client_initialized
+    global _g_global_redis_initialized_attempted
     global _g_global_redis_client
     if _g_global_redis_client:
         logger.info( "Clearing existing Redis connection" )
-        _g_global_redis_client_initialized = False
+        _g_global_redis_initialized_attempted = False
         _g_global_redis_client = None  # No good way to explicitly "close" this
     return
 

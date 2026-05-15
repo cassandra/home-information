@@ -107,6 +107,27 @@ class TestAudioSignal(BaseTestCase):
         self.assertEqual(AudioSignal.CONSOLE_INFO.label, 'ConsoleInfo')
         return
 
+    def test_health_status_alarms_route_to_event_signals(self):
+        """HEALTH_STATUS alarms reuse the EVENT signals — EVENT is
+        treated as the generic 'system event' audio bucket. Health
+        transitions are system events about the system's own ability
+        to function, which fits this same surface without adding new
+        operator-tunable settings."""
+        info_signal = AudioSignal.from_alarm_attributes(
+            AlarmLevel.INFO, AlarmSource.HEALTH_STATUS, 'health_status.x.recovered'
+        )
+        self.assertEqual(info_signal, AudioSignal.EVENT_INFO)
+
+        warning_signal = AudioSignal.from_alarm_attributes(
+            AlarmLevel.WARNING, AlarmSource.HEALTH_STATUS, 'health_status.x.error'
+        )
+        self.assertEqual(warning_signal, AudioSignal.EVENT_WARNING)
+
+        critical_signal = AudioSignal.from_alarm_attributes(
+            AlarmLevel.CRITICAL, AlarmSource.HEALTH_STATUS, 'health_status.x.error'
+        )
+        self.assertEqual(critical_signal, AudioSignal.EVENT_CRITICAL)
+
     def test_invalid_alarm_level_returns_none(self):
         """Test that invalid alarm levels return None gracefully."""
         signal = AudioSignal.from_alarm_attributes(AlarmLevel.NONE, AlarmSource.EVENT, None)

@@ -3,8 +3,8 @@ from typing import Optional
 
 from hi.apps.control.controller_manager import ControllerManager
 from hi.apps.control.models import Controller
+from hi.apps.entity.entity_state_role_order import ENTITY_CONTROL_STATE_ORDERING
 from hi.apps.entity.models import Entity, EntityState
-from hi.apps.location.enums import LocationViewType
 from hi.apps.monitor.status_display_manager import StatusDisplayManager
 
 from .transient_models import ControllerOutcome
@@ -13,43 +13,30 @@ logger = logging.getLogger(__name__)
 
 
 class OneClickNotSupported(Exception):
-    """Raised when EntityStateType doesn't support one-click control."""
+    """Raised when an entity has no one-click control target."""
     pass
 
 
 class OneClickError(Exception):
-    """Raised when EntityStateType has erro being set."""
+    """Raised when a one-click control attempt fails."""
     pass
 
 
 class OneClickControlService:
-    """
-    Service responsible for complete one-click control flow:
-    - Priority resolution and controller selection
-    - Current state detection for proper toggle behavior  
-    - Control execution and outcome reporting
+    """One-click control flow: pick a target state via role priority,
+    determine the next toggle value, dispatch the control. Whether
+    one-click is *invoked* in a given context is the caller's
+    decision (currently only the AUTOMATION LocationViewType does so);
+    this service answers "for this entity, what would one-click do?"
     """
 
-    # Although we can cycle through a value enumeration of any length to
-    # have a one-click behavior. This is not going to be useful past a
-    # certain point, so we best limit one-click behavior to simpler
-    # controllers.
-    #
+    # Toggling cycles through ``EntityState.toggle_values()``. Past a
+    # certain length the cycle stops being a usable one-click
+    # affordance, so we cap discrete one-click eligibility here.
     ONE_CLICK_CHOICE_LIMIT = 3
-    
-    def execute_one_click_control(
-            self,
-            entity              : Entity,
-            location_view_type  : LocationViewType  = None ) -> ControllerOutcome:
-        """
-        Execute complete one-click control flow: decision, state detection, execution.
-        Convenience wrapper around ControllerManager.do_control().
-        Raises OneClickNotSupported if control cannot be attempted.
-        """
-        controller = self._find_controller(
-            entity = entity,
-            location_view_type = location_view_type,
-        )
+
+    def execute_one_click_control( self, entity : Entity ) -> ControllerOutcome:
+        controller = self._find_controller( entity = entity )
         current_value = self._get_current_state_value(
             entity_state = controller.entity_state,
         )
@@ -58,41 +45,54 @@ class OneClickControlService:
             current_value = current_value,
         )
         logger.debug( f'Calling control: {entity} : {current_value} -> {target_value}' )
-        
+
         return ControllerManager().do_control(
             controller = controller,
             control_value = target_value,
         )
-    
-    def _find_controller( self,
-                          entity              : Entity,
-                          location_view_type  : LocationViewType  = None ) -> Controller:
-        """Find highest priority EntityState that has controllers and is supported.
 
-        We only want one-click controls to apply the entity state being
-        used in the display status.  Thus, we make sure we use the same
-        logic to pick the entity state, then see if it has a controller.
-        """
+    def _find_controller( self, entity : Entity ) -> Controller:
+        """Find a toggle-eligible controller on a state whose role
+        is listed in ``ENTITY_CONTROL_STATE_ORDERING.order_for`` for
+        the entity's EntityType. Walks the role order strictly: only
+        states with roles in that list are considered. States with
+        unlisted roles (e.g., a thermostat's
+        ``THERMOSTAT_TARGET_TEMPERATURE``) are not eligible for
+        one-click even when controllable. Raises
+        ``OneClickNotSupported`` when no listed role yields a
+        toggle-eligible controller."""
 
-        if not location_view_type:
-            location_view_type = LocationViewType.default()
-        priority_list = location_view_type.entity_state_type_priority_list
-
-        entity_state_list = StatusDisplayManager().get_entity_state_list_for_status(
+        all_states = StatusDisplayManager().all_entity_states_including_delegations(
             entity = entity,
-            entity_state_type_priority_list = priority_list,
         )
+        states_by_role = {}
+        for state in all_states:
+            states_by_role.setdefault( state.entity_state_role, [] ).append( state )
 
-        for entity_state in entity_state_list:
-            if entity_state.entity_state_type:
-                controller = entity_state.controllers.first()
-                if controller:
+        role_order = ENTITY_CONTROL_STATE_ORDERING.order_for( entity.entity_type )
+        for role in role_order:
+            for state in states_by_role.get( role, [] ):
+                controller = state.controllers.first()
+                if controller and self._is_toggle_eligible( state ):
                     return controller
+                continue
             continue
-        
-        raise OneClickNotSupported(f'No priority states found for {entity}')
-    
-    def _get_current_state_value( self, entity_state: EntityState ) -> Optional[str]:
+        raise OneClickNotSupported( f'No one-click target for {entity}' )
+
+    def _is_toggle_eligible( self, entity_state : EntityState ) -> bool:
+        """A state is toggle-eligible when it has a non-empty
+        ``toggle_values`` list within ``ONE_CLICK_CHOICE_LIMIT``.
+        States outside this range exist (continuous sensors, large
+        discrete enums) but don't have a meaningful one-click
+        affordance."""
+        toggle_values = entity_state.toggle_values()
+        if not toggle_values:
+            return False
+        if len( toggle_values ) > self.ONE_CLICK_CHOICE_LIMIT:
+            return False
+        return True
+
+    def _get_current_state_value( self, entity_state : EntityState ) -> Optional[str]:
         try:
             sensor_response = StatusDisplayManager().get_latest_sensor_response(
                 entity_state = entity_state,
@@ -111,7 +111,7 @@ class OneClickControlService:
             logger.warning( f'Problem getting latest response for: {entity_state} - {e}' )
             pass
         return None
-    
+
     def _determine_control_value( self,
                                   entity_state   : EntityState,
                                   current_value  : Optional[str] ) -> str:
@@ -122,7 +122,7 @@ class OneClickControlService:
 
         if len(toggle_state_value_list) > self.ONE_CLICK_CHOICE_LIMIT:
             raise OneClickNotSupported(f'Too many values to toggle for {entity_state}')
-            
+
         for idx, toggle_state_value in enumerate( toggle_state_value_list ):
             if toggle_state_value != current_value:
                 continue

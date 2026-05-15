@@ -27,8 +27,7 @@ PROFILE_FIELD_ENTITIES = 'entities'
 
 # Location fields
 LOCATION_FIELD_NAME = 'name'
-LOCATION_FIELD_SVG_FRAGMENT_FILENAME = 'svg_fragment_filename'
-LOCATION_FIELD_SVG_VIEW_BOX_STR = 'svg_view_box_str'
+LOCATION_FIELD_SVG_TEMPLATE_NAME = 'svg_template_name'
 LOCATION_FIELD_ORDER_ID = 'order_id'
 LOCATION_FIELD_VIEWS = 'views'
 

@@ -15,6 +15,7 @@ INSTALLED_APPS = [
     'hi.apps.common',
     'hi.simulator',
     'hi.simulator.services.hass',
+    'hi.simulator.services.homebox',
     'hi.simulator.services.zoneminder',
 ]
 
@@ -29,6 +30,7 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 
     'hi.simulator.middleware.SimViewMiddleware',
+    'hi.simulator.middleware.SimulatorFaultInjectionMiddleware',
 ]
 
 ROOT_URLCONF = 'hi.simulator.urls'

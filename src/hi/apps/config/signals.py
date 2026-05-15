@@ -60,6 +60,10 @@ class SettingsInitializer:
                 name = app_settings.label,
                 subsystem_key = app_settings.app_name,
             )
+        else:
+            if subsystem.name != app_settings.label:
+                subsystem.name = app_settings.label
+                subsystem.save( update_fields = ['name'] )
         self._create_attributes_if_needed(
             subsystem = subsystem,
             app_settings = app_settings,
@@ -101,4 +105,11 @@ class SettingsInitializer:
                 is_editable = setting_definition.is_editable,
                 is_required = setting_definition.is_required,
             )
+        else:
+            if attribute.name != setting_definition.label:
+                attribute.name = setting_definition.label
+                attribute.save(
+                    update_fields = ['name'],
+                    track_history = False,
+                )
         return attribute
