@@ -1,4 +1,5 @@
 import logging
+import threading
 from asgiref.sync import sync_to_async
 from typing import Any, Dict, List, Optional
 
@@ -34,9 +35,7 @@ logger = logging.getLogger(__name__)
 
 class HassManager( SingletonManager, AggregateHealthProvider, ApiHealthStatusProvider ):
 
-    # Bound on the per-entity attributes cache the monitor populates
-    # for capability-providing gateway methods to read. Generous
-    # (no realistic HA install has 128 cameras), present for memory
+    # Generous against realistic HA installs; bounded only as memory
     # defense against pathological long-running scale.
     LATEST_ATTRS_CACHE_MAXSIZE = 128
 
@@ -48,12 +47,14 @@ class HassManager( SingletonManager, AggregateHealthProvider, ApiHealthStatusPro
 
         self._change_listeners = set()
 
-        # LRU cache of HA attribute dicts the monitor populates for
-        # capability-providing gateway methods to read. Selective
-        # inserts; see update_latest_attrs_cache for the policy.
+        # Selective-insert LRU cache (see update_latest_attrs_cache
+        # for the policy). The lock guards both writes and reads
+        # because LRUCache.__getitem__ bumps the recency order, so
+        # readers implicitly write to the underlying OrderedDict.
         self._latest_attrs_by_entity_id = LRUCache(
             maxsize = self.LATEST_ATTRS_CACHE_MAXSIZE,
         )
+        self._latest_attrs_lock = threading.Lock()
 
         # Add self as the API health status provider to aggregate
         self.add_api_health_status_provider(self)
@@ -133,22 +134,25 @@ class HassManager( SingletonManager, AggregateHealthProvider, ApiHealthStatusPro
         return
 
     def clear_caches(self):
-        self._latest_attrs_by_entity_id.clear()
+        with self._latest_attrs_lock:
+            self._latest_attrs_by_entity_id.clear()
         return
 
     def update_latest_attrs_cache( self, hass_state_map : Dict[ str, HassState ] ):
-        """Refresh the per-entity attributes cache from a polling
-        snapshot. Inserts are selective: only domains for which
-        downstream code needs attribute access are cached. Other
-        domains pass through without consuming cache slots."""
-        for entity_id, state in hass_state_map.items():
-            if state.domain != HassApi.CAMERA_DOMAIN:
-                continue
-            self._latest_attrs_by_entity_id[ entity_id ] = dict( state.attributes )
+        """Refresh per-entity attributes from a polling snapshot.
+        Selective insert: only domains downstream code needs
+        attribute access for are cached; other domains pass through
+        without consuming cache slots."""
+        with self._latest_attrs_lock:
+            for entity_id, state in hass_state_map.items():
+                if state.domain != HassApi.CAMERA_DOMAIN:
+                    continue
+                self._latest_attrs_by_entity_id[ entity_id ] = dict( state.attributes )
         return
 
     def get_latest_attrs( self, entity_id : str ) -> Optional[ Dict[ str, Any ] ]:
-        return self._latest_attrs_by_entity_id.get( entity_id )
+        with self._latest_attrs_lock:
+            return self._latest_attrs_by_entity_id.get( entity_id )
 
     def _load_attributes(self) -> Dict[ HassAttributeType, IntegrationAttribute ]:
         try:

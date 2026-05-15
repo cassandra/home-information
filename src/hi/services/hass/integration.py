@@ -107,10 +107,8 @@ class HassGateway( IntegrationGateway ):
         if not entity_picture:
             return None
 
-        # ``entity_picture`` is typically a relative path
-        # (``/api/camera_proxy/...?token=...``); prefix with the HA
-        # base URL when so. Pass absolute URLs through unchanged for
-        # the rare integrations that emit them.
+        # Some HA integrations emit an absolute URL; pass those
+        # through unchanged. Relative paths get the HA base prefix.
         if entity_picture.startswith( ('http://', 'https://') ):
             source_url = entity_picture
         else:

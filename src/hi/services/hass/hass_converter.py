@@ -585,6 +585,16 @@ class HassConverter:
         messages = list()
         with transaction.atomic():
 
+            # Re-derive integration-owned capability flags from the
+            # current upstream device shape. Self-healing if HA's
+            # domain composition changes (e.g., a paired motion sensor
+            # added or removed), and the only point where pre-PR HA
+            # cameras pick up has_video_snapshot=True.
+            has_video_snapshot = HassApi.CAMERA_DOMAIN in hass_device.domain_set
+            if entity.has_video_snapshot != has_video_snapshot:
+                entity.has_video_snapshot = has_video_snapshot
+                entity.save( update_fields = [ 'has_video_snapshot' ] )
+
             insteon_address = cls.hass_device_to_insteon_address( hass_device )
             try:
                 attribute = entity.attributes.get( name = cls.INSTEON_ADDRESS_ATTR_NAME )

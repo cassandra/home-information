@@ -399,15 +399,12 @@ class HassServiceDispatcher:
                  service  : str,
                  payload  : Dict[ str, Any ],
                  ) -> List[ Tuple[ str, str ] ]:
-        """Camera motion-detection toggling. HA exposes
-        ``camera.enable_motion_detection`` and
-        ``camera.disable_motion_detection`` services; both target the
-        ``motion_detection`` SimState that the composer folds into the
-        camera's attributes. Other camera services
-        (``camera.turn_on`` / ``camera.snapshot`` / ``camera.record``)
-        are not modeled here — they don't affect any state the HI
-        integration polls."""
+        """Camera motion-detection toggling. The no-motion variant
+        has no ``motion_detection`` SimState and silently no-ops, as
+        real HA does for cameras without that capability."""
         if domain != 'camera':
+            return []
+        if isinstance( sim_entity.sim_entity_fields, HassCameraNoMotionSimEntityFields ):
             return []
         if service == 'enable_motion_detection':
             return [ ( 'motion_detection', 'on' ) ]

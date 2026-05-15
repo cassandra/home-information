@@ -15,7 +15,7 @@ class Migration(migrations.Migration):
             name="has_video_snapshot",
             field=models.BooleanField(
                 default=False,
-                help_text="Whether the source integration can provide a still image of this entity (e.g., HA camera entity_picture, ZM nph-zms mode=single). Orthogonal to has_video_stream — an entity may provide either, both, or neither capability.",
+                help_text="Whether the source integration can provide a still image of this entity (e.g., HA camera entity_picture, ZM nph-zms mode=single). Orthogonal to has_video_stream: an entity may provide either, both, or neither capability.",
                 verbose_name="Has Video Snapshot",
             ),
         ),

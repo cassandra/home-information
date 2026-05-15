@@ -1,5 +1,6 @@
 import base64
 from dataclasses import dataclass, field
+import hashlib
 import os
 import time
 from typing import ClassVar, Dict, List, Tuple
@@ -2812,32 +2813,22 @@ class HassThermostatHvacActionState( HassState ):
 
 # ===== Generic Camera =====
 #
-# Models a Home Assistant camera entity at its universal-feature
-# subset: snapshot-image source via ``entity_picture`` / ``access_token``,
-# discrete camera mode (idle / streaming / recording), and a paired
-# motion ``binary_sensor.X_motion``. The camera's
-# ``motion_detection`` attribute reads from the sibling
-# ``HassCameraMotionDetectionState`` and is toggleable via HA's
-# ``camera.enable_motion_detection`` / ``camera.disable_motion_detection``
-# services.
-#
-# Composer collapses the three SimStates into TWO HA entities:
-# ``camera.X`` (camera mode + motion_detection folded into attributes)
-# and ``binary_sensor.X_motion`` (motion as its own HA entity, as in
-# real HA).
+# Universal-feature HA camera: snapshot via
+# ``entity_picture`` / ``access_token``, discrete camera mode, and
+# (in the full variant) a paired motion ``binary_sensor.X_motion``.
+# See ``api_composers._camera`` for the multi-state-to-HA-entity
+# collapse.
 
 
 def _camera_access_token( entity_id_suffix : str ) -> str:
-    """Per-entity stable access token in the shape HA emits (32 hex
-    chars). Stable across simulator restarts so HI integrations holding
-    a previously-issued URL still resolve; real HA rotates the token
+    """Per-entity stable access token in HA's 32-hex-char shape.
+    Stable across simulator restarts so HI integrations holding a
+    previously-issued URL still resolve; real HA rotates the token
     on state change, which the simulator deliberately doesn't model
     until the HA integration's token-rotation handling needs an
     explicit test surface."""
     seed = f'hi-sim-camera::{entity_id_suffix}'
-    digest = base64.urlsafe_b64encode( seed.encode() ).decode()
-    # Pad/truncate deterministically to HA's 32-hex-chars shape.
-    return ( digest * 4 )[ :32 ].replace( '-', '0' ).replace( '_', '1' ).replace( '=', '2' )
+    return hashlib.sha256( seed.encode() ).hexdigest()[ :32 ]
 
 
 @dataclass( frozen = True )

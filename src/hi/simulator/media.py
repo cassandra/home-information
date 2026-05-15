@@ -1,12 +1,7 @@
 """Shared synthetic-media primitives for the simulator.
 
-Both the ZoneMinder and Home Assistant simulators need to serve a
-single placeholder JPEG (event snapshot thumbnail / camera snapshot)
-with operator-identifying text overlaid so the artifact viewed inside
-HI is obviously coming from the simulator and from a specific entity.
-
-This module owns that one primitive; per-integration media modules
-(e.g., ``zm_media.py``) wrap it with their own framing conventions.
+Renders a placeholder JPEG with operator-identifying text overlaid
+so the image viewed inside HI is obviously synthetic.
 """
 import io
 from datetime import datetime
@@ -17,7 +12,7 @@ from PIL import Image, ImageDraw
 import hi.apps.common.datetimeproxy as datetimeproxy
 
 
-# Modest default size — recognizable text overlay, low render cost.
+# Modest default size: recognizable text overlay, low render cost.
 FRAME_WIDTH = 320
 FRAME_HEIGHT = 240
 

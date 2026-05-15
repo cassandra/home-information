@@ -599,6 +599,27 @@ class TestZoneMinderSynchronizerEntityUpdate(TestCase):
         self.assertEqual(result.updated_list, [])
         self.assertEqual(result.info_list, [])
 
+    def test_update_entity_heals_missing_video_snapshot_flag(self):
+        """Existing entities imported before the video_snapshot field
+        existed should self-heal on the next sync."""
+        entity = Entity.objects.create(
+            name='Pre-existing ZM Camera',
+            entity_type_str='CAMERA',
+            has_video_stream=False,
+            has_video_snapshot=False,
+        )
+        mock_monitor = Mock()
+        mock_monitor.name.return_value = 'Driveway'
+        mock_monitor.id.return_value = 42
+
+        self.synchronizer._update_entity(
+            entity, mock_monitor, IntegrationSyncResult(title='Test'),
+        )
+
+        entity.refresh_from_db()
+        self.assertTrue(entity.has_video_stream)
+        self.assertTrue(entity.has_video_snapshot)
+
 
 class TestZoneMinderSynchronizerEntityRemoval(TestCase):
     """Test intelligent entity deletion"""
@@ -1018,6 +1039,7 @@ class CreateMonitorEntityCreateNewContractTests(TestCase):
         self.assertEqual(entity.integration_id, ZmMetaData.integration_id)
         self.assertEqual(entity.integration_name, 'monitor.42')
         self.assertTrue(entity.has_video_stream)
+        self.assertTrue(entity.has_video_snapshot)
 
     def test_creates_movement_sensor_and_function_controller_for_monitor(self):
         result = IntegrationSyncResult(title='Test')
@@ -1111,6 +1133,7 @@ class CreateMonitorEntityReconnectContractTests(TestCase):
         self.assertEqual(existing.integration_id, ZmMetaData.integration_id)
         self.assertEqual(existing.integration_name, 'monitor.101')
         self.assertTrue(existing.has_video_stream)
+        self.assertTrue(existing.has_video_snapshot)
 
 
 class EventDefinitionLifecycleCycleTests(TestCase):

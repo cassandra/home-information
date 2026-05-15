@@ -66,7 +66,7 @@ class Entity( IntegrationDetailsModel, LocationItemModelMixin ):
         help_text = (
             'Whether the source integration can provide a still image of '
             'this entity (e.g., HA camera entity_picture, ZM nph-zms '
-            'mode=single). Orthogonal to has_video_stream — an entity may '
+            'mode=single). Orthogonal to has_video_stream: an entity may '
             'provide either, both, or neither capability.'
         ),
     )

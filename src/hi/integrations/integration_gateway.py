@@ -90,10 +90,6 @@ class IntegrationGateway:
         return None
 
     def get_entity_video_snapshot(self, entity: Entity) -> Optional[VideoSnapshot]:
-        """Return a fresh still-image source for the entity, if the
-        integration provides one natively. Distinct from
-        ``get_entity_video_stream`` — an integration may provide either,
-        both, or neither capability. Default returns None."""
         return None
 
     def get_sensor_response_video_stream(
