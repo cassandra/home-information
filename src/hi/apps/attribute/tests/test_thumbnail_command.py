@@ -31,18 +31,20 @@ class TestBackfillAttributeThumbnailsCommand(BaseTestCase):
 
     def test_command_generates_thumbnails_for_existing_file_attributes(self):
         with self.isolated_media_root():
-            source_path = 'entity/attributes/retroactive-image.png'
-            default_storage.save(
-                source_path,
-                ContentFile(self._create_valid_png_image_bytes()),
-            )
-
+            # Pass the file contents to ``file_value`` directly so
+            # ``AttributeModel.save()`` owns filename generation —
+            # otherwise the model's ``generate_unique_filename()``
+            # timestamp suffix desyncs the attribute's stored path
+            # from the on-disk path written by ``default_storage.save()``.
             entity = self._create_entity()
             attribute = EntityAttribute.objects.create(
                 entity=entity,
                 name='retroactive_image',
                 value='Retroactive image',
-                file_value=source_path,
+                file_value=ContentFile(
+                    self._create_valid_png_image_bytes(),
+                    name='retroactive-image.png',
+                ),
                 file_mime_type='image/png',
                 value_type_str=str(AttributeValueType.FILE),
                 attribute_type_str=str(AttributeType.CUSTOM),
@@ -58,18 +60,15 @@ class TestBackfillAttributeThumbnailsCommand(BaseTestCase):
 
     def test_command_dry_run_does_not_write_thumbnail_files(self):
         with self.isolated_media_root():
-            source_path = 'entity/attributes/retroactive-image-dry-run.png'
-            default_storage.save(
-                source_path,
-                ContentFile(self._create_valid_png_image_bytes()),
-            )
-
             entity = self._create_entity()
             attribute = EntityAttribute.objects.create(
                 entity=entity,
                 name='retroactive_image_dry_run',
                 value='Retroactive image dry-run',
-                file_value=source_path,
+                file_value=ContentFile(
+                    self._create_valid_png_image_bytes(),
+                    name='retroactive-image-dry-run.png',
+                ),
                 file_mime_type='image/png',
                 value_type_str=str(AttributeValueType.FILE),
                 attribute_type_str=str(AttributeType.CUSTOM),
