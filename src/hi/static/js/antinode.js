@@ -287,7 +287,9 @@
             });
         },
         
+        addBeforeContentRemovalFunction: addBeforeContentRemovalFunction,
         addAfterAsyncRenderFunction: addAfterAsyncRenderFunction,
+        addAfterModalRenderFunction: addAfterModalRenderFunction,
 
         // Display modal content that was rendered server-side.
         // Creates a modal wrapper, appends the content, and shows it.
@@ -557,11 +559,12 @@ function asyncUpdateData( $target, $mode, data, xhr ) {
     // Alternatively, there are other types of more complicated response
     // patterns, and each of these are encoded as a JSON document with
     // corresponding content type.
-    
+
     let ct = xhr.getResponseHeader("content-type") || "";
-    
+
     if (ct.indexOf('html') > -1) {
      if ( $target ) {
+         beforeContentRemoval( $target );
          if ( $mode == 'replace' ) {
           $target.replaceWith( data );
          }
@@ -689,11 +692,19 @@ function asyncUpdateDataFromJson( $target, $mode, json ) {
     // In case any content with preserved scroll bars was refreshed.
     //
     afterAsyncRender();
-    
+
     if ( 'modal' in json ) {
         let targetObj = getNewModal();
         targetObj.append( json['modal'] )
         showModal( targetObj );
+        // Modal content is now in the DOM. Fires a dedicated
+        // post-modal-insert hook so consumers (e.g., entity-status
+        // panel init handlers) can see the modal's DOM in place.
+        // Kept separate from ``afterAsyncRender`` because the
+        // latter is positioned earlier in this handler to keep
+        // ``restoreScrollBarPositions`` ahead of the
+        // ``resetScrollbar`` / ``scrollTo`` branches below.
+        afterModalRender();
     }
     
     // Allowing re-writing URL so it is preserved for navigation and refresh
@@ -783,14 +794,43 @@ function beforeAsyncCall( $node ) {
 };
 
 //====================
+// Things that need to run BEFORE a subtree is detached from the DOM
+// by an antinode-driven operation — either an HTML content swap in
+// ``asyncUpdateData`` or a modal dismissal in
+// ``handleModalHiddenEvent``. Callbacks receive the outgoing
+// ``$subtree`` so they can act on what's about to be removed — e.g.,
+// the video connection manager force-closes long-lived stream
+// fetches before the browser orphans them.
+
+let beforeContentRemovalFunctionList = [];
+
+function beforeContentRemoval( $subtree ) {
+    for ( let i = 0; i < beforeContentRemovalFunctionList.length; i++ ) {
+        try {
+            beforeContentRemovalFunctionList[i]( $subtree );
+        } catch ( e ) {
+            console.error( 'beforeContentRemoval handler error:', e );
+        }
+    }
+};
+
+function addBeforeContentRemovalFunction( func ) {
+    beforeContentRemovalFunctionList.push( func );
+};
+
+//====================
 // Things that need to run after asynchronous content is rendered
 
 let afterAsyncRenderFunctionList = [];
-    
+
 function afterAsyncRender() {
 
     for ( let i = 0; i < afterAsyncRenderFunctionList.length; i++ ) {
-        afterAsyncRenderFunctionList[i]();
+        try {
+            afterAsyncRenderFunctionList[i]();
+        } catch ( e ) {
+            console.error( 'afterAsyncRender handler error:', e );
+        }
     }
     restoreScrollBarPositions();
 };
@@ -799,6 +839,30 @@ function afterAsyncRender() {
 //
 function addAfterAsyncRenderFunction( func_name ) {
     afterAsyncRenderFunctionList.push( func_name );
+};
+
+//====================
+// Things that need to run after a modal (delivered as the ``modal``
+// field of a JSON response) has been appended and shown. Distinct
+// from ``afterAsyncRender`` because that fires earlier in the JSON
+// response handler — before modal insertion — to keep scroll-bar
+// restore ahead of explicit scroll directives. Consumers that need
+// to react to the inserted modal DOM register here.
+
+let afterModalRenderFunctionList = [];
+
+function afterModalRender() {
+    for ( let i = 0; i < afterModalRenderFunctionList.length; i++ ) {
+        try {
+            afterModalRenderFunctionList[i]();
+        } catch ( e ) {
+            console.error( 'afterModalRender handler error:', e );
+        }
+    }
+};
+
+function addAfterModalRenderFunction( func_name ) {
+    afterModalRenderFunctionList.push( func_name );
 };
 
 //====================
@@ -930,14 +994,15 @@ function handleModalHiddenEvent( modalObj ) {
         modalHideStartMs = null;
         if ( deferredModalShowObj ) {
             showModal( deferredModalShowObj );
-        } 
-        
+        }
+
     } catch (e) {
         console.error('Problem handling modal hidden event');
     }
     finally {
         modalHideStartMs = null;
         deferredModalShowObj = null;
+        beforeContentRemoval( $(modalObj) );
         $(modalObj).remove();
     }
 };

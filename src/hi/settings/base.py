@@ -247,6 +247,9 @@ PIPELINE = {
                 'css/attribute.css',
                 'css/stream-browser.css',
                 'css/control.css',
+                'state_panels/smoke_detector/smoke_detector.css',
+                'state_panels/camera/camera.css',
+                'state_panels/thermostat/thermostat.css',
             ),
             'output_filename': 'css/css_head.css',
         },
@@ -265,7 +268,8 @@ PIPELINE = {
                 'js/antinode.js',
                 'js/autosize.min.js',
                 'js/main.js',
-                'js/controllers.js',
+                'js/entity_state_status.js',
+                'state_panels/fallback/fallback.js',
             ),
             'output_filename': 'js/js_before_content.js',
         },
@@ -291,7 +295,7 @@ PIPELINE = {
         'js_hi_grid_content': {
             'source_filenames': (
                 'js/svg-utils.js',
-                'js/entity_state_status.js',
+                'state_panels/thermostat/thermostat.js',
                 'js/status.js',
                 'js/auto-view.js',
                 'js/edit-dragdrop.js',

@@ -4,7 +4,7 @@ from datetime import datetime, timezone
 from hi.apps.entity.enums import EntityStateRole, EntityStateType, EntityType
 from hi.apps.entity.models import Entity, EntityState
 from hi.apps.location.location_view_data import LocationViewData
-from hi.apps.monitor.transient_models import EntityStateStatusData
+from hi.apps.monitor.status_data import EntityStateStatusData
 from hi.apps.sense.transient_models import SensorResponse
 from hi.integrations.transient_models import IntegrationKey
 from hi.testing.base_test_case import BaseTestCase

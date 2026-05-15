@@ -1,7 +1,8 @@
 import logging
 from unittest.mock import Mock
 
-from hi.apps.monitor.transient_models import EntityStateStatusData, EntityStatusData
+from hi.apps.monitor.display_data import EntityDisplayData
+from hi.apps.monitor.status_data import EntityStateStatusData, EntityStatusData
 from hi.apps.entity.models import Entity, EntityState
 from hi.apps.sense.transient_models import SensorResponse
 from hi.apps.control.transient_models import ControllerData
@@ -128,29 +129,36 @@ class TestEntityStateStatusData(BaseTestCase):
 class TestEntityStatusData(BaseTestCase):
 
     def test_template_context_includes_all_required_display_data(self):
-        """Test template context provides complete data for UI rendering."""
+        """``EntityDisplayData.to_template_context`` provides the keys
+        templates rely on for rendering, with the per-state list
+        wrapped in display-ready ``EntityStateDisplayData`` items."""
         entity = Entity.objects.create(
             name='Display Entity',
-            entity_type_str='CAMERA'
+            entity_type_str='CAMERA',
         )
-        
-        # Create mock entity state status data
-        state_status_data1 = Mock(spec=EntityStateStatusData)
-        state_status_data1.entity_state = Mock()
-        state_status_data1.entity_state.entity_state_type_str = 'ON_OFF'
-        
-        state_status_data2 = Mock(spec=EntityStateStatusData)
-        state_status_data2.entity_state = Mock()
-        state_status_data2.entity_state.entity_state_type_str = 'MOTION'
-        
+        state_1 = EntityState.objects.create(
+            entity=entity, name='State 1',
+            entity_state_type_str='ON_OFF',
+        )
+        state_2 = EntityState.objects.create(
+            entity=entity, name='State 2',
+            entity_state_type_str='MOVEMENT',
+        )
         status_data = EntityStatusData(
             entity=entity,
-            entity_state_status_data_list=[state_status_data1, state_status_data2]
+            entity_state_status_data_list=[
+                EntityStateStatusData(
+                    entity_state=state_1,
+                    sensor_response_list=[], controller_data_list=[],
+                ),
+                EntityStateStatusData(
+                    entity_state=state_2,
+                    sensor_response_list=[], controller_data_list=[],
+                ),
+            ],
         )
-        
-        context = status_data.to_template_context()
-
-        # Should include all data needed for template rendering
+        display_data = EntityDisplayData(entity_status_data=status_data)
+        context = display_data.to_template_context()
         self.assertIn('entity', context)
         self.assertIn('state_status_data_list', context)
         self.assertEqual(context['entity'], entity)
@@ -192,8 +200,8 @@ class TestEntityStatusData(BaseTestCase):
         self.assertEqual(len(status_data.entity_state_status_data_list), 0)
         self.assertIsNone(status_data.display_only_svg_icon_item)
         
-        # Template context should still be valid
-        context = status_data.to_template_context()
+        # Template context should still be valid (via display wrapper)
+        context = EntityDisplayData(entity_status_data=status_data).to_template_context()
         self.assertEqual(context['entity'], entity)
         self.assertEqual(len(context['state_status_data_list']), 0)
 
@@ -238,3 +246,70 @@ class TestEntityStatusData(BaseTestCase):
         self.assertIn('ON_OFF', state_types)
         self.assertIn('MOTION', state_types)
         self.assertIn('RECORDING', state_types)
+
+
+class TestStateStatusDataByRole(BaseTestCase):
+    """``EntityDisplayData.state_status_data_by_role`` indexes the
+    state-status entries by the lowercase EntityStateRole name so
+    panel templates can pull a specific state by semantic role."""
+
+    def test_keys_are_lowercase_role_names(self):
+        from hi.apps.entity.enums import EntityStateRole, EntityType
+        from hi.apps.entity.models import EntityState
+
+        entity = Entity.objects.create(
+            name='Smoke Test',
+            entity_type_str=str(EntityType.SMOKE_DETECTOR),
+        )
+        smoke_state = EntityState.objects.create(
+            entity=entity, name='Smoke',
+            entity_state_type_str='SMOKE',
+            role_str=str(EntityStateRole.SMOKE),
+        )
+        battery_state = EntityState.objects.create(
+            entity=entity, name='Battery',
+            entity_state_type_str='BATTERY_LEVEL',
+            role_str=str(EntityStateRole.BATTERY_LEVEL),
+        )
+
+        status_data = EntityStatusData(
+            entity=entity,
+            entity_state_status_data_list=[
+                EntityStateStatusData(
+                    entity_state=smoke_state,
+                    sensor_response_list=[], controller_data_list=[],
+                ),
+                EntityStateStatusData(
+                    entity_state=battery_state,
+                    sensor_response_list=[], controller_data_list=[],
+                ),
+            ],
+        )
+        display_data = EntityDisplayData(entity_status_data=status_data)
+
+        by_role = display_data.state_status_data_by_role
+        self.assertIn('smoke', by_role)
+        self.assertIn('battery_level', by_role)
+        self.assertEqual(by_role['smoke'].entity_state, smoke_state)
+        self.assertEqual(by_role['battery_level'].entity_state, battery_state)
+
+    def test_empty_when_no_states(self):
+        entity = Entity.objects.create(
+            name='Empty', entity_type_str='OTHER',
+        )
+        status_data = EntityStatusData(
+            entity=entity, entity_state_status_data_list=[],
+        )
+        display_data = EntityDisplayData(entity_status_data=status_data)
+        self.assertEqual(display_data.state_status_data_by_role, {})
+
+    def test_template_context_includes_by_role_map(self):
+        entity = Entity.objects.create(
+            name='Ctx Test', entity_type_str='OTHER',
+        )
+        status_data = EntityStatusData(
+            entity=entity, entity_state_status_data_list=[],
+        )
+        display_data = EntityDisplayData(entity_status_data=status_data)
+        context = display_data.to_template_context()
+        self.assertIn('state_status_data_by_role', context)

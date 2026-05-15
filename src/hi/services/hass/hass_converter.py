@@ -1905,7 +1905,7 @@ class HassConverter:
             # PRESENCE shares the [ACTIVE, IDLE] EntityStateValue
             # vocabulary with MOVEMENT but renders under its own
             # state-type label and styling decay (see
-            # ``StatusDisplayData._get_presence_status_style``).
+            # ``EntityStateDisplayData._get_presence_status_style``).
             sensor = HiModelHelper.create_presence_sensor(
                 entity = entity,
                 integration_key = integration_key,

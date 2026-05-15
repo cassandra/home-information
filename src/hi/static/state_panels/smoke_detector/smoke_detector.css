@@ -1,0 +1,185 @@
+/* EntityStatusPanel for SMOKE_DETECTOR entities.
+ *
+ * All rules nested under .hi-state-panel-smoke_detector so the short
+ * scoped class names (.icon, .label, .badge, .hero, .aux-item, etc.)
+ * don't leak. Variant switching is CSS-only and driven by the
+ * ``status`` attribute on the panel root. Two status vocabularies
+ * land on the root over a panel's lifetime: the raw sensor value
+ * (smoke_clear / smoke_detected) on initial server render, and the
+ * decay-aware value (idle / active / recent / past) once the first
+ * polling refresh lands. CSS handles both so the panel reads
+ * correctly at any moment.
+ */
+
+:root {
+    --hi-smoke-clear-color: #059669;
+    --hi-smoke-clear-bg: rgba(5, 150, 105, 0.10);
+    --hi-smoke-alarm-color: #dc2626;
+    --hi-smoke-alarm-bg: rgba(220, 38, 38, 0.15);
+    --hi-smoke-recent-color: #d97706;
+    --hi-smoke-recent-bg: rgba(217, 119, 6, 0.12);
+    --hi-smoke-past-color: #ca8a04;
+    --hi-smoke-past-bg: rgba(202, 138, 4, 0.10);
+}
+
+/* ============================================================== */
+/* Variant visibility: which icon and label show per status value. */
+/* ============================================================== */
+
+.hi-state-panel-smoke_detector .icon,
+.hi-state-panel-smoke_detector .status-label {
+    display: none;
+}
+
+.hi-state-panel-smoke_detector[status="smoke_clear"] .icon--clear,
+.hi-state-panel-smoke_detector[status="idle"] .icon--clear,
+.hi-state-panel-smoke_detector[status="smoke_clear"] .status-label--clear,
+.hi-state-panel-smoke_detector[status="idle"] .status-label--clear {
+    display: inline-block;
+}
+
+.hi-state-panel-smoke_detector[status="smoke_detected"] .icon--alarm,
+.hi-state-panel-smoke_detector[status="active"] .icon--alarm,
+.hi-state-panel-smoke_detector[status="smoke_detected"] .status-label--alarm,
+.hi-state-panel-smoke_detector[status="active"] .status-label--alarm {
+    display: inline-block;
+}
+
+.hi-state-panel-smoke_detector[status="recent"] .icon--recent,
+.hi-state-panel-smoke_detector[status="recent"] .status-label--clear {
+    display: inline-block;
+}
+
+.hi-state-panel-smoke_detector[status="past"] .icon--past,
+.hi-state-panel-smoke_detector[status="past"] .status-label--clear {
+    display: inline-block;
+}
+
+/* ============================================================== */
+/* Color tints — applied to badge background per status.          */
+/* ============================================================== */
+
+.hi-state-panel-smoke_detector .badge {
+    background: var(--hi-smoke-clear-bg);
+    color: var(--hi-smoke-clear-color);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.hi-state-panel-smoke_detector[status="smoke_detected"] .badge,
+.hi-state-panel-smoke_detector[status="active"] .badge {
+    background: var(--hi-smoke-alarm-bg);
+    color: var(--hi-smoke-alarm-color);
+}
+.hi-state-panel-smoke_detector[status="recent"] .badge {
+    background: var(--hi-smoke-recent-bg);
+    color: var(--hi-smoke-recent-color);
+}
+.hi-state-panel-smoke_detector[status="past"] .badge {
+    background: var(--hi-smoke-past-bg);
+    color: var(--hi-smoke-past-color);
+}
+
+.hi-state-panel-smoke_detector .icon {
+    width: 60%;
+    height: 60%;
+}
+
+/* Status label color follows visual treatment. */
+.hi-state-panel-smoke_detector .status-label { font-weight: 600; }
+.hi-state-panel-smoke_detector[status="smoke_clear"] .status-label,
+.hi-state-panel-smoke_detector[status="idle"] .status-label { color: var(--hi-smoke-clear-color); }
+.hi-state-panel-smoke_detector[status="smoke_detected"] .status-label,
+.hi-state-panel-smoke_detector[status="active"] .status-label { color: var(--hi-smoke-alarm-color); }
+.hi-state-panel-smoke_detector[status="recent"] .status-label { color: var(--hi-smoke-recent-color); }
+.hi-state-panel-smoke_detector[status="past"] .status-label { color: var(--hi-smoke-past-color); }
+
+/* ============================================================== */
+/* Modal layout                                                   */
+/* ============================================================== */
+
+.hi-state-panel-smoke_detector--modal .hero {
+    padding: 24px 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    text-align: center;
+}
+.hi-state-panel-smoke_detector--modal .badge { width: 120px; height: 120px; }
+.hi-state-panel-smoke_detector--modal .status-label {
+    font-size: 22px;
+    line-height: 1.1;
+}
+
+.hi-state-panel-smoke_detector--modal .auxiliary {
+    border-top: 1px solid var(--line-color, #d0d7de);
+    padding: 14px 20px;
+    display: flex;
+    justify-content: space-around;
+}
+.hi-state-panel-smoke_detector--modal .aux-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+}
+.hi-state-panel-smoke_detector--modal .aux-label {
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--text-muted, #6c757d);
+    font-weight: 600;
+}
+.hi-state-panel-smoke_detector--modal .aux-value { font-size: 14px; font-weight: 500; }
+
+/* ============================================================== */
+/* List card layout                                               */
+/* ============================================================== */
+
+.hi-state-panel-smoke_detector--list {
+    display: grid;
+    grid-template-columns: 60px 1fr auto;
+    gap: 12px;
+    align-items: center;
+    padding: 4px;
+}
+.hi-state-panel-smoke_detector--list .badge { width: 60px; height: 60px; }
+.hi-state-panel-smoke_detector--list .list-meta { min-width: 0; }
+.hi-state-panel-smoke_detector--list .entity-name {
+    font-size: 14px; font-weight: 600; line-height: 1.2;
+}
+.hi-state-panel-smoke_detector--list .status-line { font-size: 12px; }
+.hi-state-panel-smoke_detector--list .status-label { font-size: 12px; }
+.hi-state-panel-smoke_detector--list .aux-bits {
+    font-size: 11px;
+    color: var(--text-muted, #6c757d);
+}
+
+/* ============================================================== */
+/* Grid card layout                                               */
+/* ============================================================== */
+
+.hi-state-panel-smoke_detector--grid {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    padding: 8px;
+    gap: 6px;
+}
+.hi-state-panel-smoke_detector--grid .badge { width: 64px; height: 64px; margin-top: 4px; }
+.hi-state-panel-smoke_detector--grid .status-label { font-size: 13px; line-height: 1.1; }
+.hi-state-panel-smoke_detector--grid .entity-name {
+    font-size: 11px;
+    color: var(--text-muted, #6c757d);
+    line-height: 1.2;
+}
+
+.hi-state-panel-smoke_detector--grid[status="smoke_detected"],
+.hi-state-panel-smoke_detector--grid[status="active"] { background: var(--hi-smoke-alarm-bg); }
+.hi-state-panel-smoke_detector--grid[status="recent"] { background: var(--hi-smoke-recent-bg); }
+.hi-state-panel-smoke_detector--grid[status="past"] { background: var(--hi-smoke-past-bg); }

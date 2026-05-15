@@ -14,8 +14,8 @@ from hi.apps.sense.sensor_response_manager import SensorResponseMixin
 from hi.apps.sense.transient_models import SensorResponse
 from hi.testing.dev_overrides import DevOverrideManager
 
-from .status_display_data import StatusDisplayData
-from .transient_models import EntityStatusData, EntityStateStatusData
+from .display_data import EntityStateDisplayData
+from .status_data import EntityStatusData, EntityStateStatusData
 
 
 class StatusDisplayManager( Singleton, SensorResponseMixin ):
@@ -31,18 +31,17 @@ class StatusDisplayManager( Singleton, SensorResponseMixin ):
         
     def get_entity_state_status_map( self ) -> Dict[ str, dict ]:
         """Build the per-EntityState polling-update map consumed by
-        the client. One pass through ``StatusDisplayData`` per
-        EntityState produces all three UI update pieces
-        (attributes, controller, display_value) in one structure."""
+        the client. Keyed by the EntityState id (as a string, since
+        JSON object keys are always strings). The value shape is
+        defined by ``EntityStateDisplayData.to_polling_update_dict``."""
 
         entity_state_status_data_list = self.get_all_entity_state_status_data_list()
 
         status_map : Dict[ str, dict ] = {}
         for entity_state_status_data in entity_state_status_data_list:
-            status_display_data = StatusDisplayData( entity_state_status_data )
-            status_map[ status_display_data.css_class ] = (
-                status_display_data.to_polling_update_dict()
-            )
+            status_display_data = EntityStateDisplayData( entity_state_status_data )
+            state_id_key = str( status_display_data.entity_state.id )
+            status_map[ state_id_key ] = status_display_data.to_polling_update_dict()
             if settings.DEBUG and settings.DEBUG_TRACE_STATE:
                 latest = status_display_data.sensor_response_list[ 0 ]
                 DevOverrideManager.trace_state(
@@ -50,7 +49,7 @@ class StatusDisplayManager( Singleton, SensorResponseMixin ):
                     ha_entity_id = latest.integration_key.integration_name,
                     hi_entity_state_id = status_display_data.entity_state.id,
                     hi_value = latest.value,
-                    row = status_map[ status_display_data.css_class ],
+                    row = status_map[ state_id_key ],
                 )
             continue
 

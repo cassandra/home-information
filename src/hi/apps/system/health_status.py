@@ -144,7 +144,7 @@ class HealthStatus:
         elif self.status.is_info:
             return "info-circle"
         elif self.status.is_critical:
-            return "times-circle"
+            return "exclamation-circle"
         elif self.status.is_error:
             return "exclamation-circle"
         else:  # UNKNOWN

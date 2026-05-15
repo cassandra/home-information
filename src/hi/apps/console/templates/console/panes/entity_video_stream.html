@@ -2,6 +2,11 @@
 {% entity_video_stream entity as video_stream %}
 {% if video_stream and video_stream.source_url %}
 <div class="video-container">
-  <img class="img-fluid" src="{{ video_stream.source_url }}" alt="{{ entity.name }} Live Video">
+  {# ``data-video-stream`` opts this <img> into the connection         #}
+{# manager's force-close-on-unload lifecycle. ``.video-container``    #}
+{# on the parent is purely styling (also used by historical video    #}
+{# playback containers); the data attribute is the behavior marker.  #}
+  <img class="img-fluid" data-video-stream
+       src="{{ video_stream.source_url }}" alt="{{ entity.name }} Live Video">
 </div>
 {% endif %}

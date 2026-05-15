@@ -1,7 +1,9 @@
 <div class="discrete-control">
   <select id="{{ attribute_form.value.id_for_label }}"
           name="value"
-          class="{{ controller_data.css_class }} discrete-select form-select"
+          class="discrete-select form-select"
+          data-state-id="{{ controller_data.entity_state.id }}"
+          data-controller-value
           onchange-async="true"
           data-controller-id="{{ controller_data.controller.id }}">  
     {% for value, label in controller_data.controller.choices %}

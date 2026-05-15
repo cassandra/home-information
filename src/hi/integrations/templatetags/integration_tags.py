@@ -63,3 +63,34 @@ def previous_integration_logo_path( model : IntegrationDetailsModel ) -> str:
     metadata = _get_previous_integration_metadata( model )
     return metadata.logo_static_path if metadata else ''
 
+
+@register.inclusion_tag( 'integrations/panes/integration_health_banner.html' )
+def integration_health_banner( integration_id : str, context_message : str = None ):
+    """Render a banner when the integration is in a non-healthy state.
+
+    Renders nothing for HEALTHY or when the integration cannot be
+    resolved. Use from any UI that depends on an integration's data
+    so the operator is alerted when displayed state may be stale or
+    actions may not take effect.
+
+    Parameters:
+      integration_id   : The entity's / surface's owning integration id.
+      context_message  : Optional message describing how the integration's
+                         degraded state affects the surrounding UI."""
+    if not integration_id:
+        return { 'health_status': None }
+    try:
+        gateway = IntegrationManager().get_integration_gateway( integration_id )
+        provider = gateway.get_health_status_provider()
+        health_status = provider.health_status
+        metadata = gateway.get_metadata()
+    except Exception:
+        logger.debug( 'integration_health_banner: lookup failed for %r',
+                      integration_id )
+        return { 'health_status': None }
+    return {
+        'health_status': health_status,
+        'integration_label': metadata.label if metadata else integration_id,
+        'context_message': context_message,
+    }
+

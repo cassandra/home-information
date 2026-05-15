@@ -727,7 +727,7 @@ g[status="past"] {
 g[status="off"] path.hi-state-bg  {
     fill: var(--status-off-color);
 }
-div[status="off"] {
+.hi-status-display[status="off"] {
     color: var(--on-status-off-color);
     background-color: var(--status-off-color);
 }
@@ -737,7 +737,7 @@ g[status="on"] {
 g[status="on"] path.hi-state-bg {
     fill: var(--status-on-color);
 }
-div[status="on"] {
+.hi-status-display[status="on"] {
     color: var(--on-status-on-color);
     background-color: var(--status-on-color);
 }
@@ -745,7 +745,7 @@ g[status="dim"] {
     filter: drop-shadow(0 0 5px var(--status-on-color));
     opacity: 0.5;
 }
-div[status="dim"] {
+.hi-status-display[status="dim"] {
     color: var(--on-status-on-color);
     background-color: var(--status-on-color);
     opacity: 0.5;
@@ -780,7 +780,7 @@ g[status="gas_detected"] {
 }
 
 
-div[status] {
+.hi-status-display[status] {
     color: var(--black);
     background-color: var(--white);
     border-color: var(--black);
@@ -788,80 +788,80 @@ div[status] {
     border-width: 2px;
     border-radius: 8px;
 }
-div[status="active"] {
+.hi-status-display[status="active"] {
     color: var(--on-status-active-color);
     background-color: var(--status-active-color);
 }
-div[status="idle"] {
+.hi-status-display[status="idle"] {
     color: var(--on-status-ok-color);
     background-color: var(--status-ok-color);
 }
-div[status="recent"] {
+.hi-status-display[status="recent"] {
     color: var(--on-status-recent-color);
     background-color: var(--status-recent-color);
 }
-div[status="past"] {
+.hi-status-display[status="past"] {
     color: var(--on-status-past-color);
     background-color: var(--status-past-color);
 }
-div[status="partial"] {
+.hi-status-display[status="partial"] {
     color: var(--on-status-recent-color);
     background-color: var(--status-recent-color);
 }
-div[status="open"] {
+.hi-status-display[status="open"] {
     color: var(--on-status-bad-color);
     background-color: var(--status-bad-color);
 }
-div[status="closed"] {
+.hi-status-display[status="closed"] {
     color: var(--on-status-idle-color);
     background-color: var(--status-idle-color);
 }
-div[status="RAID_OK"],
-div[status="connected"] {
+.hi-status-display[status="RAID_OK"],
+.hi-status-display[status="connected"] {
     color: var(--on-status-ok-color);
     background-color: var(--status-ok-color);
 }
-div[status="disconnected"] {
+.hi-status-display[status="disconnected"] {
     color: var(--on-status-bad-color);
     background-color: var(--status-bad-color);
 }
-div[status="high"] {
+.hi-status-display[status="high"] {
     color: var(--on-status-ok-color);
     background-color: var(--status-ok-color);
 }
-div[status="low"] {
+.hi-status-display[status="low"] {
     color: var(--on-status-bad-color);
     background-color: var(--status-bad-color);
 }
-div[status="smoke_clear"] {
+.hi-status-display[status="smoke_clear"] {
     color: var(--on-status-ok-color);
     background-color: var(--status-ok-color);
 }
-div[status="smoke_detected"] {
+.hi-status-display[status="smoke_detected"] {
     color: var(--on-status-bad-color);
     background-color: var(--status-bad-color);
 }
-div[status="moisture_clear"] {
+.hi-status-display[status="moisture_clear"] {
     color: var(--on-status-ok-color);
     background-color: var(--status-ok-color);
 }
-div[status="moisture_detected"] {
+.hi-status-display[status="moisture_detected"] {
     color: var(--on-status-bad-color);
     background-color: var(--status-bad-color);
 }
-div[status="co_clear"] {
+.hi-status-display[status="co_clear"] {
     color: var(--on-status-ok-color);
     background-color: var(--status-ok-color);
 }
-div[status="co_detected"] {
+.hi-status-display[status="co_detected"] {
     color: var(--on-status-bad-color);
     background-color: var(--status-bad-color);
 }
-div[status="gas_clear"] {
+.hi-status-display[status="gas_clear"] {
     color: var(--on-status-ok-color);
     background-color: var(--status-ok-color);
 }
-div[status="gas_detected"] {
+.hi-status-display[status="gas_detected"] {
     color: var(--on-status-bad-color);
     background-color: var(--status-bad-color);
 }
@@ -2207,6 +2207,17 @@ g[hover] {
 }
 .hi-category-section--danger {
     border-left-color: var(--danger-color);
+}
+
+/* Framework subheader rendered between the modal title bar and the
+   panel body. Shows entity-type icon + label on the left, integration
+   logo centered, and the modal-type label on the right. Panels
+   render below this strip and don't repeat any of this identifying
+   chrome. */
+.hi-entity-status-subheader__type-icon .hi-entity-display-only-icon {
+    width: 18px;
+    height: 18px;
+    vertical-align: middle;
 }
 
 /* Light primary-tinted banner used as a section header (e.g., the

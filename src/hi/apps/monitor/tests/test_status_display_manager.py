@@ -6,7 +6,7 @@ from hi.apps.entity.models import Entity, EntityState
 from hi.apps.sense.models import Sensor
 from hi.apps.sense.transient_models import SensorResponse
 from hi.apps.monitor.status_display_manager import StatusDisplayManager
-from hi.apps.monitor.transient_models import EntityStateStatusData
+from hi.apps.monitor.status_data import EntityStateStatusData
 from hi.testing.base_test_case import BaseTestCase
 
 logging.disable(logging.CRITICAL)
@@ -240,11 +240,11 @@ class TestStatusDisplayManager(BaseTestCase):
         # The unified map emits a row for every EntityState with a
         # response, even those whose value produces no
         # ``svg_status_style`` (e.g., ON_OFF with an unrecognized
-        # value). The pre-refactor ``cssClassUpdateMap`` skipped
-        # these; the unified shape carries display_value and
-        # (when applicable) controller updates which remain useful
-        # independent of icon styling, so they're always
-        # emitted with an empty ``attributes`` dict.
+        # value). The pre-refactor cssClassUpdateMap skipped these;
+        # the unified shape carries ``display`` (and, when
+        # applicable, ``controller``) updates which remain useful
+        # independent of icon styling. States with no SVG style
+        # simply omit ``status`` / ``svg_style`` from their row.
         entity = Entity.objects.create(
             name='Unrecognized State', entity_type_str='SENSOR',
         )
@@ -266,5 +266,8 @@ class TestStatusDisplayManager(BaseTestCase):
                 return_value=[status_data]):
             result = manager.get_entity_state_status_map()
 
-        self.assertIn(entity_state.css_class, result)
-        self.assertEqual(result[entity_state.css_class]['attributes'], {})
+        state_id_key = str(entity_state.id)
+        self.assertIn(state_id_key, result)
+        self.assertNotIn('svg_style', result[state_id_key])
+        self.assertNotIn('status', result[state_id_key])
+        self.assertIn('display', result[state_id_key])

@@ -59,7 +59,7 @@
         </h6>
       </div>
       <div class="card-body p-2">
-        <img class="img-fluid" src="{{ video_stream.source_url }}" alt="{{ alert_visual_content.alarm.title }}">
+        <img class="img-fluid" data-video-stream src="{{ video_stream.source_url }}" alt="{{ alert_visual_content.alarm.title }}">
         {% if not alert_visual_content.is_from_latest %}
         <small class="text-muted d-block mt-1">From: {{ alert_visual_content.alarm.timestamp|localtime|date:"M j, Y H:i" }}</small>
         {% endif %}
@@ -113,7 +113,7 @@
                   <small class="text-muted">Source {{ video_source.index }} - {{ video_source.alarm.timestamp|localtime|date:"M j H:i" }}</small>
                 </div>
                 <div class="card-body p-2">
-                  <img class="img-fluid" src="{{ video_stream.source_url }}" alt="Source {{ video_source.index }}">
+                  <img class="img-fluid" data-video-stream src="{{ video_stream.source_url }}" alt="Source {{ video_source.index }}">
                 </div>
               </div>
               {% endif %}

@@ -10,6 +10,7 @@ from hi.apps.entity.enums import EntityGroupType
 from hi.apps.entity.models import Entity
 from hi.apps.location.models import Location, LocationView
 from hi.apps.location.svg_item_factory import SvgItemFactory
+from hi.apps.monitor.display_data import EntityDisplayData
 from hi.apps.monitor.status_display_manager import StatusDisplayManager
 
 from .models import (
@@ -66,10 +67,14 @@ class CollectionManager(Singleton):
         entity_list = [ x.entity for x in collection_entity_list ]
         entity_status_data_list = StatusDisplayManager().get_entity_status_data_list(
             entities = entity_list,
-        )        
+        )
+        entity_display_data_list = [
+            EntityDisplayData( entity_status_data = d )
+            for d in entity_status_data_list
+        ]
         return CollectionData(
             collection = collection,
-            entity_status_data_list = entity_status_data_list,
+            entity_status_data_list = entity_display_data_list,
         )
 
     def create_collection( self, name : str ) -> Collection:
