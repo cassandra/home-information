@@ -37,19 +37,32 @@ class TestEnvironmentHomeView(SyncViewTestCase):
             'EMAIL_USE_TLS',
             'EMAIL_USE_SSL',
             'CORS_ALLOWED_ORIGINS',
-            'CSP_DEFAULT_SRC',
-            'CSP_CONNECT_SRC',
-            'CSP_FRAME_SRC',
-            'CSP_SCRIPT_SRC',
-            'CSP_STYLE_SRC',
-            'CSP_MEDIA_SRC',
-            'CSP_IMG_SRC',
-            'CSP_CHILD_SRC',
-            'CSP_FONT_SRC',
+            'CONTENT_SECURITY_POLICY',
         ]
-        
+
         for key in expected_keys:
             self.assertIn(key, data, f"Expected key '{key}' not found in config data")
+
+        # django-csp 4.x dict shape — every active directive should be
+        # present under DIRECTIVES.
+        csp_directives = data['CONTENT_SECURITY_POLICY']['DIRECTIVES']
+        expected_directives = [
+            'default-src',
+            'connect-src',
+            'frame-src',
+            'script-src',
+            'style-src',
+            'media-src',
+            'img-src',
+            'child-src',
+            'font-src',
+            'worker-src',
+        ]
+        for directive in expected_directives:
+            self.assertIn(
+                directive, csp_directives,
+                f"Expected CSP directive '{directive}' not found",
+            )
 
     def test_post_not_allowed(self):
         """Test that POST requests are not allowed."""
@@ -77,15 +90,11 @@ class TestEnvironmentHomeView(SyncViewTestCase):
         mock_settings.EMAIL_USE_TLS = True
         mock_settings.EMAIL_USE_SSL = False
         mock_settings.CORS_ALLOWED_ORIGINS = ['http://test.com']
-        mock_settings.CSP_DEFAULT_SRC = ["'self'"]
-        mock_settings.CSP_CONNECT_SRC = ["'self'"]
-        mock_settings.CSP_FRAME_SRC = ["'self'"]
-        mock_settings.CSP_SCRIPT_SRC = ["'self'"]
-        mock_settings.CSP_STYLE_SRC = ["'self'"]
-        mock_settings.CSP_MEDIA_SRC = ["'self'"]
-        mock_settings.CSP_IMG_SRC = ["'self'"]
-        mock_settings.CSP_CHILD_SRC = ["'self'"]
-        mock_settings.CSP_FONT_SRC = ["'self'"]
+        mock_settings.CONTENT_SECURITY_POLICY = {
+            'DIRECTIVES': {
+                'default-src': ["'self'"],
+            },
+        }
 
         url = reverse('env_home')
         response = self.client.get(url)

@@ -33,55 +33,54 @@ ALLOWED_HOSTS = ENV.ALLOWED_HOSTS
 
 CORS_ALLOWED_ORIGINS = ENV.CORS_ALLOWED_ORIGINS
 
-CSP_DEFAULT_SRC = (
-    "'self'",
-    'data:',
-) + ENV.EXTRA_CSP_URLS
-
-CSP_CONNECT_SRC = (
-    "'self'",
-) + ENV.EXTRA_CSP_URLS
-
-CSP_FRAME_SRC = (
-    "'self'",
-) + ENV.EXTRA_CSP_URLS
-
-CSP_SCRIPT_SRC = (
-    "'self'",
-    "'unsafe-inline'",
-    "'unsafe-eval'",
-) + ENV.EXTRA_CSP_URLS
-
-CSP_STYLE_SRC = (
-    "'self'",
-    "'unsafe-inline'",
-    "'unsafe-eval'",
-) + ENV.EXTRA_CSP_URLS
-
-CSP_MEDIA_SRC = (
-    "'self'",
-    "'unsafe-inline'",
-    "'unsafe-eval'",
-    'data:',
-) + ENV.EXTRA_CSP_URLS
-
-CSP_IMG_SRC = (
-    "'self'",
-    'data:',
-) + ENV.EXTRA_CSP_URLS
-
-CSP_CHILD_SRC = (
-    "'self'",
-) + ENV.EXTRA_CSP_URLS
-
-CSP_FONT_SRC = (
-    "'self'",
-    'data:',
-) + ENV.EXTRA_CSP_URLS
-
-CSP_WORKER_SRC = (
-    "'self'",
-) + ENV.EXTRA_CSP_URLS
+# django-csp 4.x dict-based config. Directive keys are kebab-case
+# without the ``CSP_`` prefix (see django-csp migration guide). Each
+# value concatenates with ENV.EXTRA_CSP_URLS so deployments can extend
+# the allow-lists without editing source.
+CONTENT_SECURITY_POLICY = {
+    'DIRECTIVES': {
+        'default-src': (
+            "'self'",
+            'data:',
+        ) + ENV.EXTRA_CSP_URLS,
+        'connect-src': (
+            "'self'",
+        ) + ENV.EXTRA_CSP_URLS,
+        'frame-src': (
+            "'self'",
+        ) + ENV.EXTRA_CSP_URLS,
+        'script-src': (
+            "'self'",
+            "'unsafe-inline'",
+            "'unsafe-eval'",
+        ) + ENV.EXTRA_CSP_URLS,
+        'style-src': (
+            "'self'",
+            "'unsafe-inline'",
+            "'unsafe-eval'",
+        ) + ENV.EXTRA_CSP_URLS,
+        'media-src': (
+            "'self'",
+            "'unsafe-inline'",
+            "'unsafe-eval'",
+            'data:',
+        ) + ENV.EXTRA_CSP_URLS,
+        'img-src': (
+            "'self'",
+            'data:',
+        ) + ENV.EXTRA_CSP_URLS,
+        'child-src': (
+            "'self'",
+        ) + ENV.EXTRA_CSP_URLS,
+        'font-src': (
+            "'self'",
+            'data:',
+        ) + ENV.EXTRA_CSP_URLS,
+        'worker-src': (
+            "'self'",
+        ) + ENV.EXTRA_CSP_URLS,
+    },
+}
 
 LANGUAGE_CODE = 'en-us'
 TIME_ZONE = 'UTC'
