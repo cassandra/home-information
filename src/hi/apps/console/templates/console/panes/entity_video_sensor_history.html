@@ -115,7 +115,10 @@
                 <div class="video-container mb-3" role="img" aria-label="Event video playback">
                     {% sensor_response_video_stream sensor_history_data.current_sensor_response as video_stream %}
                     {% if video_stream and video_stream.source_url %}
-                    <img class="img-fluid" data-video-stream src="{{ video_stream.source_url }}" alt="Video recording from {{ sensor_history_data.current_sensor_response.timestamp|localtime|date:'F j, Y g:i A' }}" data-event-id="{{ sensor_history_data.current_sensor_response.sensor_history_id }}" onerror="this.style.display='none'; this.outerHTML='<div class=\'alert alert-warning text-center d-flex align-items-center justify-content-center\' style=\'min-height: 240px;\'><div><div class=\'mb-2\'>[VIDEO]</div><h6>Video No Longer Available</h6></div></div>'">
+                    <div class="hi-video-recording">
+                      <img class="img-fluid" data-video-recording src="{{ video_stream.source_url }}" alt="Video recording from {{ sensor_history_data.current_sensor_response.timestamp|localtime|date:'F j, Y g:i A' }}" data-event-id="{{ sensor_history_data.current_sensor_response.sensor_history_id }}" onerror="this.style.display='none'; this.outerHTML='<div class=\'alert alert-warning text-center d-flex align-items-center justify-content-center\' style=\'min-height: 240px;\'><div><div class=\'mb-2\'>[VIDEO]</div><h6>Video No Longer Available</h6></div></div>'">
+                      {% include "console/panes/video_recording_replay_button.html" %}
+                    </div>
                     {% elif sensor_history_data.current_sensor_response.source_image_url %}
                     <!-- Fallback to image when video stream is not available -->
                     <img class="img-fluid" src="{{ sensor_history_data.current_sensor_response.source_image_url }}" alt="Image from {{ sensor_history_data.current_sensor_response.timestamp|localtime|date:'F j, Y g:i A' }}" data-event-id="{{ sensor_history_data.current_sensor_response.sensor_history_id }}">
