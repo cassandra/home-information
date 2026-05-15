@@ -2852,6 +2852,15 @@ class HassCameraSimEntityFields( SimEntityFields ):
     model_name       : str = 'SimCam'
 
 
+@dataclass( frozen = True )
+class HassCameraNoMotionSimEntityFields( HassCameraSimEntityFields ):
+    """Variant of the generic camera with no paired motion
+    ``binary_sensor``. Some HA camera integrations don't expose one
+    (basic MJPEG cameras, certain doorbells); modeling both shapes
+    lets HI's integration logic be exercised against either."""
+    pass
+
+
 @dataclass
 class HassCameraState( HassState ):
     """Camera-mode primary state. Renders as ``camera.X`` with HA's
@@ -2974,6 +2983,14 @@ HASS_SIM_ENTITY_DEFINITION_LIST = [
             HassCameraState,
             HassCameraMotionDetectionState,
             HassCameraMotionState,
+        ],
+    ),
+    SimEntityDefinition(
+        class_label = 'Generic Camera (no motion sensor)',
+        sim_entity_type = SimEntityType.CAMERA,
+        sim_entity_fields_class = HassCameraNoMotionSimEntityFields,
+        sim_state_class_list = [
+            HassCameraState,
         ],
     ),
     SimEntityDefinition(

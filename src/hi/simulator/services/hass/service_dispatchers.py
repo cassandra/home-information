@@ -30,6 +30,7 @@ from hi.simulator.enums import SimStateType
 
 from .unit_translation import UnitTranslationHelper
 from .sim_models import (
+    HassCameraNoMotionSimEntityFields,
     HassCameraSimEntityFields,
     HassColorSmartBulbFields,
     HassFanFields,
@@ -419,6 +420,7 @@ class HassServiceDispatcher:
 # objects exist as references. Keyed off SimEntityFields class.
 HassServiceDispatcher._REGISTRY = {
     HassCameraSimEntityFields: HassServiceDispatcher._camera,
+    HassCameraNoMotionSimEntityFields: HassServiceDispatcher._camera,
     HassColorSmartBulbFields: HassServiceDispatcher._color_smart_bulb,
     HassFanFields: HassServiceDispatcher._fan,
     HassGarageCoverFields: HassServiceDispatcher._discrete_cover,

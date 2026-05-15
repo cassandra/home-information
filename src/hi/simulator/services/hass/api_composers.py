@@ -27,6 +27,7 @@ from hi.simulator.base_models import SimState
 from .sim_models import (
     HassCameraMotionDetectionState,
     HassCameraMotionState,
+    HassCameraNoMotionSimEntityFields,
     HassCameraSimEntityFields,
     HassCameraState,
     HassColorSmartBulbBrightnessState,
@@ -265,6 +266,7 @@ class HassApiComposer:
 # the dispatch is per-device-type.
 HassApiComposer._REGISTRY = {
     HassCameraSimEntityFields: HassApiComposer._camera,
+    HassCameraNoMotionSimEntityFields: HassApiComposer._camera,
     HassColorSmartBulbFields: HassApiComposer._color_smart_bulb,
     HassMultiFeatureFanFields: HassApiComposer._multi_feature_fan,
     HassThermostatFields: HassApiComposer._thermostat,
