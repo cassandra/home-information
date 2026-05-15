@@ -1128,8 +1128,8 @@ class TestEntityEditViewFileUploadIntegration(DualModeViewTestCase):
 
 class TestEntityStateHistoryView(DualModeViewTestCase):
     """The per-EntityState history modal renders observations and
-    unmatched intents through the value_template_name dispatch and
-    supports next/prev cursor navigation."""
+    unmatched intents through the ``render_state_value_text``
+    templatetag dispatch and supports next/prev cursor navigation."""
 
     def setUp(self):
         super().setUp()
@@ -1224,3 +1224,82 @@ class TestEntityStateHistoryView(DualModeViewTestCase):
         # Encoded "+" is "%2B"; the cursor in the Older link must be
         # encoded so the round-trip through the query parser preserves it.
         self.assertIn( '%2B00%3A00', body )
+
+    def test_video_browse_affordance_rendered_for_video_stream_rows(self):
+        """Rows whose underlying SensorHistory has_video_stream render a
+        click-through to the per-event video browser; rows without it
+        do not."""
+        from django.urls import reverse as _reverse
+        from hi.apps.sense.models import SensorHistory
+        SensorHistory.objects.all().delete()
+        video_obs = SensorHistory.objects.create(
+            sensor = self.sensor, value = 'on',
+            response_datetime = '2024-03-01T12:00:00Z',
+            has_video_stream = True,
+        )
+        expected_url = _reverse(
+            'console_entity_video_sensor_history_detail',
+            kwargs = {
+                'entity_id': self.entity.id,
+                'sensor_id': self.sensor.id,
+                'sensor_history_id': video_obs.id,
+            },
+        )
+
+        url = reverse(
+            'entity_state_history',
+            kwargs = { 'entity_state_id': self.state.id },
+        )
+        response = self.client.get(url)
+        self.assertSuccessResponse(response)
+        body = response.content.decode()
+        self.assertIn( expected_url, body )
+        self.assertIn( 'hi-history-row-actions', body )
+
+    def test_details_affordance_rendered_for_rows_with_details(self):
+        """Rows whose underlying SensorHistory has detail attributes
+        render a click-through to the per-event details modal."""
+        from django.urls import reverse as _reverse
+        from hi.apps.sense.models import SensorHistory
+        SensorHistory.objects.all().delete()
+        details_obs = SensorHistory.objects.create(
+            sensor = self.sensor, value = 'on',
+            response_datetime = '2024-03-01T12:00:00Z',
+            details = '{"trigger": "motion"}',
+        )
+        expected_url = _reverse(
+            'sense_sensor_history_details',
+            kwargs = { 'sensor_history_id': details_obs.id },
+        )
+
+        url = reverse(
+            'entity_state_history',
+            kwargs = { 'entity_state_id': self.state.id },
+        )
+        response = self.client.get(url)
+        self.assertSuccessResponse(response)
+        body = response.content.decode()
+        self.assertIn( expected_url, body )
+        self.assertIn( 'hi-history-row-actions', body )
+
+    def test_no_affordances_rendered_for_plain_observation(self):
+        """An observation with no video and no details has no
+        click-through icons in its row."""
+        from hi.apps.sense.models import SensorHistory
+        SensorHistory.objects.all().delete()
+        SensorHistory.objects.create(
+            sensor = self.sensor, value = 'on',
+            response_datetime = '2024-03-01T12:00:00Z',
+        )
+
+        url = reverse(
+            'entity_state_history',
+            kwargs = { 'entity_state_id': self.state.id },
+        )
+        response = self.client.get(url)
+        self.assertSuccessResponse(response)
+        body = response.content.decode()
+        # The history-row-actions wrapper only renders when at least
+        # one affordance applies. A plain observation should have no
+        # such wrapper.
+        self.assertNotIn( 'hi-history-row-actions', body )

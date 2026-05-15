@@ -3,6 +3,7 @@
 {% load common_tags %}
 {% load humanize %}
 {% load icons %}
+{% load sense_tags %}
 <div class="timeline-item mb-2">
   <div class="card{% if row.history_value_type.name == 'INTENT' %} border-left-warning{% else %} border-left-primary{% endif %}">
     <div class="card-body py-2 px-3">
@@ -17,9 +18,7 @@
         <div class="col-md-5 col-sm-7">
           <div class="d-flex align-items-center">
             <div class="flex-grow-1">
-              {% with sensor_response=row %}
-                {% include_with_fallback row.entity_state.entity_state_type.value_template_name "sense/panes/sensor_response_value_default.html" %}
-              {% endwith %}
+              <div class="hi-status-display text-center px-2" status="{{ row.value }}">{% render_state_value_text row.entity_state row.value %}</div>
             </div>
             {% if row.history_value_type.name == 'INTENT' or row.matched_intent %}
               <img src="{% static 'img/hi-icon-16x16.png' %}"
@@ -30,16 +29,51 @@
             {% endif %}
           </div>
         </div>
-        <div class="col-md-3 col-12">
-          {% if annotate_sources %}
-            <small class="text-muted d-block text-md-right mt-1 mt-md-0">
-              {{ row.instrument.name }}
-            </small>
-          {% endif %}
-          {% if row.matched_intent and annotate_sources %}
-            <small class="text-muted d-block text-md-right">
-              commanded by {{ row.matched_intent.instrument.name }}
-            </small>
+        <div class="col-md-3 col-12 d-flex align-items-center justify-content-md-end">
+          <div class="flex-grow-1 text-md-right mr-2">
+            {% if annotate_sources %}
+              <small class="text-muted d-block mt-1 mt-md-0">
+                {{ row.instrument.name }}
+              </small>
+            {% endif %}
+            {% if row.matched_intent and annotate_sources %}
+              <small class="text-muted d-block">
+                commanded by {{ row.matched_intent.instrument.name }}
+              </small>
+            {% endif %}
+          </div>
+          {% if row.video_browse_url or row.details_url %}
+            <div class="hi-history-row-actions d-flex align-items-center">
+              {# Render both video and details slots when the row has #}
+              {# at least one click-through URL. Whichever URL is     #}
+              {# absent gets an invisible placeholder of the same     #}
+              {# dimensions so icons of the same type line up         #}
+              {# vertically across rows.                              #}
+              {% if row.video_browse_url %}
+                <a href="{{ row.video_browse_url }}" data-async="true"
+                   title="View video for this event"
+                   class="btn btn-sm btn-outline-primary ml-1">
+                  {% icon "video" size="sm" %}
+                </a>
+              {% else %}
+                <span class="btn btn-sm btn-outline-primary ml-1 invisible"
+                      aria-hidden="true">
+                  {% icon "video" size="sm" %}
+                </span>
+              {% endif %}
+              {% if row.details_url %}
+                <a href="{{ row.details_url }}" data-async="true"
+                   title="View details for this event"
+                   class="btn btn-sm btn-outline-primary ml-1">
+                  {% icon "info-circle" size="sm" %}
+                </a>
+              {% else %}
+                <span class="btn btn-sm btn-outline-primary ml-1 invisible"
+                      aria-hidden="true">
+                  {% icon "info-circle" size="sm" %}
+                </span>
+              {% endif %}
+            </div>
           {% endif %}
         </div>
       </div>

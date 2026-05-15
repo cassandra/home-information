@@ -10,27 +10,6 @@ from hi.testing.base_test_case import BaseTestCase
 logging.disable(logging.CRITICAL)
 
 
-class TestEntityStateType(BaseTestCase):
-
-    def test_value_template_name_generation_supports_ui_customization(self):
-        """``value_template_name`` is the model-layer template-dispatch
-        primitive for read-only value display. Per-state-type templates
-        are resolved by the lowercased enum name."""
-        on_off_template = EntityStateType.ON_OFF.value_template_name()
-        temperature_template = EntityStateType.TEMPERATURE.value_template_name()
-
-        self.assertNotEqual(on_off_template, temperature_template)
-
-        self.assertTrue(on_off_template.startswith('sense/panes/sensor_response_value_'))
-        self.assertTrue(on_off_template.endswith('.html'))
-
-        multivalued_template = EntityStateType.MULTIVALUED.value_template_name()
-        self.assertTrue(multivalued_template.startswith('sense/panes/sensor_response_value_'))
-        self.assertIn('multivalued', multivalued_template)
-
-        return
-
-
 class TestEntityStateTypeDefaultRole(BaseTestCase):
 
     def test_every_entity_state_type_resolves_to_a_role(self):

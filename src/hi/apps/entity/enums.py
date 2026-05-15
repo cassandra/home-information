@@ -469,15 +469,6 @@ class EntityStateType(LabeledEnum):
     
     def toggle_values(self) -> List[str]:
         return [ str(x) for x in self.entity_state_value_list ]
-                         
-    def value_template_name(self):
-        """
-        Template used to render a sensor's value for this state. Create the
-        template at the given location to define a state-specific rendering, else
-        it will fallback to the default template of
-        "entity/panes/sensor_response_value_default.html"
-        """
-        return f'sense/panes/sensor_response_value_{self.name.lower()}.html'
 
     def default_role(self) -> EntityStateRole:
         """The default EntityStateRole for an EntityState of this type.

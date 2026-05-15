@@ -16,6 +16,10 @@ from hi.apps.common.enums import LabeledEnum
 from hi.apps.control.models import ControllerHistory
 from hi.apps.entity.models import EntityState
 from hi.apps.sense.models import SensorHistory
+from hi.apps.sense.sensor_history_urls import (
+    sensor_history_details_url,
+    sensor_history_video_browse_url,
+)
 
 
 # Maximum delay between a controller intent and a subsequent matching
@@ -69,14 +73,58 @@ class EntityStateHistoryValue:
 
     INTENT rows record an HI control action that produced no
     confirming observation within the window (or where the
-    observation's value did not match)."""
+    observation's value did not match).
 
-    value               : str
-    timestamp           : datetime
-    entity_state        : EntityState
-    instrument          : Instrument
-    history_value_type  : StateHistoryValueType
-    matched_intent      : Optional[ MatchedIntent ] = None
+    Click-through metadata (``sensor_history_id``, ``has_video_stream``,
+    ``has_details``, ``provides_video_stream``) is populated on
+    OBSERVATION rows from the underlying ``SensorHistory`` and the
+    parent ``Sensor``. INTENT rows leave these at defaults since
+    controllers don't have video or details to link to."""
+
+    value                 : str
+    timestamp             : datetime
+    entity_state          : EntityState
+    instrument            : Instrument
+    history_value_type    : StateHistoryValueType
+    matched_intent        : Optional[ MatchedIntent ] = None
+    sensor_history_id     : Optional[ int ]           = None
+    has_video_stream      : bool                      = False
+    has_details           : bool                      = False
+    provides_video_stream : bool                      = False
+
+    @property
+    def video_browse_url(self) -> Optional[ str ]:
+        """Click-through to the video event browser for this row.
+        OBSERVATION rows route via the sensor; INTENT rows return
+        ``None`` (controllers don't have video)."""
+        if self.history_value_type != StateHistoryValueType.OBSERVATION:
+            return None
+        return sensor_history_video_browse_url(
+            entity_id = self.entity_state.entity.id,
+            sensor_id = self.instrument.id,
+            sensor_history_id = self.sensor_history_id,
+            has_video_stream = self.has_video_stream,
+            provides_video_stream = self.provides_video_stream,
+        )
+
+    @property
+    def details_url(self) -> Optional[ str ]:
+        """Click-through to the per-row details modal for this row.
+        OBSERVATION rows with detail attributes route to the details
+        modal; INTENT rows return ``None``."""
+        if self.history_value_type != StateHistoryValueType.OBSERVATION:
+            return None
+        return sensor_history_details_url(
+            sensor_history_id = self.sensor_history_id,
+            has_details = self.has_details,
+        )
+
+    @property
+    def click_url(self) -> Optional[ str ]:
+        """Composite: prefers the video URL over the details URL.
+        ``None`` when neither applies (e.g., INTENT rows, or
+        OBSERVATION rows with no video and no details)."""
+        return self.video_browse_url or self.details_url
 
 
 def get_entity_state_history_page(
@@ -189,6 +237,10 @@ def merge_history(
             instrument = _sensor_instrument( obs ),
             history_value_type = StateHistoryValueType.OBSERVATION,
             matched_intent = matched_intent,
+            sensor_history_id = obs.id,
+            has_video_stream = obs.has_video_stream,
+            has_details = bool( obs.detail_attrs ),
+            provides_video_stream = obs.sensor.provides_video_stream,
         ))
         continue
     for intent_history in unmatched_intents:
