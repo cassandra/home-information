@@ -57,18 +57,37 @@ self.addEventListener('activate', function(event) {
   );
 });
 
-// Fetch event - no caching, always use network
+// Lookup set built from STATIC_ASSETS at install/parse time. The
+// fetch handler below uses this to decide whether to intercept a
+// request; anything not in this set bypasses the service worker
+// entirely.
+var STATIC_ASSET_PATHS = new Set(STATIC_ASSETS);
+
+// Fetch event - scoped to pre-cached static assets only.
+//
+// MJPEG streams (multipart/x-mixed-replace) and other long-lived or
+// dynamic responses are NOT routed through ``event.respondWith``.
+// Browsers vary in how they proxy multipart responses through a
+// service worker, and Firefox in particular fails on multiple
+// concurrent multipart streams routed through a ``fetch`` inside
+// respondWith. Letting non-static requests pass through unmodified
+// keeps streams, the polling endpoint, and dynamic pages on the
+// browser's native fetch path.
 self.addEventListener('fetch', function(event) {
-  // Only handle GET requests
   if (event.request.method !== 'GET') {
     return;
   }
-
-  // Skip non-HTTP(S) requests
   if (!event.request.url.startsWith('http')) {
     return;
   }
-
-  // Always fetch from network, no caching
-  event.respondWith(fetch(event.request));
+  var pathname = new URL(event.request.url).pathname;
+  if (!STATIC_ASSET_PATHS.has(pathname)) {
+    return;
+  }
+  // Cache-first for pre-cached static assets; network on miss.
+  event.respondWith(
+    caches.match(event.request).then(function(cached) {
+      return cached || fetch(event.request);
+    })
+  );
 });

@@ -287,6 +287,7 @@
             });
         },
         
+        addBeforeAsyncRenderFunction: addBeforeAsyncRenderFunction,
         addAfterAsyncRenderFunction: addAfterAsyncRenderFunction,
         addAfterModalRenderFunction: addAfterModalRenderFunction,
 
@@ -558,11 +559,12 @@ function asyncUpdateData( $target, $mode, data, xhr ) {
     // Alternatively, there are other types of more complicated response
     // patterns, and each of these are encoded as a JSON document with
     // corresponding content type.
-    
+
     let ct = xhr.getResponseHeader("content-type") || "";
-    
+
     if (ct.indexOf('html') > -1) {
      if ( $target ) {
+         beforeAsyncRender( $target );
          if ( $mode == 'replace' ) {
           $target.replaceWith( data );
          }
@@ -792,10 +794,30 @@ function beforeAsyncCall( $node ) {
 };
 
 //====================
+// Things that need to run BEFORE asynchronous content replaces an
+// existing subtree. Callbacks receive the outgoing ``$target`` so
+// they can act on what's about to be removed — e.g., the video
+// connection manager force-closes long-lived stream fetches before
+// the browser orphans them. Hook runs once per HTML-content swap,
+// just before the DOM mutation.
+
+let beforeAsyncRenderFunctionList = [];
+
+function beforeAsyncRender( $target ) {
+    for ( let i = 0; i < beforeAsyncRenderFunctionList.length; i++ ) {
+        beforeAsyncRenderFunctionList[i]( $target );
+    }
+};
+
+function addBeforeAsyncRenderFunction( func ) {
+    beforeAsyncRenderFunctionList.push( func );
+};
+
+//====================
 // Things that need to run after asynchronous content is rendered
 
 let afterAsyncRenderFunctionList = [];
-    
+
 function afterAsyncRender() {
 
     for ( let i = 0; i < afterAsyncRenderFunctionList.length; i++ ) {
