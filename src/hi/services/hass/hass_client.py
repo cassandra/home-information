@@ -41,6 +41,10 @@ class HassClient:
         self._timeout_secs = timeout_secs if timeout_secs is not None else self.DEFAULT_TIMEOUT
         return
 
+    @property
+    def api_base_url(self) -> str:
+        return self._api_base_url
+
     def states(self) -> List[ HassState ]:
 
         url = f'{self._api_base_url}/api/states'

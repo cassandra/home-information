@@ -1,6 +1,8 @@
 import logging
 from asgiref.sync import sync_to_async
-from typing import Dict, List, Optional
+from typing import Any, Dict, List, Optional
+
+from cachetools import LRUCache
 
 from hi.apps.common.singleton_manager import SingletonManager
 from hi.apps.common.utils import str_to_bool
@@ -25,12 +27,18 @@ from .enums import HassAttributeType
 from .hass_client import HassClient
 from .hass_client_factory import HassClientFactory
 from .hass_metadata import HassMetaData
-from .hass_models import HassState
+from .hass_models import HassApi, HassState
 
 logger = logging.getLogger(__name__)
 
 
 class HassManager( SingletonManager, AggregateHealthProvider, ApiHealthStatusProvider ):
+
+    # Bound on the per-entity attributes cache the monitor populates
+    # for capability-providing gateway methods to read. Generous
+    # (no realistic HA install has 128 cameras), present for memory
+    # defense against pathological long-running scale.
+    LATEST_ATTRS_CACHE_MAXSIZE = 128
 
     def __init_singleton__( self ):
         super().__init_singleton__()
@@ -39,6 +47,13 @@ class HassManager( SingletonManager, AggregateHealthProvider, ApiHealthStatusPro
         self._client_factory = HassClientFactory()
 
         self._change_listeners = set()
+
+        # LRU cache of HA attribute dicts the monitor populates for
+        # capability-providing gateway methods to read. Selective
+        # inserts; see update_latest_attrs_cache for the policy.
+        self._latest_attrs_by_entity_id = LRUCache(
+            maxsize = self.LATEST_ATTRS_CACHE_MAXSIZE,
+        )
 
         # Add self as the API health status provider to aggregate
         self.add_api_health_status_provider(self)
@@ -118,7 +133,22 @@ class HassManager( SingletonManager, AggregateHealthProvider, ApiHealthStatusPro
         return
 
     def clear_caches(self):
+        self._latest_attrs_by_entity_id.clear()
         return
+
+    def update_latest_attrs_cache( self, hass_state_map : Dict[ str, HassState ] ):
+        """Refresh the per-entity attributes cache from a polling
+        snapshot. Inserts are selective: only domains for which
+        downstream code needs attribute access are cached. Other
+        domains pass through without consuming cache slots."""
+        for entity_id, state in hass_state_map.items():
+            if state.domain != HassApi.CAMERA_DOMAIN:
+                continue
+            self._latest_attrs_by_entity_id[ entity_id ] = dict( state.attributes )
+        return
+
+    def get_latest_attrs( self, entity_id : str ) -> Optional[ Dict[ str, Any ] ]:
+        return self._latest_attrs_by_entity_id.get( entity_id )
 
     def _load_attributes(self) -> Dict[ HassAttributeType, IntegrationAttribute ]:
         try:

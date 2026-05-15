@@ -92,7 +92,9 @@ class HassMonitor( PeriodicMonitor, HassMixin, SensorResponseMixin ):
         
         id_to_hass_state_map = await hass_manager.fetch_hass_states_from_api_async( verbose = False )
         logger.debug( f'Fetched {len(id_to_hass_state_map)} HAss States' )
-        
+
+        hass_manager.update_latest_attrs_cache( id_to_hass_state_map )
+
         current_datetime = datetimeproxy.now()
         sensor_response_latest_map = dict()
         

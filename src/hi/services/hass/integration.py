@@ -1,6 +1,8 @@
 import logging
 from typing import List, Optional
 
+from hi.apps.entity.models import Entity
+from hi.apps.entity.transient_models import VideoSnapshot
 from hi.apps.system.enums import HealthStatusType
 from hi.apps.system.health_status_provider import HealthStatusProvider
 
@@ -87,3 +89,34 @@ class HassGateway( IntegrationGateway ):
         except Exception as e:
             logger.exception(f'Error in HASS connection test: {e}')
             return ConnectionTestResult.failure(f'Connection test error: {e}')
+
+    def get_entity_video_snapshot(self, entity: Entity) -> Optional[VideoSnapshot]:
+        if not entity.has_video_snapshot:
+            return None
+        if entity.integration_id != HassMetaData.integration_id:
+            return None
+        if not entity.integration_name:
+            return None
+
+        hass_manager = HassManager()
+        attrs = hass_manager.get_latest_attrs( entity.integration_name )
+        if not attrs:
+            return None
+
+        entity_picture = attrs.get( 'entity_picture' )
+        if not entity_picture:
+            return None
+
+        # ``entity_picture`` is typically a relative path
+        # (``/api/camera_proxy/...?token=...``); prefix with the HA
+        # base URL when so. Pass absolute URLs through unchanged for
+        # the rare integrations that emit them.
+        if entity_picture.startswith( ('http://', 'https://') ):
+            source_url = entity_picture
+        else:
+            client = hass_manager.hass_client
+            if not client:
+                return None
+            source_url = f'{client.api_base_url}{entity_picture}'
+
+        return VideoSnapshot( source_url = source_url )
