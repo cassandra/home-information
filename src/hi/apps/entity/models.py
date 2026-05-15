@@ -60,6 +60,16 @@ class Entity( IntegrationDetailsModel, LocationItemModelMixin ):
         'Has Video Stream',
         default = False,
     )
+    has_video_snapshot = models.BooleanField(
+        'Has Video Snapshot',
+        default = False,
+        help_text = (
+            'Whether the source integration can provide a still image of '
+            'this entity (e.g., HA camera entity_picture, ZM nph-zms '
+            'mode=single). Orthogonal to has_video_stream — an entity may '
+            'provide either, both, or neither capability.'
+        ),
+    )
     is_disabled = models.BooleanField(
         'Disabled?',
         default = False,
