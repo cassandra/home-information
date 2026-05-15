@@ -54,9 +54,11 @@
 
     {% include "config/panes/base_page_settings.html" %}
     
-    <div id="hi-server-error-msg">
-      WARNING
-      <div>Server Is Down !</div>
+    <div id="hi-server-error-msg" role="alert" aria-live="assertive">
+      <svg class="icon" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+        <path d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z"/>
+      </svg>
+      <div class="msg">Lost Connection To Server</div>
     </div>
 
     {% block footer_pre_javascript %}{% endblock %}

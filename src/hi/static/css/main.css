@@ -642,29 +642,24 @@ input[type="password"],
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
-    padding: 1rem;
     z-index: 1060;
+    padding: 2rem 3rem;
+    min-width: 22rem;
     text-align: center;
-    font-size: 2rem;
-    font-weight: bold;
-    color: var(--warning-color);
-    background-color: #282425;
+    color: var(--on-secondary-color);
+    background-color: var(--secondary-color);
     border-radius: 0.8rem;
-    border: 0.1rem solid #282425;
-    box-shadow: 0 0 1rem rgba(0, 0, 0, 0.5);
+    box-shadow: 0 0.5rem 1.5rem rgba(0, 0, 0, 0.35);
 }
-
-#hi-server-error-msg > div {
-    margin-top: 1rem;
-    padding: 3rem;
-    width: 36rem;
-    height: 14rem;
-    color: #282425;
-    font-size: 4rem;
-    background-color: var(--warning-color);
-    border-bottom-left-radius: 0.8rem;
-    border-bottom-right-radius: 0.8rem;
-    text-align: center;
+#hi-server-error-msg .icon {
+    width: 4rem;
+    height: 4rem;
+    margin-bottom: 1rem;
+}
+#hi-server-error-msg .msg {
+    font-size: 2rem;
+    font-weight: 600;
+    line-height: 1.2;
 }
 
 svg[action-state="move"] {
