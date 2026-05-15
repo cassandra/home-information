@@ -8,12 +8,19 @@
     const TRANSPARENT_GIF_SRC =
         'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
 
+    // The connection manager treats both markers as the same kind of
+    // long-lived MJPEG fetch — both need explicit cleanup on DOM
+    // removal so browser per-host connection slots are released. The
+    // markers themselves are disjoint by content type:
+    //   - ``data-video-stream``    : continuous live MJPEG (camera).
+    //   - ``data-video-recording`` : finite recorded MJPEG (event playback).
+    // The replay click handler at the bottom of this file applies
+    // only to the recording case.
+    const LONG_LIVED_VIDEO_SELECTOR =
+        'img[data-video-stream], img[data-video-recording]';
+
     // Tracks every long-lived video connection currently attached to
-    // the document. An <img> opts in by carrying ``data-video-stream``;
-    // both live MJPEG streams and event-video playback elements need
-    // this because surveillance users typically browse between events
-    // faster than playback completes, leaving recorded-video fetches
-    // holding browser per-host connection slots if not closed.
+    // the document.
     //
     // Responsibilities split with antinode:
     //   - Antinode fires ``beforeAsyncRender($target)`` immediately
@@ -59,7 +66,7 @@
         closeWithin: function( $scope ) {
             if ( ! $scope || ! $scope.find ) return;
             const manager = this;
-            $scope.find( 'img[data-video-stream]' ).each(function() {
+            $scope.find( LONG_LIVED_VIDEO_SELECTOR ).each(function() {
                 manager.forceClose( this );
             });
         },
@@ -72,7 +79,7 @@
                     this.streams.delete( element );
                 }
             }
-            document.querySelectorAll( 'img[data-video-stream]' ).forEach(
+            document.querySelectorAll( LONG_LIVED_VIDEO_SELECTOR ).forEach(
                 (el) => this.register( el )
             );
         },
@@ -179,7 +186,7 @@
             // Tag the current video element with its event id for
             // debug visibility in console logs / DOM inspection. The
             // connection manager handles registration itself via the
-            // ``data-video-stream`` marker.
+            // ``data-video-stream`` / ``data-video-recording`` markers.
             this.tagCurrentVideoWithEventId();
         },
 
@@ -244,6 +251,43 @@
     // Also cleanup on navigation away from video pages
     window.addEventListener('pagehide', () => {
         VideoConnectionManager.cleanup();
+    });
+
+    // Replay-from-start for finite recordings. Templates wrap each
+    // ``[data-video-recording]`` <img> in a ``.hi-video-recording``
+    // container that also holds a ``.hi-video-recording-replay``
+    // button. Delegated on body so async-loaded fragments work
+    // without an init pass.
+    //
+    // Mechanism: append a fresh ``_replay`` query parameter to the
+    // cached original URL on each click. The browser sees a new URL,
+    // abandons the previous fetch, and starts a new one. ZoneMinder
+    // serves the recording from the start on each request
+    // (``replay=single``). Avoids ever blanking the ``src`` —
+    // some templates carry inline ``onerror`` handlers that fire
+    // on empty src and replace the <img> with an error message,
+    // which the empty-src + reset technique would trigger.
+    function videoRecordingReplayBuster( baseUrl ) {
+        const sep = baseUrl.includes('?') ? '&' : '?';
+        return baseUrl + sep + '_replay=' + Date.now();
+    }
+    jQuery(function($) {
+        $( 'body' ).on( 'click', '.hi-video-recording-replay', function( ev ) {
+            ev.preventDefault();
+            ev.stopPropagation();
+            const wrapper = this.closest( '.hi-video-recording' );
+            const img = wrapper && wrapper.querySelector( 'img[data-video-recording]' );
+            if ( ! img ) return;
+            // Cache the original URL on first click. Subsequent
+            // clicks always rebuild from this cached base so the
+            // ``_replay`` parameter doesn't stack.
+            if ( ! img.dataset.videoRecordingSrc ) {
+                img.dataset.videoRecordingSrc = img.src;
+            }
+            const baseUrl = img.dataset.videoRecordingSrc;
+            if ( ! baseUrl || baseUrl.startsWith('data:') ) return;
+            img.src = videoRecordingReplayBuster( baseUrl );
+        });
     });
 
 

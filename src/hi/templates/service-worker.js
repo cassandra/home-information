@@ -1,37 +1,24 @@
-// Static-asset cache + pass-through for everything else.
+// Pass-through service worker.
 //
-// The service worker intercepts only requests whose path begins with
-// Django's STATIC_URL. Cache-first with on-demand population on miss.
-// Everything else — dynamic pages, the polling endpoint, MJPEG video
-// streams (multipart/x-mixed-replace) — passes through to the
-// browser's native fetch path. Firefox in particular mishandles
-// multiple concurrent multipart streams routed through a service
-// worker's respondWith, so this scoping is deliberate.
-
-var CACHE_VERSION = 2;
-var STATIC_CACHE_NAME = 'static-cache-' + CACHE_VERSION;
-var STATIC_URL_PREFIX = '{{ STATIC_URL }}';
+// Registered solely to satisfy the installable-PWA criteria
+// (manifest + active SW with a fetch handler). No caching: the
+// browser's HTTP cache handles repeat fetches for /static/ assets,
+// and adding a SW cache layer on top introduced stale-content bugs
+// every time a static file changed (cache key is the URL, which
+// doesn't change between deploys).
 
 self.addEventListener('install', function(event) {
-  // Take over immediately rather than waiting for all existing
-  // controlled pages to close. Combined with ``clients.claim()`` on
-  // activate, this ensures the new SW handles fetches as soon as it
-  // is installed.
   event.waitUntil(self.skipWaiting());
 });
 
 self.addEventListener('activate', function(event) {
-  // Sweep any caches that don't match the current version. Bumping
-  // CACHE_VERSION invalidates everything previously cached.
+  // Sweep every cache this SW has ever created so users upgrading
+  // from a caching version don't keep serving stale content.
   event.waitUntil(
     caches.keys().then(function(cacheNames) {
-      return Promise.all(
-        cacheNames.map(function(name) {
-          if (name !== STATIC_CACHE_NAME) {
-            return caches.delete(name);
-          }
-        })
-      );
+      return Promise.all(cacheNames.map(function(name) {
+        return caches.delete(name);
+      }));
     }).then(function() {
       return self.clients.claim();
     })
@@ -39,30 +26,7 @@ self.addEventListener('activate', function(event) {
 });
 
 self.addEventListener('fetch', function(event) {
-  if (event.request.method !== 'GET') {
-    return;
-  }
-  if (!event.request.url.startsWith('http')) {
-    return;
-  }
-  var pathname = new URL(event.request.url).pathname;
-  if (!pathname.startsWith(STATIC_URL_PREFIX)) {
-    return;
-  }
-  event.respondWith(
-    caches.match(event.request).then(function(cached) {
-      if (cached) {
-        return cached;
-      }
-      return fetch(event.request).then(function(response) {
-        if (response && response.ok) {
-          var clone = response.clone();
-          caches.open(STATIC_CACHE_NAME).then(function(cache) {
-            cache.put(event.request, clone);
-          });
-        }
-        return response;
-      });
-    })
-  );
+  // Intentional no-op: let the browser handle every request
+  // natively. Present only to satisfy PWA installability checks
+  // that look for a fetch handler on the active SW.
 });
