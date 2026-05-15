@@ -1,10 +1,17 @@
 import json
 import logging
 import uuid
-from unittest.mock import patch
+from io import BytesIO
+from unittest.mock import patch, call
+
+from django.core.files.base import ContentFile
+from django.core.files.storage import default_storage
+
+from PIL import Image
 
 from hi.apps.attribute.models import AttributeModel
 from hi.apps.attribute.enums import AttributeValueType, AttributeType
+from hi.apps.attribute.thumbnail import AttributeThumbnail
 from hi.apps.entity.enums import EntityType
 from hi.apps.entity.models import Entity, EntityAttribute
 from hi.integrations.transient_models import IntegrationKey
@@ -21,6 +28,23 @@ class ConcreteAttributeModel(AttributeModel):
 
 
 class TestAttributeModel(BaseTestCase):
+
+    @staticmethod
+    def _create_valid_png_image_bytes(size=(128, 96)):
+        image = Image.new('RGB', size=size, color=(24, 120, 220))
+        image_bytes = BytesIO()
+        image.save(image_bytes, format='PNG')
+        return image_bytes.getvalue()
+
+    @staticmethod
+    def _create_valid_pdf_bytes():
+        try:
+            image = Image.new('RGB', size=(360, 220), color=(255, 255, 255))
+            pdf_bytes = BytesIO()
+            image.save(pdf_bytes, format='PDF')
+            return pdf_bytes.getvalue()
+        except Exception:
+            return None
 
     def test_attribute_model_enum_property_conversions(self):
         """Test enum property conversions - custom business logic."""
@@ -147,6 +171,233 @@ class TestAttributeModel(BaseTestCase):
                 self.assertEqual(attr.value, 'test_file.txt')  # Value set to original filename
                 self.assertEqual(attr.file_value.name, 'unique_test_file.txt')  # Name updated to unique
                 self.assertEqual(attr.file_value.field.upload_to, 'test_attributes/')
+        return
+
+    def test_thumbnail_relative_path_for_supported_image_file(self):
+        """Test deterministic thumbnail path generation for supported image files."""
+        attr = ConcreteAttributeModel(
+            name='photo',
+            value_type_str='FILE',
+            attribute_type_str='CUSTOM',
+            file_mime_type='image/jpeg'
+        )
+        attr.file_value = 'entity/attributes/front_door.jpg'
+
+        self.assertTrue(attr.supports_thumbnail_generation)
+        self.assertEqual(
+            attr.thumbnail_relative_path,
+            'entity/attributes/thumbnails/front_door.thumb.png'
+        )
+        return
+
+    def test_thumbnail_relative_path_none_for_unsupported_file_type(self):
+        """Test unsupported files do not produce thumbnail paths."""
+        attr = ConcreteAttributeModel(
+            name='document',
+            value_type_str='FILE',
+            attribute_type_str='CUSTOM',
+            file_mime_type='text/plain'
+        )
+        attr.file_value = 'entity/attributes/manual.txt'
+
+        self.assertFalse(attr.supports_thumbnail_generation)
+        self.assertIsNone(attr.thumbnail_relative_path)
+        return
+
+    def test_thumbnail_relative_path_for_supported_pdf_file(self):
+        """Test deterministic thumbnail path generation for supported PDF files."""
+        attr = ConcreteAttributeModel(
+            name='manual',
+            value_type_str='FILE',
+            attribute_type_str='CUSTOM',
+            file_mime_type='application/pdf'
+        )
+        attr.file_value = 'entity/attributes/manual.pdf'
+
+        self.assertTrue(attr.supports_thumbnail_generation)
+        self.assertEqual(
+            attr.thumbnail_relative_path,
+            'entity/attributes/thumbnails/manual.thumb.png'
+        )
+        return
+
+    def test_generate_thumbnail_best_effort_success(self):
+        """Test thumbnail generation creates a derived file for valid image content."""
+        with self.isolated_media_root():
+            source_path = 'test_attributes/camera_snapshot.png'
+            default_storage.save(
+                source_path,
+                ContentFile(self._create_valid_png_image_bytes(size=(900, 600)))
+            )
+
+            attr = ConcreteAttributeModel(
+                name='camera_snapshot',
+                value_type_str='FILE',
+                attribute_type_str='CUSTOM',
+                file_mime_type='image/png'
+            )
+            attr.file_value = source_path
+
+            generated = AttributeThumbnail(attr).generate_thumbnail_best_effort()
+
+            self.assertTrue(generated)
+            self.assertTrue(default_storage.exists(attr.thumbnail_relative_path))
+            self.assertTrue(attr.has_thumbnail)
+            self.assertIsNotNone(attr.thumbnail_url)
+            self.assertIn('test_attributes/thumbnails/camera_snapshot.thumb.png', attr.thumbnail_url)
+        return
+
+    def test_generate_thumbnail_best_effort_invalid_image_content(self):
+        """Test thumbnail generation failure is graceful for bad image bytes."""
+        with self.isolated_media_root():
+            source_path = 'test_attributes/not_really_an_image.jpg'
+            default_storage.save(source_path, ContentFile(b'plain text bytes, not an image'))
+
+            attr = ConcreteAttributeModel(
+                name='broken_image',
+                value_type_str='FILE',
+                attribute_type_str='CUSTOM',
+                file_mime_type='image/jpeg'
+            )
+            attr.file_value = source_path
+
+            generated = AttributeThumbnail(attr).generate_thumbnail_best_effort()
+
+            self.assertFalse(generated)
+            self.assertFalse(attr.has_thumbnail)
+            self.assertIsNone(attr.thumbnail_url)
+        return
+
+    def test_generate_thumbnail_best_effort_pdf_success(self):
+        """Test thumbnail generation from first page of a PDF file."""
+        pdf_bytes = self._create_valid_pdf_bytes()
+        if not pdf_bytes:
+            self.skipTest('Unable to generate test PDF bytes in this environment')
+
+        with self.isolated_media_root():
+            source_path = 'test_attributes/manual.pdf'
+            default_storage.save(source_path, ContentFile(pdf_bytes))
+
+            attr = ConcreteAttributeModel(
+                name='manual',
+                value_type_str='FILE',
+                attribute_type_str='CUSTOM',
+                file_mime_type='application/pdf'
+            )
+            attr.file_value = source_path
+
+            generated = AttributeThumbnail(attr).generate_thumbnail_best_effort()
+
+            self.assertTrue(generated)
+            self.assertTrue(default_storage.exists(attr.thumbnail_relative_path))
+            self.assertTrue(attr.has_thumbnail)
+            self.assertIsNotNone(attr.thumbnail_url)
+        return
+
+    def test_ensure_thumbnail_generates_when_missing(self):
+        """ensure_thumbnail() lazily produces a thumbnail on first call when
+        the source is supported and no thumbnail is present yet."""
+        with self.isolated_media_root():
+            source_path = 'test_attributes/lazy_view.png'
+            default_storage.save(
+                source_path,
+                ContentFile(self._create_valid_png_image_bytes()),
+            )
+
+            attr = ConcreteAttributeModel(
+                name='lazy_view',
+                value_type_str='FILE',
+                attribute_type_str='CUSTOM',
+                file_mime_type='image/png',
+            )
+            attr.file_value = source_path
+
+            self.assertFalse(attr.has_thumbnail)
+
+            attr.ensure_thumbnail()
+
+            self.assertTrue(default_storage.exists(attr.thumbnail_relative_path))
+            self.assertTrue(attr.has_thumbnail)
+        return
+
+    @patch('hi.apps.attribute.models.AttributeThumbnail')
+    def test_ensure_thumbnail_noop_when_already_present(self, mock_thumbnail_cls):
+        """ensure_thumbnail() must NOT re-trigger generation when a thumbnail
+        already exists on disk — the per-render cost should be one
+        storage.exists() check."""
+        with self.isolated_media_root():
+            source_path = 'test_attributes/already_done.png'
+            default_storage.save(
+                source_path,
+                ContentFile(self._create_valid_png_image_bytes()),
+            )
+
+            attr = ConcreteAttributeModel(
+                name='already_done',
+                value_type_str='FILE',
+                attribute_type_str='CUSTOM',
+                file_mime_type='image/png',
+            )
+            attr.file_value = source_path
+
+            # Pre-populate the thumbnail file directly so the model sees
+            # an existing thumbnail without invoking the generator.
+            default_storage.save(
+                attr.thumbnail_relative_path,
+                ContentFile(b'pre-existing thumbnail bytes'),
+            )
+
+            attr.ensure_thumbnail()
+
+            mock_thumbnail_cls.assert_not_called()
+        return
+
+    def test_ensure_thumbnail_noop_for_unsupported_mime_type(self):
+        """ensure_thumbnail() short-circuits for file types outside the
+        supported set — no generation attempt, no thumbnail produced."""
+        with self.isolated_media_root():
+            source_path = 'test_attributes/notes.txt'
+            default_storage.save(source_path, ContentFile(b'plain text notes'))
+
+            attr = ConcreteAttributeModel(
+                name='notes',
+                value_type_str='FILE',
+                attribute_type_str='CUSTOM',
+                file_mime_type='text/plain',
+            )
+            attr.file_value = source_path
+
+            with patch(
+                'hi.apps.attribute.models.AttributeThumbnail'
+            ) as mock_thumbnail_cls:
+                attr.ensure_thumbnail()
+                mock_thumbnail_cls.assert_not_called()
+
+            self.assertFalse(attr.has_thumbnail)
+            self.assertIsNone(attr.thumbnail_relative_path)
+        return
+
+    @patch('hi.apps.attribute.models.default_storage')
+    def test_attribute_model_file_delete_also_deletes_thumbnail(self, mock_storage):
+        """Test file deletion removes generated thumbnail when present."""
+        mock_storage.exists.side_effect = [True, True]
+
+        attr = ConcreteAttributeModel(
+            name='test_attr',
+            value_type_str='FILE',
+            attribute_type_str='CUSTOM',
+            file_mime_type='image/jpeg'
+        )
+        attr.file_value = 'test_image.jpg'
+        attr.pk = 1
+
+        with patch('django.db.models.Model.delete'):
+            attr.delete()
+
+        self.assertEqual(
+            mock_storage.delete.call_args_list,
+            [call('test_image.jpg'), call('thumbnails/test_image.thumb.png')]
+        )
         return
 
     @patch('hi.apps.attribute.models.default_storage')

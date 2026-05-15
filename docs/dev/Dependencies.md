@@ -119,3 +119,22 @@ mkdir ~/.redis
 touch ~/.redis/redis.conf
 ```
 Then run with `redis-server`.
+
+### Poppler
+
+_Optional. Required for PDF thumbnail previews on file attributes. Without it, PDF attributes still upload and work — they just display a generic icon instead of a rendered preview._
+
+The `pdf2image` Python package (installed via requirements) shells out to `pdftoppm` from the `poppler-utils` system package. Docker builds install this automatically; local development needs it installed separately.
+
+#### MacOS
+
+``` shell
+brew install poppler
+```
+
+#### Ubuntu (GNU/Linux)
+
+``` shell
+sudo apt install poppler-utils
+```
+

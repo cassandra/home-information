@@ -9,6 +9,7 @@ RUN apt-get update \
         nginx \
         redis-server \
         redis-tools \
+        poppler-utils \
     && mkdir -p /var/log/supervisor \
     && mkdir -p /etc/supervisor/conf.d \
     && rm -rf /var/lib/apt/lists/* \

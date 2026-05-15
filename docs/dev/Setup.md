@@ -147,7 +147,7 @@ cd $PROJ_DIR/src
 
 ### Running
 
-Ensure that a local Redis server is running (see the Dependencies page for installation instructions). Note: Redis is only a manual dependency for local development — Docker deployments bundle it automatically. Then:
+Ensure that a local Redis server is running (see the [Dependencies page](Dependencies.md) for installation instructions). Note: Redis is only a manual dependency for local development — Docker deployments bundle it automatically. Then:
 
 ``` shell
 cd $PROJ_DIR/src

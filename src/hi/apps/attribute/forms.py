@@ -6,6 +6,7 @@ from django import forms
 from hi.apps.common.utils import is_blank, str_to_bool
 
 from .enums import AttributeType, AttributeValueType
+from .thumbnail import AttributeThumbnail
 
 
 class RegularAttributeBaseFormSet(forms.BaseInlineFormSet):
@@ -179,10 +180,15 @@ class AttributeUploadForm( forms.ModelForm ):
     def save( self, commit = True ):
         instance = super().save( commit = False )
 
-        mime_type_tuple = mimetypes.guess_type( instance.file_value.name )
+        uploaded_mime_type = getattr(instance.file_value, 'content_type', None)
+        if uploaded_mime_type:
+            uploaded_mime_type = uploaded_mime_type.split(';', 1)[0].strip().lower()
+        if not uploaded_mime_type:
+            mime_type_tuple = mimetypes.guess_type( instance.file_value.name )
+            uploaded_mime_type = mime_type_tuple[0]
         
         instance.name = instance.file_value.name
-        instance.file_mime_type = mime_type_tuple[0]
+        instance.file_mime_type = uploaded_mime_type
         instance.value_type_str = str( AttributeValueType.FILE )
         instance.attribute_type_str = str(AttributeType.CUSTOM)
         instance.is_editable = True
@@ -190,4 +196,6 @@ class AttributeUploadForm( forms.ModelForm ):
 
         if commit:
             instance.save()
+            thumbnail_generated = AttributeThumbnail(instance).generate_thumbnail_best_effort()
+            instance.set_thumbnail_exists_cache(thumbnail_generated)
         return instance
