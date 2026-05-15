@@ -415,16 +415,16 @@ DEBUG_FORCE_TRANSIENT_VIEW_OVERRIDE = False
 # For testing UI error display of the various attribute editing form errors.
 DEBUG_INJECT_ATTRIBUTE_FORM_ERRORS = False
 
-# Per-state tracing for debugging value flow across the HA
-# integration and the simulator. The master switch is
-# ``DEBUG_TRACE_STATE``; main-code call sites short-circuit on
+# Per-state tracing for debugging value flow across any
+# integration (HA, ZM, etc.) and the simulator. The master switch
+# is ``DEBUG_TRACE_STATE``; main-code call sites short-circuit on
 # it for zero overhead when off. When on, the trace dispatcher
-# consults ``DEBUG_TRACE_HA_ENTITY_IDS`` (HA entity_ids; matched
-# against the integration_name with any ``~suffix`` stripped, so
-# a single entry like ``cover.x`` catches its substate variants)
-# and ``DEBUG_TRACE_HI_ENTITY_STATE_IDS`` (HI EntityState PKs)
-# for granularity. ``settings.DEBUG`` must also be True. See
+# consults ``DEBUG_TRACE_INTEGRATION_NAMES`` (matched against
+# the integration_name with any ``~suffix`` stripped, so a single
+# entry like ``cover.x`` catches its substate variants) and
+# ``DEBUG_TRACE_HI_ENTITY_STATE_IDS`` (HI EntityState PKs) for
+# granularity. ``settings.DEBUG`` must also be True. See
 # ``hi.testing.dev_overrides.StateTraceManager``.
 DEBUG_TRACE_STATE = False
-DEBUG_TRACE_HA_ENTITY_IDS = [ ]  # strings / integration_key.name
+DEBUG_TRACE_INTEGRATION_NAMES = [ ]  # strings / integration_key.name
 DEBUG_TRACE_HI_ENTITY_STATE_IDS = [ ]  # ints / EntityState database ids

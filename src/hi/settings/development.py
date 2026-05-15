@@ -164,8 +164,8 @@ DEBUG_INJECT_ATTRIBUTE_FORM_ERRORS = False
 
 # Per-state tracing for debugging value flow. Set
 # ``DEBUG_TRACE_STATE = True`` and populate one or both id lists
-# with the specific HA entity_ids and/or HI EntityState PKs to
-# instrument.
+# with the specific integration_names and/or HI EntityState PKs
+# to instrument.
 DEBUG_TRACE_STATE = False
-DEBUG_TRACE_HA_ENTITY_IDS = []  # strings / integration_key.name
-DEBUG_TRACE_HI_ENTITY_STATE_IDS = []  # ints / EntityState database ids
+DEBUG_TRACE_INTEGRATION_NAMES = [ ]  # strings / integration_key.name
+DEBUG_TRACE_HI_ENTITY_STATE_IDS = [ ]  # ints / EntityState database ids

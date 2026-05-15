@@ -46,7 +46,7 @@ class StatusDisplayManager( Singleton, SensorResponseMixin ):
                 latest = status_display_data.sensor_response_list[ 0 ]
                 DevOverrideManager.trace_state(
                     'hi.ui_poll.entity_state.out',
-                    ha_entity_id = latest.integration_key.integration_name,
+                    integration_name = latest.integration_key.integration_name,
                     hi_entity_state_id = status_display_data.entity_state.id,
                     hi_value = latest.value,
                     row = status_map[ state_id_key ],

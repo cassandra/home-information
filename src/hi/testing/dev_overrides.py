@@ -102,20 +102,20 @@ class DevOverrideManager:
     @classmethod
     def trace_state( cls,
                      label              : str,
-                     ha_entity_id       : Optional[ str ] = None,
+                     integration_name   : Optional[ str ] = None,
                      hi_entity_state_id : Optional[ int ] = None,
-                     ha_value           : Any             = None,
+                     integration_value  : Any             = None,
                      hi_value           : Any             = None,
                      **kwargs           : Any ) -> None:
         if not StateTraceManager.is_traced(
-                ha_entity_id = ha_entity_id,
+                integration_name = integration_name,
                 hi_entity_state_id = hi_entity_state_id ):
             return
         StateTraceManager.emit(
             label = label,
-            ha_entity_id = ha_entity_id,
+            integration_name = integration_name,
             hi_entity_state_id = hi_entity_state_id,
-            ha_value = ha_value,
+            integration_value = integration_value,
             hi_value = hi_value,
             **kwargs,
         )
@@ -123,18 +123,18 @@ class DevOverrideManager:
 
 class StateTraceManager:
     """
-    Per-state tracing for debugging value flow across the HA
-    integration and the simulator.
+    Per-state tracing for debugging value flow across any
+    integration (HA, ZM, etc.) and the simulator.
 
     Reached from main code only via ``DevOverrideManager.trace_state``;
     main-code sites short-circuit on
     ``settings.DEBUG and settings.DEBUG_TRACE_STATE`` so this class
     is only consulted when tracing is on.
 
-    Granularity is set by ``DEBUG_TRACE_HA_ENTITY_IDS`` (HA
-    entity_ids; the matcher strips any ``~suffix`` so a single
-    entry like ``'cover.x'`` catches its substate variants) and
-    ``DEBUG_TRACE_HI_ENTITY_STATE_IDS`` (HI EntityState PKs).
+    Granularity is set by ``DEBUG_TRACE_INTEGRATION_NAMES``
+    (integration_names; the matcher strips any ``~suffix`` so a
+    single entry like ``'cover.x'`` catches its substate variants)
+    and ``DEBUG_TRACE_HI_ENTITY_STATE_IDS`` (HI EntityState PKs).
     Output goes to the dedicated ``hi.state_trace`` logger at
     INFO so verbosity can be scoped independently of other
     loggers.
@@ -142,11 +142,11 @@ class StateTraceManager:
 
     @classmethod
     def is_traced( cls,
-                   ha_entity_id       : Optional[ str ] = None,
+                   integration_name   : Optional[ str ] = None,
                    hi_entity_state_id : Optional[ int ] = None ) -> bool:
-        if ha_entity_id:
-            target = ha_entity_id.split( '~', 1 )[ 0 ]
-            if target in settings.DEBUG_TRACE_HA_ENTITY_IDS:
+        if integration_name:
+            target = integration_name.split( '~', 1 )[ 0 ]
+            if target in settings.DEBUG_TRACE_INTEGRATION_NAMES:
                 return True
         if hi_entity_state_id is not None:
             if hi_entity_state_id in settings.DEBUG_TRACE_HI_ENTITY_STATE_IDS:
@@ -156,29 +156,29 @@ class StateTraceManager:
     # Tabular column widths. Generous so common values fit without
     # disrupting alignment; long values overflow the slot and
     # disrupt only their own row, not subsequent ones.
-    LABEL_W   = 28
-    HA_ID_W   = 42
-    HA_VAL_W  = 14
-    HI_ID_W   = 6
-    HI_VAL_W  = 26
+    LABEL_W             = 28
+    INTEGRATION_NAME_W  = 42
+    INTEGRATION_VAL_W   = 14
+    HI_ID_W             = 6
+    HI_VAL_W            = 26
 
     @classmethod
     def emit( cls,
               label              : str,
-              ha_entity_id       : Optional[ str ] = None,
+              integration_name   : Optional[ str ] = None,
               hi_entity_state_id : Optional[ int ] = None,
-              ha_value           : Any             = None,
+              integration_value  : Any             = None,
               hi_value           : Any             = None,
               **kwargs           : Any ) -> None:
-        ha_id_str   = ha_entity_id or ''
-        hi_id_str   = '' if hi_entity_state_id is None else str( hi_entity_state_id )
-        ha_val_str  = '' if ha_value is None else str( ha_value )
-        hi_val_str  = '' if hi_value is None else str( hi_value )
-        extras_str  = ' '.join( f'{k}={v}' for k, v in kwargs.items() )
+        int_name_str = integration_name or ''
+        hi_id_str    = '' if hi_entity_state_id is None else str( hi_entity_state_id )
+        int_val_str  = '' if integration_value is None else str( integration_value )
+        hi_val_str   = '' if hi_value is None else str( hi_value )
+        extras_str   = ' '.join( f'{k}={v}' for k, v in kwargs.items() )
         line = (
             f'{label:<{cls.LABEL_W}} | '
-            f'{ha_id_str:<{cls.HA_ID_W}} | '
-            f'{ha_val_str:<{cls.HA_VAL_W}} | '
+            f'{int_name_str:<{cls.INTEGRATION_NAME_W}} | '
+            f'{int_val_str:<{cls.INTEGRATION_VAL_W}} | '
             f'{hi_id_str:<{cls.HI_ID_W}} | '
             f'{hi_val_str:<{cls.HI_VAL_W}} | '
             f'{extras_str}'

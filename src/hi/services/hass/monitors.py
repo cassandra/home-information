@@ -110,8 +110,8 @@ class HassMonitor( PeriodicMonitor, HassMixin, SensorResponseMixin ):
             if settings.DEBUG and settings.DEBUG_TRACE_STATE:
                 DevOverrideManager.trace_state(
                     'hi.ha_poll.in',
-                    ha_entity_id = hass_state.entity_id,
-                    ha_value = hass_state.state_value,
+                    integration_name = hass_state.entity_id,
+                    integration_value = hass_state.state_value,
                     device_class = hass_state.device_class,
                     value_map = { str(k): v for k, v in value_map.items() },
                 )

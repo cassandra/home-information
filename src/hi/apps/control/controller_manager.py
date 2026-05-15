@@ -42,7 +42,7 @@ class ControllerManager( Singleton ):
         if settings.DEBUG and settings.DEBUG_TRACE_STATE:
             DevOverrideManager.trace_state(
                 'hi.control.out',
-                ha_entity_id = integration_details.key.integration_name,
+                integration_name = integration_details.key.integration_name,
                 hi_entity_state_id = controller.entity_state.id,
                 hi_value = control_value,
             )

@@ -19,6 +19,7 @@ from hi.apps.config.views import ConfigPageView
 from hi.apps.entity.entity_placement import EntityPlacementService
 from hi.apps.entity.models import Entity
 from hi.apps.location.models import LocationView
+from hi.apps.sense.sensor_response_manager import SensorResponseManager
 
 from .placement_request import PlacementFormParser, PlacementUrlParams
 from .entity_operations import EntityIntegrationOperations
@@ -218,6 +219,13 @@ class IntegrationSyncView( HiModalView, IntegrationViewMixin ):
             # in the UI until the server restarts. ``finally`` so a
             # partial-commit failure during sync also flushes.
             IntegrationMetadataCache().invalidate()
+            # Drop the in-process Sensor lookup cache so subsequent
+            # polling reads pick up the new Sensor rows. Re-imported
+            # entities reuse their integration_keys but get new DB
+            # PKs and new EntityState links; without this, the
+            # polling status map keys responses by stale (deleted)
+            # EntityState PKs and the UI silently fails to update.
+            SensorResponseManager().invalidate_local_sensor_cache()
 
         # Scope the placement to just the entities this sync created.
         # Without scoping, the placement's GET endpoint queries every
@@ -578,6 +586,7 @@ class IntegrationDisableView( HiModalView, IntegrationViewMixin ):
             # don't return stale entries that reference deleted
             # rows. Symmetric with the post-sync invalidation.
             IntegrationMetadataCache().invalidate()
+            SensorResponseManager().invalidate_local_sensor_cache()
         redirect_url = reverse( 'integrations_home' )
         return self.redirect_response( request, redirect_url )
 

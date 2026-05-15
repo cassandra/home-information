@@ -3,6 +3,8 @@ from datetime import datetime
 import logging
 from .pyzm_client.helpers.Monitor import Monitor as ZmMonitor
 
+from django.conf import settings
+
 import hi.apps.common.datetimeproxy as datetimeproxy
 from hi.apps.alert.enums import AlarmLevel
 from hi.apps.entity.enums import EntityStateValue
@@ -11,6 +13,7 @@ from hi.apps.sense.sensor_response_manager import SensorResponseMixin
 from hi.apps.sense.transient_models import SensorResponse
 from hi.apps.sense.enums import CorrelationRole
 from hi.apps.system.provider_info import ProviderInfo
+from hi.testing.dev_overrides import DevOverrideManager
 
 from .constants import ZmDetailKeys, ZmTimeouts
 from .zm_models import ZmEvent, AggregatedMonitorState
@@ -196,6 +199,14 @@ class ZoneMinderMonitor( PeriodicMonitor, ZoneMinderMixin, SensorResponseMixin )
                     timestamp = current_poll_datetime,
                 )
                 sensor_response_map[idle_sensor_response.integration_key] = idle_sensor_response
+
+                if settings.DEBUG and settings.DEBUG_TRACE_STATE:
+                    DevOverrideManager.trace_state(
+                        'hi.zm_poll.no_events',
+                        integration_name = idle_sensor_response.integration_key.integration_name,
+                        integration_value = idle_sensor_response.value,
+                        monitor_id = zm_monitor.id(),
+                    )
             continue
         
         if open_zm_event_list:
@@ -293,11 +304,23 @@ class ZoneMinderMonitor( PeriodicMonitor, ZoneMinderMixin, SensorResponseMixin )
                 sensor_response = self._create_movement_active_sensor_response(state.canonical_event)
             else:  # state.is_idle
                 sensor_response = self._create_movement_idle_sensor_response(state.canonical_event)
-                
+
             # Use our calculated effective timestamp
             sensor_response.timestamp = state.effective_timestamp
-            
+
             sensor_response_map[sensor_response.integration_key] = sensor_response
+
+            if settings.DEBUG and settings.DEBUG_TRACE_STATE:
+                DevOverrideManager.trace_state(
+                    'hi.zm_poll.events',
+                    integration_name = sensor_response.integration_key.integration_name,
+                    integration_value = sensor_response.value,
+                    monitor_id = monitor_id,
+                    event_count = len( state.all_events ),
+                    canonical_event_id = (
+                        state.canonical_event.event_id if state.canonical_event else None
+                    ),
+                )
             
             # Update event processing caches to avoid reprocessing from ZM API
             for zm_event in state.all_events:
@@ -320,10 +343,18 @@ class ZoneMinderMonitor( PeriodicMonitor, ZoneMinderMixin, SensorResponseMixin )
                 timestamp = current_poll_datetime,
             )
             sensor_response_map[function_sensor_response.integration_key] = function_sensor_response
+
+            if settings.DEBUG and settings.DEBUG_TRACE_STATE:
+                DevOverrideManager.trace_state(
+                    'hi.zm_poll.function',
+                    integration_name = function_sensor_response.integration_key.integration_name,
+                    integration_value = str( zm_monitor.function() ),
+                    monitor_id = zm_monitor.id(),
+                )
             continue
-        
+
         return sensor_response_map
-    
+
     async def _process_states(self):
         current_poll_datetime = datetimeproxy.now()
         sensor_response_map = dict()
@@ -342,7 +373,14 @@ class ZoneMinderMonitor( PeriodicMonitor, ZoneMinderMixin, SensorResponseMixin )
                 timestamp = current_poll_datetime,
             )
             sensor_response_map[run_state_sensor_response.integration_key] = run_state_sensor_response
-        
+
+            if settings.DEBUG and settings.DEBUG_TRACE_STATE:
+                DevOverrideManager.trace_state(
+                    'hi.zm_poll.run_state',
+                    integration_name = run_state_sensor_response.integration_key.integration_name,
+                    integration_value = active_run_state_name,
+                )
+
         return sensor_response_map
       
     def _has_video_stream_capability(self, detail_attrs: dict = None) -> bool:

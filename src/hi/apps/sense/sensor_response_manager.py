@@ -85,6 +85,31 @@ class SensorResponseManager( Singleton, SensorHistoryMixin, EventMixin ):
         # Any future heavyweight initializations go here (e.g., any DB operations).
         self._was_initialized = True
         return
+
+    def invalidate_local_sensor_cache(self):
+        """Drop the in-process IntegrationKey → Sensor lookup cache
+        and mark the in-memory latest-responses map stale. Leaves
+        the Redis-backed sensor response data untouched (its keys
+        are integration_key strings, which are stable across
+        re-import).
+
+        Called by the integration framework after any operation that
+        creates, refreshes, or removes Sensors with integration_keys
+        (sync, disable). Symmetric with
+        ``IntegrationMetadataCache.invalidate()``.
+
+        Necessary because ``_sensor_cache`` holds Python ``Sensor``
+        model instances keyed by integration_key. After re-import
+        the integration_key is reused (it's derived from the
+        external ID, which doesn't change) but the underlying DB
+        row has a new PK and a new ``entity_state`` link. Without
+        invalidation, the polling read path returns the stale
+        Sensor object, the status map is keyed by the deleted
+        EntityState's PK, and the client's DOM (rendered with new
+        PKs) silently fails to update for up to the 300s TTL."""
+        self._sensor_cache.clear()
+        self._latest_sensor_data_dirty = True
+        return
     
     async def update_with_latest_sensor_responses(
             self,
@@ -119,7 +144,7 @@ class SensorResponseManager( Singleton, SensorHistoryMixin, EventMixin ):
                         sensor = latest_sensor_response.sensor
                         DevOverrideManager.trace_state(
                             'hi.sensor.skip',
-                            ha_entity_id = integration_key.integration_name,
+                            integration_name = integration_key.integration_name,
                             hi_entity_state_id = sensor.entity_state.id if sensor else None,
                             hi_value = latest_sensor_response.value,
                         )
@@ -136,7 +161,7 @@ class SensorResponseManager( Singleton, SensorHistoryMixin, EventMixin ):
                     sensor = latest_sensor_response.sensor
                     DevOverrideManager.trace_state(
                         'hi.sensor.commit',
-                        ha_entity_id = integration_key.integration_name,
+                        integration_name = integration_key.integration_name,
                         hi_entity_state_id = sensor.entity_state.id if sensor else None,
                         hi_value = f'{previous_sensor_response.value} -> {latest_sensor_response.value}',
                     )
@@ -145,7 +170,7 @@ class SensorResponseManager( Singleton, SensorHistoryMixin, EventMixin ):
                     sensor = latest_sensor_response.sensor
                     DevOverrideManager.trace_state(
                         'hi.sensor.first',
-                        ha_entity_id = integration_key.integration_name,
+                        integration_name = integration_key.integration_name,
                         hi_entity_state_id = sensor.entity_state.id if sensor else None,
                         hi_value = latest_sensor_response.value,
                     )
