@@ -20,4 +20,8 @@ urlpatterns = [
     re_path( r'^services/(?P<domain>[\w_]+)/(?P<service>[\w_]+)$',
              views.ServiceCallView.as_view(),
              name = 'hass_api_service_call' ),
+
+    re_path( r'^camera_proxy/(?P<entity_id>[\w\._\-]+)$',
+             views.CameraSnapshotView.as_view(),
+             name = 'hass_api_camera_snapshot' ),
 ]

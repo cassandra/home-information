@@ -25,6 +25,10 @@ from typing import Dict, List
 from hi.simulator.base_models import SimState
 
 from .sim_models import (
+    HassCameraMotionDetectionState,
+    HassCameraMotionState,
+    HassCameraSimEntityFields,
+    HassCameraState,
     HassColorSmartBulbBrightnessState,
     HassColorSmartBulbColorModeState,
     HassColorSmartBulbFields,
@@ -217,10 +221,50 @@ class HassApiComposer:
         return [ primary_dict ]
 
 
+    @staticmethod
+    def _camera( sim_states : List[ SimState ] ) -> List[ Dict ]:
+        """Compose camera + motion_detection + motion_sensor SimStates
+        into TWO HA entities, mirroring real HA's shape:
+
+        - ``camera.X`` from ``HassCameraState`` with the
+          ``motion_detection`` attribute folded in from
+          ``HassCameraMotionDetectionState``.
+        - ``binary_sensor.X_motion`` from ``HassCameraMotionState``
+          as its own HA entity.
+
+        The motion_detection state's placeholder ``_internal.*``
+        entity_id never reaches the response."""
+        camera_dict = None
+        motion_sensor_dict = None
+        motion_detection_attrs : Dict = {}
+
+        for state in sim_states:
+            if isinstance( state, HassCameraState ):
+                camera_dict = dict( state.to_api_dict() )
+            elif isinstance( state, HassCameraMotionState ):
+                motion_sensor_dict = state.to_api_dict()
+            elif isinstance( state, HassCameraMotionDetectionState ):
+                motion_detection_attrs.update( state.to_api_dict().get( 'attributes', {} ) )
+            continue
+
+        if camera_dict is None:
+            return HassApiComposer._default( sim_states )
+
+        merged_attrs = dict( camera_dict.get( 'attributes', {} ) )
+        merged_attrs.update( motion_detection_attrs )
+        camera_dict[ 'attributes' ] = merged_attrs
+
+        results = [ camera_dict ]
+        if motion_sensor_dict is not None:
+            results.append( motion_sensor_dict )
+        return results
+
+
 # Registry built after the class is defined so the classmethod
 # objects exist as references. Keyed off SimEntityFields class so
 # the dispatch is per-device-type.
 HassApiComposer._REGISTRY = {
+    HassCameraSimEntityFields: HassApiComposer._camera,
     HassColorSmartBulbFields: HassApiComposer._color_smart_bulb,
     HassMultiFeatureFanFields: HassApiComposer._multi_feature_fan,
     HassThermostatFields: HassApiComposer._thermostat,

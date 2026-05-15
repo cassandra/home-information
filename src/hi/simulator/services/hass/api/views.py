@@ -2,11 +2,12 @@ import json
 import logging
 
 from django.core.exceptions import BadRequest
-from django.http import JsonResponse
+from django.http import HttpResponse, JsonResponse
 from django.utils.decorators import method_decorator
 from django.views.decorators.csrf import csrf_exempt
 from django.views.generic import View
 
+from hi.simulator.media import render_jpeg_frame
 from hi.simulator.services.hass.api_composers import HassApiComposer
 from hi.simulator.services.hass.service_dispatchers import HassServiceDispatcher
 from hi.simulator.services.hass.simulator import HassSimulator
@@ -156,3 +157,24 @@ class ServiceCallView( View ):
         except Exception:
             logger.exception( 'Problem processing HAss service call' )
             return JsonResponse( list(), safe = False )
+
+
+class CameraSnapshotView( View ):
+    """Mirrors HA's ``/api/camera_proxy/<entity_id>`` endpoint, which
+    returns a single JPEG of the camera's current view. The simulator
+    accepts any ``token`` query param (real HA validates the rotating
+    ``access_token``); the goal here is shape parity with HA's URL
+    contract, not auth enforcement.
+
+    Returns a Pillow-rendered placeholder JPEG with the entity_id
+    overlaid so artifacts viewed inside HI are obviously coming from
+    the simulator and from a specific camera."""
+
+    def get(self, request, entity_id, *args, **kwargs):
+        jpeg_bytes = render_jpeg_frame(
+            text_lines = [
+                'HA Camera',
+                entity_id,
+            ],
+        )
+        return HttpResponse( jpeg_bytes, content_type = 'image/jpeg' )
