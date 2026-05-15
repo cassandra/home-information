@@ -4,8 +4,16 @@ V2 File Card Component
 Individual file attribute card with preview, actions, and metadata
 {% endcomment %}
 
-<div class="{{ DIVID.ATTR_V2_FILE_CARD_CLASS }}" 
-     data-attribute-id="{{ attribute.id }}" 
+{% comment %}
+Lazy thumbnail generation: triggers synchronous generation on first
+view for any supported file attribute that doesn't yet have one.
+Render-time hook with no output — see ``ensure_thumbnail`` template
+tag in attribute_extras.py.
+{% endcomment %}
+{% ensure_thumbnail attribute %}
+
+<div class="{{ DIVID.ATTR_V2_FILE_CARD_CLASS }}"
+     data-attribute-id="{{ attribute.id }}"
      data-url-detect="true"
      data-order-index="{{ forloop.counter }}"
      data-thumbnail-ready="{{ attribute.has_thumbnail|yesno:'true,false' }}"

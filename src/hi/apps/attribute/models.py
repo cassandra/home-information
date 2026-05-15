@@ -14,7 +14,7 @@ from .enums import (
     AttributeType,
 )
 from .managers import ActiveAttributeManager, DeletedAttributeManager
-from .thumbnail import AttributeThumbnailRules
+from .thumbnail import AttributeThumbnail, AttributeThumbnailRules
 
 logger = logging.getLogger(__name__)
 
@@ -189,6 +189,25 @@ class AttributeModel(models.Model):
     @property
     def has_thumbnail(self):
         return self._thumbnail_exists()
+
+    def ensure_thumbnail(self):
+        """Generate a thumbnail synchronously if one is missing for this
+        file attribute. Intended as a lazy-generation hook invoked from
+        display templates via the ``{% ensure_thumbnail %}`` tag.
+
+        Spreads thumbnail-generation cost across actual usage (each file
+        attribute pays once, on first view) instead of forcing an upfront
+        pass at startup. No-op for unsupported file types or already-
+        generated thumbnails. Generation failures are swallowed by the
+        best-effort helper; the template falls back to its icon
+        placeholder in that case."""
+        if not self.supports_thumbnail_generation:
+            return
+        if self._thumbnail_exists():
+            return
+        AttributeThumbnail( self ).generate_thumbnail_best_effort()
+        self.clear_thumbnail_exists_cache()
+        return
 
     @property
     def thumbnail_url(self):

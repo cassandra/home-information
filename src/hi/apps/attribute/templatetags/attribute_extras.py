@@ -316,3 +316,19 @@ def attribute_text_linkify(value):
 
     html = ''.join(str(part) for part in rendered_parts).replace('\n', '<br>')
     return mark_safe(html)
+
+
+@register.simple_tag
+def ensure_thumbnail(attribute):
+    """Render-time hook that triggers lazy thumbnail generation for a
+    file attribute if one isn't already present. Use in display
+    templates as ``{% ensure_thumbnail attribute %}`` ahead of any
+    ``attribute.has_thumbnail`` / ``attribute.thumbnail_url`` reads.
+
+    Renders nothing (the tag's side effect is the work). No-op for
+    attributes that don't support thumbnails or already have one;
+    generation failures are swallowed and the surrounding template
+    falls back to its placeholder."""
+    if hasattr( attribute, 'ensure_thumbnail' ):
+        attribute.ensure_thumbnail()
+    return ''
