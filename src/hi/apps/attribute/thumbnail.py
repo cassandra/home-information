@@ -67,10 +67,30 @@ class AttributeThumbnailRules:
 class AttributeThumbnail:
 
     THUMBNAIL_SIZE = (320, 320)
+
+    # Per-mime-type input size caps. PDFs get a tighter ceiling because
+    # rendering cost scales with page dimensions and complexity, not
+    # raw byte count — a small but pathological PDF can still be much
+    # more expensive than a moderately sized image.
     THUMBNAIL_MAX_SOURCE_BYTES = 20 * 1024 * 1024
+    THUMBNAIL_MAX_PDF_SOURCE_BYTES = 10 * 1024 * 1024
+
+    # Bounds on PDF rendering. ``PDF_RENDER_SIZE`` caps the rasterized
+    # output dimensions before the thumbnail resize, preventing a
+    # large-page PDF from producing a multi-GB pixel buffer at
+    # pdf2image's 200-DPI default. ``PDF_RENDER_TIMEOUT_SECS`` is
+    # threaded through to the underlying pdftoppm subprocess so a
+    # crafted PDF can't hang generation indefinitely.
+    PDF_RENDER_SIZE = (640, 640)
+    PDF_RENDER_TIMEOUT_SECS = 30
 
     def __init__(self, attribute: 'AttributeModel'):
         self.attribute = attribute
+
+    def _max_source_bytes_for_mime_type(self, mime_type):
+        if mime_type in AttributeThumbnailRules.THUMBNAIL_PDF_MIME_TYPES:
+            return self.THUMBNAIL_MAX_PDF_SOURCE_BYTES
+        return self.THUMBNAIL_MAX_SOURCE_BYTES
 
     def _render_pdf_first_page_image(self, file_handle):
         try:
@@ -83,8 +103,10 @@ class AttributeThumbnail:
             pdf_bytes = file_handle.read()
             rendered_pages = convert_from_bytes(
                 pdf_bytes,
-                first_page=1,
-                last_page=1,
+                first_page = 1,
+                last_page = 1,
+                size = self.PDF_RENDER_SIZE,
+                timeout = self.PDF_RENDER_TIMEOUT_SECS,
             )
             if not rendered_pages:
                 logger.warning( f'Cannot generate thumbnail for empty PDF: {self.attribute.file_value.name}' )
@@ -117,10 +139,12 @@ class AttributeThumbnail:
             return True
 
         if self.attribute.file_value and getattr(self.attribute.file_value, 'size', None):
-            if self.attribute.file_value.size > self.THUMBNAIL_MAX_SOURCE_BYTES:
+            max_source_bytes = self._max_source_bytes_for_mime_type( mime_type )
+            if self.attribute.file_value.size > max_source_bytes:
                 logger.info(
                     f'Skipping thumbnail generation for {self.attribute.file_value.name}: '
-                    f'file too large ({self.attribute.file_value.size} bytes)'
+                    f'file too large ({self.attribute.file_value.size} bytes, '
+                    f'limit {max_source_bytes} bytes for {mime_type})'
                 )
                 return False
 
