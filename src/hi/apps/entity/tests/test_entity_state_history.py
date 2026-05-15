@@ -345,6 +345,175 @@ class TestMergeHistory( BaseTestCase ):
         timestamps = [ r.timestamp for r in result ]
         self.assertEqual( timestamps, sorted( timestamps, reverse = True ) )
 
+    # ------------------------------------------------------------------
+    # Click-through metadata on OBSERVATION rows.
+
+    def test_observation_row_carries_sensor_history_id(self):
+        obs = self._observation( 'on', _at( 0 ) )
+
+        result = merge_history(
+            entity_state = self.state,
+            observation_rows = [ obs ],
+            intent_rows = [],
+        )
+
+        self.assertEqual( len( result ), 1 )
+        self.assertEqual( result[ 0 ].sensor_history_id, obs.id )
+
+    def test_observation_row_reflects_has_video_stream_from_source(self):
+        obs_with = SensorHistory.objects.create(
+            sensor = self.sensor, value = 'on',
+            response_datetime = _at( 0 ), has_video_stream = True,
+        )
+        obs_without = SensorHistory.objects.create(
+            sensor = self.sensor, value = 'on',
+            response_datetime = _at( 1 ), has_video_stream = False,
+        )
+
+        result = merge_history(
+            entity_state = self.state,
+            observation_rows = [ obs_with, obs_without ],
+            intent_rows = [],
+        )
+
+        by_id = { r.sensor_history_id: r for r in result }
+        self.assertTrue( by_id[ obs_with.id ].has_video_stream )
+        self.assertFalse( by_id[ obs_without.id ].has_video_stream )
+
+    def test_observation_row_has_details_when_details_present(self):
+        obs_with = SensorHistory.objects.create(
+            sensor = self.sensor, value = 'on',
+            response_datetime = _at( 0 ),
+            details = '{"trigger": "motion"}',
+        )
+        obs_without = self._observation( 'on', _at( 1 ) )
+
+        result = merge_history(
+            entity_state = self.state,
+            observation_rows = [ obs_with, obs_without ],
+            intent_rows = [],
+        )
+
+        by_id = { r.sensor_history_id: r for r in result }
+        self.assertTrue( by_id[ obs_with.id ].has_details )
+        self.assertFalse( by_id[ obs_without.id ].has_details )
+
+    def test_observation_row_reflects_provides_video_stream_from_sensor(self):
+        # Two sensors on the same state, one with provides_video_stream
+        # set. Each observation row carries its sensor's flag.
+        video_sensor = Sensor.objects.create(
+            entity_state = self.state,
+            name = 'cam-sensor',
+            sensor_type_str = 'DEFAULT',
+            integration_payload = '{}',
+            provides_video_stream = True,
+        )
+        obs_video = self._observation( 'on', _at( 0 ), sensor = video_sensor )
+        obs_plain = self._observation( 'on', _at( 1 ) )
+
+        result = merge_history(
+            entity_state = self.state,
+            observation_rows = [ obs_video, obs_plain ],
+            intent_rows = [],
+        )
+
+        by_id = { r.sensor_history_id: r for r in result }
+        self.assertTrue( by_id[ obs_video.id ].provides_video_stream )
+        self.assertFalse( by_id[ obs_plain.id ].provides_video_stream )
+
+    def test_intent_row_click_through_fields_at_defaults(self):
+        intent = self._intent( 'on', _at( 0 ) )
+
+        result = merge_history(
+            entity_state = self.state,
+            observation_rows = [],
+            intent_rows = [ intent ],
+        )
+
+        self.assertEqual( len( result ), 1 )
+        row = result[ 0 ]
+        self.assertIsNone( row.sensor_history_id )
+        self.assertFalse( row.has_video_stream )
+        self.assertFalse( row.has_details )
+        self.assertFalse( row.provides_video_stream )
+
+    # ------------------------------------------------------------------
+    # Click-through URL properties on the row type.
+
+    def test_observation_with_video_stream_has_video_browse_url(self):
+        obs = SensorHistory.objects.create(
+            sensor = self.sensor, value = 'on',
+            response_datetime = _at( 0 ), has_video_stream = True,
+        )
+
+        result = merge_history(
+            entity_state = self.state,
+            observation_rows = [ obs ],
+            intent_rows = [],
+        )
+
+        self.assertIsNotNone( result[ 0 ].video_browse_url )
+
+    def test_observation_with_details_has_details_url(self):
+        obs = SensorHistory.objects.create(
+            sensor = self.sensor, value = 'on',
+            response_datetime = _at( 0 ),
+            details = '{"trigger": "motion"}',
+        )
+
+        result = merge_history(
+            entity_state = self.state,
+            observation_rows = [ obs ],
+            intent_rows = [],
+        )
+
+        self.assertIsNotNone( result[ 0 ].details_url )
+
+    def test_observation_without_video_or_details_has_no_click_url(self):
+        obs = self._observation( 'on', _at( 0 ) )
+
+        result = merge_history(
+            entity_state = self.state,
+            observation_rows = [ obs ],
+            intent_rows = [],
+        )
+
+        row = result[ 0 ]
+        self.assertIsNone( row.video_browse_url )
+        self.assertIsNone( row.details_url )
+        self.assertIsNone( row.click_url )
+
+    def test_intent_row_has_no_click_through_urls(self):
+        intent = self._intent( 'on', _at( 0 ) )
+
+        result = merge_history(
+            entity_state = self.state,
+            observation_rows = [],
+            intent_rows = [ intent ],
+        )
+
+        row = result[ 0 ]
+        self.assertIsNone( row.video_browse_url )
+        self.assertIsNone( row.details_url )
+        self.assertIsNone( row.click_url )
+
+    def test_click_url_prefers_video_over_details(self):
+        obs = SensorHistory.objects.create(
+            sensor = self.sensor, value = 'on',
+            response_datetime = _at( 0 ),
+            has_video_stream = True,
+            details = '{"trigger": "motion"}',
+        )
+
+        result = merge_history(
+            entity_state = self.state,
+            observation_rows = [ obs ],
+            intent_rows = [],
+        )
+
+        row = result[ 0 ]
+        self.assertEqual( row.click_url, row.video_browse_url )
+
 
 class TestGetEntityStateHistoryPage( BaseTestCase ):
     """``get_entity_state_history_page`` is the sensor-anchored page

@@ -1,0 +1,1 @@
+{% load entity_tags units %}{% if entity_state.units %}{{ value|as_display_value:entity_state }}{% else %}{{ value|value_label }}{% endif %}

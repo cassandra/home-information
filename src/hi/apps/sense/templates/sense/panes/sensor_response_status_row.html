@@ -1,5 +1,6 @@
 {% load common_tags %}
 {% load icons %}
+{% load sense_tags %}
 <div class="row">
   <div class="col-6 align-self-center">
     <div class="h6 text-center">
@@ -35,7 +36,10 @@
   </div>
   <div class="col-6 align-self-center">
     <a href="{{ sensor_response.click_url }}" title="See details" data-async="true">
-      {% include_with_fallback sensor_response.sensor.entity_state.entity_state_type.value_template_name "sense/panes/sensor_response_value_default.html" %}
+      <div class="hi-status-display text-center px-2"
+           data-state-id="{{ sensor_response.entity_state.id }}"
+           data-status data-display-text
+           status="{{ sensor_response.value }}">{% render_state_value_text sensor_response.entity_state sensor_response.value %}</div>
     </a>
   </div>
 </div>

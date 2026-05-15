@@ -14,9 +14,9 @@ def include_controller_widget( context, controller : Controller ):
     controller's EntityStateType, falling back to
     ``control/panes/controller_default.html``. This is the per-state-type
     widget *layout* used by the EntityStatus row-list — a template-layer
-    concern, not a model-layer one (it assumes an inline form snippet inside
-    a row). Read-only value display dispatches through the model's
-    ``EntityStateType.value_template_name`` instead."""
+    concern, not a model-layer one (it assumes an inline form snippet
+    inside a row). The read-only value-display analogue is
+    ``sense_tags.render_state_value_text``."""
     state_type_name = controller.entity_state.entity_state_type.name.lower()
     template_name = f'control/panes/controller_{state_type_name}.html'
     try:

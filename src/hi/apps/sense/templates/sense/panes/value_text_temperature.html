@@ -1,0 +1,6 @@
+{% load units %}
+{# Temperature value rendering. Server-side ``value`` is in the      #}
+{# EntityState's stored unit; the ``as_display_value`` filter goes   #}
+{# through ConsoleConverterHelper to produce a DisplayValue whose    #}
+{# ``__str__`` combines the user-display magnitude and unit symbol.  #}
+{{ value|as_display_value:entity_state }}
