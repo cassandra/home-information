@@ -287,7 +287,7 @@
             });
         },
         
-        addBeforeAsyncRenderFunction: addBeforeAsyncRenderFunction,
+        addBeforeContentRemovalFunction: addBeforeContentRemovalFunction,
         addAfterAsyncRenderFunction: addAfterAsyncRenderFunction,
         addAfterModalRenderFunction: addAfterModalRenderFunction,
 
@@ -564,7 +564,7 @@ function asyncUpdateData( $target, $mode, data, xhr ) {
 
     if (ct.indexOf('html') > -1) {
      if ( $target ) {
-         beforeAsyncRender( $target );
+         beforeContentRemoval( $target );
          if ( $mode == 'replace' ) {
           $target.replaceWith( data );
          }
@@ -794,23 +794,28 @@ function beforeAsyncCall( $node ) {
 };
 
 //====================
-// Things that need to run BEFORE asynchronous content replaces an
-// existing subtree. Callbacks receive the outgoing ``$target`` so
-// they can act on what's about to be removed — e.g., the video
-// connection manager force-closes long-lived stream fetches before
-// the browser orphans them. Hook runs once per HTML-content swap,
-// just before the DOM mutation.
+// Things that need to run BEFORE a subtree is detached from the DOM
+// by an antinode-driven operation — either an HTML content swap in
+// ``asyncUpdateData`` or a modal dismissal in
+// ``handleModalHiddenEvent``. Callbacks receive the outgoing
+// ``$subtree`` so they can act on what's about to be removed — e.g.,
+// the video connection manager force-closes long-lived stream
+// fetches before the browser orphans them.
 
-let beforeAsyncRenderFunctionList = [];
+let beforeContentRemovalFunctionList = [];
 
-function beforeAsyncRender( $target ) {
-    for ( let i = 0; i < beforeAsyncRenderFunctionList.length; i++ ) {
-        beforeAsyncRenderFunctionList[i]( $target );
+function beforeContentRemoval( $subtree ) {
+    for ( let i = 0; i < beforeContentRemovalFunctionList.length; i++ ) {
+        try {
+            beforeContentRemovalFunctionList[i]( $subtree );
+        } catch ( e ) {
+            console.error( 'beforeContentRemoval handler error:', e );
+        }
     }
 };
 
-function addBeforeAsyncRenderFunction( func ) {
-    beforeAsyncRenderFunctionList.push( func );
+function addBeforeContentRemovalFunction( func ) {
+    beforeContentRemovalFunctionList.push( func );
 };
 
 //====================
@@ -821,7 +826,11 @@ let afterAsyncRenderFunctionList = [];
 function afterAsyncRender() {
 
     for ( let i = 0; i < afterAsyncRenderFunctionList.length; i++ ) {
-        afterAsyncRenderFunctionList[i]();
+        try {
+            afterAsyncRenderFunctionList[i]();
+        } catch ( e ) {
+            console.error( 'afterAsyncRender handler error:', e );
+        }
     }
     restoreScrollBarPositions();
 };
@@ -844,7 +853,11 @@ let afterModalRenderFunctionList = [];
 
 function afterModalRender() {
     for ( let i = 0; i < afterModalRenderFunctionList.length; i++ ) {
-        afterModalRenderFunctionList[i]();
+        try {
+            afterModalRenderFunctionList[i]();
+        } catch ( e ) {
+            console.error( 'afterModalRender handler error:', e );
+        }
     }
 };
 
@@ -981,14 +994,15 @@ function handleModalHiddenEvent( modalObj ) {
         modalHideStartMs = null;
         if ( deferredModalShowObj ) {
             showModal( deferredModalShowObj );
-        } 
-        
+        }
+
     } catch (e) {
         console.error('Problem handling modal hidden event');
     }
     finally {
         modalHideStartMs = null;
         deferredModalShowObj = null;
+        beforeContentRemoval( $(modalObj) );
         $(modalObj).remove();
     }
 };

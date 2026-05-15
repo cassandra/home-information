@@ -213,9 +213,10 @@
         VideoConnectionManager.reconcile();
     }
 
-    // Hook into antinode lifecycle. ``beforeAsyncRender`` runs before
-    // each HTML content swap with the outgoing $target — that's where
-    // we close stream connections cleanly. ``afterAsyncRender`` and
+    // Hook into antinode lifecycle. ``beforeContentRemoval`` runs
+    // before any subtree is detached — HTML content swap or modal
+    // dismissal — with the outgoing subtree. That's where we close
+    // stream connections cleanly. ``afterAsyncRender`` and
     // ``afterModalRender`` run after content is in the DOM — that's
     // where we reconcile our tracked set against the new state.
     function registerHook( hookName, fn ) {
@@ -224,8 +225,8 @@
             window.AN[ hookName ]( fn );
         }
     }
-    registerHook( 'addBeforeAsyncRenderFunction', ($target) => {
-        VideoConnectionManager.closeWithin( $target );
+    registerHook( 'addBeforeContentRemovalFunction', ($subtree) => {
+        VideoConnectionManager.closeWithin( $subtree );
     });
     registerHook( 'addAfterAsyncRenderFunction', () => {
         VideoTimelineScrollManager.handleAsyncUpdate();

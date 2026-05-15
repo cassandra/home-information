@@ -8,7 +8,7 @@ go through the wrapping ``EntityStateDisplayData`` /
 conversion, formatted labels, SVG status styles, role-keyed lookup,
 etc.). Manager produces raw; views project."""
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Dict, List, Optional
 
 import hi.apps.common.datetimeproxy as datetimeproxy
@@ -460,10 +460,26 @@ class EntityDisplayData:
     need: a role-keyed map of per-state display projections, an
     ordered list of the same, plus pass-through to the basic
     ``entity`` / ``entity_for_video`` / ``display_only_svg_icon_item``
-    references. Constructed once per render at the view layer; the
-    per-state wrapping happens lazily on first access."""
+    references. Constructed once per render at the view layer; each
+    contained state is wrapped exactly once at construction time."""
 
     entity_status_data : EntityStatusData
+    state_display_data_map : Dict[ int, 'EntityStateDisplayData' ] = field(
+        init = False, repr = False,
+    )
+
+    def __post_init__(self):
+        # Each contained state's ``EntityStateDisplayData`` is built
+        # exactly once here. ``state_status_data_list`` and
+        # ``state_status_data_by_role`` below both project from this
+        # map, so the per-state construction cost (the
+        # ConsoleConverterHelper lookup and the _get_svg_status_style
+        # dispatch) is paid once per render even when both projections
+        # are accessed (the typical ``to_template_context()`` path).
+        self.state_display_data_map = {
+            d.entity_state.id: EntityStateDisplayData( d )
+            for d in self.entity_status_data.entity_state_status_data_list
+        }
 
     @property
     def entity(self) -> Entity:
@@ -494,7 +510,7 @@ class EntityDisplayData:
                 self.entity_status_data.entity.entity_type,
             ),
         )
-        return [ EntityStateDisplayData( d ) for d in ordered_raw ]
+        return [ self.state_display_data_map[ d.entity_state.id ] for d in ordered_raw ]
 
     @property
     def state_status_data_by_role(self) -> Dict[str, 'EntityStateDisplayData']:
@@ -504,7 +520,7 @@ class EntityDisplayData:
         ``EntityStateDisplayData`` so panel templates get the
         display-ready accessors directly."""
         return {
-            d.entity_state.entity_state_role.name.lower(): EntityStateDisplayData( d )
+            d.entity_state.entity_state_role.name.lower(): self.state_display_data_map[ d.entity_state.id ]
             for d in self.entity_status_data.entity_state_status_data_list
         }
 
