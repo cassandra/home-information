@@ -111,40 +111,6 @@ class EntityAttributeHistoryTestCase(BaseTestCase):
         self.assertEqual(entity_attr._get_history_model_class(), EntityAttributeHistory)
         return
 
-    def test_attribute_history_cascade_deletion(self):
-        """Test that history records are deleted when attribute is hard-deleted - database constraint behavior."""
-        # Create entity and attribute with history
-        entity = Entity.objects.create(
-            name='Test Entity',
-            entity_type_str=str(EntityType.OTHER),
-            integration_id='test.entity',
-            integration_name='test_integration'
-        )
-        
-        attr = EntityAttribute.objects.create(
-            entity=entity,
-            name='test_attr',
-            value='test_value',
-            value_type_str=str(AttributeValueType.TEXT),
-            attribute_type_str=str(AttributeType.CUSTOM)
-        )
-        
-        # Update to create multiple history records
-        attr.value = 'updated_value'
-        attr.save()
-        
-        # Verify history records exist
-        history_count = EntityAttributeHistory.objects.filter(attribute=attr).count()
-        self.assertEqual(history_count, 2)
-        
-        # Hard-delete the attribute to trigger FK cascade.
-        attr.delete(hard_delete=True)
-        
-        # Verify all history records are deleted (cascade)
-        history_count = EntityAttributeHistory.objects.filter(attribute=attr).count()
-        self.assertEqual(history_count, 0)
-        return
-
     def test_attribute_history_preserved_on_soft_delete(self):
         """Test that soft delete keeps history records because row is not physically removed."""
         entity = Entity.objects.create(

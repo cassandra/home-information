@@ -4,7 +4,7 @@ cachetools==5.5.0
 certifi==2025.8.3
 charset-normalizer==3.4.3
 dateparser==1.2.2
-Django==4.2.30
+Django==5.2.14
 django-constance==4.3.5
 django-csp==4.0
 django-pipeline==4.1.0

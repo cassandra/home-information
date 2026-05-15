@@ -217,10 +217,10 @@ class TestWeatherAlertIntegration(AsyncTaskTestCase):
         """Helper to create test weather alerts."""
         from hi.apps.weather.transient_models import WeatherAlert
         from hi.apps.weather.enums import AlertCategory, AlertStatus, AlertUrgency, AlertCertainty
-        from datetime import datetime
+        from datetime import datetime, UTC
         from django.utils import timezone
-        
-        base_time = timezone.make_aware(datetime(2024, 3, 15, 20, 0, 0), timezone.utc)
+
+        base_time = timezone.make_aware(datetime(2024, 3, 15, 20, 0, 0), UTC)
         
         return WeatherAlert(
             event_type=event_type,
