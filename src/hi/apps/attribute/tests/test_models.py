@@ -294,6 +294,89 @@ class TestAttributeModel(BaseTestCase):
             self.assertIsNotNone(attr.thumbnail_url)
         return
 
+    def test_ensure_thumbnail_generates_when_missing(self):
+        """ensure_thumbnail() lazily produces a thumbnail on first call when
+        the source is supported and no thumbnail is present yet."""
+        with self.isolated_media_root():
+            source_path = 'test_attributes/lazy_view.png'
+            default_storage.save(
+                source_path,
+                ContentFile(self._create_valid_png_image_bytes()),
+            )
+
+            attr = ConcreteAttributeModel(
+                name='lazy_view',
+                value_type_str='FILE',
+                attribute_type_str='CUSTOM',
+                file_mime_type='image/png',
+            )
+            attr.file_value = source_path
+
+            self.assertFalse(attr.has_thumbnail)
+
+            attr.ensure_thumbnail()
+
+            self.assertTrue(default_storage.exists(attr.thumbnail_relative_path))
+            self.assertTrue(attr.has_thumbnail)
+        return
+
+    @patch('hi.apps.attribute.models.AttributeThumbnail')
+    def test_ensure_thumbnail_noop_when_already_present(self, mock_thumbnail_cls):
+        """ensure_thumbnail() must NOT re-trigger generation when a thumbnail
+        already exists on disk — the per-render cost should be one
+        storage.exists() check."""
+        with self.isolated_media_root():
+            source_path = 'test_attributes/already_done.png'
+            default_storage.save(
+                source_path,
+                ContentFile(self._create_valid_png_image_bytes()),
+            )
+
+            attr = ConcreteAttributeModel(
+                name='already_done',
+                value_type_str='FILE',
+                attribute_type_str='CUSTOM',
+                file_mime_type='image/png',
+            )
+            attr.file_value = source_path
+
+            # Pre-populate the thumbnail file directly so the model sees
+            # an existing thumbnail without invoking the generator.
+            default_storage.save(
+                attr.thumbnail_relative_path,
+                ContentFile(b'pre-existing thumbnail bytes'),
+            )
+
+            attr.ensure_thumbnail()
+
+            mock_thumbnail_cls.assert_not_called()
+        return
+
+    def test_ensure_thumbnail_noop_for_unsupported_mime_type(self):
+        """ensure_thumbnail() short-circuits for file types outside the
+        supported set — no generation attempt, no thumbnail produced."""
+        with self.isolated_media_root():
+            source_path = 'test_attributes/notes.txt'
+            default_storage.save(source_path, ContentFile(b'plain text notes'))
+
+            attr = ConcreteAttributeModel(
+                name='notes',
+                value_type_str='FILE',
+                attribute_type_str='CUSTOM',
+                file_mime_type='text/plain',
+            )
+            attr.file_value = source_path
+
+            with patch(
+                'hi.apps.attribute.models.AttributeThumbnail'
+            ) as mock_thumbnail_cls:
+                attr.ensure_thumbnail()
+                mock_thumbnail_cls.assert_not_called()
+
+            self.assertFalse(attr.has_thumbnail)
+            self.assertIsNone(attr.thumbnail_relative_path)
+        return
+
     @patch('hi.apps.attribute.models.default_storage')
     def test_attribute_model_file_delete_also_deletes_thumbnail(self, mock_storage):
         """Test file deletion removes generated thumbnail when present."""
