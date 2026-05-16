@@ -4,12 +4,13 @@ Unit tests for Integration models.
 
 import logging
 
-from django.test import TestCase, TransactionTestCase
+from django.test import TestCase
 from django.db import IntegrityError, transaction, models
 
 from hi.apps.attribute.enums import AttributeType, AttributeValueType
 from hi.integrations.models import Integration, IntegrationAttribute, IntegrationDetailsModel
 from hi.integrations.transient_models import IntegrationKey, IntegrationDetails
+from hi.testing.base_test_case import BaseTestCase
 
 logging.disable(logging.CRITICAL)
 
@@ -600,8 +601,9 @@ class IntegrationDetailsModelTestCase(TestCase):
         self.assertIn('Integration-specific data', integration_payload_field.help_text)
 
 
-class IntegrationModelTransactionTestCase(TransactionTestCase):
-    """Transaction-specific tests for Integration models."""
+class IntegrationModelConstraintsTestCase(BaseTestCase):
+    """Database-constraint behavior on the Integration / IntegrationAttribute
+    models: null guards, unique-constraint rollback, cascade deletion."""
 
     def test_integration_id_null_constraint(self):
         """Test that integration_id cannot be null."""

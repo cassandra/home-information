@@ -20,7 +20,7 @@ contracts live in each ``services/<integration>/tests/`` directory.
 
 import logging
 
-from django.test import TestCase, TransactionTestCase
+from django.test import TestCase
 
 from hi.apps.attribute.enums import AttributeType
 from hi.apps.entity.models import Entity, EntityAttribute, EntityState
@@ -29,6 +29,7 @@ from hi.apps.sense.models import Sensor
 from hi.apps.control.models import Controller
 from hi.integrations.integration_synchronizer import IntegrationSynchronizer
 from hi.integrations.sync_result import IntegrationSyncResult
+from hi.testing.base_test_case import BaseTestCase
 
 logging.disable(logging.CRITICAL)
 
@@ -696,16 +697,15 @@ class IntegrationSynchronizerRemovalTestCase(TestCase):
         self.assertEqual(self.result.removed_list, [])
 
 
-class IntegrationSynchronizerRemovalTransactionTestCase(TransactionTestCase):
-    """Transaction-specific tests for _remove_entity_intelligently."""
-    
+class IntegrationSynchronizerPreservationIntegrationTests(BaseTestCase):
+    """End-to-end ``_remove_entity_intelligently`` exercises with
+    mixed integration/user components: data consistency under
+    preservation, foreign-key integrity, user-data detection at
+    the entity-attribute boundary, and orphan vs preserved
+    entity-state classification."""
+
     def setUp(self):
-        """Set up test data."""
-        # Ensure subsystem data is populated after database flush
-        from hi.apps.config.signals import SettingsInitializer
-        initializer = SettingsInitializer()
-        initializer.run(sender=None)
-        
+        super().setUp()
         self.synchronizer = TestSynchronizer()
         self.result = IntegrationSyncResult(title='Test Import Result')
         
