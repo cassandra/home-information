@@ -93,6 +93,20 @@ def entity_video_stream(entity):
 
 
 @register.simple_tag
+def cache_bust_url(url):
+    """Append a unique cache-busting query parameter so each template
+    render produces a distinct URL. Snapshot URLs are otherwise stable
+    enough (ZM uses 1-second resolution; HA's access_token rotates only
+    every few minutes) that the browser serves a stale image when an
+    async partial-DOM update revisits the same camera."""
+    if not url:
+        return url
+    import time
+    sep = '&' if '?' in url else '?'
+    return f'{url}{sep}_cb={time.time_ns()}'
+
+
+@register.simple_tag
 def entity_video_snapshot(entity):
     """Get the current still-image snapshot for an entity, if available.
 

@@ -31,11 +31,13 @@ class VideoStreamBrowsingHelper:
     def find_video_sensor_for_entity( cls, entity: Entity ) -> Optional[Sensor]:
         """
         Find the first sensor with video capability for an entity.
-        Uses priority order to select the best sensor and optimizes queries.
+        Uses priority order to select the best sensor and optimizes
+        queries. Eligibility is sensor-level (``provides_video_stream``);
+        independent of whether the parent entity has its own live feed.
         """
-        if not entity or not entity.has_video_stream:
+        if not entity:
             return None
-        
+
         # Fetch all entity states with their sensors in a single query
         # Using select_related and prefetch_related to minimize database hits
         entity_states = EntityState.objects.filter(

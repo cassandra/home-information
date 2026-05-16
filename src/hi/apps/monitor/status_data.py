@@ -38,7 +38,7 @@ class EntityStatusData:
     display_only_svg_icon_item     : SvgIconItem                   = None
     
     def __post_init__(self):
-        if not self.entity_for_video and self.entity.has_video_stream:
+        if not self.entity_for_video and self.entity.has_live_feed:
             self.entity_for_video = self.entity
         return
 

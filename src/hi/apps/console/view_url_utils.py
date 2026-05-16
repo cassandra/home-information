@@ -60,17 +60,19 @@ class ViewUrlUtils:
             # Look up the sensor and its entity
             sensor = Sensor.objects.select_related('entity_state__entity').get(id=sensor_id)
             entity = sensor.entity_state.entity
-            
-            # Check if entity has video stream capability
-            if entity.has_video_stream:
-                # Generate entity-based video stream URL for live video feed
+
+            # Auto-view targets the live feed (motion implies the user
+            # wants to *see* what's happening — a static snapshot has
+            # no animation to draw attention). Gate on has_live_feed,
+            # which covers both native streams and pollable snapshots.
+            if entity.has_live_feed:
                 return reverse('console_entity_video_stream', kwargs={'entity_id': entity.id})
-            
+
             # Future: Add other view types based on entity state type
             # elif sensor.entity_state.entity_state_type == EntityStateType.WEATHER:
             #     return reverse('console_weather_view', kwargs={'sensor_id': sensor_id})
-            
-            logger.debug(f"Entity {entity.id} for sensor {sensor_id} does not have video stream capability")
+
+            logger.debug(f"Entity {entity.id} for sensor {sensor_id} does not have a live feed")
             return None
             
         except Sensor.DoesNotExist:

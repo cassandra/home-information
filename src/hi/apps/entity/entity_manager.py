@@ -3,6 +3,7 @@ from threading import local
 from typing import List, Sequence
 
 from django.db import transaction
+from django.db.models import QuerySet
 from django.db.models.signals import post_save, post_delete
 from django.dispatch import receiver
 
@@ -125,19 +126,13 @@ class EntityManager(Singleton):
         entity_view_group_list.sort( key = lambda item : item.entity_group_type.label )
         return entity_view_group_list
 
-    def get_view_stream_entities(self) -> List[ Entity ]:
-        """
-        Return all entities that have a video-stream capability AND are
-        not currently disabled. Both conditions are required for an entity
-        to surface in capability-driven enumerations like the sidebar
-        Cameras list. Per-entity view sites should keep using the raw
-        has_video_stream flag — the disabled gate only applies at
-        listing time.
-        """
-        return list(Entity.objects.filter(
-            has_video_stream = True,
-            is_disabled = False,
-        ))
+    def get_displayable_live_view_entities(self) -> QuerySet[ Entity ]:
+        """Queryset of entities that have any current visual (native
+        stream, synthetic snapshot stream, or static snapshot) AND are
+        not currently disabled. Used by surfaces that enumerate
+        "cameras to show" (e.g., the console sidebar). Returned as a
+        queryset so callers can add their own prefetch / ordering."""
+        return Entity.objects.with_live_view().filter( is_disabled = False )
 
 
 _thread_local = local()
