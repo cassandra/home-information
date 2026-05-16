@@ -95,6 +95,96 @@
         }
     };
 
+    // Polls ``[data-video-snapshot]`` <img> elements at their declared
+    // ``data-stream-fps`` to synthesize a live feed from a still-image
+    // endpoint (HA cameras and any future integration that offers a
+    // snapshot URL but no native stream). Pauses while the tab is
+    // hidden so bandwidth isn't spent rendering frames the user can't
+    // see.
+    //
+    // Marker contract:
+    //   - ``data-video-snapshot``     : presence opts the <img> into polling.
+    //   - ``data-stream-fps``         : polling rate (parallel to the Entity
+    //                                   model's ``video_snapshot_stream_fps``).
+    //
+    // Distinct from ``data-video-stream`` / ``data-video-recording``
+    // which are continuous MJPEG fetches managed by VideoConnectionManager.
+    const SnapshotStreamManager = {
+
+        SELECTOR: 'img[data-video-snapshot]',
+        SNAPSHOT_BASE_ATTR: 'snapshotBaseUrl',
+
+        pollers: new Map(),  // element -> intervalId
+
+        register: function( element ) {
+            if ( ! element ) return;
+            if ( this.pollers.has( element )) return;
+            const fps = parseFloat( element.dataset.streamFps );
+            if ( ! fps || fps <= 0 ) return;
+            const intervalMs = Math.max( 50, Math.round( 1000 / fps ));
+            // Strip any server-rendered cache-bust so each poll cycle
+            // adds its own; otherwise the URL keeps growing.
+            element.dataset[ this.SNAPSHOT_BASE_ATTR ] =
+                this._stripCacheBust( element.src );
+            const manager = this;
+            const intervalId = setInterval(function() {
+                if ( document.hidden ) return;
+                manager._refresh( element );
+            }, intervalMs);
+            this.pollers.set( element, intervalId );
+        },
+
+        unregister: function( element ) {
+            if ( ! element ) return;
+            const intervalId = this.pollers.get( element );
+            if ( intervalId !== undefined ) {
+                clearInterval( intervalId );
+            }
+            this.pollers.delete( element );
+        },
+
+        closeWithin: function( $scope ) {
+            if ( ! $scope || ! $scope.find ) return;
+            const manager = this;
+            $scope.find( this.SELECTOR ).each(function() {
+                manager.unregister( this );
+            });
+        },
+
+        reconcile: function() {
+            for ( const element of Array.from( this.pollers.keys() )) {
+                if ( ! document.contains( element )) {
+                    this.unregister( element );
+                }
+            }
+            document.querySelectorAll( this.SELECTOR ).forEach(
+                (el) => this.register( el )
+            );
+        },
+
+        cleanup: function() {
+            for ( const element of Array.from( this.pollers.keys() )) {
+                this.unregister( element );
+            }
+        },
+
+        _refresh: function( element ) {
+            const base = element.dataset[ this.SNAPSHOT_BASE_ATTR ] || element.src;
+            const sep = base.includes( '?' ) ? '&' : '?';
+            element.src = base + sep + '_cb=' + Date.now();
+        },
+
+        _stripCacheBust: function( url ) {
+            try {
+                const u = new URL( url, window.location.href );
+                u.searchParams.delete( '_cb' );
+                return u.toString();
+            } catch ( e ) {
+                return url;
+            }
+        }
+    };
+
     // Video Timeline Scrollbar Management
     const VideoTimelineScrollManager = {
         init: function() {
@@ -208,16 +298,16 @@
     };
 
     // Initialize when DOM is ready
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', () => {
-            VideoTimelineScrollManager.init();
-            VideoTimelineScrollManager.tagCurrentVideoWithEventId();
-            VideoConnectionManager.reconcile();
-        });
-    } else {
+    function initVideoSubsystems() {
         VideoTimelineScrollManager.init();
         VideoTimelineScrollManager.tagCurrentVideoWithEventId();
         VideoConnectionManager.reconcile();
+        SnapshotStreamManager.reconcile();
+    }
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initVideoSubsystems);
+    } else {
+        initVideoSubsystems();
     }
 
     // Hook into antinode lifecycle. ``beforeContentRemoval`` runs
@@ -234,23 +324,28 @@
     }
     registerHook( 'addBeforeContentRemovalFunction', ($subtree) => {
         VideoConnectionManager.closeWithin( $subtree );
+        SnapshotStreamManager.closeWithin( $subtree );
     });
     registerHook( 'addAfterAsyncRenderFunction', () => {
         VideoTimelineScrollManager.handleAsyncUpdate();
         VideoConnectionManager.reconcile();
+        SnapshotStreamManager.reconcile();
     });
     registerHook( 'addAfterModalRenderFunction', () => {
         VideoConnectionManager.reconcile();
+        SnapshotStreamManager.reconcile();
     });
 
-    // Cleanup on page unload to free connections
+    // Cleanup on page unload to free connections and stop pollers
     window.addEventListener('beforeunload', () => {
         VideoConnectionManager.cleanup();
+        SnapshotStreamManager.cleanup();
     });
 
     // Also cleanup on navigation away from video pages
     window.addEventListener('pagehide', () => {
         VideoConnectionManager.cleanup();
+        SnapshotStreamManager.cleanup();
     });
 
     // Replay-from-start for finite recordings. Templates wrap each
@@ -294,4 +389,5 @@
     // Expose for potential external use and debugging
     window.VideoTimelineScrollManager = VideoTimelineScrollManager;
     window.VideoConnectionManager = VideoConnectionManager;
+    window.SnapshotStreamManager = SnapshotStreamManager;
 })();

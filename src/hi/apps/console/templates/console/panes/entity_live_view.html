@@ -19,7 +19,7 @@
   {% cache_bust_url video_snapshot.source_url as snapshot_url %}
   <div class="video-container">
     <img class="img-fluid" data-video-snapshot
-         data-fps="{{ entity.video_snapshot_stream_fps }}"
+         data-stream-fps="{{ entity.video_snapshot_stream_fps }}"
          src="{{ snapshot_url }}" alt="{{ entity.name }} Live View">
   </div>
   {% endif %}
