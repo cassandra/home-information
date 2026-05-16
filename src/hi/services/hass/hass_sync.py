@@ -86,10 +86,6 @@ class HassSynchronizer( IntegrationSynchronizer, HassMixin ):
         }
 
     def post_sync(self, result):
-        """Reload the manager so process-level state derived from the
-        post-sync DB (notably the entity_id -> HA state id map for the
-        snapshot gateway) reflects the new Sensor rows. Reload acquires
-        its own locks; safe to call here with the sync lock released."""
         hass_manager = self.hass_manager()
         if hass_manager is None:
             return

@@ -113,15 +113,20 @@
 
         SELECTOR: 'img[data-video-snapshot]',
         SNAPSHOT_BASE_ATTR: 'snapshotBaseUrl',
+        // Defensive cap: faster than 1 fps would risk overlapping
+        // preloaders on slow endpoints (a stale older preload could
+        // finish after a newer one and swap to an older URL).
+        MAX_FPS: 1.0,
 
         pollers: new Map(),  // element -> intervalId
 
         register: function( element ) {
             if ( ! element ) return;
             if ( this.pollers.has( element )) return;
-            const fps = parseFloat( element.dataset.streamFps );
-            if ( ! fps || fps <= 0 ) return;
-            const intervalMs = Math.max( 50, Math.round( 1000 / fps ));
+            const declared = parseFloat( element.dataset.streamFps );
+            if ( ! declared || declared <= 0 ) return;
+            const fps = Math.min( declared, this.MAX_FPS );
+            const intervalMs = Math.round( 1000 / fps );
             // Strip any server-rendered cache-bust so each poll cycle
             // adds its own; otherwise the URL keeps growing.
             element.dataset[ this.SNAPSHOT_BASE_ATTR ] =
@@ -174,12 +179,15 @@
             const newUrl = base + sep + '_cb=' + Date.now();
             // Preload pattern: fetch into a hidden Image first, swap the
             // visible <img>'s src only after a successful load. Avoids
-            // (a) flicker from in-flight fetches that get aborted by the
-            // next poll's src change, and (b) spurious ``error`` events
-            // from those aborted fetches that would otherwise trip the
-            // VideoErrorHandler placeholder.
+            // flicker from in-flight fetches that get aborted by the next
+            // poll's src change. On preload failure, assign the failing
+            // URL to the visible <img> so VideoErrorHandler surfaces the
+            // outage; the next successful preload heals the placeholder.
             const preloader = new Image();
             preloader.onload = function() {
+                element.src = newUrl;
+            };
+            preloader.onerror = function() {
                 element.src = newUrl;
             };
             preloader.src = newUrl;

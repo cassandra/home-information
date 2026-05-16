@@ -1,5 +1,9 @@
 import logging
+import time
+
 from django import template
+
+from hi.integrations.integration_manager import IntegrationManager
 
 logger = logging.getLogger(__name__)
 
@@ -28,10 +32,7 @@ def sensor_response_video_stream(sensor_response):
 
         entity = sensor_response.sensor.entity_state.entity
 
-        # Get integration gateway for this entity
-        from hi.integrations.integration_manager import IntegrationManager
-        integration_manager = IntegrationManager()
-        gateway = integration_manager.get_integration_gateway(entity.integration_id)
+        gateway = IntegrationManager().get_integration_gateway(entity.integration_id)
 
         if not gateway:
             logger.warning(f"No integration gateway found for {entity.integration_id}")
@@ -66,14 +67,7 @@ def entity_video_stream(entity):
         return None
 
     try:
-        # The gateway returns None for entities that don't have a
-        # native stream, so no need to gate on ``has_video_stream``
-        # here. The user-facing gate lives at the template level via
-        # ``has_live_view`` so snapshot-only entities can also render
-        # through the central live-view include.
-        from hi.integrations.integration_manager import IntegrationManager
-        integration_manager = IntegrationManager()
-        gateway = integration_manager.get_integration_gateway(entity.integration_id)
+        gateway = IntegrationManager().get_integration_gateway(entity.integration_id)
 
         if not gateway:
             logger.warning(f"No integration gateway found for {entity.integration_id}")
@@ -101,7 +95,6 @@ def cache_bust_url(url):
     async partial-DOM update revisits the same camera."""
     if not url:
         return url
-    import time
     sep = '&' if '?' in url else '?'
     return f'{url}{sep}_cb={time.time_ns()}'
 
@@ -117,7 +110,6 @@ def entity_video_snapshot(entity):
         return None
 
     try:
-        from hi.integrations.integration_manager import IntegrationManager
         gateway = IntegrationManager().get_integration_gateway(entity.integration_id)
         if not gateway:
             logger.warning(f"No integration gateway found for {entity.integration_id}")

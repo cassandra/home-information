@@ -13,7 +13,7 @@ from .enums import (
     AttributeValueType,
     AttributeType,
 )
-from .managers import ActiveAttributeManager, DeletedAttributeManager
+from .managers import ActiveAttributeModelManager, DeletedAttributeModelManager
 from .thumbnail import AttributeThumbnail, AttributeThumbnailRules
 
 logger = logging.getLogger(__name__)
@@ -306,9 +306,9 @@ class SoftDeleteAttributeModel(AttributeModel):
         db_index = True,
     )
 
-    objects = ActiveAttributeManager()
+    objects = ActiveAttributeModelManager()
     all_objects = models.Manager()
-    deleted_objects = DeletedAttributeManager()
+    deleted_objects = DeletedAttributeModelManager()
 
     class Meta(AttributeModel.Meta):
         abstract = True

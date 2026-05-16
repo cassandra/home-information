@@ -15,7 +15,7 @@ class Migration(migrations.Migration):
             name="video_snapshot_stream_fps",
             field=models.FloatField(
                 blank=True,
-                default=1.0,
+                default=None,
                 help_text="When has_video_snapshot is True, the rate at which the snapshot is suitable to be polled to approximate a live feed. None or 0 means snapshot exists but is not suitable for synthetic streaming.",
                 null=True,
                 verbose_name="Video Snapshot Stream FPS",

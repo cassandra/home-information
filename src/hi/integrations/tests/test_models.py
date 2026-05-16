@@ -571,9 +571,9 @@ class IntegrationDetailsModelTestCase(TestCase):
         self.assertTrue(mock_obj3.save_called)
 
     def test_integration_details_model_manager(self):
-        """Test that IntegrationDetailsModel uses IntegrationDetailsManager."""
+        """Test that IntegrationDetailsModel uses IntegrationDetailsModelManager."""
         # Test using the concrete test model
-        self.assertEqual(ConcreteIntegrationDetailsModel.objects.__class__.__name__, 'IntegrationDetailsManager')
+        self.assertEqual(ConcreteIntegrationDetailsModel.objects.__class__.__name__, 'IntegrationDetailsModelManager')
 
     def test_integration_details_model_fields(self):
         """Test IntegrationDetailsModel field definitions."""

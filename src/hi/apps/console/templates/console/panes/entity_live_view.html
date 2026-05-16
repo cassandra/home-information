@@ -1,15 +1,3 @@
-{# Central live-view include: renders the current visual for a camera-shaped #}
-{# entity, choosing among three rendering modes based on the entity's       #}
-{# declared capabilities.                                                   #}
-{#                                                                          #}
-{#   1. ``has_native_video_stream`` -> native continuous stream (MJPEG)     #}
-{#   2. ``has_streamable_snapshot`` -> snapshot polled at ``...stream_fps`` #}
-{#      (rendered as a static <img> here; the polling JS handler reading    #}
-{#       ``data-video-snapshot`` lands in a later phase)                    #}
-{#   3. ``has_video_snapshot``      -> static snapshot                      #}
-{#                                                                          #}
-{# Callers should check ``entity.has_live_view`` before including; this     #}
-{# template assumes a visual is available.                                  #}
 {% load video_tags %}
 {% if entity.has_native_video_stream %}
   {% include "console/panes/entity_video_stream.html" with entity=entity %}

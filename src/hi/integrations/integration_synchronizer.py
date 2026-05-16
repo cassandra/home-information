@@ -124,12 +124,11 @@ class IntegrationSynchronizer:
         self._record_sync_check_complete_if_successful( result = result )
         try:
             self.post_sync( result = result )
-        except Exception as e:
-            # Post-sync hook failures should never mask the sync
-            # result — sync itself succeeded as far as the caller is
-            # concerned. Just log and move on.
-            logger.warning(
-                f'{self.__class__.__name__} post_sync hook failed: {e}'
+        except Exception:
+            # Post-sync hook failures must not mask the sync result;
+            # log the traceback so the failure is debuggable.
+            logger.exception(
+                f'{self.__class__.__name__} post_sync hook failed'
             )
         return result
 

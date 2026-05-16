@@ -5,7 +5,7 @@ from django.db import models
 from hi.apps.attribute.models import AttributeModel, AttributeValueHistoryModel
 
 from .transient_models import IntegrationKey, IntegrationDetails
-from .managers import IntegrationDetailsManager
+from .managers import IntegrationDetailsModelManager
 
 
 class Integration( models.Model ):
@@ -87,7 +87,7 @@ class IntegrationDetailsModel( models.Model ):
     For use in DB objects that need to be associated with an integration
     device, sensor, controller, attribute, etc.
     """
-    objects = IntegrationDetailsManager()
+    objects = IntegrationDetailsModelManager()
     
     class Meta:
         abstract = True

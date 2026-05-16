@@ -5,7 +5,7 @@ from . import managers
 
 class UnsubscribedEmail( models.Model ):
 
-    objects = managers.UnsubscribedEmailManager()
+    objects = managers.UnsubscribedEmailModelManager()
     
     email = models.EmailField(
         unique = True,

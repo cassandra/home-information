@@ -2,18 +2,12 @@
 {% load icons %}
 {% load integration_tags %}
 <div class="entity-video-pane">
-    {# Banner color and tab label track whether the visual is moving #}
-    {# (live feed: native or synthetic) vs. a static snapshot.        #}
     <div class="video-interface-header {% if entity.has_live_feed %}current-stream{% else %}bg-primary{% endif %} mb-3">
         <div class="d-flex justify-content-between align-items-center">
             <div class="d-flex align-items-center">
                 <h5 class="entity-title mb-0 mr-3">{{ entity.name }}</h5>
             </div>
             <div class="video-nav-tabs" role="tablist">
-                {# Live mode and timeline mode are independent capabilities; each #}
-                {# renders only if the entity supports it. Auto-view + sidebar   #}
-                {# clicks land here, so at least one mode is always available    #}
-                {# (see ``EntityVideoView`` entry gate).                         #}
                 {% if entity.has_live_view %}
                 <span class="video-nav-tab active" role="tab">
                     {% icon "video" size="sm" css_class="hi-icon-left" %}{% if entity.has_live_feed %}Live Stream{% else %}Snapshot{% endif %}
@@ -34,7 +28,6 @@
 
     {% integration_health_banner entity.integration_id "Live view may be stale or unavailable until the integration recovers." %}
 
-    <!-- Current live view (native stream, synthetic stream, or static snapshot) -->
     {% if entity.has_live_view %}
     {% include "console/panes/entity_live_view.html" with entity=entity %}
     {% else %}

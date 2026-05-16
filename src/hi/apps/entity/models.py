@@ -1,6 +1,5 @@
 import json
-from functools import cached_property
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Tuple
 
 from django.db import models
 
@@ -21,7 +20,7 @@ from .enums import (
     EntityStateRole,
     EntityStateType,
 )
-from .managers import EntityManager
+from .managers import EntityModelManager
 
 
 class Entity( IntegrationDetailsModel, LocationItemModelMixin ):
@@ -76,7 +75,7 @@ class Entity( IntegrationDetailsModel, LocationItemModelMixin ):
         'Video Snapshot Stream FPS',
         null = True,
         blank = True,
-        default = 1.0,
+        default = None,
         help_text = (
             'When has_video_snapshot is True, the rate at which the snapshot '
             'is suitable to be polled to approximate a live feed. None or 0 '
@@ -97,7 +96,7 @@ class Entity( IntegrationDetailsModel, LocationItemModelMixin ):
         auto_now_add = True,
     )
 
-    objects = EntityManager()
+    objects = EntityModelManager()
 
     class Meta:
         verbose_name = 'Entity'
@@ -153,19 +152,7 @@ class Entity( IntegrationDetailsModel, LocationItemModelMixin ):
         """*Any* current visual exists, moving or static. Use this on
         surfaces that just want to show the camera (side panel buttons,
         state panels, dispatch routing)."""
-        return self.has_live_feed or self.has_video_snapshot
-
-    @cached_property
-    def video_timeline_state(self) -> Optional['EntityState']:
-        """The (stably-picked) state with a video-providing sensor, or
-        None. Eligibility for video-timeline mode is sensor-level."""
-        return self.states.filter(
-            sensors__provides_video_stream = True,
-        ).order_by( 'id' ).first()
-
-    @property
-    def has_video_timeline(self) -> bool:
-        return self.video_timeline_state is not None
+        return self.has_native_video_stream or self.has_video_snapshot
 
     def get_attribute_map(self):
         attribute_map = dict()

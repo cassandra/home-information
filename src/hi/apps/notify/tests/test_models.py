@@ -53,10 +53,10 @@ class TestUnsubscribedEmail(BaseTestCase):
 
     def test_unsubscribed_email_manager_usage(self):
         """Test custom manager usage - important for query interface."""
-        from hi.apps.notify.managers import UnsubscribedEmailManager
+        from hi.apps.notify.managers import UnsubscribedEmailModelManager
         
         # Should use custom manager
-        self.assertIsInstance(UnsubscribedEmail.objects, UnsubscribedEmailManager)
+        self.assertIsInstance(UnsubscribedEmail.objects, UnsubscribedEmailModelManager)
         return
 
 

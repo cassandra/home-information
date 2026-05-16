@@ -7,7 +7,6 @@ from django.utils import timezone
 from hi.apps.entity.view_mixins import EntityViewMixin
 from hi.apps.sense.models import Sensor
 from hi.apps.sense.view_mixins import SenseViewMixin
-from hi.integrations.integration_manager import IntegrationManager
 
 from hi.enums import ViewType
 from hi.hi_async_view import HiModalView
@@ -62,21 +61,10 @@ class EntityVideoView( HiGridView, EntityViewMixin ):
     def get_main_template_context( self, request, *args, **kwargs ):
         entity = self.get_entity( request, *args, **kwargs )
 
-        # ``video_sensor`` is the timeline-mode entry point and may be
-        # None for entities that have a live view but no per-sensor
-        # video timeline (e.g., HA cameras with snapshot only). The
-        # pane template hides the timeline tab when this is None.
         video_sensor = VideoStreamBrowsingHelper.find_video_sensor_for_entity(entity)
 
-        # Either mode is enough to enter the pane: a live view, or a
-        # timeline. Both are independent capabilities; the template
-        # renders only the tabs that apply.
         if not entity.has_live_view and not video_sensor:
             raise BadRequest( 'Entity provides neither a live view nor a video timeline.' )
-
-        integration_gateway = IntegrationManager().get_integration_gateway( entity.integration_id )
-        if not integration_gateway:
-            raise BadRequest( 'Integration not available.' )
 
         request.view_parameters.view_type = ViewType.ENTITY_VIDEO
         request.view_parameters.to_session( request )

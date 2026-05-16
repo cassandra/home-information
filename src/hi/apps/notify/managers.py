@@ -1,7 +1,7 @@
 from django.db import models
 
 
-class UnsubscribedEmailManager(models.Manager):
+class UnsubscribedEmailModelManager(models.Manager):
 
     def exists_by_user( self, user ):
         if not user.email:
