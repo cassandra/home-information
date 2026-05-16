@@ -15,7 +15,7 @@ from hi.apps.weather.transient_models import WeatherConditionsData, NumericDataP
 from hi.apps.weather.weather_data_source import WeatherDataSource
 from hi.transient_models import GeographicLocation
 from hi.units import UnitQuantity
-from hi.testing.async_task_utils import AsyncTaskTestCase
+from hi.testing.async_task_utils import AsyncTaskFastTestCase
 
 logging.disable(logging.CRITICAL)
 
@@ -52,7 +52,7 @@ class MockWeatherDataSource(WeatherDataSource):
         pass  # Not used in these tests
 
 
-class TestWeatherManagerDailyTrackerIntegration(AsyncTaskTestCase):
+class TestWeatherManagerDailyTrackerIntegration(AsyncTaskFastTestCase):
     """Test integration between WeatherManager and DailyWeatherTracker."""
     
     def setUp(self):

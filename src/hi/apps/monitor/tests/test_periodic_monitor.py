@@ -1,7 +1,7 @@
 import asyncio
 import logging
 
-from hi.testing.async_task_utils import AsyncTaskTestCase
+from hi.testing.async_task_utils import AsyncTaskFastTestCase
 from hi.apps.monitor.periodic_monitor import PeriodicMonitor
 from hi.apps.system.provider_info import ProviderInfo
 
@@ -40,7 +40,7 @@ class ConcreteTestMonitor(PeriodicMonitor):
         await super().cleanup()
 
 
-class TestPeriodicMonitor(AsyncTaskTestCase):
+class TestPeriodicMonitor(AsyncTaskFastTestCase):
     """Test PeriodicMonitor async lifecycle and behavior.
     
     Uses AsyncTaskTestCase to avoid database locking issues with async code.

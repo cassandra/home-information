@@ -1,5 +1,4 @@
 import logging
-import tempfile
 from pathlib import Path
 
 from hi.apps.profiles.profile_manager import ProfileManager
@@ -157,21 +156,18 @@ class TestProfileManager(BaseTestCase):
 
     def test_single_story_profile_loading(self):
         """Test loading SINGLE_STORY profile from actual JSON data."""
-        with tempfile.TemporaryDirectory() as temp_media_root:
-            with self.settings(MEDIA_ROOT=temp_media_root):
-                self._test_profile_loading(ProfileType.SINGLE_STORY)
+        with self.in_memory_media_storage():
+            self._test_profile_loading(ProfileType.SINGLE_STORY)
 
     def test_two_story_profile_loading(self):
         """Test loading TWO_STORY profile from actual JSON data."""
-        with tempfile.TemporaryDirectory() as temp_media_root:
-            with self.settings(MEDIA_ROOT=temp_media_root):
-                self._test_profile_loading(ProfileType.TWO_STORY)
+        with self.in_memory_media_storage():
+            self._test_profile_loading(ProfileType.TWO_STORY)
 
     def test_apartment_profile_loading(self):
         """Test loading APARTMENT profile from actual JSON data."""
-        with tempfile.TemporaryDirectory() as temp_media_root:
-            with self.settings(MEDIA_ROOT=temp_media_root):
-                self._test_profile_loading(ProfileType.APARTMENT)
+        with self.in_memory_media_storage():
+            self._test_profile_loading(ProfileType.APARTMENT)
 
     def test_profile_requires_empty_database(self):
         """Test that profile loading fails when database is not empty."""
@@ -218,29 +214,26 @@ class TestProfileManager(BaseTestCase):
 
     def test_svg_template_rendering_to_media(self):
         """Test that profile loading renders SVG templates to MEDIA_ROOT files."""
-        import os
+        from django.core.files.storage import default_storage
 
-        with tempfile.TemporaryDirectory() as temp_media_root:
-            with self.settings(MEDIA_ROOT=temp_media_root):
-                stats = self.profile_manager.load_profile(ProfileType.SINGLE_STORY)
-                self.assertTrue(stats.meets_minimum_requirements())
+        with self.in_memory_media_storage():
+            stats = self.profile_manager.load_profile(ProfileType.SINGLE_STORY)
+            self.assertTrue(stats.meets_minimum_requirements())
 
-                locations = Location.objects.all()
-                self.assertGreater(locations.count(), 0, "Should create locations")
+            locations = Location.objects.all()
+            self.assertGreater(locations.count(), 0, "Should create locations")
 
-                for location in locations:
-                    self.assertIsNotNone(
-                        location.svg_fragment_filename,
-                        "Location should have SVG fragment filename")
-                    full_path = os.path.join(temp_media_root, location.svg_fragment_filename)
-                    self.assertTrue(
-                        os.path.exists(full_path),
-                        f"Rendered SVG should exist in MEDIA_ROOT: {full_path}")
-                    # Verify file has content
-                    with open(full_path, 'r') as f:
-                        content = f.read()
-                    self.assertGreater(len(content), 0,
-                                       f"SVG file should not be empty: {full_path}")
+            for location in locations:
+                self.assertIsNotNone(
+                    location.svg_fragment_filename,
+                    "Location should have SVG fragment filename")
+                self.assertTrue(
+                    default_storage.exists(location.svg_fragment_filename),
+                    f"Rendered SVG should exist: {location.svg_fragment_filename}")
+                with default_storage.open(location.svg_fragment_filename, 'r') as f:
+                    content = f.read()
+                self.assertGreater(len(content), 0,
+                                   f"SVG file should not be empty: {location.svg_fragment_filename}")
     
     def test_real_profile_templates_exist(self):
         """Test that the real profile JSON files reference existing SVG templates."""
@@ -262,12 +255,10 @@ class TestProfileManager(BaseTestCase):
     
     def test_profile_svg_template_error_handling(self):
         """Test error handling when SVG template references are invalid."""
-        with tempfile.TemporaryDirectory() as temp_media_root:
-            with self.settings(MEDIA_ROOT=temp_media_root):
-                # Load real profile data and corrupt the template reference
-                json_path = self.profile_manager._get_profile_json_path(ProfileType.SINGLE_STORY)
-                profile_data = self.profile_manager._load_json_file(json_path)
-                profile_data['locations'][0]['svg_template_name'] = 'profiles/svg/backgrounds/nonexistent.svg'
+        with self.in_memory_media_storage():
+            json_path = self.profile_manager._get_profile_json_path(ProfileType.SINGLE_STORY)
+            profile_data = self.profile_manager._load_json_file(json_path)
+            profile_data['locations'][0]['svg_template_name'] = 'profiles/svg/backgrounds/nonexistent.svg'
 
-                with self.assertRaises(Exception):
-                    self.profile_manager._render_svg_templates(profile_data)
+            with self.assertRaises(Exception):
+                self.profile_manager._render_svg_templates(profile_data)

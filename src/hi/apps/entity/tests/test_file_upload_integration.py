@@ -5,9 +5,7 @@ Tests file storage patterns, upload path generation, file cleanup operations,
 and cross-owner file handling consistency using AttributeItemEditContext pattern.
 """
 import logging
-import tempfile
 from django.core.files.uploadedfile import SimpleUploadedFile
-from django.test import override_settings
 
 from hi.apps.entity.tests.synthetic_data import EntityAttributeSyntheticData
 from hi.apps.entity.models import EntityAttribute
@@ -19,26 +17,14 @@ logging.disable(logging.CRITICAL)
 
 class TestFileUploadContextIntegration(BaseTestCase):
     """Test file upload operations with AttributeItemEditContext integration."""
-    
+
     def setUp(self):
         super().setUp()
-        # Create temporary media root for this test class
-        self._temp_media_dir = tempfile.mkdtemp()
-        self._settings_patcher = override_settings(MEDIA_ROOT=self._temp_media_dir)
-        self._settings_patcher.enable()
-        
+        self.enterContext(self.in_memory_media_storage())
+
         self.entity = EntityAttributeSyntheticData.create_test_entity(
             name="File Upload Test Entity"
         )
-    
-    def tearDown(self):
-        # Clean up the temporary media directory and settings
-        if hasattr(self, '_settings_patcher'):
-            self._settings_patcher.disable()
-        if hasattr(self, '_temp_media_dir'):
-            import shutil
-            shutil.rmtree(self._temp_media_dir, ignore_errors=True)
-        super().tearDown()
         
     def test_file_attribute_creation_with_context(self):
         """Test file attribute creation provides correct context - file lifecycle integration."""

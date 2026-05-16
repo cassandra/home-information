@@ -3,7 +3,6 @@ import logging
 from datetime import datetime
 
 from django.db import IntegrityError
-from django.test import TransactionTestCase
 from django.utils import timezone
 
 from hi.apps.sense.models import Sensor, SensorHistory
@@ -142,8 +141,9 @@ class TestSensor(BaseTestCase):
         self.assertEqual(sensor.css_class, expected_css_class)
 
 
-class TestSensorHistory(TransactionTestCase):
-    """Test SensorHistory model with database transactions."""
+class TestSensorHistory(BaseTestCase):
+    """SensorHistory model: default ordering, JSON details parsing,
+    index-backed query correctness, and related-name access."""
 
     def setUp(self):
         self.entity = Entity.objects.create(

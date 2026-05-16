@@ -12,6 +12,7 @@ https://docs.djangoproject.com/en/4.2/ref/settings/
 
 from pathlib import Path
 import os
+import sys
 
 from hi.environment.server import EnvironmentSettings
 
@@ -199,6 +200,16 @@ AUTH_PASSWORD_VALIDATORS = [
         'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',
     },
 ]
+
+# Default PBKDF2 hashing is hundreds of ms per call by design; for tests
+# (where many setUps create a user) it dominates wall time. Swap to a
+# fast hasher only when the process is invoked as ``manage.py test``.
+# WSGI / gunicorn / runserver / migrate / shell do not match, so
+# production processes are unaffected.
+if sys.argv[1:2] == ['test']:
+    PASSWORD_HASHERS = [
+        'django.contrib.auth.hashers.MD5PasswordHasher',
+    ]
 
 
 # Internationalization

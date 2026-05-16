@@ -6,7 +6,7 @@ from hi.apps.alert.alert_manager import AlertManager, AlertMaintenanceResult
 from hi.apps.alert.alarm import Alarm
 from hi.apps.alert.enums import AlarmLevel, AlarmSource
 from hi.apps.security.enums import SecurityLevel
-from hi.testing.async_task_utils import AsyncTaskTestCase
+from hi.testing.async_task_utils import AsyncTaskFastTestCase
 from hi.testing.base_test_case import BaseTestCase
 
 logging.disable(logging.CRITICAL)
@@ -225,7 +225,7 @@ class TestAlertMaintenanceResult(BaseTestCase):
         self.assertEqual(result.total_alerts_removed, 5)
 
 
-class TestAlertManagerMaintenance(AsyncTaskTestCase):
+class TestAlertManagerMaintenance(AsyncTaskFastTestCase):
     """Test AlertManager periodic maintenance with new result tracking."""
 
     def setUp(self):

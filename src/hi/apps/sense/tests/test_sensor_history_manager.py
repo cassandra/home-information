@@ -5,7 +5,7 @@ from unittest.mock import patch
 
 from asgiref.sync import sync_to_async
 from django.utils import timezone
-from hi.testing.async_task_utils import AsyncTaskTestCase
+from hi.testing.async_task_utils import AsyncTaskFastTestCase, AsyncTaskTestCase
 
 from hi.apps.entity.models import Entity, EntityState
 from hi.apps.sense.models import Sensor, SensorHistory
@@ -16,7 +16,7 @@ from hi.integrations.transient_models import IntegrationKey
 logging.disable(logging.CRITICAL)
 
 
-class AsyncSensorHistoryManagerTestCase(AsyncTaskTestCase):
+class AsyncSensorHistoryManagerTestCase(AsyncTaskFastTestCase):
     """Test SensorHistoryManager with proper async infrastructure."""
     
     def setUp(self):
@@ -160,6 +160,38 @@ class AsyncSensorHistoryManagerTestCase(AsyncTaskTestCase):
         self.assertEqual(history.source_image_url, response.source_image_url)
         self.assertIn('key', history.detail_attrs)
 
+
+class AsyncSensorHistoryManagerCrossConnectionTestCase(AsyncTaskTestCase):
+    """Tests that exercise add_to_sensor_history end-to-end (real DB
+    writes via sync_to_async). Needs TransactionTestCase semantics
+    so worker threads see the setUp Sensor row."""
+
+    def setUp(self):
+        super().setUp()
+        SensorHistoryManager._instances = {}
+        self.manager = SensorHistoryManager()
+
+        self.entity = Entity.objects.create(
+            name='Test Entity',
+            entity_type_str='LIGHT',
+        )
+        self.entity_state = EntityState.objects.create(
+            entity=self.entity,
+            entity_state_type_str='ON_OFF',
+        )
+        self.sensor = Sensor.objects.create(
+            name='Test Sensor',
+            entity_state=self.entity_state,
+            sensor_type_str='DEFAULT',
+            integration_id='test_sensor_123',
+            integration_name='test_integration',
+            persist_history=True,
+        )
+        self.integration_key = IntegrationKey(
+            integration_id='test_sensor_123',
+            integration_name='test_integration',
+        )
+
     def test_add_sensor_history_populates_sensor_history_id(self):
         """Test that add_to_sensor_history populates sensor_history_id in SensorResponse objects."""
         # Create sensor with history disabled
@@ -224,7 +256,7 @@ class AsyncSensorHistoryManagerTestCase(AsyncTaskTestCase):
     def test_concurrent_history_addition_thread_safety(self):
         """Test manager handles concurrent access safely."""
         import threading
-        
+
         from django.utils import timezone
         responses = [
             SensorResponse(
@@ -234,9 +266,9 @@ class AsyncSensorHistoryManagerTestCase(AsyncTaskTestCase):
                 sensor=self.sensor
             ) for i in range(5)
         ]
-        
+
         results = []
-        
+
         def worker(response_list):
             async def async_worker():
                 await self.manager.add_to_sensor_history(response_list)
@@ -245,7 +277,7 @@ class AsyncSensorHistoryManagerTestCase(AsyncTaskTestCase):
                     sensor=self.sensor
                 ).count)()
                 results.append(count)
-            
+
             # Run in separate event loop for each thread
             loop = asyncio.new_event_loop()
             asyncio.set_event_loop(loop)
@@ -253,15 +285,16 @@ class AsyncSensorHistoryManagerTestCase(AsyncTaskTestCase):
                 loop.run_until_complete(async_worker())
             finally:
                 loop.close()
-        
+
         threads = [threading.Thread(target=worker, args=([resp],)) for resp in responses]
         for thread in threads:
             thread.start()
         for thread in threads:
             thread.join()
-        
+
         # All operations should succeed
         self.assertEqual(len(results), 5)
         # Total records should equal number of operations
         final_count = SensorHistory.objects.filter(sensor=self.sensor).count()
         self.assertEqual(final_count, 5)
+

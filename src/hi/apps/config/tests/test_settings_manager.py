@@ -4,7 +4,7 @@ import threading
 import time
 
 from hi.apps.config.models import Subsystem, SubsystemAttribute
-from hi.apps.config.settings_manager import SettingsManager, _settings_processor
+from hi.apps.config.settings_manager import SettingsManager
 from hi.apps.config.setting_enums import SettingEnum, SettingDefinition
 from hi.apps.attribute.enums import AttributeValueType
 from hi.testing.base_test_case import BaseTestCase
@@ -267,12 +267,15 @@ class TestSettingsManager(BaseTestCase):
             self.assertTrue(True)  # Lock acquisition succeeded
 
     def test_no_deadlock_on_setting_save(self):
-        """Test that setting a value doesn't cause deadlock from signal-triggered reload."""
-        
+        """Test that setting a value doesn't cause deadlock from signal-triggered reload.
+
+        The background reload via ``_settings_processor`` is scheduled
+        from ``transaction.on_commit``, which doesn't fire under
+        ``TestCase`` (the wrapping transaction rolls back), so this
+        test only asserts the synchronous no-deadlock contract."""
         manager = SettingsManager()
         manager.ensure_initialized()
-        
-        # Create test subsystem and attribute first
+
         subsystem = Subsystem.objects.create(
             name='Deadlock Test Subsystem',
             subsystem_key='deadlock_test',
@@ -284,46 +287,17 @@ class TestSettingsManager(BaseTestCase):
             value_type=AttributeValueType.TEXT,
             value='deadlock_initial_value',
         )
-        
-        # Reload to pick up the new setting
         manager.reload()
-        
-        # Track if the background reload completes
-        reload_completed = threading.Event()
-        original_callback = _settings_processor.callback_func
-        
-        def tracking_callback():
-            try:
-                original_callback()
-            finally:
-                reload_completed.set()
-        
-        # Patch the processor callback to track completion
-        _settings_processor.callback_func = tracking_callback
-        
-        try:
-            # This operation previously caused deadlock
-            # The signal handler would try to reload while the lock was held
-            start_time = time.time()
-            manager.set_setting_value(TestSetting.TEST_SETTING, 'deadlock_test_value')
-            
-            # Verify the operation completed quickly (no deadlock)
-            elapsed = time.time() - start_time
-            self.assertLess(elapsed, 1.0, "set_setting_value took too long, possible deadlock")
-            
-            # Verify the delayed reload was scheduled and completes
-            # Give a bit more time for the Timer to execute
-            reload_completed.wait(timeout=3.0)
-            # The main test is that set_setting_value completed without deadlock
-            # Background reload completion is secondary (timing-dependent in tests)
-            if not reload_completed.is_set():
-                # This is just a warning - the important thing is no deadlock occurred
-                pass
-            
-            # Verify the setting was actually saved
-            self.assertEqual(manager.get_setting_value(TestSetting.TEST_SETTING), 'deadlock_test_value')
-            
-        finally:
-            # Restore original callback
-            _settings_processor.callback_func = original_callback
+
+        # This operation previously caused deadlock: the signal handler
+        # tried to reload while the manager's lock was held.
+        start_time = time.time()
+        manager.set_setting_value(TestSetting.TEST_SETTING, 'deadlock_test_value')
+        elapsed = time.time() - start_time
+        self.assertLess(elapsed, 1.0, "set_setting_value took too long, possible deadlock")
+
+        # The in-memory map is updated synchronously by set_setting_value,
+        # so it reflects the new value regardless of whether the
+        # background reload eventually runs.
+        self.assertEqual(manager.get_setting_value(TestSetting.TEST_SETTING), 'deadlock_test_value')
         return

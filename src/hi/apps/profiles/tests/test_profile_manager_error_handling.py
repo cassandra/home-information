@@ -1,5 +1,4 @@
 import logging
-import tempfile
 
 from hi.apps.profiles.profile_manager import ProfileManager, ProfileLoadingStats
 from hi.apps.entity.models import Entity, EntityPosition
@@ -23,10 +22,9 @@ class TestProfileManagerErrorHandling(BaseTestCase):
         """Test that a non-existent SVG template causes an error during rendering."""
         malformed_data = self.data_generator.create_missing_svg_file_data()
 
-        with tempfile.TemporaryDirectory() as temp_media_root:
-            with self.settings(MEDIA_ROOT=temp_media_root):
-                with self.assertRaises(Exception):
-                    self.profile_manager._render_svg_templates(malformed_data)
+        with self.in_memory_media_storage():
+            with self.assertRaises(Exception):
+                self.profile_manager._render_svg_templates(malformed_data)
 
     def test_invalid_entity_types_individual_failure(self):
         """Test that invalid entity types cause individual entity creation failures."""

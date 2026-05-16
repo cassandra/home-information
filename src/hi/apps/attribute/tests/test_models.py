@@ -1,13 +1,11 @@
 import json
 import logging
 import uuid
-from io import BytesIO
 from unittest.mock import patch, call
 
 from django.core.files.base import ContentFile
 from django.core.files.storage import default_storage
 
-from PIL import Image
 
 from hi.apps.attribute.models import AttributeModel
 from hi.apps.attribute.enums import AttributeValueType, AttributeType
@@ -29,22 +27,6 @@ class ConcreteAttributeModel(AttributeModel):
 
 class TestAttributeModel(BaseTestCase):
 
-    @staticmethod
-    def _create_valid_png_image_bytes(size=(128, 96)):
-        image = Image.new('RGB', size=size, color=(24, 120, 220))
-        image_bytes = BytesIO()
-        image.save(image_bytes, format='PNG')
-        return image_bytes.getvalue()
-
-    @staticmethod
-    def _create_valid_pdf_bytes():
-        try:
-            image = Image.new('RGB', size=(360, 220), color=(255, 255, 255))
-            pdf_bytes = BytesIO()
-            image.save(pdf_bytes, format='PDF')
-            return pdf_bytes.getvalue()
-        except Exception:
-            return None
 
     def test_attribute_model_enum_property_conversions(self):
         """Test enum property conversions - custom business logic."""
@@ -227,7 +209,7 @@ class TestAttributeModel(BaseTestCase):
             source_path = 'test_attributes/camera_snapshot.png'
             default_storage.save(
                 source_path,
-                ContentFile(self._create_valid_png_image_bytes(size=(900, 600)))
+                ContentFile(self.create_test_png_bytes())
             )
 
             attr = ConcreteAttributeModel(
@@ -270,13 +252,9 @@ class TestAttributeModel(BaseTestCase):
 
     def test_generate_thumbnail_best_effort_pdf_success(self):
         """Test thumbnail generation from first page of a PDF file."""
-        pdf_bytes = self._create_valid_pdf_bytes()
-        if not pdf_bytes:
-            self.skipTest('Unable to generate test PDF bytes in this environment')
-
         with self.isolated_media_root():
             source_path = 'test_attributes/manual.pdf'
-            default_storage.save(source_path, ContentFile(pdf_bytes))
+            default_storage.save(source_path, ContentFile(self.create_test_pdf_bytes()))
 
             attr = ConcreteAttributeModel(
                 name='manual',
@@ -301,7 +279,7 @@ class TestAttributeModel(BaseTestCase):
             source_path = 'test_attributes/lazy_view.png'
             default_storage.save(
                 source_path,
-                ContentFile(self._create_valid_png_image_bytes()),
+                ContentFile(self.create_test_png_bytes()),
             )
 
             attr = ConcreteAttributeModel(
@@ -329,7 +307,7 @@ class TestAttributeModel(BaseTestCase):
             source_path = 'test_attributes/already_done.png'
             default_storage.save(
                 source_path,
-                ContentFile(self._create_valid_png_image_bytes()),
+                ContentFile(self.create_test_png_bytes()),
             )
 
             attr = ConcreteAttributeModel(

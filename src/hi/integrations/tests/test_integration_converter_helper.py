@@ -5,7 +5,7 @@ from django.test import TestCase
 from hi.integrations.integration_converter_helper import IntegrationConverterHelper
 from hi.integrations.integration_metadata_cache import IntegrationMetadataCache
 from hi.integrations.transient_models import IntegrationKey
-from hi.testing.async_task_utils import AsyncTaskTestCase
+from hi.testing.async_task_utils import AsyncTaskFastTestCase
 
 logging.disable(logging.CRITICAL)
 
@@ -148,7 +148,7 @@ class TestFromEntityStateValue(TestCase):
         self.assertAlmostEqual( external, 75.0, places = 6 )
 
 
-class TestAsyncConverterHelpers(AsyncTaskTestCase):
+class TestAsyncConverterHelpers(AsyncTaskFastTestCase):
     """Async variants delegate to the cache's async API, which uses
     sync_to_async for DB safety. AsyncTaskTestCase manages the
     event-loop lifecycle so these don't deadlock on DB locks."""

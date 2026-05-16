@@ -1,10 +1,8 @@
-from io import BytesIO, StringIO
+from io import StringIO
 
 from django.core.files.base import ContentFile
 from django.core.management import call_command
 from django.core.files.storage import default_storage
-
-from PIL import Image
 
 from hi.apps.entity.enums import EntityType
 from hi.testing.base_test_case import BaseTestCase
@@ -13,13 +11,6 @@ from hi.apps.attribute.enums import AttributeType, AttributeValueType
 
 
 class TestBackfillAttributeThumbnailsCommand(BaseTestCase):
-
-    @staticmethod
-    def _create_valid_png_image_bytes(size=(320, 240)):
-        image = Image.new('RGB', size=size, color=(80, 120, 200))
-        image_bytes = BytesIO()
-        image.save(image_bytes, format='PNG')
-        return image_bytes.getvalue()
 
     def _create_entity(self):
         return Entity.objects.create(
@@ -42,7 +33,7 @@ class TestBackfillAttributeThumbnailsCommand(BaseTestCase):
                 name='retroactive_image',
                 value='Retroactive image',
                 file_value=ContentFile(
-                    self._create_valid_png_image_bytes(),
+                    self.create_test_png_bytes(),
                     name='retroactive-image.png',
                 ),
                 file_mime_type='image/png',
@@ -66,7 +57,7 @@ class TestBackfillAttributeThumbnailsCommand(BaseTestCase):
                 name='retroactive_image_dry_run',
                 value='Retroactive image dry-run',
                 file_value=ContentFile(
-                    self._create_valid_png_image_bytes(),
+                    self.create_test_png_bytes(),
                     name='retroactive-image-dry-run.png',
                 ),
                 file_mime_type='image/png',

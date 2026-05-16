@@ -10,12 +10,12 @@ from hi.apps.weather.weather_sources.nws import NationalWeatherService
 from hi.apps.weather.weather_manager import WeatherManager
 from hi.transient_models import GeographicLocation
 from hi.units import UnitQuantity
-from hi.testing.async_task_utils import AsyncTaskTestCase
+from hi.testing.async_task_utils import AsyncTaskFastTestCase
 
 logging.disable(logging.CRITICAL)
 
 
-class TestWeatherAlertIntegration(AsyncTaskTestCase):
+class TestWeatherAlertIntegration(AsyncTaskFastTestCase):
     """Test end-to-end weather alert to alarm integration."""
     
     def test_nws_tornado_warning_creates_critical_alarm(self):
