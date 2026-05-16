@@ -14,7 +14,6 @@ from hi.apps.sense.transient_models import SensorResponse
 from hi.apps.sense.enums import CorrelationRole
 from hi.integrations.transient_models import IntegrationKey
 
-from django.core.exceptions import BadRequest
 
 logging.disable(logging.CRITICAL)
 
@@ -738,21 +737,15 @@ class TestVideoDispatchResult(TransactionTestCase):
             VideoDispatchType.HISTORY_LATER
         ])
 
-    def test_get_video_dispatch_result_no_video_sensor_raises_error(self):
-        """Test error handling when entity has no video sensor."""
-        with self.assertRaises(BadRequest) as context:
-            VideoStreamBrowsingHelper.get_video_dispatch_result(
-                self.non_video_entity, '/any/url/'
-            )
-        
-        self.assertIn('No video sensor found', str(context.exception))
-
-    def test_get_video_dispatch_result_none_entity_raises_error(self):
-        """Test error handling when entity is None."""
-        with self.assertRaises(AttributeError):
-            VideoStreamBrowsingHelper.get_video_dispatch_result(
-                None, '/any/url/'
-            )
+    def test_get_video_dispatch_result_no_video_sensor_falls_back_to_live_stream(self):
+        """Entities without a per-sensor video timeline (e.g., HA cameras
+        with snapshot only) fall back to the live-stream dispatch
+        instead of raising — the live view is still available."""
+        result = VideoStreamBrowsingHelper.get_video_dispatch_result(
+            self.non_video_entity, '/any/url/'
+        )
+        self.assertEqual(result.dispatch_type, VideoDispatchType.LIVE_STREAM)
+        self.assertIsNone(result.sensor)
 
     def test_get_video_dispatch_result_fallback_to_default(self):
         """Test fallback to default dispatch for unrecognized URLs."""

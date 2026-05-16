@@ -62,26 +62,24 @@ class EntityVideoStreamView( HiGridView, EntityViewMixin ):
     def get_main_template_context( self, request, *args, **kwargs ):
         entity = self.get_entity( request, *args, **kwargs )
 
-        # Check if entity has video stream capability
-        if not entity.has_video_stream:
-            raise BadRequest( 'Entity does not have video stream capability.' )
+        if not entity.has_live_view:
+            raise BadRequest( 'Entity does not provide a live view.' )
 
-        # Get the integration gateway for this entity (Do we really need this check?)
         integration_gateway = IntegrationManager().get_integration_gateway( entity.integration_id )
         if not integration_gateway:
-            raise BadRequest( 'Integration not available for video stream.' )
+            raise BadRequest( 'Integration not available.' )
 
-        # Find the first sensor with video capability for history browsing
+        # ``video_sensor`` is the timeline-mode entry point and may be
+        # None for entities that have a live view but no per-sensor
+        # video timeline (e.g., HA cameras with snapshot only). The
+        # pane template hides the timeline tab when this is None.
         video_sensor = VideoStreamBrowsingHelper.find_video_sensor_for_entity(entity)
 
-        if not video_sensor:
-            raise BadRequest( 'Entity does not have any video stream sensors.' )
-        
         request.view_parameters.view_type = ViewType.ENTITY_VIDEO_STREAM
         request.view_parameters.to_session( request )
         return {
             'entity': entity,
-            'video_sensor': video_sensor,  # May be None if no video sensors
+            'video_sensor': video_sensor,
         }
 
     

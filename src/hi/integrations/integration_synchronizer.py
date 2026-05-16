@@ -122,6 +122,15 @@ class IntegrationSynchronizer:
             logger.debug(f'{self.__class__.__name__} sync ended.')
 
         self._record_sync_check_complete_if_successful( result = result )
+        try:
+            self.post_sync( result = result )
+        except Exception as e:
+            # Post-sync hook failures should never mask the sync
+            # result — sync itself succeeded as far as the caller is
+            # concerned. Just log and move on.
+            logger.warning(
+                f'{self.__class__.__name__} post_sync hook failed: {e}'
+            )
         return result
 
     def _record_sync_check_complete_if_successful(
@@ -148,6 +157,17 @@ class IntegrationSynchronizer:
                 f'Failed to record sync-check completion for '
                 f'{metadata.integration_id}: {e}'
             )
+        return
+
+    def post_sync(self, result : IntegrationSyncResult) -> None:
+        """Hook for integration-specific work that must happen after a
+        sync completes (and after the sync lock has been released).
+        Sync mutates entity/sensor records; integrations whose
+        process-level state derives from those records should refresh
+        here. Default is no-op.
+
+        Runs regardless of result.error_list — partial syncs may have
+        committed enough changes to invalidate process-level state."""
         return
 
     def _sync_impl(self, is_initial_import: bool) -> IntegrationSyncResult:

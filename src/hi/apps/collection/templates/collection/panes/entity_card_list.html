@@ -7,7 +7,7 @@
       </div>
       {% if collection.collection_type.is_cameras %}
       <div>
-        {% include "console/panes/entity_video_stream_w_link.html" with entity=entity_status_data.entity %}
+        {% include "console/panes/entity_live_view_w_link.html" with entity=entity_status_data.entity %}
       </div>
       {% else %}
       <div class="entity-content-section flex-grow-1 ml-3">

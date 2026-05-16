@@ -5,7 +5,8 @@ from unittest.mock import Mock
 
 from django.test import TestCase
 
-from hi.apps.entity.models import Entity
+from hi.apps.entity.models import Entity, EntityState
+from hi.apps.sense.models import Sensor
 
 from hi.services.hass.hass_manager import HassManager
 from hi.services.hass.hass_metadata import HassMetaData
@@ -33,14 +34,32 @@ class GetEntityVideoSnapshotTests(TestCase):
         mock_client.api_base_url = self.BASE_URL.rstrip('/')
         self.manager._hass_client = mock_client
 
-    def _camera_entity(self, integration_name='camera.front_door'):
-        return Entity.objects.create(
+    def _camera_entity(self, device_id='front_door', ha_state_id='camera.front_door'):
+        """Build a camera-shaped HI Entity + camera-domain Sensor and
+        rebuild the manager's entity_id -> ha_state_id map so the
+        gateway's lookup resolves."""
+        entity = Entity.objects.create(
             name='Front Door',
             entity_type_str='CAMERA',
             integration_id=HassMetaData.integration_id,
-            integration_name=integration_name,
+            integration_name=device_id,
             has_video_snapshot=True,
         )
+        entity_state = EntityState.objects.create(
+            entity=entity,
+            entity_state_type_str='VIDEO_STREAM',
+            role_str='primary',
+            name='Camera',
+        )
+        Sensor.objects.create(
+            name='Camera',
+            entity_state=entity_state,
+            sensor_type_str='BLOB',
+            integration_id=HassMetaData.integration_id,
+            integration_name=ha_state_id,
+        )
+        self.manager._rebuild_entity_id_to_ha_state_id_map()
+        return entity
 
     def _prime_cache(self, integration_name, attrs):
         self.manager.update_latest_attrs_cache({

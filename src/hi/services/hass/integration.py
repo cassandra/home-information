@@ -95,11 +95,17 @@ class HassGateway( IntegrationGateway ):
             return None
         if entity.integration_id != HassMetaData.integration_id:
             return None
-        if not entity.integration_name:
-            return None
 
         hass_manager = HassManager()
-        attrs = hass_manager.get_latest_attrs( entity.integration_name )
+        # ``Entity.integration_name`` is the HassDevice device_id (an HI
+        # grouping construct), not the HA state id the attrs cache is
+        # keyed by. The manager bridges the two via a sync-time-built
+        # map of HI Entity.id -> camera-domain HA state id.
+        ha_state_id = hass_manager.get_ha_state_id_for_entity( entity )
+        if not ha_state_id:
+            return None
+
+        attrs = hass_manager.get_latest_attrs( ha_state_id )
         if not attrs:
             return None
 

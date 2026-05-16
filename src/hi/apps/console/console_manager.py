@@ -91,14 +91,15 @@ class ConsoleManager( Singleton, SettingsMixin, SensorResponseMixin ):
     def _build_camera_control_display_list(self) -> List[CameraControlDisplayData]:
         """Build camera control display data with status entity states.
 
-        Listing context: includes the conjunction with is_disabled to
-        suppress disabled (e.g., disconnected) cameras from the camera
-        control list. Per-entity views still respect raw has_video_stream.
-        """
+        Listing context: any entity with a live view (native stream,
+        synthetic snapshot stream, or static snapshot) is eligible.
+        ``is_disabled`` suppresses cameras the operator has marked
+        offline (e.g., after an integration disconnect)."""
         # Get entities with prefetched states in one efficient query
         entity_list = list(
             Entity.objects
-            .filter(has_video_stream=True, is_disabled=False)
+            .with_live_view()
+            .filter(is_disabled=False)
             .prefetch_related('states')
             .order_by('name')
         )

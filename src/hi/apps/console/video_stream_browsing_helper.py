@@ -8,7 +8,6 @@ from datetime import datetime, timedelta
 from typing import Dict, List, Optional
 from urllib.parse import urlparse
 
-from django.core.exceptions import BadRequest
 from django.utils import timezone
 from django.urls import resolve, Resolver404
 
@@ -732,8 +731,15 @@ class VideoStreamBrowsingHelper:
         """
         video_sensor = cls.find_video_sensor_for_entity(entity)
         if not video_sensor:
-            raise BadRequest( f'No video sensor found for entity {entity.id}.' )
-        
+            # No per-sensor video timeline (e.g., HA camera with snapshot
+            # only). Fall back to the live view; the timeline branches
+            # below all require a sensor to anchor on.
+            return VideoDispatchResult(
+                dispatch_type = VideoDispatchType.LIVE_STREAM,
+                sensor = None,
+            )
+
+
         # Extract timeline context from referrer URL if available
         try:
             parsed_url = urlparse(referrer_url)

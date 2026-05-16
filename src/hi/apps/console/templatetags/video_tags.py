@@ -66,12 +66,11 @@ def entity_video_stream(entity):
         return None
 
     try:
-        # Check if entity has video stream capability
-        if not entity.has_video_stream:
-            logger.debug(f"Entity {entity.id} does not have video stream capability")
-            return None
-
-        # Get integration gateway for this entity
+        # The gateway returns None for entities that don't have a
+        # native stream, so no need to gate on ``has_video_stream``
+        # here. The user-facing gate lives at the template level via
+        # ``has_live_view`` so snapshot-only entities can also render
+        # through the central live-view include.
         from hi.integrations.integration_manager import IntegrationManager
         integration_manager = IntegrationManager()
         gateway = integration_manager.get_integration_gateway(entity.integration_id)
@@ -79,8 +78,7 @@ def entity_video_stream(entity):
         if not gateway:
             logger.warning(f"No integration gateway found for {entity.integration_id}")
             return None
-            
-        # Get live video stream
+
         video_stream = gateway.get_entity_video_stream(entity)
 
         if video_stream:
@@ -88,7 +86,29 @@ def entity_video_stream(entity):
 
         logger.debug(f"No video stream available for entity {entity.id}")
         return None
-        
+
     except Exception as e:
         logger.error(f"Error getting video stream for entity {entity.id}: {e}")
+        return None
+
+
+@register.simple_tag
+def entity_video_snapshot(entity):
+    """Get the current still-image snapshot for an entity, if available.
+
+    Returns a ``VideoSnapshot`` (with ``source_url``) or ``None``.
+    Parallel to ``entity_video_stream`` but for the snapshot capability.
+    """
+    if not entity:
+        return None
+
+    try:
+        from hi.integrations.integration_manager import IntegrationManager
+        gateway = IntegrationManager().get_integration_gateway(entity.integration_id)
+        if not gateway:
+            logger.warning(f"No integration gateway found for {entity.integration_id}")
+            return None
+        return gateway.get_entity_video_snapshot(entity)
+    except Exception as e:
+        logger.error(f"Error getting video snapshot for entity {entity.id}: {e}")
         return None

@@ -28,10 +28,10 @@
         </div>
     </div>
 
-    <!-- Current video stream -->
-    {% if entity.has_video_stream %}
-    {% include "console/panes/entity_video_stream.html" with entity=entity %}
+    <!-- Current live view (native stream, synthetic stream, or static snapshot) -->
+    {% if entity.has_live_view %}
+    {% include "console/panes/entity_live_view.html" with entity=entity %}
     {% else %}
-    <div class="text-muted">Video stream not available.</div>
+    <div class="text-muted">Live view not available.</div>
     {% endif %}
 </div>

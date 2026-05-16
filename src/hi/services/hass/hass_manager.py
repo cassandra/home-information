@@ -56,6 +56,14 @@ class HassManager( SingletonManager, AggregateHealthProvider, ApiHealthStatusPro
         )
         self._latest_attrs_lock = threading.Lock()
 
+        # Bridges the HI-Entity-shaped gateway API to the HA-state-shaped
+        # attrs cache: HI Entity.id -> HA state id (a.k.a. HA wire
+        # ``entity_id``, the value the HA API uses to address a state
+        # and the value stored on HI ``Sensor.integration_name`` for
+        # HA-sourced sensors). Built at reload() time by a single bulk
+        # query; pure dict lookups at request time.
+        self._entity_id_to_ha_state_id: Dict[ int, str ] = {}
+
         # Add self as the API health status provider to aggregate
         self.add_api_health_status_provider(self)
 
@@ -110,6 +118,7 @@ class HassManager( SingletonManager, AggregateHealthProvider, ApiHealthStatusPro
             self._hass_attr_type_to_attribute = self._load_attributes()
             self._hass_client = self.create_hass_client( self._hass_attr_type_to_attribute )
             self.clear_caches()
+            self._rebuild_entity_id_to_ha_state_id_map()
             self.record_healthy('Reloaded')
 
         except IntegrationDisabledError:
@@ -137,6 +146,25 @@ class HassManager( SingletonManager, AggregateHealthProvider, ApiHealthStatusPro
         with self._latest_attrs_lock:
             self._latest_attrs_by_entity_id.clear()
         return
+
+    def _rebuild_entity_id_to_ha_state_id_map(self):
+        """Rebuild the HI Entity.id -> HA state id map for camera-domain
+        sensors. Called from reload(); also runs after a sync since sync
+        creates/updates the underlying Sensor rows. Single bulk query."""
+        from hi.apps.sense.models import Sensor
+        pairs = Sensor.objects.filter(
+            integration_id = HassMetaData.integration_id,
+            integration_name__startswith = f'{HassApi.CAMERA_DOMAIN}.',
+        ).values_list( 'entity_state__entity_id', 'integration_name' )
+        self._entity_id_to_ha_state_id = dict( pairs )
+        return
+
+    def get_ha_state_id_for_entity( self, entity ) -> Optional[ str ]:
+        """Look up the HA state id (wire entity_id) for the camera-domain
+        sensor on an HI Entity, or None if the entity has no such sensor.
+        Used by the snapshot gateway to bridge HI Entity to the HA-shaped
+        attrs cache."""
+        return self._entity_id_to_ha_state_id.get( entity.id )
 
     def update_latest_attrs_cache( self, hass_state_map : Dict[ str, HassState ] ):
         """Refresh per-entity attributes from a polling snapshot.
