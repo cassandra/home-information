@@ -116,7 +116,10 @@
                     {% sensor_response_video_stream sensor_history_data.current_sensor_response as video_stream %}
                     {% if video_stream and video_stream.source_url %}
                     <div class="hi-video-recording">
-                      <img class="img-fluid" data-video-recording src="{{ video_stream.source_url }}" alt="Video recording from {{ sensor_history_data.current_sensor_response.timestamp|localtime|date:'F j, Y g:i A' }}" data-event-id="{{ sensor_history_data.current_sensor_response.sensor_history_id }}" onerror="this.style.display='none'; this.outerHTML='<div class=\'alert alert-warning text-center d-flex align-items-center justify-content-center\' style=\'min-height: 240px;\'><div><div class=\'mb-2\'>[VIDEO]</div><h6>Video No Longer Available</h6></div></div>'">
+                      <img class="img-fluid" data-video-recording
+                           src="{{ video_stream.source_url }}"
+                           alt="Video recording from {{ sensor_history_data.current_sensor_response.timestamp|localtime|date:'F j, Y g:i A' }}"
+                           data-event-id="{{ sensor_history_data.current_sensor_response.sensor_history_id }}">
                       {% include "console/panes/video_recording_replay_button.html" %}
                     </div>
                     {% elif sensor_history_data.current_sensor_response.source_image_url %}
@@ -126,19 +129,7 @@
                         <small class="text-muted">Image - video may be processing</small>
                     </div>
                     {% else %}
-                    <!-- Fallback when no video stream or snapshot is available -->
-                    <div class="video-placeholder d-flex align-items-center justify-content-center">
-                        <div class="text-center">
-                            <div class="video-placeholder-icon mb-3">
-                                <svg width="64" height="64" fill="currentColor" viewBox="0 0 16 16">
-                                    <path d="M10.5 8.5a2.5 2.5 0 1 1-5 0 2.5 2.5 0 0 1 5 0z"/>
-                                    <path d="M2 4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2h-1.172a2 2 0 0 1-1.414-.586l-.828-.828A2 2 0 0 0 9.172 2H6.828a2 2 0 0 0-1.414.586l-.828.828A2 2 0 0 1 3.172 4H2zm.5 2a.5.5 0 1 1 0-1 .5.5 0 0 1 0 1zm9 2.5a3.5 3.5 0 1 1-7 0 3.5 3.5 0 0 1 7 0z"/>
-                                </svg>
-                            </div>
-                            <h5 class="mb-2">Video Stream Unavailable</h5>
-                            <small class="text-muted">Video recording may not be available for this event</small>
-                        </div>
-                    </div>
+                    {% include "console/panes/video_unavailable_placeholder.html" with heading="Video Stream Unavailable" subtitle="Video recording may not be available for this event" %}
                     {% endif %}
                 </div>
 

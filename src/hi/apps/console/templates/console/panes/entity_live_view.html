@@ -22,6 +22,8 @@
          data-stream-fps="{{ entity.video_snapshot_stream_fps }}"
          src="{{ snapshot_url }}" alt="{{ entity.name }} Live View">
   </div>
+  {% else %}
+  {% include "console/panes/video_unavailable_placeholder.html" with heading="Live View Unavailable" subtitle="The integration may be offline or unable to provide a snapshot" %}
   {% endif %}
 {% elif entity.has_video_snapshot %}
   {% entity_video_snapshot entity as video_snapshot %}
@@ -31,5 +33,7 @@
     <img class="img-fluid"
          src="{{ snapshot_url }}" alt="{{ entity.name }} Snapshot">
   </div>
+  {% else %}
+  {% include "console/panes/video_unavailable_placeholder.html" with heading="Snapshot Unavailable" subtitle="The integration may be offline or unable to provide a snapshot" %}
   {% endif %}
 {% endif %}

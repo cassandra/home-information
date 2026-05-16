@@ -171,7 +171,18 @@
         _refresh: function( element ) {
             const base = element.dataset[ this.SNAPSHOT_BASE_ATTR ] || element.src;
             const sep = base.includes( '?' ) ? '&' : '?';
-            element.src = base + sep + '_cb=' + Date.now();
+            const newUrl = base + sep + '_cb=' + Date.now();
+            // Preload pattern: fetch into a hidden Image first, swap the
+            // visible <img>'s src only after a successful load. Avoids
+            // (a) flicker from in-flight fetches that get aborted by the
+            // next poll's src change, and (b) spurious ``error`` events
+            // from those aborted fetches that would otherwise trip the
+            // VideoErrorHandler placeholder.
+            const preloader = new Image();
+            preloader.onload = function() {
+                element.src = newUrl;
+            };
+            preloader.src = newUrl;
         },
 
         _stripCacheBust: function( url ) {
@@ -182,6 +193,123 @@
             } catch ( e ) {
                 return url;
             }
+        }
+    };
+
+    // Generic ``error``-event handler for the three video-marker <img>
+    // elements (``data-video-stream``, ``data-video-recording``,
+    // ``data-video-snapshot``). On load failure, hides the <img> and
+    // inserts a sibling placeholder; on a subsequent successful load,
+    // hides the placeholder and reveals the <img> again. Self-healing
+    // is important for snapshot polling (transient HA blip shouldn't
+    // permanently kill the feed) and harmless for the long-lived
+    // streams (the placeholder just shows until the user navigates).
+    //
+    // Coordinates with VideoConnectionManager.forceClose: that path
+    // sets ``src`` to a transparent GIF (``data:image/gif;...``).
+    // Browsers don't fire ``error`` on a successfully-loaded data
+    // URI, but we also explicitly skip ``data:`` URLs as defense.
+    const VideoErrorHandler = {
+
+        SELECTOR: 'img[data-video-stream], img[data-video-recording], img[data-video-snapshot]',
+        PLACEHOLDER_CLASS: 'video-load-error-placeholder',
+        REGISTERED_FLAG: 'videoErrorHandlerRegistered',
+
+        // Heading + subtitle per marker. Mirrors the server-rendered
+        // ``.video-placeholder`` markup in entity_video_sensor_history.html
+        // for the no-source case, so the failed-to-load and no-data cases
+        // look visually identical.
+        MESSAGES: {
+            'data-video-stream': {
+                heading: 'Live View Unavailable',
+                subtitle: 'The integration may be offline or the camera unreachable',
+            },
+            'data-video-recording': {
+                heading: 'Video No Longer Available',
+                subtitle: 'This recording could not be loaded',
+            },
+            'data-video-snapshot': {
+                heading: 'Snapshot Unavailable',
+                subtitle: 'The integration may be offline or unable to provide a snapshot',
+            },
+        },
+
+        // Reuses the camera icon from the server-rendered placeholder.
+        CAMERA_ICON_SVG:
+            '<svg width="64" height="64" fill="currentColor" viewBox="0 0 16 16">' +
+            '<path d="M10.5 8.5a2.5 2.5 0 1 1-5 0 2.5 2.5 0 0 1 5 0z"/>' +
+            '<path d="M2 4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2h-1.172a2 2 0 0 1-1.414-.586l-.828-.828A2 2 0 0 0 9.172 2H6.828a2 2 0 0 0-1.414.586l-.828.828A2 2 0 0 1 3.172 4H2zm.5 2a.5.5 0 1 1 0-1 .5.5 0 0 1 0 1zm9 2.5a3.5 3.5 0 1 1-7 0 3.5 3.5 0 0 1 7 0z"/>' +
+            '</svg>',
+
+        register: function( element ) {
+            if ( ! element ) return;
+            if ( element.dataset[ this.REGISTERED_FLAG ] ) return;
+            element.dataset[ this.REGISTERED_FLAG ] = '1';
+            const handler = this;
+            element.addEventListener( 'error', function() {
+                handler._handleError( element );
+            });
+            element.addEventListener( 'load', function() {
+                handler._handleLoad( element );
+            });
+        },
+
+        _handleError: function( element ) {
+            if ( element.src && element.src.startsWith( 'data:' )) return;
+            element.style.display = 'none';
+            const existing = this._findSiblingPlaceholder( element );
+            if ( existing ) return;
+            const placeholder = this._buildPlaceholder( element );
+            element.insertAdjacentElement( 'afterend', placeholder );
+        },
+
+        _handleLoad: function( element ) {
+            if ( element.src && element.src.startsWith( 'data:' )) return;
+            element.style.display = '';
+            const existing = this._findSiblingPlaceholder( element );
+            if ( existing ) existing.remove();
+        },
+
+        _findSiblingPlaceholder: function( element ) {
+            const next = element.nextElementSibling;
+            if ( next && next.classList
+                 && next.classList.contains( this.PLACEHOLDER_CLASS )) {
+                return next;
+            }
+            return null;
+        },
+
+        _buildPlaceholder: function( element ) {
+            const messages = this._messagesFor( element );
+            const wrapper = document.createElement( 'div' );
+            wrapper.className =
+                'video-placeholder d-flex align-items-center justify-content-center '
+                + this.PLACEHOLDER_CLASS;
+            wrapper.innerHTML =
+                '<div class="text-center">'
+                + '<div class="video-placeholder-icon mb-3">'
+                + this.CAMERA_ICON_SVG
+                + '</div>'
+                + '<h5 class="mb-2"></h5>'
+                + '<small class="text-muted"></small>'
+                + '</div>';
+            wrapper.querySelector( 'h5' ).textContent = messages.heading;
+            wrapper.querySelector( 'small' ).textContent = messages.subtitle;
+            return wrapper;
+        },
+
+        _messagesFor: function( element ) {
+            for ( const marker of Object.keys( this.MESSAGES )) {
+                if ( element.hasAttribute( marker )) return this.MESSAGES[ marker ];
+            }
+            return { heading: 'Image Unavailable', subtitle: '' };
+        },
+
+        reconcile: function() {
+            const handler = this;
+            document.querySelectorAll( this.SELECTOR ).forEach(
+                (el) => handler.register( el )
+            );
         }
     };
 
@@ -303,6 +431,7 @@
         VideoTimelineScrollManager.tagCurrentVideoWithEventId();
         VideoConnectionManager.reconcile();
         SnapshotStreamManager.reconcile();
+        VideoErrorHandler.reconcile();
     }
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', initVideoSubsystems);
@@ -330,10 +459,12 @@
         VideoTimelineScrollManager.handleAsyncUpdate();
         VideoConnectionManager.reconcile();
         SnapshotStreamManager.reconcile();
+        VideoErrorHandler.reconcile();
     });
     registerHook( 'addAfterModalRenderFunction', () => {
         VideoConnectionManager.reconcile();
         SnapshotStreamManager.reconcile();
+        VideoErrorHandler.reconcile();
     });
 
     // Cleanup on page unload to free connections and stop pollers
@@ -358,10 +489,9 @@
     // cached original URL on each click. The browser sees a new URL,
     // abandons the previous fetch, and starts a new one. ZoneMinder
     // serves the recording from the start on each request
-    // (``replay=single``). Avoids ever blanking the ``src`` —
-    // some templates carry inline ``onerror`` handlers that fire
-    // on empty src and replace the <img> with an error message,
-    // which the empty-src + reset technique would trigger.
+    // (``replay=single``). Avoids blanking the ``src`` — an empty
+    // src would fire ``error`` and trigger ``VideoErrorHandler``'s
+    // placeholder.
     function videoRecordingReplayBuster( baseUrl ) {
         const sep = baseUrl.includes('?') ? '&' : '?';
         return baseUrl + sep + '_replay=' + Date.now();
@@ -390,4 +520,5 @@
     window.VideoTimelineScrollManager = VideoTimelineScrollManager;
     window.VideoConnectionManager = VideoConnectionManager;
     window.SnapshotStreamManager = SnapshotStreamManager;
+    window.VideoErrorHandler = VideoErrorHandler;
 })();

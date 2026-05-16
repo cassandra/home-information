@@ -3,10 +3,12 @@
 {% if video_stream and video_stream.source_url %}
 <div class="video-container">
   {# ``data-video-stream`` opts this <img> into the connection         #}
-{# manager's force-close-on-unload lifecycle. ``.video-container``    #}
-{# on the parent is purely styling (also used by historical video    #}
-{# playback containers); the data attribute is the behavior marker.  #}
+  {# manager's force-close-on-unload lifecycle. ``.video-container``   #}
+  {# on the parent is purely styling (also used by historical video   #}
+  {# playback containers); the data attribute is the behavior marker. #}
   <img class="img-fluid" data-video-stream
        src="{{ video_stream.source_url }}" alt="{{ entity.name }} Live Video">
 </div>
+{% else %}
+{% include "console/panes/video_unavailable_placeholder.html" with heading="Live Stream Unavailable" subtitle="The integration may be offline or the camera unreachable" %}
 {% endif %}
