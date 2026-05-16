@@ -6,7 +6,7 @@ from django.utils import timezone
 from django.core.exceptions import BadRequest
 
 from hi.apps.console.views import (
-    EntityVideoStreamView, EntityVideoSensorHistoryView,
+    EntityVideoView, EntityVideoSensorHistoryView,
     EntityVideoSensorHistoryEarlierView, EntityVideoSensorHistoryLaterView
 )
 from hi.apps.console.transient_models import EntitySensorHistoryData
@@ -18,8 +18,8 @@ from hi.testing.base_test_case import BaseTestCase
 logging.disable(logging.CRITICAL)
 
 
-class TestEntityVideoStreamView(BaseTestCase):
-    """Test EntityVideoStreamView for displaying video streams."""
+class TestEntityVideoView(BaseTestCase):
+    """Test EntityVideoView for displaying video streams."""
 
     def setUp(self):
         super().setUp()
@@ -44,7 +44,7 @@ class TestEntityVideoStreamView(BaseTestCase):
 
     def test_get_main_template_name_returns_correct_template(self):
         """Test that the view returns the correct template name."""
-        view = EntityVideoStreamView()
+        view = EntityVideoView()
         template_name = view.get_main_template_name()
         
         self.assertEqual(template_name, 'console/panes/entity_video_pane.html')
@@ -52,14 +52,14 @@ class TestEntityVideoStreamView(BaseTestCase):
     def test_view_integration_with_url_routing(self):
         """Test that the view integrates correctly with URL routing."""
         # This tests the actual URL pattern and view integration
-        url = reverse('console_entity_video_stream', kwargs={'entity_id': self.video_entity.id})
+        url = reverse('console_entity_video', kwargs={'entity_id': self.video_entity.id})
         
-        self.assertIn('/console/entity/video-stream/', url)
+        self.assertIn('/console/entity/video/', url)
         self.assertIn(str(self.video_entity.id), url)
         
     def test_view_inheritance_from_higrideview(self):
-        """Test that EntityVideoStreamView correctly inherits from HiGridView."""
-        view = EntityVideoStreamView()
+        """Test that EntityVideoView correctly inherits from HiGridView."""
+        view = EntityVideoView()
         
         # Should have HiGridView methods
         self.assertTrue(hasattr(view, 'get_main_template_name'))
@@ -68,13 +68,13 @@ class TestEntityVideoStreamView(BaseTestCase):
         self.assertTrue(callable(view.get_main_template_context))
 
     def test_view_class_exists_and_is_importable(self):
-        """Test that the EntityVideoStreamView class exists and can be imported."""
+        """Test that the EntityVideoView class exists and can be imported."""
         # This is a basic smoke test to ensure the view is properly defined
-        from hi.apps.console.views import EntityVideoStreamView
+        from hi.apps.console.views import EntityVideoView
         
-        self.assertTrue(EntityVideoStreamView)
-        self.assertTrue(hasattr(EntityVideoStreamView, 'get_main_template_name'))
-        self.assertTrue(hasattr(EntityVideoStreamView, 'get_main_template_context'))
+        self.assertTrue(EntityVideoView)
+        self.assertTrue(hasattr(EntityVideoView, 'get_main_template_name'))
+        self.assertTrue(hasattr(EntityVideoView, 'get_main_template_context'))
 
     def test_video_entity_has_correct_attributes(self):
         """Test that test video entity has correct attributes for testing."""

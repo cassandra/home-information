@@ -441,6 +441,7 @@ class CameraDeviceVideoSnapshotFlagTests(TestCase):
             add_alarm_events=False,
         )
         self.assertTrue(entity.has_video_snapshot)
+        self.assertEqual(entity.video_snapshot_stream_fps, 1.0)
 
     def test_create_leaves_flag_off_for_non_camera_device(self):
         entity = HassConverter.create_models_for_hass_device(
@@ -448,12 +449,14 @@ class CameraDeviceVideoSnapshotFlagTests(TestCase):
             add_alarm_events=False,
         )
         self.assertFalse(entity.has_video_snapshot)
+        self.assertIsNone(entity.video_snapshot_stream_fps)
 
     def test_reconnect_sets_flag_on_existing_entity(self):
         existing = Entity.objects.create(
             name='User Renamed Camera',
             entity_type_str='CAMERA',
             has_video_snapshot=False,
+            video_snapshot_stream_fps=None,
         )
         HassConverter.create_models_for_hass_device(
             hass_device=self._build_camera_device(),
@@ -462,6 +465,7 @@ class CameraDeviceVideoSnapshotFlagTests(TestCase):
         )
         existing.refresh_from_db()
         self.assertTrue(existing.has_video_snapshot)
+        self.assertEqual(existing.video_snapshot_stream_fps, 1.0)
 
     def test_update_heals_flag_on_existing_camera_entity(self):
         """Pre-PR cameras stay has_video_snapshot=False until the
@@ -471,6 +475,7 @@ class CameraDeviceVideoSnapshotFlagTests(TestCase):
             name='User Renamed Camera',
             entity_type_str='CAMERA',
             has_video_snapshot=False,
+            video_snapshot_stream_fps=None,
         )
         # Set integration key so the converter recognizes the
         # entity as HASS-owned and the update path is well-formed.
@@ -485,6 +490,7 @@ class CameraDeviceVideoSnapshotFlagTests(TestCase):
 
         existing.refresh_from_db()
         self.assertTrue(existing.has_video_snapshot)
+        self.assertEqual(existing.video_snapshot_stream_fps, 1.0)
 
     def test_update_clears_flag_when_device_no_longer_camera(self):
         """Self-healing in the opposite direction: if upstream
@@ -494,6 +500,7 @@ class CameraDeviceVideoSnapshotFlagTests(TestCase):
             name='Was a camera',
             entity_type_str='LIGHT',
             has_video_snapshot=True,
+            video_snapshot_stream_fps=1.0,
         )
         existing.integration_id = HassMetaData.integration_id
         existing.integration_name = 'light.kitchen_light'
@@ -506,3 +513,4 @@ class CameraDeviceVideoSnapshotFlagTests(TestCase):
 
         existing.refresh_from_db()
         self.assertFalse(existing.has_video_snapshot)
+        self.assertIsNone(existing.video_snapshot_stream_fps)

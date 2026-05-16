@@ -14,13 +14,13 @@ class TestTransientViewSuggestion(BaseTestCase):
     def test_transient_view_suggestion_creation(self):
         """Test creating a TransientViewSuggestion with basic parameters."""
         suggestion = TransientViewSuggestion(
-            url='/console/entity/video-stream/123/',
+            url='/console/entity/video/123/',
             duration_seconds=30,
             priority=5,
             trigger_reason='motion_detected'
         )
         
-        self.assertEqual(suggestion.url, '/console/entity/video-stream/123/')
+        self.assertEqual(suggestion.url, '/console/entity/video/123/')
         self.assertEqual(suggestion.duration_seconds, 30)
         self.assertEqual(suggestion.priority, 5)
         self.assertEqual(suggestion.trigger_reason, 'motion_detected')

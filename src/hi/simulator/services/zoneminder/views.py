@@ -70,12 +70,21 @@ class NphZmsView( View ):
     """
 
     def get(self, request, *args, **kwargs):
+        # Real ZoneMinder treats ``mode=single`` as "return a single
+        # JPEG frame instead of a multipart MJPEG stream"; this is
+        # how HI's ``get_video_snapshot_url`` fetches a still image.
+        single_mode = request.GET.get( 'mode' ) == 'single'
+
         event_id_str = request.GET.get( 'event' )
         if event_id_str is not None:
+            if single_mode:
+                return self._event_snapshot_response( event_id_str = event_id_str )
             return self._event_playback_response( event_id_str = event_id_str )
 
         monitor_id_str = request.GET.get( 'monitor' )
         if monitor_id_str is not None:
+            if single_mode:
+                return self._monitor_snapshot_response( monitor_id_str = monitor_id_str )
             return self._live_stream_response( monitor_id_str = monitor_id_str )
 
         return HttpResponse(
@@ -83,6 +92,50 @@ class NphZmsView( View ):
             status = 400,
             content_type = 'text/plain',
         )
+
+    def _monitor_snapshot_response( self, monitor_id_str : str ) -> HttpResponse:
+        text_lines = [ 'Monitor Snapshot (simulator)' ]
+        try:
+            monitor_id = int( monitor_id_str )
+        except ValueError:
+            text_lines.append( f'unknown monitor "{monitor_id_str}"' )
+        else:
+            zm_sim_monitor = ZoneMinderSimulator().find_zm_monitor_by_id(
+                monitor_id = monitor_id,
+            )
+            if zm_sim_monitor is None:
+                text_lines.append( f'monitor {monitor_id} (no record)' )
+            else:
+                text_lines.append( f'monitor: {zm_sim_monitor.name}' )
+                text_lines.append( f'id: {monitor_id}' )
+        response = HttpResponse(
+            render_thumbnail_jpeg( text_lines = text_lines ),
+            content_type = 'image/jpeg',
+        )
+        _apply_no_cache_headers( response )
+        return response
+
+    def _event_snapshot_response( self, event_id_str : str ) -> HttpResponse:
+        text_lines = [ 'Event Snapshot (simulator)' ]
+        try:
+            event_id = int( event_id_str )
+        except ValueError:
+            text_lines.append( f'unknown event "{event_id_str}"' )
+        else:
+            zm_sim_event = ZmSimEventManager().find_event_by_id( event_id = event_id )
+            if zm_sim_event is None:
+                text_lines.append( f'event {event_id} (no record)' )
+            else:
+                text_lines.append(
+                    f'monitor: {zm_sim_event.zm_sim_monitor.name}',
+                )
+                text_lines.append( f'event id: {event_id}' )
+        response = HttpResponse(
+            render_thumbnail_jpeg( text_lines = text_lines ),
+            content_type = 'image/jpeg',
+        )
+        _apply_no_cache_headers( response )
+        return response
 
     def _event_playback_response( self, event_id_str : str ) -> StreamingHttpResponse:
         text_lines = [ 'Event Playback (simulator)' ]

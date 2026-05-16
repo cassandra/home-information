@@ -20,6 +20,7 @@ from .enums import (
     EntityStateRole,
     EntityStateType,
 )
+from .managers import EntityModelManager
 
 
 class Entity( IntegrationDetailsModel, LocationItemModelMixin ):
@@ -70,6 +71,17 @@ class Entity( IntegrationDetailsModel, LocationItemModelMixin ):
             'provide either, both, or neither capability.'
         ),
     )
+    video_snapshot_stream_fps = models.FloatField(
+        'Video Snapshot Stream FPS',
+        null = True,
+        blank = True,
+        default = None,
+        help_text = (
+            'When has_video_snapshot is True, the rate at which the snapshot '
+            'is suitable to be polled to approximate a live feed. None or 0 '
+            'means snapshot exists but is not suitable for synthetic streaming.'
+        ),
+    )
     is_disabled = models.BooleanField(
         'Disabled?',
         default = False,
@@ -83,6 +95,8 @@ class Entity( IntegrationDetailsModel, LocationItemModelMixin ):
         'Created',
         auto_now_add = True,
     )
+
+    objects = EntityModelManager()
 
     class Meta:
         verbose_name = 'Entity'
@@ -112,6 +126,33 @@ class Entity( IntegrationDetailsModel, LocationItemModelMixin ):
     def entity_type( self, entity_type : EntityType ):
         self.entity_type_str = str(entity_type)
         return
+
+    @property
+    def has_native_video_stream(self) -> bool:
+        """Explicit-name alias for ``has_video_stream`` for the rare
+        native-vs-synthetic disambiguation case. Most callers want
+        ``has_live_feed`` instead."""
+        return self.has_video_stream
+
+    @property
+    def has_streamable_snapshot(self) -> bool:
+        """Snapshot exists and is suitable to be polled fast enough to
+        approximate a live feed."""
+        return self.has_video_snapshot and (self.video_snapshot_stream_fps or 0) > 0
+
+    @property
+    def has_live_feed(self) -> bool:
+        """A *moving* visual is available: native stream OR a snapshot
+        that can be polled. Use this on surfaces that imply motion
+        (auto-view trigger, "LIVE" indicators, video-pane "live mode")."""
+        return self.has_native_video_stream or self.has_streamable_snapshot
+
+    @property
+    def has_live_view(self) -> bool:
+        """*Any* current visual exists, moving or static. Use this on
+        surfaces that just want to show the camera (side panel buttons,
+        state panels, dispatch routing)."""
+        return self.has_native_video_stream or self.has_video_snapshot
 
     def get_attribute_map(self):
         attribute_map = dict()

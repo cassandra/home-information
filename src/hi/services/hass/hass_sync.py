@@ -85,6 +85,13 @@ class HassSynchronizer( IntegrationSynchronizer, HassMixin ):
             ).values_list( 'integration_id', 'integration_name' )
         }
 
+    def post_sync(self, result):
+        hass_manager = self.hass_manager()
+        if hass_manager is None:
+            return
+        hass_manager.reload()
+        return
+
     def _sync_impl( self, is_initial_import: bool ) -> IntegrationSyncResult:
         hass_manager = self.hass_manager()
         result = IntegrationSyncResult(

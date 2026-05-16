@@ -3,8 +3,8 @@
 <div class="hi-state-panel-camera hi-state-panel-camera--grid">
 
   <div class="stream">
-    {% if entity.has_video_stream %}
-      {% include "console/panes/entity_video_stream_w_link.html" with entity=entity %}
+    {% if entity.has_live_view %}
+      {% include "console/panes/entity_live_view_w_link.html" with entity=entity %}
     {% else %}
       <div class="stream-unavailable">Offline</div>
     {% endif %}

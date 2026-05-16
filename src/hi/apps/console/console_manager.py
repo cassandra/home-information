@@ -78,11 +78,6 @@ class ConsoleManager( Singleton, SettingsMixin, SensorResponseMixin ):
         
         return display_data_list
 
-    def get_video_stream_entity_list(self) -> List[Entity]:
-        """Legacy method - now extracts entities from camera control display data."""
-        display_data_list = self.get_camera_control_display_list()
-        return [data.entity for data in display_data_list]
-
     def _invalidate_camera_control_cache(self):
         """Invalidate cache when entity data changes."""
         self._camera_control_cache.clear()
@@ -91,14 +86,11 @@ class ConsoleManager( Singleton, SettingsMixin, SensorResponseMixin ):
     def _build_camera_control_display_list(self) -> List[CameraControlDisplayData]:
         """Build camera control display data with status entity states.
 
-        Listing context: includes the conjunction with is_disabled to
-        suppress disabled (e.g., disconnected) cameras from the camera
-        control list. Per-entity views still respect raw has_video_stream.
-        """
-        # Get entities with prefetched states in one efficient query
+        The displayable-live-view set is owned by the entity-domain
+        manager; this method adds display-specific prefetching and
+        ordering."""
         entity_list = list(
-            Entity.objects
-            .filter(has_video_stream=True, is_disabled=False)
+            EntityManager().get_displayable_live_view_entities()
             .prefetch_related('states')
             .order_by('name')
         )

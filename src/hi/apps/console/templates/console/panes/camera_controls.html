@@ -3,7 +3,7 @@
   <div class="row">
     {% for camera_data in camera_control_display_list %}
     <div class="w-50 pl-1 pb-1">
-      <a href="{% url 'console_entity_video_stream_dispatch' entity_id=camera_data.entity.id %}"
+      <a href="{% url 'console_entity_video_dispatch' entity_id=camera_data.entity.id %}"
          data-entity-id="{{ camera_data.entity.id }}"
          data-async="#main-content"
          class="btn btn-primary btn-control btn-camera"

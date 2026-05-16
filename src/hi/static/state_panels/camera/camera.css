@@ -31,16 +31,32 @@
     min-height: 60px;
 }
 
-/* The existing entity_video_stream wrapper renders an anchor + img. */
+/* The live-view wrapper renders an anchor that wraps a
+ * .video-container around the <img>. Both intermediate elements
+ * must carry height:100% so the <img>'s height:100% / object-fit
+ * resolves against the .stream box's aspect-ratio rather than the
+ * image's intrinsic height (which would otherwise overflow the
+ * 16:9 area and get bottom-clipped by overflow:hidden). */
 .hi-state-panel-camera .stream a {
     display: block;
     text-decoration: none;
+    width: 100%;
+    height: 100%;
+}
+.hi-state-panel-camera .stream .video-container {
+    width: 100%;
+    height: 100%;
 }
 .hi-state-panel-camera .stream .video-container img,
 .hi-state-panel-camera .stream img.img-fluid {
     width: 100%;
     height: 100%;
-    object-fit: cover;
+    /* ``contain`` rather than ``cover``: integrations produce
+     * arbitrary aspect ratios, and silently cropping pixels from
+     * the user's camera feed is the wrong default. Grid/list cards
+     * keep their fixed aspect-ratio cell for layout consistency;
+     * the image is letterboxed inside. */
+    object-fit: contain;
     display: block;
 }
 
@@ -48,9 +64,17 @@
 /* Modal layout                                                   */
 /* ============================================================== */
 
+/* Modal shows one camera at a time, so the box sizes to the image's
+ * natural aspect ratio — no cropping, no letterboxing. Grid/list
+ * contexts (below) keep their fixed aspect-ratio cell for layout
+ * consistency across cameras; ``object-fit: contain`` inherited from
+ * the base rule keeps each image whole inside its cell. */
 .hi-state-panel-camera--modal .stream {
-    aspect-ratio: 16 / 9;
     margin-bottom: 16px;
+}
+.hi-state-panel-camera--modal .stream .video-container img,
+.hi-state-panel-camera--modal .stream img.img-fluid {
+    height: auto;
 }
 
 /* ============================================================== */

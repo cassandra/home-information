@@ -56,6 +56,9 @@ class HassManager( SingletonManager, AggregateHealthProvider, ApiHealthStatusPro
         )
         self._latest_attrs_lock = threading.Lock()
 
+        # HI Entity.id -> HA wire entity_id, for camera-domain sensors.
+        self._entity_id_to_ha_state_id: Dict[ int, str ] = {}
+
         # Add self as the API health status provider to aggregate
         self.add_api_health_status_provider(self)
 
@@ -110,6 +113,7 @@ class HassManager( SingletonManager, AggregateHealthProvider, ApiHealthStatusPro
             self._hass_attr_type_to_attribute = self._load_attributes()
             self._hass_client = self.create_hass_client( self._hass_attr_type_to_attribute )
             self.clear_caches()
+            self._rebuild_entity_id_to_ha_state_id_map()
             self.record_healthy('Reloaded')
 
         except IntegrationDisabledError:
@@ -137,6 +141,18 @@ class HassManager( SingletonManager, AggregateHealthProvider, ApiHealthStatusPro
         with self._latest_attrs_lock:
             self._latest_attrs_by_entity_id.clear()
         return
+
+    def _rebuild_entity_id_to_ha_state_id_map(self):
+        from hi.apps.sense.models import Sensor
+        pairs = Sensor.objects.filter(
+            integration_id = HassMetaData.integration_id,
+            integration_name__startswith = f'{HassApi.CAMERA_DOMAIN}.',
+        ).values_list( 'entity_state__entity_id', 'integration_name' )
+        self._entity_id_to_ha_state_id = dict( pairs )
+        return
+
+    def get_ha_state_id_for_entity( self, entity ) -> Optional[ str ]:
+        return self._entity_id_to_ha_state_id.get( entity.id )
 
     def update_latest_attrs_cache( self, hass_state_map : Dict[ str, HassState ] ):
         """Refresh per-entity attributes from a polling snapshot.

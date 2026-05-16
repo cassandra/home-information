@@ -119,14 +119,14 @@ class StatusDisplayManager( Singleton, SensorResponseMixin ):
         # principals when the entity is a delegate.
         #
         entity_for_video = None
-        if entity.has_video_stream:
+        if entity.has_live_feed:
             entity_for_video = entity
-            
+
         entity_state_set = set( entity.states.all() )
         for entity_state_delegation in entity.entity_state_delegations.all():
             entity_state_set.add( entity_state_delegation.entity_state )
             if ( not entity_for_video
-                 and entity_state_delegation.entity_state.entity.has_video_stream ):
+                 and entity_state_delegation.entity_state.entity.has_live_feed ):
                 entity_for_video = entity_state_delegation.entity_state.entity
             continue
 

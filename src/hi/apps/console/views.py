@@ -7,7 +7,6 @@ from django.utils import timezone
 from hi.apps.entity.view_mixins import EntityViewMixin
 from hi.apps.sense.models import Sensor
 from hi.apps.sense.view_mixins import SenseViewMixin
-from hi.integrations.integration_manager import IntegrationManager
 
 from hi.enums import ViewType
 from hi.hi_async_view import HiModalView
@@ -19,7 +18,7 @@ from .enums import VideoDispatchType
 from .video_stream_browsing_helper import VideoStreamBrowsingHelper
 
 
-class EntityVideoStreamDispatchView( View, EntityViewMixin ):
+class EntityVideoDispatchView( View, EntityViewMixin ):
     """
     Simple dispatch view for camera sidebar navigation.
     Routes to existing views based on referrer context.
@@ -28,7 +27,7 @@ class EntityVideoStreamDispatchView( View, EntityViewMixin ):
     def get( self, request, *args, **kwargs ):
 
         if not request.view_parameters.view_type.is_video_browse:
-            return EntityVideoStreamView().get( request, **kwargs )
+            return EntityVideoView().get( request, **kwargs )
 
         entity = self.get_entity( request, *args, **kwargs )
         
@@ -44,7 +43,7 @@ class EntityVideoStreamDispatchView( View, EntityViewMixin ):
         
         # Route to appropriate view based on dispatch type
         if dispatch_result.dispatch_type == VideoDispatchType.LIVE_STREAM:
-            return EntityVideoStreamView().get( request, **kwargs )
+            return EntityVideoView().get( request, **kwargs )
         elif dispatch_result.dispatch_type == VideoDispatchType.HISTORY_EARLIER:
             return EntityVideoSensorHistoryEarlierView().get( request, **kwargs )
         elif dispatch_result.dispatch_type == VideoDispatchType.HISTORY_LATER:
@@ -53,7 +52,7 @@ class EntityVideoStreamDispatchView( View, EntityViewMixin ):
             return EntityVideoSensorHistoryView().get( request, **kwargs )
 
 
-class EntityVideoStreamView( HiGridView, EntityViewMixin ):
+class EntityVideoView( HiGridView, EntityViewMixin ):
     """View for displaying entity-based video streams."""
 
     def get_main_template_name( self ) -> str:
@@ -62,26 +61,16 @@ class EntityVideoStreamView( HiGridView, EntityViewMixin ):
     def get_main_template_context( self, request, *args, **kwargs ):
         entity = self.get_entity( request, *args, **kwargs )
 
-        # Check if entity has video stream capability
-        if not entity.has_video_stream:
-            raise BadRequest( 'Entity does not have video stream capability.' )
-
-        # Get the integration gateway for this entity (Do we really need this check?)
-        integration_gateway = IntegrationManager().get_integration_gateway( entity.integration_id )
-        if not integration_gateway:
-            raise BadRequest( 'Integration not available for video stream.' )
-
-        # Find the first sensor with video capability for history browsing
         video_sensor = VideoStreamBrowsingHelper.find_video_sensor_for_entity(entity)
 
-        if not video_sensor:
-            raise BadRequest( 'Entity does not have any video stream sensors.' )
-        
-        request.view_parameters.view_type = ViewType.ENTITY_VIDEO_STREAM
+        if not entity.has_live_view and not video_sensor:
+            raise BadRequest( 'Entity provides neither a live view nor a video timeline.' )
+
+        request.view_parameters.view_type = ViewType.ENTITY_VIDEO
         request.view_parameters.to_session( request )
         return {
             'entity': entity,
-            'video_sensor': video_sensor,  # May be None if no video sensors
+            'video_sensor': video_sensor,
         }
 
     

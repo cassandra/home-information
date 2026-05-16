@@ -1,12 +1,12 @@
 """
-Unit tests for IntegrationDetailsManager.
+Unit tests for IntegrationDetailsModelManager.
 """
 import logging
 
 from django.test import TransactionTestCase
 from django.db import models, connection
 
-from hi.integrations.managers import IntegrationDetailsManager
+from hi.integrations.managers import IntegrationDetailsModelManager
 from hi.integrations.models import IntegrationDetailsModel
 from hi.integrations.transient_models import IntegrationKey
 
@@ -14,7 +14,7 @@ logging.disable(logging.CRITICAL)
 
 
 class ManagerTestModel(IntegrationDetailsModel):
-    """Concrete test model for testing IntegrationDetailsManager."""
+    """Concrete test model for testing IntegrationDetailsModelManager."""
     
     name = models.CharField(max_length=64, default='test')
     
@@ -23,7 +23,7 @@ class ManagerTestModel(IntegrationDetailsModel):
 
 
 class IntegrationDetailsManagerTestCase(TransactionTestCase):
-    """Test cases for IntegrationDetailsManager functionality."""
+    """Test cases for IntegrationDetailsModelManager functionality."""
 
     def setUp(self):
         """Set up test data by creating table and test instances."""
@@ -305,9 +305,9 @@ class IntegrationDetailsManagerTestCase(TransactionTestCase):
         self.assertEqual(filtered_result.first().name, 'Extra Model')
 
     def test_manager_inheritance_and_usage(self):
-        """Test that IntegrationDetailsManager is properly inherited and used."""
-        # Verify that ManagerTestModel uses IntegrationDetailsManager
-        self.assertIsInstance(ManagerTestModel.objects, IntegrationDetailsManager)
+        """Test that IntegrationDetailsModelManager is properly inherited and used."""
+        # Verify that ManagerTestModel uses IntegrationDetailsModelManager
+        self.assertIsInstance(ManagerTestModel.objects, IntegrationDetailsModelManager)
         
         # Verify that manager methods exist and are callable
         self.assertTrue(hasattr(ManagerTestModel.objects, 'filter_by_integration_key'))

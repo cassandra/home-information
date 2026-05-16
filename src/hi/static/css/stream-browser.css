@@ -529,7 +529,8 @@
 }
 
 .video-interface-header.current-stream .entity-title,
-.video-interface-header.event-history .entity-title {
+.video-interface-header.event-history .entity-title,
+.video-interface-header.bg-primary .entity-title {
     color: inherit;
 }
 
@@ -547,7 +548,8 @@
     color: inherit;
 }
 
-.video-interface-header.event-history .last-activity-badge {
+.video-interface-header.event-history .last-activity-badge,
+.video-interface-header.bg-primary .last-activity-badge {
     background-color: rgba(255, 255, 255, 0.1);
     border-color: rgba(255, 255, 255, 0.2);
     color: inherit;
@@ -612,16 +614,26 @@
     border-color: rgba(255, 255, 255, 0.9);
 }
 
+/* Static snapshot uses ``bg-primary`` directly; mirror the active-tab
+ * inversion the named banner classes get. */
+.video-interface-header.bg-primary .video-nav-tab.active {
+    background-color: rgba(255, 255, 255, 0.9);
+    color: var(--primary-color);
+    border-color: rgba(255, 255, 255, 0.9);
+}
+
 /* Inactive tab styling for colored headers */
 .video-interface-header.current-stream .video-nav-tab:not(.active):not(.disabled),
-.video-interface-header.event-history .video-nav-tab:not(.active):not(.disabled) {
+.video-interface-header.event-history .video-nav-tab:not(.active):not(.disabled),
+.video-interface-header.bg-primary .video-nav-tab:not(.active):not(.disabled) {
     background-color: rgba(255, 255, 255, 0.1);
     color: rgba(255, 255, 255, 0.8);
     border-color: rgba(255, 255, 255, 0.2);
 }
 
 .video-interface-header.current-stream .video-nav-tab:hover:not(.disabled):not(.active),
-.video-interface-header.event-history .video-nav-tab:hover:not(.disabled):not(.active) {
+.video-interface-header.event-history .video-nav-tab:hover:not(.disabled):not(.active),
+.video-interface-header.bg-primary .video-nav-tab:hover:not(.disabled):not(.active) {
     background-color: rgba(255, 255, 255, 0.2);
     color: rgba(255, 255, 255, 1);
     border-color: rgba(255, 255, 255, 0.3);

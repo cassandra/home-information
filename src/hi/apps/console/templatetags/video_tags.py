@@ -1,5 +1,9 @@
 import logging
+import time
+
 from django import template
+
+from hi.integrations.integration_manager import IntegrationManager
 
 logger = logging.getLogger(__name__)
 
@@ -28,10 +32,7 @@ def sensor_response_video_stream(sensor_response):
 
         entity = sensor_response.sensor.entity_state.entity
 
-        # Get integration gateway for this entity
-        from hi.integrations.integration_manager import IntegrationManager
-        integration_manager = IntegrationManager()
-        gateway = integration_manager.get_integration_gateway(entity.integration_id)
+        gateway = IntegrationManager().get_integration_gateway(entity.integration_id)
 
         if not gateway:
             logger.warning(f"No integration gateway found for {entity.integration_id}")
@@ -66,21 +67,12 @@ def entity_video_stream(entity):
         return None
 
     try:
-        # Check if entity has video stream capability
-        if not entity.has_video_stream:
-            logger.debug(f"Entity {entity.id} does not have video stream capability")
-            return None
-
-        # Get integration gateway for this entity
-        from hi.integrations.integration_manager import IntegrationManager
-        integration_manager = IntegrationManager()
-        gateway = integration_manager.get_integration_gateway(entity.integration_id)
+        gateway = IntegrationManager().get_integration_gateway(entity.integration_id)
 
         if not gateway:
             logger.warning(f"No integration gateway found for {entity.integration_id}")
             return None
-            
-        # Get live video stream
+
         video_stream = gateway.get_entity_video_stream(entity)
 
         if video_stream:
@@ -88,7 +80,41 @@ def entity_video_stream(entity):
 
         logger.debug(f"No video stream available for entity {entity.id}")
         return None
-        
+
     except Exception as e:
         logger.error(f"Error getting video stream for entity {entity.id}: {e}")
+        return None
+
+
+@register.simple_tag
+def cache_bust_url(url):
+    """Append a unique cache-busting query parameter so each template
+    render produces a distinct URL. Snapshot URLs are otherwise stable
+    enough (ZM uses 1-second resolution; HA's access_token rotates only
+    every few minutes) that the browser serves a stale image when an
+    async partial-DOM update revisits the same camera."""
+    if not url:
+        return url
+    sep = '&' if '?' in url else '?'
+    return f'{url}{sep}_cb={time.time_ns()}'
+
+
+@register.simple_tag
+def entity_video_snapshot(entity):
+    """Get the current still-image snapshot for an entity, if available.
+
+    Returns a ``VideoSnapshot`` (with ``source_url``) or ``None``.
+    Parallel to ``entity_video_stream`` but for the snapshot capability.
+    """
+    if not entity:
+        return None
+
+    try:
+        gateway = IntegrationManager().get_integration_gateway(entity.integration_id)
+        if not gateway:
+            logger.warning(f"No integration gateway found for {entity.integration_id}")
+            return None
+        return gateway.get_entity_video_snapshot(entity)
+    except Exception as e:
+        logger.error(f"Error getting video snapshot for entity {entity.id}: {e}")
         return None

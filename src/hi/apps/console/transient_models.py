@@ -65,7 +65,7 @@ class VideoDispatchResult:
     Encapsulates the dispatch type and all necessary parameters for routing.
     """
     dispatch_type      : VideoDispatchType
-    sensor             : Sensor
+    sensor             : Optional[Sensor] = None  # None for live-stream-only entities (e.g., snapshot-only)
     timestamp          : Optional[int] = None  # Unix timestamp for earlier/later views
     window_start       : Optional[int] = None  # Window start timestamp for context preservation
     window_end         : Optional[int] = None  # Window end timestamp for context preservation
@@ -89,13 +89,15 @@ class VideoDispatchResult:
         Get the kwargs needed for the target view.
         Returns dict suitable for updating request kwargs.
         """
-        kwargs = { 'sensor_id': self.sensor.id }
-        
+        kwargs = {}
+        if self.sensor is not None:
+            kwargs['sensor_id'] = self.sensor.id
+
         if self.timestamp is not None:
             kwargs['timestamp'] = self.timestamp
         if self.window_start is not None:
             kwargs['window_start'] = self.window_start
         if self.window_end is not None:
             kwargs['window_end'] = self.window_end
-            
+
         return kwargs
