@@ -1,9 +1,6 @@
 import logging
-import tempfile
-import shutil
 
 from django.core.files.uploadedfile import SimpleUploadedFile
-from django.test import override_settings
 from django.urls import reverse
 
 from hi.apps.collection.collection_manager import CollectionManager
@@ -29,20 +26,10 @@ class TestLocationAddView(DualModeViewTestCase):
         # Set edit mode (required by decorator)
         self.setSessionViewMode(ViewMode.EDIT)
         
-        # Set up isolated MEDIA_ROOT for file upload tests
-        self._temp_media_dir = tempfile.mkdtemp()
-        self._settings_patcher = override_settings(MEDIA_ROOT=self._temp_media_dir)
-        self._settings_patcher.enable()
+        self.enterContext(self.in_memory_media_storage())
 
     def tearDown(self):
         """Clean up singletons when using real objects instead of mocks."""
-        # Clean up the temporary media directory and settings
-        if hasattr(self, '_settings_patcher'):
-            self._settings_patcher.disable()
-        if hasattr(self, '_temp_media_dir'):
-            shutil.rmtree(self._temp_media_dir, ignore_errors=True)
-            
-        # Reset singleton managers to ensure clean state between tests
         try:
             LocationManager._instance = None
         except ImportError:
@@ -174,15 +161,9 @@ class TestLocationAddFirstView(DualModeViewTestCase):
     def setUp(self):
         super().setUp()
         self.setSessionViewMode(ViewMode.EDIT)
-        self._temp_media_dir = tempfile.mkdtemp()
-        self._settings_patcher = override_settings(MEDIA_ROOT=self._temp_media_dir)
-        self._settings_patcher.enable()
+        self.enterContext(self.in_memory_media_storage())
 
     def tearDown(self):
-        if hasattr(self, '_settings_patcher'):
-            self._settings_patcher.disable()
-        if hasattr(self, '_temp_media_dir'):
-            shutil.rmtree(self._temp_media_dir, ignore_errors=True)
         LocationManager._instance = None
         CollectionManager._instance = None
         EntityManager._instance = None
@@ -223,9 +204,7 @@ class TestLocationSvgReplaceView(DualModeViewTestCase):
         self.setSessionViewMode(ViewMode.EDIT)
         
         # Create temporary media root for this test class
-        self._temp_media_dir = tempfile.mkdtemp()
-        self._settings_patcher = override_settings(MEDIA_ROOT=self._temp_media_dir)
-        self._settings_patcher.enable()
+        self.enterContext(self.in_memory_media_storage())
         
         # Create test location
         self.location = Location.objects.create(
@@ -234,14 +213,6 @@ class TestLocationSvgReplaceView(DualModeViewTestCase):
             svg_view_box_str='0 0 100 100'
         )
     
-    def tearDown(self):
-        # Clean up the temporary media directory and settings
-        if hasattr(self, '_settings_patcher'):
-            self._settings_patcher.disable()
-        if hasattr(self, '_temp_media_dir'):
-            import shutil
-            shutil.rmtree(self._temp_media_dir, ignore_errors=True)
-        super().tearDown()
 
     def test_get_svg_replace_form(self):
         """Test getting SVG replace form."""

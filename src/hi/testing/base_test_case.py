@@ -98,20 +98,52 @@ class BaseTestCase(TestCase):
     def isolated_media_root(self):
         """
         Context manager for isolated MEDIA_ROOT testing.
-        
+
         Creates a temporary directory for MEDIA_ROOT to ensure tests don't
         pollute the production media directory with test files.
-        
+
         Usage:
             with self.isolated_media_root() as temp_media:
                 # Test file operations here
                 # Files will be written to temp_media, not production MEDIA_ROOT
                 pass
                 # Temporary directory is automatically cleaned up
+
+        Prefer ``in_memory_media_storage()`` for tests that only need
+        Django's ``default_storage`` abstraction.
         """
         with tempfile.TemporaryDirectory() as temp_media_root:
             with self.settings(MEDIA_ROOT=temp_media_root):
                 yield temp_media_root
+
+    @contextmanager
+    def in_memory_media_storage(self):
+        """Swap the default file storage for ``InMemoryStorage`` so
+        tests using ``default_storage`` skip filesystem I/O entirely.
+        Drop-in for ``isolated_media_root`` when the test never
+        touches real paths (``os.path.exists`` / raw ``open()``);
+        for those cases assert via ``default_storage`` instead.
+
+        Usage (context manager):
+            with self.in_memory_media_storage():
+                ...
+
+        Usage (setUp, Python 3.11+):
+            def setUp(self):
+                super().setUp()
+                self.enterContext(self.in_memory_media_storage())
+        """
+        with self.settings(
+            STORAGES = {
+                'default': {
+                    'BACKEND': 'django.core.files.storage.InMemoryStorage',
+                },
+                'staticfiles': {
+                    'BACKEND': 'django.contrib.staticfiles.storage.StaticFilesStorage',
+                },
+            },
+        ):
+            yield
     
     def create_test_text_file(self, filename='test_file.txt', content='test content'):
         """

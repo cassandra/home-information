@@ -1,11 +1,8 @@
 import logging
-import tempfile
-import shutil
 from unittest.mock import patch
 
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.db import transaction
-from django.test import override_settings
 from django.urls import reverse
 
 from hi.apps.attribute.enums import AttributeValueType
@@ -33,10 +30,7 @@ class TestEntityEditView(DualModeViewTestCase):
 
     def setUp(self):
         super().setUp()
-        # Set up isolated MEDIA_ROOT for file upload tests
-        self._temp_media_dir = tempfile.mkdtemp()
-        self._settings_patcher = override_settings(MEDIA_ROOT=self._temp_media_dir)
-        self._settings_patcher.enable()
+        self.enterContext(self.in_memory_media_storage())
         
         # Create test data using synthetic data helper
         self.entity = EntityAttributeSyntheticData.create_test_entity(
@@ -53,13 +47,6 @@ class TestEntityEditView(DualModeViewTestCase):
             name='manual'
         )
     
-    def tearDown(self):
-        # Clean up the temporary media directory and settings
-        if hasattr(self, '_settings_patcher'):
-            self._settings_patcher.disable()
-        if hasattr(self, '_temp_media_dir'):
-            shutil.rmtree(self._temp_media_dir, ignore_errors=True)
-        super().tearDown()
 
     def test_get_modal_displays_entity_edit_form(self):
         """Test that GET request displays entity edit modal with forms."""
@@ -527,10 +514,7 @@ class TestEntityAttributeUploadView(SyncViewTestCase):
 
     def setUp(self):
         super().setUp()
-        # Set up isolated MEDIA_ROOT for file upload tests
-        self._temp_media_dir = tempfile.mkdtemp()
-        self._settings_patcher = override_settings(MEDIA_ROOT=self._temp_media_dir)
-        self._settings_patcher.enable()
+        self.enterContext(self.in_memory_media_storage())
         
         # Create test entity
         self.entity = Entity.objects.create(
@@ -540,13 +524,6 @@ class TestEntityAttributeUploadView(SyncViewTestCase):
             entity_type_str=str(EntityType.CAMERA)
         )
     
-    def tearDown(self):
-        # Clean up the temporary media directory and settings
-        if hasattr(self, '_settings_patcher'):
-            self._settings_patcher.disable()
-        if hasattr(self, '_temp_media_dir'):
-            shutil.rmtree(self._temp_media_dir, ignore_errors=True)
-        super().tearDown()
 
     def test_post_valid_file_upload(self):
         """Test successful file upload using real form."""
@@ -854,23 +831,13 @@ class TestEntityEditViewFileUploadIntegration(DualModeViewTestCase):
 
     def setUp(self):
         super().setUp()
-        # Set up isolated MEDIA_ROOT for file upload tests
-        self._temp_media_dir = tempfile.mkdtemp()
-        self._settings_patcher = override_settings(MEDIA_ROOT=self._temp_media_dir)
-        self._settings_patcher.enable()
+        self.enterContext(self.in_memory_media_storage())
         
         self.entity = EntityAttributeSyntheticData.create_test_entity(
             name='File Upload Test Entity',
             entity_type_str=str(EntityType.CAMERA)
         )
     
-    def tearDown(self):
-        # Clean up the temporary media directory and settings
-        if hasattr(self, '_settings_patcher'):
-            self._settings_patcher.disable()
-        if hasattr(self, '_temp_media_dir'):
-            shutil.rmtree(self._temp_media_dir, ignore_errors=True)
-        super().tearDown()
 
     def test_file_upload_creates_attribute_and_updates_dom(self):
         """Test complete file upload flow from upload to DOM update."""
