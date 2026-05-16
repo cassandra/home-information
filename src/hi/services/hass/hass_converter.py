@@ -542,9 +542,11 @@ class HassConverter:
 
             # Integration-owned: re-applied on both fresh-create and
             # reconnect so the entity reflects current upstream state.
+            is_camera = HassApi.CAMERA_DOMAIN in hass_device.domain_set
             entity.integration_key = entity_integration_key
             entity.can_user_delete = HassMetaData.allow_entity_deletion
-            entity.has_video_snapshot = HassApi.CAMERA_DOMAIN in hass_device.domain_set
+            entity.has_video_snapshot = is_camera
+            entity.video_snapshot_stream_fps = 1.0 if is_camera else None
             entity.save()
             
             insteon_address = cls.hass_device_to_insteon_address( hass_device )
@@ -588,12 +590,18 @@ class HassConverter:
             # Re-derive integration-owned capability flags from the
             # current upstream device shape. Self-healing if HA's
             # domain composition changes (e.g., a paired motion sensor
-            # added or removed), and the only point where pre-PR HA
-            # cameras pick up has_video_snapshot=True.
-            has_video_snapshot = HassApi.CAMERA_DOMAIN in hass_device.domain_set
-            if entity.has_video_snapshot != has_video_snapshot:
-                entity.has_video_snapshot = has_video_snapshot
-                entity.save( update_fields = [ 'has_video_snapshot' ] )
+            # added or removed).
+            is_camera = HassApi.CAMERA_DOMAIN in hass_device.domain_set
+            expected_fps = 1.0 if is_camera else None
+            update_fields = []
+            if entity.has_video_snapshot != is_camera:
+                entity.has_video_snapshot = is_camera
+                update_fields.append( 'has_video_snapshot' )
+            if entity.video_snapshot_stream_fps != expected_fps:
+                entity.video_snapshot_stream_fps = expected_fps
+                update_fields.append( 'video_snapshot_stream_fps' )
+            if update_fields:
+                entity.save( update_fields = update_fields )
 
             insteon_address = cls.hass_device_to_insteon_address( hass_device )
             try:
