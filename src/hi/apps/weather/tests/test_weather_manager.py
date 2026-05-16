@@ -27,13 +27,13 @@ from hi.apps.weather.enums import (
 )
 from hi.units import UnitQuantity
 
-from hi.testing.async_task_utils import AsyncTaskTestCase
+from hi.testing.async_task_utils import AsyncTaskFastTestCase
 from hi.apps.weather.tests.synthetic_data import WeatherSyntheticData
 
 logging.disable(logging.CRITICAL)
 
 
-class TestWeatherManager( AsyncTaskTestCase ):
+class TestWeatherManager( AsyncTaskFastTestCase ):
     
     def _create_test_weather_data(self, priority, time_offset_secs, temperature_value, is_null=False):
         """Helper to create test weather data with specified parameters."""

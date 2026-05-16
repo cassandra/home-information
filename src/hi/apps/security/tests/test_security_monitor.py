@@ -1,7 +1,7 @@
 import logging
 from unittest.mock import Mock, patch, AsyncMock
 
-from hi.testing.async_task_utils import AsyncTaskTestCase
+from hi.testing.async_task_utils import AsyncTaskFastTestCase
 
 import hi.apps.common.datetimeproxy as datetimeproxy
 from hi.apps.security.enums import SecurityState
@@ -11,7 +11,7 @@ from hi.apps.security.settings import SecuritySetting
 logging.disable(logging.CRITICAL)
 
 
-class TestSecurityMonitor(AsyncTaskTestCase):
+class TestSecurityMonitor(AsyncTaskFastTestCase):
     """Test SecurityMonitor async behavior and time-based transitions.
     
     Uses AsyncTaskTestCase to avoid database locking issues with async code.

@@ -4,7 +4,7 @@ import threading
 from unittest.mock import Mock, patch, MagicMock
 
 from django.test import override_settings
-from hi.testing.async_task_utils import AsyncTaskTestCase
+from hi.testing.async_task_utils import AsyncTaskFastTestCase
 
 from hi.apps.monitor.monitor_manager import AppMonitorManager
 from hi.apps.monitor.periodic_monitor import PeriodicMonitor
@@ -30,7 +30,7 @@ class TestMonitor2(PeriodicMonitor):
         pass
 
 
-class TestAppMonitorManager(AsyncTaskTestCase):
+class TestAppMonitorManager(AsyncTaskFastTestCase):
     """Test AppMonitorManager singleton and async behavior.
     
     Uses AsyncTaskTestCase for async compatibility.

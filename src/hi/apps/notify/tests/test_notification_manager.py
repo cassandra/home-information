@@ -1,6 +1,6 @@
 import logging
 from unittest.mock import AsyncMock, Mock, patch
-from hi.testing.async_task_utils import AsyncTaskTestCase
+from hi.testing.async_task_utils import AsyncTaskFastTestCase
 
 from hi.apps.notify.notification_manager import NotificationManager
 from hi.apps.notify.settings import NotifySetting
@@ -11,7 +11,7 @@ from hi.apps.notify.transient_models import NotificationMaintenanceResult as Mai
 logging.disable(logging.CRITICAL)
 
 
-class AsyncManagerTestCase(AsyncTaskTestCase):
+class AsyncManagerTestCase(AsyncTaskFastTestCase):
     """Base class for async manager tests with proper infrastructure."""
 
 

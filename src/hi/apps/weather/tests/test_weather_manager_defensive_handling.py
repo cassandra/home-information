@@ -15,7 +15,7 @@ from hi.apps.weather.transient_models import WeatherConditionsData, NumericDataP
 from hi.apps.weather.weather_data_source import WeatherDataSource
 from hi.transient_models import GeographicLocation
 from hi.units import UnitQuantity
-from hi.testing.async_task_utils import AsyncTaskTestCase
+from hi.testing.async_task_utils import AsyncTaskFastTestCase
 
 logging.disable(logging.CRITICAL)
 
@@ -56,7 +56,7 @@ class MockWeatherDataSource(WeatherDataSource):
         pass
 
 
-class TestWeatherManagerDefensiveHandling(AsyncTaskTestCase):
+class TestWeatherManagerDefensiveHandling(AsyncTaskFastTestCase):
     """Test defensive error handling for daily weather tracking."""
     
     def setUp(self):
