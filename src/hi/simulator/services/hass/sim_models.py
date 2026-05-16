@@ -1,5 +1,6 @@
 import base64
 from dataclasses import dataclass, field
+import hashlib
 import os
 import time
 from typing import ClassVar, Dict, List, Tuple
@@ -2810,7 +2811,179 @@ class HassThermostatHvacActionState( HassState ):
         return { 'hvac_action': self.value }
 
 
+# ===== Generic Camera =====
+#
+# Universal-feature HA camera: snapshot via
+# ``entity_picture`` / ``access_token``, discrete camera mode, and
+# (in the full variant) a paired motion ``binary_sensor.X_motion``.
+# See ``api_composers._camera`` for the multi-state-to-HA-entity
+# collapse.
+
+
+def _camera_access_token( entity_id_suffix : str ) -> str:
+    """Per-entity stable access token in HA's 32-hex-char shape.
+    Stable across simulator restarts so HI integrations holding a
+    previously-issued URL still resolve; real HA rotates the token
+    on state change, which the simulator deliberately doesn't model
+    until the HA integration's token-rotation handling needs an
+    explicit test surface."""
+    seed = f'hi-sim-camera::{entity_id_suffix}'
+    return hashlib.sha256( seed.encode() ).hexdigest()[ :32 ]
+
+
+@dataclass( frozen = True )
+class HassCameraSimEntityFields( SimEntityFields ):
+    """Operator-configurable fields for a Generic Camera. The
+    ``entity_id_suffix`` becomes the entity's HA identifier stem
+    (e.g., ``front_door`` → ``camera.front_door`` +
+    ``binary_sensor.front_door_motion``)."""
+
+    entity_id_suffix : str = 'sim_camera_1'
+    brand            : str = 'Generic'
+    model_name       : str = 'SimCam'
+
+
+@dataclass( frozen = True )
+class HassCameraNoMotionSimEntityFields( HassCameraSimEntityFields ):
+    """Variant of the generic camera with no paired motion
+    ``binary_sensor``. Some HA camera integrations don't expose one
+    (basic MJPEG cameras, certain doorbells); modeling both shapes
+    lets HI's integration logic be exercised against either."""
+    pass
+
+
+@dataclass
+class HassCameraState( HassState ):
+    """Camera-mode primary state. Renders as ``camera.X`` with HA's
+    canonical camera attributes (``access_token``, ``entity_picture``,
+    ``frontend_stream_type``, brand/model). The ``motion_detection``
+    attribute is contributed by the sibling
+    ``HassCameraMotionDetectionState`` via the composer; not added
+    here."""
+
+    sim_entity_fields  : HassCameraSimEntityFields
+    sim_state_type     : SimStateType                 = SimStateType.DISCRETE
+    sim_state_id       : str                          = 'camera_mode'
+    value              : str                          = 'idle'
+
+    CAMERA_MODE_CHOICES : ClassVar[ List[ Tuple[ str, str ] ] ] = [
+        ( 'idle'      , 'Idle' ),
+        ( 'streaming' , 'Streaming' ),
+        ( 'recording' , 'Recording' ),
+    ]
+
+    @property
+    def name(self):
+        return f'{self.entity_name} Mode'
+
+    @property
+    def entity_id(self):
+        return f'camera.{self.sim_entity_fields.entity_id_suffix}'
+
+    @property
+    def state(self):
+        return self.value
+
+    @property
+    def choices(self) -> List[ Tuple[ str, str ] ]:
+        return self.CAMERA_MODE_CHOICES
+
+    @property
+    def attributes(self) -> Dict[ str, str ]:
+        token = _camera_access_token( self.sim_entity_fields.entity_id_suffix )
+        return {
+            'access_token'         : token,
+            'entity_picture'       : f'/api/camera_proxy/{self.entity_id}?token={token}',
+            'frontend_stream_type' : 'mjpeg',
+            'brand'                : self.sim_entity_fields.brand,
+            'model_name'           : self.sim_entity_fields.model_name,
+            'friendly_name'        : self.entity_name,
+        }
+
+
+@dataclass
+class HassCameraMotionDetectionState( HassState ):
+    """Toggleable motion-detection flag on the camera. Not emitted as
+    its own HA entity — the composer folds its value into the parent
+    camera entity's ``motion_detection`` attribute. ``entity_id`` is a
+    placeholder used only for the framework's per-state book-keeping;
+    it never reaches the ``/api/states`` response."""
+
+    sim_entity_fields  : HassCameraSimEntityFields
+    sim_state_type     : SimStateType                 = SimStateType.ON_OFF
+    sim_state_id       : str                          = 'motion_detection'
+    value              : str                          = 'on'
+
+    @property
+    def name(self):
+        return f'{self.entity_name} Motion Detection'
+
+    @property
+    def entity_id(self):
+        # Composer-only placeholder; never emitted.
+        return f'_internal.camera_motion_detection.{self.sim_entity_fields.entity_id_suffix}'
+
+    @property
+    def state(self):
+        return 'on' if str_to_bool( self.value ) else 'off'
+
+    @property
+    def attributes(self) -> Dict[ str, str ]:
+        # Camera composer reads this and merges it into the camera's
+        # attributes as ``motion_detection``.
+        return { 'motion_detection': str_to_bool( self.value ) }
+
+
+@dataclass
+class HassCameraMotionState( HassState ):
+    """Paired motion ``binary_sensor.X_motion``. Renders as its own HA
+    entity (the composer does NOT fold it into the camera), mirroring
+    HA's reality where the camera and motion sensor are paired but
+    separate entities."""
+
+    sim_entity_fields  : HassCameraSimEntityFields
+    sim_state_type     : SimStateType                 = SimStateType.MOVEMENT
+    sim_state_id       : str                          = 'motion'
+
+    @property
+    def name(self):
+        return f'{self.entity_name} Motion'
+
+    @property
+    def entity_id(self):
+        return f'binary_sensor.{self.sim_entity_fields.entity_id_suffix}_motion'
+
+    @property
+    def state(self):
+        return 'on' if str_to_bool( self.value ) else 'off'
+
+    @property
+    def attributes(self) -> Dict[ str, str ]:
+        return {
+            'device_class' : 'motion',
+            'friendly_name': self.name,
+        }
+
+
 HASS_SIM_ENTITY_DEFINITION_LIST = [
+    SimEntityDefinition(
+        class_label = 'Generic Camera',
+        sim_entity_type = SimEntityType.CAMERA,
+        sim_entity_fields_class = HassCameraSimEntityFields,
+        sim_state_class_list = [
+            HassCameraState,
+            HassCameraMotionDetectionState,
+            HassCameraMotionState,
+        ],
+    ),
+    SimEntityDefinition(
+        class_label = 'Generic Camera (no motion sensor)',
+        sim_entity_type = SimEntityType.CAMERA,
+        sim_entity_fields_class = HassCameraNoMotionSimEntityFields,
+        sim_state_class_list = [
+            HassCameraState,
+        ],
+    ),
     SimEntityDefinition(
         class_label = 'Insteon Switch',
         sim_entity_type = SimEntityType.LIGHT,

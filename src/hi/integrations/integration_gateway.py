@@ -1,7 +1,7 @@
 from typing import List, Optional
 
 from hi.apps.entity.models import Entity
-from hi.apps.entity.transient_models import VideoStream
+from hi.apps.entity.transient_models import VideoSnapshot, VideoStream
 from hi.apps.monitor.periodic_monitor import PeriodicMonitor
 from hi.apps.sense.transient_models import SensorResponse
 from hi.apps.system.health_status_provider import HealthStatusProvider
@@ -88,7 +88,10 @@ class IntegrationGateway:
     
     def get_entity_video_stream(self, entity: Entity) -> Optional[VideoStream]:
         return None
-        
+
+    def get_entity_video_snapshot(self, entity: Entity) -> Optional[VideoSnapshot]:
+        return None
+
     def get_sensor_response_video_stream(
             self,
             sensor_response: SensorResponse) -> Optional[VideoStream]:

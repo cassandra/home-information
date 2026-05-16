@@ -2,7 +2,7 @@ import logging
 from typing import List, Optional
 
 from hi.apps.entity.models import Entity
-from hi.apps.entity.transient_models import VideoStream
+from hi.apps.entity.transient_models import VideoSnapshot, VideoStream
 from hi.apps.entity.enums import VideoStreamType, VideoStreamMode
 from hi.apps.entity.constants import VideoStreamMetadataKeys
 from hi.apps.sense.transient_models import SensorResponse
@@ -96,6 +96,34 @@ class ZoneMinderGateway( IntegrationGateway, ZoneMinderMixin ):
             logger.exception(f'Error in ZoneMinder connection test: {e}')
             return ConnectionTestResult.failure(f'Connection test error: {e}')
     
+    def get_entity_video_snapshot(self, entity: Entity) -> Optional[VideoSnapshot]:
+        """Return a fresh still frame for the ZoneMinder monitor backing
+        this entity (``nph-zms?mode=single``). Returns None when the
+        entity isn't a ZM monitor or the integration_name can't be
+        parsed."""
+        if not entity.has_video_snapshot:
+            return None
+
+        if not ( entity.integration_id == ZmMetaData.integration_id
+                 and entity.integration_name
+                 and entity.integration_name.startswith(
+                     self.zm_manager().ZM_MONITOR_INTEGRATION_NAME_PREFIX )):
+            return None
+
+        try:
+            monitor_id = int( entity.integration_name.split('.')[1] )
+        except ( IndexError, ValueError ):
+            logger.warning(
+                f'Could not parse monitor ID from entity integration name: '
+                f'{entity.integration_name}'
+            )
+            return None
+
+        return VideoSnapshot(
+            source_url = self.zm_manager().get_video_snapshot_url( monitor_id ),
+            metadata = { 'monitor_id': monitor_id },
+        )
+
     def get_entity_video_stream(self, entity: Entity) -> Optional[VideoStream]:
         """Get entity's primary video stream (typically live)"""
         if not entity.has_video_stream:

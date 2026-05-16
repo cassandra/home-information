@@ -733,9 +733,68 @@ class TestHassManagerProperties(TestCase):
         """Test clear_caches method exists and is callable"""
         # Should not raise exception
         self.manager.clear_caches()
-        
+
         # Method should be callable
         self.assertTrue(callable(self.manager.clear_caches))
+
+
+class TestHassManagerLatestAttrsCache(TestCase):
+    """Selective-insert policy: only camera-domain entities populate
+    the cache. The downstream consumer is the snapshot gateway, so
+    caching states from other domains would burn slots needlessly."""
+
+    def setUp(self):
+        HassManager._instance = None
+        HassManager._lock = threading.Lock()
+        self.manager = HassManager()
+
+    def _state(self, entity_id, attributes=None):
+        s = Mock()
+        s.entity_id = entity_id
+        s.domain = entity_id.split('.')[0]
+        s.attributes = attributes or {}
+        return s
+
+    def test_only_camera_domain_states_populate_cache(self):
+        states = {
+            'camera.front_door': self._state(
+                'camera.front_door',
+                {'entity_picture': '/api/camera_proxy/camera.front_door?token=x'},
+            ),
+            'light.kitchen': self._state('light.kitchen', {'brightness': 128}),
+            'sensor.temp': self._state('sensor.temp', {'unit': 'C'}),
+            'binary_sensor.motion': self._state('binary_sensor.motion'),
+        }
+
+        self.manager.update_latest_attrs_cache(states)
+
+        self.assertIsNotNone(self.manager.get_latest_attrs('camera.front_door'))
+        self.assertIsNone(self.manager.get_latest_attrs('light.kitchen'))
+        self.assertIsNone(self.manager.get_latest_attrs('sensor.temp'))
+        self.assertIsNone(self.manager.get_latest_attrs('binary_sensor.motion'))
+
+    def test_cache_stores_a_snapshot_not_a_reference(self):
+        """A subsequent mutation of the upstream state's attributes
+        must not leak into the cached dict; consumers rely on the
+        cached value matching the poll-time snapshot."""
+        attrs = {'entity_picture': '/api/camera_proxy/camera.front_door?token=v1'}
+        state = self._state('camera.front_door', attrs)
+
+        self.manager.update_latest_attrs_cache({'camera.front_door': state})
+        attrs['entity_picture'] = '/api/camera_proxy/camera.front_door?token=MUTATED'
+
+        cached = self.manager.get_latest_attrs('camera.front_door')
+        self.assertEqual(
+            cached['entity_picture'],
+            '/api/camera_proxy/camera.front_door?token=v1',
+        )
+
+    def test_clear_caches_drops_cached_attrs(self):
+        self.manager.update_latest_attrs_cache({
+            'camera.front_door': self._state('camera.front_door', {'k': 'v'}),
+        })
+        self.manager.clear_caches()
+        self.assertIsNone(self.manager.get_latest_attrs('camera.front_door'))
 
 
 class TestHassManagerIntegrationBoundaries(TestCase):

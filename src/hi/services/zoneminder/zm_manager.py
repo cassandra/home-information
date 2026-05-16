@@ -372,6 +372,19 @@ class ZoneMinderManager( SingletonManager, AggregateHealthProvider, ApiHealthSta
         import time
         timestamp = int(time.time())
         return f'{self.zm_client.portal_url}/cgi-bin/nph-zms?mode=jpeg&scale=100&rate=5&maxfps=5&replay=single&source=event&event={event_id}&_t={timestamp}'
+
+    def get_video_snapshot_url( self, monitor_id : int ):
+        """Return a URL to a single still frame for the monitor's
+        current view (ZoneMinder's ``mode=single`` variant). Cache-bust
+        with a timestamp so each call returns a fresh image rather than
+        a cached prior response."""
+        import time
+        timestamp = int(time.time())
+        return (
+            f'{self.zm_client.portal_url}/cgi-bin/nph-zms'
+            f'?mode=single&scale=100&monitor={monitor_id}'
+            f'&_t={timestamp}'
+        )
         
     def test_client_with_attributes(
             self,

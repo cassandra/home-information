@@ -332,6 +332,7 @@ class ZoneMinderSynchronizer( IntegrationSynchronizer, ZoneMinderMixin ):
             entity.integration_key = entity_integration_key
             entity.can_user_delete = ZmMetaData.allow_entity_deletion
             entity.has_video_stream = True
+            entity.has_video_snapshot = True
             entity.save()
 
             movement_sensor = HiModelHelper.create_movement_sensor(
@@ -375,11 +376,20 @@ class ZoneMinderSynchronizer( IntegrationSynchronizer, ZoneMinderMixin ):
         (``can_add_custom_attributes`` defaults to True), so it's
         treated as user-owned after creation: this method does not
         touch it on update. ZM monitor renames upstream are not
-        propagated; the operator's chosen name stays. The method is
-        currently a no-op stub kept for the symmetry of the sync
-        flow's create/update/remove dispatch — future
-        integration-owned per-entity fields would land here.
+        propagated; the operator's chosen name stays.
         """
+        # Re-apply integration-owned capability flags. Every ZM
+        # monitor is a camera, so both flags are unconditionally True;
+        # the conditional save avoids spurious writes.
+        update_fields = []
+        if not entity.has_video_stream:
+            entity.has_video_stream = True
+            update_fields.append( 'has_video_stream' )
+        if not entity.has_video_snapshot:
+            entity.has_video_snapshot = True
+            update_fields.append( 'has_video_snapshot' )
+        if update_fields:
+            entity.save( update_fields = update_fields )
         return
     
     def _remove_entity( self,

@@ -74,6 +74,8 @@ from django.db import transaction
 from hi.simulator.enums import SimEntityType
 from hi.simulator.models import DbSimEntity, SimProfile
 from hi.simulator.services.hass.sim_models import (
+    HassCameraNoMotionSimEntityFields,
+    HassCameraSimEntityFields,
     HassCarbonMonoxideDetectorFields,
     HassColorSmartBulbFields,
     HassFanFields,
@@ -362,6 +364,8 @@ class Command(BaseCommand):
 
     def _build_hass_zoo(self, profile: SimProfile) -> int:
         # One of every HASS sim entity definition type.
+        self._add_hass_camera(           profile, 'Zoo Camera'          , 'zoo_camera' )
+        self._add_hass_camera_no_motion( profile, 'Zoo Camera No Motion', 'zoo_camera_no_motion' )
         self._add_hass_light_switch(   profile, 'Zoo Insteon Light Switch'     , '01.BB.01' )
         self._add_hass_dimmer(         profile, 'Zoo Insteon Dimmer'           , '01.BB.02' )
         self._add_hass_dual_band(      profile, 'Zoo Insteon Dual Band Switch' , '01.BB.03' )
@@ -662,6 +666,30 @@ class Command(BaseCommand):
             fields_class = HassSwitchFields,
             sim_entity_type = SimEntityType.WALL_SWITCH,
             fields_kwargs = {'name': name},
+        )
+
+    def _add_hass_camera(self, profile, name, entity_id_suffix):
+        self._create_db_entity(
+            profile = profile,
+            simulator_id = 'hass',
+            fields_class = HassCameraSimEntityFields,
+            sim_entity_type = SimEntityType.CAMERA,
+            fields_kwargs = {
+                'name': name,
+                'entity_id_suffix': entity_id_suffix,
+            },
+        )
+
+    def _add_hass_camera_no_motion(self, profile, name, entity_id_suffix):
+        self._create_db_entity(
+            profile = profile,
+            simulator_id = 'hass',
+            fields_class = HassCameraNoMotionSimEntityFields,
+            sim_entity_type = SimEntityType.CAMERA,
+            fields_kwargs = {
+                'name': name,
+                'entity_id_suffix': entity_id_suffix,
+            },
         )
 
     def _add_hass_basic_outlet(self, profile, name):

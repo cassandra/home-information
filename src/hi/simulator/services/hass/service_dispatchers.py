@@ -30,6 +30,8 @@ from hi.simulator.enums import SimStateType
 
 from .unit_translation import UnitTranslationHelper
 from .sim_models import (
+    HassCameraNoMotionSimEntityFields,
+    HassCameraSimEntityFields,
     HassColorSmartBulbFields,
     HassFanFields,
     HassGarageCoverFields,
@@ -391,9 +393,31 @@ class HassServiceDispatcher:
         return None
 
 
+    @staticmethod
+    def _camera( sim_entity,
+                 domain   : str,
+                 service  : str,
+                 payload  : Dict[ str, Any ],
+                 ) -> List[ Tuple[ str, str ] ]:
+        """Camera motion-detection toggling. The no-motion variant
+        has no ``motion_detection`` SimState and silently no-ops, as
+        real HA does for cameras without that capability."""
+        if domain != 'camera':
+            return []
+        if isinstance( sim_entity.sim_entity_fields, HassCameraNoMotionSimEntityFields ):
+            return []
+        if service == 'enable_motion_detection':
+            return [ ( 'motion_detection', 'on' ) ]
+        if service == 'disable_motion_detection':
+            return [ ( 'motion_detection', 'off' ) ]
+        return []
+
+
 # Registry built after the class is defined so the staticmethod
 # objects exist as references. Keyed off SimEntityFields class.
 HassServiceDispatcher._REGISTRY = {
+    HassCameraSimEntityFields: HassServiceDispatcher._camera,
+    HassCameraNoMotionSimEntityFields: HassServiceDispatcher._camera,
     HassColorSmartBulbFields: HassServiceDispatcher._color_smart_bulb,
     HassFanFields: HassServiceDispatcher._fan,
     HassGarageCoverFields: HassServiceDispatcher._discrete_cover,

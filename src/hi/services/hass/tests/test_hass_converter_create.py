@@ -388,3 +388,121 @@ class EventDefinitionLifecycleCycleTests(TestCase):
             entity=entity,
         )
         self.assertEqual(self._hass_event_def_count(), 1)
+
+
+class CameraDeviceVideoSnapshotFlagTests(TestCase):
+    """Camera-domain HA devices must surface as Entities with
+    ``has_video_snapshot=True``; the gateway uses that flag to gate
+    snapshot-URL resolution. Covers create, reconnect, and update
+    paths; the update path is the only one that heals pre-existing
+    entities imported before the field existed."""
+
+    def _build_camera_device(self, device_id='front_door'):
+        api_dict = {
+            'entity_id': f'camera.{device_id}',
+            'state': 'idle',
+            'attributes': {
+                'friendly_name': device_id.replace('_', ' ').title(),
+                'entity_picture': f'/api/camera_proxy/camera.{device_id}?token=abc',
+                'access_token': 'abc',
+            },
+            'last_changed': '2026-01-01T00:00:00+00:00',
+            'last_reported': '2026-01-01T00:00:00+00:00',
+            'last_updated': '2026-01-01T00:00:00+00:00',
+            'context': {'id': 'ctx', 'parent_id': None, 'user_id': None},
+        }
+        hass_state = HassConverter.create_hass_state(api_dict)
+        device = HassDevice(device_id=device_id)
+        device.add_state(hass_state)
+        return device
+
+    def _build_non_camera_device(self, device_id='kitchen_light'):
+        api_dict = {
+            'entity_id': f'light.{device_id}',
+            'state': 'on',
+            'attributes': {
+                'friendly_name': device_id.replace('_', ' ').title(),
+                'supported_color_modes': ['onoff'],
+                'color_mode': 'onoff',
+            },
+            'last_changed': '2026-01-01T00:00:00+00:00',
+            'last_reported': '2026-01-01T00:00:00+00:00',
+            'last_updated': '2026-01-01T00:00:00+00:00',
+            'context': {'id': 'ctx', 'parent_id': None, 'user_id': None},
+        }
+        hass_state = HassConverter.create_hass_state(api_dict)
+        device = HassDevice(device_id=device_id)
+        device.add_state(hass_state)
+        return device
+
+    def test_create_sets_flag_for_camera_device(self):
+        entity = HassConverter.create_models_for_hass_device(
+            hass_device=self._build_camera_device(),
+            add_alarm_events=False,
+        )
+        self.assertTrue(entity.has_video_snapshot)
+
+    def test_create_leaves_flag_off_for_non_camera_device(self):
+        entity = HassConverter.create_models_for_hass_device(
+            hass_device=self._build_non_camera_device(),
+            add_alarm_events=False,
+        )
+        self.assertFalse(entity.has_video_snapshot)
+
+    def test_reconnect_sets_flag_on_existing_entity(self):
+        existing = Entity.objects.create(
+            name='User Renamed Camera',
+            entity_type_str='CAMERA',
+            has_video_snapshot=False,
+        )
+        HassConverter.create_models_for_hass_device(
+            hass_device=self._build_camera_device(),
+            add_alarm_events=False,
+            entity=existing,
+        )
+        existing.refresh_from_db()
+        self.assertTrue(existing.has_video_snapshot)
+
+    def test_update_heals_flag_on_existing_camera_entity(self):
+        """Pre-PR cameras stay has_video_snapshot=False until the
+        next sync cycle calls update_models_for_hass_device, which
+        re-derives the flag from the current upstream device."""
+        existing = Entity.objects.create(
+            name='User Renamed Camera',
+            entity_type_str='CAMERA',
+            has_video_snapshot=False,
+        )
+        # Set integration key so the converter recognizes the
+        # entity as HASS-owned and the update path is well-formed.
+        existing.integration_id = HassMetaData.integration_id
+        existing.integration_name = 'camera.front_door'
+        existing.save()
+
+        HassConverter.update_models_for_hass_device(
+            entity=existing,
+            hass_device=self._build_camera_device(),
+        )
+
+        existing.refresh_from_db()
+        self.assertTrue(existing.has_video_snapshot)
+
+    def test_update_clears_flag_when_device_no_longer_camera(self):
+        """Self-healing in the opposite direction: if upstream
+        reshapes a device away from the camera domain, the flag
+        comes down."""
+        existing = Entity.objects.create(
+            name='Was a camera',
+            entity_type_str='LIGHT',
+            has_video_snapshot=True,
+        )
+        existing.integration_id = HassMetaData.integration_id
+        existing.integration_name = 'light.kitchen_light'
+        existing.save()
+
+        HassConverter.update_models_for_hass_device(
+            entity=existing,
+            hass_device=self._build_non_camera_device(),
+        )
+
+        existing.refresh_from_db()
+        self.assertFalse(existing.has_video_snapshot)

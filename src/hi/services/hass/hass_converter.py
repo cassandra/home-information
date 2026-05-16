@@ -267,7 +267,10 @@ class HassConverter:
         (HassApi.SENSOR_DOMAIN, None, None): EntityStateType.BLOB,  # Generic sensor
         
         # Other domains (read-only)
-        # Note: CAMERA_DOMAIN entities should have has_video_stream=True but no VIDEO_STREAM EntityState
+        # Note: CAMERA_DOMAIN entities expose video_snapshot capability
+        # via has_video_snapshot (set during _create_or_reconnect_entity),
+        # not via an EntityStateType here. They have no native video
+        # stream so has_video_stream stays False.
         (HassApi.SUN_DOMAIN, None, None): EntityStateType.MULTIVALUED,
         (HassApi.WEATHER_DOMAIN, None, None): EntityStateType.MULTIVALUED,
     }
@@ -541,6 +544,7 @@ class HassConverter:
             # reconnect so the entity reflects current upstream state.
             entity.integration_key = entity_integration_key
             entity.can_user_delete = HassMetaData.allow_entity_deletion
+            entity.has_video_snapshot = HassApi.CAMERA_DOMAIN in hass_device.domain_set
             entity.save()
             
             insteon_address = cls.hass_device_to_insteon_address( hass_device )
@@ -580,6 +584,16 @@ class HassConverter:
 
         messages = list()
         with transaction.atomic():
+
+            # Re-derive integration-owned capability flags from the
+            # current upstream device shape. Self-healing if HA's
+            # domain composition changes (e.g., a paired motion sensor
+            # added or removed), and the only point where pre-PR HA
+            # cameras pick up has_video_snapshot=True.
+            has_video_snapshot = HassApi.CAMERA_DOMAIN in hass_device.domain_set
+            if entity.has_video_snapshot != has_video_snapshot:
+                entity.has_video_snapshot = has_video_snapshot
+                entity.save( update_fields = [ 'has_video_snapshot' ] )
 
             insteon_address = cls.hass_device_to_insteon_address( hass_device )
             try:

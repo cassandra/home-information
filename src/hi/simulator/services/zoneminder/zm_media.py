@@ -14,27 +14,25 @@ ZoneMinder serves three byte-shapes the HI integration consumes:
      ``cgi-bin/nph-zms?...&monitor=<id>``.
 
 The simulator collapses all three into the same primitives:
-``render_jpeg_frame`` (Pillow-rendered placeholder) and
-``iter_bounded_mjpeg_parts`` (yields each multipart chunk with a
-delay between frames so the browser's MJPEG renderer animates
-through them rather than collapsing to the last frame). The "live"
-stream is bounded too — it cycles through a fixed frame count and
-ends — which is enough to exercise the HI player's wiring without
-holding a long-running connection open against Django's dev server.
+``render_jpeg_frame`` (lifted to ``hi.simulator.media`` so both
+ZM and HA snapshots share it) and ``iter_bounded_mjpeg_parts``
+(yields each multipart chunk with a delay between frames so the
+browser's MJPEG renderer animates through them rather than
+collapsing to the last frame). The "live" stream is bounded too —
+it cycles through a fixed frame count and ends — which is enough
+to exercise the HI player's wiring without holding a long-running
+connection open against Django's dev server.
 
 Frame content carries operator-visible identifiers (monitor name,
 event id, frame number, current time) so that artifacts viewed
 inside HI are obviously coming from the simulator and from which
 specific monitor/event.
 """
-import io
 import time
 from datetime import datetime, timedelta
 from typing import Iterator, List, Optional, Tuple
 
-from PIL import Image, ImageDraw
-
-import hi.apps.common.datetimeproxy as datetimeproxy
+from hi.simulator.media import render_jpeg_frame
 
 
 # Single boundary string is reused across all MJPEG responses; the
@@ -52,17 +50,13 @@ _DEFAULT_FRAME_COUNT = 8
 # slow it slightly so the "(simulator)" frame counter is readable.
 _DEFAULT_FRAME_INTERVAL_SECS = 0.5
 
-# Modest default size — recognizable text, low render cost.
-_FRAME_WIDTH = 320
-_FRAME_HEIGHT = 240
-
 
 def render_thumbnail_jpeg( text_lines : List[str] ) -> bytes:
     """Single placeholder JPEG used as an event snapshot thumbnail.
     ``text_lines`` is rendered in stacked rows; callers typically
     pass the monitor name, event id, and timestamp so the
     artifact is identifiable inside HI."""
-    return _render_jpeg_frame( text_lines = text_lines )
+    return render_jpeg_frame( text_lines = text_lines )
 
 
 def mjpeg_content_type() -> str:
@@ -103,7 +97,7 @@ def iter_bounded_mjpeg_parts(
         frame_text = list( text_lines ) + [
             f'frame {index + 1}/{frame_count}',
         ]
-        jpeg_bytes = _render_jpeg_frame(
+        jpeg_bytes = render_jpeg_frame(
             text_lines = frame_text,
             timestamp_override = _interpolated_frame_time(
                 playback_start = playback_start,
@@ -164,35 +158,3 @@ def render_bounded_mjpeg_response(
         )
     )
     return body, mjpeg_content_type()
-
-
-def _render_jpeg_frame(
-        text_lines         : List[str],
-        timestamp_override : Optional[datetime] = None,
-) -> bytes:
-    """Pillow-rendered single JPEG frame. Default bitmap font so the
-    simulator stays independent of system font availability. The
-    timestamp line is appended automatically so multiple frames
-    rendered in quick succession still differ visibly. When
-    ``timestamp_override`` is provided (event playback), that value
-    is rendered instead of wall-clock now."""
-    raw_timestamp = (
-        timestamp_override if timestamp_override is not None else datetimeproxy.now()
-    )
-    timestamp = raw_timestamp.strftime( '%Y-%m-%d %H:%M:%S' )
-    image = Image.new(
-        mode = 'RGB',
-        size = ( _FRAME_WIDTH, _FRAME_HEIGHT ),
-        color = ( 25, 30, 50 ),
-    )
-    draw = ImageDraw.Draw( image )
-    y = 30
-    for line in text_lines:
-        draw.text( ( 20, y ), line, fill = ( 230, 240, 250 ) )
-        y += 24
-    draw.text( ( 20, _FRAME_HEIGHT - 30 ), timestamp, fill = ( 150, 170, 200 ) )
-    draw.text( ( _FRAME_WIDTH - 110, _FRAME_HEIGHT - 30 ),
-               '(simulator)', fill = ( 120, 130, 150 ) )
-    buffer = io.BytesIO()
-    image.save( buffer, format = 'JPEG', quality = 70 )
-    return buffer.getvalue()

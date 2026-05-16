@@ -15,11 +15,30 @@ class VideoStream:
     stream_type: VideoStreamType
     source_url: str = None
     metadata: Dict[str, Any] = field(default_factory=dict)
-    
+
     # Future extensibility:
     # webrtc_config: WebRTCConfig = None
     # hls_manifest_url: str = None
     # thumbnail_url: str = None
+
+
+@dataclass
+class VideoSnapshot:
+    """A still image of a camera's current view, fetched on demand.
+
+    Parallel to ``VideoStream`` but distinct because the two capabilities
+    are orthogonal: an entity can provide a stream, a snapshot, both, or
+    neither. Integrations declare what they natively provide via the
+    corresponding gateway methods (``get_entity_video_stream`` /
+    ``get_entity_video_snapshot``); higher-level synthesis (e.g.,
+    presenting a snapshot-only camera as a low-rate refresh "stream"
+    for display) is a separate concern that consumes both capabilities.
+
+    Naming note: "video_snapshot" is used (rather than bare "snapshot")
+    to disambiguate from the existing ZoneMinder event-snapshot
+    terminology (a frame extracted from a past recorded event)."""
+    source_url: str = None
+    metadata: Dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass
