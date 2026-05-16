@@ -162,13 +162,74 @@ class BaseTestCase(TestCase):
             content_type='text/plain'
         )
     
+    @staticmethod
+    def create_test_png_bytes():
+        """Minimal valid PNG (4x4, RGB) that PIL/Pillow can decode.
+
+        Prefer this over generating PNGs at test time via
+        ``PIL.Image.new(...).save(...)``; doing so per test adds
+        encoder cost and pulls PIL into otherwise pure logic tests.
+        For tests that don't exercise image decoding at all, use any
+        arbitrary bytes (``ContentFile(b'whatever')``)."""
+        return (
+            b'\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR'
+            b'\x00\x00\x00\x04\x00\x00\x00\x04\x08\x02\x00\x00\x00&\x93\t'
+            b')\x00\x00\x00\x14IDATx\xdac4J9\xc1'
+            b'\x00\x03L\x0cH\x007\x07\x00D\xca\x01f\xa1\xfbT'
+            b'\x08\x00\x00\x00\x00IEND\xaeB`\x82'
+        )
+
+    @staticmethod
+    def create_test_pdf_bytes():
+        """Minimal valid PDF (1 page, blank) that ``pdf2image`` /
+        poppler can render. Same byte sequence as
+        ``create_test_pdf_file`` but returned as raw bytes for
+        ``ContentFile`` usage."""
+        return (
+            b'%PDF-1.4\n'
+            b'1 0 obj\n'
+            b'<<\n'
+            b'/Type /Catalog\n'
+            b'/Pages 2 0 R\n'
+            b'>>\n'
+            b'endobj\n'
+            b'2 0 obj\n'
+            b'<<\n'
+            b'/Type /Pages\n'
+            b'/Kids [3 0 R]\n'
+            b'/Count 1\n'
+            b'>>\n'
+            b'endobj\n'
+            b'3 0 obj\n'
+            b'<<\n'
+            b'/Type /Page\n'
+            b'/Parent 2 0 R\n'
+            b'/MediaBox [0 0 612 792]\n'
+            b'>>\n'
+            b'endobj\n'
+            b'xref\n'
+            b'0 4\n'
+            b'0000000000 65535 f \n'
+            b'0000000010 00000 n \n'
+            b'0000000053 00000 n \n'
+            b'0000000125 00000 n \n'
+            b'trailer\n'
+            b'<<\n'
+            b'/Size 4\n'
+            b'/Root 1 0 R\n'
+            b'>>\n'
+            b'startxref\n'
+            b'205\n'
+            b'%%EOF\n'
+        )
+
     def create_test_image_file(self, filename='test_image.jpg'):
         """
         Create a test image file for file upload testing.
-        
+
         Args:
             filename: Name of the image file (default: 'test_image.jpg')
-            
+
         Returns:
             SimpleUploadedFile instance with minimal JPEG data
         """
