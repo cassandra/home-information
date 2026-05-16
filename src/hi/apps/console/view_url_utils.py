@@ -66,7 +66,7 @@ class ViewUrlUtils:
             # no animation to draw attention). Gate on has_live_feed,
             # which covers both native streams and pollable snapshots.
             if entity.has_live_feed:
-                return reverse('console_entity_video_stream', kwargs={'entity_id': entity.id})
+                return reverse('console_entity_video', kwargs={'entity_id': entity.id})
 
             # Future: Add other view types based on entity state type
             # elif sensor.entity_state.entity_state_type == EntityStateType.WEATHER:

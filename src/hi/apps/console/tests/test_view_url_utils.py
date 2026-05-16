@@ -93,7 +93,7 @@ class TestViewUrlUtils(BaseTestCase):
         view_url = ViewUrlUtils.get_view_url_for_alarm(alarm)
         
         self.assertIsNotNone(view_url)
-        self.assertIn('/console/entity/video-stream/', view_url)
+        self.assertIn('/console/entity/video/', view_url)
         self.assertIn(str(self.video_entity.id), view_url)
         
     def test_get_view_url_for_alarm_returns_none_for_non_video_entity(self):
@@ -173,7 +173,7 @@ class TestViewUrlUtils(BaseTestCase):
         view_url = ViewUrlUtils._get_view_url_for_sensor_id(self.video_motion_sensor.id)
         
         self.assertIsNotNone(view_url)
-        self.assertIn('/console/entity/video-stream/', view_url)
+        self.assertIn('/console/entity/video/', view_url)
         self.assertIn(str(self.video_entity.id), view_url)
         
     def test_get_view_url_for_sensor_id_returns_none_for_non_video_entity(self):

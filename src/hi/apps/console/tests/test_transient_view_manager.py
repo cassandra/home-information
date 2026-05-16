@@ -204,7 +204,7 @@ class TestTransientViewManager(BaseTestCase):
             # Verify suggestion content
             suggestion = self.manager.get_current_suggestion()
             self.assertIsNotNone(suggestion)
-            self.assertIn('/console/entity/video-stream/', suggestion.url)
+            self.assertIn('/console/entity/video/', suggestion.url)
             self.assertIn(str(entity.id), suggestion.url)
             self.assertEqual(suggestion.duration_seconds, 30)
             self.assertEqual(suggestion.priority, motion_alarm.alarm_level.priority)

@@ -19,7 +19,7 @@ from .enums import VideoDispatchType
 from .video_stream_browsing_helper import VideoStreamBrowsingHelper
 
 
-class EntityVideoStreamDispatchView( View, EntityViewMixin ):
+class EntityVideoDispatchView( View, EntityViewMixin ):
     """
     Simple dispatch view for camera sidebar navigation.
     Routes to existing views based on referrer context.
@@ -28,7 +28,7 @@ class EntityVideoStreamDispatchView( View, EntityViewMixin ):
     def get( self, request, *args, **kwargs ):
 
         if not request.view_parameters.view_type.is_video_browse:
-            return EntityVideoStreamView().get( request, **kwargs )
+            return EntityVideoView().get( request, **kwargs )
 
         entity = self.get_entity( request, *args, **kwargs )
         
@@ -44,7 +44,7 @@ class EntityVideoStreamDispatchView( View, EntityViewMixin ):
         
         # Route to appropriate view based on dispatch type
         if dispatch_result.dispatch_type == VideoDispatchType.LIVE_STREAM:
-            return EntityVideoStreamView().get( request, **kwargs )
+            return EntityVideoView().get( request, **kwargs )
         elif dispatch_result.dispatch_type == VideoDispatchType.HISTORY_EARLIER:
             return EntityVideoSensorHistoryEarlierView().get( request, **kwargs )
         elif dispatch_result.dispatch_type == VideoDispatchType.HISTORY_LATER:
@@ -53,7 +53,7 @@ class EntityVideoStreamDispatchView( View, EntityViewMixin ):
             return EntityVideoSensorHistoryView().get( request, **kwargs )
 
 
-class EntityVideoStreamView( HiGridView, EntityViewMixin ):
+class EntityVideoView( HiGridView, EntityViewMixin ):
     """View for displaying entity-based video streams."""
 
     def get_main_template_name( self ) -> str:
@@ -78,7 +78,7 @@ class EntityVideoStreamView( HiGridView, EntityViewMixin ):
         if not integration_gateway:
             raise BadRequest( 'Integration not available.' )
 
-        request.view_parameters.view_type = ViewType.ENTITY_VIDEO_STREAM
+        request.view_parameters.view_type = ViewType.ENTITY_VIDEO
         request.view_parameters.to_session( request )
         return {
             'entity': entity,

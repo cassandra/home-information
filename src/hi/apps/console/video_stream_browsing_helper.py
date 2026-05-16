@@ -751,15 +751,14 @@ class VideoStreamBrowsingHelper:
             url_name = resolved.url_name
             
             # Case 1: Referrer has sensor_history_id with window bounds
-            # Use EntityVideoSensorHistoryEarlierView to preserve timeline
+            # Use EntityVideoSensorHistoryEarlierView to preserve timeline.
+            # URL converters declare these as ``<int:...>`` so kwargs
+            # values arrive already typed as int (not str).
             if url_name == 'console_entity_video_sensor_history_detail_with_context':
-                window_start_str = resolved.kwargs.get('window_start', '')
-                window_end_str = resolved.kwargs.get('window_end', '')
-                if ( window_start_str
-                     and window_start_str.isdigit()
-                     and window_end_str
-                     and window_end_str.isdigit() ):
-                    timestamp = int(window_start_str)
+                window_start = resolved.kwargs.get('window_start')
+                window_end = resolved.kwargs.get('window_end')
+                if window_start is not None and window_end is not None:
+                    timestamp = window_start
                     
                     # Try earlier records first (preserve original intent)
                     if cls._has_older_records(video_sensor, timestamp):
@@ -787,9 +786,8 @@ class VideoStreamBrowsingHelper:
             # Case 3: Referrer is "earlier" pagination view
             # Preserve the same earlier view with same timestamp
             elif url_name == 'console_entity_video_sensor_history_earlier':
-                timestamp_str = resolved.kwargs.get('timestamp', '')
-                if timestamp_str and timestamp_str.isdigit():
-                    timestamp = int(timestamp_str)
+                timestamp = resolved.kwargs.get('timestamp')
+                if timestamp is not None:
                     
                     # Try to preserve earlier view
                     if cls._has_older_records(video_sensor, timestamp):
@@ -806,12 +804,11 @@ class VideoStreamBrowsingHelper:
                             timestamp = timestamp
                         )
                     
-            # Case 4: Referrer is "later" pagination view  
+            # Case 4: Referrer is "later" pagination view
             # Preserve the same later view with same timestamp
             elif url_name == 'console_entity_video_sensor_history_later':
-                timestamp_str = resolved.kwargs.get('timestamp', '')
-                if timestamp_str and timestamp_str.isdigit():
-                    timestamp = int(timestamp_str)
+                timestamp = resolved.kwargs.get('timestamp')
+                if timestamp is not None:
                     
                     # Try to preserve later view
                     if cls._has_newer_records(video_sensor, timestamp):
