@@ -1,6 +1,6 @@
 from collections import deque
 from datetime import datetime
-from typing import List
+from typing import Callable, List
 
 import hi.apps.common.datetimeproxy as datetimeproxy
 
@@ -9,10 +9,12 @@ from .sim_models import ZmSimEvent, ZmSimMonitor
 
 class ZmSimEventHistory:
 
-    event_counter = 0
-    
-    def __init__( self, zm_sim_monitor : ZmSimMonitor, max_events: int = 500 ):
+    def __init__( self,
+                  zm_sim_monitor      : ZmSimMonitor,
+                  event_id_allocator  : Callable[[], int],
+                  max_events          : int = 500 ):
         self._zm_sim_monitor = zm_sim_monitor
+        self._event_id_allocator = event_id_allocator
         self._zm_sim_events = deque( maxlen = max_events )
         return
 
@@ -38,13 +40,13 @@ class ZmSimEventHistory:
         return latest_zm_sim_event
 
     def add_zm_sim_event( self ) -> ZmSimEvent:
-        self.event_counter += 1
+        event_id = self._event_id_allocator()
         zm_sim_event = ZmSimEvent(
             zm_sim_monitor = self._zm_sim_monitor,
-            event_id = self.event_counter,
+            event_id = event_id,
             start_datetime = datetimeproxy.now(),
             end_datetime = None,
-            name = f'Event {self.event_counter}',
+            name = f'Event {event_id}',
         )
         self._zm_sim_events.append( zm_sim_event )
         return zm_sim_event
