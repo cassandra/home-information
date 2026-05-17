@@ -8,6 +8,8 @@ If you're new to entity display, start with [`entity-display-overview.md`](entit
 
 On every `/api/status` poll, [`StatusDisplayManager`](../../../src/hi/apps/monitor/status_display_manager.py) builds an `entityStateStatusMap` keyed by `EntityState.id` (as a string). The JS dispatcher in [`entity_state_status.js`](../../../src/hi/static/js/entity_state_status.js) walks every DOM element carrying `data-state-id="<id>"`, looks up the row for that state, and writes whatever subset the element opted into via declaration attributes. No descendant traversal, no class-as-join — each element opts in directly.
 
+The set of state ids in the map can grow or shrink between polls (e.g., an entity gains or loses an `EntityState`). Elements whose id is missing from the current map are left untouched on this tick; ids that newly appear are picked up on the next tick by any element that opts in. Custom `registerUpdate` handlers should follow the same shape — look up by id, no-op when the entry is absent.
+
 ## Server payload shape
 
 Per-state row, built by [`EntityStateDisplayData.to_polling_update_dict`](../../../src/hi/apps/monitor/display_data.py):
