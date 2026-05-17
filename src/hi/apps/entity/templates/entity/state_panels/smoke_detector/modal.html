@@ -6,9 +6,8 @@
 {# the decay-aware value (``idle`` / ``active`` / ``recent`` /       #}
 {# ``past``). CSS handles both vocabularies.                         #}
 <div class="hi-state-panel-smoke_detector hi-state-panel-smoke_detector--modal"
-     {% if smoke_data %}data-state-id="{{ smoke_data.entity_state.id }}" data-status status="{{ smoke_data.latest_sensor_value }}"{% endif %}>
+     data-state-id="{{ smoke_data.entity_state.id }}" data-status status="{{ smoke_data.latest_sensor_value }}">
 
-  {% if smoke_data %}
   <div class="hero">
     <div class="badge">
       <svg class="icon icon--clear" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
@@ -27,7 +26,6 @@
     <div class="status-label status-label--clear">Clear</div>
     <div class="status-label status-label--alarm">Smoke Detected</div>
   </div>
-  {% endif %}
 
   {% if battery_data %}
   <div class="auxiliary">

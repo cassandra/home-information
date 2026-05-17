@@ -68,10 +68,11 @@ class TestEntityStatusPanelRegistry( BaseTestCase ):
 
     def setUp( self ):
         super().setUp()
+        self._registry_snapshot = EntityStatusPanelRegistry().snapshot_for_tests()
         EntityStatusPanelRegistry().reset_for_tests()
 
     def tearDown( self ):
-        EntityStatusPanelRegistry().reset_for_tests()
+        EntityStatusPanelRegistry().restore_for_tests( self._registry_snapshot )
         super().tearDown()
 
     def test_register_adds_panel( self ):
@@ -99,10 +100,11 @@ class TestResolvePanel( BaseTestCase ):
 
     def setUp( self ):
         super().setUp()
+        self._registry_snapshot = EntityStatusPanelRegistry().snapshot_for_tests()
         EntityStatusPanelRegistry().reset_for_tests()
 
     def tearDown( self ):
-        EntityStatusPanelRegistry().reset_for_tests()
+        EntityStatusPanelRegistry().restore_for_tests( self._registry_snapshot )
         super().tearDown()
 
     def _register( self, panel ):
@@ -227,3 +229,66 @@ class TestResolvePanel( BaseTestCase ):
                 display_context = DisplayContext.GRID,
                 present_roles = set(),
             )
+
+
+class TestProductionPanelDiscovery( BaseTestCase ):
+    """End-to-end check that the panel.py modules under
+    ``hi.apps.entity.state_panels`` are wired up: each existing panel
+    type resolves to a panel for each display context."""
+
+    EXPECTED_TYPED_PANELS = {
+        (EntityType.THERMOSTAT, DisplayContext.MODAL): 'thermostat_modal',
+        (EntityType.THERMOSTAT, DisplayContext.LIST): 'thermostat_list',
+        (EntityType.THERMOSTAT, DisplayContext.GRID): 'thermostat_grid',
+        (EntityType.SMOKE_DETECTOR, DisplayContext.MODAL): 'smoke_detector_modal',
+        (EntityType.SMOKE_DETECTOR, DisplayContext.LIST): 'smoke_detector_list',
+        (EntityType.SMOKE_DETECTOR, DisplayContext.GRID): 'smoke_detector_grid',
+        (EntityType.CAMERA, DisplayContext.MODAL): 'camera_modal',
+        (EntityType.CAMERA, DisplayContext.LIST): 'camera_list',
+        (EntityType.CAMERA, DisplayContext.GRID): 'camera_grid',
+    }
+
+    EXPECTED_FALLBACK_PANELS = {
+        DisplayContext.MODAL: 'fallback_modal',
+        DisplayContext.LIST: 'fallback_list',
+        DisplayContext.GRID: 'fallback_grid',
+    }
+
+    def test_typed_panels_resolve_with_required_roles( self ):
+        thermostat_present_roles = { EntityStateRole.THERMOSTAT_CURRENT_TEMPERATURE }
+        smoke_present_roles = { EntityStateRole.SMOKE }
+        for ( entity_type, ctx ), expected_name in self.EXPECTED_TYPED_PANELS.items():
+            if entity_type == EntityType.THERMOSTAT:
+                present_roles = thermostat_present_roles
+            elif entity_type == EntityType.SMOKE_DETECTOR:
+                present_roles = smoke_present_roles
+            else:
+                present_roles = set()
+            resolution = resolve_panel(
+                entity_type = entity_type,
+                display_context = ctx,
+                present_roles = present_roles,
+            )
+            self.assertEqual(
+                resolution.panel.name, expected_name,
+                msg = f'{entity_type.name}/{ctx.name}',
+            )
+
+    def test_unknown_entity_type_falls_back( self ):
+        for ctx, expected_name in self.EXPECTED_FALLBACK_PANELS.items():
+            resolution = resolve_panel(
+                entity_type = EntityType.OTHER,
+                display_context = ctx,
+                present_roles = set(),
+            )
+            self.assertEqual( resolution.panel.name, expected_name )
+
+    def test_typed_panel_falls_back_when_required_role_absent( self ):
+        # Thermostat with no roles -> required THERMOSTAT_CURRENT_TEMPERATURE
+        # is missing, so dispatch falls through to fallback.
+        resolution = resolve_panel(
+            entity_type = EntityType.THERMOSTAT,
+            display_context = DisplayContext.MODAL,
+            present_roles = set(),
+        )
+        self.assertEqual( resolution.panel.name, 'fallback_modal' )

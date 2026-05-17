@@ -1,74 +1,16 @@
-"""Template tags for the EntityStatusPanel framework.
-
-``render_entity_status_panel`` is the dispatch point used at each
-panel call site (EntityStatus modal body, collection list card,
-collection grid card). It resolves a template along the panel
-fallback chain and renders it with the parent context plus
-panel-specific additions.
-
-``panel_state`` is a presentation helper for panel templates that
-need to pull a specific EntityState by ``EntityStateRole`` (e.g.,
-the thermostat panel reaching for the current-temperature state)."""
-
-from typing import Optional
-
 from django import template
-
-from hi.apps.entity.enums import EntityStateRole
-from hi.apps.entity.models import Entity, EntityState
-from hi.apps.entity.state_panel_dispatch import (
-    SUPPORTED_DISPLAY_CONTEXTS,
-    resolve_panel_template,
-)
+from django.template.loader import get_template
 
 
 register = template.Library()
 
 
 @register.simple_tag( takes_context = True )
-def render_entity_status_panel( context, entity_status_data, display_context_name : str ):
-    """Render the panel for ``entity_status_data.entity`` in
-    ``display_context_name``.
-
-    The panel template's context is the parent's flattened context
-    merged with the entity_status_data's ``to_template_context()``
-    fields, so panel templates have ``entity``,
-    ``state_status_data_list``, ``state_status_data_by_role``, and the
-    other display fields at the top level regardless of which call
-    site (modal / list card / grid card) invokes the tag."""
-
-    if display_context_name not in SUPPORTED_DISPLAY_CONTEXTS:
-        raise ValueError(
-            f'Unsupported display context: {display_context_name!r}. '
-            f'Expected one of {SUPPORTED_DISPLAY_CONTEXTS}.'
-        )
-
-    template_obj = resolve_panel_template(
-        entity_type = entity_status_data.entity.entity_type,
-        display_context_name = display_context_name,
-    )
+def include_panel( context, entity_panel_data ):
+    """Render ``entity_panel_data.panel_template`` with the parent context
+    flattened and ``entity_panel_data.panel_context`` merged on top. The
+    view layer resolves which panel to render; this tag handles only the
+    context flattening that template-side ``{% include %}`` cannot express."""
     flat = context.flatten()
-    flat.update( entity_status_data.to_template_context() )
-    flat[ 'display_context_name' ] = display_context_name
-    return template_obj.render( flat )
-
-
-@register.simple_tag
-def panel_state( entity : Entity, role : str ) -> Optional[ EntityState ]:
-    """Return the EntityState on ``entity`` whose role matches
-    ``role`` (case-insensitive name match against ``EntityStateRole``),
-    or ``None`` when no such state exists. Walks both the entity's
-    own states and delegated states."""
-
-    try:
-        role_enum = EntityStateRole.from_name( role )
-    except ValueError:
-        return None
-
-    for state in entity.states.all():
-        if state.entity_state_role == role_enum:
-            return state
-    for delegation in entity.entity_state_delegations.select_related( 'entity_state' ).all():
-        if delegation.entity_state.entity_state_role == role_enum:
-            return delegation.entity_state
-    return None
+    flat.update( entity_panel_data.panel_context )
+    return get_template( entity_panel_data.panel_template ).render( flat )

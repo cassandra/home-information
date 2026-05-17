@@ -21,20 +21,16 @@
           <line x1="110" y1="8" x2="110" y2="24" stroke-width="3" stroke-linecap="round"/>
         </g>
       {% endif %}
-      {% if current_data %}
-        <g class="dial-current-marker"
-           data-marker-state-id="{{ current_data.entity_state.id }}"
-           data-temp-value="{{ current_data.latest_display_value.magnitude }}">
-          <circle cx="110" cy="15" r="5"/>
-        </g>
-      {% endif %}
+      <g class="dial-current-marker"
+         data-marker-state-id="{{ current_data.entity_state.id }}"
+         data-temp-value="{{ current_data.latest_display_value.magnitude }}">
+        <circle cx="110" cy="15" r="5"/>
+      </g>
     </svg>
     <div class="dial-center">
-      {% if current_data %}
-        <span class="dial-temp"
-              data-state-id="{{ current_data.entity_state.id }}"
-              data-display-text>{{ current_data.latest_display_label }}</span>
-      {% endif %}
+      <span class="dial-temp"
+            data-state-id="{{ current_data.entity_state.id }}"
+            data-display-text>{{ current_data.latest_display_label }}</span>
       <span class="dial-mode-label" for-status="idle">Idle</span>
       <span class="dial-mode-label" for-status="heating">Heating</span>
       <span class="dial-mode-label" for-status="cooling">Cooling</span>

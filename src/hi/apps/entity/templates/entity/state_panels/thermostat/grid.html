@@ -3,13 +3,11 @@
 <div class="hi-state-panel-thermostat hi-state-panel-thermostat--grid"
      {% if action_data %}data-state-id="{{ action_data.entity_state.id }}" data-status status="{{ action_data.latest_sensor_value }}"{% endif %}>
 
-  {% if current_data %}
-    <div class="grid-temp"
-         data-state-id="{{ current_data.entity_state.id }}"
-         data-display-text>
-      {{ current_data.latest_display_label }}
-    </div>
-  {% endif %}
+  <div class="grid-temp"
+       data-state-id="{{ current_data.entity_state.id }}"
+       data-display-text>
+    {{ current_data.latest_display_label }}
+  </div>
   <div class="entity-name">{{ entity.name }}</div>
   {% if setpoint_data %}
     <div class="setpoint-line">

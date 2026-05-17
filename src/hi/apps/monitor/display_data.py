@@ -9,7 +9,7 @@ conversion, formatted labels, SVG status styles, role-keyed lookup,
 etc.). Manager produces raw; views project."""
 
 from dataclasses import dataclass, field
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Set
 
 import hi.apps.common.datetimeproxy as datetimeproxy
 
@@ -19,7 +19,7 @@ from hi.apps.console.console_converter_helper import (
     DisplayValue,
 )
 from hi.apps.entity.entity_state_role_order import ENTITY_STATUS_VIEW_ORDERING
-from hi.apps.entity.enums import EntityStateType, EntityStateValue
+from hi.apps.entity.enums import EntityStateRole, EntityStateType, EntityStateValue
 from hi.apps.entity.models import Entity
 
 from hi.hi_styles import StatusStyle
@@ -511,6 +511,13 @@ class EntityDisplayData:
             ),
         )
         return [ self.state_display_data_map[ d.entity_state.id ] for d in ordered_raw ]
+
+    @property
+    def present_roles(self) -> Set[EntityStateRole]:
+        return {
+            d.entity_state.entity_state_role
+            for d in self.entity_status_data.entity_state_status_data_list
+        }
 
     @property
     def state_status_data_by_role(self) -> Dict[str, 'EntityStateDisplayData']:

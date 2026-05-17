@@ -74,3 +74,14 @@ class EntityStatusPanelRegistry( Singleton ):
             self._panels.clear()
             self._discovered = False
         return
+
+    def snapshot_for_tests( self ):
+        with self._lock:
+            return ( dict( self._panels ), self._discovered )
+
+    def restore_for_tests( self, snapshot ) -> None:
+        panels, discovered = snapshot
+        with self._lock:
+            self._panels = dict( panels )
+            self._discovered = discovered
+        return

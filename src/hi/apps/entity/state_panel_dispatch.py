@@ -1,14 +1,13 @@
 import logging
 from dataclasses import dataclass, field
-from typing import List, Set
-
-from django.template import Template
-from django.template.exceptions import TemplateDoesNotExist
-from django.template.loader import get_template
+from typing import Any, Dict, List, Set, TYPE_CHECKING
 
 from hi.apps.entity.enums import DisplayContext, EntityStateRole, EntityType
 from hi.apps.entity.state_panel_base import EntityStatusPanel
 from hi.apps.entity.state_panel_registry import EntityStatusPanelRegistry
+
+if TYPE_CHECKING:
+    from hi.apps.monitor.display_data import EntityDisplayData
 
 
 logger = logging.getLogger( __name__ )
@@ -19,6 +18,35 @@ class PanelResolution:
     panel  : EntityStatusPanel
     extras : Set[ EntityStateRole ] = field( default_factory = set )
     trace  : List[ str ]            = field( default_factory = list )
+
+
+@dataclass
+class EntityPanelData:
+    """An entity prepared for rendering through the panel framework in a
+    specific display context. Produced by ``build_entity_panel_data``;
+    consumed identically by both the entity status modal and the
+    collection card wrappers."""
+
+    entity_status_data : 'EntityDisplayData'
+    panel_template     : str
+    panel_context      : Dict[ str, Any ]
+    trace              : List[ str ]            = field( default_factory = list )
+
+    @property
+    def entity(self):
+        return self.entity_status_data.entity
+
+    @property
+    def display_category(self):
+        return self.entity_status_data.display_category
+
+    @property
+    def display_only_svg_icon_item(self):
+        return self.entity_status_data.display_only_svg_icon_item
+
+    @property
+    def extras_state_data_list(self):
+        return self.panel_context[ 'extras_state_data_list' ]
 
 
 def resolve_panel(
@@ -87,44 +115,72 @@ def _build_resolution( panel, present_roles, trace ):
     return resolution
 
 
-# Legacy template-path resolver. Kept while the render_entity_status_panel
-# template tag remains; removed in Phase 3b.
-
-SUPPORTED_DISPLAY_CONTEXTS = ( 'modal', 'list', 'grid' )
-
-FRAMEWORK_FALLBACK_TEMPLATES = {
-    'modal': 'entity/state_panels/fallback/modal.html',
-    'list': 'entity/state_panels/fallback/list.html',
-    'grid': 'entity/state_panels/fallback/grid.html',
-}
-
-
-def resolve_panel_template(
-        entity_type           : EntityType,
-        display_context_name  : str,
-) -> Template:
-    if display_context_name not in SUPPORTED_DISPLAY_CONTEXTS:
-        raise ValueError(
-            f'Unsupported display context: {display_context_name!r}. '
-            f'Expected one of {SUPPORTED_DISPLAY_CONTEXTS}.'
-        )
-    type_lower = entity_type.name.lower()
-    for candidate in _legacy_candidate_paths( type_lower, display_context_name ):
-        try:
-            return get_template( candidate )
-        except TemplateDoesNotExist:
-            continue
-        continue
-    raise TemplateDoesNotExist(
-        f'No panel template found for entity_type={entity_type.name} '
-        f'context={display_context_name}; framework fallback at '
-        f'{FRAMEWORK_FALLBACK_TEMPLATES[display_context_name]} is missing.'
+def resolve_panel_for(
+        entity_display_data,
+        display_context : DisplayContext,
+) -> PanelResolution:
+    return resolve_panel(
+        entity_type     = entity_display_data.entity.entity_type,
+        display_context = display_context,
+        present_roles   = entity_display_data.present_roles,
     )
 
 
-def _legacy_candidate_paths( type_lower : str, display_context_name : str ) -> List[ str ]:
-    return [
-        f'entity/state_panels/{type_lower}/{display_context_name}.html',
-        f'entity/state_panels/{type_lower}/modal.html',
-        FRAMEWORK_FALLBACK_TEMPLATES[ display_context_name ],
-    ]
+def build_panel_context(
+        entity_display_data,
+        resolution : PanelResolution,
+) -> Dict[ str, Any ]:
+    """Build the flat template context for ``resolution.panel.template_name``.
+    ``state_status_data_list`` and ``state_status_data_by_role`` are filtered
+    to the panel's declared (required + optional) roles, except for fallback
+    panels (``entity_type is None``) which see every state. ``extras_state_data_list``
+    is the per-state projection of ``resolution.extras`` for the framework's
+    modal extras section."""
+
+    panel = resolution.panel
+    all_state_data_list = entity_display_data.state_status_data_list
+
+    if panel.entity_type is None:
+        state_data_list = all_state_data_list
+        state_data_by_role = entity_display_data.state_status_data_by_role
+        extras_state_data_list = []
+    else:
+        declared = panel.required_roles | panel.optional_roles
+        state_data_list = [
+            d for d in all_state_data_list
+            if d.entity_state.entity_state_role in declared
+        ]
+        state_data_by_role = {
+            name: data
+            for name, data in entity_display_data.state_status_data_by_role.items()
+            if data.entity_state.entity_state_role in declared
+        }
+        extras_state_data_list = [
+            d for d in all_state_data_list
+            if d.entity_state.entity_state_role in resolution.extras
+        ]
+
+    return {
+        'entity'                     : entity_display_data.entity,
+        'entity_status_data'         : entity_display_data,
+        'state_status_data_list'     : state_data_list,
+        'state_status_data_by_role'  : state_data_by_role,
+        'entity_for_video'           : entity_display_data.entity_for_video,
+        'display_only_svg_icon_item' : entity_display_data.display_only_svg_icon_item,
+        'display_category'           : entity_display_data.display_category,
+        'extras_state_data_list'     : extras_state_data_list,
+    }
+
+
+def build_entity_panel_data(
+        entity_display_data,
+        display_context : DisplayContext,
+) -> EntityPanelData:
+    resolution = resolve_panel_for( entity_display_data, display_context )
+    panel_context = build_panel_context( entity_display_data, resolution )
+    return EntityPanelData(
+        entity_status_data = entity_display_data,
+        panel_template     = resolution.panel.template_name,
+        panel_context      = panel_context,
+        trace              = resolution.trace,
+    )
