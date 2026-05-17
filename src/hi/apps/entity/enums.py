@@ -346,6 +346,14 @@ class EntityStateRole(LabeledEnum):
         return cls.DISCRETE
 
 
+class DisplayContext(LabeledEnum):
+    """For views/templates that depend on where they are being displayed."""
+
+    MODAL = ( 'Modal', '' )
+    LIST  = ( 'List' , '' )
+    GRID  = ( 'Grid' , '' )
+
+
 class EntityStateType(LabeledEnum):
 
     # General types
