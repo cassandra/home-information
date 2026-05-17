@@ -469,13 +469,12 @@ class EntityDisplayData:
     )
 
     def __post_init__(self):
-        # Each contained state's ``EntityStateDisplayData`` is built
-        # exactly once here. ``state_status_data_list`` and
-        # ``state_status_data_by_role`` below both project from this
-        # map, so the per-state construction cost (the
-        # ConsoleConverterHelper lookup and the _get_svg_status_style
-        # dispatch) is paid once per render even when both projections
-        # are accessed (the typical ``to_template_context()`` path).
+        # Build each contained state's ``EntityStateDisplayData`` exactly
+        # once. ``state_status_data_list`` and ``state_status_data_by_role``
+        # below both project from this map, so the per-state construction
+        # cost (the ConsoleConverterHelper lookup and the
+        # _get_svg_status_style dispatch) is paid once per render even
+        # when both projections are accessed.
         self.state_display_data_map = {
             d.entity_state.id: EntityStateDisplayData( d )
             for d in self.entity_status_data.entity_state_status_data_list
@@ -519,6 +518,22 @@ class EntityDisplayData:
             for d in self.entity_status_data.entity_state_status_data_list
         }
 
+    def filter_to_roles( self, declared_roles: Set[EntityStateRole] ):
+        """Project ``state_status_data_list`` and ``state_status_data_by_role``
+        down to states whose role is in ``declared_roles``. Returns a tuple
+        ``(state_list, by_role_dict)`` — the same shapes the unfiltered
+        properties expose, just filtered."""
+        state_list = [
+            d for d in self.state_status_data_list
+            if d.entity_state.entity_state_role in declared_roles
+        ]
+        by_role = {
+            name: data
+            for name, data in self.state_status_data_by_role.items()
+            if data.entity_state.entity_state_role in declared_roles
+        }
+        return state_list, by_role
+
     @property
     def state_status_data_by_role(self) -> Dict[str, 'EntityStateDisplayData']:
         """Role-keyed lookup for panel templates that pull a
@@ -531,13 +546,3 @@ class EntityDisplayData:
             for d in self.entity_status_data.entity_state_status_data_list
         }
 
-    def to_template_context(self) -> Dict:
-        return {
-            'entity': self.entity,
-            'entity_status_data': self,
-            'state_status_data_list': self.state_status_data_list,
-            'state_status_data_by_role': self.state_status_data_by_role,
-            'entity_for_video': self.entity_for_video,
-            'display_only_svg_icon_item': self.display_only_svg_icon_item,
-            'display_category': self.display_category,
-        }

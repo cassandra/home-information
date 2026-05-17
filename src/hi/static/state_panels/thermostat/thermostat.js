@@ -1,5 +1,5 @@
 /*
- * EntityStatusPanel JS — thermostat.
+ * EntityStatePanel JS — thermostat.
  *
  * The dial's setpoint marker and current-temperature marker need
  * SVG rotations computed from the numeric temperature magnitude.
@@ -46,8 +46,17 @@
     }
 
     function applyAngleToMarker( $marker, tempValue ) {
-        const angle = temperatureToAngle( tempValue );
-        $marker.attr( 'transform', 'rotate(' + angle + ' 110 110)' );
+        // Hide the marker when there is no numeric value yet (empty
+        // ``data-temp-value`` from a sensor with no reading); otherwise
+        // ``temperatureToAngle`` would clamp NaN to 0 and the marker
+        // would settle at the dial's top, misleadingly.
+        const value = parseFloat( tempValue );
+        if ( isNaN( value ) ) {
+            $marker.css( 'display', 'none' );
+            return;
+        }
+        $marker.css( 'display', '' );
+        $marker.attr( 'transform', 'rotate(' + temperatureToAngle( value ) + ' 110 110)' );
     }
 
     // Initial render: each marker has the numeric value baked in

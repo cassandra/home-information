@@ -30,14 +30,17 @@ class EntityStatePanelRegistry( Singleton ):
 
     def discover( self ) -> None:
         """Import each ``state_panels/<name>/panel.py`` and register every
-        ``EntityStatePanel`` instance found at module scope. Idempotent."""
+        ``EntityStatePanel`` instance found at module scope. Idempotent.
+        Per-module failures are logged and skipped rather than aborting
+        app startup, so one malformed panel doesn't poison the registry."""
         with self._lock:
             if self._discovered:
                 return
-            self._discovered = True
         try:
             from hi.apps.entity import state_panels as panels_pkg
         except ImportError:
+            with self._lock:
+                self._discovered = True
             return
         for module_info in pkgutil.iter_modules( panels_pkg.__path__ ):
             if not module_info.ispkg:
@@ -45,22 +48,24 @@ class EntityStatePanelRegistry( Singleton ):
             module_path = f'{panels_pkg.__name__}.{module_info.name}.panel'
             try:
                 module = importlib.import_module( module_path )
-            except ImportError as e:
-                logger.warning( f'Skipping {module_path}: {e}' )
-                continue
-            found = [
-                value for value in vars( module ).values()
-                if isinstance( value, EntityStatePanel )
-            ]
-            if not found:
-                logger.warning(
-                    f'{module_path}: no EntityStatePanel instance at module scope'
-                )
-                continue
-            for panel in found:
-                self.register( panel )
+                found = [
+                    value for value in vars( module ).values()
+                    if isinstance( value, EntityStatePanel )
+                ]
+                if not found:
+                    logger.warning(
+                        f'{module_path}: no EntityStatePanel instance at module scope'
+                    )
+                    continue
+                for panel in found:
+                    self.register( panel )
+                    continue
+            except Exception:
+                logger.exception( f'Skipping {module_path}: discovery error' )
                 continue
             continue
+        with self._lock:
+            self._discovered = True
         return
 
     def all_panels( self ) -> List[ EntityStatePanel ]:
@@ -68,12 +73,6 @@ class EntityStatePanelRegistry( Singleton ):
 
     def get_by_name( self, name : str ) -> Optional[ EntityStatePanel ]:
         return self._panels.get( name )
-
-    def reset_for_tests( self ) -> None:
-        with self._lock:
-            self._panels.clear()
-            self._discovered = False
-        return
 
     def snapshot_for_tests( self ):
         with self._lock:

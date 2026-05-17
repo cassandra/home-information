@@ -1,5 +1,5 @@
 /*
- * Fallback EntityStatusPanel — client-side behaviors specific to
+ * Fallback EntityStatePanel — client-side behaviors specific to
  * the flat-list rendering used when no per-EntityType panel is
  * registered.
  *

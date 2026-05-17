@@ -31,7 +31,7 @@
  * self-describing, so authors place the markers on whichever
  * element they want updated.
  *
- * After the universal apply pass, registered EntityStatusPanel
+ * After the universal apply pass, registered EntityStatePanel
  * handlers run. Panels that need behavior beyond what the universal
  * dispatcher handles (e.g., a thermostat dial whose SVG marker
  * angles are computed from numeric values) register a handler via
@@ -46,7 +46,7 @@
     window.Hi = window.Hi || {};
     Hi.entityStateStatus = Hi.entityStateStatus || {};
 
-    // EntityStatusPanel JS that wants to react to polling updates
+    // EntityStatePanel JS that wants to react to polling updates
     // beyond what CSS keyed on the ``status`` attribute can do
     // registers an update handler via ``registerUpdate``. Update
     // handlers receive the full statusMap keyed by state id and
@@ -80,7 +80,7 @@
             try {
                 handler();
             } catch ( e ) {
-                console.error( 'EntityStatusPanel init handler error:', e );
+                console.error( 'EntityStatePanel init handler error:', e );
             }
         }
     }
@@ -131,7 +131,7 @@
             try {
                 handler( statusMap );
             } catch ( e ) {
-                console.error( 'EntityStatusPanel handler error:', e );
+                console.error( 'EntityStatePanel handler error:', e );
             }
         }
     };

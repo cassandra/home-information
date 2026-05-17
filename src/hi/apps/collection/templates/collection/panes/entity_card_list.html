@@ -3,7 +3,7 @@
   <div class="card-body">
     <div class="d-flex">
       <div class="entity-title-section flex-shrink-0">
-        {% include "collection/panes/entity_card_title.html" with entity_status_data=state_panel_data.entity_status_data %}
+        {% include "collection/panes/entity_card_title.html" with entity_status_data=state_panel_data.entity_display_data %}
       </div>
       {% if collection.collection_type.is_cameras %}
       <div>

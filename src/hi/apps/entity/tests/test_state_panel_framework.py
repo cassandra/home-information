@@ -69,7 +69,7 @@ class TestEntityStatePanelRegistry( BaseTestCase ):
     def setUp( self ):
         super().setUp()
         self._registry_snapshot = EntityStatePanelRegistry().snapshot_for_tests()
-        EntityStatePanelRegistry().reset_for_tests()
+        EntityStatePanelRegistry().restore_for_tests( ( {}, False ) )
 
     def tearDown( self ):
         EntityStatePanelRegistry().restore_for_tests( self._registry_snapshot )
@@ -101,7 +101,7 @@ class TestResolvePanel( BaseTestCase ):
     def setUp( self ):
         super().setUp()
         self._registry_snapshot = EntityStatePanelRegistry().snapshot_for_tests()
-        EntityStatePanelRegistry().reset_for_tests()
+        EntityStatePanelRegistry().restore_for_tests( ( {}, False ) )
 
     def tearDown( self ):
         EntityStatePanelRegistry().restore_for_tests( self._registry_snapshot )
@@ -292,3 +292,74 @@ class TestProductionPanelDiscovery( BaseTestCase ):
             present_roles = set(),
         )
         self.assertEqual( resolution.panel.name, 'fallback_modal' )
+
+
+class TestDiscoveryErrorHandling( BaseTestCase ):
+
+    def setUp( self ):
+        super().setUp()
+        self._registry_snapshot = EntityStatePanelRegistry().snapshot_for_tests()
+
+    def tearDown( self ):
+        EntityStatePanelRegistry().restore_for_tests( self._registry_snapshot )
+        super().tearDown()
+
+    def test_broken_panel_module_does_not_abort_discovery( self ):
+        """If one panel.py raises at import, discover() should log and
+        continue rather than poisoning Django startup."""
+        from unittest.mock import patch
+        registry = EntityStatePanelRegistry()
+        registry.restore_for_tests( ( {}, False ) )
+
+        with patch(
+            'hi.apps.entity.state_panel_registry.importlib.import_module',
+            side_effect = lambda name: (
+                ( _ for _ in () ).throw( RuntimeError( 'boom' ) )
+                if name.endswith( '.thermostat.panel' )
+                else __import__( name, fromlist = [ '*' ] )
+            ),
+        ):
+            registry.discover()
+
+        # The broken panel is skipped, but other panels still register.
+        all_names = { p.name for p in registry.all_panels() }
+        self.assertIn( 'fallback_modal', all_names )
+        # Thermostat module was the one we broke; its panels are absent.
+        self.assertNotIn( 'thermostat_modal', all_names )
+
+
+class TestIncludePanelTag( BaseTestCase ):
+
+    def test_panel_context_keys_override_parent_context_keys( self ):
+        """The {% include_panel %} tag must merge ``panel_context`` over
+        the parent context so a panel template sees the panel-filtered
+        values, not whatever the wrapper happened to define."""
+        from django.template import Context, Template
+        from hi.apps.entity.state_panel_dispatch import EntityStatePanelData
+        from unittest.mock import Mock
+
+        # A tiny inline template registered via Django's loaders is fussy;
+        # easier to mock the loader resolution.
+        panel_data = EntityStatePanelData(
+            entity_display_data = Mock(),
+            panel_template      = 'fixtures/test_include_panel.html',
+            panel_context       = { 'shared_var': 'from-panel-context' },
+        )
+        from unittest.mock import patch
+        rendered = None
+        with patch(
+            'hi.apps.entity.templatetags.state_panel_tags.get_template'
+        ) as mock_get_template:
+            mock_get_template.return_value.render.return_value = 'ok'
+            mock_get_template.return_value.render.side_effect = (
+                lambda flat, request = None: f'shared_var={flat.get("shared_var")}'
+            )
+            t = Template(
+                '{% load state_panel_tags %}'
+                '{% include_panel panel_data %}'
+            )
+            rendered = t.render( Context( {
+                'panel_data': panel_data,
+                'shared_var': 'from-parent-context',
+            } ) )
+        self.assertEqual( rendered, 'shared_var=from-panel-context' )

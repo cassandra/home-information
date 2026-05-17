@@ -45,12 +45,13 @@ class EntityStatusView( HiModalView, EntityViewMixin ):
             return EntityEditView().get( request, *args, **kwargs )
 
         entity_display_data = EntityDisplayData( entity_status_data = entity_status_data )
+        debug = bool( request.GET.get( 'debug_panel' ) )
         state_panel_data = StatePanelDispatcher.build_state_panel_data(
-            entity_display_data, DisplayContext.MODAL,
+            entity_display_data, DisplayContext.MODAL, debug = debug,
         )
         context = {
             'state_panel_data' : state_panel_data,
-            'panel_trace'       : state_panel_data.trace if request.GET.get( 'debug_panel' ) else None,
+            'panel_trace'      : state_panel_data.trace if debug else None,
         }
         return self.modal_response( request, context )
 

@@ -21,38 +21,32 @@ class EntityStatePanel:
     optional_roles   : Set[ EntityStateRole ]   = field( default_factory = set )
 
     def __post_init__( self ):
+        prefix = f'EntityStatePanel({self.name!r})'
         if not self.name or not isinstance( self.name, str ):
-            raise TypeError(
-                'EntityStatePanel: name must be a non-empty str'
-            )
+            raise TypeError( f'{prefix}: name must be a non-empty str' )
         if not self.template_name or not isinstance( self.template_name, str ):
-            raise TypeError(
-                f'{self.name}: template_name must be a non-empty str'
-            )
+            raise TypeError( f'{prefix}: template_name must be a non-empty str' )
         if not self.display_contexts:
             raise TypeError(
-                f'{self.name}: display_contexts must be a non-empty '
-                f'Set[ DisplayContext ]'
+                f'{prefix}: display_contexts must be a non-empty Set[ DisplayContext ]'
             )
         for ctx in self.display_contexts:
             if not isinstance( ctx, DisplayContext ):
                 raise TypeError(
-                    f'{self.name}: display_contexts entries must be '
+                    f'{prefix}: display_contexts entries must be '
                     f'DisplayContext members; got {ctx!r}'
                 )
         if not isinstance( self.priority, int ):
-            raise TypeError(
-                f'{self.name}: priority must be an int'
-            )
+            raise TypeError( f'{prefix}: priority must be an int' )
         if self.entity_type is not None and not isinstance( self.entity_type, EntityType ):
             raise TypeError(
-                f'{self.name}: entity_type must be an EntityType member or None'
+                f'{prefix}: entity_type must be an EntityType member or None'
             )
         overlap = self.required_roles & self.optional_roles
         if overlap:
             names = ', '.join( sorted( r.name for r in overlap ) )
             raise TypeError(
-                f'{self.name}: required_roles and optional_roles must '
-                f'be disjoint; overlap: {names}'
+                f'{prefix}: required_roles and optional_roles must be disjoint; '
+                f'overlap: {names}'
             )
         return
