@@ -1,6 +1,10 @@
 {% with entity=entity_status_data.entity %}
-<a href="{% if request.view_parameters.is_editing %}{% url 'entity_edit_mode' entity_id=entity_status_data.entity.id %}{% else %}{% url 'entity_edit' entity_id=entity_status_data.entity.id %}{% endif %}"
-   data-async="true">
+{# Collection cards show only a subset of state (per the state panel #}
+{# declaration); the full status modal mirrors what LocationView     #}
+{# clicks open. Edit-mode clicks fall through to the per-entity      #}
+{# inline edit view as before.                                       #}
+<a href="{% if request.view_parameters.is_editing %}{% url 'entity_edit_mode' entity_id=entity_status_data.entity.id %}{% else %}{% url 'entity_status' entity_id=entity_status_data.entity.id %}{% endif %}"
+   data-async="{% if request.view_parameters.is_editing %}true{% else %}modal{% endif %}">
 
   <div class="d-flex justify-content-start">
     <div class="display-only-svg-icon pr-2">

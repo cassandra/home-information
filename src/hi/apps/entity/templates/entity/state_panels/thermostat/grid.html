@@ -1,7 +1,9 @@
 {# Aliases declared in panel.py (role_data_template_aliases):           #}
-{#   current_data, target_data, low_data, high_data, action_data.       #}
+{#   current_data, target_data, low_data, high_data,                    #}
+{#   action_data, mode_data.                                            #}
 <div class="hi-state-panel-thermostat hi-state-panel-thermostat--grid"
-     {% if action_data %}data-state-id="{{ action_data.entity_state.id }}" data-status status="{{ action_data.latest_sensor_value }}"{% endif %}>
+     {% if action_data %}data-state-id="{{ action_data.entity_state.id }}" data-status status="{{ action_data.latest_sensor_value }}"{% endif %}
+     {% if mode_data %}data-hvac-mode-state-id="{{ mode_data.entity_state.id }}" data-hvac-mode="{{ mode_data.latest_sensor_value }}"{% endif %}>
 
   <div class="grid-temp"
        data-state-id="{{ current_data.entity_state.id }}"
@@ -15,9 +17,12 @@
     <span class="dial-mode-label" for-status="idle">Idle</span>
     <span class="dial-mode-label" for-status="off">Off</span>
     {% if low_data and high_data %}
-      · <strong data-state-id="{{ low_data.entity_state.id }}" data-display-text>{{ low_data.latest_display_label }}</strong>–<strong data-state-id="{{ high_data.entity_state.id }}" data-display-text>{{ high_data.latest_display_label }}</strong>
-    {% elif target_data %}
-      · <strong data-state-id="{{ target_data.entity_state.id }}" data-display-text>{{ target_data.latest_display_label }}</strong>
+      <span class="setpoint-summary--dual"
+            > · <strong data-state-id="{{ low_data.entity_state.id }}" data-display-text>{{ low_data.latest_display_label }}</strong>–<strong data-state-id="{{ high_data.entity_state.id }}" data-display-text>{{ high_data.latest_display_label }}</strong></span>
+    {% endif %}
+    {% if target_data %}
+      <span class="setpoint-summary--single"
+            > · <strong data-state-id="{{ target_data.entity_state.id }}" data-display-text>{{ target_data.latest_display_label }}</strong></span>
     {% endif %}
   </div>
 

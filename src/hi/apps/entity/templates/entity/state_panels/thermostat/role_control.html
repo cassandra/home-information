@@ -1,7 +1,32 @@
-{# Renders the role's controller widget when controllable, else a    #}
-{# plain readout. Used for HVAC mode / fan / preset rows.            #}
+{# Thermostat-local select widget for controllable discrete roles      #}
+{# (Mode / Fan / Preset). Renders a plain form-wrapped <select>; the   #}
+{# form is a CSRF + URL carrier only, with no antinode hooks           #}
+{# (no ``onchange-async``, no ``data-async``). The thermostat JS does  #}
+{# the POST on change and the framework's unified ``apply`` path       #}
+{# handles the optimistic UI update via ``data-state-id`` /            #}
+{# ``data-controller-value`` on the select itself. Sense-only roles    #}
+{# render as a read-only label.                                        #}
 {% if role_data.controller_data_list %}
-  {% include "control/panes/controller_data.html" with controller_data=role_data.controller_data_list.0 %}
+  {% with controller_data=role_data.controller_data_list.0 %}
+  {% with controller=controller_data.controller %}
+  <form action="{% url 'control_controller' controller_id=controller.id %}"
+        method="post"
+        class="thermostat-select-form">
+    {% csrf_token %}
+    <div class="discrete-control">
+      <select name="value"
+              class="discrete-select form-select thermostat-select"
+              data-state-id="{{ controller_data.entity_state.id }}"
+              data-controller-value>
+        {% for value, label in controller.choices %}
+          <option value="{{ value }}"
+                  {% if controller_data.latest_sensor_response.value.lower == value.lower %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+    </div>
+  </form>
+  {% endwith %}
+  {% endwith %}
 {% else %}
   <div class="control-readonly"
        data-state-id="{{ role_data.entity_state.id }}"

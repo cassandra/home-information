@@ -1,26 +1,35 @@
 {# Aliases declared in panel.py (role_data_template_aliases):           #}
 {#   current_data, target_data, low_data, high_data,                    #}
 {#   action_data, mode_data, fan_data, preset_data, humidity_data.      #}
+{#                                                                      #}
+{# Setpoint UI selection (dual vs single) is driven by the live         #}
+{# ``data-hvac-mode`` attribute on the panel root: the template renders #}
+{# every available setpoint block, and CSS hides the inactive one.      #}
+{# thermostat.js keeps ``data-hvac-mode`` synced with the polled        #}
+{# HVAC_MODE value so changing the mode select swaps the visible       #}
+{# setpoint controls without reopening the modal.                       #}
 <div class="hi-state-panel-thermostat hi-state-panel-thermostat--modal"
-     {% if action_data %}data-state-id="{{ action_data.entity_state.id }}" data-status status="{{ action_data.latest_sensor_value }}"{% endif %}>
+     {% if action_data %}data-state-id="{{ action_data.entity_state.id }}" data-status status="{{ action_data.latest_sensor_value }}"{% endif %}
+     {% if mode_data %}data-hvac-mode-state-id="{{ mode_data.entity_state.id }}" data-hvac-mode="{{ mode_data.latest_sensor_value }}"{% endif %}>
 
   <div class="dial">
     <svg class="dial-svg" viewBox="0 0 220 220" aria-hidden="true">
       <circle class="dial-track" cx="110" cy="110" r="95" fill="none" stroke-width="2"/>
 
       {% if low_data and high_data %}
-        <g class="dial-setpoint-marker dial-setpoint-marker--low"
+        <g class="dial-setpoint-marker dial-setpoint-marker--dual dial-setpoint-marker--low"
            data-marker-state-id="{{ low_data.entity_state.id }}"
            data-temp-value="{{ low_data.latest_display_value.magnitude }}">
           <line x1="110" y1="8" x2="110" y2="24" stroke-width="3" stroke-linecap="round"/>
         </g>
-        <g class="dial-setpoint-marker dial-setpoint-marker--high"
+        <g class="dial-setpoint-marker dial-setpoint-marker--dual dial-setpoint-marker--high"
            data-marker-state-id="{{ high_data.entity_state.id }}"
            data-temp-value="{{ high_data.latest_display_value.magnitude }}">
           <line x1="110" y1="8" x2="110" y2="24" stroke-width="3" stroke-linecap="round"/>
         </g>
-      {% elif target_data %}
-        <g class="dial-setpoint-marker"
+      {% endif %}
+      {% if target_data %}
+        <g class="dial-setpoint-marker dial-setpoint-marker--single"
            data-marker-state-id="{{ target_data.entity_state.id }}"
            data-temp-value="{{ target_data.latest_display_value.magnitude }}">
           <line x1="110" y1="8" x2="110" y2="24" stroke-width="3" stroke-linecap="round"/>
@@ -47,41 +56,48 @@
   {% if low_data and high_data or target_data or mode_data or fan_data or preset_data %}
   <div class="thermostat-controls">
 
-    {% if low_data and high_data %}
-      <div class="control-group">
-        <div class="control-label">Low Setpoint</div>
-        {% include "entity/state_panels/thermostat/setpoint_stepper.html" with setpoint_data=low_data %}
-      </div>
-      <div class="control-group">
-        <div class="control-label">High Setpoint</div>
-        {% include "entity/state_panels/thermostat/setpoint_stepper.html" with setpoint_data=high_data %}
-      </div>
-    {% elif target_data %}
-      <div class="control-group">
-        <div class="control-label">Setpoint</div>
-        {% include "entity/state_panels/thermostat/setpoint_stepper.html" with setpoint_data=target_data %}
-      </div>
+    {% if low_data and high_data or target_data %}
+    <div class="thermostat-setpoint-row">
+      {% if low_data and high_data %}
+        <div class="control-group setpoint-block setpoint-block--dual">
+          <div class="control-label">Low Setpoint</div>
+          {% include "entity/state_panels/thermostat/setpoint_stepper.html" with setpoint_data=low_data %}
+        </div>
+        <div class="control-group setpoint-block setpoint-block--dual">
+          <div class="control-label">High Setpoint</div>
+          {% include "entity/state_panels/thermostat/setpoint_stepper.html" with setpoint_data=high_data %}
+        </div>
+      {% endif %}
+      {% if target_data %}
+        <div class="control-group setpoint-block setpoint-block--single">
+          <div class="control-label">Setpoint</div>
+          {% include "entity/state_panels/thermostat/setpoint_stepper.html" with setpoint_data=target_data %}
+        </div>
+      {% endif %}
+    </div>
     {% endif %}
 
-    {% if mode_data %}
-      <div class="control-group">
-        <div class="control-label">Mode</div>
-        {% include "entity/state_panels/thermostat/role_control.html" with role_data=mode_data %}
-      </div>
-    {% endif %}
-
-    {% if fan_data %}
-      <div class="control-group">
-        <div class="control-label">Fan</div>
-        {% include "entity/state_panels/thermostat/role_control.html" with role_data=fan_data %}
-      </div>
-    {% endif %}
-
-    {% if preset_data %}
-      <div class="control-group">
-        <div class="control-label">Preset</div>
-        {% include "entity/state_panels/thermostat/role_control.html" with role_data=preset_data %}
-      </div>
+    {% if mode_data or fan_data or preset_data %}
+    <div class="thermostat-modes-grid">
+      {% if mode_data %}
+        <div class="control-group">
+          <div class="control-label">Mode</div>
+          {% include "entity/state_panels/thermostat/role_control.html" with role_data=mode_data %}
+        </div>
+      {% endif %}
+      {% if fan_data %}
+        <div class="control-group">
+          <div class="control-label">Fan</div>
+          {% include "entity/state_panels/thermostat/role_control.html" with role_data=fan_data %}
+        </div>
+      {% endif %}
+      {% if preset_data %}
+        <div class="control-group">
+          <div class="control-label">Preset</div>
+          {% include "entity/state_panels/thermostat/role_control.html" with role_data=preset_data %}
+        </div>
+      {% endif %}
+    </div>
     {% endif %}
 
   </div>

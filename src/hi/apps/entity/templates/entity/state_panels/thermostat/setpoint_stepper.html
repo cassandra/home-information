@@ -1,20 +1,16 @@
-{% load common_tags %}
-{# Setpoint −/+ stepper. Posts each adjustment to the controller via   #}
-{# the same async-form mechanism the slider uses; the response is      #}
-{# routed into a hidden sink so the buttons survive across clicks.     #}
-{# The visible value and the hidden input both opt into polling, so    #}
-{# the displayed and form-bound values stay in sync with backend state #}
-{# regardless of who initiated the change.                             #}
+{# Setpoint −/+ stepper. JS click handler reads the hidden input's   #}
+{# value, bumps by data-stepper-delta, optimistically updates the    #}
+{# visible label, and POSTs the new value to the controller. The     #}
+{# polling contract refreshes both the hidden input (via             #}
+{# data-controller-value) and the visible label (via data-display-   #}
+{# text) on the next tick, keeping initial / interactive / external- #}
+{# change paths consistent.                                          #}
 <div class="setpoint-stepper">
   {% if setpoint_data.controller_data_list %}
     {% with controller=setpoint_data.controller_data_list.0.controller %}
-    {% generate_uuid as stepper_uuid %}
     <form action="{% url 'control_controller' controller_id=controller.id %}"
           method="post"
-          class="setpoint-stepper-form"
-          data-async="#thermostat-stepper-sink-{{ stepper_uuid }}"
-          data-mode="replace"
-          data-stay-in-modal="true">
+          class="setpoint-stepper-form">
       {% csrf_token %}
       <button type="button"
               class="stepper-btn stepper-btn--decrement"
@@ -33,7 +29,6 @@
               data-stepper-delta="1"
               aria-label="Increase setpoint">+</button>
     </form>
-    <div id="thermostat-stepper-sink-{{ stepper_uuid }}" hidden></div>
     {% endwith %}
   {% else %}
     <span class="setpoint-value setpoint-value--readonly"

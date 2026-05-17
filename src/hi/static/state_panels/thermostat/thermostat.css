@@ -102,11 +102,22 @@
 .hi-state-panel-thermostat--modal .dial-mode-label { margin-top: 6px; }
 
 .hi-state-panel-thermostat--modal .thermostat-controls {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    width: 100%;
+    margin-top: 4px;
+}
+.hi-state-panel-thermostat--modal .thermostat-setpoint-row {
+    display: flex;
+    justify-content: center;
+    gap: 24px;
+    flex-wrap: wrap;
+}
+.hi-state-panel-thermostat--modal .thermostat-modes-grid {
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 12px 16px;
-    width: 100%;
-    margin-top: 4px;
 }
 .hi-state-panel-thermostat--modal .control-group {
     display: flex;
@@ -248,3 +259,40 @@
 }
 .hi-state-panel-thermostat--grid[status="heating"] .setpoint-line { color: var(--hi-thermo-heating-color); }
 .hi-state-panel-thermostat--grid[status="cooling"] .setpoint-line { color: var(--hi-thermo-cooling-color); }
+
+/* ============================================================== */
+/* Setpoint visibility (dual vs single).                          */
+/* ============================================================== */
+/* Driven by the live HVAC mode value. thermostat.js keeps        */
+/* ``data-hvac-mode`` on the panel root in sync with the polled   */
+/* HVAC_MODE state. Default (mode absent or any non-dual mode):   */
+/* hide dual markers / blocks / summaries. heat_cool / auto: show */
+/* dual, hide single. Placed at end-of-file so the cascade wins   */
+/* against earlier .control-group / .setpoint-summary layout      */
+/* rules at equal specificity.                                    */
+
+.hi-state-panel-thermostat .dial-setpoint-marker--dual,
+.hi-state-panel-thermostat .setpoint-block--dual,
+.hi-state-panel-thermostat .setpoint-summary--dual {
+    display: none;
+}
+.hi-state-panel-thermostat[data-hvac-mode="heat_cool"] .dial-setpoint-marker--dual,
+.hi-state-panel-thermostat[data-hvac-mode="auto"]      .dial-setpoint-marker--dual {
+    display: initial;
+}
+.hi-state-panel-thermostat[data-hvac-mode="heat_cool"] .setpoint-block--dual,
+.hi-state-panel-thermostat[data-hvac-mode="auto"]      .setpoint-block--dual {
+    display: flex;
+}
+.hi-state-panel-thermostat[data-hvac-mode="heat_cool"] .setpoint-summary--dual,
+.hi-state-panel-thermostat[data-hvac-mode="auto"]      .setpoint-summary--dual {
+    display: inline;
+}
+.hi-state-panel-thermostat[data-hvac-mode="heat_cool"] .dial-setpoint-marker--single,
+.hi-state-panel-thermostat[data-hvac-mode="auto"]      .dial-setpoint-marker--single,
+.hi-state-panel-thermostat[data-hvac-mode="heat_cool"] .setpoint-block--single,
+.hi-state-panel-thermostat[data-hvac-mode="auto"]      .setpoint-block--single,
+.hi-state-panel-thermostat[data-hvac-mode="heat_cool"] .setpoint-summary--single,
+.hi-state-panel-thermostat[data-hvac-mode="auto"]      .setpoint-summary--single {
+    display: none;
+}

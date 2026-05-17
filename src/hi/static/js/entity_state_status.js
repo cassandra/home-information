@@ -214,7 +214,93 @@
         $display.text( format.replace( '{n}', slider.value ) );
     }
 
+    // Generic optimistic-apply for user-driven control changes. When
+    // a state-bound control changes (select / checkbox / numeric
+    // input / scripted change on a hidden input), synthesize a one-
+    // entry statusMap and run the universal apply. Dependent display
+    // elements (``data-display-text``, ``data-display-magnitude``,
+    // ``data-status``, panel-root status attr, etc.) update in lock
+    // step with the user's intent, and registered update handlers
+    // (dial marker positioning, panel-root ``data-hvac-mode`` sync,
+    // etc.) fire immediately — the polling cycle merely confirms or
+    // corrects, never drives the first-frame UI response.
+    //
+    // The server-bound submit path (antinode's ``onchange-async``
+    // form-submit) runs independently of this handler on the same
+    // ``change`` event, so error responses still surface through the
+    // normal mechanism. If the server rejects the change, the next
+    // polling tick overwrites the optimistic value with the canonical
+    // one.
+    function buildSyntheticEntry( $el ) {
+        const stateId = $el.attr( 'data-state-id' );
+        const tag = ( $el.prop( 'tagName' ) || '' ).toUpperCase();
+        const type = ( $el.attr( 'type' ) || '' ).toLowerCase();
+        let value = $el.val();
+        let displayText = String( value );
+
+        if ( tag === 'SELECT' ) {
+            const $opt = $el.find( 'option:selected' );
+            if ( $opt.length ) displayText = $opt.text() || displayText;
+        } else if ( tag === 'INPUT' && type === 'checkbox' ) {
+            const checked = $el.prop( 'checked' );
+            value = checked ? ( $el.val() || 'on' ) : 'off';
+            displayText = checked
+                ? ( $el.attr( 'data-on-text' ) || 'On' )
+                : ( $el.attr( 'data-off-text' ) || 'Off' );
+        } else if ( stateId ) {
+            // Numeric / hidden-input case: format the optimistic value
+            // by mirroring the existing displayed text — same decimal
+            // precision and same unit suffix. Heuristic, but it keeps
+            // an optimistic "73.0°F" matching the canonical "72.0°F"
+            // until the next polling tick reconciles. Backend authority
+            // returns on every poll, so a brief divergence here is
+            // self-correcting; the goal is just to avoid the visible
+            // jump that happens when the optimistic value is
+            // unformatted ("73") and polling replaces it with the
+            // formatted version ("73.0°F").
+            const $paired = $( '[data-state-id="' + stateId + '"][data-display-text]' )
+                  .not( $el ).first();
+            if ( $paired.length ) {
+                const prev = $paired.text();
+                const numMatch = prev.match( /-?\d+\.?\d*/ );
+                const decimalMatch = numMatch ? numMatch[ 0 ].match( /\.(\d+)$/ ) : null;
+                const precision = decimalMatch ? decimalMatch[ 1 ].length : 0;
+                const unitMatch = prev.match( /[^\d\s.\-+][^\d]*$/ );
+                const unit = unitMatch ? unitMatch[ 0 ] : '';
+                const num = parseFloat( value );
+                if ( ! isNaN( num ) ) {
+                    displayText = num.toFixed( precision ) + unit;
+                }
+            }
+        }
+
+        const entry = {
+            controller: { value: value },
+            display:    { text: displayText },
+            status:     String( value ).toLowerCase(),
+        };
+        const magnitude = parseFloat( value );
+        if ( ! isNaN( magnitude ) ) {
+            entry.display.magnitude = magnitude;
+        }
+        return entry;
+    }
+
     jQuery(function($) {
+        $( document ).on(
+            'change',
+            '[data-state-id][data-controller-value]',
+            function() {
+                const $el = $( this );
+                const stateId = $el.attr( 'data-state-id' );
+                if ( ! stateId ) return;
+                const entry = buildSyntheticEntry( $el );
+                const synthetic = {};
+                synthetic[ stateId ] = entry;
+                Hi.entityStateStatus.apply( synthetic );
+            }
+        );
+
         // Slider drag mirror — keep the paired display in lock-step
         // with the thumb during user drag. ``input`` fires
         // continuously; ``change`` only fires on release, which
