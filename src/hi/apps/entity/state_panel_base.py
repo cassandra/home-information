@@ -3,7 +3,7 @@ Authoring guidance: ``docs/dev/frontend/entity-state-panels.md``.
 """
 
 from dataclasses import dataclass, field
-from typing import Optional, Set
+from typing import Dict, Optional, Set
 
 from hi.apps.entity.enums import DisplayContext, EntityStateRole, EntityType
 
@@ -16,9 +16,17 @@ class EntityStatePanel:
     priority         : int  # Priority 1 higher than priority 2
     template_name    : str
 
-    entity_type      : Optional[ EntityType ]   = None  # If 'None' then used as fallback
-    required_roles   : Set[ EntityStateRole ]   = field( default_factory = set )
-    optional_roles   : Set[ EntityStateRole ]   = field( default_factory = set )
+    entity_type      : Optional[ EntityType ]    = None  # If 'None' then used as fallback
+    required_roles   : Set[ EntityStateRole ]    = field( default_factory = set )
+    optional_roles   : Set[ EntityStateRole ]    = field( default_factory = set )
+    # Each entry binds a template-context variable name (key) to one of
+    # the panel's declared EntityStateRoles. The dispatcher resolves
+    # these against ``state_status_data_by_role`` at render time so the
+    # template can use ``{{ current_data.entity_state.id }}`` directly
+    # instead of chaining ``{% with %}`` blocks. Aliases must reference
+    # roles in ``required_roles | optional_roles``; absent optional
+    # roles resolve to ``None``.
+    role_data_template_aliases : Dict[ str, EntityStateRole ] = field( default_factory = dict )
 
     def __post_init__( self ):
         prefix = f'EntityStatePanel({self.name!r})'
@@ -49,4 +57,16 @@ class EntityStatePanel:
                 f'{prefix}: required_roles and optional_roles must be disjoint; '
                 f'overlap: {names}'
             )
+        declared = self.required_roles | self.optional_roles
+        for alias, role in self.role_data_template_aliases.items():
+            if not isinstance( role, EntityStateRole ):
+                raise TypeError(
+                    f'{prefix}: role_data_template_aliases[{alias!r}] must be an '
+                    f'EntityStateRole member; got {role!r}'
+                )
+            if role not in declared:
+                raise TypeError(
+                    f'{prefix}: role_data_template_aliases[{alias!r}] -> {role.name} '
+                    f'is not in required_roles or optional_roles'
+                )
         return

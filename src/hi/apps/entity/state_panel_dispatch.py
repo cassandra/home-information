@@ -93,6 +93,11 @@ class StatePanelDispatcher:
             'display_only_svg_icon_item' : entity_display_data.display_only_svg_icon_item,
             'display_category'           : entity_display_data.display_category,
         }
+        # Resolve the panel's declared role-data template aliases against
+        # the (filtered) by-role map. Absent optional roles resolve to
+        # ``None`` so templates can ``{% if alias %}``-guard them.
+        for alias, role in panel.role_data_template_aliases.items():
+            panel_context[ alias ] = by_role.get( role.name.lower() )
         return EntityStatePanelData(
             entity_display_data    = entity_display_data,
             panel_template         = panel.template_name,

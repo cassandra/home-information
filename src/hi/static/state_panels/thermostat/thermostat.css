@@ -100,8 +100,92 @@
 }
 .hi-state-panel-thermostat--modal .dial-temp { font-size: 56px; }
 .hi-state-panel-thermostat--modal .dial-mode-label { margin-top: 6px; }
-.hi-state-panel-thermostat--modal .states {
+
+.hi-state-panel-thermostat--modal .thermostat-controls {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px 16px;
     width: 100%;
+    margin-top: 4px;
+}
+.hi-state-panel-thermostat--modal .control-group {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+.hi-state-panel-thermostat--modal .control-label {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--text-muted, #6c757d);
+    font-weight: 600;
+}
+.hi-state-panel-thermostat--modal .control-readonly {
+    font-size: 14px;
+    color: #1f2328;
+    padding: 6px 0;
+}
+
+/* Setpoint stepper widget. */
+.hi-state-panel-thermostat .setpoint-stepper-form {
+    display: inline-flex;
+    align-items: center;
+    gap: 12px;
+    margin: 0;
+}
+.hi-state-panel-thermostat .setpoint-stepper {
+    display: inline-flex;
+    align-items: center;
+    gap: 12px;
+}
+.hi-state-panel-thermostat .stepper-btn {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    border: 1px solid var(--line-color, #d0d7de);
+    background: white;
+    color: var(--primary-color, #177072);
+    font-size: 18px;
+    line-height: 1;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+}
+.hi-state-panel-thermostat .stepper-btn:hover { background: var(--info-bg-light, #e8f4f4); }
+.hi-state-panel-thermostat .stepper-btn:disabled {
+    color: var(--text-muted, #6c757d);
+    cursor: not-allowed;
+    opacity: 0.55;
+}
+.hi-state-panel-thermostat .setpoint-value {
+    font-size: 20px;
+    font-weight: 500;
+    min-width: 56px;
+    text-align: center;
+}
+.hi-state-panel-thermostat .setpoint-value--readonly {
+    font-size: 16px;
+    font-weight: 400;
+    text-align: left;
+}
+
+.hi-state-panel-thermostat--modal .thermostat-secondary {
+    width: 100%;
+    border-top: 1px solid var(--line-color, #d0d7de);
+    padding-top: 12px;
+    margin-top: 16px;
+    display: flex;
+    gap: 16px;
+    font-size: 13px;
+    color: var(--text-muted, #6c757d);
+}
+.hi-state-panel-thermostat--modal .secondary-label { color: var(--text-muted, #6c757d); }
+.hi-state-panel-thermostat--modal .secondary-value {
+    color: #1f2328;
+    font-weight: 500;
+    margin-left: 4px;
 }
 
 /* ============================================================== */
@@ -124,6 +208,10 @@
 }
 .hi-state-panel-thermostat--list .setpoint-summary {
     font-size: 12px; color: var(--text-muted, #6c757d); margin-top: 2px;
+}
+.hi-state-panel-thermostat--list .setpoint-summary strong { color: #1f2328; font-weight: 500; }
+.hi-state-panel-thermostat--list .humidity-line {
+    font-size: 11px; color: var(--text-muted, #6c757d); margin-top: 2px;
 }
 
 /* ============================================================== */

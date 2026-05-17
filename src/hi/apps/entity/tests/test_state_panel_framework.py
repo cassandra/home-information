@@ -63,6 +63,28 @@ class TestEntityStatePanelValidation( BaseTestCase ):
                 optional_roles = { EntityStateRole.TEMPERATURE },
             )
 
+    def test_role_data_template_alias_to_undeclared_role_rejected( self ):
+        # Aliasing a role that's not in required_roles | optional_roles
+        # is an authoring mistake — the dispatcher would always resolve
+        # it to None for typed panels (filtered by-role map) or to
+        # whatever happens to be present for fallback panels.
+        with self.assertRaises( TypeError ):
+            _make_panel(
+                required_roles = { EntityStateRole.TEMPERATURE },
+                role_data_template_aliases = {
+                    'temp_data': EntityStateRole.HUMIDITY,
+                },
+            )
+
+    def test_role_data_template_alias_must_be_entity_state_role( self ):
+        with self.assertRaises( TypeError ):
+            _make_panel(
+                required_roles = { EntityStateRole.TEMPERATURE },
+                role_data_template_aliases = {
+                    'temp_data': 'temperature',
+                },
+            )
+
 
 class TestEntityStatePanelRegistry( BaseTestCase ):
 

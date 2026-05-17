@@ -53,6 +53,7 @@ Each panel is an [`EntityStatePanel`](../../../src/hi/apps/entity/state_panel_ba
 | `entity_type` | optional | The `EntityType` this panel claims. `None` (the default) marks a framework fallback panel: matched only after no type-specific panel matches. |
 | `required_roles` | optional | Conjunctive. Panel is selected only when every role is present on the entity. Once selected, the template may assume every required role is in `state_status_data_by_role`. Defaults to empty. |
 | `optional_roles` | optional | Roles the panel knows about and will display when present. Templates use `{% if %}` only for these. Defaults to empty. |
+| `role_data_template_aliases` | optional | `Dict[str, EntityStateRole]` mapping template-context variable names to declared roles. The dispatcher resolves each alias against the entity's by-role map so templates can use `{{ current_data.entity_state.id }}` directly instead of chaining `{% with %}` blocks. Absent optional roles resolve to `None`. Aliased roles must be in `required_roles ∪ optional_roles`. Recommended for panels with 5+ named roles; smaller panels can read the by-role dict directly. Defaults to empty. |
 
 `required_roles` and `optional_roles` must be disjoint. Together they form the panel's **declared** role set; any `EntityStateRole` on the entity outside this set is an **extra** (see "Display contexts and extras" below).
 
@@ -124,7 +125,9 @@ When a panel template runs, the parent context plus the entity's display project
 
 Source of truth: `EntityDisplayData.to_template_context()` in [`display_data.py`](../../../src/hi/apps/monitor/display_data.py).
 
-Required-role access reads cleanly without `{% if %}`:
+Two ways to reach a specific role's data from a template:
+
+**A — direct lookup (fine for 1–4 roles per template).** Bind a single `{% with %}`:
 
 ```django
 {% with current_data=state_status_data_by_role.thermostat_current_temperature %}
@@ -133,15 +136,31 @@ Required-role access reads cleanly without `{% if %}`:
 {% endwith %}
 ```
 
-Optional-role access guards with `{% if %}`:
+Note: Django's `{% with %}` tag does not parse across newlines — keep the whole tag on one line, including any multi-key form.
+
+**B — `role_data_template_aliases` (recommended for 5+ roles).** Declare the aliases in `panel.py` and access them as top-level template variables:
+
+```python
+# panel.py
+panel = EntityStatePanel(
+    ...
+    role_data_template_aliases = {
+        'current_data':  EntityStateRole.THERMOSTAT_CURRENT_TEMPERATURE,
+        'target_data':   EntityStateRole.THERMOSTAT_TARGET_TEMPERATURE,
+        ...
+    },
+)
+```
 
 ```django
-{% with fan_data=state_status_data_by_role.fan_mode %}
-  {% if fan_data %}
-    <!-- render fan controls -->
-  {% endif %}
-{% endwith %}
+{# Aliases declared in panel.py (role_data_template_aliases):    #}
+{#   current_data, target_data, ...                              #}
+<span data-state-id="{{ current_data.entity_state.id }}"
+      data-display-text>{{ current_data.display.text }}</span>
+{% if fan_data %}<!-- render fan controls -->{% endif %}
 ```
+
+Required-role aliases are guaranteed non-`None` when the panel is selected. Optional-role aliases resolve to `None` when the role isn't present on the entity; guard with `{% if %}`. Templates that use aliases should include a top-of-file comment listing the aliases so readers don't have to bounce to `panel.py` to know the variable origins.
 
 For the live-update declaration grammar, server payload shape, and the icon-vs-path asymmetry, see [`entity-status-display.md`](entity-status-display.md). Authoring a panel template is mostly a matter of (1) pulling the right state via `state_status_data_by_role` or `state_status_data_list`, and (2) tagging the elements that should refresh.
 

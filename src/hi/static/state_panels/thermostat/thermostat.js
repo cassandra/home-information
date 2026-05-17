@@ -100,4 +100,21 @@
         }
     }
 
+    // Setpoint stepper: bump the form's hidden value and submit. The
+    // form's existing ``data-async`` wiring posts to the controller
+    // endpoint; polling refreshes both the visible label and the
+    // hidden input back to the new sensor value once the integration
+    // confirms the change.
+    $( document ).on( 'click', '.hi-state-panel-thermostat .stepper-btn', function() {
+        const $btn = $( this );
+        const $form = $btn.closest( 'form.setpoint-stepper-form' );
+        if ( ! $form.length ) return;
+        const $input = $form.find( 'input[name="value"]' );
+        const cur = parseFloat( $input.val() );
+        const delta = parseFloat( $btn.attr( 'data-stepper-delta' ) ) || 0;
+        if ( isNaN( cur ) || ! delta ) return;
+        $input.val( cur + delta );
+        $form.submit();
+    });
+
 })();

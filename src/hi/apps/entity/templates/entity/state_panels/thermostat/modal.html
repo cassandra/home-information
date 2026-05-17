@@ -1,26 +1,32 @@
-{% load common_tags %}
-{% with current_data=state_status_data_by_role.thermostat_current_temperature setpoint_data=state_status_data_by_role.thermostat_target_temperature action_data=state_status_data_by_role.hvac_action %}
-
-{# The panel root carries ``data-state-id`` + ``data-status`` for   #}
-{# the HVAC_ACTION state so the polling dispatcher keeps the        #}
-{# ``status`` attribute current (idle / heating / cooling / off).   #}
-{# CSS keyed on ``[status=...]`` handles the color tint and the     #}
-{# dial-mode label visibility. The setpoint and current-temperature #}
-{# markers on the dial are JS-positioned because their angle        #}
-{# depends on the numeric magnitude, which CSS alone can't compute. #}
+{# Aliases declared in panel.py (role_data_template_aliases):           #}
+{#   current_data, target_data, low_data, high_data,                    #}
+{#   action_data, mode_data, fan_data, preset_data, humidity_data.      #}
 <div class="hi-state-panel-thermostat hi-state-panel-thermostat--modal"
      {% if action_data %}data-state-id="{{ action_data.entity_state.id }}" data-status status="{{ action_data.latest_sensor_value }}"{% endif %}>
 
   <div class="dial">
     <svg class="dial-svg" viewBox="0 0 220 220" aria-hidden="true">
       <circle class="dial-track" cx="110" cy="110" r="95" fill="none" stroke-width="2"/>
-      {% if setpoint_data %}
+
+      {% if low_data and high_data %}
+        <g class="dial-setpoint-marker dial-setpoint-marker--low"
+           data-marker-state-id="{{ low_data.entity_state.id }}"
+           data-temp-value="{{ low_data.latest_display_value.magnitude }}">
+          <line x1="110" y1="8" x2="110" y2="24" stroke-width="3" stroke-linecap="round"/>
+        </g>
+        <g class="dial-setpoint-marker dial-setpoint-marker--high"
+           data-marker-state-id="{{ high_data.entity_state.id }}"
+           data-temp-value="{{ high_data.latest_display_value.magnitude }}">
+          <line x1="110" y1="8" x2="110" y2="24" stroke-width="3" stroke-linecap="round"/>
+        </g>
+      {% elif target_data %}
         <g class="dial-setpoint-marker"
-           data-marker-state-id="{{ setpoint_data.entity_state.id }}"
-           data-temp-value="{{ setpoint_data.latest_display_value.magnitude }}">
+           data-marker-state-id="{{ target_data.entity_state.id }}"
+           data-temp-value="{{ target_data.latest_display_value.magnitude }}">
           <line x1="110" y1="8" x2="110" y2="24" stroke-width="3" stroke-linecap="round"/>
         </g>
       {% endif %}
+
       <g class="dial-current-marker"
          data-marker-state-id="{{ current_data.entity_state.id }}"
          data-temp-value="{{ current_data.latest_display_value.magnitude }}">
@@ -38,12 +44,56 @@
     </div>
   </div>
 
-  {% if state_status_data_list %}
-  <div class="states">
-    {% include "entity/state_panels/fallback/state_list.html" with entity_state_status_data_list=state_status_data_list %}
+  {% if low_data and high_data or target_data or mode_data or fan_data or preset_data %}
+  <div class="thermostat-controls">
+
+    {% if low_data and high_data %}
+      <div class="control-group">
+        <div class="control-label">Low Setpoint</div>
+        {% include "entity/state_panels/thermostat/setpoint_stepper.html" with setpoint_data=low_data %}
+      </div>
+      <div class="control-group">
+        <div class="control-label">High Setpoint</div>
+        {% include "entity/state_panels/thermostat/setpoint_stepper.html" with setpoint_data=high_data %}
+      </div>
+    {% elif target_data %}
+      <div class="control-group">
+        <div class="control-label">Setpoint</div>
+        {% include "entity/state_panels/thermostat/setpoint_stepper.html" with setpoint_data=target_data %}
+      </div>
+    {% endif %}
+
+    {% if mode_data %}
+      <div class="control-group">
+        <div class="control-label">Mode</div>
+        {% include "entity/state_panels/thermostat/role_control.html" with role_data=mode_data %}
+      </div>
+    {% endif %}
+
+    {% if fan_data %}
+      <div class="control-group">
+        <div class="control-label">Fan</div>
+        {% include "entity/state_panels/thermostat/role_control.html" with role_data=fan_data %}
+      </div>
+    {% endif %}
+
+    {% if preset_data %}
+      <div class="control-group">
+        <div class="control-label">Preset</div>
+        {% include "entity/state_panels/thermostat/role_control.html" with role_data=preset_data %}
+      </div>
+    {% endif %}
+
+  </div>
+  {% endif %}
+
+  {% if humidity_data %}
+  <div class="thermostat-secondary">
+    <span class="secondary-label">Humidity</span>
+    <span class="secondary-value"
+          data-state-id="{{ humidity_data.entity_state.id }}"
+          data-display-text>{{ humidity_data.latest_display_label }}</span>
   </div>
   {% endif %}
 
 </div>
-
-{% endwith %}
