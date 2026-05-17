@@ -13,7 +13,15 @@ class ZmSimEventManager( Singleton ):
     def __init_singleton__( self ):
         self._zm_sim_events_map : Dict[ int, ZmSimEventHistory ] = dict()
         self._data_lock = threading.Lock()
+        # ZM's wire event_id space is a single non-decreasing counter
+        # across all monitors. Centralizing allocation here keeps ids
+        # unique under simultaneous events on different monitors.
+        self._next_event_id = 0
         return
+
+    def _allocate_event_id( self ) -> int:
+        self._next_event_id += 1
+        return self._next_event_id
 
     def add_motion_value( self,
                           zm_sim_monitor : ZmSimMonitor,
@@ -23,6 +31,7 @@ class ZmSimEventManager( Singleton ):
             if monitor_id not in self._zm_sim_events_map:
                 self._zm_sim_events_map[monitor_id] = ZmSimEventHistory(
                     zm_sim_monitor = zm_sim_monitor,
+                    event_id_allocator = self._allocate_event_id,
                 )
             self._zm_sim_events_map[monitor_id].add_motion_value( motion_value = motion_value )
         return
