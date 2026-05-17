@@ -1,13 +1,15 @@
-{% with smoke_data=state_status_data_by_role.smoke battery_data=state_status_data_by_role.battery_level %}
-
+{# Aliases declared in panel.py (role_data_template_aliases):           #}
+{#   smoke_data, battery_data.                                          #}
 <div class="hi-state-panel-smoke_detector hi-state-panel-smoke_detector--list"
-     data-state-id="{{ smoke_data.entity_state.id }}" data-status status="{{ smoke_data.latest_sensor_value }}">
+     data-state-id="{{ smoke_data.entity_state.id }}"
+     data-status
+     status="{{ smoke_data.svg_status_style.status_value }}">
 
   <div class="badge">
-    <svg class="icon icon--clear" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+    <svg class="icon icon--idle" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
       <path d="M12 2L4 5v6c0 5 3.5 9.5 8 11 4.5-1.5 8-6 8-11V5l-8-3zm-1.3 14.3l-3.7-3.7 1.4-1.4 2.3 2.3 5.3-5.3 1.4 1.4-6.7 6.7z"/>
     </svg>
-    <svg class="icon icon--alarm" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+    <svg class="icon icon--active" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
       <path d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z"/>
     </svg>
     <svg class="icon icon--recent" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
@@ -20,19 +22,19 @@
 
   <div class="list-meta">
     <div class="entity-name">{{ entity.name }}</div>
-    <div class="status-line">
-      <span class="status-label status-label--clear">Clear</span>
-      <span class="status-label status-label--alarm">Smoke Detected</span>
-    </div>
+    <div class="status-label status-label--idle">All Clear</div>
+    <div class="status-label status-label--active">Smoke Detected</div>
+    <div class="status-label status-label--recent">Recently Cleared</div>
+    <div class="status-label status-label--past">Past Alarm</div>
   </div>
 
   {% if battery_data %}
   <div class="aux-bits">
     <span data-state-id="{{ battery_data.entity_state.id }}"
-          data-display-text>{{ battery_data.latest_display_label }}</span>
+          data-display-text
+          data-status
+          status="{{ battery_data.svg_status_style.status_value }}">{{ battery_data.latest_display_label }}</span>
   </div>
   {% endif %}
 
 </div>
-
-{% endwith %}

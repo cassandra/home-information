@@ -279,6 +279,9 @@ class EntityStateDisplayData:
         if self.entity_state.entity_state_type == EntityStateType.GAS:
             return self._get_gas_status_style()
 
+        if self.entity_state.entity_state_type == EntityStateType.BATTERY_LEVEL:
+            return self._get_battery_level_status_style()
+
         # TODO: These should map the latest value into a continuous range of colors/opacity
         #
         # EntityStateType.AIR_PRESSURE
@@ -450,6 +453,21 @@ class EntityStateDisplayData:
         if self.latest_sensor_value == str(EntityStateValue.LOW):
             return StatusStyle.Low
         return None
+
+    # Battery percentages below this threshold are flagged ``low``;
+    # otherwise ``ok``. The token surfaces via the standard polling
+    # pipeline so any panel that opts in via ``data-status`` on a
+    # battery-bound element can react with CSS rules.
+    BATTERY_LOW_THRESHOLD_PCT = 20
+
+    def _get_battery_level_status_style( self ):
+        try:
+            magnitude = float( self.latest_sensor_value )
+        except (TypeError, ValueError):
+            return StatusStyle.BatteryOk
+        if magnitude < self.BATTERY_LOW_THRESHOLD_PCT:
+            return StatusStyle.BatteryLow
+        return StatusStyle.BatteryOk
     
 
 

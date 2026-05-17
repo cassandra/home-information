@@ -829,6 +829,81 @@ class HassSmokeDetectorState( HassState ):
 
 
 @dataclass( frozen = True )
+class HassSmokeDetectorWithBatteryFields( SimEntityFields ):
+    """Smoke detector that also reports a battery percentage —
+    common shape for battery-powered Zigbee / Z-Wave smoke alarms."""
+    pass
+
+
+@dataclass
+class HassSmokeDetectorWithBatterySmokeState( HassState ):
+    sim_entity_fields  : HassSmokeDetectorWithBatteryFields
+    sim_state_type     : SimStateType                  = SimStateType.ON_OFF
+    sim_state_id       : str                           = 'smoke'
+    value              : str                           = 'off'
+
+    @property
+    def name(self):
+        return f'{self.entity_name} Smoke'
+
+    @property
+    def entity_id(self):
+        return _binary_sensor_entity_id( self.entity_name )
+
+    @property
+    def state(self):
+        return 'on' if str_to_bool( self.value ) else 'off'
+
+    @property
+    def attributes(self) -> Dict[ str, str ]:
+        return {
+            'device_class': 'smoke',
+            'friendly_name': self.entity_name,
+            'icon': 'mdi:smoke-detector',
+        }
+
+
+@dataclass
+class HassSmokeDetectorWithBatteryBatteryState( HassState ):
+    sim_entity_fields  : HassSmokeDetectorWithBatteryFields
+    sim_state_type     : SimStateType                  = SimStateType.CONTINUOUS
+    sim_state_id       : str                           = 'battery'
+    value              : str                           = '85'
+
+    @property
+    def name(self):
+        return f'{self.entity_name} Battery'
+
+    @property
+    def entity_id(self):
+        return _sensor_entity_id( self.entity_name, suffix = '_battery' )
+
+    @property
+    def state(self):
+        return self.value
+
+    @property
+    def attributes(self) -> Dict[ str, str ]:
+        return {
+            'device_class'       : 'battery',
+            'friendly_name'      : f'{self.entity_name} Battery',
+            'unit_of_measurement': '%',
+        }
+
+    @property
+    def min_value(self):
+        return 0
+
+    @property
+    def max_value(self):
+        return 100
+
+    @property
+    def display_unit(self) -> str:
+        return '%'
+
+
+@dataclass( frozen = True )
 class HassCarbonMonoxideDetectorFields( SimEntityFields ):
     """A carbon monoxide detector (``binary_sensor`` with
     ``device_class=carbon_monoxide``). Single ON_OFF SimState —
@@ -3086,6 +3161,15 @@ HASS_SIM_ENTITY_DEFINITION_LIST = [
         sim_entity_fields_class = HassSmokeDetectorFields,
         sim_state_class_list = [
             HassSmokeDetectorState,
+        ],
+    ),
+    SimEntityDefinition(
+        class_label = 'Smoke Detector (smoke + battery)',
+        sim_entity_type = SimEntityType.SMOKE_DETECTOR,
+        sim_entity_fields_class = HassSmokeDetectorWithBatteryFields,
+        sim_state_class_list = [
+            HassSmokeDetectorWithBatterySmokeState,
+            HassSmokeDetectorWithBatteryBatteryState,
         ],
     ),
     SimEntityDefinition(

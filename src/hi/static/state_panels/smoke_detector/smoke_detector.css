@@ -1,101 +1,85 @@
 /* EntityStatePanel for SMOKE_DETECTOR entities.
  *
  * All rules nested under .hi-state-panel-smoke_detector so the short
- * scoped class names (.icon, .label, .badge, .hero, .aux-item, etc.)
- * don't leak. Variant switching is CSS-only and driven by the
- * ``status`` attribute on the panel root. Two status vocabularies
- * land on the root over a panel's lifetime: the raw sensor value
- * (smoke_clear / smoke_detected) on initial server render, and the
- * decay-aware value (idle / active / recent / past) once the first
- * polling refresh lands. CSS handles both so the panel reads
- * correctly at any moment.
+ * scoped class names (.icon, .status-label, .badge, .hero, etc.)
+ * don't leak. The panel root carries the SMOKE state's polling-
+ * driven status attribute — its value is the decay-aware token
+ * (``idle`` / ``active`` / ``recent`` / ``past``) at both initial
+ * render and across polling refreshes, because the template seeds
+ * it from ``smoke_data.svg_status_style.status_value`` and the
+ * polling pipeline writes the same vocabulary. CSS keyed on the
+ * single token suffices.
  */
 
 :root {
-    --hi-smoke-clear-color: #059669;
-    --hi-smoke-clear-bg: rgba(5, 150, 105, 0.10);
-    --hi-smoke-alarm-color: #dc2626;
-    --hi-smoke-alarm-bg: rgba(220, 38, 38, 0.15);
+    --hi-smoke-idle-color:   #059669;
+    --hi-smoke-idle-bg:      rgba(5, 150, 105, 0.10);
+    --hi-smoke-active-color: #dc2626;
+    --hi-smoke-active-bg:    rgba(220, 38, 38, 0.15);
     --hi-smoke-recent-color: #d97706;
-    --hi-smoke-recent-bg: rgba(217, 119, 6, 0.12);
-    --hi-smoke-past-color: #ca8a04;
-    --hi-smoke-past-bg: rgba(202, 138, 4, 0.10);
+    --hi-smoke-recent-bg:    rgba(217, 119, 6, 0.12);
+    --hi-smoke-past-color:   #6b7280;
+    --hi-smoke-past-bg:      rgba(107, 114, 128, 0.08);
 }
 
 /* ============================================================== */
-/* Variant visibility: which icon and label show per status value. */
+/* Badge — circular icon hero, shared across contexts.            */
+/* ============================================================== */
+
+.hi-state-panel-smoke_detector .badge {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+.hi-state-panel-smoke_detector .icon {
+    width: 60%;
+    height: 60%;
+}
+
+/* ============================================================== */
+/* Per-state visibility: icon + label variants                    */
 /* ============================================================== */
 
 .hi-state-panel-smoke_detector .icon,
 .hi-state-panel-smoke_detector .status-label {
     display: none;
 }
-
-.hi-state-panel-smoke_detector[status="smoke_clear"] .icon--clear,
-.hi-state-panel-smoke_detector[status="idle"] .icon--clear,
-.hi-state-panel-smoke_detector[status="smoke_clear"] .status-label--clear,
-.hi-state-panel-smoke_detector[status="idle"] .status-label--clear {
-    display: inline-block;
-}
-
-.hi-state-panel-smoke_detector[status="smoke_detected"] .icon--alarm,
-.hi-state-panel-smoke_detector[status="active"] .icon--alarm,
-.hi-state-panel-smoke_detector[status="smoke_detected"] .status-label--alarm,
-.hi-state-panel-smoke_detector[status="active"] .status-label--alarm {
-    display: inline-block;
-}
-
+.hi-state-panel-smoke_detector[status="idle"]   .icon--idle,
+.hi-state-panel-smoke_detector[status="idle"]   .status-label--idle,
+.hi-state-panel-smoke_detector[status="active"] .icon--active,
+.hi-state-panel-smoke_detector[status="active"] .status-label--active,
 .hi-state-panel-smoke_detector[status="recent"] .icon--recent,
-.hi-state-panel-smoke_detector[status="recent"] .status-label--clear {
-    display: inline-block;
-}
-
-.hi-state-panel-smoke_detector[status="past"] .icon--past,
-.hi-state-panel-smoke_detector[status="past"] .status-label--clear {
-    display: inline-block;
+.hi-state-panel-smoke_detector[status="recent"] .status-label--recent,
+.hi-state-panel-smoke_detector[status="past"]   .icon--past,
+.hi-state-panel-smoke_detector[status="past"]   .status-label--past {
+    display: block;
 }
 
 /* ============================================================== */
-/* Color tints — applied to badge background per status.          */
+/* Per-state color tints                                          */
 /* ============================================================== */
 
-.hi-state-panel-smoke_detector .badge {
-    background: var(--hi-smoke-clear-bg);
-    color: var(--hi-smoke-clear-color);
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex-shrink: 0;
-}
+.hi-state-panel-smoke_detector[status="idle"]   .badge { background: var(--hi-smoke-idle-bg);   color: var(--hi-smoke-idle-color); }
+.hi-state-panel-smoke_detector[status="active"] .badge { background: var(--hi-smoke-active-bg); color: var(--hi-smoke-active-color); }
+.hi-state-panel-smoke_detector[status="recent"] .badge { background: var(--hi-smoke-recent-bg); color: var(--hi-smoke-recent-color); }
+.hi-state-panel-smoke_detector[status="past"]   .badge { background: var(--hi-smoke-past-bg);   color: var(--hi-smoke-past-color); }
 
-.hi-state-panel-smoke_detector[status="smoke_detected"] .badge,
-.hi-state-panel-smoke_detector[status="active"] .badge {
-    background: var(--hi-smoke-alarm-bg);
-    color: var(--hi-smoke-alarm-color);
-}
-.hi-state-panel-smoke_detector[status="recent"] .badge {
-    background: var(--hi-smoke-recent-bg);
-    color: var(--hi-smoke-recent-color);
-}
-.hi-state-panel-smoke_detector[status="past"] .badge {
-    background: var(--hi-smoke-past-bg);
-    color: var(--hi-smoke-past-color);
-}
-
-.hi-state-panel-smoke_detector .icon {
-    width: 60%;
-    height: 60%;
-}
-
-/* Status label color follows visual treatment. */
 .hi-state-panel-smoke_detector .status-label { font-weight: 600; }
-.hi-state-panel-smoke_detector[status="smoke_clear"] .status-label,
-.hi-state-panel-smoke_detector[status="idle"] .status-label { color: var(--hi-smoke-clear-color); }
-.hi-state-panel-smoke_detector[status="smoke_detected"] .status-label,
-.hi-state-panel-smoke_detector[status="active"] .status-label { color: var(--hi-smoke-alarm-color); }
+.hi-state-panel-smoke_detector[status="idle"]   .status-label { color: var(--hi-smoke-idle-color); }
+.hi-state-panel-smoke_detector[status="active"] .status-label { color: var(--hi-smoke-active-color); }
 .hi-state-panel-smoke_detector[status="recent"] .status-label { color: var(--hi-smoke-recent-color); }
-.hi-state-panel-smoke_detector[status="past"] .status-label { color: var(--hi-smoke-past-color); }
+.hi-state-panel-smoke_detector[status="past"]   .status-label { color: var(--hi-smoke-past-color); }
+
+/* Alarm-state pulse to draw attention. */
+.hi-state-panel-smoke_detector[status="active"] .icon--active {
+    animation: hi-smoke-alarm-pulse 1.2s ease-in-out infinite;
+}
+@keyframes hi-smoke-alarm-pulse {
+    0%, 100% { transform: scale(1);    opacity: 1; }
+    50%      { transform: scale(1.08); opacity: 0.85; }
+}
 
 /* ============================================================== */
 /* Modal layout                                                   */
@@ -114,7 +98,6 @@
     font-size: 22px;
     line-height: 1.1;
 }
-
 .hi-state-panel-smoke_detector--modal .auxiliary {
     border-top: 1px solid var(--line-color, #d0d7de);
     padding: 14px 20px;
@@ -152,7 +135,6 @@
 .hi-state-panel-smoke_detector--list .entity-name {
     font-size: 14px; font-weight: 600; line-height: 1.2;
 }
-.hi-state-panel-smoke_detector--list .status-line { font-size: 12px; }
 .hi-state-panel-smoke_detector--list .status-label { font-size: 12px; }
 .hi-state-panel-smoke_detector--list .aux-bits {
     font-size: 11px;
@@ -168,18 +150,50 @@
     flex-direction: column;
     align-items: center;
     text-align: center;
-    padding: 8px;
+    padding: 12px;
     gap: 6px;
+    height: 100%;
 }
-.hi-state-panel-smoke_detector--grid .badge { width: 64px; height: 64px; margin-top: 4px; }
+.hi-state-panel-smoke_detector--grid .badge { width: 72px; height: 72px; margin-top: 6px; }
 .hi-state-panel-smoke_detector--grid .status-label { font-size: 13px; line-height: 1.1; }
 .hi-state-panel-smoke_detector--grid .entity-name {
-    font-size: 11px;
+    font-size: 10px;
     color: var(--text-muted, #6c757d);
     line-height: 1.2;
+    margin-top: 4px;
+}
+.hi-state-panel-smoke_detector--grid[status="idle"]   { background: var(--hi-smoke-idle-bg); }
+.hi-state-panel-smoke_detector--grid[status="active"] { background: var(--hi-smoke-active-bg); }
+.hi-state-panel-smoke_detector--grid[status="recent"] { background: var(--hi-smoke-recent-bg); }
+.hi-state-panel-smoke_detector--grid[status="past"]   { background: var(--hi-smoke-past-bg); }
+
+/* ============================================================== */
+/* Battery low-state escalation.                                  */
+/* ============================================================== */
+/* The polling pipeline emits ``status="low"`` on BATTERY_LEVEL    */
+/* elements when the value is below the framework threshold        */
+/* (see EntityStateDisplayData.BATTERY_LOW_THRESHOLD_PCT). The     */
+/* aux-value text colors red; the grid card surfaces a dedicated   */
+/* "Low Battery" warning only in the low state.                    */
+
+.hi-state-panel-smoke_detector--modal .aux-value[status="low"] {
+    color: var(--hi-smoke-active-color);
+    font-weight: 600;
+}
+.hi-state-panel-smoke_detector--list .aux-bits span[status="low"] {
+    color: var(--hi-smoke-active-color);
+    font-weight: 600;
 }
 
-.hi-state-panel-smoke_detector--grid[status="smoke_detected"],
-.hi-state-panel-smoke_detector--grid[status="active"] { background: var(--hi-smoke-alarm-bg); }
-.hi-state-panel-smoke_detector--grid[status="recent"] { background: var(--hi-smoke-recent-bg); }
-.hi-state-panel-smoke_detector--grid[status="past"] { background: var(--hi-smoke-past-bg); }
+.hi-state-panel-smoke_detector--grid .low-battery-warning {
+    display: none;
+    margin-top: 6px;
+    font-size: 9px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--hi-smoke-active-color);
+}
+.hi-state-panel-smoke_detector--grid .low-battery-warning[status="low"] {
+    display: block;
+}

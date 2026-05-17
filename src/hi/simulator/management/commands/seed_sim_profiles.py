@@ -100,6 +100,7 @@ from hi.simulator.services.hass.sim_models import (
     HassPresenceSensorFields,
     HassSmartBulbFields,
     HassSmokeDetectorFields,
+    HassSmokeDetectorWithBatteryFields,
     HassSwitchFields,
     HassWaterLeakSensorFields,
     HassWeatherStationFields,
@@ -387,6 +388,7 @@ class Command(BaseCommand):
         self._add_hass_door_contact(   profile, 'Zoo Door Contact' )
         self._add_hass_window_contact( profile, 'Zoo Window Contact' )
         self._add_hass_smoke_detector( profile, 'Zoo Smoke Detector' )
+        self._add_hass_smoke_detector_with_battery( profile, 'Zoo Smoke Detector (Battery)' )
         self._add_hass_carbon_monoxide_detector( profile, 'Zoo CO Detector' )
         self._add_hass_gas_detector(   profile, 'Zoo Gas Detector' )
         self._add_hass_temperature_sensor( profile, 'Zoo Thermometer' )
@@ -562,6 +564,15 @@ class Command(BaseCommand):
             profile = profile,
             simulator_id = 'hass',
             fields_class = HassSmokeDetectorFields,
+            sim_entity_type = SimEntityType.SMOKE_DETECTOR,
+            fields_kwargs = {'name': name},
+        )
+
+    def _add_hass_smoke_detector_with_battery(self, profile, name):
+        self._create_db_entity(
+            profile = profile,
+            simulator_id = 'hass',
+            fields_class = HassSmokeDetectorWithBatteryFields,
             sim_entity_type = SimEntityType.SMOKE_DETECTOR,
             fields_kwargs = {'name': name},
         )
