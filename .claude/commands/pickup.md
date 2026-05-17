@@ -14,7 +14,24 @@ This command does NOT write code, commit, or push implementation changes. For ba
 
 1. **Load context.** Read `docs/CLAUDE.md` for development philosophy and standards. Use TodoWrite to track pickup steps.
 
-2. **Read the issue.** Run `gh issue view $0 --comments`. Understand requirements, context, and any prior design decisions in the thread.
+2. **Read the issue body AND every comment.** Comments often carry decisive design refinements; never plan from the body alone.
+
+   Use a JSON projection so the GitHub Projects-classic deprecation warning (which makes `gh issue view --comments` exit non-zero on some repos) cannot mask comment retrieval:
+
+   ```bash
+   gh issue view $0 --json title,body,state,labels,assignees,comments
+   ```
+
+   If the JSON command itself fails for any reason, fall back to fetching body and comments as two separate calls and confirm BOTH succeeded before proceeding:
+
+   ```bash
+   gh issue view $0 --json title,body,state,labels,assignees
+   gh api repos/{owner}/{repo}/issues/$0/comments
+   ```
+
+   Do not substitute `gh api repos/.../issues/$0` alone — that endpoint returns only the body, not the comments thread, and silently produces an incomplete picture.
+
+   Before moving to step 3, verify the comments array was retrieved (it may legitimately be empty; an empty array is OK, a missing field is not). If any comment is present, read it in full and treat its content as authoritative alongside the body.
 
 3. **Safety check.** Run `git status`; abort if the working tree is not clean.
 
