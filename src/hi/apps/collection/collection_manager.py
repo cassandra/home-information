@@ -8,7 +8,7 @@ from hi.apps.collection.edit.forms import CollectionPositionForm
 from hi.apps.common.singleton import Singleton
 from hi.apps.entity.enums import DisplayContext, EntityGroupType
 from hi.apps.entity.models import Entity
-from hi.apps.entity.state_panel_dispatch import build_entity_panel_data
+from hi.apps.entity.state_panel_dispatch import StatePanelDispatcher
 from hi.apps.location.models import Location, LocationView
 from hi.apps.location.svg_item_factory import SvgItemFactory
 from hi.apps.monitor.display_data import EntityDisplayData
@@ -73,8 +73,8 @@ class CollectionManager(Singleton):
             DisplayContext.GRID if collection.collection_view_type.is_grid
             else DisplayContext.LIST
         )
-        entity_panel_data_list = [
-            build_entity_panel_data(
+        state_panel_data_list = [
+            StatePanelDispatcher.build_state_panel_data(
                 EntityDisplayData( entity_status_data = status_data ),
                 display_context,
             )
@@ -82,7 +82,7 @@ class CollectionManager(Singleton):
         ]
         return CollectionData(
             collection             = collection,
-            entity_panel_data_list = entity_panel_data_list,
+            state_panel_data_list = state_panel_data_list,
         )
 
     def create_collection( self, name : str ) -> Collection:

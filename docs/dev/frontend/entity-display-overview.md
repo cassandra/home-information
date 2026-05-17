@@ -35,10 +35,10 @@ The same polling pipeline drives four visually distinct surfaces. Each surface h
 |---|---|---|
 | **LocationView SVG icons** | The map view's `<g>` icon elements per positioned entity | [`entity-visual-configuration.md`](entity-visual-configuration.md) |
 | **LocationView SVG paths** | The map view's `<path>` elements per area-based entity | [`entity-visual-configuration.md`](entity-visual-configuration.md) |
-| **Entity status modal** | Body of the per-entity status dialog | [`entity-status-panels.md`](entity-status-panels.md) |
-| **Collection cards** | Per-entity cards in the list and grid layouts of a collection view | [`entity-status-panels.md`](entity-status-panels.md) |
+| **Entity status modal** | Body of the per-entity status dialog | [`entity-state-panels.md`](entity-state-panels.md) |
+| **Collection cards** | Per-entity cards in the list and grid layouts of a collection view | [`entity-state-panels.md`](entity-state-panels.md) |
 
-The modal and collection-card surfaces share an `EntityStatusPanel` dispatch: a panel for a given `EntityType` provides up to three templates (`modal.html` / `list.html` / `grid.html`), with a framework fallback supplying a flat state list when no per-type panel exists.
+The modal and collection-card surfaces share an `EntityStatePanel` dispatch: a panel for a given `EntityType` provides up to three templates (`modal.html` / `list.html` / `grid.html`), with a framework fallback supplying a flat state list when no per-type panel exists.
 
 ## The polling contract is the connective tissue
 
@@ -62,7 +62,7 @@ The full grammar, the server payload shape, and the rules about which declaratio
 By task:
 
 - **Adding visual support for a new `EntityType` on the map** (icon or path) — [`entity-visual-configuration.md`](entity-visual-configuration.md).
-- **Authoring a custom panel for a new `EntityType`** (modal / list / grid bodies) — [`entity-status-panels.md`](entity-status-panels.md).
+- **Authoring a custom panel for a new `EntityType`** (modal / list / grid bodies) — [`entity-state-panels.md`](entity-state-panels.md).
 - **Modifying the polling-update mechanism**, the wire format, the color palette, or the per-element declaration grammar — [`entity-status-display.md`](entity-status-display.md).
 
 By component:

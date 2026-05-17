@@ -6,6 +6,6 @@ class DeviceConfig(AppConfig):
     name = "hi.apps.entity"
 
     def ready(self):
-        from hi.apps.entity.state_panel_registry import EntityStatusPanelRegistry
-        EntityStatusPanelRegistry().discover()
+        from hi.apps.entity.state_panel_registry import EntityStatePanelRegistry
+        EntityStatePanelRegistry().discover()
         return

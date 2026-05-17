@@ -1,5 +1,5 @@
 """
-Authoring guidance: ``docs/dev/frontend/entity-status-panels.md``.
+Authoring guidance: ``docs/dev/frontend/entity-state-panels.md``.
 """
 
 from dataclasses import dataclass, field
@@ -9,7 +9,7 @@ from hi.apps.entity.enums import DisplayContext, EntityStateRole, EntityType
 
 
 @dataclass
-class EntityStatusPanel:
+class EntityStatePanel:
 
     name             : str
     display_contexts : Set[ DisplayContext ]
@@ -23,7 +23,7 @@ class EntityStatusPanel:
     def __post_init__( self ):
         if not self.name or not isinstance( self.name, str ):
             raise TypeError(
-                'EntityStatusPanel: name must be a non-empty str'
+                'EntityStatePanel: name must be a non-empty str'
             )
         if not self.template_name or not isinstance( self.template_name, str ):
             raise TypeError(

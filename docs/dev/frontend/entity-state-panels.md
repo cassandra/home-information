@@ -1,6 +1,6 @@
-# Entity Status Panels
+# Entity State Panels
 
-EntityStatusPanels render the body of the entity status modal and of the per-entity cards inside collections. The framework dispatches per-`EntityType`, picking from one or more **panel declarations** that target that type. Each panel can present its entity in whatever form best fits — a flat state list, a graphical dial, a video frame, etc. — while the surrounding modal / card chrome stays uniform.
+EntityStatePanels render the body of the entity status modal and of the per-entity cards inside collections. The framework dispatches per-`EntityType`, picking from one or more **panel declarations** that target that type. Each panel can present its entity in whatever form best fits — a flat state list, a graphical dial, a video frame, etc. — while the surrounding modal / card chrome stays uniform.
 
 This document covers authoring a new panel.
 
@@ -12,7 +12,7 @@ This document covers authoring a new panel.
 
 A panel is a Python declaration plus a bundle of templates and static assets:
 
-- The **declaration** (an `EntityStatusPanel` instance constructed in `panel.py`) names the panel, the `EntityType` it claims, the `DisplayContext`s it handles, its priority, and the `EntityStateRole`s it requires and optionally uses.
+- The **declaration** (an `EntityStatePanel` instance constructed in `panel.py`) names the panel, the `EntityType` it claims, the `DisplayContext`s it handles, its priority, and the `EntityStateRole`s it requires and optionally uses.
 - The **template** renders the panel body. Templates are context-agnostic: panels that need to look meaningfully different across display contexts should split into separate declarations, not branch inside a single template.
 - The **static** assets — CSS and optional JS — handle visual styling and any custom polling-time behavior.
 
@@ -26,7 +26,7 @@ When no panel matches, the framework falls back to a flat state list. The fallba
 
 ```
 src/hi/apps/entity/state_panels/<name>/
-    panel.py            # required: one or more EntityStatusPanel instances at module scope
+    panel.py            # required: one or more EntityStatePanel instances at module scope
 
 src/hi/apps/entity/templates/entity/state_panels/<name>/
     <author-chosen>.html  # the template(s) named by panel.py
@@ -42,7 +42,7 @@ There is no enforced template filename. The declaration names the template expli
 
 ## Panel declaration
 
-Each panel is an [`EntityStatusPanel`](../../../src/hi/apps/entity/state_panel_base.py) dataclass instance with the following fields:
+Each panel is an [`EntityStatePanel`](../../../src/hi/apps/entity/state_panel_base.py) dataclass instance with the following fields:
 
 | Field | Required | Meaning |
 |---|---|---|
@@ -61,10 +61,10 @@ Worked example:
 ```python
 # src/hi/apps/entity/state_panels/thermostat_single_setpoint/panel.py
 from hi.apps.entity.enums import DisplayContext, EntityStateRole, EntityType
-from hi.apps.entity.state_panel_base import EntityStatusPanel
+from hi.apps.entity.state_panel_base import EntityStatePanel
 
 
-panel = EntityStatusPanel(
+panel = EntityStatePanel(
     name = 'thermostat_single_setpoint',
     entity_type = EntityType.THERMOSTAT,
     display_contexts = { DisplayContext.MODAL, DisplayContext.LIST, DisplayContext.GRID },
@@ -84,7 +84,7 @@ panel = EntityStatusPanel(
 )
 ```
 
-At app-ready time, [`state_panel_registry.py`](../../../src/hi/apps/entity/state_panel_registry.py) imports each `state_panels/<name>/panel.py` and registers every `EntityStatusPanel` instance at module scope. A module may declare one panel (typical) or multiple (siblings sharing CSS/JS or a templates directory).
+At app-ready time, [`state_panel_registry.py`](../../../src/hi/apps/entity/state_panel_registry.py) imports each `state_panels/<name>/panel.py` and registers every `EntityStatePanel` instance at module scope. A module may declare one panel (typical) or multiple (siblings sharing CSS/JS or a templates directory).
 
 For the resolution algorithm the framework uses to choose among matching declarations, read [`state_panel_dispatch.py`](../../../src/hi/apps/entity/state_panel_dispatch.py) directly.
 
@@ -167,7 +167,7 @@ Append `?debug_panel=1` to any view that renders an entity status panel to see t
 ## Walkthrough: adding a panel
 
 1. Pick a `<name>` unique across all panels (typically `<entity_type>_<variant>` if variants are anticipated, or just `<entity_type>` for a single panel).
-2. Create `src/hi/apps/entity/state_panels/<name>/panel.py` that constructs an `EntityStatusPanel` at module scope. Set `display_contexts`, `priority`, `required_roles`, `optional_roles`, `template_name`, and `entity_type` (omit `entity_type` only if the panel is a framework fallback).
+2. Create `src/hi/apps/entity/state_panels/<name>/panel.py` that constructs an `EntityStatePanel` at module scope. Set `display_contexts`, `priority`, `required_roles`, `optional_roles`, `template_name`, and `entity_type` (omit `entity_type` only if the panel is a framework fallback).
 3. Create the template at the path named by `template_name`.
 4. Fetch required-role states via `state_status_data_by_role.<role_name>` (lowercase `EntityStateRole.name`) — no `{% if %}` needed. Guard optional-role access with `{% if %}`.
 5. Tag refreshable elements per the polling-update contract (see [`entity-status-display.md`](entity-status-display.md)).

@@ -8,7 +8,7 @@
 {% block modal_dialog_class %}hi-modal-dialog-600{% endblock %}
 
 {% block title_text %}
-{{ entity_panel_data.entity.name }}
+{{ state_panel_data.entity.name }}
 {% endblock %}
 
 {# Framework-level subheader: entity type icon + label on the left, #}
@@ -16,7 +16,7 @@
 {# right. Panels render their body below without repeating any of   #}
 {# this identifying chrome.                                          #}
 {% block subheader %}
-{% with entity=entity_panel_data.entity icon_item=entity_panel_data.display_only_svg_icon_item %}
+{% with entity=state_panel_data.entity icon_item=state_panel_data.display_only_svg_icon_item %}
 <div class="hi-entity-status-subheader d-flex align-items-center px-3 py-1 border-bottom">
   <div class="hi-entity-status-subheader__left d-flex align-items-center">
     {% if icon_item %}
@@ -43,10 +43,10 @@
 {% endblock %}
 
 {% block body %}
-{% integration_health_banner entity_panel_data.entity.integration_id "Values shown may be stale; controls may not respond." %}
-{% include_panel entity_panel_data %}
-{% if entity_panel_data.extras_state_data_list %}
-{% include "entity/state_panels/extras_section.html" with extras_state_data_list=entity_panel_data.extras_state_data_list %}
+{% integration_health_banner state_panel_data.entity.integration_id "Values shown may be stale; controls may not respond." %}
+{% include_panel state_panel_data %}
+{% if state_panel_data.extras_state_data_list %}
+{% include "entity/state_panels/extras_section.html" with extras_state_data_list=state_panel_data.extras_state_data_list %}
 {% endif %}
 {% if panel_trace %}<!--
 Panel dispatch trace:
@@ -57,7 +57,7 @@ Panel dispatch trace:
 
 {% block action_left %}
 <a class="btn btn-primary"
-   href="{% url 'entity_edit' entity_id=entity_panel_data.entity.id %}"
+   href="{% url 'entity_edit' entity_id=state_panel_data.entity.id %}"
    data-async="modal">
   {% icon "edit" size="sm" css_class="hi-icon-left" %}EDIT
 </a>
@@ -65,7 +65,7 @@ Panel dispatch trace:
 
 {% block action_center %}
 <a class="btn btn-primary"
-   href="{% url 'entity_history' entity_id=entity_panel_data.entity.id %}"
+   href="{% url 'entity_history' entity_id=state_panel_data.entity.id %}"
    data-async="modal">
   {% icon "history" size="sm" css_class="hi-icon-left" %}HISTORY
 </a>

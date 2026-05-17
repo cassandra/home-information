@@ -1,5 +1,5 @@
 from hi.apps.entity.enums import DisplayContext, EntityStateRole, EntityType
-from hi.apps.entity.state_panel_base import EntityStatusPanel
+from hi.apps.entity.state_panel_base import EntityStatePanel
 
 
 _REQUIRED_ROLES = {
@@ -12,7 +12,7 @@ _OPTIONAL_ROLES = {
 }
 
 
-modal_panel = EntityStatusPanel(
+modal_panel = EntityStatePanel(
     name             = 'thermostat_modal',
     entity_type      = EntityType.THERMOSTAT,
     display_contexts = { DisplayContext.MODAL },
@@ -22,7 +22,7 @@ modal_panel = EntityStatusPanel(
     optional_roles   = _OPTIONAL_ROLES,
 )
 
-list_panel = EntityStatusPanel(
+list_panel = EntityStatePanel(
     name             = 'thermostat_list',
     entity_type      = EntityType.THERMOSTAT,
     display_contexts = { DisplayContext.LIST },
@@ -32,7 +32,7 @@ list_panel = EntityStatusPanel(
     optional_roles   = _OPTIONAL_ROLES,
 )
 
-grid_panel = EntityStatusPanel(
+grid_panel = EntityStatePanel(
     name             = 'thermostat_grid',
     entity_type      = EntityType.THERMOSTAT,
     display_contexts = { DisplayContext.GRID },

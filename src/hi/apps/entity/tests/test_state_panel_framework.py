@@ -1,17 +1,17 @@
 import logging
 
 from hi.apps.entity.enums import DisplayContext, EntityStateRole, EntityType
-from hi.apps.entity.state_panel_base import EntityStatusPanel
-from hi.apps.entity.state_panel_dispatch import resolve_panel
-from hi.apps.entity.state_panel_registry import EntityStatusPanelRegistry
+from hi.apps.entity.state_panel_base import EntityStatePanel
+from hi.apps.entity.state_panel_dispatch import StatePanelDispatcher
+from hi.apps.entity.state_panel_registry import EntityStatePanelRegistry
 from hi.testing.base_test_case import BaseTestCase
 
 
 logging.disable( logging.CRITICAL )
 
 
-def _make_panel( **overrides ) -> EntityStatusPanel:
-    """Build an EntityStatusPanel with sensible defaults for testing.
+def _make_panel( **overrides ) -> EntityStatePanel:
+    """Build an EntityStatePanel with sensible defaults for testing.
     Only the attributes the test cares about need to be passed."""
     defaults = dict(
         name             = 'p',
@@ -20,10 +20,10 @@ def _make_panel( **overrides ) -> EntityStatusPanel:
         template_name    = 'entity/state_panels/p/panel.html',
     )
     defaults.update( overrides )
-    return EntityStatusPanel( **defaults )
+    return EntityStatePanel( **defaults )
 
 
-class TestEntityStatusPanelValidation( BaseTestCase ):
+class TestEntityStatePanelValidation( BaseTestCase ):
 
     def test_minimal_construction_succeeds( self ):
         panel = _make_panel()
@@ -64,33 +64,33 @@ class TestEntityStatusPanelValidation( BaseTestCase ):
             )
 
 
-class TestEntityStatusPanelRegistry( BaseTestCase ):
+class TestEntityStatePanelRegistry( BaseTestCase ):
 
     def setUp( self ):
         super().setUp()
-        self._registry_snapshot = EntityStatusPanelRegistry().snapshot_for_tests()
-        EntityStatusPanelRegistry().reset_for_tests()
+        self._registry_snapshot = EntityStatePanelRegistry().snapshot_for_tests()
+        EntityStatePanelRegistry().reset_for_tests()
 
     def tearDown( self ):
-        EntityStatusPanelRegistry().restore_for_tests( self._registry_snapshot )
+        EntityStatePanelRegistry().restore_for_tests( self._registry_snapshot )
         super().tearDown()
 
     def test_register_adds_panel( self ):
-        registry = EntityStatusPanelRegistry()
+        registry = EntityStatePanelRegistry()
         panel = _make_panel( name = 'alpha' )
         registry.register( panel )
         self.assertIs( registry.get_by_name( 'alpha' ), panel )
         self.assertIn( panel, registry.all_panels() )
 
     def test_re_registering_same_instance_is_idempotent( self ):
-        registry = EntityStatusPanelRegistry()
+        registry = EntityStatePanelRegistry()
         panel = _make_panel( name = 'alpha' )
         registry.register( panel )
         registry.register( panel )
         self.assertEqual( len( registry.all_panels() ), 1 )
 
     def test_duplicate_name_different_instance_rejected( self ):
-        registry = EntityStatusPanelRegistry()
+        registry = EntityStatePanelRegistry()
         registry.register( _make_panel( name = 'alpha' ) )
         with self.assertRaises( RuntimeError ):
             registry.register( _make_panel( name = 'alpha' ) )
@@ -100,15 +100,15 @@ class TestResolvePanel( BaseTestCase ):
 
     def setUp( self ):
         super().setUp()
-        self._registry_snapshot = EntityStatusPanelRegistry().snapshot_for_tests()
-        EntityStatusPanelRegistry().reset_for_tests()
+        self._registry_snapshot = EntityStatePanelRegistry().snapshot_for_tests()
+        EntityStatePanelRegistry().reset_for_tests()
 
     def tearDown( self ):
-        EntityStatusPanelRegistry().restore_for_tests( self._registry_snapshot )
+        EntityStatePanelRegistry().restore_for_tests( self._registry_snapshot )
         super().tearDown()
 
     def _register( self, panel ):
-        EntityStatusPanelRegistry().register( panel )
+        EntityStatePanelRegistry().register( panel )
         return panel
 
     def test_typed_panel_wins_when_required_roles_present( self ):
@@ -120,7 +120,7 @@ class TestResolvePanel( BaseTestCase ):
         fallback = self._register( _make_panel(
             name = 'fallback', entity_type = None,
         ) )
-        resolution = resolve_panel(
+        resolution = StatePanelDispatcher.resolve_panel(
             entity_type = EntityType.THERMOSTAT,
             display_context = DisplayContext.MODAL,
             present_roles = { EntityStateRole.THERMOSTAT_CURRENT_TEMPERATURE },
@@ -140,7 +140,7 @@ class TestResolvePanel( BaseTestCase ):
             entity_type = EntityType.THERMOSTAT,
             priority = 20,
         ) )
-        resolution = resolve_panel(
+        resolution = StatePanelDispatcher.resolve_panel(
             entity_type = EntityType.THERMOSTAT,
             display_context = DisplayContext.MODAL,
             present_roles = { EntityStateRole.THERMOSTAT_CURRENT_TEMPERATURE },
@@ -154,7 +154,7 @@ class TestResolvePanel( BaseTestCase ):
         self._register( _make_panel(
             name = 'bbb', entity_type = EntityType.THERMOSTAT, priority = 10,
         ) )
-        resolution = resolve_panel(
+        resolution = StatePanelDispatcher.resolve_panel(
             entity_type = EntityType.THERMOSTAT,
             display_context = DisplayContext.MODAL,
             present_roles = set(),
@@ -170,7 +170,7 @@ class TestResolvePanel( BaseTestCase ):
         fallback = self._register( _make_panel(
             name = 'fallback', entity_type = None,
         ) )
-        resolution = resolve_panel(
+        resolution = StatePanelDispatcher.resolve_panel(
             entity_type = EntityType.THERMOSTAT,
             display_context = DisplayContext.MODAL,
             present_roles = set(),
@@ -188,7 +188,7 @@ class TestResolvePanel( BaseTestCase ):
             entity_type = None,
             display_contexts = { DisplayContext.MODAL, DisplayContext.GRID },
         ) )
-        resolution = resolve_panel(
+        resolution = StatePanelDispatcher.resolve_panel(
             entity_type = EntityType.THERMOSTAT,
             display_context = DisplayContext.GRID,
             present_roles = set(),
@@ -202,7 +202,7 @@ class TestResolvePanel( BaseTestCase ):
             required_roles = { EntityStateRole.THERMOSTAT_CURRENT_TEMPERATURE },
             optional_roles = { EntityStateRole.HUMIDITY },
         ) )
-        resolution = resolve_panel(
+        resolution = StatePanelDispatcher.resolve_panel(
             entity_type = EntityType.THERMOSTAT,
             display_context = DisplayContext.MODAL,
             present_roles = {
@@ -224,7 +224,7 @@ class TestResolvePanel( BaseTestCase ):
             display_contexts = { DisplayContext.MODAL },
         ) )
         with self.assertRaises( RuntimeError ):
-            resolve_panel(
+            StatePanelDispatcher.resolve_panel(
                 entity_type = EntityType.THERMOSTAT,
                 display_context = DisplayContext.GRID,
                 present_roles = set(),
@@ -264,7 +264,7 @@ class TestProductionPanelDiscovery( BaseTestCase ):
                 present_roles = smoke_present_roles
             else:
                 present_roles = set()
-            resolution = resolve_panel(
+            resolution = StatePanelDispatcher.resolve_panel(
                 entity_type = entity_type,
                 display_context = ctx,
                 present_roles = present_roles,
@@ -276,7 +276,7 @@ class TestProductionPanelDiscovery( BaseTestCase ):
 
     def test_unknown_entity_type_falls_back( self ):
         for ctx, expected_name in self.EXPECTED_FALLBACK_PANELS.items():
-            resolution = resolve_panel(
+            resolution = StatePanelDispatcher.resolve_panel(
                 entity_type = EntityType.OTHER,
                 display_context = ctx,
                 present_roles = set(),
@@ -286,7 +286,7 @@ class TestProductionPanelDiscovery( BaseTestCase ):
     def test_typed_panel_falls_back_when_required_role_absent( self ):
         # Thermostat with no roles -> required THERMOSTAT_CURRENT_TEMPERATURE
         # is missing, so dispatch falls through to fallback.
-        resolution = resolve_panel(
+        resolution = StatePanelDispatcher.resolve_panel(
             entity_type = EntityType.THERMOSTAT,
             display_context = DisplayContext.MODAL,
             present_roles = set(),

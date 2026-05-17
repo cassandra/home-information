@@ -1,8 +1,8 @@
 from hi.apps.entity.enums import DisplayContext, EntityType
-from hi.apps.entity.state_panel_base import EntityStatusPanel
+from hi.apps.entity.state_panel_base import EntityStatePanel
 
 
-modal_panel = EntityStatusPanel(
+modal_panel = EntityStatePanel(
     name             = 'camera_modal',
     entity_type      = EntityType.CAMERA,
     display_contexts = { DisplayContext.MODAL },
@@ -10,7 +10,7 @@ modal_panel = EntityStatusPanel(
     template_name    = 'entity/state_panels/camera/modal.html',
 )
 
-list_panel = EntityStatusPanel(
+list_panel = EntityStatePanel(
     name             = 'camera_list',
     entity_type      = EntityType.CAMERA,
     display_contexts = { DisplayContext.LIST },
@@ -18,7 +18,7 @@ list_panel = EntityStatusPanel(
     template_name    = 'entity/state_panels/camera/list.html',
 )
 
-grid_panel = EntityStatusPanel(
+grid_panel = EntityStatePanel(
     name             = 'camera_grid',
     entity_type      = EntityType.CAMERA,
     display_contexts = { DisplayContext.GRID },

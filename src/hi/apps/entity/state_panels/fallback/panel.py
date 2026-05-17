@@ -1,8 +1,8 @@
 from hi.apps.entity.enums import DisplayContext
-from hi.apps.entity.state_panel_base import EntityStatusPanel
+from hi.apps.entity.state_panel_base import EntityStatePanel
 
 
-modal_panel = EntityStatusPanel(
+modal_panel = EntityStatePanel(
     name             = 'fallback_modal',
     entity_type      = None,
     display_contexts = { DisplayContext.MODAL },
@@ -10,7 +10,7 @@ modal_panel = EntityStatusPanel(
     template_name    = 'entity/state_panels/fallback/modal.html',
 )
 
-list_panel = EntityStatusPanel(
+list_panel = EntityStatePanel(
     name             = 'fallback_list',
     entity_type      = None,
     display_contexts = { DisplayContext.LIST },
@@ -18,7 +18,7 @@ list_panel = EntityStatusPanel(
     template_name    = 'entity/state_panels/fallback/list.html',
 )
 
-grid_panel = EntityStatusPanel(
+grid_panel = EntityStatePanel(
     name             = 'fallback_grid',
     entity_type      = None,
     display_contexts = { DisplayContext.GRID },

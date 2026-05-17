@@ -10,7 +10,7 @@ from hi.apps.common import datetimeproxy
 from hi.apps.attribute.view_mixins import AttributeEditViewMixin
 from hi.apps.attribute.edit_response_renderer import AttributeEditResponseRenderer
 from hi.apps.entity.enums import DisplayContext
-from hi.apps.entity.state_panel_dispatch import build_entity_panel_data
+from hi.apps.entity.state_panel_dispatch import StatePanelDispatcher
 from hi.apps.monitor.display_data import EntityDisplayData
 from hi.apps.monitor.status_display_manager import StatusDisplayManager
 
@@ -45,10 +45,12 @@ class EntityStatusView( HiModalView, EntityViewMixin ):
             return EntityEditView().get( request, *args, **kwargs )
 
         entity_display_data = EntityDisplayData( entity_status_data = entity_status_data )
-        entity_panel_data = build_entity_panel_data( entity_display_data, DisplayContext.MODAL )
+        state_panel_data = StatePanelDispatcher.build_state_panel_data(
+            entity_display_data, DisplayContext.MODAL,
+        )
         context = {
-            'entity_panel_data' : entity_panel_data,
-            'panel_trace'       : entity_panel_data.trace if request.GET.get( 'debug_panel' ) else None,
+            'state_panel_data' : state_panel_data,
+            'panel_trace'       : state_panel_data.trace if request.GET.get( 'debug_panel' ) else None,
         }
         return self.modal_response( request, context )
 

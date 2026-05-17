@@ -6,21 +6,21 @@ from typing import Dict, List, Optional
 
 from hi.apps.common.singleton import Singleton
 
-from hi.apps.entity.state_panel_base import EntityStatusPanel
+from hi.apps.entity.state_panel_base import EntityStatePanel
 
 
 logger = logging.getLogger( __name__ )
 
 
-class EntityStatusPanelRegistry( Singleton ):
+class EntityStatePanelRegistry( Singleton ):
 
     def __init_singleton__( self ):
-        self._panels : Dict[ str, EntityStatusPanel ] = {}
+        self._panels : Dict[ str, EntityStatePanel ] = {}
         self._lock = Lock()
         self._discovered = False
         return
 
-    def register( self, panel : EntityStatusPanel ) -> None:
+    def register( self, panel : EntityStatePanel ) -> None:
         with self._lock:
             existing = self._panels.get( panel.name )
             if existing is not None and existing is not panel:
@@ -30,7 +30,7 @@ class EntityStatusPanelRegistry( Singleton ):
 
     def discover( self ) -> None:
         """Import each ``state_panels/<name>/panel.py`` and register every
-        ``EntityStatusPanel`` instance found at module scope. Idempotent."""
+        ``EntityStatePanel`` instance found at module scope. Idempotent."""
         with self._lock:
             if self._discovered:
                 return
@@ -50,11 +50,11 @@ class EntityStatusPanelRegistry( Singleton ):
                 continue
             found = [
                 value for value in vars( module ).values()
-                if isinstance( value, EntityStatusPanel )
+                if isinstance( value, EntityStatePanel )
             ]
             if not found:
                 logger.warning(
-                    f'{module_path}: no EntityStatusPanel instance at module scope'
+                    f'{module_path}: no EntityStatePanel instance at module scope'
                 )
                 continue
             for panel in found:
@@ -63,10 +63,10 @@ class EntityStatusPanelRegistry( Singleton ):
             continue
         return
 
-    def all_panels( self ) -> List[ EntityStatusPanel ]:
+    def all_panels( self ) -> List[ EntityStatePanel ]:
         return list( self._panels.values() )
 
-    def get_by_name( self, name : str ) -> Optional[ EntityStatusPanel ]:
+    def get_by_name( self, name : str ) -> Optional[ EntityStatePanel ]:
         return self._panels.get( name )
 
     def reset_for_tests( self ) -> None:
