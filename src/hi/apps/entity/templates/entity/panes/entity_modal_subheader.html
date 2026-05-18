@@ -1,0 +1,33 @@
+{% load static %}
+{% load entity_tags %}
+{% load integration_tags %}
+{# Shared subheader for the per-entity modals (status / edit / history).#}
+{# Renders: entity type icon + type label on the left, integration logo #}
+{# centered (when present), the modal-view name on the right. Callers   #}
+{# pass ``entity`` and ``modal_name`` (e.g. "Status", "Edit",          #}
+{# "History").                                                          #}
+{% entity_display_svg_icon_item entity as icon_item %}
+<div class="hi-entity-status-subheader d-flex align-items-center px-3 py-1 mb-3">
+  <div class="hi-entity-status-subheader__left d-flex align-items-center">
+    {% if icon_item %}
+      <span class="hi-entity-status-subheader__type-icon mr-2">
+        {% include "entity/panes/entity_display_only_svg_icon.html" with svg_icon_item=icon_item %}
+      </span>
+    {% endif %}
+    <small class="text-muted text-uppercase">{{ entity.entity_type.label }}</small>
+  </div>
+  <div class="hi-entity-status-subheader__center flex-grow-1 text-center">
+    {% if entity.integration_id %}
+      {% integration_logo_path entity as logo_path %}
+      {% if logo_path %}<img src="{% static logo_path %}" alt="" class="hi-integration-logo--inline mr-1">{% endif %}
+      <small>{% integration_display_name entity %}</small>
+    {% elif entity.previous_integration_id %}
+      {% previous_integration_logo_path entity as prev_logo_path %}
+      {% if prev_logo_path %}<img src="{% static prev_logo_path %}" alt="" class="hi-integration-logo--detached mr-1">{% endif %}
+      <small class="font-italic">Detached from {% previous_integration_display_name entity %}</small>
+    {% endif %}
+  </div>
+  <div class="hi-entity-status-subheader__right">
+    <small class="text-muted text-uppercase">{{ modal_name }}</small>
+  </div>
+</div>

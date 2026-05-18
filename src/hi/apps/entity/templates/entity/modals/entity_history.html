@@ -6,6 +6,10 @@
 {{ entity.name }}
 {% endblock %}
 
+{% block subheader %}
+  {% include "entity/panes/entity_modal_subheader.html" with entity=entity modal_name="History" %}
+{% endblock %}
+
 {% block body %}
 {% if state_to_rows %}
   {% for state, rows in state_to_rows.items %}

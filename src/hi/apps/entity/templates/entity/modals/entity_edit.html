@@ -1,28 +1,14 @@
-{% extends "modals/base.html" %}
-{% load icons static %}
-{% load integration_tags %}
+{% extends "modals/action_3.html" %}
+{% load icons %}
 
 {% block modal_dialog_class %}hi-modal-dialog-700{% endblock %}
 {% block title_text %}{{ entity.name }}{% endblock %}
 
+{% block subheader %}
+  {% include "entity/panes/entity_modal_subheader.html" with entity=entity modal_name="Edit" %}
+{% endblock %}
+
 {% block body %}
-{% if entity.integration_id %}
-<div class="text-muted text-center">
-  <small>
-    {% integration_logo_path entity as logo_path %}
-    {% if logo_path %}<img src="{% static logo_path %}" alt="" class="hi-integration-logo--inline mr-1">{% endif %}
-    From: {% integration_display_name entity %}
-  </small>
-</div>
-{% elif entity.previous_integration_id %}
-<div class="text-muted text-center font-italic">
-  <small>
-    {% previous_integration_logo_path entity as prev_logo_path %}
-    {% if prev_logo_path %}<img src="{% static prev_logo_path %}" alt="" class="hi-integration-logo--detached mr-1">{% endif %}
-    Detached from: {% previous_integration_display_name entity %}
-  </small>
-</div>
-{% endif %}
 <!-- Root container for this attribute editing context -->
 <div id="{{ attr_page_context.container_html_id }}" 
      class="{{ DIVID.ATTR_V2_CONTAINER_CLASS }}">
@@ -65,6 +51,23 @@
 </div>
 {% endblock %}
 
-{% block footer %}
-<!-- No footer - sticky panel contains all actions -->
+{% block action_left %}
+<a class="btn btn-primary"
+   href="{% url 'entity_status' entity_id=entity.id %}"
+   data-async="modal">
+  {% icon "info-circle" size="sm" css_class="hi-icon-left" %}STATUS
+</a>
+{% endblock %}
+
+{% block action_center %}
+<a class="btn btn-primary"
+   href="{% url 'entity_history' entity_id=entity.id %}"
+   data-async="modal">
+  {% icon "history" size="sm" css_class="hi-icon-left" %}HISTORY
+</a>
+{% endblock %}
+
+{% block action_right %}
+<a id="hi-modal-done" role="button" {% if autofocus %}autofocus="autofocus"{% endif %}
+   class="btn btn-primary" href="#" data-dismiss="modal">DONE</a>
 {% endblock %}
