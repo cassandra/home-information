@@ -1,20 +1,38 @@
+{% load humanize tz video_tags %}
 {# Aliases declared in panel.py (role_data_template_aliases):           #}
 {#   motion_data (optional).                                            #}
+{#                                                                      #}
+{# ROW context: thumbnail snapshot (when available) + entity name +    #}
+{# (optional) motion chip + (optional) "Motion N min ago" timestamp.   #}
+{# No live feed embed — a tiny stream is not useful, and the modal     #}
+{# carries the live feed. Card-wide click goes to the modal.           #}
 <div class="hi-state-panel-camera hi-state-panel-camera--row">
 
-  <div class="stream">
-    {% if entity.has_live_view %}
-      {% include "console/panes/entity_live_view_w_link.html" with entity=entity %}
+  {% if entity.has_video_snapshot %}
+    {% entity_video_snapshot entity as snapshot %}
+    {% if snapshot and snapshot.source_url %}
+      {% cache_bust_url snapshot.source_url as snapshot_url %}
+      <div class="row-thumb">
+        <img src="{{ snapshot_url }}" alt="{{ entity.name }}">
+      </div>
     {% else %}
-      <div class="stream-unavailable">Offline</div>
+      <div class="row-icon">
+        {% include "entity/panes/entity_display_only_svg_icon.html" with svg_icon_item=entity_status_data.display_only_svg_icon_item %}
+      </div>
     {% endif %}
-    {% if motion_data %}
-      {% include "entity/state_panels/camera/motion_chip.html" %}
-    {% endif %}
-  </div>
+  {% else %}
+    <div class="row-icon">
+      {% include "entity/panes/entity_display_only_svg_icon.html" with svg_icon_item=entity_status_data.display_only_svg_icon_item %}
+    </div>
+  {% endif %}
 
-  <div class="row-meta">
-    <div class="entity-name">{{ entity.name }}</div>
-  </div>
+  <div class="entity-name">{{ entity.name }}</div>
+
+  {% if motion_data %}
+    {% include "entity/state_panels/camera/motion_chip.html" %}
+    {% with summary=motion_data.recent_state_value_summary %}{% if summary.penultimate %}
+      <div class="last-event">Motion {{ summary.penultimate.timestamp|localtime|naturaltime }}</div>
+    {% endif %}{% endwith %}
+  {% endif %}
 
 </div>
