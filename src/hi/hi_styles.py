@@ -421,11 +421,64 @@ class EntityStyle:
         EntityType.WINDOW: Window,
     }
 
+    # Per-EntityType initial-placement size factor. Opt-in: only entity
+    # types whose intended layout size deviates from the default (1.0)
+    # need entries here. The factor multiplies the base placement size
+    # in PositionGeometry.default_icon_scale.
+    #
+    # This is layout-driven, not realism-driven — the goal is fitting
+    # many items in a view with touch-friendly sizing and reducing
+    # post-placement resizing labor. Smaller-than-default types are
+    # ones a user is likely to place many of in a single view; larger-
+    # than-default types are ones that anchor a view's visual layout.
+    # Primary control surfaces (lights, switches) stay at the default
+    # since they are interactive targets the user will exercise.
+    EntityTypeToIconSizeFactor = {
+        # Smaller (high-count or modest-importance items)
+        EntityType.BAROMETER: 0.7,
+        EntityType.CARBON_MONOXIDE_DETECTOR: 0.7,
+        EntityType.CONSUMABLE: 0.7,
+        EntityType.DOORBELL: 0.7,
+        EntityType.DOOR_LOCK: 0.7,
+        EntityType.ELECTRICAL_OUTLET: 0.7,
+        EntityType.FIRE_EXTINGUISHER: 0.7,
+        EntityType.GARBAGE_DISPOSAL: 0.7,
+        EntityType.GAS_DETECTOR: 0.7,
+        EntityType.HYGROMETER: 0.7,
+        EntityType.LEAK_SENSOR: 0.7,
+        EntityType.LIGHT_SENSOR: 0.7,
+        EntityType.MOTION_SENSOR: 0.7,
+        EntityType.OPEN_CLOSE_SENSOR: 0.7,
+        EntityType.PRESENCE_SENSOR: 0.7,
+        EntityType.RADON_DETECTOR: 0.7,
+        EntityType.SMOKE_DETECTOR: 0.7,
+        EntityType.SPEAKER: 0.7,
+        EntityType.SPRINKLER_HEAD: 0.7,
+        EntityType.THERMOMETER: 0.7,
+        EntityType.WATER_SHUTOFF_VALVE: 0.7,
+
+        # Larger (room-anchoring single items)
+        EntityType.BATHTUB: 1.5,
+        EntityType.FIREPLACE: 1.5,
+        EntityType.HVAC_AIR_HANDLER: 1.5,
+        EntityType.HVAC_CONDENSER: 1.5,
+        EntityType.HVAC_FURNACE: 1.5,
+        EntityType.REFRIGERATOR: 1.5,
+        EntityType.TREE: 1.5,
+
+        # Very large
+        EntityType.AUTOMOBILE: 2.0,
+    }
+
     @classmethod
     def get_svg_icon_viewbox( cls, entity_type : EntityType ) -> SvgViewBox:
         if entity_type in cls.EntityTypeToIconViewbox:
             return cls.EntityTypeToIconViewbox.get( entity_type )
         return ItemStyle.get_default_svg_icon_viewbox()
+
+    @classmethod
+    def get_icon_size_factor( cls, entity_type : EntityType ) -> float:
+        return cls.EntityTypeToIconSizeFactor.get( entity_type, 1.0 )
             
     @classmethod
     def get_svg_icon_template_name( cls, entity_type : EntityType ) -> str:

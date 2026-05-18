@@ -33,7 +33,7 @@ from hi.hi_styles import EntityStyle
 
 class PositionGeometry:
 
-    DEFAULT_ICON_SIZE_PERCENT_OF_VIEWBOX = 10.0
+    DEFAULT_ICON_SIZE_PERCENT_OF_VIEWBOX = 7.5
     DEFAULT_GRID_COLUMNS = 4
     DEFAULT_GRID_SPACING_FRACTION = 0.18
     DEFAULT_VIEWBOX_MARGIN_FRACTION = 0.05
@@ -105,7 +105,10 @@ class PositionGeometry:
                             entity,
                             location_view : LocationView ) -> Decimal:
         """Default scale for an icon entity: ~10% of the viewbox's
-        smaller dimension, clamped to the location's
+        smaller dimension, multiplied by the entity type's opt-in
+        size factor (defaults to 1.0; only entity types with
+        meaningfully different intended layout sizes — e.g.
+        Automobile — override it), clamped to the location's
         svg_position_bounds.min_scale / max_scale."""
         view_box = location_view.svg_view_box
         icon_view_box = EntityStyle.get_svg_icon_viewbox( entity.entity_type )
@@ -116,7 +119,8 @@ class PositionGeometry:
 
         viewbox_min_dimension = min( view_box.width, view_box.height )
         size_fraction = cls.DEFAULT_ICON_SIZE_PERCENT_OF_VIEWBOX / 100.0
-        target_icon_size = viewbox_min_dimension * size_fraction
+        size_factor = EntityStyle.get_icon_size_factor( entity.entity_type )
+        target_icon_size = viewbox_min_dimension * size_fraction * size_factor
         scale = target_icon_size / icon_max_dimension
 
         position_bounds = location_view.location.svg_position_bounds
