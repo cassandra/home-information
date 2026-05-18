@@ -296,8 +296,10 @@
     padding: 8px;
     height: 100%;
 }
-.hi-state-panel-thermostat--tile[status="heating"] { background: var(--hi-thermo-heating-bg); }
-.hi-state-panel-thermostat--tile[status="cooling"] { background: var(--hi-thermo-cooling-bg); }
+.hi-state-panel-thermostat--tile[status="heating"],
+.hi-state-panel-thermostat--row[status="heating"] { background: var(--hi-thermo-heating-bg); }
+.hi-state-panel-thermostat--tile[status="cooling"],
+.hi-state-panel-thermostat--row[status="cooling"] { background: var(--hi-thermo-cooling-bg); }
 .hi-state-panel-thermostat--tile .tile-temp {
     font-size: 44px;
     font-weight: 300;

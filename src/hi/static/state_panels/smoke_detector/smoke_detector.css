@@ -205,10 +205,14 @@
     line-height: 1.2;
     margin-top: 4px;
 }
-.hi-state-panel-smoke_detector--tile[status="idle"]   { background: var(--hi-smoke-idle-bg); }
-.hi-state-panel-smoke_detector--tile[status="active"] { background: var(--hi-smoke-active-bg); }
-.hi-state-panel-smoke_detector--tile[status="recent"] { background: var(--hi-smoke-recent-bg); }
-.hi-state-panel-smoke_detector--tile[status="past"]   { background: var(--hi-smoke-past-bg); }
+.hi-state-panel-smoke_detector--tile[status="idle"],
+.hi-state-panel-smoke_detector--row[status="idle"]   { background: var(--hi-smoke-idle-bg); }
+.hi-state-panel-smoke_detector--tile[status="active"],
+.hi-state-panel-smoke_detector--row[status="active"] { background: var(--hi-smoke-active-bg); }
+.hi-state-panel-smoke_detector--tile[status="recent"],
+.hi-state-panel-smoke_detector--row[status="recent"] { background: var(--hi-smoke-recent-bg); }
+.hi-state-panel-smoke_detector--tile[status="past"],
+.hi-state-panel-smoke_detector--row[status="past"]   { background: var(--hi-smoke-past-bg); }
 
 /* ============================================================== */
 /* Battery low-state escalation.                                  */

@@ -1821,10 +1821,16 @@ g[hover] {
 }
 
 .entity-card--tile {
+    /* display: grid so the single panel child auto-stretches to fill
+     * both axes — min-height alone wouldn't give the panel's height:100%
+     * a resolvable parent height, leaving the card's white background
+     * visible below the panel content. */
+    display: grid;
     min-height: var(--hi-panel-tile-min-size);
 }
 
 .entity-card--row {
+    display: grid;
     min-height: var(--hi-panel-row-min-height);
 }
 
