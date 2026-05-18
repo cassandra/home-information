@@ -1,9 +1,11 @@
-{# Camera EntityStatusPanel — modal context.                              #}
-{# Reuses the existing video-stream wrapper for the live frame and the    #}
-{# existing per-state row list for any controllers/sensors the camera    #}
-{# entity exposes (e.g., ZoneMinder Function dropdown, connectivity      #}
-{# sensors). No new JS — the video stream rendering and click-through to #}
-{# the full-page video pane all go through the established machinery.    #}
+{# Aliases declared in panel.py (role_data_template_aliases):           #}
+{#   motion_data (optional).                                            #}
+{#                                                                      #}
+{# Stream rendering goes through the standard live-view template so     #}
+{# the panel inherits its offline placeholder, click-through, and       #}
+{# polling-driven snapshot refresh. Anything beyond the stream (and     #}
+{# the optional motion chip) flows into the framework extras section    #}
+{# beneath the panel body.                                              #}
 <div class="hi-state-panel-camera hi-state-panel-camera--modal">
 
   <div class="stream">
@@ -12,12 +14,9 @@
     {% else %}
       <div class="stream-unavailable">Live view not available</div>
     {% endif %}
+    {% if motion_data %}
+      {% include "entity/state_panels/camera/motion_chip.html" %}
+    {% endif %}
   </div>
-
-  {% if state_status_data_list %}
-  <div class="states">
-    {% include "entity/state_panels/fallback/state_list.html" with entity_state_status_data_list=state_status_data_list %}
-  </div>
-  {% endif %}
 
 </div>

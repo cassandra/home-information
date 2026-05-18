@@ -81,7 +81,7 @@ For the existing palette of `StatusStyle` instances and the status-value vocabul
    - Icon renders at the expected position, scale, and rotation.
    - Status changes update the visual (color tint, drop-shadow glow, etc.) within one polling cycle.
    - Click target covers the whole icon (the `hi-entity-bg` rectangle).
-5. Open a collection containing the entity and verify the cards render reasonably; for entity types with custom panel needs see [`entity-status-panels.md`](entity-status-panels.md).
+5. Open a collection containing the entity and verify the cards render reasonably; for entity types with custom panel needs see [`entity-state-panels.md`](entity-state-panels.md).
 
 ## Simulator integration (optional)
 
@@ -91,6 +91,6 @@ If the new entity type should be exercisable from the simulator, add it to `SimE
 
 - [Architecture overview](entity-display-overview.md)
 - [Polling-update contract](entity-status-display.md)
-- [Panel authoring](entity-status-panels.md)
+- [Panel authoring](entity-state-panels.md)
 - [Icon system](icon-system.md)
 - [Style guidelines](style-guidelines.md)

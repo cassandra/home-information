@@ -35,18 +35,18 @@ class TestCollectionManagerIntegration(BaseTestCase):
         
         # Verify collection data structure
         self.assertEqual(collection_data.collection, collection)
-        self.assertEqual(len(collection_data.entity_status_data_list), 2)
-        
+        self.assertEqual(len(collection_data.state_panel_data_list), 2)
+
         # Verify entities are ordered correctly
-        entity_names = [esd.entity.name for esd in collection_data.entity_status_data_list]
+        entity_names = [panel_data.entity.name for panel_data in collection_data.state_panel_data_list]
         self.assertEqual(entity_names, ['Security Camera', 'Porch Light'])
-        
-        # Verify each entity has status data and SVG icon
-        for entity_status_data in collection_data.entity_status_data_list:
-            self.assertIsNotNone(entity_status_data.entity)
-            self.assertIsNotNone(entity_status_data.display_only_svg_icon_item)
+
+        # Verify each card has the expected entity-derived fields
+        for state_panel_data in collection_data.state_panel_data_list:
+            self.assertIsNotNone(state_panel_data.entity)
+            self.assertIsNotNone(state_panel_data.display_only_svg_icon_item)
             # SVG icon should be configured for display
-            self.assertIsNotNone(entity_status_data.display_only_svg_icon_item.template_name)
+            self.assertIsNotNone(state_panel_data.display_only_svg_icon_item.template_name)
 
     def test_entity_collection_group_organization_by_type(self):
         """Test create_entity_collection_group_list organization - groups entities by type."""
@@ -645,12 +645,12 @@ class TestCollectionManager(BaseTestCase):
 
         # Verify basic context contains collection and entity list
         self.assertIn('collection', context)
-        self.assertIn('entity_status_data_list', context)
+        self.assertIn('state_panel_data_list', context)
         self.assertEqual(context['collection'], collection)
-        self.assertEqual(len(context['entity_status_data_list']), 4)
+        self.assertEqual(len(context['state_panel_data_list']), 4)
 
-        # Verify entity_status_data_list contains proper EntityStatusData objects
-        entity_names = [esd.entity.name for esd in context['entity_status_data_list']]
+        # Verify state_panel_data_list contains the expected entities
+        entity_names = [panel_data.entity.name for panel_data in context['state_panel_data_list']]
         expected_names = ['Info Display', 'Security Camera', 'Smart Switch', 'PTZ Camera']
         self.assertEqual(entity_names, expected_names)
 

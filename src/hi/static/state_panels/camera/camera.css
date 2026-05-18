@@ -1,4 +1,4 @@
-/* EntityStatusPanel for CAMERA entities.
+/* EntityStatePanel for CAMERA entities.
  *
  * All rules nested under .hi-state-panel-camera. The panel composes
  * existing video-stream and state-status partials; this CSS supplies
@@ -123,4 +123,61 @@
     font-weight: 600;
     line-height: 1.2;
     text-shadow: 0 0 4px rgba(0,0,0,0.6);
+}
+
+/* ============================================================== */
+/* Motion chip — small status indicator overlaid on the stream    */
+/* corner when the camera entity carries a MOVEMENT role. Uses    */
+/* the framework's decay-aware status tokens so the chip color    */
+/* matches the rest of the app's motion treatment.                */
+/* ============================================================== */
+
+.hi-state-panel-camera .stream {
+    position: relative;
+}
+.hi-state-panel-camera .motion-chip {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0, 0, 0, 0.55);
+    color: var(--status-idle-color);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.5);
+    z-index: 2;
+}
+.hi-state-panel-camera .motion-chip svg {
+    width: 65%;
+    height: 65%;
+}
+.hi-state-panel-camera .motion-chip[status="active"] {
+    background: var(--status-active-color);
+    color: var(--on-status-active-color);
+    animation: hi-camera-motion-pulse 1.2s ease-in-out infinite;
+}
+.hi-state-panel-camera .motion-chip[status="recent"] {
+    background: var(--status-recent-color);
+    color: var(--on-status-recent-color);
+}
+.hi-state-panel-camera .motion-chip[status="past"] {
+    background: var(--status-past-color);
+    color: var(--on-status-past-color);
+}
+
+@keyframes hi-camera-motion-pulse {
+    0%, 100% { transform: scale(1);    opacity: 1; }
+    50%      { transform: scale(1.12); opacity: 0.9; }
+}
+
+/* Smaller chip in compact contexts. */
+.hi-state-panel-camera--list .motion-chip,
+.hi-state-panel-camera--grid .motion-chip {
+    width: 24px;
+    height: 24px;
+    top: 4px;
+    right: 4px;
 }

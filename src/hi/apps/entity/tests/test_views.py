@@ -682,6 +682,33 @@ class TestEntityStatusView(DualModeViewTestCase):
 
         self.assertEqual(response.status_code, 405)
 
+    def test_type_specific_panel_falls_back_when_required_role_absent(self):
+        """A typed panel whose required roles are missing on the entity
+        must fall back to the framework fallback panel rather than
+        render a misshapen typed view. Wires the resolver + view layer
+        end-to-end so a regression in dispatch routing surfaces here."""
+        from hi.apps.entity.models import Entity, EntityState
+        # THERMOSTAT panel requires THERMOSTAT_CURRENT_TEMPERATURE.
+        # Give the entity only an unrelated ON_OFF state so the typed
+        # panel is disqualified and the fallback wins.
+        thermostat_without_temp = Entity.objects.create(
+            integration_id='test.thermostat_no_temp',
+            integration_name='test_integration',
+            name='Misconfigured Thermostat',
+            entity_type_str=str(EntityType.THERMOSTAT),
+        )
+        EntityState.objects.create(
+            entity=thermostat_without_temp,
+            entity_state_type_str=str(EntityStateType.ON_OFF),
+            name='Some State',
+        )
+        url = reverse('entity_status', kwargs={'entity_id': thermostat_without_temp.id})
+        response = self.client.get(url)
+        self.assertSuccessResponse(response)
+        state_panel_data = response.context['state_panel_data']
+        self.assertEqual(state_panel_data.panel_template,
+                         'entity/state_panels/fallback/modal.html')
+
 
 class TestEntityHistoryView(DualModeViewTestCase):
     """EntityHistoryView is the per-entity overview modal showing

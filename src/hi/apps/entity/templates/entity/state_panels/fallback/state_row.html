@@ -1,5 +1,4 @@
 {% load icons %}
-{% with sensor_response=entity_state_status_data.latest_sensor_response %}
 <div class="card">
   <div class="card-body">
     {% if entity_state_status_data.controller_data_list %}
@@ -16,7 +15,6 @@
     {% else %}
     <div class="alert alert-info">{{ entity_state_status_data.entity_state.short_name }}: no sensors or controllers defined.</div>
     {% endif %}
-    
+
   </div>
 </div>
-{% endwith %}

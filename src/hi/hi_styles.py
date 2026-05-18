@@ -719,6 +719,22 @@ class StatusStyle:
         fill_color = STATUS_BAD_COLOR,
         fill_opacity = 0.5,
     )
+    BatteryLow = SvgStatusStyle(
+        status_value = 'low',
+        stroke_color = STATUS_BAD_COLOR,
+        stroke_width = DEFAULT_STROKE_WIDTH,
+        stroke_dasharray = DEFAULT_STROKE_DASHARRAY,
+        fill_color = STATUS_BAD_COLOR,
+        fill_opacity = 0.5,
+    )
+    BatteryOk = SvgStatusStyle(
+        status_value = 'ok',
+        stroke_color = STATUS_OK_COLOR,
+        stroke_width = DEFAULT_STROKE_WIDTH,
+        stroke_dasharray = DEFAULT_STROKE_DASHARRAY,
+        fill_color = STATUS_OK_COLOR,
+        fill_opacity = 0.15,
+    )
 
     @classmethod
     def default( cls, status_value : str = DEFAULT_STATUS_VALUE ):

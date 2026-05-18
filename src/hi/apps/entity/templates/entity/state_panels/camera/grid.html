@@ -1,5 +1,5 @@
-{# Camera EntityStatusPanel — collection grid card context. Video fills #}
-{# the cell with a name overlay along the bottom.                       #}
+{# Aliases declared in panel.py (role_data_template_aliases):           #}
+{#   motion_data (optional).                                            #}
 <div class="hi-state-panel-camera hi-state-panel-camera--grid">
 
   <div class="stream">
@@ -7,6 +7,9 @@
       {% include "console/panes/entity_live_view_w_link.html" with entity=entity %}
     {% else %}
       <div class="stream-unavailable">Offline</div>
+    {% endif %}
+    {% if motion_data %}
+      {% include "entity/state_panels/camera/motion_chip.html" %}
     {% endif %}
   </div>
 

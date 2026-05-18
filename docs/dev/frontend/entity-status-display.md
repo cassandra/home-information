@@ -2,11 +2,13 @@
 
 Reference for the polling-update contract that connects backend state to live DOM. Covers the server payload shape, the per-element declaration grammar, the status-value vocabulary, the color palette, and the icon-vs-path asymmetry.
 
-If you're new to entity display, start with [`entity-display-overview.md`](entity-display-overview.md). For consuming the contract from authoring contexts, see [`entity-status-panels.md`](entity-status-panels.md) (panel authoring) and [`entity-visual-configuration.md`](entity-visual-configuration.md) (SVG asset authoring).
+If you're new to entity display, start with [`entity-display-overview.md`](entity-display-overview.md). For consuming the contract from authoring contexts, see [`entity-state-panels.md`](entity-state-panels.md) (panel authoring) and [`entity-visual-configuration.md`](entity-visual-configuration.md) (SVG asset authoring).
 
 ## The flow in one paragraph
 
 On every `/api/status` poll, [`StatusDisplayManager`](../../../src/hi/apps/monitor/status_display_manager.py) builds an `entityStateStatusMap` keyed by `EntityState.id` (as a string). The JS dispatcher in [`entity_state_status.js`](../../../src/hi/static/js/entity_state_status.js) walks every DOM element carrying `data-state-id="<id>"`, looks up the row for that state, and writes whatever subset the element opted into via declaration attributes. No descendant traversal, no class-as-join — each element opts in directly.
+
+The set of state ids in the map can grow or shrink between polls (e.g., an entity gains or loses an `EntityState`). Elements whose id is missing from the current map are left untouched on this tick; ids that newly appear are picked up on the next tick by any element that opts in. Custom `registerUpdate` handlers should follow the same shape — look up by id, no-op when the entry is absent.
 
 ## Server payload shape
 
@@ -118,7 +120,7 @@ See [`entity_state_status.js`](../../../src/hi/static/js/entity_state_status.js)
 ## Related documentation
 
 - [Architecture overview](entity-display-overview.md)
-- [Panel authoring](entity-status-panels.md)
+- [Panel authoring](entity-state-panels.md)
 - [SVG asset authoring](entity-visual-configuration.md)
 - [Style guidelines](style-guidelines.md)
 - [Template conventions](template-conventions.md)

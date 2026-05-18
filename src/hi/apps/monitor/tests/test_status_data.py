@@ -128,10 +128,10 @@ class TestEntityStateStatusData(BaseTestCase):
 
 class TestEntityStatusData(BaseTestCase):
 
-    def test_template_context_includes_all_required_display_data(self):
-        """``EntityDisplayData.to_template_context`` provides the keys
-        templates rely on for rendering, with the per-state list
-        wrapped in display-ready ``EntityStateDisplayData`` items."""
+    def test_display_data_exposes_per_state_projections(self):
+        """``EntityDisplayData`` wraps the raw status data with a
+        display-ordered per-state list and a role-keyed map; both are
+        the entry points templates use to find state-specific data."""
         entity = Entity.objects.create(
             name='Display Entity',
             entity_type_str='CAMERA',
@@ -158,11 +158,10 @@ class TestEntityStatusData(BaseTestCase):
             ],
         )
         display_data = EntityDisplayData(entity_status_data=status_data)
-        context = display_data.to_template_context()
-        self.assertIn('entity', context)
-        self.assertIn('state_status_data_list', context)
-        self.assertEqual(context['entity'], entity)
-        self.assertEqual(len(context['state_status_data_list']), 2)
+        self.assertEqual(display_data.entity, entity)
+        self.assertEqual(len(display_data.state_status_data_list), 2)
+        self.assertEqual(set(display_data.state_status_data_by_role.keys()),
+                         {'on_off', 'movement'})
 
     def test_entity_status_data_supports_optional_display_icon(self):
         """Test entity status data with optional SVG icon for display."""
@@ -200,10 +199,10 @@ class TestEntityStatusData(BaseTestCase):
         self.assertEqual(len(status_data.entity_state_status_data_list), 0)
         self.assertIsNone(status_data.display_only_svg_icon_item)
         
-        # Template context should still be valid (via display wrapper)
-        context = EntityDisplayData(entity_status_data=status_data).to_template_context()
-        self.assertEqual(context['entity'], entity)
-        self.assertEqual(len(context['state_status_data_list']), 0)
+        # Display wrapper still exposes the entity and an empty state list.
+        display_data = EntityDisplayData(entity_status_data=status_data)
+        self.assertEqual(display_data.entity, entity)
+        self.assertEqual(len(display_data.state_status_data_list), 0)
 
     def test_entity_status_data_aggregates_multiple_state_types(self):
         """Test entity status data aggregation across different state types."""
@@ -303,7 +302,7 @@ class TestStateStatusDataByRole(BaseTestCase):
         display_data = EntityDisplayData(entity_status_data=status_data)
         self.assertEqual(display_data.state_status_data_by_role, {})
 
-    def test_template_context_includes_by_role_map(self):
+    def test_by_role_map_is_dict(self):
         entity = Entity.objects.create(
             name='Ctx Test', entity_type_str='OTHER',
         )
@@ -311,5 +310,4 @@ class TestStateStatusDataByRole(BaseTestCase):
             entity=entity, entity_state_status_data_list=[],
         )
         display_data = EntityDisplayData(entity_status_data=status_data)
-        context = display_data.to_template_context()
-        self.assertIn('state_status_data_by_role', context)
+        self.assertIsInstance(display_data.state_status_data_by_role, dict)

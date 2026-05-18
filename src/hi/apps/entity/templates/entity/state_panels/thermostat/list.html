@@ -1,44 +1,67 @@
-{% with current_data=state_status_data_by_role.thermostat_current_temperature setpoint_data=state_status_data_by_role.thermostat_target_temperature action_data=state_status_data_by_role.hvac_action %}
-
+{# Aliases declared in panel.py (role_data_template_aliases):           #}
+{#   current_data, target_data, low_data, high_data,                    #}
+{#   action_data, mode_data, humidity_data.                             #}
 <div class="hi-state-panel-thermostat hi-state-panel-thermostat--list"
-     {% if action_data %}data-state-id="{{ action_data.entity_state.id }}" data-status status="{{ action_data.latest_sensor_value }}"{% endif %}>
+     {% if action_data %}data-state-id="{{ action_data.entity_state.id }}" data-status status="{{ action_data.latest_sensor_value }}"{% endif %}
+     {% if mode_data %}data-hvac-mode-state-id="{{ mode_data.entity_state.id }}" data-hvac-mode="{{ mode_data.latest_sensor_value }}"{% endif %}>
 
   <div class="dial">
     <svg class="dial-svg" viewBox="0 0 220 220" aria-hidden="true">
       <circle class="dial-track" cx="110" cy="110" r="95" fill="none" stroke-width="2"/>
-      {% if setpoint_data %}
-        <g class="dial-setpoint-marker"
-           data-marker-state-id="{{ setpoint_data.entity_state.id }}"
-           data-temp-value="{{ setpoint_data.latest_display_value.magnitude }}">
+
+      {% if low_data and high_data %}
+        <g class="dial-setpoint-marker dial-setpoint-marker--dual dial-setpoint-marker--low"
+           data-marker-state-id="{{ low_data.entity_state.id }}"
+           data-temp-value="{{ low_data.latest_display_value.magnitude }}">
+          <line x1="110" y1="10" x2="110" y2="24" stroke-width="6" stroke-linecap="round"/>
+        </g>
+        <g class="dial-setpoint-marker dial-setpoint-marker--dual dial-setpoint-marker--high"
+           data-marker-state-id="{{ high_data.entity_state.id }}"
+           data-temp-value="{{ high_data.latest_display_value.magnitude }}">
           <line x1="110" y1="10" x2="110" y2="24" stroke-width="6" stroke-linecap="round"/>
         </g>
       {% endif %}
-      {% if current_data %}
-        <g class="dial-current-marker"
-           data-marker-state-id="{{ current_data.entity_state.id }}"
-           data-temp-value="{{ current_data.latest_display_value.magnitude }}">
-          <circle cx="110" cy="17" r="9"/>
+      {% if target_data %}
+        <g class="dial-setpoint-marker dial-setpoint-marker--single"
+           data-marker-state-id="{{ target_data.entity_state.id }}"
+           data-temp-value="{{ target_data.latest_display_value.magnitude }}">
+          <line x1="110" y1="10" x2="110" y2="24" stroke-width="6" stroke-linecap="round"/>
         </g>
       {% endif %}
+
+      <g class="dial-current-marker"
+         data-marker-state-id="{{ current_data.entity_state.id }}"
+         data-temp-value="{{ current_data.latest_display_value.magnitude }}">
+        <circle cx="110" cy="17" r="9"/>
+      </g>
     </svg>
     <div class="dial-center">
-      {% if current_data %}
-        <span class="dial-temp"
-              data-state-id="{{ current_data.entity_state.id }}"
-              data-display-text>{{ current_data.latest_display_label }}</span>
-      {% endif %}
+      <span class="dial-temp"
+            data-state-id="{{ current_data.entity_state.id }}"
+            data-display-text>{{ current_data.latest_display_label }}</span>
     </div>
   </div>
 
   <div class="list-meta">
     <div class="entity-name">{{ entity.name }}</div>
-    {% if setpoint_data %}
-      <div class="setpoint-summary">
-        Target <strong data-state-id="{{ setpoint_data.entity_state.id }}" data-display-text>{{ setpoint_data.latest_display_label }}</strong>
+    {% if low_data and high_data %}
+      <div class="setpoint-summary setpoint-summary--dual">
+        <strong data-state-id="{{ low_data.entity_state.id }}" data-display-text>{{ low_data.latest_display_label }}</strong>
+        –
+        <strong data-state-id="{{ high_data.entity_state.id }}" data-display-text>{{ high_data.latest_display_label }}</strong>
+      </div>
+    {% endif %}
+    {% if target_data %}
+      <div class="setpoint-summary setpoint-summary--single">
+        Target <strong data-state-id="{{ target_data.entity_state.id }}" data-display-text>{{ target_data.latest_display_label }}</strong>
+      </div>
+    {% endif %}
+    {% if humidity_data %}
+      <div class="humidity-line">
+        Humidity <span data-state-id="{{ humidity_data.entity_state.id }}"
+                       data-display-text>{{ humidity_data.latest_display_label }}</span>
       </div>
     {% endif %}
   </div>
 
 </div>
-
-{% endwith %}

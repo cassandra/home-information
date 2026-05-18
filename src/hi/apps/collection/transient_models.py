@@ -4,7 +4,7 @@ from typing import List
 from hi.apps.collection.edit.forms import CollectionEditForm, CollectionPositionForm
 from hi.apps.entity.enums import EntityGroupType
 from hi.apps.entity.models import Entity
-from hi.apps.monitor.display_data import EntityDisplayData
+from hi.apps.entity.state_panel_dispatch import EntityStatePanelData
 
 from .models import Collection
 
@@ -12,29 +12,29 @@ from .models import Collection
 @dataclass
 class CollectionData:
 
-    collection               : Collection
-    entity_status_data_list  : List[ EntityDisplayData ]
-    
+    collection             : Collection
+    state_panel_data_list : List[ EntityStatePanelData ]
+
     def to_template_context(self):
         return {
             'collection': self.collection,
-            'entity_status_data_list': self.entity_status_data_list,
+            'state_panel_data_list': self.state_panel_data_list,
             'collection_grid_css_class': self.grid_css_class,
-            'entity_count': len(self.entity_status_data_list),
+            'entity_count': len(self.state_panel_data_list),
         }
 
     @property
     def grid_css_class(self):
         if self.collection.collection_type.is_cameras:
-            return 'grid-2-items'            
-        entity_count = len(self.entity_status_data_list)
+            return 'grid-2-items'
+        entity_count = len(self.state_panel_data_list)
         if entity_count >= 3:
             return 'grid-3-plus-items'
         if entity_count == 2:
             return 'grid-2-items'
         return 'grid-1-item'
-        
-    
+
+
 @dataclass
 class CollectionViewItem:
 
@@ -62,7 +62,7 @@ class EntityCollectionGroup:
     collection         : Collection
     entity_group_type  : EntityGroupType
     item_list          : List[EntityCollectionItem]  = field( default_factory = list )
-    
+
 
 @dataclass
 class CollectionEditModeData:

@@ -6,8 +6,9 @@ from django.http import HttpRequest
 
 from hi.apps.collection.edit.forms import CollectionPositionForm
 from hi.apps.common.singleton import Singleton
-from hi.apps.entity.enums import EntityGroupType
+from hi.apps.entity.enums import DisplayContext, EntityGroupType
 from hi.apps.entity.models import Entity
+from hi.apps.entity.state_panel_dispatch import StatePanelDispatcher
 from hi.apps.location.models import Location, LocationView
 from hi.apps.location.svg_item_factory import SvgItemFactory
 from hi.apps.monitor.display_data import EntityDisplayData
@@ -68,13 +69,20 @@ class CollectionManager(Singleton):
         entity_status_data_list = StatusDisplayManager().get_entity_status_data_list(
             entities = entity_list,
         )
-        entity_display_data_list = [
-            EntityDisplayData( entity_status_data = d )
-            for d in entity_status_data_list
+        display_context = (
+            DisplayContext.GRID if collection.collection_view_type.is_grid
+            else DisplayContext.LIST
+        )
+        state_panel_data_list = [
+            StatePanelDispatcher.build_state_panel_data(
+                EntityDisplayData( entity_status_data = status_data ),
+                display_context,
+            )
+            for status_data in entity_status_data_list
         ]
         return CollectionData(
-            collection = collection,
-            entity_status_data_list = entity_display_data_list,
+            collection             = collection,
+            state_panel_data_list = state_panel_data_list,
         )
 
     def create_collection( self, name : str ) -> Collection:

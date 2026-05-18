@@ -43,18 +43,18 @@ class TestCollectionViewType(BaseTestCase):
         )
         
         # GRID type should enable grid-specific UI features
-        self.assertTrue(grid_collection.collection_view_type.is_grid())
-        self.assertFalse(grid_collection.collection_view_type.is_list())
+        self.assertTrue(grid_collection.collection_view_type.is_grid)
+        self.assertFalse(grid_collection.collection_view_type.is_list)
         
         # LIST type should enable list-specific UI features
-        self.assertFalse(list_collection.collection_view_type.is_grid())
-        self.assertTrue(list_collection.collection_view_type.is_list())
+        self.assertFalse(list_collection.collection_view_type.is_grid)
+        self.assertTrue(list_collection.collection_view_type.is_list)
         
         # Verify view types persist correctly in database
         grid_collection.refresh_from_db()
         list_collection.refresh_from_db()
-        self.assertTrue(grid_collection.collection_view_type.is_grid())
-        self.assertTrue(list_collection.collection_view_type.is_list())
+        self.assertTrue(grid_collection.collection_view_type.is_grid)
+        self.assertTrue(list_collection.collection_view_type.is_list)
 
     def test_all_collection_view_types_support_required_ui_modes(self):
         """Test CollectionViewType completeness - ensures UI can handle all types."""
@@ -63,8 +63,8 @@ class TestCollectionViewType(BaseTestCase):
         ambiguous_types = []
         
         for view_type in CollectionViewType:
-            is_grid = view_type.is_grid()
-            is_list = view_type.is_list()
+            is_grid = view_type.is_grid
+            is_list = view_type.is_list
             
             # Each type must be exactly one classification
             if not (is_grid or is_list):
@@ -79,8 +79,8 @@ class TestCollectionViewType(BaseTestCase):
                          f"View types with ambiguous classification: {ambiguous_types}")
         
         # Verify we have both grid and list types available
-        grid_types = [vt for vt in CollectionViewType if vt.is_grid()]
-        list_types = [vt for vt in CollectionViewType if vt.is_list()]
+        grid_types = [vt for vt in CollectionViewType if vt.is_grid]
+        list_types = [vt for vt in CollectionViewType if vt.is_list]
         
         self.assertGreater(len(grid_types), 0, "No grid view types available")
         self.assertGreater(len(list_types), 0, "No list view types available")

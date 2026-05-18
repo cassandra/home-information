@@ -2,10 +2,15 @@ import logging
 from datetime import datetime, timedelta
 from unittest.mock import Mock, patch
 
+import hi.apps.common.datetimeproxy as datetimeproxy
 from hi.apps.entity.models import Entity, EntityState
 from hi.apps.entity.enums import EntityStateValue
 from hi.apps.sense.transient_models import SensorResponse
-from hi.apps.monitor.display_data import EntityStateDisplayData
+from hi.apps.monitor.display_data import (
+    EntityStateDisplayData,
+    RecentStateValueSummary,
+    StateValueEntry,
+)
 from hi.apps.monitor.status_data import EntityStateStatusData
 from hi.hi_styles import StatusStyle
 from hi.testing.base_test_case import BaseTestCase
@@ -684,6 +689,147 @@ class TestLatestDisplayLabel(BaseTestCase):
         )
         display_data = EntityStateDisplayData( status_data )
         self.assertEqual( display_data.latest_display_label, '' )
+
+
+class TestRecentStateValueSummary(BaseTestCase):
+    """``recent_state_value_summary`` exposes the cached
+    SensorResponse list (already deduped by value change in
+    ``SensorResponseManager``) as a display-ready structure. Each
+    entry's label flows through the same conversion pipeline as
+    ``latest_display_label``; the framework adds no completeness
+    claims and does not query the DB."""
+
+    def setUp(self):
+        super().setUp()
+        self.entity = Entity.objects.create(
+            name='Test Entity',
+            entity_type_str='SENSOR',
+        )
+
+    def _make_display_data(self, entity_state_type_str, value_timestamp_pairs,
+                           units=None):
+        entity_state = EntityState.objects.create(
+            entity = self.entity,
+            entity_state_type_str = entity_state_type_str,
+            units = units,
+        )
+        responses = []
+        for value, ts in value_timestamp_pairs:
+            response = Mock(spec=SensorResponse)
+            response.value = value
+            response.timestamp = ts
+            responses.append( response )
+        status_data = EntityStateStatusData(
+            entity_state = entity_state,
+            sensor_response_list = responses,
+            controller_data_list = [],
+        )
+        return EntityStateDisplayData( status_data )
+
+    def test_empty_sensor_response_list_returns_none(self):
+        # No cached responses (fresh install, cache cleared, sensor
+        # never reported) → caller distinguishes "nothing to show"
+        # from a populated-but-old summary without inspecting list
+        # length.
+        display_data = self._make_display_data( 'MOVEMENT', [] )
+        self.assertIsNone( display_data.recent_state_value_summary )
+
+    def test_single_entry_populates_latest_only(self):
+        now = datetime.now()
+        display_data = self._make_display_data(
+            'SMOKE', [ ( str(EntityStateValue.SMOKE_DETECTED), now ) ],
+        )
+        summary = display_data.recent_state_value_summary
+        self.assertIsInstance( summary, RecentStateValueSummary )
+        self.assertEqual( len( summary.entries ), 1 )
+        self.assertIsNotNone( summary.latest )
+        self.assertIsNone( summary.penultimate )
+        self.assertEqual( summary.latest.timestamp, now )
+
+    def test_multi_entry_preserves_newest_first_order(self):
+        # SensorResponseManager already LPUSHes newest-first; the
+        # summary preserves that order so ``latest`` is index [0]
+        # and ``penultimate`` is index [1]. Timestamps are
+        # timezone-aware because EntityStateDisplayData's status-style
+        # computation subtracts against ``datetimeproxy.now()``.
+        now = datetimeproxy.now()
+        earlier = now - timedelta( minutes = 14 )
+        oldest = now - timedelta( hours = 2 )
+        display_data = self._make_display_data(
+            'SMOKE',
+            [
+                ( str(EntityStateValue.OFF), now ),
+                ( str(EntityStateValue.SMOKE_DETECTED), earlier ),
+                ( str(EntityStateValue.OFF), oldest ),
+            ],
+        )
+        summary = display_data.recent_state_value_summary
+        self.assertEqual( len( summary.entries ), 3 )
+        self.assertEqual( summary.latest.timestamp, now )
+        self.assertEqual( summary.penultimate.timestamp, earlier )
+        self.assertEqual( summary.entries[2].timestamp, oldest )
+
+    def test_entry_label_matches_latest_display_label_for_enum(self):
+        # Per-entry conversion must produce identical labels to the
+        # single-entry path so panels render history rows that look
+        # like the current value (just at different timestamps).
+        display_data = self._make_display_data(
+            'SMOKE',
+            [ ( str(EntityStateValue.SMOKE_DETECTED), datetime.now() ) ],
+        )
+        summary = display_data.recent_state_value_summary
+        self.assertEqual(
+            summary.latest.display_label,
+            display_data.latest_display_label,
+        )
+        self.assertEqual( summary.latest.display_label, 'Smoke Detected' )
+
+    def test_entry_label_applies_unit_conversion(self):
+        # A unit-bearing state's history must convert each cached
+        # raw value through the same display-unit translation as
+        # the current value; otherwise temperature history would
+        # show stored °C while the headline number is °F.
+        now = datetime.now()
+        display_data = self._make_display_data(
+            'TEMPERATURE',
+            [ ( '22', now ), ( '21', now - timedelta( minutes = 5 ) ) ],
+            units = '°C',
+        )
+        summary = display_data.recent_state_value_summary
+        for entry in summary.entries:
+            self.assertTrue(
+                '°F' in entry.display_label or '°C' in entry.display_label,
+                f'expected temperature unit symbol in entry label,'
+                f' got {entry.display_label!r}',
+            )
+        # Latest entry must equal the latest_display_label so panels
+        # that show both the headline and the history don't disagree.
+        self.assertEqual(
+            summary.latest.display_label,
+            display_data.latest_display_label,
+        )
+
+    def test_summary_is_memoized(self):
+        # ``cached_property`` semantics: repeated access returns the
+        # same object so panels touching the summary multiple times
+        # (e.g. once for latest, once for penultimate) don't pay the
+        # per-entry conversion cost on each access.
+        display_data = self._make_display_data(
+            'SMOKE',
+            [ ( str(EntityStateValue.SMOKE_DETECTED), datetime.now() ) ],
+        )
+        first = display_data.recent_state_value_summary
+        second = display_data.recent_state_value_summary
+        self.assertIs( first, second )
+
+    def test_state_value_entry_is_immutable_dataclass(self):
+        # Frozen dataclass: panels can't mutate per-entry fields
+        # mid-render. Documents the immutability contract.
+        entry = StateValueEntry(
+            display_label = 'x', timestamp = datetime.now(),
+        )
+        with self.assertRaises( Exception ):
+            entry.display_label = 'y'
 
 
 class TestToPollingUpdateDict(BaseTestCase):

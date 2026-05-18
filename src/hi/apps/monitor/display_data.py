@@ -9,7 +9,9 @@ conversion, formatted labels, SVG status styles, role-keyed lookup,
 etc.). Manager produces raw; views project."""
 
 from dataclasses import dataclass, field
-from typing import Dict, List, Optional
+from datetime import datetime
+from functools import cached_property
+from typing import Dict, List, Optional, Set
 
 import hi.apps.common.datetimeproxy as datetimeproxy
 
@@ -19,13 +21,49 @@ from hi.apps.console.console_converter_helper import (
     DisplayValue,
 )
 from hi.apps.entity.entity_state_role_order import ENTITY_STATUS_VIEW_ORDERING
-from hi.apps.entity.enums import EntityStateType, EntityStateValue
+from hi.apps.entity.enums import EntityStateRole, EntityStateType, EntityStateValue
 from hi.apps.entity.models import Entity
 
 from hi.hi_styles import StatusStyle
 
 from .enums import EntityDisplayCategory
 from .status_data import EntityStateStatusData, EntityStatusData
+
+
+@dataclass(frozen=True)
+class StateValueEntry:
+    """A single converted entry from the recent state-value cache —
+    a display-ready label paired with the timestamp the value was
+    recorded. The label has already been through the same
+    ``ConsoleConverterHelper`` pipeline as ``latest_display_label``,
+    so templates render entries with the user's preferred unit
+    without per-entry conversion logic."""
+    display_label : str
+    timestamp     : datetime
+
+
+@dataclass(frozen=True)
+class RecentStateValueSummary:
+    """Cached recent state-value history for a single EntityState,
+    surfaced to panel templates. The list is ``SensorResponseManager``'s
+    in-cache window (up to 5 entries, newest-first, already deduped
+    by value change), with each value converted to its display form.
+
+    Bounded by cache size and cache lifetime: a non-empty summary
+    represents only what is currently cached, not a claim about
+    full history. Panels that need "no events in window" semantics
+    should phrase UI accordingly — the framework makes no
+    completeness claims and does not query the DB."""
+
+    entries : List[ StateValueEntry ]
+
+    @property
+    def latest(self) -> Optional[ StateValueEntry ]:
+        return self.entries[0] if self.entries else None
+
+    @property
+    def penultimate(self) -> Optional[ StateValueEntry ]:
+        return self.entries[1] if len( self.entries ) > 1 else None
 
 
 class EntityStateDisplayData:
@@ -158,8 +196,43 @@ class EntityStateDisplayData:
         magnitude+unit form (``"72.0°F"``); other values resolve
         through ``EntityStateValue.to_display_label`` (enum label,
         humanized free-form, or numeric pass-through)."""
-        combined = str( self.latest_display_value )
-        return EntityStateValue.to_display_label( combined )
+        return self._display_label_for_display_value( self.latest_display_value )
+
+    def _display_label_for_value(self, sensor_value) -> str:
+        """Convert one raw sensor value into its display label via
+        the same pipeline as ``latest_display_label``. Shared so
+        per-entry conversion in ``recent_state_value_summary``
+        produces labels indistinguishable from the latest-only
+        path."""
+        display_value = ConsoleConverterHelper.from_entity_state_value(
+            entity_state_value = sensor_value,
+            entity_state = self._entity_state,
+        )
+        return self._display_label_for_display_value( display_value )
+
+    @staticmethod
+    def _display_label_for_display_value(display_value: DisplayValue) -> str:
+        return EntityStateValue.to_display_label( str( display_value ) )
+
+    @cached_property
+    def recent_state_value_summary(self) -> Optional[ RecentStateValueSummary ]:
+        """Cached recent state-value history (up to 5 entries,
+        newest-first), each converted to its display label. Returns
+        ``None`` when the sensor response cache is empty. See
+        ``RecentStateValueSummary`` for the contract — the framework
+        makes no claims about completeness, no DB query is performed,
+        and these values are not included in the polling-update
+        payload (panels see them only at server-side render)."""
+        if not self._sensor_response_list:
+            return None
+        entries = [
+            StateValueEntry(
+                display_label = self._display_label_for_value( r.value ),
+                timestamp     = r.timestamp,
+            )
+            for r in self._sensor_response_list
+        ]
+        return RecentStateValueSummary( entries = entries )
 
     def to_polling_update_dict(self) -> dict:
         """Build the per-EntityState row of ``entityStateStatusMap``.
@@ -278,6 +351,9 @@ class EntityStateDisplayData:
 
         if self.entity_state.entity_state_type == EntityStateType.GAS:
             return self._get_gas_status_style()
+
+        if self.entity_state.entity_state_type == EntityStateType.BATTERY_LEVEL:
+            return self._get_battery_level_status_style()
 
         # TODO: These should map the latest value into a continuous range of colors/opacity
         #
@@ -450,6 +526,21 @@ class EntityStateDisplayData:
         if self.latest_sensor_value == str(EntityStateValue.LOW):
             return StatusStyle.Low
         return None
+
+    # Battery percentages below this threshold are flagged ``low``;
+    # otherwise ``ok``. The token surfaces via the standard polling
+    # pipeline so any panel that opts in via ``data-status`` on a
+    # battery-bound element can react with CSS rules.
+    BATTERY_LOW_THRESHOLD_PCT = 20
+
+    def _get_battery_level_status_style( self ):
+        try:
+            magnitude = float( self.latest_sensor_value )
+        except (TypeError, ValueError):
+            return StatusStyle.BatteryOk
+        if magnitude < self.BATTERY_LOW_THRESHOLD_PCT:
+            return StatusStyle.BatteryLow
+        return StatusStyle.BatteryOk
     
 
 
@@ -469,13 +560,12 @@ class EntityDisplayData:
     )
 
     def __post_init__(self):
-        # Each contained state's ``EntityStateDisplayData`` is built
-        # exactly once here. ``state_status_data_list`` and
-        # ``state_status_data_by_role`` below both project from this
-        # map, so the per-state construction cost (the
-        # ConsoleConverterHelper lookup and the _get_svg_status_style
-        # dispatch) is paid once per render even when both projections
-        # are accessed (the typical ``to_template_context()`` path).
+        # Build each contained state's ``EntityStateDisplayData`` exactly
+        # once. ``state_status_data_list`` and ``state_status_data_by_role``
+        # below both project from this map, so the per-state construction
+        # cost (the ConsoleConverterHelper lookup and the
+        # _get_svg_status_style dispatch) is paid once per render even
+        # when both projections are accessed.
         self.state_display_data_map = {
             d.entity_state.id: EntityStateDisplayData( d )
             for d in self.entity_status_data.entity_state_status_data_list
@@ -513,6 +603,29 @@ class EntityDisplayData:
         return [ self.state_display_data_map[ d.entity_state.id ] for d in ordered_raw ]
 
     @property
+    def present_roles(self) -> Set[EntityStateRole]:
+        return {
+            d.entity_state.entity_state_role
+            for d in self.entity_status_data.entity_state_status_data_list
+        }
+
+    def filter_to_roles( self, declared_roles: Set[EntityStateRole] ):
+        """Project ``state_status_data_list`` and ``state_status_data_by_role``
+        down to states whose role is in ``declared_roles``. Returns a tuple
+        ``(state_list, by_role_dict)`` — the same shapes the unfiltered
+        properties expose, just filtered."""
+        state_list = [
+            d for d in self.state_status_data_list
+            if d.entity_state.entity_state_role in declared_roles
+        ]
+        by_role = {
+            name: data
+            for name, data in self.state_status_data_by_role.items()
+            if data.entity_state.entity_state_role in declared_roles
+        }
+        return state_list, by_role
+
+    @property
     def state_status_data_by_role(self) -> Dict[str, 'EntityStateDisplayData']:
         """Role-keyed lookup for panel templates that pull a
         specific state by semantic role. Keys are the lowercase
@@ -524,13 +637,3 @@ class EntityDisplayData:
             for d in self.entity_status_data.entity_state_status_data_list
         }
 
-    def to_template_context(self) -> Dict:
-        return {
-            'entity': self.entity,
-            'entity_status_data': self,
-            'state_status_data_list': self.state_status_data_list,
-            'state_status_data_by_role': self.state_status_data_by_role,
-            'entity_for_video': self.entity_for_video,
-            'display_only_svg_icon_item': self.display_only_svg_icon_item,
-            'display_category': self.display_category,
-        }
