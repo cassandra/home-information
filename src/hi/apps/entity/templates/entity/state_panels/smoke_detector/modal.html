@@ -1,3 +1,4 @@
+{% load humanize tz %}
 {# Aliases declared in panel.py (role_data_template_aliases):           #}
 {#   smoke_data, battery_data.                                          #}
 {#                                                                      #}
@@ -16,6 +17,9 @@
     <div class="status-label status-label--active">Smoke Detected</div>
     <div class="status-label status-label--recent">Recently Cleared</div>
     <div class="status-label status-label--past">Past Alarm</div>
+    {% with summary=smoke_data.recent_state_value_summary %}{% if summary.penultimate %}
+    <div class="last-event">Triggered {{ summary.penultimate.timestamp|localtime|naturaltime }}</div>
+    {% endif %}{% endwith %}
   </div>
 
   {% if battery_data %}

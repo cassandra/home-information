@@ -164,6 +164,32 @@ Required-role aliases are guaranteed non-`None` when the panel is selected. Opti
 
 For the live-update declaration grammar, server payload shape, and the icon-vs-path asymmetry, see [`entity-status-display.md`](entity-status-display.md). Authoring a panel template is mostly a matter of (1) pulling the right state via `state_status_data_by_role` or `state_status_data_list`, and (2) tagging the elements that should refresh.
 
+### Recent state-value history
+
+`EntityStateDisplayData` exposes `recent_state_value_summary` — a display-ready view of the cached `SensorResponse` list (up to 5 entries, newest-first, already deduplicated by value change in `SensorResponseManager`). Each entry's `display_label` flows through the same `ConsoleConverterHelper` pipeline as `latest_display_label`, so history rows render in the user's preferred unit without per-template conversion.
+
+Shape:
+
+```python
+summary.latest        # StateValueEntry | None    (entries[0])
+summary.penultimate   # StateValueEntry | None    (entries[1])
+summary.entries       # list[StateValueEntry]     (newest-first, up to 5)
+
+# StateValueEntry: display_label: str, timestamp: datetime
+```
+
+Template idiom:
+
+```django
+{% if recent_state_value_summary and recent_state_value_summary.penultimate %}
+  <div class="last-event">
+    Triggered {{ recent_state_value_summary.penultimate.timestamp|naturaltime }}
+  </div>
+{% endif %}
+```
+
+The summary is `None` when the cache is empty (fresh install, cache cleared, sensor never reported). Panels should treat that as "nothing to show" rather than as an error — the framework makes no completeness claim and does not query the `SensorHistory` DB. The summary is also **not** included in the polling-update payload: panels see it only at server-side render. Status-attribute decay (`status="recent"` / `"past"`) continues to refresh live; "X minutes ago" detail does not tick second-by-second. Templates that want timestamp detail should gate it by status decay so an aged-out event doesn't keep advertising itself indefinitely.
+
 ## JS extensions
 
 Most panels need no JavaScript — declarative HTML attributes and CSS rules carry all the live-update work. When more is needed (e.g., re-positioning an SVG marker from a numeric magnitude), register a handler with `Hi.statePanels`:

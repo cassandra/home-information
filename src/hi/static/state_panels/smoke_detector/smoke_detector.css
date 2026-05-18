@@ -72,6 +72,23 @@
 .hi-state-panel-smoke_detector[status="recent"] .status-label { color: var(--hi-smoke-recent-color); }
 .hi-state-panel-smoke_detector[status="past"]   .status-label { color: var(--hi-smoke-past-color); }
 
+/* ============================================================== */
+/* "Triggered X ago" detail line (recent / past only).            */
+/* ============================================================== */
+/* Visibility matches the status-label variants: hidden by default */
+/* and shown only when the panel root's decay-aware ``status``     */
+/* attribute is ``recent`` or ``past``. Idle and active suppress   */
+/* — idle has nothing to say, active is "now."                     */
+
+.hi-state-panel-smoke_detector .last-event {
+    display: none;
+    color: var(--text-muted, #6c757d);
+}
+.hi-state-panel-smoke_detector[status="recent"] .last-event,
+.hi-state-panel-smoke_detector[status="past"]   .last-event {
+    display: block;
+}
+
 /* Alarm-state pulse to draw attention. */
 .hi-state-panel-smoke_detector[status="active"] .icon--active {
     animation: hi-smoke-alarm-pulse 1.2s ease-in-out infinite;
@@ -97,6 +114,10 @@
 .hi-state-panel-smoke_detector--modal .status-label {
     font-size: 22px;
     line-height: 1.1;
+}
+.hi-state-panel-smoke_detector--modal .last-event {
+    font-size: 13px;
+    line-height: 1.2;
 }
 .hi-state-panel-smoke_detector--modal .auxiliary {
     border-top: 1px solid var(--line-color, #d0d7de);
@@ -136,6 +157,10 @@
     font-size: 14px; font-weight: 600; line-height: 1.2;
 }
 .hi-state-panel-smoke_detector--list .status-label { font-size: 12px; }
+.hi-state-panel-smoke_detector--list .last-event {
+    font-size: 11px;
+    line-height: 1.2;
+}
 .hi-state-panel-smoke_detector--list .aux-bits {
     font-size: 11px;
     color: var(--text-muted, #6c757d);

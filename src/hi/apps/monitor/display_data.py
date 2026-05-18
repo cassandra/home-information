@@ -9,6 +9,8 @@ conversion, formatted labels, SVG status styles, role-keyed lookup,
 etc.). Manager produces raw; views project."""
 
 from dataclasses import dataclass, field
+from datetime import datetime
+from functools import cached_property
 from typing import Dict, List, Optional, Set
 
 import hi.apps.common.datetimeproxy as datetimeproxy
@@ -26,6 +28,42 @@ from hi.hi_styles import StatusStyle
 
 from .enums import EntityDisplayCategory
 from .status_data import EntityStateStatusData, EntityStatusData
+
+
+@dataclass(frozen=True)
+class StateValueEntry:
+    """A single converted entry from the recent state-value cache —
+    a display-ready label paired with the timestamp the value was
+    recorded. The label has already been through the same
+    ``ConsoleConverterHelper`` pipeline as ``latest_display_label``,
+    so templates render entries with the user's preferred unit
+    without per-entry conversion logic."""
+    display_label : str
+    timestamp     : datetime
+
+
+@dataclass(frozen=True)
+class RecentStateValueSummary:
+    """Cached recent state-value history for a single EntityState,
+    surfaced to panel templates. The list is ``SensorResponseManager``'s
+    in-cache window (up to 5 entries, newest-first, already deduped
+    by value change), with each value converted to its display form.
+
+    Bounded by cache size and cache lifetime: a non-empty summary
+    represents only what is currently cached, not a claim about
+    full history. Panels that need "no events in window" semantics
+    should phrase UI accordingly — the framework makes no
+    completeness claims and does not query the DB."""
+
+    entries : List[ StateValueEntry ]
+
+    @property
+    def latest(self) -> Optional[ StateValueEntry ]:
+        return self.entries[0] if self.entries else None
+
+    @property
+    def penultimate(self) -> Optional[ StateValueEntry ]:
+        return self.entries[1] if len( self.entries ) > 1 else None
 
 
 class EntityStateDisplayData:
@@ -158,8 +196,43 @@ class EntityStateDisplayData:
         magnitude+unit form (``"72.0°F"``); other values resolve
         through ``EntityStateValue.to_display_label`` (enum label,
         humanized free-form, or numeric pass-through)."""
-        combined = str( self.latest_display_value )
-        return EntityStateValue.to_display_label( combined )
+        return self._display_label_for_display_value( self.latest_display_value )
+
+    def _display_label_for_value(self, sensor_value) -> str:
+        """Convert one raw sensor value into its display label via
+        the same pipeline as ``latest_display_label``. Shared so
+        per-entry conversion in ``recent_state_value_summary``
+        produces labels indistinguishable from the latest-only
+        path."""
+        display_value = ConsoleConverterHelper.from_entity_state_value(
+            entity_state_value = sensor_value,
+            entity_state = self._entity_state,
+        )
+        return self._display_label_for_display_value( display_value )
+
+    @staticmethod
+    def _display_label_for_display_value(display_value: DisplayValue) -> str:
+        return EntityStateValue.to_display_label( str( display_value ) )
+
+    @cached_property
+    def recent_state_value_summary(self) -> Optional[ RecentStateValueSummary ]:
+        """Cached recent state-value history (up to 5 entries,
+        newest-first), each converted to its display label. Returns
+        ``None`` when the sensor response cache is empty. See
+        ``RecentStateValueSummary`` for the contract — the framework
+        makes no claims about completeness, no DB query is performed,
+        and these values are not included in the polling-update
+        payload (panels see them only at server-side render)."""
+        if not self._sensor_response_list:
+            return None
+        entries = [
+            StateValueEntry(
+                display_label = self._display_label_for_value( r.value ),
+                timestamp     = r.timestamp,
+            )
+            for r in self._sensor_response_list
+        ]
+        return RecentStateValueSummary( entries = entries )
 
     def to_polling_update_dict(self) -> dict:
         """Build the per-EntityState row of ``entityStateStatusMap``.
