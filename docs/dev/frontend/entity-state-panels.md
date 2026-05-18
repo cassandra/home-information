@@ -68,7 +68,7 @@ from hi.apps.entity.state_panel_base import EntityStatePanel
 panel = EntityStatePanel(
     name = 'thermostat_single_setpoint',
     entity_type = EntityType.THERMOSTAT,
-    display_contexts = { DisplayContext.MODAL, DisplayContext.LIST, DisplayContext.GRID },
+    display_contexts = { DisplayContext.MODAL, DisplayContext.ROW, DisplayContext.TILE },
     priority = 20,
     required_roles = {
         EntityStateRole.THERMOSTAT_CURRENT_TEMPERATURE,
@@ -95,17 +95,73 @@ Every `EntityStateRole` declared in `required_roles` or `optional_roles` is the 
 
 Extras — roles on the entity outside the panel's declared set — are framework-owned. The panel template does not see them.
 
-## Display contexts and extras
+## Display contexts
 
-| `DisplayContext` | Extras behavior |
-|---|---|
-| `MODAL` | Framework auto-appends an expandable **"Other states"** section below the panel chrome whenever extras exist. Renders each extra row using the existing fallback `state_row.html`. |
-| `LIST`  | Framework ignores extras silently. |
-| `GRID`  | Framework ignores extras silently. |
+The framework defines three `DisplayContext` values. They name **shape** — the per-author design budget — not consumer layout. CollectionView and other consumers map their own layout choices to these contexts; the panel author thinks in shape budgets and authors a template per context the panel chooses to handle.
 
-This produces a framework-level invariant for the modal context: **every `EntityState` on an entity is reachable in the modal view, always.** Either the active panel handles it (declared role) or the framework surfaces it (extra). Authors cannot opt out — the contract belongs to the user.
+| `DisplayContext` | Shape | Design budget | Extras behavior |
+|---|---|---|---|
+| `MODAL` | Roomy, unbounded height | ~480–640px wide, height grows with content | Framework auto-appends an expandable **"Other states"** section below the panel chrome whenever extras exist; renders each extra row using fallback `state_row.html`. |
+| `TILE`  | Square-ish, gridable | 240–280 wide × 200–260 tall target; 200 × 200 min; ~320 max wide; aspect 1:1 to 5:4 | Framework ignores extras silently. |
+| `ROW`   | Wide, single horizontal strip | full container width × ~80px tall target; 56 min / 128 max height; aspect ≥ 4:1 | Framework ignores extras silently. |
 
-Grid and list are compact-by-intent; extras are intentionally invisible there to keep card layouts tight. Users who want to see every state open the modal.
+Modal-context invariant: **every `EntityState` on an entity is reachable in the modal view, always.** Either the active panel handles it (declared role) or the framework surfaces it (extra). Authors cannot opt out.
+
+TILE and ROW are compact-by-intent; extras are intentionally invisible there to keep card layouts tight. Users who want to see every state open the modal.
+
+### Size-budget CSS variables
+
+Budgets are documented and shared via CSS variables so panel CSS and wrapper layout reference the same numbers:
+
+```css
+--hi-panel-tile-min-size: 200px;
+--hi-panel-tile-target-size: 240px;
+--hi-panel-tile-max-size: 320px;
+--hi-panel-row-min-height: 56px;
+--hi-panel-row-target-height: 80px;
+--hi-panel-row-max-height: 128px;
+```
+
+**Enforcement is soft.** No `max-width` / `max-height` clamping by the framework. Panel authors who exceed budgets see content visibly cramped or sliding; the feedback loop is immediate. Wrappers use `auto-fit` + `minmax(var(--hi-panel-tile-min-size), 1fr)` for TILE grids and `flex-direction: column` for ROW lists — column count follows from container width without JS.
+
+### Template filename convention
+
+By convention each context's template is named for the context:
+
+```
+state_panels/<name>/modal.html
+state_panels/<name>/row.html
+state_panels/<name>/tile.html
+```
+
+Filename is not enforced — `panel.template_name` names the template explicitly per panel declaration. The convention exists for navigation.
+
+## CollectionView integration
+
+CollectionView consumes the panel framework through four `CollectionViewType` values, parallel to `LocationViewType`:
+
+| `CollectionViewType` | Panel content | Click |
+|---|---|---|
+| `DEFAULT` | none — icon + name only; framework dispatch is **skipped** | whole card → entity status/edit modal |
+| `GRID`    | panels rendered in `TILE` context | whole card → modal |
+| `LIST`    | panels rendered in `ROW` context | whole card → modal |
+| `SECURITY` | panels rendered in `TILE` context | whole card → modal (aspirational placeholder paralleling `LocationViewType.SECURITY`; no distinct behavior today) |
+
+`DEFAULT` is the primary case. Most entities in a typical install are information-only items (manuals, warranties, plant care notes) — no states, no controllers, just editable attributes. For these, the collection is a clickable index; rendering a panel adds nothing useful. Collections with integration-backed entities opt into `GRID` / `LIST` / `SECURITY` for richer surfacing.
+
+`GRID` and `SECURITY` render identically today; they differ only as user-facing labels (and as scaffolding for future cross-view SECURITY semantics that haven't been designed yet).
+
+### Whole-card click contract
+
+In every CollectionView mode, the entire card is the click target — wrapped in an `<a>` to the status modal. **Controllers within a card must consume their own clicks** so taps on a slider / checkbox / button don't bubble to the wrapping `<a>` and trigger the modal:
+
+- **JS handlers**: call `event.stopPropagation()` (and `preventDefault()` where relevant) inside controller click / change handlers.
+- **CSS**: nothing special — `<input>` / `<button>` elements stop click propagation naturally on most browsers, but explicit `stopPropagation` in handlers is the safer guarantee.
+- **Touch-target sizing**: controllers must be **≥44pt** on the smallest side (Apple HIG; ~48dp Material) so finger taps land squarely on the controller and not the background card.
+
+Panels with controllers in their ROW / TILE templates carry the responsibility for both. Panels without controllers (smoke detector, plain camera) have no extra work — every card-pixel routes to the modal.
+
+Edit mode overrides all of this: when `request.view_parameters.is_editing` is set, JS intercepts card clicks and opens the entity edit pane regardless of the wrapper `<a>`'s `href`. This behavior is owned by the collection app, not by panels.
 
 ## Template authoring
 
@@ -218,7 +274,7 @@ Append `?debug_panel=1` to any view that renders an entity status panel to see t
 5. Tag refreshable elements per the polling-update contract (see [`entity-status-display.md`](entity-status-display.md)).
 6. Drop panel-private CSS and JS in `src/hi/static/state_panels/<name>/` if needed.
 7. Register any panel JS handlers via `Hi.statePanels.registerInit` / `registerUpdate`.
-8. Verify in the simulator: open the entity status modal, change values on the simulator side, watch the panel refresh; open a collection containing the entity and check the list and grid contexts. If the panel doesn't render where expected, hit the URL with `?debug_panel=1` and check the resolution trace.
+8. Verify in the simulator: open the entity status modal, change values on the simulator side, watch the panel refresh; open a collection containing the entity and check the ROW and TILE contexts (CollectionViewType LIST and GRID, respectively). If the panel doesn't render where expected, hit the URL with `?debug_panel=1` and check the resolution trace.
 
 ## Exemplars
 
@@ -237,4 +293,6 @@ Read the existing panels when starting a new one — copy from the closest match
 - **Don't render extras inside the panel.** The modal context auto-appends an "Other states" section for any role outside the panel's declared set. Panels that try to render unknown states inside their own chrome will duplicate them.
 - **Declare what you display, display what you declare.** If a role appears in `required_roles` or `optional_roles`, the template must render it (subject to `{% if %}` for optionals). If a role is rendered but not declared, the framework will still treat it as an "extra" and may surface it twice in modal.
 - **Don't branch a template by `DisplayContext`.** If the panel needs context-specific layout, split into separate declarations with their own templates rather than `{% if context == ... %}` inside one file.
+- **Controllers must stop click propagation.** CollectionView wraps every card in an `<a>` to the entity modal. Sliders / checkboxes / buttons in ROW or TILE templates need to call `event.stopPropagation()` in their handlers (and meet the ≥44pt touch-target rule) so taps don't accidentally trigger the modal.
+- **Don't author for `DEFAULT` CollectionViewType.** DEFAULT collections skip the panel framework entirely — they render icon + name through the collection wrapper, not through any panel template. Panels are dispatched only for GRID, LIST, and SECURITY view types.
 - **Shared partials live where they were first authored.** The flat state list and per-state row templates live under `state_panels/fallback/` (where they were born). Other panels that want the same list reference them from that path; there's no separate "shared" namespace.
