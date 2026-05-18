@@ -162,9 +162,10 @@ class TestEntityPlacementCalculatorBulkShapes(BaseTestCase):
         self.assertEqual(len(shapes), len(entities))
         for shape in shapes:
             self.assertIsInstance(shape, PlacementPoint)
-        # Distinct x positions in a single row.
-        xs = [s.svg_x for s in shapes]
-        self.assertEqual(len(set(xs)), 4)
+        # All placement positions are distinct — adaptive grid shape
+        # (rows × cols) is an implementation detail and not asserted.
+        positions = [(s.svg_x, s.svg_y) for s in shapes]
+        self.assertEqual(len(set(positions)), 4)
 
 
 class TestEntityPlacerSetEntityPath(BaseTestCase):
