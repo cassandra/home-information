@@ -116,7 +116,7 @@
 }
 .hi-state-panel-thermostat--modal .thermostat-modes-grid {
     display: grid;
-    tile-template-columns: 1fr 1fr;
+    grid-template-columns: 1fr 1fr;
     gap: 12px 16px;
 }
 .hi-state-panel-thermostat--modal .control-group {
@@ -150,13 +150,13 @@
     gap: 12px;
 }
 .hi-state-panel-thermostat .stepper-btn {
-    width: 32px;
-    height: 32px;
+    width: 44px;
+    height: 44px;
     border-radius: 50%;
     border: 1px solid var(--line-color, #d0d7de);
     background: white;
     color: var(--primary-color, #177072);
-    font-size: 18px;
+    font-size: 22px;
     line-height: 1;
     cursor: pointer;
     display: inline-flex;
@@ -205,7 +205,7 @@
 
 .hi-state-panel-thermostat--row {
     display: grid;
-    tile-template-columns: 96px 1fr;
+    grid-template-columns: 96px 1fr;
     gap: 14px;
     align-items: center;
 }

@@ -99,28 +99,19 @@ Extras — roles on the entity outside the panel's declared set — are framewor
 
 The framework defines three `DisplayContext` values. They name **shape** — the per-author design budget — not consumer layout. CollectionView and other consumers map their own layout choices to these contexts; the panel author thinks in shape budgets and authors a template per context the panel chooses to handle.
 
-| `DisplayContext` | Shape | Design budget | Extras behavior |
-|---|---|---|---|
-| `MODAL` | Roomy, unbounded height | ~480–640px wide, height grows with content | Framework auto-appends an expandable **"Other states"** section below the panel chrome whenever extras exist; renders each extra row using fallback `state_row.html`. |
-| `TILE`  | Square-ish, gridable | 240–280 wide × 200–260 tall target; 200 × 200 min; ~320 max wide; aspect 1:1 to 5:4 | Framework ignores extras silently. |
-| `ROW`   | Wide, single horizontal strip | full container width × ~80px tall target; 56 min / 128 max height; aspect ≥ 4:1 | Framework ignores extras silently. |
+| `DisplayContext` | Shape | Budget (CSS variables) | Aspect | Extras behavior |
+|---|---|---|---|---|
+| `MODAL` | Roomy, unbounded height | content-driven; modal container is ~480–640px wide | n/a | Framework auto-appends an expandable **"Other states"** section below the panel chrome whenever extras exist; renders each extra row using fallback `state_row.html`. |
+| `TILE`  | Square-ish, gridable | `--hi-panel-tile-*` in `src/hi/static/css/main.css` | 1:1 to 5:4 | Framework ignores extras silently. |
+| `ROW`   | Wide, single horizontal strip | `--hi-panel-row-*` in `src/hi/static/css/main.css` | ≥ 4:1 | Framework ignores extras silently. |
+
+The "Budget" column references the CSS variables that define concrete min / target / max sizes per context. The CSS is the source of truth; this guide deliberately does not reproduce the numbers to avoid drift. The qualitative shape and aspect-ratio contracts here are the conceptual budget every panel honors regardless of the specific numbers.
 
 Modal-context invariant: **every `EntityState` on an entity is reachable in the modal view, always.** Either the active panel handles it (declared role) or the framework surfaces it (extra). Authors cannot opt out.
 
 TILE and ROW are compact-by-intent; extras are intentionally invisible there to keep card layouts tight. Users who want to see every state open the modal.
 
-### Size-budget CSS variables
-
-Budgets are documented and shared via CSS variables so panel CSS and wrapper layout reference the same numbers:
-
-```css
---hi-panel-tile-min-size: 200px;
---hi-panel-tile-target-size: 240px;
---hi-panel-tile-max-size: 320px;
---hi-panel-row-min-height: 56px;
---hi-panel-row-target-height: 80px;
---hi-panel-row-max-height: 128px;
-```
+The height side of the TILE budget is a target, not a clamp. Panels whose content has an intrinsic aspect (camera live feeds being the canonical case) may exceed the height target when the content demands it — the width budget and the min-size contract still apply, so the wrapper's adaptive column count remains predictable.
 
 **Enforcement is soft.** No `max-width` / `max-height` clamping by the framework. Panel authors who exceed budgets see content visibly cramped or sliding; the feedback loop is immediate. Wrappers use `auto-fit` + `minmax(var(--hi-panel-tile-min-size), 1fr)` for TILE grids and `flex-direction: column` for ROW lists — column count follows from container width without JS.
 
