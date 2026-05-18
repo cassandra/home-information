@@ -25,7 +25,7 @@ class CollectionData:
 
     @property
     def grid_css_class(self):
-        if self.collection.collection_type.is_cameras:
+        if self.collection.collection_view_type.is_security:
             return 'grid-2-items'
         entity_count = len(self.state_panel_data_list)
         if entity_count >= 3:

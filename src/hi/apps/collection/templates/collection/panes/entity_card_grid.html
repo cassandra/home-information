@@ -2,7 +2,7 @@
 <div class="card h-100">
   <div class="card-body p-3">
     {% include "collection/panes/entity_card_title.html" with entity_status_data=state_panel_data.entity_display_data %}
-    {% if collection.collection_type.is_cameras %}
+    {% if collection.collection_view_type.is_security %}
     <div>
       {% include "console/panes/entity_live_view_w_link.html" with entity=state_panel_data.entity %}
     </div>

@@ -5,7 +5,7 @@
       <div class="entity-title-section flex-shrink-0">
         {% include "collection/panes/entity_card_title.html" with entity_status_data=state_panel_data.entity_display_data %}
       </div>
-      {% if collection.collection_type.is_cameras %}
+      {% if collection.collection_view_type.is_security %}
       <div>
         {% include "console/panes/entity_live_view_w_link.html" with entity=state_panel_data.entity %}
       </div>
