@@ -141,29 +141,47 @@
 .hi-state-panel-smoke_detector--modal .aux-value { font-size: 14px; font-weight: 500; }
 
 /* ============================================================== */
-/* List card layout                                               */
+/* Row card layout: badge + name + status + last-event + aux all     */
+/* on one horizontal line.                                            */
 /* ============================================================== */
 
 .hi-state-panel-smoke_detector--row {
-    display: grid;
-    grid-template-columns: 60px 1fr auto;
-    gap: 12px;
+    display: flex;
     align-items: center;
-    padding: 4px;
+    gap: 12px;
+    padding: 6px 12px;
+    min-height: var(--hi-panel-row-min-height);
 }
-.hi-state-panel-smoke_detector--row .badge { width: 60px; height: 60px; }
-.hi-state-panel-smoke_detector--row .row-meta { min-width: 0; }
+.hi-state-panel-smoke_detector--row .badge { width: 44px; height: 44px; flex-shrink: 0; }
 .hi-state-panel-smoke_detector--row .entity-name {
     font-size: 14px; font-weight: 600; line-height: 1.2;
+    flex: 0 1 auto;
+    min-width: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
-.hi-state-panel-smoke_detector--row .status-label { font-size: 12px; }
+.hi-state-panel-smoke_detector--row .status-label {
+    font-size: 13px;
+    flex-shrink: 0;
+}
+/* margin-left: auto on both last-event and aux-bits pushes the      */
+/* right-most group to the right edge. Whichever of the two appears  */
+/* first consumes the available free space; the other sits flush     */
+/* next to it. Works for all combinations (either present, both      */
+/* present, neither present).                                         */
 .hi-state-panel-smoke_detector--row .last-event {
     font-size: 11px;
     line-height: 1.2;
+    color: var(--text-muted, #6c757d);
+    flex-shrink: 0;
+    margin-left: auto;
 }
 .hi-state-panel-smoke_detector--row .aux-bits {
     font-size: 11px;
     color: var(--text-muted, #6c757d);
+    flex-shrink: 0;
+    margin-left: auto;
 }
 
 /* ============================================================== */
