@@ -1,67 +1,63 @@
 {# Aliases declared in panel.py (role_data_template_aliases):           #}
 {#   current_data, target_data, low_data, high_data,                    #}
-{#   action_data, mode_data, humidity_data.                             #}
+{#   action_data, mode_data, fan_data, preset_data.                     #}
+{#                                                                      #}
+{# ROW context: horizontal strip showing name + current temp + setpoint #}
+{# stepper(s) + optional mode / fan / preset selects across the row.    #}
+{# No SVG dial in this context — the modal carries the dial. Setpoint   #}
+{# steppers are interactive; click handlers in thermostat.js call       #}
+{# stopPropagation so taps don't trigger the surrounding card-wrapper   #}
+{# modal-open click.                                                    #}
 <div class="hi-state-panel-thermostat hi-state-panel-thermostat--row"
      {% if action_data %}data-state-id="{{ action_data.entity_state.id }}" data-status status="{{ action_data.latest_sensor_value }}"{% endif %}
      {% if mode_data %}data-hvac-mode-state-id="{{ mode_data.entity_state.id }}" data-hvac-mode="{{ mode_data.latest_sensor_value }}"{% endif %}>
 
-  <div class="dial">
-    <svg class="dial-svg" viewBox="0 0 220 220" aria-hidden="true">
-      <circle class="dial-track" cx="110" cy="110" r="95" fill="none" stroke-width="2"/>
-
-      {% if low_data and high_data %}
-        <g class="dial-setpoint-marker dial-setpoint-marker--dual dial-setpoint-marker--low"
-           data-marker-state-id="{{ low_data.entity_state.id }}"
-           data-temp-value="{{ low_data.latest_display_value.magnitude }}">
-          <line x1="110" y1="10" x2="110" y2="24" stroke-width="6" stroke-linecap="round"/>
-        </g>
-        <g class="dial-setpoint-marker dial-setpoint-marker--dual dial-setpoint-marker--high"
-           data-marker-state-id="{{ high_data.entity_state.id }}"
-           data-temp-value="{{ high_data.latest_display_value.magnitude }}">
-          <line x1="110" y1="10" x2="110" y2="24" stroke-width="6" stroke-linecap="round"/>
-        </g>
-      {% endif %}
-      {% if target_data %}
-        <g class="dial-setpoint-marker dial-setpoint-marker--single"
-           data-marker-state-id="{{ target_data.entity_state.id }}"
-           data-temp-value="{{ target_data.latest_display_value.magnitude }}">
-          <line x1="110" y1="10" x2="110" y2="24" stroke-width="6" stroke-linecap="round"/>
-        </g>
-      {% endif %}
-
-      <g class="dial-current-marker"
-         data-marker-state-id="{{ current_data.entity_state.id }}"
-         data-temp-value="{{ current_data.latest_display_value.magnitude }}">
-        <circle cx="110" cy="17" r="9"/>
-      </g>
-    </svg>
-    <div class="dial-center">
-      <span class="dial-temp"
-            data-state-id="{{ current_data.entity_state.id }}"
-            data-display-text>{{ current_data.latest_display_label }}</span>
+  <div class="row-identity">
+    <div class="entity-name">{{ entity.name }}</div>
+    {% if action_data %}
+    <div class="row-mode-status">
+      <span class="dial-mode-label" for-status="heating">Heating</span>
+      <span class="dial-mode-label" for-status="cooling">Cooling</span>
+      <span class="dial-mode-label" for-status="idle">Idle</span>
+      <span class="dial-mode-label" for-status="off">Off</span>
     </div>
+    {% endif %}
   </div>
 
-  <div class="row-meta">
-    <div class="entity-name">{{ entity.name }}</div>
+  <div class="row-current">
+    <span class="row-current-temp"
+          data-state-id="{{ current_data.entity_state.id }}"
+          data-display-text>{{ current_data.latest_display_label }}</span>
+  </div>
+
+  <div class="row-setpoints">
     {% if low_data and high_data %}
-      <div class="setpoint-summary setpoint-summary--dual">
-        <strong data-state-id="{{ low_data.entity_state.id }}" data-display-text>{{ low_data.latest_display_label }}</strong>
-        –
-        <strong data-state-id="{{ high_data.entity_state.id }}" data-display-text>{{ high_data.latest_display_label }}</strong>
+      <div class="setpoint-block setpoint-block--dual">
+        {% include "entity/state_panels/thermostat/setpoint_stepper.html" with setpoint_data=low_data %}
+        {% include "entity/state_panels/thermostat/setpoint_stepper.html" with setpoint_data=high_data %}
       </div>
     {% endif %}
     {% if target_data %}
-      <div class="setpoint-summary setpoint-summary--single">
-        Target <strong data-state-id="{{ target_data.entity_state.id }}" data-display-text>{{ target_data.latest_display_label }}</strong>
-      </div>
-    {% endif %}
-    {% if humidity_data %}
-      <div class="humidity-line">
-        Humidity <span data-state-id="{{ humidity_data.entity_state.id }}"
-                       data-display-text>{{ humidity_data.latest_display_label }}</span>
+      <div class="setpoint-block setpoint-block--single">
+        {% include "entity/state_panels/thermostat/setpoint_stepper.html" with setpoint_data=target_data %}
       </div>
     {% endif %}
   </div>
+
+  {% if mode_data %}
+  <div class="row-control row-control--mode">
+    {% include "entity/state_panels/thermostat/role_control.html" with role_data=mode_data %}
+  </div>
+  {% endif %}
+  {% if fan_data %}
+  <div class="row-control row-control--fan">
+    {% include "entity/state_panels/thermostat/role_control.html" with role_data=fan_data %}
+  </div>
+  {% endif %}
+  {% if preset_data %}
+  <div class="row-control row-control--preset">
+    {% include "entity/state_panels/thermostat/role_control.html" with role_data=preset_data %}
+  </div>
+  {% endif %}
 
 </div>

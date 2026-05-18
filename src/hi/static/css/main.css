@@ -1768,6 +1768,12 @@ g[hover] {
     flex-direction: column;
     gap: 8px;
     margin-bottom: 1rem;
+    /* Establish a container query context so ROW-context panels can
+       use @container to adapt to actual content width (immune to
+       sidebar / layout-chrome width that @media viewport queries
+       cannot account for). */
+    container-type: inline-size;
+    container-name: collection-row;
 }
 
 /* ================================================================ */
@@ -1815,10 +1821,16 @@ g[hover] {
 }
 
 .entity-card--tile {
+    /* display: grid so the single panel child auto-stretches to fill
+     * both axes — min-height alone wouldn't give the panel's height:100%
+     * a resolvable parent height, leaving the card's white background
+     * visible below the panel content. */
+    display: grid;
     min-height: var(--hi-panel-tile-min-size);
 }
 
 .entity-card--row {
+    display: grid;
     min-height: var(--hi-panel-row-min-height);
 }
 

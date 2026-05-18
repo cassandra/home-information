@@ -1,11 +1,10 @@
 /* Framework fallback panel for ROW and TILE contexts. Renders entity
- * icon + name plus an optional state list — self-contained so the
- * collection-card wrapper does not need to add any chrome of its own.
+ * icon + name plus a compact list of the first few states (controllers
+ * + sensor values). Self-contained — the collection-card wrapper does
+ * not add any chrome of its own.
  */
 
 .hi-state-panel-fallback__icon {
-    width: 32px;
-    height: 32px;
     flex-shrink: 0;
 }
 .hi-state-panel-fallback__icon svg {
@@ -13,35 +12,75 @@
     height: 100%;
 }
 .hi-state-panel-fallback__name {
-    font-weight: 500;
+    font-weight: 600;
     color: var(--black);
     overflow: hidden;
     text-overflow: ellipsis;
-}
-
-/* ROW: icon left, body right (name above optional state list). */
-.hi-state-panel-fallback--row {
-    display: flex;
-    align-items: flex-start;
-    gap: 12px;
-    padding: 8px 12px;
-    min-height: var(--hi-panel-row-min-height);
-}
-.hi-state-panel-fallback--row .hi-state-panel-fallback__body {
-    flex: 1;
-    min-width: 0;
-}
-.hi-state-panel-fallback--row .hi-state-panel-fallback__name {
-    margin-bottom: 4px;
     white-space: nowrap;
 }
 
-/* TILE: icon centered atop name; state list (when present) below. */
+/* Per-state compact block: label above value/control. Both contexts
+ * use the same per-state structure; the parent layout differs (the
+ * row stacks states horizontally, the tile stacks them vertically).
+ */
+.state-compact {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+}
+.state-compact__label {
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--text-muted, #6c757d);
+    font-weight: 600;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.state-compact__value {
+    font-size: 13px;
+    line-height: 1.2;
+    overflow: hidden;
+}
+/* Compact form inside the value cell — strip the controller's default
+ * row chrome (history button, oversized text-center label) that lives
+ * in controller_data_row.html. The form widget itself stays
+ * functional. */
+.state-compact__value form {
+    margin: 0;
+}
+
+/* ROW: icon left, name next, states stacked horizontally on the right. */
+.hi-state-panel-fallback--row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 6px 12px;
+    min-height: var(--hi-panel-row-min-height);
+}
+.hi-state-panel-fallback--row .hi-state-panel-fallback__icon {
+    width: 32px;
+    height: 32px;
+}
+.hi-state-panel-fallback--row .hi-state-panel-fallback__name {
+    flex: 0 1 auto;
+    min-width: 0;
+    font-size: 14px;
+}
+.hi-state-panel-fallback--row .state-compact {
+    flex: 1 1 0;
+    min-width: 0;
+    max-width: 280px;
+}
+
+/* TILE: icon centered atop name; states stacked vertically below. */
 .hi-state-panel-fallback--tile {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 8px;
+    gap: 6px;
     padding: 12px;
     text-align: center;
 }
@@ -52,4 +91,8 @@
 .hi-state-panel-fallback--tile .hi-state-panel-fallback__name {
     font-size: 13px;
     line-height: 1.2;
+}
+.hi-state-panel-fallback--tile .state-compact {
+    align-items: center;
+    width: 100%;
 }

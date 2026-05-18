@@ -81,19 +81,55 @@
 /* List card layout                                               */
 /* ============================================================== */
 
+/* ROW context: status-only horizontal strip — no live feed embed.    */
+/* A small snapshot thumbnail (when available) replaces the stream    */
+/* for visual identification; falls back to the entity icon when no   */
+/* snapshot exists.                                                    */
+
 .hi-state-panel-camera--row {
-    display: grid;
-    grid-template-columns: 160px 1fr;
-    gap: 12px;
+    display: flex;
     align-items: center;
+    gap: 12px;
+    padding: 6px 12px;
+    min-height: var(--hi-panel-row-min-height);
 }
-.hi-state-panel-camera--row .stream {
-    width: 160px;
+.hi-state-panel-camera--row .row-thumb {
+    flex-shrink: 0;
+    width: 80px;
     aspect-ratio: 16 / 9;
+    background: #000;
+    border-radius: 3px;
+    overflow: hidden;
 }
-.hi-state-panel-camera--row .row-meta { min-width: 0; }
+.hi-state-panel-camera--row .row-thumb img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+.hi-state-panel-camera--row .row-icon {
+    flex-shrink: 0;
+    width: 44px;
+    height: 44px;
+}
+.hi-state-panel-camera--row .row-icon svg {
+    width: 100%;
+    height: 100%;
+}
 .hi-state-panel-camera--row .entity-name {
-    font-size: 13px; font-weight: 600; line-height: 1.2;
+    flex: 0 1 auto;
+    min-width: 0;
+    font-size: 14px; font-weight: 600; line-height: 1.2;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.hi-state-panel-camera--row .last-event {
+    font-size: 11px;
+    line-height: 1.2;
+    color: var(--text-muted, #6c757d);
+    flex-shrink: 0;
+    margin-left: auto;
 }
 
 /* ============================================================== */
@@ -180,4 +216,14 @@
     height: 24px;
     top: 4px;
     right: 4px;
+}
+
+/* In ROW context the chip flows inline (no stream to overlay) — */
+/* drop the absolute positioning and the box-shadow.             */
+.hi-state-panel-camera--row .motion-chip {
+    position: static;
+    flex-shrink: 0;
+    box-shadow: none;
+    top: auto;
+    right: auto;
 }

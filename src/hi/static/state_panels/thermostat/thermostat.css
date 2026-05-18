@@ -116,7 +116,7 @@
 }
 .hi-state-panel-thermostat--modal .thermostat-modes-grid {
     display: grid;
-    tile-template-columns: 1fr 1fr;
+    grid-template-columns: 1fr 1fr;
     gap: 12px 16px;
 }
 .hi-state-panel-thermostat--modal .control-group {
@@ -150,13 +150,13 @@
     gap: 12px;
 }
 .hi-state-panel-thermostat .stepper-btn {
-    width: 32px;
-    height: 32px;
+    width: 44px;
+    height: 44px;
     border-radius: 50%;
     border: 1px solid var(--line-color, #d0d7de);
     background: white;
     color: var(--primary-color, #177072);
-    font-size: 18px;
+    font-size: 22px;
     line-height: 1;
     cursor: pointer;
     display: inline-flex;
@@ -204,25 +204,83 @@
 /* ============================================================== */
 
 .hi-state-panel-thermostat--row {
-    display: grid;
-    tile-template-columns: 96px 1fr;
-    gap: 14px;
+    display: flex;
     align-items: center;
+    gap: 16px;
+    padding: 8px 12px;
+    min-height: var(--hi-panel-row-min-height);
 }
-.hi-state-panel-thermostat--row .dial {
-    width: 96px;
-    height: 96px;
+.hi-state-panel-thermostat--row .row-identity {
+    flex: 0 1 auto;
+    min-width: 0;
+    overflow: hidden;
 }
-.hi-state-panel-thermostat--row .dial-temp { font-size: 26px; }
 .hi-state-panel-thermostat--row .entity-name {
     font-size: 14px; font-weight: 600; line-height: 1.2;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
-.hi-state-panel-thermostat--row .setpoint-summary {
-    font-size: 12px; color: var(--text-muted, #6c757d); margin-top: 2px;
+.hi-state-panel-thermostat--row .row-mode-status {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    font-weight: 600;
+    margin-top: 2px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
-.hi-state-panel-thermostat--row .setpoint-summary strong { color: #1f2328; font-weight: 500; }
-.hi-state-panel-thermostat--row .humidity-line {
-    font-size: 11px; color: var(--text-muted, #6c757d); margin-top: 2px;
+.hi-state-panel-thermostat--row .row-current {
+    flex: 0 0 auto;
+}
+.hi-state-panel-thermostat--row .row-current-temp {
+    font-size: 40px;
+    font-weight: 300;
+    line-height: 1;
+}
+.hi-state-panel-thermostat--row[status="heating"] .row-current-temp {
+    color: var(--hi-thermo-heating-color);
+}
+.hi-state-panel-thermostat--row[status="cooling"] .row-current-temp {
+    color: var(--hi-thermo-cooling-color);
+}
+.hi-state-panel-thermostat--row .row-setpoints {
+    flex: 1 1 auto;
+    display: flex;
+    justify-content: flex-start;
+    gap: 16px;
+}
+.hi-state-panel-thermostat--row .setpoint-block--dual {
+    gap: 16px;
+}
+.hi-state-panel-thermostat--row .row-control {
+    flex: 0 1 auto;
+}
+.hi-state-panel-thermostat--row .row-control select {
+    font-size: 12px;
+    padding: 4px 6px;
+    max-width: 110px;
+}
+
+/* Progressive disclosure as the row narrows: hide the right-most,
+ * lower-priority controllers first. Mode select disappears before the
+ * mode-status label (which still conveys the mode visually). Below
+ * the last breakpoint, the absolute minimum (name + current + setpoint)
+ * remains. Container queries scope to the actual content width (set on
+ * .collection-row-list in main.css), independent of sidebar width.
+ */
+@container collection-row (max-width: 1100px) {
+    .hi-state-panel-thermostat--row .row-control--preset { display: none; }
+}
+@container collection-row (max-width: 900px) {
+    .hi-state-panel-thermostat--row .row-control--fan { display: none; }
+}
+@container collection-row (max-width: 700px) {
+    .hi-state-panel-thermostat--row .row-control--mode { display: none; }
+}
+@container collection-row (max-width: 500px) {
+    .hi-state-panel-thermostat--row .row-mode-status { display: none; }
 }
 
 /* ============================================================== */
@@ -238,8 +296,10 @@
     padding: 8px;
     height: 100%;
 }
-.hi-state-panel-thermostat--tile[status="heating"] { background: var(--hi-thermo-heating-bg); }
-.hi-state-panel-thermostat--tile[status="cooling"] { background: var(--hi-thermo-cooling-bg); }
+.hi-state-panel-thermostat--tile[status="heating"],
+.hi-state-panel-thermostat--row[status="heating"] { background: var(--hi-thermo-heating-bg); }
+.hi-state-panel-thermostat--tile[status="cooling"],
+.hi-state-panel-thermostat--row[status="cooling"] { background: var(--hi-thermo-cooling-bg); }
 .hi-state-panel-thermostat--tile .tile-temp {
     font-size: 44px;
     font-weight: 300;

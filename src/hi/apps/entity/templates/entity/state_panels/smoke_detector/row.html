@@ -1,6 +1,12 @@
 {% load humanize tz %}
 {# Aliases declared in panel.py (role_data_template_aliases):           #}
 {#   smoke_data, battery_data.                                          #}
+{#                                                                      #}
+{# ROW context: horizontal strip. Badge + name + status label +         #}
+{# (optional) "Triggered X ago" timestamp + (optional) battery readout, #}
+{# all on a single line. Status labels and last-event visibility are    #}
+{# driven by the panel-root ``status`` attribute (the decay-aware       #}
+{# token) per CSS rules that this template does not need to repeat.     #}
 <div class="hi-state-panel-smoke_detector hi-state-panel-smoke_detector--row"
      data-state-id="{{ smoke_data.entity_state.id }}"
      data-status
@@ -8,24 +14,24 @@
 
   {% include "entity/state_panels/smoke_detector/badge.html" %}
 
-  <div class="row-meta">
-    <div class="entity-name">{{ entity.name }}</div>
-    <div class="status-label status-label--idle">All Clear</div>
-    <div class="status-label status-label--active">Smoke Detected</div>
-    <div class="status-label status-label--recent">Recently Cleared</div>
-    <div class="status-label status-label--past">Past Alarm</div>
-    {% with summary=smoke_data.recent_state_value_summary %}{% if summary.penultimate %}
+  <div class="entity-name">{{ entity.name }}</div>
+
+  <div class="status-label status-label--idle">All Clear</div>
+  <div class="status-label status-label--active">Smoke Detected</div>
+  <div class="status-label status-label--recent">Recently Cleared</div>
+  <div class="status-label status-label--past">Past Alarm</div>
+
+  {% with summary=smoke_data.recent_state_value_summary %}{% if summary.penultimate %}
     <div class="last-event">Triggered {{ summary.penultimate.timestamp|localtime|naturaltime }}</div>
-    {% endif %}{% endwith %}
-  </div>
+  {% endif %}{% endwith %}
 
   {% if battery_data %}
-  <div class="aux-bits">
-    <span data-state-id="{{ battery_data.entity_state.id }}"
-          data-display-text
-          data-status
-          status="{{ battery_data.svg_status_style.status_value }}">{{ battery_data.latest_display_label }}</span>
-  </div>
+    <div class="aux-bits">
+      <span data-state-id="{{ battery_data.entity_state.id }}"
+            data-display-text
+            data-status
+            status="{{ battery_data.svg_status_style.status_value }}">{{ battery_data.latest_display_label }}</span>
+    </div>
   {% endif %}
 
 </div>

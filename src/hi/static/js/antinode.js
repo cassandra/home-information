@@ -433,10 +433,31 @@ function asyncSubmitHandlerHelper( $form ) {
 // trigger an ansynchonous (aka, ajax) request.
 //
 function asyncClickHandler(event) {
+    let $anchor = $(this);
+
+    // When a ``<div data-async>`` is used as a card-wide click target,
+    // it may contain interactive descendants (inner antinode links,
+    // controllers, selects) that should handle their own clicks. Skip
+    // the outer handler when the click originated inside such an
+    // interactive descendant of ``this``. (When ``this`` IS the
+    // interactive element — the normal ``<a data-async>`` case —
+    // closest() returns the anchor itself and we proceed.)
+    //
+    // ``label`` is included because label-wrapped form controls
+    // (e.g. the on/off switch's <label class=switch-modern> wrapping
+    // a checkbox + styled <span>) take user clicks on the visible
+    // <span> child, which has no other interactive ancestor.
+    let $interactive = $(event.target).closest(
+        'a, button, input, select, textarea, label, [role="button"]'
+    );
+    if ( $interactive.length
+         && $interactive[0] !== this
+         && $.contains( this, $interactive[0] ) ) {
+        return;
+    }
+
     event.preventDefault();
     event.stopPropagation();
-
-    let $anchor = $(this);
 
     handleHideShowIfNeeded( $anchor );
 

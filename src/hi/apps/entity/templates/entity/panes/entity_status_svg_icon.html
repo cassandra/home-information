@@ -1,0 +1,27 @@
+{# Standalone polling-aware entity SVG icon. Renders its own <svg>    #}
+{# wrapper (suitable for use anywhere in HTML, not just inside an    #}
+{# outer SVG canvas like LocationView) and includes the polling-     #}
+{# update hooks when a primary state is supplied:                    #}
+{#                                                                    #}
+{#   svg_icon_item       (required) - icon visuals + viewBox         #}
+{#   primary_state_data  (optional) - EntityStateDisplayData whose   #}
+{#                                    state_id / svg_status_style    #}
+{#                                    feed the polling attrs         #}
+{#                                                                    #}
+{# When ``primary_state_data`` is omitted (or None), this template   #}
+{# renders an icon with no polling attributes — equivalent to the    #}
+{# truly-display-only variant. Use ``entity_display_only_svg_icon``  #}
+{# directly when polling attributes should never be present (e.g.    #}
+{# legend or example renderings).                                     #}
+{#                                                                    #}
+{# The polling attributes live on an inner <g> rather than the       #}
+{# <svg> root so the icon participates in the project's existing    #}
+{# ``g[status="..."]`` CSS rules (main.css:720+), which were         #}
+{# authored against the LocationView's <g>-wrapped icons.            #}
+<svg class="hi-entity-status-svg-icon"
+     xmlns="http://www.w3.org/2000/svg"
+     viewBox="{{ svg_icon_item.bounding_box }}">
+  <g {% if primary_state_data %}data-state-id="{{ primary_state_data.entity_state.id }}" data-status status="{{ primary_state_data.svg_status_style.status_value }}"{% endif %}>
+    {% include svg_icon_item.template_name %}
+  </g>
+</svg>
