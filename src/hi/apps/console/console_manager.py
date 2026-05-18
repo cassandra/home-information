@@ -14,6 +14,7 @@ from hi.apps.entity.models import Entity, EntityState
 from hi.apps.entity.enums import EntityStateType
 from hi.apps.sense.sensor_response_manager import SensorResponseMixin
 
+from .console_helper import ConsoleSettingsHelper
 from .constants import ConsoleConstants
 from .transient_models import CameraControlDisplayData
 
@@ -94,16 +95,19 @@ class ConsoleManager( Singleton, SettingsMixin, SensorResponseMixin ):
             .prefetch_related('states')
             .order_by('name')
         )
-        
+
+        short_name_map = ConsoleSettingsHelper.compute_camera_short_names( entity_list )
+
         display_data_list = []
         for entity in entity_list:
             status_entity_state = self._find_priority_entity_state(entity)
             display_data = CameraControlDisplayData(
                 entity=entity,
-                status_entity_state=status_entity_state
+                status_entity_state=status_entity_state,
+                short_name=short_name_map.get( entity.id, entity.name ),
             )
             display_data_list.append(display_data)
-        
+
         return display_data_list
 
     def _find_priority_entity_state(self, entity: Entity) -> Optional[EntityState]:

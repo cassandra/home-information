@@ -590,6 +590,8 @@ a.clickable-card:active {
 .btn-control {
     width: 100%;
     white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
     font-size: 0.75rem;
     font-weight: bold;
 }
@@ -750,8 +752,14 @@ g[status="on"] path.hi-state-bg {
     background-color: var(--status-on-color);
 }
 g[status="dim"] {
-    filter: drop-shadow(0 0 5px var(--status-on-color));
-    opacity: 0.5;
+    /* Smaller blur than "on" so the glow reads as less intense.
+     * The opacity for the fill is handled on the .hi-state-bg path
+     * below (via fill-opacity) so the SVG outline stays solid. */
+    filter: drop-shadow(0 0 3px var(--status-on-color));
+}
+g[status="dim"] path.hi-state-bg {
+    fill: var(--status-on-color);
+    fill-opacity: 0.5;
 }
 .hi-status-display[status="dim"] {
     color: var(--on-status-on-color);

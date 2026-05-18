@@ -7,6 +7,7 @@
          data-entity-id="{{ camera_data.entity.id }}"
          data-async="#main-content"
          class="btn btn-primary btn-control btn-camera"
+         title="{{ camera_data.entity.name }}"
          {% if camera_data.status_entity_state %}data-state-id="{{ camera_data.status_entity_state.id }}" data-status status=""{% endif %}
          role="button">
         {{ camera_data.short_name }}
