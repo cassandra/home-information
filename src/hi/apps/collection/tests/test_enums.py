@@ -56,31 +56,40 @@ class TestCollectionViewType(BaseTestCase):
         self.assertTrue(grid_collection.collection_view_type.is_grid)
         self.assertTrue(list_collection.collection_view_type.is_list)
 
-    def test_all_collection_view_types_support_required_ui_modes(self):
-        """Test CollectionViewType completeness - ensures UI can handle all types."""
-        # Every view type must be classifiable as either grid or list for UI rendering
-        unclassified_types = []
-        ambiguous_types = []
-        
+    def test_each_view_type_has_exactly_one_classification(self):
+        """Every CollectionViewType value must classify as exactly one
+        of the is_* properties so consumers can dispatch on a single
+        property without ambiguity."""
         for view_type in CollectionViewType:
-            is_grid = view_type.is_grid
-            is_list = view_type.is_list
-            
-            # Each type must be exactly one classification
-            if not (is_grid or is_list):
-                unclassified_types.append(view_type)
-            elif is_grid and is_list:
-                ambiguous_types.append(view_type)
-        
-        # No view types should be unclassified or ambiguous
-        self.assertEqual(unclassified_types, [],
-                         f"View types missing classification: {unclassified_types}")
-        self.assertEqual(ambiguous_types, [],
-                         f"View types with ambiguous classification: {ambiguous_types}")
-        
-        # Verify we have both grid and list types available
-        grid_types = [vt for vt in CollectionViewType if vt.is_grid]
-        list_types = [vt for vt in CollectionViewType if vt.is_list]
-        
-        self.assertGreater(len(grid_types), 0, "No grid view types available")
-        self.assertGreater(len(list_types), 0, "No list view types available")
+            classifications = [
+                view_type.is_default,
+                view_type.is_grid,
+                view_type.is_grid_large,
+                view_type.is_list,
+                view_type.is_security,
+            ]
+            true_count = sum( 1 for c in classifications if c )
+            self.assertEqual(
+                true_count, 1,
+                f'{view_type} has {true_count} true classifications; expected exactly 1',
+            )
+
+    def test_default_view_type_is_classified(self):
+        collection = Collection.objects.create(
+            name = 'Info Index', collection_type_str = 'OTHER',
+            collection_view_type_str = 'DEFAULT',
+        )
+        self.assertTrue( collection.collection_view_type.is_default )
+        self.assertFalse( collection.collection_view_type.is_grid )
+        self.assertFalse( collection.collection_view_type.is_list )
+        self.assertFalse( collection.collection_view_type.is_security )
+
+    def test_security_view_type_is_classified(self):
+        collection = Collection.objects.create(
+            name = 'Camera Watch', collection_type_str = 'CAMERAS',
+            collection_view_type_str = 'SECURITY',
+        )
+        self.assertTrue( collection.collection_view_type.is_security )
+        self.assertFalse( collection.collection_view_type.is_default )
+        self.assertFalse( collection.collection_view_type.is_grid )
+        self.assertFalse( collection.collection_view_type.is_list )

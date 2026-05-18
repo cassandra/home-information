@@ -81,18 +81,18 @@
 /* List card layout                                               */
 /* ============================================================== */
 
-.hi-state-panel-camera--list {
+.hi-state-panel-camera--row {
     display: grid;
     grid-template-columns: 160px 1fr;
     gap: 12px;
     align-items: center;
 }
-.hi-state-panel-camera--list .stream {
+.hi-state-panel-camera--row .stream {
     width: 160px;
     aspect-ratio: 16 / 9;
 }
-.hi-state-panel-camera--list .list-meta { min-width: 0; }
-.hi-state-panel-camera--list .entity-name {
+.hi-state-panel-camera--row .row-meta { min-width: 0; }
+.hi-state-panel-camera--row .entity-name {
     font-size: 13px; font-weight: 600; line-height: 1.2;
 }
 
@@ -100,16 +100,16 @@
 /* Grid card layout — video fills, name overlay along the bottom. */
 /* ============================================================== */
 
-.hi-state-panel-camera--grid {
+.hi-state-panel-camera--tile {
     position: relative;
     width: 100%;
     height: 100%;
 }
-.hi-state-panel-camera--grid .stream {
+.hi-state-panel-camera--tile .stream {
     width: 100%;
     height: 100%;
 }
-.hi-state-panel-camera--grid .grid-overlay {
+.hi-state-panel-camera--tile .tile-overlay {
     position: absolute;
     bottom: 0;
     left: 0;
@@ -118,7 +118,7 @@
     background: linear-gradient(180deg, rgba(0,0,0,0) 0%, rgba(0,0,0,0.75) 100%);
     color: white;
 }
-.hi-state-panel-camera--grid .entity-name {
+.hi-state-panel-camera--tile .entity-name {
     font-size: 11px;
     font-weight: 600;
     line-height: 1.2;
@@ -174,8 +174,8 @@
 }
 
 /* Smaller chip in compact contexts. */
-.hi-state-panel-camera--list .motion-chip,
-.hi-state-panel-camera--grid .motion-chip {
+.hi-state-panel-camera--row .motion-chip,
+.hi-state-panel-camera--tile .motion-chip {
     width: 24px;
     height: 24px;
     top: 4px;

@@ -70,7 +70,20 @@
   --on-status-ok-color: white;
   --on-status-bad-color: white;
   --on-status-idle-color: black;
-  
+
+  /* Panel size budgets. Soft enforcement: collection wrappers reference
+     these via auto-fit/minmax for adaptive column counts; panels
+     reference them when their content scales with the budget.
+     See docs/dev/frontend/entity-state-panels.md. */
+  --hi-panel-tile-min-size: 240px;
+  --hi-panel-tile-target-size: 280px;
+  --hi-panel-tile-max-size: 360px;
+  --hi-panel-tile-large-min-size: 380px;
+  --hi-panel-row-min-height: 56px;
+  --hi-panel-row-target-height: 80px;
+  --hi-panel-row-max-height: 128px;
+  --hi-panel-default-tile-min-size: 160px;
+
 }
 
 html, body {
@@ -1716,229 +1729,133 @@ g[hover] {
     min-width: 0; /* Allow text truncation if needed */
 }
 
-/* ================================= */
-/* Collection Grid Layout           */
-/* ================================= */
+/* ================================================================ */
+/* Collection layouts                                               */
+/* ================================================================ */
+/* Three per-CollectionViewType wrappers; column counts come from   */
+/* CSS auto-fit + minmax referencing the panel size budgets.        */
 
-.collection-grid {
+.collection-tile-grid,
+.collection-default {
     display: grid;
-    gap: 15px;
+    gap: 16px;
+    margin-bottom: 1rem;
+}
+.collection-tile-grid {
+    grid-template-columns: repeat(
+        auto-fit, minmax(var(--hi-panel-tile-min-size), 1fr)
+    );
+}
+/* GRID_LARGE bumps the minimum tile size so each tile gets more
+ * pixels; column count still adapts to container width (2 on
+ * tablet, 3 on standard desktop, 4 on wide desktop). Used when
+ * panel content benefits from larger presentation — camera streams,
+ * dial-heavy panels, etc.
+ */
+.collection-tile-grid--large {
+    grid-template-columns: repeat(
+        auto-fit, minmax(var(--hi-panel-tile-large-min-size), 1fr)
+    );
+}
+.collection-default {
+    grid-template-columns: repeat(
+        auto-fit, minmax(var(--hi-panel-default-tile-min-size), 1fr)
+    );
+}
+
+.collection-row-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
     margin-bottom: 1rem;
 }
 
-/* Grid responsive layouts */
-.grid-1-item {
-    grid-template-columns: 1fr 2fr;
-}
+/* ================================================================ */
+/* Entity card wrapper                                              */
+/* ================================================================ */
+/* The wrapper is a <div data-async data-href> click target — see   */
+/* docs/dev/frontend/entity-state-panels.md for the whole-card-     */
+/* click contract.                                                  */
 
-.grid-2-items {
-    grid-template-columns: 1fr 1fr;
-}
-
-.grid-3-plus-items {
-    grid-template-columns: 1fr 1fr 1fr;
-}
-
-/* Card hover effects for better interaction */
-.collection-grid .card {
-    transition: all 0.2s ease;
+.entity-card {
+    display: block;
+    cursor: pointer;
     border: 1px solid var(--line-color);
+    border-radius: 4px;
     background: var(--white);
+    overflow: hidden;
+    transition: box-shadow 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
 }
-
-.collection-grid .card:hover {
-    transform: translateY(-2px);
+.entity-card:hover {
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
     border-color: var(--primary-color);
 }
 
-/* Enhanced typography and spacing in cards */
-.collection-grid .card-body {
-    padding: 1rem !important;
+.entity-card--default {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
 }
-
-/* Grid card entity title styling */
-.collection-grid .card .entity-status-title {
-    margin-bottom: 0.75rem;
-    font-weight: 600;
+.entity-card--default .entity-card__icon {
+    width: 28px;
+    height: 28px;
+    flex-shrink: 0;
 }
-
-.collection-grid .card .display-only-svg-icon {
-    width: 2.5rem;
-    height: 2.5rem;
-}
-
-/* Ensure consistent card heights in grid */
-.collection-grid .card {
+.entity-card--default .entity-card__icon svg {
+    width: 100%;
     height: 100%;
-    display: flex;
-    flex-direction: column;
 }
-
-.collection-grid .card-body {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-}
-
-/* ================================= */
-/* Collection List Layout           */
-/* ================================= */
-
-.collection-list {
-    display: flex;
-    flex-direction: column;
-}
-
-.entity-row {
-    display: flex;
-    align-items: flex-start;
-    border-top: 1px solid var(--line-color);
-    padding: 15px 0;
-    transition: background-color 0.2s ease;
-}
-
-.entity-row:hover {
-    background-color: var(--muted-bg-light);
-}
-
-.entity-row:first-child {
-    border-top: none;
-}
-
-/* Entity type-specific flex behavior for responsive layout */
-.entity-row .entity-title-section {
-    display: flex;
-    align-items: flex-start;
-    margin-right: 15px;
-    min-width: 0; /* Allow shrinking */
-    flex: 0 0 200px; /* Default fixed width for consistent alignment */
-}
-
-.entity-row .entity-content-section {
-    flex: 1;
-    min-width: 0; /* Allow shrinking */
-}
-
-/* User-defined entities get more flexible title space to reduce blank space */
-.entity-row.user-defined .entity-title-section {
-    flex: 1;
-    max-width: none;
-}
-
-/* Sensor/controller entities maintain fixed title width for tabular consistency */
-.entity-row.sensor-controller .entity-title-section {
-    flex: 0 0 200px;
-}
-
-/* Video stream entities maintain fixed title width for tabular consistency */
-.entity-row.video-stream .entity-title-section {
-    flex: 0 0 200px;
-}
-
-/* Enhanced styling for entity title display in list view */
-.entity-row .entity-title-section a {
+.entity-card--default .entity-card__name {
     font-weight: 500;
     color: var(--black);
-    text-decoration: none;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
-.entity-row .entity-title-section a:hover {
-    color: var(--primary-color);
-    text-decoration: none;
+.entity-card--tile {
+    min-height: var(--hi-panel-tile-min-size);
 }
 
-/* Better spacing and alignment for entity state content */
-.entity-row .entity-content-section .d-flex {
-    align-items: center;
-    flex-wrap: wrap;
-    gap: 0.5rem;
+.entity-card--row {
+    min-height: var(--hi-panel-row-min-height);
 }
 
-.entity-row .entity-content-section .text-center {
-    margin-right: 1rem;
+/* Edit mode: the entire card is a single click target opening the edit
+ * pane. Inner interactive elements (live-view links, controllers) are
+ * blocked at the CSS layer so panel authors don't need to gate their own
+ * click handlers on edit mode — clicks never reach the inner elements,
+ * they fall through to the card's data-async handler.
+ */
+[hi-edit="True"] .entity-card * {
+    pointer-events: none;
+}
+[hi-edit="True"] .entity-card {
+    pointer-events: auto;
 }
 
-/* Improve typography hierarchy in list view */
-.collection-list .entity-row h6,
-.collection-list .entity-row .h6 {
-    margin-bottom: 0.25rem;
-    font-weight: 600;
-    color: var(--black);
-}
+/* ================================================================ */
+/* Drag and Drop Styling                                            */
+/* ================================================================ */
 
-.collection-list .entity-row small {
-    color: var(--muted-color);
-    font-size: 0.85rem;
-}
-
-/* Responsive adjustments for smaller screens */
-@media (max-width: 768px) {
-    .grid-3-plus-items {
-        grid-template-columns: 1fr 1fr;
-    }
-
-    .grid-1-item {
-        grid-template-columns: 1fr;
-    }
-
-    .entity-row.sensor-controller .entity-title-section,
-    .entity-row.video-stream .entity-title-section {
-        flex: 0 0 150px;
-    }
-}
-
-@media (max-width: 576px) {
-    .grid-2-items,
-    .grid-3-plus-items {
-        grid-template-columns: 1fr;
-    }
-
-    .collection-grid {
-        gap: 10px;
-    }
-
-    .entity-row {
-        flex-direction: column;
-        align-items: stretch;
-    }
-
-    .entity-row .entity-title-section {
-        margin-right: 0;
-        margin-bottom: 10px;
-        flex: none;
-    }
-}
-
-/* ================================= */
-/* Drag and Drop Styling           */
-/* ================================= */
-
-/* Draggable items in collection view */
-.collection-grid .draggable {
+.collection-tile-grid .draggable,
+.collection-default .draggable,
+.collection-row-list .draggable {
     cursor: grab;
 }
-
-.collection-grid .draggable:active {
+.collection-tile-grid .draggable:active,
+.collection-default .draggable:active,
+.collection-row-list .draggable:active {
     cursor: grabbing;
 }
-
-.collection-list .draggable {
-    cursor: grab;
-}
-
-.collection-list .draggable:active {
-    cursor: grabbing;
-}
-
-/* Visual feedback during drag operations */
-.collection-grid .draggable.ui-sortable-helper {
+.collection-tile-grid .draggable.ui-sortable-helper,
+.collection-default .draggable.ui-sortable-helper {
     transform: rotate(2deg) scale(1.05);
     z-index: 1000;
     box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
 }
-
-.collection-list .draggable.ui-sortable-helper {
+.collection-row-list .draggable.ui-sortable-helper {
     background: var(--white);
     border: 2px solid var(--primary-color);
     border-radius: 4px;

@@ -1,14 +1,14 @@
 {% load humanize tz %}
 {# Aliases declared in panel.py (role_data_template_aliases):           #}
 {#   smoke_data, battery_data.                                          #}
-<div class="hi-state-panel-smoke_detector hi-state-panel-smoke_detector--list"
+<div class="hi-state-panel-smoke_detector hi-state-panel-smoke_detector--row"
      data-state-id="{{ smoke_data.entity_state.id }}"
      data-status
      status="{{ smoke_data.svg_status_style.status_value }}">
 
   {% include "entity/state_panels/smoke_detector/badge.html" %}
 
-  <div class="list-meta">
+  <div class="row-meta">
     <div class="entity-name">{{ entity.name }}</div>
     <div class="status-label status-label--idle">All Clear</div>
     <div class="status-label status-label--active">Smoke Detected</div>

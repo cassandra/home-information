@@ -39,9 +39,11 @@
 // Basic async loading:
 //   <a href="/path" data-async="#target-id">Load Content</a>
 //   <form action="/submit" data-async="#result-area">...</form>
+//   <div data-href="/path" data-async="modal">Wide click target</div>
 //
 // Attributes:
 //   data-async="{selector}"  - jQuery selector for target element, or "modal" for new modal
+//   data-href="{url}"        - URL fallback for non-anchor elements where ``href`` is not valid HTML5
 //   data-mode="insert"       - (default) Replace inner HTML of target
 //   data-mode="replace"      - Replace entire target element
 //   data-hide="{selector}"   - Hide elements when triggered
@@ -453,7 +455,10 @@ function asyncClickHandler(event) {
         $mode = 'insert';
     }
 
-    let url = $anchor.attr('href');
+    // ``href`` is the standard source. ``data-href`` is the fallback
+    // for elements where ``href`` is not valid HTML5 (e.g. a ``<div
+    // data-async>`` wrapper used as a wide click target).
+    let url = $anchor.attr('href') || $anchor.attr('data-href');
     if ( $anchor.attr('data-params') ) {
         url += '?' + $anchor.attr('data-params');
     }

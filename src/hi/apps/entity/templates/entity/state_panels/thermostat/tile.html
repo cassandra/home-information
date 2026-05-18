@@ -1,11 +1,11 @@
 {# Aliases declared in panel.py (role_data_template_aliases):           #}
 {#   current_data, target_data, low_data, high_data,                    #}
 {#   action_data, mode_data.                                            #}
-<div class="hi-state-panel-thermostat hi-state-panel-thermostat--grid"
+<div class="hi-state-panel-thermostat hi-state-panel-thermostat--tile"
      {% if action_data %}data-state-id="{{ action_data.entity_state.id }}" data-status status="{{ action_data.latest_sensor_value }}"{% endif %}
      {% if mode_data %}data-hvac-mode-state-id="{{ mode_data.entity_state.id }}" data-hvac-mode="{{ mode_data.latest_sensor_value }}"{% endif %}>
 
-  <div class="grid-temp"
+  <div class="tile-temp"
        data-state-id="{{ current_data.entity_state.id }}"
        data-display-text>
     {{ current_data.latest_display_label }}
