@@ -442,8 +442,13 @@ function asyncClickHandler(event) {
     // interactive descendant of ``this``. (When ``this`` IS the
     // interactive element — the normal ``<a data-async>`` case —
     // closest() returns the anchor itself and we proceed.)
+    //
+    // ``label`` is included because label-wrapped form controls
+    // (e.g. the on/off switch's <label class=switch-modern> wrapping
+    // a checkbox + styled <span>) take user clicks on the visible
+    // <span> child, which has no other interactive ancestor.
     let $interactive = $(event.target).closest(
-        'a, button, input, select, textarea, [role="button"]'
+        'a, button, input, select, textarea, label, [role="button"]'
     );
     if ( $interactive.length
          && $interactive[0] !== this

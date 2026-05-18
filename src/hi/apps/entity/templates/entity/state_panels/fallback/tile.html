@@ -1,12 +1,16 @@
-{# Framework fallback for the TILE context. Renders the entity's icon #}
-{# and name, plus the per-state row list when states exist. Self-     #}
-{# contained so stateless entities still surface their identity.     #}
+{# Framework fallback for the TILE context. Renders entity icon + name #}
+{# + the first few states (compact label/value or controller). Cap is  #}
+{# applied via the |slice filter below — change ":3" to ":2" or ":4"   #}
+{# to tune the visible-state count uniformly. Entities with more       #}
+{# states than the cap show only the first N (sorted per the           #}
+{# framework's ENTITY_STATUS_VIEW_ORDERING role priority); the modal    #}
+{# carries the full state list.                                         #}
 <div class="hi-state-panel-fallback hi-state-panel-fallback--tile">
   <div class="hi-state-panel-fallback__icon">
-    {% include "entity/panes/entity_display_only_svg_icon.html" with svg_icon_item=entity_status_data.display_only_svg_icon_item %}
+    {% include "entity/panes/entity_status_svg_icon.html" with svg_icon_item=entity_status_data.display_only_svg_icon_item primary_state_data=state_status_data_list|first %}
   </div>
   <div class="hi-state-panel-fallback__name">{{ entity.name }}</div>
-  {% if state_status_data_list %}
-    {% include "entity/state_panels/fallback/state_list.html" with entity_state_status_data_list=state_status_data_list %}
-  {% endif %}
+  {% for state_data in state_status_data_list|slice:":2" %}
+    {% include "entity/state_panels/fallback/state_compact.html" with state_data=state_data %}
+  {% endfor %}
 </div>

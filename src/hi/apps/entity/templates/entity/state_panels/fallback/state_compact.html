@@ -1,0 +1,17 @@
+{# Per-state compact rendering for fallback ROW / TILE contexts.       #}
+{# Label above value/controller widget. Used by fallback row.html and #}
+{# tile.html, capped to a small number of states per the framework's  #}
+{# "fallback is intentionally minimal" stance.                        #}
+<div class="state-compact">
+  <div class="state-compact__label">{{ state_data.entity_state.short_name }}</div>
+  <div class="state-compact__value">
+    {% if state_data.controller_data_list %}
+      {% for controller_data in state_data.controller_data_list %}
+        {% include "control/panes/controller_data.html" with controller_data=controller_data %}
+      {% endfor %}
+    {% elif state_data.latest_display_label %}
+      <span data-state-id="{{ state_data.entity_state.id }}"
+            data-display-text>{{ state_data.latest_display_label }}</span>
+    {% endif %}
+  </div>
+</div>
