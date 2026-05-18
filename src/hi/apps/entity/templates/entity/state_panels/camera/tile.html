@@ -1,6 +1,6 @@
 {# Aliases declared in panel.py (role_data_template_aliases):           #}
 {#   motion_data (optional).                                            #}
-<div class="hi-state-panel-camera hi-state-panel-camera--list">
+<div class="hi-state-panel-camera hi-state-panel-camera--tile">
 
   <div class="stream">
     {% if entity.has_live_view %}
@@ -13,7 +13,7 @@
     {% endif %}
   </div>
 
-  <div class="list-meta">
+  <div class="tile-overlay">
     <div class="entity-name">{{ entity.name }}</div>
   </div>
 

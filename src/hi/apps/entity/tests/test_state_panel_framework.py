@@ -208,11 +208,11 @@ class TestResolvePanel( BaseTestCase ):
         fallback = self._register( _make_panel(
             name = 'fallback',
             entity_type = None,
-            display_contexts = { DisplayContext.MODAL, DisplayContext.GRID },
+            display_contexts = { DisplayContext.MODAL, DisplayContext.TILE },
         ) )
         resolution = StatePanelDispatcher.resolve_panel(
             entity_type = EntityType.THERMOSTAT,
-            display_context = DisplayContext.GRID,
+            display_context = DisplayContext.TILE,
             present_roles = set(),
         )
         self.assertIs( resolution.panel, fallback )
@@ -248,7 +248,7 @@ class TestResolvePanel( BaseTestCase ):
         with self.assertRaises( RuntimeError ):
             StatePanelDispatcher.resolve_panel(
                 entity_type = EntityType.THERMOSTAT,
-                display_context = DisplayContext.GRID,
+                display_context = DisplayContext.TILE,
                 present_roles = set(),
             )
 
@@ -260,20 +260,20 @@ class TestProductionPanelDiscovery( BaseTestCase ):
 
     EXPECTED_TYPED_PANELS = {
         (EntityType.THERMOSTAT, DisplayContext.MODAL): 'thermostat_modal',
-        (EntityType.THERMOSTAT, DisplayContext.LIST): 'thermostat_list',
-        (EntityType.THERMOSTAT, DisplayContext.GRID): 'thermostat_grid',
+        (EntityType.THERMOSTAT, DisplayContext.ROW): 'thermostat_row',
+        (EntityType.THERMOSTAT, DisplayContext.TILE): 'thermostat_tile',
         (EntityType.SMOKE_DETECTOR, DisplayContext.MODAL): 'smoke_detector_modal',
-        (EntityType.SMOKE_DETECTOR, DisplayContext.LIST): 'smoke_detector_list',
-        (EntityType.SMOKE_DETECTOR, DisplayContext.GRID): 'smoke_detector_grid',
+        (EntityType.SMOKE_DETECTOR, DisplayContext.ROW): 'smoke_detector_row',
+        (EntityType.SMOKE_DETECTOR, DisplayContext.TILE): 'smoke_detector_tile',
         (EntityType.CAMERA, DisplayContext.MODAL): 'camera_modal',
-        (EntityType.CAMERA, DisplayContext.LIST): 'camera_list',
-        (EntityType.CAMERA, DisplayContext.GRID): 'camera_grid',
+        (EntityType.CAMERA, DisplayContext.ROW): 'camera_row',
+        (EntityType.CAMERA, DisplayContext.TILE): 'camera_tile',
     }
 
     EXPECTED_FALLBACK_PANELS = {
         DisplayContext.MODAL: 'fallback_modal',
-        DisplayContext.LIST: 'fallback_list',
-        DisplayContext.GRID: 'fallback_grid',
+        DisplayContext.ROW: 'fallback_row',
+        DisplayContext.TILE: 'fallback_tile',
     }
 
     def test_typed_panels_resolve_with_required_roles( self ):

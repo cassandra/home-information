@@ -70,8 +70,8 @@ class CollectionManager(Singleton):
             entities = entity_list,
         )
         display_context = (
-            DisplayContext.GRID if collection.collection_view_type.is_grid
-            else DisplayContext.LIST
+            DisplayContext.TILE if collection.collection_view_type.is_grid
+            else DisplayContext.ROW
         )
         state_panel_data_list = [
             StatePanelDispatcher.build_state_panel_data(

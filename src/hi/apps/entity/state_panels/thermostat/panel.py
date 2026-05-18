@@ -44,23 +44,23 @@ modal_panel = EntityStatePanel(
     role_data_template_aliases = _ROLE_DATA_TEMPLATE_ALIASES,
 )
 
-list_panel = EntityStatePanel(
-    name                       = 'thermostat_list',
+row_panel = EntityStatePanel(
+    name                       = 'thermostat_row',
     entity_type                = EntityType.THERMOSTAT,
-    display_contexts           = { DisplayContext.LIST },
+    display_contexts           = { DisplayContext.ROW },
     priority                   = 100,
-    template_name              = 'entity/state_panels/thermostat/list.html',
+    template_name              = 'entity/state_panels/thermostat/row.html',
     required_roles             = _REQUIRED_ROLES,
     optional_roles             = _OPTIONAL_ROLES,
     role_data_template_aliases = _ROLE_DATA_TEMPLATE_ALIASES,
 )
 
-grid_panel = EntityStatePanel(
-    name                       = 'thermostat_grid',
+tile_panel = EntityStatePanel(
+    name                       = 'thermostat_tile',
     entity_type                = EntityType.THERMOSTAT,
-    display_contexts           = { DisplayContext.GRID },
+    display_contexts           = { DisplayContext.TILE },
     priority                   = 100,
-    template_name              = 'entity/state_panels/thermostat/grid.html',
+    template_name              = 'entity/state_panels/thermostat/tile.html',
     required_roles             = _REQUIRED_ROLES,
     optional_roles             = _OPTIONAL_ROLES,
     role_data_template_aliases = _ROLE_DATA_TEMPLATE_ALIASES,

@@ -144,24 +144,24 @@
 /* List card layout                                               */
 /* ============================================================== */
 
-.hi-state-panel-smoke_detector--list {
+.hi-state-panel-smoke_detector--row {
     display: grid;
     grid-template-columns: 60px 1fr auto;
     gap: 12px;
     align-items: center;
     padding: 4px;
 }
-.hi-state-panel-smoke_detector--list .badge { width: 60px; height: 60px; }
-.hi-state-panel-smoke_detector--list .list-meta { min-width: 0; }
-.hi-state-panel-smoke_detector--list .entity-name {
+.hi-state-panel-smoke_detector--row .badge { width: 60px; height: 60px; }
+.hi-state-panel-smoke_detector--row .row-meta { min-width: 0; }
+.hi-state-panel-smoke_detector--row .entity-name {
     font-size: 14px; font-weight: 600; line-height: 1.2;
 }
-.hi-state-panel-smoke_detector--list .status-label { font-size: 12px; }
-.hi-state-panel-smoke_detector--list .last-event {
+.hi-state-panel-smoke_detector--row .status-label { font-size: 12px; }
+.hi-state-panel-smoke_detector--row .last-event {
     font-size: 11px;
     line-height: 1.2;
 }
-.hi-state-panel-smoke_detector--list .aux-bits {
+.hi-state-panel-smoke_detector--row .aux-bits {
     font-size: 11px;
     color: var(--text-muted, #6c757d);
 }
@@ -170,7 +170,7 @@
 /* Grid card layout                                               */
 /* ============================================================== */
 
-.hi-state-panel-smoke_detector--grid {
+.hi-state-panel-smoke_detector--tile {
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -179,18 +179,18 @@
     gap: 6px;
     height: 100%;
 }
-.hi-state-panel-smoke_detector--grid .badge { width: 72px; height: 72px; margin-top: 6px; }
-.hi-state-panel-smoke_detector--grid .status-label { font-size: 13px; line-height: 1.1; }
-.hi-state-panel-smoke_detector--grid .entity-name {
+.hi-state-panel-smoke_detector--tile .badge { width: 72px; height: 72px; margin-top: 6px; }
+.hi-state-panel-smoke_detector--tile .status-label { font-size: 13px; line-height: 1.1; }
+.hi-state-panel-smoke_detector--tile .entity-name {
     font-size: 10px;
     color: var(--text-muted, #6c757d);
     line-height: 1.2;
     margin-top: 4px;
 }
-.hi-state-panel-smoke_detector--grid[status="idle"]   { background: var(--hi-smoke-idle-bg); }
-.hi-state-panel-smoke_detector--grid[status="active"] { background: var(--hi-smoke-active-bg); }
-.hi-state-panel-smoke_detector--grid[status="recent"] { background: var(--hi-smoke-recent-bg); }
-.hi-state-panel-smoke_detector--grid[status="past"]   { background: var(--hi-smoke-past-bg); }
+.hi-state-panel-smoke_detector--tile[status="idle"]   { background: var(--hi-smoke-idle-bg); }
+.hi-state-panel-smoke_detector--tile[status="active"] { background: var(--hi-smoke-active-bg); }
+.hi-state-panel-smoke_detector--tile[status="recent"] { background: var(--hi-smoke-recent-bg); }
+.hi-state-panel-smoke_detector--tile[status="past"]   { background: var(--hi-smoke-past-bg); }
 
 /* ============================================================== */
 /* Battery low-state escalation.                                  */
@@ -205,12 +205,12 @@
     color: var(--hi-smoke-active-color);
     font-weight: 600;
 }
-.hi-state-panel-smoke_detector--list .aux-bits span[status="low"] {
+.hi-state-panel-smoke_detector--row .aux-bits span[status="low"] {
     color: var(--hi-smoke-active-color);
     font-weight: 600;
 }
 
-.hi-state-panel-smoke_detector--grid .low-battery-warning {
+.hi-state-panel-smoke_detector--tile .low-battery-warning {
     display: none;
     margin-top: 6px;
     font-size: 9px;
@@ -219,6 +219,6 @@
     letter-spacing: 0.05em;
     color: var(--hi-smoke-active-color);
 }
-.hi-state-panel-smoke_detector--grid .low-battery-warning[status="low"] {
+.hi-state-panel-smoke_detector--tile .low-battery-warning[status="low"] {
     display: block;
 }

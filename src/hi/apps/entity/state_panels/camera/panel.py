@@ -21,22 +21,22 @@ modal_panel = EntityStatePanel(
     role_data_template_aliases = _ROLE_DATA_TEMPLATE_ALIASES,
 )
 
-list_panel = EntityStatePanel(
-    name                       = 'camera_list',
+row_panel = EntityStatePanel(
+    name                       = 'camera_row',
     entity_type                = EntityType.CAMERA,
-    display_contexts           = { DisplayContext.LIST },
+    display_contexts           = { DisplayContext.ROW },
     priority                   = 100,
-    template_name              = 'entity/state_panels/camera/list.html',
+    template_name              = 'entity/state_panels/camera/row.html',
     optional_roles             = _OPTIONAL_ROLES,
     role_data_template_aliases = _ROLE_DATA_TEMPLATE_ALIASES,
 )
 
-grid_panel = EntityStatePanel(
-    name                       = 'camera_grid',
+tile_panel = EntityStatePanel(
+    name                       = 'camera_tile',
     entity_type                = EntityType.CAMERA,
-    display_contexts           = { DisplayContext.GRID },
+    display_contexts           = { DisplayContext.TILE },
     priority                   = 100,
-    template_name              = 'entity/state_panels/camera/grid.html',
+    template_name              = 'entity/state_panels/camera/tile.html',
     optional_roles             = _OPTIONAL_ROLES,
     role_data_template_aliases = _ROLE_DATA_TEMPLATE_ALIASES,
 )

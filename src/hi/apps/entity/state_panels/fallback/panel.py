@@ -10,18 +10,18 @@ modal_panel = EntityStatePanel(
     template_name    = 'entity/state_panels/fallback/modal.html',
 )
 
-list_panel = EntityStatePanel(
-    name             = 'fallback_list',
+row_panel = EntityStatePanel(
+    name             = 'fallback_row',
     entity_type      = None,
-    display_contexts = { DisplayContext.LIST },
+    display_contexts = { DisplayContext.ROW },
     priority         = 1000,
-    template_name    = 'entity/state_panels/fallback/list.html',
+    template_name    = 'entity/state_panels/fallback/row.html',
 )
 
-grid_panel = EntityStatePanel(
-    name             = 'fallback_grid',
+tile_panel = EntityStatePanel(
+    name             = 'fallback_tile',
     entity_type      = None,
-    display_contexts = { DisplayContext.GRID },
+    display_contexts = { DisplayContext.TILE },
     priority         = 1000,
-    template_name    = 'entity/state_panels/fallback/grid.html',
+    template_name    = 'entity/state_panels/fallback/tile.html',
 )

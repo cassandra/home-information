@@ -116,7 +116,7 @@
 }
 .hi-state-panel-thermostat--modal .thermostat-modes-grid {
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    tile-template-columns: 1fr 1fr;
     gap: 12px 16px;
 }
 .hi-state-panel-thermostat--modal .control-group {
@@ -203,25 +203,25 @@
 /* List card layout                                               */
 /* ============================================================== */
 
-.hi-state-panel-thermostat--list {
+.hi-state-panel-thermostat--row {
     display: grid;
-    grid-template-columns: 96px 1fr;
+    tile-template-columns: 96px 1fr;
     gap: 14px;
     align-items: center;
 }
-.hi-state-panel-thermostat--list .dial {
+.hi-state-panel-thermostat--row .dial {
     width: 96px;
     height: 96px;
 }
-.hi-state-panel-thermostat--list .dial-temp { font-size: 26px; }
-.hi-state-panel-thermostat--list .entity-name {
+.hi-state-panel-thermostat--row .dial-temp { font-size: 26px; }
+.hi-state-panel-thermostat--row .entity-name {
     font-size: 14px; font-weight: 600; line-height: 1.2;
 }
-.hi-state-panel-thermostat--list .setpoint-summary {
+.hi-state-panel-thermostat--row .setpoint-summary {
     font-size: 12px; color: var(--text-muted, #6c757d); margin-top: 2px;
 }
-.hi-state-panel-thermostat--list .setpoint-summary strong { color: #1f2328; font-weight: 500; }
-.hi-state-panel-thermostat--list .humidity-line {
+.hi-state-panel-thermostat--row .setpoint-summary strong { color: #1f2328; font-weight: 500; }
+.hi-state-panel-thermostat--row .humidity-line {
     font-size: 11px; color: var(--text-muted, #6c757d); margin-top: 2px;
 }
 
@@ -229,7 +229,7 @@
 /* Grid card layout — flat number, color-tinted background.       */
 /* ============================================================== */
 
-.hi-state-panel-thermostat--grid {
+.hi-state-panel-thermostat--tile {
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -238,18 +238,18 @@
     padding: 8px;
     height: 100%;
 }
-.hi-state-panel-thermostat--grid[status="heating"] { background: var(--hi-thermo-heating-bg); }
-.hi-state-panel-thermostat--grid[status="cooling"] { background: var(--hi-thermo-cooling-bg); }
-.hi-state-panel-thermostat--grid .grid-temp {
+.hi-state-panel-thermostat--tile[status="heating"] { background: var(--hi-thermo-heating-bg); }
+.hi-state-panel-thermostat--tile[status="cooling"] { background: var(--hi-thermo-cooling-bg); }
+.hi-state-panel-thermostat--tile .tile-temp {
     font-size: 44px;
     font-weight: 300;
     line-height: 1;
 }
-.hi-state-panel-thermostat--grid .entity-name {
+.hi-state-panel-thermostat--tile .entity-name {
     font-size: 11px; color: var(--text-muted, #6c757d);
     margin-top: 6px; line-height: 1.2;
 }
-.hi-state-panel-thermostat--grid .setpoint-line {
+.hi-state-panel-thermostat--tile .setpoint-line {
     font-size: 9px;
     letter-spacing: 0.04em;
     text-transform: uppercase;
@@ -257,8 +257,8 @@
     margin-top: 3px;
     font-weight: 600;
 }
-.hi-state-panel-thermostat--grid[status="heating"] .setpoint-line { color: var(--hi-thermo-heating-color); }
-.hi-state-panel-thermostat--grid[status="cooling"] .setpoint-line { color: var(--hi-thermo-cooling-color); }
+.hi-state-panel-thermostat--tile[status="heating"] .setpoint-line { color: var(--hi-thermo-heating-color); }
+.hi-state-panel-thermostat--tile[status="cooling"] .setpoint-line { color: var(--hi-thermo-cooling-color); }
 
 /* ============================================================== */
 /* Setpoint visibility (dual vs single).                          */

@@ -347,11 +347,17 @@ class EntityStateRole(LabeledEnum):
 
 
 class DisplayContext(LabeledEnum):
-    """For views/templates that depend on where they are being displayed."""
+    """Author-facing shape vocabulary for panel templates.
+
+    Each value names a shape the panel author designs for; consumers
+    (CollectionView, modal renderers, etc.) map their layout choices
+    onto these shapes. See ``docs/dev/frontend/entity-state-panels.md``
+    for size budgets and the CSS-variable contract.
+    """
 
     MODAL = ( 'Modal', '' )
-    LIST  = ( 'List' , '' )
-    GRID  = ( 'Grid' , '' )
+    ROW   = ( 'Row' , '' )    # wide, full-width strip; ~80px tall
+    TILE  = ( 'Tile', '' )    # square-ish, gridable; 240-280 wide × 200-260 tall
 
 
 class EntityStateType(LabeledEnum):

@@ -27,23 +27,23 @@ modal_panel = EntityStatePanel(
     role_data_template_aliases = _ROLE_DATA_TEMPLATE_ALIASES,
 )
 
-list_panel = EntityStatePanel(
-    name                       = 'smoke_detector_list',
+row_panel = EntityStatePanel(
+    name                       = 'smoke_detector_row',
     entity_type                = EntityType.SMOKE_DETECTOR,
-    display_contexts           = { DisplayContext.LIST },
+    display_contexts           = { DisplayContext.ROW },
     priority                   = 100,
-    template_name              = 'entity/state_panels/smoke_detector/list.html',
+    template_name              = 'entity/state_panels/smoke_detector/row.html',
     required_roles             = _REQUIRED_ROLES,
     optional_roles             = _OPTIONAL_ROLES,
     role_data_template_aliases = _ROLE_DATA_TEMPLATE_ALIASES,
 )
 
-grid_panel = EntityStatePanel(
-    name                       = 'smoke_detector_grid',
+tile_panel = EntityStatePanel(
+    name                       = 'smoke_detector_tile',
     entity_type                = EntityType.SMOKE_DETECTOR,
-    display_contexts           = { DisplayContext.GRID },
+    display_contexts           = { DisplayContext.TILE },
     priority                   = 100,
-    template_name              = 'entity/state_panels/smoke_detector/grid.html',
+    template_name              = 'entity/state_panels/smoke_detector/tile.html',
     required_roles             = _REQUIRED_ROLES,
     optional_roles             = _OPTIONAL_ROLES,
     role_data_template_aliases = _ROLE_DATA_TEMPLATE_ALIASES,
