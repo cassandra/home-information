@@ -1,0 +1,10 @@
+{% with entity=state_panel_data.entity %}
+<div class="entity-card entity-card--default"
+     data-href="{% if request.view_parameters.is_editing %}{% url 'entity_edit_mode' entity_id=entity.id %}{% else %}{% url 'entity_status' entity_id=entity.id %}{% endif %}"
+     data-async="{% if request.view_parameters.is_editing %}true{% else %}modal{% endif %}">
+  <div class="entity-card__icon">
+    {% include "entity/panes/entity_display_only_svg_icon.html" with svg_icon_item=state_panel_data.entity_display_data.display_only_svg_icon_item %}
+  </div>
+  <div class="entity-card__name">{{ entity.name }}</div>
+</div>
+{% endwith %}

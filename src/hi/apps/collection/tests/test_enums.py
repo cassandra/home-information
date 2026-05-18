@@ -58,12 +58,13 @@ class TestCollectionViewType(BaseTestCase):
 
     def test_each_view_type_has_exactly_one_classification(self):
         """Every CollectionViewType value must classify as exactly one
-        of is_default / is_grid / is_list / is_security so consumers
-        can dispatch on a single property without ambiguity."""
+        of the is_* properties so consumers can dispatch on a single
+        property without ambiguity."""
         for view_type in CollectionViewType:
             classifications = [
                 view_type.is_default,
                 view_type.is_grid,
+                view_type.is_grid_large,
                 view_type.is_list,
                 view_type.is_security,
             ]

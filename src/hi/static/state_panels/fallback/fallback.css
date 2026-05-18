@@ -1,0 +1,55 @@
+/* Framework fallback panel for ROW and TILE contexts. Renders entity
+ * icon + name plus an optional state list — self-contained so the
+ * collection-card wrapper does not need to add any chrome of its own.
+ */
+
+.hi-state-panel-fallback__icon {
+    width: 32px;
+    height: 32px;
+    flex-shrink: 0;
+}
+.hi-state-panel-fallback__icon svg {
+    width: 100%;
+    height: 100%;
+}
+.hi-state-panel-fallback__name {
+    font-weight: 500;
+    color: var(--black);
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* ROW: icon left, body right (name above optional state list). */
+.hi-state-panel-fallback--row {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 8px 12px;
+    min-height: var(--hi-panel-row-min-height);
+}
+.hi-state-panel-fallback--row .hi-state-panel-fallback__body {
+    flex: 1;
+    min-width: 0;
+}
+.hi-state-panel-fallback--row .hi-state-panel-fallback__name {
+    margin-bottom: 4px;
+    white-space: nowrap;
+}
+
+/* TILE: icon centered atop name; state list (when present) below. */
+.hi-state-panel-fallback--tile {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    padding: 12px;
+    text-align: center;
+}
+.hi-state-panel-fallback--tile .hi-state-panel-fallback__icon {
+    width: 48px;
+    height: 48px;
+}
+.hi-state-panel-fallback--tile .hi-state-panel-fallback__name {
+    font-size: 13px;
+    line-height: 1.2;
+}

@@ -8,7 +8,7 @@ from hi.apps.collection.edit.forms import CollectionPositionForm
 from hi.apps.common.singleton import Singleton
 from hi.apps.entity.enums import DisplayContext, EntityGroupType
 from hi.apps.entity.models import Entity
-from hi.apps.entity.state_panel_dispatch import StatePanelDispatcher
+from hi.apps.entity.state_panel_dispatch import EntityStatePanelData, StatePanelDispatcher
 from hi.apps.location.models import Location, LocationView
 from hi.apps.location.svg_item_factory import SvgItemFactory
 from hi.apps.monitor.display_data import EntityDisplayData
@@ -69,21 +69,48 @@ class CollectionManager(Singleton):
         entity_status_data_list = StatusDisplayManager().get_entity_status_data_list(
             entities = entity_list,
         )
-        display_context = (
-            DisplayContext.TILE if collection.collection_view_type.is_grid
-            else DisplayContext.ROW
-        )
-        state_panel_data_list = [
-            StatePanelDispatcher.build_state_panel_data(
-                EntityDisplayData( entity_status_data = status_data ),
-                display_context,
-            )
-            for status_data in entity_status_data_list
-        ]
+        display_context = self._resolve_display_context( collection.collection_view_type )
+        if display_context is None:
+            # DEFAULT view skips the panel framework. Construct a minimal
+            # ``EntityStatePanelData`` (no panel template, no panel context)
+            # so the wrapper template can still read ``state_panel_data.entity``
+            # and ``state_panel_data.entity_display_data`` uniformly with the
+            # other modes.
+            state_panel_data_list = [
+                EntityStatePanelData(
+                    entity_display_data = EntityDisplayData( entity_status_data = status_data ),
+                    panel_template      = '',
+                    panel_context       = {},
+                )
+                for status_data in entity_status_data_list
+            ]
+        else:
+            state_panel_data_list = [
+                StatePanelDispatcher.build_state_panel_data(
+                    EntityDisplayData( entity_status_data = status_data ),
+                    display_context,
+                )
+                for status_data in entity_status_data_list
+            ]
         return CollectionData(
             collection             = collection,
             state_panel_data_list = state_panel_data_list,
         )
+
+    @staticmethod
+    def _resolve_display_context( collection_view_type ) -> 'DisplayContext':
+        """Map a ``CollectionViewType`` to the panel-framework
+        ``DisplayContext`` that drives template selection. Returns
+        ``None`` for ``DEFAULT`` (the information-index view that
+        skips the panel framework entirely)."""
+        if collection_view_type.is_default:
+            return None
+        if collection_view_type.is_list:
+            return DisplayContext.ROW
+        # GRID, GRID_LARGE, and SECURITY all use TILE — they differ
+        # only in the wrapper-level column-count budget, not in the
+        # panel template selection.
+        return DisplayContext.TILE
 
     def create_collection( self, name : str ) -> Collection:
         """Create a new ``Collection`` with sensible defaults

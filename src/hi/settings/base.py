@@ -256,6 +256,7 @@ PIPELINE = {
                 'css/attribute.css',
                 'css/stream-browser.css',
                 'css/control.css',
+                'state_panels/fallback/fallback.css',
                 'state_panels/smoke_detector/smoke_detector.css',
                 'state_panels/camera/camera.css',
                 'state_panels/thermostat/thermostat.css',

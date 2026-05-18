@@ -1,7 +1,12 @@
-{# Framework fallback for the collection grid card context: renders #}
-{# the entity's state list. Currently identical to the list-context #}
-{# fallback; panels wanting a denser grid layout provide their own  #}
-{# grid.html.                                                       #}
-{% if state_status_data_list %}
-{% include "entity/state_panels/fallback/state_list.html" with entity_state_status_data_list=state_status_data_list %}
-{% endif %}
+{# Framework fallback for the TILE context. Renders the entity's icon #}
+{# and name, plus the per-state row list when states exist. Self-     #}
+{# contained so stateless entities still surface their identity.     #}
+<div class="hi-state-panel-fallback hi-state-panel-fallback--tile">
+  <div class="hi-state-panel-fallback__icon">
+    {% include "entity/panes/entity_display_only_svg_icon.html" with svg_icon_item=entity_status_data.display_only_svg_icon_item %}
+  </div>
+  <div class="hi-state-panel-fallback__name">{{ entity.name }}</div>
+  {% if state_status_data_list %}
+    {% include "entity/state_panels/fallback/state_list.html" with entity_state_status_data_list=state_status_data_list %}
+  {% endif %}
+</div>

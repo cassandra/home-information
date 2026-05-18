@@ -1,0 +1,8 @@
+{% load state_panel_tags %}
+{% with entity=state_panel_data.entity %}
+<div class="entity-card entity-card--row"
+     data-href="{% if request.view_parameters.is_editing %}{% url 'entity_edit_mode' entity_id=entity.id %}{% else %}{% url 'entity_status' entity_id=entity.id %}{% endif %}"
+     data-async="{% if request.view_parameters.is_editing %}true{% else %}modal{% endif %}">
+  {% include_panel state_panel_data %}
+</div>
+{% endwith %}

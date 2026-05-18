@@ -19,20 +19,8 @@ class CollectionData:
         return {
             'collection': self.collection,
             'state_panel_data_list': self.state_panel_data_list,
-            'collection_grid_css_class': self.grid_css_class,
             'entity_count': len(self.state_panel_data_list),
         }
-
-    @property
-    def grid_css_class(self):
-        if self.collection.collection_view_type.is_security:
-            return 'grid-2-items'
-        entity_count = len(self.state_panel_data_list)
-        if entity_count >= 3:
-            return 'grid-3-plus-items'
-        if entity_count == 2:
-            return 'grid-2-items'
-        return 'grid-1-item'
 
 
 @dataclass
