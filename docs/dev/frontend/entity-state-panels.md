@@ -144,15 +144,11 @@ CollectionView consumes the panel framework through four `CollectionViewType` va
 
 ### Whole-card click contract
 
-In every CollectionView mode, the entire card is the click target — wrapped in an `<a>` to the status modal. **Controllers within a card must consume their own clicks** so taps on a slider / checkbox / button don't bubble to the wrapping `<a>` and trigger the modal:
+In every CollectionView mode, the entire card is the click target — wrapped in a `<div data-async data-href>` that routes to the status modal. Interactive descendants (`<a>`, `<button>`, `<input>`, `<select>`, `<textarea>`, `[role="button"]`) handle their own clicks; the antinode async-click handler skips the outer card action when the click originated inside an interactive descendant. Panel authors do not need to call `stopPropagation` on controller handlers — antinode bows out automatically.
 
-- **JS handlers**: call `event.stopPropagation()` (and `preventDefault()` where relevant) inside controller click / change handlers.
-- **CSS**: nothing special — `<input>` / `<button>` elements stop click propagation naturally on most browsers, but explicit `stopPropagation` in handlers is the safer guarantee.
-- **Touch-target sizing**: controllers must be **≥44pt** on the smallest side (Apple HIG; ~48dp Material) so finger taps land squarely on the controller and not the background card.
+The remaining panel-author concern is **touch-target sizing**: controllers should be **≥44pt** on the smallest side (Apple HIG; ~48dp Material). Below that, accidental background-card taps when targeting a controller become uncomfortable.
 
-Panels with controllers in their ROW / TILE templates carry the responsibility for both. Panels without controllers (smoke detector, plain camera) have no extra work — every card-pixel routes to the modal.
-
-Edit mode overrides all of this: when `request.view_parameters.is_editing` is set, JS intercepts card clicks and opens the entity edit pane regardless of the wrapper `<a>`'s `href`. This behavior is owned by the collection app, not by panels.
+In edit mode, all of this is overridden — a CSS rule (`[hi-edit="True"] .entity-card * { pointer-events: none }`) blocks descendant interactivity so card clicks always reach the wrapper and open the entity edit pane. Panel authors do not need to gate their handlers on edit state either; the CSS layer takes care of it.
 
 ## Template authoring
 
@@ -284,6 +280,6 @@ Read the existing panels when starting a new one — copy from the closest match
 - **Don't render extras inside the panel.** The modal context auto-appends an "Other states" section for any role outside the panel's declared set. Panels that try to render unknown states inside their own chrome will duplicate them.
 - **Declare what you display, display what you declare.** If a role appears in `required_roles` or `optional_roles`, the template must render it (subject to `{% if %}` for optionals). If a role is rendered but not declared, the framework will still treat it as an "extra" and may surface it twice in modal.
 - **Don't branch a template by `DisplayContext`.** If the panel needs context-specific layout, split into separate declarations with their own templates rather than `{% if context == ... %}` inside one file.
-- **Controllers must stop click propagation.** CollectionView wraps every card in an `<a>` to the entity modal. Sliders / checkboxes / buttons in ROW or TILE templates need to call `event.stopPropagation()` in their handlers (and meet the ≥44pt touch-target rule) so taps don't accidentally trigger the modal.
+- **Touch-target sizing for inner controllers.** CollectionView's whole-card click target opens the modal; antinode already skips that handler when the click came from an interactive descendant, so panel authors do not need to call `stopPropagation` themselves. The remaining concern is touch-target size — keep controllers ≥44pt so finger taps don't routinely land on the background card by accident.
 - **Don't author for `DEFAULT` CollectionViewType.** DEFAULT collections skip the panel framework entirely — they render icon + name through the collection wrapper, not through any panel template. Panels are dispatched only for GRID, LIST, and SECURITY view types.
 - **Shared partials live where they were first authored.** The flat state list and per-state row templates live under `state_panels/fallback/` (where they were born). Other panels that want the same list reference them from that path; there's no separate "shared" namespace.

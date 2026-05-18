@@ -1768,6 +1768,12 @@ g[hover] {
     flex-direction: column;
     gap: 8px;
     margin-bottom: 1rem;
+    /* Establish a container query context so ROW-context panels can
+       use @container to adapt to actual content width (immune to
+       sidebar / layout-chrome width that @media viewport queries
+       cannot account for). */
+    container-type: inline-size;
+    container-name: collection-row;
 }
 
 /* ================================================================ */
