@@ -36,10 +36,11 @@ from typing import List, Optional, Tuple, Union
 from django.db import transaction
 
 from hi.apps.entity.edit.forms import EntityPositionForm
-from hi.apps.entity.enums import EntityTransitionType
+from hi.apps.entity.enums import EntityType, EntityTransitionType
 from hi.apps.location.models import Location, LocationView
 from hi.apps.location.path_geometry import PathGeometry
 from hi.apps.location.position_geometry import PositionGeometry
+from hi.hi_styles import EntityIconDirection, EntityStyle
 
 from .entity_pairing_manager import EntityPairingManager
 from .models import (
@@ -469,8 +470,10 @@ class EntityPlacer:
                 placement_shape = placement_shape,
             )
             for delegate_entity in delegate_entity_list:
-                delegate_shape = self._calculator.shape_for_entity(
-                    entity = delegate_entity,
+                delegate_shape = self._build_delegate_shape(
+                    principal_entity = entity,
+                    principal_shape = placement_shape,
+                    delegate_entity = delegate_entity,
                     location_view = location_view,
                 )
                 self._create_entity_view(
@@ -480,6 +483,62 @@ class EntityPlacer:
                 )
                 continue
         return
+
+    # Apex offset along the principal's icon-facing direction, expressed
+    # as a fraction of the icon's half-extent in that direction. 0.0 =
+    # apex at icon center; 1.0 = apex at icon edge. Falls between for a
+    # less-than-edge but past-center anchor.
+    _COVERAGE_APEX_OFFSET_FRACTION = 0.75
+
+    def _build_delegate_shape(
+            self,
+            principal_entity : Entity,
+            principal_shape  : PlacementShape,
+            delegate_entity  : Entity,
+            location_view    : LocationView,
+    ) -> PlacementShape:
+        """Compute the delegate's placement shape. Default is the
+        calculator's centered default. When the principal is an icon
+        entity whose source-icon facing direction is known and the
+        delegate is an AREA, build a triangular coverage path with its
+        apex anchored near the principal's position so the delegate
+        visually reads as the principal's coverage cone."""
+        default_shape = self._calculator.shape_for_entity(
+            entity = delegate_entity,
+            location_view = location_view,
+        )
+        if delegate_entity.entity_type != EntityType.AREA:
+            return default_shape
+        if not isinstance( principal_shape, PlacementPoint ):
+            return default_shape
+
+        icon_direction = EntityStyle.get_icon_direction( principal_entity.entity_type )
+        if icon_direction is EntityIconDirection.UNKNOWN:
+            return default_shape
+
+        dx, dy = icon_direction.value
+        icon_viewbox = EntityStyle.get_svg_icon_viewbox( principal_entity.entity_type )
+
+        # Icon's dimension along the facing direction. ``dx`` and ``dy``
+        # are 0/±1 for cardinal directions so this picks the relevant
+        # axis cleanly.
+        facing_extent = ( abs( dx ) * icon_viewbox.width
+                          + abs( dy ) * icon_viewbox.height )
+        principal_scale = float( principal_shape.svg_scale )
+        apex_offset = ( facing_extent / 2.0
+                        * self._COVERAGE_APEX_OFFSET_FRACTION
+                        * principal_scale )
+
+        apex_x = float( principal_shape.svg_x ) + ( dx * apex_offset )
+        apex_y = float( principal_shape.svg_y ) + ( dy * apex_offset )
+
+        svg_path = PathGeometry.create_coverage_triangle_path_string(
+            location_view = location_view,
+            apex_x = apex_x,
+            apex_y = apex_y,
+            direction = icon_direction.value,
+        )
+        return PlacementPath( svg_path = svg_path )
 
     def place_entities_in_view( self,
                                 entities       : List[Entity],

@@ -1,7 +1,24 @@
+from enum import Enum
+
 from hi.apps.common.svg_models import SvgRadius, SvgStatusStyle, SvgViewBox
 
 from hi.apps.collection.enums import CollectionType
 from hi.apps.entity.enums import EntityType
+
+
+class EntityIconDirection(Enum):
+    """Direction an entity's source icon SVG was authored to point.
+    Independent of any runtime rotation the user applies to a placed
+    entity. Values for the cardinal directions are (dx, dy) unit
+    vectors in SVG coordinates (+x = right, +y = down). ``UNKNOWN``
+    is a sentinel returned by ``EntityStyle.get_icon_direction`` when
+    the entity type has no mapped direction; callers choose their own
+    default behavior."""
+    UNKNOWN      = None
+    POINTS_RIGHT = (1.0, 0.0)
+    POINTS_DOWN  = (0.0, 1.0)
+    POINTS_LEFT  = (-1.0, 0.0)
+    POINTS_UP    = (0.0, -1.0)
 
 
 class ItemStyle:
@@ -479,7 +496,27 @@ class EntityStyle:
     @classmethod
     def get_icon_size_factor( cls, entity_type : EntityType ) -> float:
         return cls.EntityTypeToIconSizeFactor.get( entity_type, 1.0 )
-            
+
+    # Per-EntityType source-icon facing direction. Used at placement
+    # time to give the auto-created Area delegate a triangular path
+    # (apex near the principal, base extending along the icon's facing
+    # direction) instead of the generic rectangle, so the delegate
+    # visually reads as a coverage cone for the principal.
+    #
+    # Opt-in: entity types without an entry get no triangle treatment;
+    # the delegate stays as the default rectangle.
+    EntityTypeToIconDirection = {
+        EntityType.CAMERA: EntityIconDirection.POINTS_RIGHT,
+        EntityType.MOTION_SENSOR: EntityIconDirection.POINTS_DOWN,
+        EntityType.PRESENCE_SENSOR: EntityIconDirection.POINTS_RIGHT,
+    }
+
+    @classmethod
+    def get_icon_direction( cls, entity_type : EntityType ) -> 'EntityIconDirection':
+        return cls.EntityTypeToIconDirection.get(
+            entity_type, EntityIconDirection.UNKNOWN,
+        )
+
     @classmethod
     def get_svg_icon_template_name( cls, entity_type : EntityType ) -> str:
         if entity_type in cls.EntityTypesWithIcons:
