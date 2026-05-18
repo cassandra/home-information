@@ -1,6 +1,11 @@
-{# Camera panel declares no roles, so any non-camera EntityStates on  #}
-{# the entity (e.g. a ZoneMinder Function dropdown, connectivity)     #}
-{# appear in the framework's modal extras section, not here.          #}
+{# Aliases declared in panel.py (role_data_template_aliases):           #}
+{#   motion_data (optional).                                            #}
+{#                                                                      #}
+{# Stream rendering goes through the standard live-view template so     #}
+{# the panel inherits its offline placeholder, click-through, and       #}
+{# polling-driven snapshot refresh. Anything beyond the stream (and     #}
+{# the optional motion chip) flows into the framework extras section    #}
+{# beneath the panel body.                                              #}
 <div class="hi-state-panel-camera hi-state-panel-camera--modal">
 
   <div class="stream">
@@ -8,6 +13,17 @@
       {% include "console/panes/entity_live_view_w_link.html" with entity=entity %}
     {% else %}
       <div class="stream-unavailable">Live view not available</div>
+    {% endif %}
+    {% if motion_data %}
+      <div class="motion-chip"
+           data-state-id="{{ motion_data.entity_state.id }}"
+           data-status
+           status="{{ motion_data.svg_status_style.status_value }}"
+           title="Motion">
+        <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+          <path d="M13.49 5.48c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zM9.89 19.38l1-4.4 2.1 2v6h2v-7.5l-2.1-2 .6-3c1.3 1.5 3.3 2.5 5.5 2.5v-2c-1.9 0-3.5-1-4.3-2.4l-1-1.6c-.4-.6-1-1-1.7-1-.3 0-.5.1-.8.1l-5.2 2.2v4.7h2v-3.4l1.8-.7-1.6 8.1-4.9-1-.4 2 7 1.4z"/>
+        </svg>
+      </div>
     {% endif %}
   </div>
 

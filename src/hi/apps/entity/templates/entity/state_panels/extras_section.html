@@ -1,15 +1,13 @@
-{# Framework-managed "Other states" section for the modal context.   #}
-{# Renders any EntityStateRole on the entity that is outside the     #}
-{# active panel's declared (required + optional) set.                #}
+{# Framework-managed extras section for the modal context. Renders     #}
+{# every EntityStateRole on the entity that is outside the active     #}
+{# panel's declared (required + optional) set, inline (no heading,    #}
+{# no collapsible wrapper) — the modal-context invariant is that      #}
+{# every EntityState is reachable, and "state" is not user-facing     #}
+{# nomenclature, so a section label adds nothing.                     #}
 <div class="hi-state-panel-extras mt-3">
-  <details>
-    <summary class="text-muted small text-uppercase">Other states</summary>
-    <div class="mt-2">
-      {% for entity_state_status_data in extras_state_data_list %}
-      <div class="my-2">
-        {% include "entity/state_panels/fallback/state_row.html" with entity_state_status_data=entity_state_status_data %}
-      </div>
-      {% endfor %}
-    </div>
-  </details>
+  {% for entity_state_status_data in extras_state_data_list %}
+  <div class="my-2">
+    {% include "entity/state_panels/fallback/state_row.html" with entity_state_status_data=entity_state_status_data %}
+  </div>
+  {% endfor %}
 </div>
