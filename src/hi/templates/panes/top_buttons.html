@@ -20,7 +20,7 @@
         <a class="btn btn-primary btn-control" role="button"
            href="{% url 'location_edit_location_edit' location_id=request.view_parameters.location.id %}"
              data-async="true" >
-          {{ request.view_parameters.location.name }}
+          {% icon "info-circle" size="sm" css_class="hi-icon-left" %}{{ request.view_parameters.location.name }}
         </a>
         {% endif %}
       </div>
