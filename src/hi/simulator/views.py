@@ -1,6 +1,6 @@
 from django.core.exceptions import BadRequest
 from django.db import transaction
-from django.http import HttpResponseRedirect
+from django.http import HttpResponseRedirect, JsonResponse
 from django.shortcuts import render
 from django.urls import reverse
 from django.views.generic import View
@@ -54,6 +54,27 @@ class SettingsView( View ):
     def get(self, request, *args, **kwargs):
         context = { 'active_section': 'settings' }
         return render( request, 'simulator/pages/settings.html', context )
+
+
+class SimStatesView( View ):
+    """Periodic-poll endpoint returning a flat map of every simulator
+    state's current value, keyed by the same DOM id used in
+    sim_state.html so the client can update in place."""
+
+    def get(self, request, *args, **kwargs):
+        states = {}
+        simulator_data_list = SimulatorManager().get_simulator_data_list()
+        for simulator_data in simulator_data_list:
+            simulator = simulator_data.simulator
+            for sim_entity in simulator.sim_entities:
+                for sim_state in sim_entity.sim_state_list:
+                    key = (
+                        f'hi-sim-state-{sim_state.simulator_id}'
+                        f'-{sim_state.sim_entity_id}'
+                        f'-{sim_state.sim_state_id}'
+                    )
+                    states[key] = str( sim_state.value )
+        return JsonResponse( { 'states': states } )
 
     
 class ProfileCreateView( View ):

@@ -30,6 +30,10 @@ urlpatterns = [
     path( 'settings/',
           views.SettingsView.as_view(),
           name = 'simulator_settings' ),
+
+    path( 'api/states/',
+          views.SimStatesView.as_view(),
+          name = 'simulator_api_states' ),
     
     path( 'profile/create',
           views.ProfileCreateView.as_view(),
