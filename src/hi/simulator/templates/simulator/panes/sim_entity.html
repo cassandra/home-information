@@ -1,6 +1,6 @@
 {% load icons %}
-<div class="row">
-  <div class="col-3">
+<div class="row sim-entity-row">
+  <div class="col-3 sim-entity-name">
     {{ sim_entity.name }}
   </div>
   <div class="col-7">
@@ -10,12 +10,16 @@
     <div class="alert alert-warning">No simulation states defined.</div>
     {% endfor %}
   </div>
-  <div class="col-2">
+  <div class="col-2 sim-entity-actions">
     <a href="{% url 'simulator_entity_edit' sim_entity_id=sim_entity.id %}"
-       class="btn btn-primary" data-async="modal">
-      {% icon "edit" size="sm" css_class="hi-icon-left" %}EDIT
+       class="btn btn-primary sim-icon-btn" data-async="modal"
+       title="Edit {{ sim_entity.name }}" aria-label="Edit">
+      {% icon "edit" size="md" %}
     </a>
     <a href="{% url 'simulator_entity_delete' sim_entity_id=sim_entity.id %}"
-       class="btn btn-danger" data-async="modal">X</a>
-  </div>  
+       class="btn btn-danger sim-icon-btn" data-async="modal"
+       title="Delete {{ sim_entity.name }}" aria-label="Delete">
+      {% icon "delete" size="md" %}
+    </a>
+  </div>
 </div>
