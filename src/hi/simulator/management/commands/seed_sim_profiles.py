@@ -24,8 +24,10 @@ own profile namespace), so the seed catalog is partitioned by module:
     * volume              — 1 server + 10 monitors
 
   NWS (hi.simulator.weather_sources.nws)
-    * (not seeded; the ProfileManager auto-creates an ``empty``
-      profile on first read)
+    * sample              — curated 8-alert catalog spanning event
+                            types; every alert starts inactive so
+                            the operator toggles individually to
+                            exercise the active-alerts feed.
 
 Re-running the command is a no-op for profiles that already exist.
 Pass ``--reset`` to delete the matching profile (and its entities)
@@ -117,6 +119,8 @@ from hi.simulator.services.zoneminder.sim_models import (
     ZmMonitorSimEntityFields,
     ZmServerSimEntityFields,
 )
+from hi.simulator.weather_sources.nws.apps import NwsWeatherSimConfig
+from hi.simulator.weather_sources.nws.models import NwsSimAlert
 
 
 # Short module aliases for the --module CLI flag, mapped to the full
@@ -125,6 +129,7 @@ MODULE_SHORT_NAMES = {
     'hass': HassConfig.name,
     'homebox': HomeBoxConfig.name,
     'zoneminder': ZoneminderConfig.name,
+    'nws': NwsWeatherSimConfig.name,
 }
 
 
@@ -190,6 +195,7 @@ class Command(BaseCommand):
         hass = HassConfig.name
         homebox = HomeBoxConfig.name
         zoneminder = ZoneminderConfig.name
+        nws = NwsWeatherSimConfig.name
         return [
             ( hass       , 'empty'            , self._build_empty ),
             ( hass       , 'baseline'         , self._build_hass_baseline ),
@@ -205,6 +211,8 @@ class Command(BaseCommand):
             ( zoneminder , 'baseline'         , self._build_zm_baseline ),
             ( zoneminder , 'baseline-changed' , self._build_zm_baseline_changed ),
             ( zoneminder , 'volume'           , self._build_zm_volume ),
+
+            ( nws        , 'sample'           , self._build_nws_sample ),
         ]
 
     # ----- profile orchestration -----
@@ -483,6 +491,153 @@ class Command(BaseCommand):
                 monitor_id = 100 + index,
             )
         return profile.db_sim_entities.count()
+
+    # ----- NWS builders -----
+
+    def _build_nws_sample(self, profile: SimProfile) -> int:
+        # 8-alert catalog spanning event types and severities. Every
+        # alert is inactive by default so the operator toggles each on
+        # individually to drive the active-alerts feed through one
+        # event type at a time. Severity / certainty / urgency follow
+        # the canonical CAP pairings the NWS issues for each product.
+        area = 'Demo County, ZZ'
+        self._add_nws_alert(
+            profile,
+            event_code = 'TOR',
+            event_name = 'Tornado Warning',
+            severity = 'Extreme', certainty = 'Observed', urgency = 'Immediate',
+            category = 'met', area_desc = area,
+            headline = 'Tornado Warning issued for Demo County',
+            description = (
+                'At 4:15 PM, a confirmed tornado was located near Demo '
+                'Town, moving northeast at 35 mph. This is a particularly '
+                'dangerous situation.'
+            ),
+            instruction = (
+                'TAKE COVER NOW! Move to a basement or interior room on '
+                'the lowest floor of a sturdy building. Avoid windows.'
+            ),
+        )
+        self._add_nws_alert(
+            profile,
+            event_code = 'HUW',
+            event_name = 'Hurricane Warning',
+            severity = 'Extreme', certainty = 'Likely', urgency = 'Expected',
+            category = 'met', area_desc = area,
+            headline = 'Hurricane Warning in effect for Demo County',
+            description = (
+                'Hurricane conditions are expected somewhere within the '
+                'warning area within 36 hours. Devastating wind damage '
+                'and life-threatening storm surge are anticipated.'
+            ),
+            instruction = (
+                'Complete preparations for hurricane-force winds and '
+                'storm surge. Follow evacuation orders from local '
+                'officials.'
+            ),
+        )
+        self._add_nws_alert(
+            profile,
+            event_code = 'SVR',
+            event_name = 'Severe Thunderstorm Warning',
+            severity = 'Severe', certainty = 'Observed', urgency = 'Immediate',
+            category = 'met', area_desc = area,
+            headline = 'Severe Thunderstorm Warning for Demo County',
+            description = (
+                'At 3:50 PM, severe thunderstorms were located along a '
+                'line moving east at 40 mph. Hazards include 60 mph wind '
+                'gusts and quarter-size hail.'
+            ),
+            instruction = (
+                'For your protection move to an interior room on the '
+                'lowest floor of a building.'
+            ),
+        )
+        self._add_nws_alert(
+            profile,
+            event_code = 'FFW',
+            event_name = 'Flash Flood Warning',
+            severity = 'Severe', certainty = 'Likely', urgency = 'Immediate',
+            category = 'met', area_desc = area,
+            headline = 'Flash Flood Warning for Demo County',
+            description = (
+                'Flash flooding is ongoing or expected to begin shortly. '
+                'Between 1 and 3 inches of rain have fallen. Additional '
+                'rainfall amounts of 1 to 2 inches are possible.'
+            ),
+            instruction = (
+                'Turn around, don\'t drown when encountering flooded '
+                'roads. Most flood deaths occur in vehicles.'
+            ),
+        )
+        self._add_nws_alert(
+            profile,
+            event_code = 'WSW',
+            event_name = 'Winter Storm Warning',
+            severity = 'Moderate', certainty = 'Likely', urgency = 'Expected',
+            category = 'met', area_desc = area,
+            headline = 'Winter Storm Warning issued for Demo County',
+            description = (
+                'Heavy snow expected. Total snow accumulations of 8 to '
+                '12 inches. Winds gusting as high as 35 mph.'
+            ),
+            instruction = (
+                'Travel could be very difficult to impossible. The '
+                'hazardous conditions could impact the morning commute.'
+            ),
+        )
+        self._add_nws_alert(
+            profile,
+            event_code = 'TOA',
+            event_name = 'Tornado Watch',
+            severity = 'Severe', certainty = 'Possible', urgency = 'Future',
+            category = 'met', area_desc = area,
+            headline = 'Tornado Watch in effect for Demo County',
+            description = (
+                'Conditions are favorable for the development of '
+                'tornadoes within the watch area. Damaging winds and '
+                'large hail are also possible.'
+            ),
+            instruction = (
+                'Review tornado safety rules and be prepared to take '
+                'shelter quickly if a warning is issued.'
+            ),
+        )
+        self._add_nws_alert(
+            profile,
+            event_code = '',
+            event_name = 'Heat Advisory',
+            severity = 'Moderate', certainty = 'Likely', urgency = 'Expected',
+            category = 'met', area_desc = area,
+            headline = 'Heat Advisory in effect for Demo County',
+            description = (
+                'Heat index values up to 105 expected. Hot temperatures '
+                'and high humidity may cause heat illnesses to occur.'
+            ),
+            instruction = (
+                'Drink plenty of fluids, stay in an air-conditioned '
+                'room, and check up on relatives and neighbors.'
+            ),
+        )
+        self._add_nws_alert(
+            profile,
+            event_code = 'AQA',
+            event_name = 'Air Quality Alert',
+            severity = 'Moderate', certainty = 'Observed', urgency = 'Expected',
+            category = 'health', area_desc = area,
+            headline = 'Air Quality Alert for Demo County',
+            description = (
+                'The Department of Environmental Quality has issued an '
+                'Air Quality Alert. Fine particulate concentrations are '
+                'expected to reach unhealthy levels.'
+            ),
+            instruction = (
+                'Sensitive groups including children, the elderly, and '
+                'those with heart or lung conditions should limit '
+                'prolonged outdoor exertion.'
+            ),
+        )
+        return profile.nws_sim_alerts.count()
 
     # ----- per-integration row builders -----
 
@@ -823,6 +978,31 @@ class Command(BaseCommand):
             fields_class = ZmMonitorSimEntityFields,
             sim_entity_type = SimEntityType.MOTION_SENSOR,
             fields_kwargs = {'name': name, 'monitor_id': monitor_id},
+        )
+
+    def _add_nws_alert(self, profile, *,
+                       event_code, event_name,
+                       severity, certainty, urgency, category,
+                       area_desc, headline, description, instruction,
+                       status = 'Actual',
+                       effective_offset_secs = -3600,
+                       expires_offset_secs = 43200):
+        NwsSimAlert.objects.create(
+            sim_profile = profile,
+            is_active = False,
+            event_code = event_code,
+            event_name = event_name,
+            severity_str = severity,
+            certainty_str = certainty,
+            urgency_str = urgency,
+            status_str = status,
+            category_str = category,
+            headline = headline,
+            description = description,
+            instruction = instruction,
+            area_desc = area_desc,
+            effective_offset_secs = effective_offset_secs,
+            expires_offset_secs = expires_offset_secs,
         )
 
     # ----- low-level row creator -----
