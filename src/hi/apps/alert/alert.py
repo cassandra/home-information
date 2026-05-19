@@ -118,7 +118,18 @@ class Alert:
 
     def upsert_alarm( self, alarm : Alarm ):
         assert alarm.signature == self.first_alarm.signature
+        # Always refresh expiry from the incoming alarm. A follow-up
+        # submission with a shorter lifetime correctly shortens the
+        # Alert's end_datetime (e.g. NWS reducing its ``expires``).
         self._end_datetime = datetimeproxy.now() + timedelta( seconds = alarm.alarm_lifetime_secs )
+        # If the caller identified this as a specific incident and we
+        # already have that incident in the deque, do not count it
+        # again — the alarm_count should reflect distinct occurrences,
+        # not how often the source re-reported the same one.
+        if alarm.source_alarm_id is not None:
+            for existing in self._latest_alarms:
+                if existing.source_alarm_id == alarm.source_alarm_id:
+                    return
         self._latest_alarms.appendleft( alarm )
         return
         

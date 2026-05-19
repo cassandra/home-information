@@ -108,6 +108,83 @@ class TestAlert(BaseTestCase):
         self.assertEqual(alert.get_latest_alarm(), second_alarm)
         return
 
+    def test_alert_upsert_alarm_skips_duplicate_source_alarm_id(self):
+        """Resubmitting an alarm with a known source_alarm_id refreshes
+        expiry but does not increment alarm_count — the count reflects
+        distinct incidents, not how often a source re-reported the
+        same one."""
+        first_alarm = Alarm(
+            alarm_source = AlarmSource.EVENT,
+            alarm_type = 'test_alarm',
+            alarm_level = AlarmLevel.WARNING,
+            title = 'Test Alarm',
+            sensor_response_list = [],
+            security_level = SecurityLevel.LOW,
+            alarm_lifetime_secs = 300,
+            timestamp = datetimeproxy.now(),
+            source_alarm_id = 'INCIDENT-A',
+        )
+        alert = Alert( first_alarm )
+
+        # Re-poll of the same incident: different timestamp / lifetime,
+        # same source_alarm_id. Expiry should refresh; count must not.
+        repoll_alarm = Alarm(
+            alarm_source = AlarmSource.EVENT,
+            alarm_type = 'test_alarm',
+            alarm_level = AlarmLevel.WARNING,
+            title = 'Test Alarm (re-polled)',
+            sensor_response_list = [],
+            security_level = SecurityLevel.LOW,
+            alarm_lifetime_secs = 600,
+            timestamp = datetimeproxy.now(),
+            source_alarm_id = 'INCIDENT-A',
+        )
+        before_end = alert.end_datetime
+        alert.upsert_alarm( repoll_alarm )
+
+        self.assertEqual( alert.alarm_count, 1 )
+        self.assertGreater( alert.end_datetime, before_end )
+
+        # A distinct incident (different source_alarm_id) of the same
+        # kind is still counted as a new occurrence.
+        distinct_alarm = Alarm(
+            alarm_source = AlarmSource.EVENT,
+            alarm_type = 'test_alarm',
+            alarm_level = AlarmLevel.WARNING,
+            title = 'Test Alarm (different incident)',
+            sensor_response_list = [],
+            security_level = SecurityLevel.LOW,
+            alarm_lifetime_secs = 300,
+            timestamp = datetimeproxy.now(),
+            source_alarm_id = 'INCIDENT-B',
+        )
+        alert.upsert_alarm( distinct_alarm )
+        self.assertEqual( alert.alarm_count, 2 )
+        return
+
+    def test_alert_upsert_alarm_no_source_id_always_counts(self):
+        """Legacy behavior: when source_alarm_id is None on both the
+        existing and incoming alarm, every submission counts. Existing
+        callers that have not adopted the new field see unchanged
+        behavior."""
+        alert = Alert( self.test_alarm )
+
+        followup_alarm = Alarm(
+            alarm_source = AlarmSource.EVENT,
+            alarm_type = 'test_alarm',
+            alarm_level = AlarmLevel.WARNING,
+            title = 'Test Alarm',
+            sensor_response_list = [],
+            security_level = SecurityLevel.LOW,
+            alarm_lifetime_secs = 300,
+            timestamp = datetimeproxy.now(),
+        )
+        alert.upsert_alarm( followup_alarm )
+        alert.upsert_alarm( followup_alarm )
+
+        self.assertEqual( alert.alarm_count, 3 )
+        return
+
     def test_alert_upsert_alarm_signature_assertion(self):
         """Test upsert_alarm signature validation - critical error handling."""
         alert = Alert(self.test_alarm)

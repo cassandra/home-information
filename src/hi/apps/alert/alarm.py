@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 from datetime import datetime
-from typing import List
+from typing import List, Optional
 
 from hi.apps.audio.audio_signal import AudioSignal
 from hi.apps.security.enums import SecurityLevel
@@ -28,6 +28,15 @@ class Alarm:
     security_level       : SecurityLevel
     alarm_lifetime_secs  : int
     timestamp            : datetime
+
+    # Optional caller-supplied identifier for the *specific incident*
+    # this alarm represents. When set, Alert.upsert_alarm uses it to
+    # recognize repeated submissions of the same incident (NWS poll
+    # returning the same alert each cycle, motion sensor re-firing on
+    # the same trigger, etc.) and refresh expiry without incrementing
+    # the alarm count. None preserves legacy "every submission
+    # counts" behavior.
+    source_alarm_id      : Optional[str] = None
 
     def __post_init__(self):
         # The lifetime field drives ``Alert.end_datetime``; zero or
