@@ -1,48 +1,17 @@
 from django.db import models
-from django.utils.timezone import now
+
+from hi.simulator.profile.models import SimProfile
 
 from .enums import SimEntityType
 
 
-class SimProfile(models.Model):
-
-    name = models.CharField(
-        'Name',
-        max_length = 128,
-        null = False, blank = False,
-        unique = True,
-    )
-    last_switched_to_datetime = models.DateTimeField(
-        'Last Switched To',
-        default = now,
-    )
-    created_datetime = models.DateTimeField(
-        'Created',
-        auto_now_add = True,
-        blank = True,
-    )
-    
-    class Meta:
-        verbose_name = 'ServiceSimulator Profile'
-        verbose_name_plural = 'ServiceSimulator Profiles'
-        ordering = [ '-last_switched_to_datetime' ]
-
-    def __str__(self):
-        return f'{self.name} [{self.id}]'
-
-    
-class DbSimEntity(models.Model):
+class DbSimEntity( models.Model ):
 
     sim_profile = models.ForeignKey(
         SimProfile,
         related_name = 'db_sim_entities',
-        verbose_name = 'ServiceSimulator Profile',
+        verbose_name = 'Simulator Profile',
         on_delete = models.CASCADE,
-    )
-    simulator_id = models.CharField(
-        'ServiceSimulator Id',
-        max_length = 64,
-        null = False, blank = False,
     )
     entity_fields_class_id = models.CharField(
         'Entity Fields Class Id',
@@ -53,7 +22,7 @@ class DbSimEntity(models.Model):
         'Entity Type',
         max_length = 32,
         null = False, blank = False,
-    )    
+    )
     sim_entity_fields_json = models.JSONField(
         'Entity Fields',
         default = dict,
@@ -68,10 +37,10 @@ class DbSimEntity(models.Model):
         auto_now=True,
         blank = True,
     )
-    
+
     class Meta:
-        verbose_name = 'ServiceSimulator Entity'
-        verbose_name_plural = 'ServiceSimulator Entities'
+        verbose_name = 'Simulator Entity'
+        verbose_name_plural = 'Simulator Entities'
 
     @property
     def sim_entity_type(self) -> SimEntityType:

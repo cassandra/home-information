@@ -1,24 +1,27 @@
 <div>
   <ul id="hi-simulator-weather-tabs" class="nav nav-tabs" role="tablist">
-    {% for weather_source in weather_source_data_list %}
+    {% for tab in tab_contexts %}
     <li class="nav-item">
-      <a id="hi-simulator-weather-tab-{{ weather_source.short_name }}" role="tab"
+      <a id="hi-simulator-weather-tab-{{ tab.short_name }}" role="tab"
          class="nav-link {% if forloop.first %}active{% endif %}"
          data-toggle="tab"
-         href="#weather-source-{{ weather_source.short_name }}"
-         aria-controls="weather-source-{{ weather_source.short_name }}"
+         href="#weather-source-{{ tab.short_name }}"
+         aria-controls="weather-source-{{ tab.short_name }}"
          aria-selected="{% if forloop.first %}true{% else %}false{% endif %}">
-        {{ weather_source.label }}</a>
+        {{ tab.label }}</a>
     </li>
     {% endfor %}
   </ul>
 
   <div id="hi-simulator-weather-content" class="tab-content">
-    {% for weather_source in weather_source_data_list %}
-    <div id="weather-source-{{ weather_source.short_name }}" role="tabpanel"
+    {% for tab in tab_contexts %}
+    <div id="weather-source-{{ tab.short_name }}" role="tabpanel"
          class="tab-pane fade {% if forloop.first %}show active{% endif %}"
-         aria-labelledby="hi-simulator-weather-tab-{{ weather_source.short_name }}">
-      {% include weather_source.tab_template %}
+         aria-labelledby="hi-simulator-weather-tab-{{ tab.short_name }}">
+      <div class="d-flex align-items-center mb-2">
+        {% include "profile/panes/profile_selector.html" with module=tab profile_list=tab.profile_list current_profile=tab.current_profile %}
+      </div>
+      {% include tab.tab_template %}
     </div>
     {% endfor %}
   </div>

@@ -26,6 +26,7 @@ logger = logging.getLogger(__name__)
 
 @dataclass
 class WeatherSourceData:
+    module_key : str   # full AppConfig.name; passes to profile URLs
     short_name : str
     label : str
     tab_template : str
@@ -39,6 +40,7 @@ def get_weather_source_data_list() -> List[ WeatherSourceData ]:
         try:
             results.append(
                 WeatherSourceData(
+                    module_key = app_config.name,
                     short_name = app_config.weather_source_short_name,
                     label = app_config.weather_source_label,
                     tab_template = app_config.weather_source_tab_template,

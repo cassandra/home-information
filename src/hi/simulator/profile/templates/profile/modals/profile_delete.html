@@ -1,0 +1,33 @@
+{% extends "modals/action_with_cancel.html" %}
+
+{% block preamble %}
+<form action="{% url 'simulator_profile_delete' module_key=module.module_key profile_id=sim_profile.id %}"
+      method="post" class="form" data-async="modal">
+  {% csrf_token %}
+{% endblock %}
+
+{% block title_text %}
+Delete {{ module.label }} Profile?
+{% endblock %}
+
+{% block body %}
+<p>
+  Delete the <strong>{{ sim_profile.name }}</strong> {{ module.label }}
+  profile? All simulated entries belonging to this profile will be
+  removed.
+</p>
+<p class="text-danger">
+  This action cannot be undone.
+</p>
+{% endblock %}
+
+{% block action_right %}
+<button id="hi-simulator-profile-delete-submit" type="submit" class="btn btn-danger"
+        name="action" value="delete">
+  DELETE
+</button>
+{% endblock %}
+
+{% block postamble %}
+</form>
+{% endblock %}

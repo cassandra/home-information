@@ -1,5 +1,7 @@
 from django.db import models
 
+from hi.simulator.profile.models import SimProfile
+
 from . import constants
 
 
@@ -16,6 +18,11 @@ class NwsSimAlert( models.Model ):
         verbose_name_plural = 'NWS Sim Alerts'
         ordering = [ '-created_datetime' ]
 
+    sim_profile = models.ForeignKey(
+        SimProfile,
+        related_name = 'nws_sim_alerts',
+        on_delete = models.CASCADE,
+    )
     is_active = models.BooleanField(
         default = True,
         help_text = 'Include this alert in the simulated active-alerts feed.',
@@ -60,7 +67,7 @@ class NwsSimAlert( models.Model ):
     headline = models.CharField( max_length = 512, default = '' )
     description = models.TextField( default = '' )
     instruction = models.TextField( blank = True, default = '' )
-    area_desc = models.CharField( max_length = 255, default = 'ServiceSimulator Test Area' )
+    area_desc = models.CharField( max_length = 255, default = 'Simulator Test Area' )
     effective_offset_secs = models.IntegerField(
         default = -60,
         help_text = (

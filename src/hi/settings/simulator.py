@@ -14,6 +14,7 @@ INSTALLED_APPS = [
     'custom',
     'hi.apps.common',
     'hi.simulator',
+    'hi.simulator.profile',
     'hi.simulator.services',
     'hi.simulator.weather_sources',
     'hi.simulator.settings',

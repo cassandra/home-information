@@ -1,6 +1,7 @@
 from django.apps import AppConfig
 
 
-class HomeBoxConfig(AppConfig):
-    default_auto_field = "django.db.models.BigAutoField"
-    name = "hi.simulator.services.homebox"
+class HomeBoxConfig( AppConfig ):
+    default_auto_field = 'django.db.models.BigAutoField'
+    name = 'hi.simulator.services.homebox'
+    simulator_module_label = 'HomeBox'

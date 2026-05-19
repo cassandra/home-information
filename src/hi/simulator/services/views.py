@@ -1,41 +1,56 @@
 from django.core.exceptions import BadRequest
-from django.db import transaction
-from django.http import HttpResponseRedirect, JsonResponse
+from django.http import JsonResponse
 from django.shortcuts import render
-from django.urls import reverse
 from django.views.generic import View
 
 import hi.apps.common.antinode as antinode
 
+from hi.simulator.profile.profile_manager import ProfileManager
 from hi.simulator.settings.enums import SimTemperatureUnit
 from hi.simulator.settings.runtime_settings import SimulatorRuntimeSettings
 
 from .enums import ServiceFaultMode
 from .exceptions import SimEntityValidationError
 from . import forms
-from .models import DbSimEntity, SimProfile
 from .service_simulator_manager import ServiceSimulatorManager
 from .sim_entity import SimEntity
 from .view_mixins import ServiceSimulatorViewMixin
 
 
+def _build_simulator_tab_contexts():
+    """Per-simulator render context for the services tabbed page.
+    Bundles each ServiceSimulator with the profile data its tab needs
+    (current profile + dropdown options), so the template can
+    iterate without consulting ProfileManager itself.
+    """
+    profile_manager = ProfileManager()
+    tab_contexts = []
+    for sim_data in ServiceSimulatorManager().get_simulator_data_list():
+        simulator = sim_data.simulator
+        tab_contexts.append({
+            'simulator_data': sim_data,
+            'simulator': simulator,
+            'module_key': simulator.module_key,
+            'module_label': simulator.label,
+            'profile_list': profile_manager.list_profiles( simulator.module_key ),
+            'current_profile': profile_manager.get_current( simulator.module_key ),
+        })
+        continue
+    return tab_contexts
+
+
 class ServicesView( View, ServiceSimulatorViewMixin ):
 
     def get(self, request, *args, **kwargs):
-        simulator_manager = ServiceSimulatorManager()
-        sim_profile_list = simulator_manager.sim_profile_list
-        current_sim_profile = simulator_manager.current_sim_profile
-        simulator_data_list = simulator_manager.get_simulator_data_list()
+        tab_contexts = _build_simulator_tab_contexts()
         current_simulator = self.get_current_simulator(
             request = request,
-            simulator_list = [ x.simulator for x in simulator_data_list ],
+            simulator_list = [ tc[ 'simulator' ] for tc in tab_contexts ],
         )
         runtime_settings = SimulatorRuntimeSettings()
         context = {
             'active_section': 'services',
-            'sim_profile_list': sim_profile_list,
-            'current_sim_profile': current_sim_profile,
-            'simulator_data_list': simulator_data_list,
+            'tab_contexts': tab_contexts,
             'current_simulator': current_simulator,
             'fault_mode_choices': list( ServiceFaultMode ),
             'temperature_unit_choices': list( SimTemperatureUnit ),
@@ -63,149 +78,6 @@ class SimStatesView( View ):
                     )
                     states[key] = str( sim_state.value )
         return JsonResponse( { 'states': states } )
-
-
-class ProfileCreateView( View ):
-
-    MODAL_TEMPLATE_NAME = 'services/modals/sim_profile_create.html'
-
-    def get(self, request, *args, **kwargs):
-        context = {
-            'sim_profile_form': forms.SimProfileForm()
-        }
-        return render( request, self.MODAL_TEMPLATE_NAME, context )
-
-    def post(self, request, *args, **kwargs):
-
-        sim_profile_form = forms.SimProfileForm( request.POST )
-        if not sim_profile_form.is_valid():
-            context = {
-                'sim_profile_form': sim_profile_form,
-            }
-            return render( request, self.MODAL_TEMPLATE_NAME, context )
-
-        sim_profile = sim_profile_form.save()
-        sim_profile = ServiceSimulatorManager().set_sim_profile(
-            sim_profile = sim_profile,
-        )
-        return antinode.refresh_response()
-
-
-class ProfileEditView( View, ServiceSimulatorViewMixin ):
-
-    MODAL_TEMPLATE_NAME = 'services/modals/sim_profile_edit.html'
-
-    def get(self, request, *args, **kwargs):
-        sim_profile = self.get_sim_profile( request, *args, **kwargs)
-        sim_profile_form = forms.SimProfileForm( instance = sim_profile )
-        context = {
-            'sim_profile_form': sim_profile_form,
-        }
-        return render( request, self.MODAL_TEMPLATE_NAME, context )
-
-    def post(self, request, *args, **kwargs):
-        sim_profile = self.get_sim_profile( request, *args, **kwargs)
-        sim_profile_form = forms.SimProfileForm( request.POST, instance = sim_profile )
-        if not sim_profile_form.is_valid():
-            context = {
-                'sim_profile_form': sim_profile_form
-            }
-            return render( request, self.MODAL_TEMPLATE_NAME, context )
-
-        sim_profile = sim_profile_form.save()
-        ServiceSimulatorManager().set_sim_profile( sim_profile = sim_profile )
-        return antinode.refresh_response()
-
-
-class ProfileCloneView( View, ServiceSimulatorViewMixin ):
-    """
-    Clone the current profile into a new profile with operator-
-    chosen name. The clone copies the profile row and every
-    DbSimEntity row beneath it; SimState values are not persisted
-    (rebuilt from class defaults on every profile load), so the
-    clone naturally gets fresh state semantics with no extra work.
-
-    The new profile becomes the active profile after creation —
-    matches the Create flow's behavior and gives the operator
-    immediate visual confirmation in the simulator UI.
-    """
-
-    MODAL_TEMPLATE_NAME = 'services/modals/sim_profile_clone.html'
-
-    def get(self, request, *args, **kwargs):
-        source_profile = self.get_sim_profile( request, *args, **kwargs )
-        suggested_name = self._suggest_name( source_profile.name )
-        sim_profile_form = forms.SimProfileForm(
-            initial = { 'name': suggested_name },
-        )
-        context = {
-            'source_profile': source_profile,
-            'sim_profile_form': sim_profile_form,
-        }
-        return render( request, self.MODAL_TEMPLATE_NAME, context )
-
-    def post(self, request, *args, **kwargs):
-        source_profile = self.get_sim_profile( request, *args, **kwargs )
-        sim_profile_form = forms.SimProfileForm( request.POST )
-        if not sim_profile_form.is_valid():
-            context = {
-                'source_profile': source_profile,
-                'sim_profile_form': sim_profile_form,
-            }
-            return render( request, self.MODAL_TEMPLATE_NAME, context )
-
-        new_name = sim_profile_form.cleaned_data['name']
-        with transaction.atomic():
-            new_profile = ServiceSimulatorManager.clone_sim_profile(
-                source_profile = source_profile,
-                new_name = new_name,
-            )
-        ServiceSimulatorManager().set_sim_profile( sim_profile = new_profile )
-        return antinode.refresh_response()
-
-    @staticmethod
-    def _suggest_name( source_name : str ) -> str:
-        candidate = f'{source_name} (copy)'
-        if not SimProfile.objects.filter( name = candidate ).exists():
-            return candidate
-        for index in range( 2, 100 ):
-            candidate = f'{source_name} (copy {index})'
-            if not SimProfile.objects.filter( name = candidate ).exists():
-                return candidate
-        return f'{source_name} (copy)'
-
-
-class ProfileSwitchView( View, ServiceSimulatorViewMixin ):
-
-    def get(self, request, *args, **kwargs):
-        sim_profile = self.get_sim_profile( request, *args, **kwargs)
-        ServiceSimulatorManager().set_sim_profile(
-            sim_profile = sim_profile,
-        )
-        url = reverse( 'simulator_home' )
-        return HttpResponseRedirect( url )
-
-
-class ProfileDeleteView( View, ServiceSimulatorViewMixin ):
-
-    MODAL_TEMPLATE_NAME = 'services/modals/sim_profile_delete.html'
-
-    def get(self, request, *args, **kwargs):
-        sim_profile = self.get_sim_profile( request, *args, **kwargs)
-        sim_entity_count = DbSimEntity.objects.filter( sim_profile = sim_profile ).count()
-        context = {
-            'sim_profile': sim_profile,
-            'sim_entity_count': sim_entity_count,
-        }
-        return render( request, self.MODAL_TEMPLATE_NAME, context )
-
-    def post(self, request, *args, **kwargs):
-        sim_profile = self.get_sim_profile( request, *args, **kwargs)
-        needs_switch = bool( sim_profile == ServiceSimulatorManager().current_sim_profile )
-        sim_profile.delete()
-        if needs_switch:
-            sim_profile = ServiceSimulatorManager().set_sim_profile( sim_profile = None )
-        return antinode.refresh_response()
 
 
 class SimEntityAddView( View, ServiceSimulatorViewMixin ):
@@ -264,7 +136,7 @@ class SimEntityEditView( View, ServiceSimulatorViewMixin ):
 
     def get( self, request, *args, **kwargs ):
         db_sim_entity = self.get_db_sim_entity( request, *args, **kwargs )
-        simulator = self.get_simulator_by_id( simulator_id = db_sim_entity.simulator_id )
+        simulator = self._get_simulator_for_entity( db_sim_entity )
         sim_entity_definition = self.get_entity_definition_by_id(
             simulator = simulator,
             class_id = db_sim_entity.entity_fields_class_id,
@@ -286,7 +158,7 @@ class SimEntityEditView( View, ServiceSimulatorViewMixin ):
 
     def post( self, request, *args, **kwargs ):
         db_sim_entity = self.get_db_sim_entity( request, *args, **kwargs )
-        simulator = self.get_simulator_by_id( simulator_id = db_sim_entity.simulator_id )
+        simulator = self._get_simulator_for_entity( db_sim_entity )
         sim_entity_definition = self.get_entity_definition_by_id(
             simulator = simulator,
             class_id = db_sim_entity.entity_fields_class_id,
@@ -324,6 +196,19 @@ class SimEntityEditView( View, ServiceSimulatorViewMixin ):
             sim_entity_fields_form.add_error( None, str(ve) )
             return error_response()
 
+    def _get_simulator_for_entity( self, db_sim_entity ):
+        """The DbSimEntity row is tied to a SimProfile (with
+        module_key) — derive the owning simulator by matching
+        module_key against the discovered service simulators."""
+        module_key = db_sim_entity.sim_profile.module_key
+        for sim_data in ServiceSimulatorManager().get_simulator_data_list():
+            if sim_data.simulator.module_key == module_key:
+                return sim_data.simulator
+            continue
+        raise BadRequest(
+            f'No service simulator registered for module {module_key!r}'
+        )
+
 
 class SimEntityDeleteView( View, ServiceSimulatorViewMixin ):
 
@@ -331,7 +216,7 @@ class SimEntityDeleteView( View, ServiceSimulatorViewMixin ):
 
     def get( self, request, *args, **kwargs ):
         db_sim_entity = self.get_db_sim_entity( request, *args, **kwargs )
-        simulator = self.get_simulator_by_id( simulator_id = db_sim_entity.simulator_id )
+        simulator = self._get_simulator_for_entity( db_sim_entity )
         sim_entity_definition = self.get_entity_definition_by_id(
             simulator = simulator,
             class_id = db_sim_entity.entity_fields_class_id,
@@ -348,25 +233,35 @@ class SimEntityDeleteView( View, ServiceSimulatorViewMixin ):
 
     def post( self, request, *args, **kwargs ):
         db_sim_entity = self.get_db_sim_entity( request, *args, **kwargs )
-        simulator = self.get_simulator_by_id( simulator_id = db_sim_entity.simulator_id )
+        simulator = self._get_simulator_for_entity( db_sim_entity )
         ServiceSimulatorManager().delete_sim_entity(
             simulator = simulator,
             db_sim_entity = db_sim_entity,
         )
         return antinode.refresh_response()
 
+    def _get_simulator_for_entity( self, db_sim_entity ):
+        module_key = db_sim_entity.sim_profile.module_key
+        for sim_data in ServiceSimulatorManager().get_simulator_data_list():
+            if sim_data.simulator.module_key == module_key:
+                return sim_data.simulator
+            continue
+        raise BadRequest(
+            f'No service simulator registered for module {module_key!r}'
+        )
+
 
 class SetServiceFaultModeView( View, ServiceSimulatorViewMixin ):
-    """
-    Operator-driven control to flip a simulator into a fault-injection
-    mode (or back to HEALTHY). Lives at a top-level URL — outside the
-    /services/<short_name>/ subtree — so the fault-injection middleware
-    never intercepts requests to it. This is the operator's escape hatch
-    when a simulator is in any non-HEALTHY mode.
+    """Operator-driven control to flip a simulator into a fault-
+    injection mode (or back to HEALTHY). Lives at a top-level URL —
+    outside the /services/<short_name>/ subtree — so the fault-
+    injection middleware never intercepts requests to it. This is the
+    operator's escape hatch when a simulator is in any non-HEALTHY
+    mode.
 
-    Returns the fault-mode form HTML fragment so antinode.js can swap it
-    in place (data-async + data-mode=replace), avoiding a full page
-    reload on each toggle.
+    Returns the fault-mode form HTML fragment so antinode.js can swap
+    it in place (data-async + data-mode=replace), avoiding a full
+    page reload on each toggle.
     """
 
     TEMPLATE_NAME = 'services/panes/fault_mode_form.html'

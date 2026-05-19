@@ -19,26 +19,6 @@ urlpatterns = [
           views.SimStatesView.as_view(),
           name = 'simulator_api_states' ),
 
-    path( 'profile/create',
-          views.ProfileCreateView.as_view(),
-          name = 'simulator_profile_create' ),
-
-    path( 'profile/edit/<int:profile_id>',
-          views.ProfileEditView.as_view(),
-          name = 'simulator_profile_edit' ),
-
-    path( 'profile/delete/<int:profile_id>',
-          views.ProfileDeleteView.as_view(),
-          name = 'simulator_profile_delete' ),
-
-    path( 'profile/clone/<int:profile_id>',
-          views.ProfileCloneView.as_view(),
-          name = 'simulator_profile_clone' ),
-
-    path( 'profile/switch/<int:profile_id>',
-          views.ProfileSwitchView.as_view(),
-          name = 'simulator_profile_switch' ),
-
     re_path( r'^entity/add/(?P<simulator_id>[\w_\-\.\:]+)/(?P<class_id>[\w\.\_]+)$',
              views.SimEntityAddView.as_view(),
              name = 'simulator_entity_add' ),

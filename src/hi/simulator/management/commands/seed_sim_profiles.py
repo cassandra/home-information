@@ -71,8 +71,9 @@ manual validation):
 from django.core.management.base import BaseCommand
 from django.db import transaction
 
+from hi.simulator.profile.models import SimProfile
 from hi.simulator.services.enums import SimEntityType
-from hi.simulator.services.models import DbSimEntity, SimProfile
+from hi.simulator.services.models import DbSimEntity
 from hi.simulator.services.hass.sim_models import (
     HassCameraNoMotionSimEntityFields,
     HassCameraSimEntityFields,

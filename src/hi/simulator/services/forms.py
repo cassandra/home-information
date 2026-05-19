@@ -5,16 +5,6 @@ from typing import Type
 from django import forms
 
 from .base_models import SimEntityFields
-from .models import SimProfile
-
-
-class SimProfileForm( forms.ModelForm ):
-
-    class Meta:
-        model = SimProfile
-        fields = (
-            'name',
-        )
 
 
 class SimEntityFieldsForm( forms.Form ):

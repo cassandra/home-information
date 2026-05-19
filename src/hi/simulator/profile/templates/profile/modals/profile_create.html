@@ -2,17 +2,17 @@
 {% load icons %}
 
 {% block preamble %}
-<form action="{% url 'simulator_profile_create' %}" method="post"
-      class="form" data-async="modal">
+<form action="{% url 'simulator_profile_create' module_key=module.module_key %}"
+      method="post" class="form" data-async="modal">
   {% csrf_token %}
 {% endblock %}
 
 {% block title_text %}
-Create Simulator Profile
+Create {{ module.label }} Profile
 {% endblock %}
 
 {% block body %}
-{% include "services/panes/sim_profile_form.html" %}
+{% include "profile/panes/profile_form.html" %}
 {% endblock %}
 
 {% block action_right %}
@@ -25,4 +25,3 @@ Create Simulator Profile
 {% block postamble %}
 </form>
 {% endblock %}
-

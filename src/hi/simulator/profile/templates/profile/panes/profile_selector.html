@@ -1,0 +1,54 @@
+{% load icons %}
+{% comment %}
+Per-module profile selector — dropdown + kebab actions menu.
+Each module's tab includes this with:
+  - module : SimulatorModule (module_key + label)
+  - profile_list : List[SimProfile]
+  - current_profile : SimProfile
+{% endcomment %}
+<div class="sim-profile-selector d-inline-flex align-items-center">
+  <div class="dropdown mr-1">
+    <button class="btn btn-sm btn-outline-primary dropdown-toggle" type="button"
+            id="hi-profile-switch-{{ module.module_key }}"
+            data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+      Profile: <strong>{{ current_profile.name }}</strong>
+    </button>
+    <div class="dropdown-menu"
+         aria-labelledby="hi-profile-switch-{{ module.module_key }}">
+      {% for profile in profile_list %}
+      <a class="dropdown-item plain {% if profile.id == current_profile.id %}active{% endif %}"
+         href="{% url 'simulator_profile_switch' module_key=module.module_key profile_id=profile.id %}">
+        {{ profile.name }}
+      </a>
+      {% endfor %}
+    </div>
+  </div>
+  <div class="dropdown">
+    <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button"
+            id="hi-profile-actions-{{ module.module_key }}"
+            data-toggle="dropdown" aria-haspopup="true" aria-expanded="false"
+            title="Profile actions">
+      {% icon "settings" size="sm" %}
+    </button>
+    <div class="dropdown-menu"
+         aria-labelledby="hi-profile-actions-{{ module.module_key }}">
+      <a class="dropdown-item plain" data-async="modal"
+         href="{% url 'simulator_profile_create' module_key=module.module_key %}">
+        {% icon "plus" size="sm" css_class="hi-icon-left" %}New Profile…
+      </a>
+      <a class="dropdown-item plain" data-async="modal"
+         href="{% url 'simulator_profile_edit' module_key=module.module_key profile_id=current_profile.id %}">
+        {% icon "edit" size="sm" css_class="hi-icon-left" %}Rename…
+      </a>
+      <a class="dropdown-item plain" data-async="modal"
+         href="{% url 'simulator_profile_clone' module_key=module.module_key profile_id=current_profile.id %}">
+        {% icon "plus" size="sm" css_class="hi-icon-left" %}Clone…
+      </a>
+      <div class="dropdown-divider"></div>
+      <a class="dropdown-item plain text-danger" data-async="modal"
+         href="{% url 'simulator_profile_delete' module_key=module.module_key profile_id=current_profile.id %}">
+        {% icon "delete" size="sm" css_class="hi-icon-left" %}Delete…
+      </a>
+    </div>
+  </div>
+</div>

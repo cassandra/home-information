@@ -70,12 +70,20 @@ class ServiceSimulator( Singleton ):
     def url_path_segment(self) -> str:
         """
         The URL segment under which this simulator's routes are mounted by
-        src/hi/simulator/urls.py:discover_urls() — derived from the
-        services-app directory name (e.g., 'homebox' for the simulator at
-        hi.simulator.services.homebox.simulator). Note this can differ
-        from `id` (e.g., id='hb' but url_path_segment='homebox').
+        src/hi/simulator/services/urls.py:discover_service_urls() — derived
+        from the services-app directory name (e.g., 'homebox' for the
+        simulator at hi.simulator.services.homebox.simulator). Note this
+        can differ from `id` (e.g., id='hb' but url_path_segment='homebox').
         """
         return self.__class__.__module__.split('.')[-2]
+
+    @property
+    def module_key(self) -> str:
+        """The simulator's pluggable module key — its Django AppConfig
+        name (e.g. ``hi.simulator.services.hass``). Used as the
+        ``SimProfile.module_key`` foreign reference so each service
+        simulator has its own independent profile space."""
+        return '.'.join( self.__class__.__module__.split('.')[:-1] )
 
     @property
     def integration_urls(self) -> List[ tuple ]:
