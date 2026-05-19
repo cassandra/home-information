@@ -12,8 +12,12 @@ logger = logging.getLogger(__name__)
 
 urlpatterns = [
     path( '',
-          views.ServicesView.as_view(),
+          views.ServicesIndexView.as_view(),
           name = 'simulator_services' ),
+
+    path( 'tab/<slug:simulator_id>/',
+          views.ServiceView.as_view(),
+          name = 'simulator_service' ),
 
     path( 'api/states/',
           views.SimStatesView.as_view(),
@@ -31,7 +35,8 @@ urlpatterns = [
           views.SimEntityDeleteView.as_view(),
           name = 'simulator_entity_delete' ),
 
-    re_path( r'^entity/state/set/(?P<simulator_id>[\w_\-\.\:]+)/(?P<sim_entity_id>\d+)/(?P<sim_state_id>[\w\-]+)$',
+    re_path( r'^entity/state/set/(?P<simulator_id>[\w_\-\.\:]+)'
+             r'/(?P<sim_entity_id>\d+)/(?P<sim_state_id>[\w\-]+)$',
              views.SimStateSetView.as_view(),
              name = 'simulator_entity_state_set' ),
 

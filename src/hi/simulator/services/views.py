@@ -1,6 +1,7 @@
 from django.core.exceptions import BadRequest
-from django.http import JsonResponse
+from django.http import Http404, HttpResponseRedirect, JsonResponse
 from django.shortcuts import render
+from django.urls import reverse
 from django.views.generic import View
 
 import hi.apps.common.antinode as antinode
@@ -17,46 +18,72 @@ from .sim_entity import SimEntity
 from .view_mixins import ServiceSimulatorViewMixin
 
 
-def _build_simulator_tab_contexts():
-    """Per-simulator render context for the services tabbed page.
-    Bundles each ServiceSimulator with the profile data its tab needs
-    (current profile + dropdown options), so the template can
-    iterate without consulting ProfileManager itself.
-    """
-    profile_manager = ProfileManager()
-    tab_contexts = []
+def _build_service_tab_specs( active_simulator_id : str ):
+    """Tab strip data for the Services section. Each entry routes to
+    its own URL (``simulator_service``); the active one is matched by
+    ``simulator.id``."""
+    specs = []
     for sim_data in ServiceSimulatorManager().get_simulator_data_list():
         simulator = sim_data.simulator
-        tab_contexts.append({
-            'simulator_data': sim_data,
-            'simulator': simulator,
-            'module_key': simulator.module_key,
-            'module_label': simulator.label,
-            'profile_list': profile_manager.list_profiles( simulator.module_key ),
-            'current_profile': profile_manager.get_current( simulator.module_key ),
+        specs.append({
+            'label': simulator.label,
+            'url': reverse( 'simulator_service',
+                            kwargs = { 'simulator_id': simulator.id } ),
+            'is_active': ( simulator.id == active_simulator_id ),
         })
         continue
-    return tab_contexts
+    return specs
 
 
-class ServicesView( View, ServiceSimulatorViewMixin ):
+class ServicesIndexView( View ):
+    """Default ``/services/`` route — redirects to the first registered
+    service's per-tab URL so the URL bar always reflects which tab is
+    showing."""
 
     def get(self, request, *args, **kwargs):
-        tab_contexts = _build_simulator_tab_contexts()
-        current_simulator = self.get_current_simulator(
-            request = request,
-            simulator_list = [ tc[ 'simulator' ] for tc in tab_contexts ],
+        sim_data_list = ServiceSimulatorManager().get_simulator_data_list()
+        if not sim_data_list:
+            return render( request, 'services/pages/empty.html',
+                           { 'active_section': 'services',
+                             'tab_specs': [] } )
+        first_simulator = sim_data_list[0].simulator
+        return HttpResponseRedirect(
+            reverse( 'simulator_service',
+                     kwargs = { 'simulator_id': first_simulator.id } )
         )
+
+
+class ServiceView( View ):
+    """Renders a single service simulator's tab body. Tab switching is
+    a full page navigation between sibling ``simulator_service``
+    routes."""
+
+    def get(self, request, simulator_id, *args, **kwargs):
+        try:
+            simulator = ServiceSimulatorManager().get_simulator(
+                simulator_id = simulator_id,
+            )
+        except KeyError:
+            raise Http404( f'Unknown simulator: {simulator_id!r}' )
+
+        profile_manager = ProfileManager()
+        module_key = simulator.module_key
         runtime_settings = SimulatorRuntimeSettings()
         context = {
             'active_section': 'services',
-            'tab_contexts': tab_contexts,
-            'current_simulator': current_simulator,
+            'tab_specs': _build_service_tab_specs( active_simulator_id = simulator.id ),
+            'simulator': simulator,
+            'module': {
+                'module_key': module_key,
+                'label': simulator.label,
+            },
+            'profile_list': profile_manager.list_profiles( module_key ),
+            'current_profile': profile_manager.get_current( module_key ),
             'fault_mode_choices': list( ServiceFaultMode ),
             'temperature_unit_choices': list( SimTemperatureUnit ),
             'temperature_unit_override': runtime_settings.temperature_unit_override,
         }
-        return render( request, 'services/pages/services.html', context )
+        return render( request, 'services/pages/service.html', context )
 
 
 class SimStatesView( View ):
@@ -72,7 +99,7 @@ class SimStatesView( View ):
             for sim_entity in simulator.sim_entities:
                 for sim_state in sim_entity.sim_state_list:
                     key = (
-                        f'hi-sim-state-{sim_state.simulator_id}'
+                        f'hi-sim-state-{simulator.id}'
                         f'-{sim_state.sim_entity_id}'
                         f'-{sim_state.sim_state_id}'
                     )
@@ -298,6 +325,7 @@ class SimStateSetView( View, ServiceSimulatorViewMixin ):
             value_str = value_str,
         )
         context = {
+            'simulator': simulator,
             'sim_state': sim_state,
         }
         return render( request, self.TEMPLATE_NAME, context )

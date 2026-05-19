@@ -12,8 +12,12 @@ logger = logging.getLogger(__name__)
 
 urlpatterns = [
     path( '',
-          views.WeatherView.as_view(),
+          views.WeatherIndexView.as_view(),
           name = 'simulator_weather' ),
+
+    path( 'tab/<slug:short_name>/',
+          views.WeatherSourceView.as_view(),
+          name = 'simulator_weather_source' ),
 ]
 
 

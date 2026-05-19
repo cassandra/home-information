@@ -163,4 +163,8 @@ class SwitchProfileView( View ):
         profile = get_object_or_404( SimProfile, pk = profile_id,
                                      module_key = module_key )
         ProfileManager().set_current( module_key = module_key, profile = profile )
-        return HttpResponseRedirect( reverse( 'simulator_home' ))
+        # Profile switching is always initiated from the tab being
+        # switched, so reloading the page that issued the request lands
+        # the user back on the same tab.
+        referer = request.META.get( 'HTTP_REFERER' )
+        return HttpResponseRedirect( referer or reverse( 'simulator_home' ))

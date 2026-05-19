@@ -25,7 +25,6 @@ class SimEntity:
         self._sim_state_map = dict()
         for SimStateSubclass in self.sim_entity_definition.sim_state_class_list:
             sim_state = SimStateSubclass(
-                simulator_id = self.db_sim_entity.simulator_id,
                 sim_entity_id = self.db_sim_entity.id,
                 sim_entity_fields = self._sim_entity_fields,
             )

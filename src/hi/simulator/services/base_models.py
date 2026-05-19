@@ -87,7 +87,6 @@ class SimState:
     """
 
     # These fields are provided by ServiceSimulatorManager when creating instances.
-    simulator_id       : str
     sim_entity_id      : int
     sim_entity_fields  : SimEntityFields
 
