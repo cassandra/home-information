@@ -1,3 +1,4 @@
+{% load icons %}
 {% for hidden in event_definition_form.hidden_fields %}
 {{ hidden }}
 {% endfor %}
@@ -10,69 +11,75 @@
 </div>
 {% endif %}
 
-<div class="input-group mb-2 mr-sm-2">
-  <div class="input-group-prepend" >
-    <label for="{{ event_definition_form.name.id_for_label }}"
-	   class="input-group-text" >{{ event_definition_form.name.label }}</label>
-  {{ event_definition_form.name }}
-    <small class="form-error text-danger" >{{ event_definition_form.name.errors }}</small>
+<div class="event-edit-field">
+  <div class="input-group">
+    <div class="input-group-prepend">
+      <label for="{{ event_definition_form.name.id_for_label }}"
+             class="input-group-text">{{ event_definition_form.name.label }}</label>
+    </div>
+    {{ event_definition_form.name }}
   </div>
+  <small class="form-error text-danger">{{ event_definition_form.name.errors }}</small>
 </div>
 
-<div class="input-group mb-2 mr-sm-2">
-  <div class="input-group-prepend" >
-    <label for="{{ event_definition_form.event.id_for_label }}"
-	   class="input-group-text" >{{ event_definition_form.event_type_str.label }}</label>
-  {{ event_definition_form.event_type_str }}
-    <small class="form-error text-danger" >{{ event_definition_form.event_type_str.errors }}</small>
+<div class="event-edit-field">
+  <div class="input-group">
+    <div class="input-group-prepend">
+      <label for="{{ event_definition_form.event_type_str.id_for_label }}"
+             class="input-group-text">{{ event_definition_form.event_type_str.label }}</label>
+    </div>
+    {{ event_definition_form.event_type_str }}
   </div>
+  <small class="form-error text-danger">{{ event_definition_form.event_type_str.errors }}</small>
 </div>
 
-<div class="input-group mb-2 mr-sm-2">
-  <div class="input-group-prepend" >
-    <label for="{{ event_definition_form.event.id_for_label }}"
-	   class="input-group-text" >{{ event_definition_form.event_window_secs.label }}</label>
-  {{ event_definition_form.event_window_secs }}
-    <small class="form-error text-danger" >{{ event_definition_form.event_window_secs.errors }}</small>
+<div class="event-edit-field">
+  <div class="input-group">
+    <div class="input-group-prepend">
+      <label for="{{ event_definition_form.event_window_secs.id_for_label }}"
+             class="input-group-text">{{ event_definition_form.event_window_secs.label }}</label>
+    </div>
+    {{ event_definition_form.event_window_secs }}
   </div>
+  <small class="form-error text-danger">{{ event_definition_form.event_window_secs.errors }}</small>
 </div>
 
-<div class="input-group mb-2 mr-sm-2">
-  <div class="input-group-prepend" >
-    <label for="{{ event_definition_form.dedupe.id_for_label }}"
-	   class="input-group-text" >{{ event_definition_form.dedupe_window_secs.label }}</label>
-  {{ event_definition_form.dedupe_window_secs }}
-    <small class="form-error text-danger" >{{ event_definition_form.dedupe_window_secs.errors }}</small>
+<div class="event-edit-field">
+  <div class="input-group">
+    <div class="input-group-prepend">
+      <label for="{{ event_definition_form.dedupe_window_secs.id_for_label }}"
+             class="input-group-text">{{ event_definition_form.dedupe_window_secs.label }}</label>
+    </div>
+    {{ event_definition_form.dedupe_window_secs }}
   </div>
+  <small class="form-error text-danger">{{ event_definition_form.dedupe_window_secs.errors }}</small>
 </div>
 
-<div class="mb-2 mr-sm-2">
-  {{ event_definition_form.enabled }}<span class="pl-2">Enabled</span>
+<div class="event-edit-toggle">
+  {{ event_definition_form.enabled }}
+  <label for="{{ event_definition_form.enabled.id_for_label }}">Enabled</label>
 </div>
 
-<hr />
-<div>
-  <div class="h5">Clauses</div>
+<section class="event-edit-section">
+  <h2 class="event-edit-section-heading">Clauses</h2>
   {{ event_clause_formset.management_form }}
   {% for event_clause_form in event_clause_formset %}
   {% include "event/edit/panes/event_clause_form.html" %}
   {% endfor %}
-</div>
+</section>
 
-<hr />
-<div>
-  <div class="h5">Alarm Actions</div>
+<section class="event-edit-section">
+  <h2 class="event-edit-section-heading">Alarm Actions</h2>
   {{ alarm_action_formset.management_form }}
   {% for alarm_action_form in alarm_action_formset %}
   {% include "event/edit/panes/alarm_action_form.html" %}
   {% endfor %}
-</div>
+</section>
 
-<hr />
-<div>
-  <div class="h5">Control Actions</div>
+<section class="event-edit-section">
+  <h2 class="event-edit-section-heading">Control Actions</h2>
   {{ control_action_formset.management_form }}
   {% for control_action_form in control_action_formset %}
   {% include "event/edit/panes/control_action_form.html" %}
   {% endfor %}
-</div>
+</section>

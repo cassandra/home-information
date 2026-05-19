@@ -25,7 +25,7 @@ class EventDefinitionForm( forms.ModelForm ):
             'dedupe_window_secs',
             'enabled',
         )
-        
+
     event_type_str = forms.ChoiceField(
         label = 'Trigger Type',
         choices = EventType.choices,
@@ -33,6 +33,12 @@ class EventDefinitionForm( forms.ModelForm ):
         required = True,
         widget = forms.Select( attrs = { 'class' : 'custom-select' } ),
     )
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        for field_name in ( 'name', 'event_window_secs', 'dedupe_window_secs' ):
+            self.fields[field_name].widget.attrs.setdefault( 'class', 'form-control' )
+        return
 
         
 class EventClauseForm( forms.ModelForm, EntityStateSelectModelFormMixin ):
@@ -73,6 +79,8 @@ class EventClauseForm( forms.ModelForm, EntityStateSelectModelFormMixin ):
             f'Hi.setEventClauseValueOperatorWidget('
             f'"{operator_field_id}", "{value_field_id}");'
         )
+        if 'class' not in self.fields['value'].widget.attrs:
+            self.fields['value'].widget.attrs['class'] = 'form-control'
         return
 
     def clean(self):
@@ -119,7 +127,14 @@ class AlarmActionForm( forms.ModelForm ):
         widget = forms.Select( attrs = { 'class' : 'custom-select' } ),
     )
 
-    
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['alarm_lifetime_secs'].widget.attrs.setdefault(
+            'class', 'form-control',
+        )
+        return
+
+
 class ControlActionForm( forms.ModelForm, EntityStateSelectModelFormMixin ):
 
     class Meta:
@@ -142,6 +157,8 @@ class ControlActionForm( forms.ModelForm, EntityStateSelectModelFormMixin ):
             entity_state = entity_state,
         )
         self.fields['controller'].widget.attrs.update({ 'class': 'custom-select' })
+        if 'class' not in self.fields['value'].widget.attrs:
+            self.fields['value'].widget.attrs['class'] = 'form-control'
         return
 
         
