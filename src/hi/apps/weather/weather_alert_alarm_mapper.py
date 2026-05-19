@@ -385,7 +385,10 @@ class WeatherAlertAlarmMapper:
         if not title or len(title.strip()) == 0:
             title = f"{weather_alert.event_type.label} - {weather_alert.severity.label}"
         
-        # Create the alarm
+        # Create the alarm. source_alarm_id ties this Alarm record
+        # back to the specific upstream alert, so repeated polls of
+        # the same active alert refresh expiry without incrementing
+        # alarm_count.
         alarm = Alarm(
             alarm_source=AlarmSource.WEATHER,
             alarm_type=self.get_alarm_type(weather_alert),
@@ -395,6 +398,7 @@ class WeatherAlertAlarmMapper:
             security_level=SecurityLevel.OFF,  # Weather alarms apply to all security levels
             alarm_lifetime_secs=self.get_alarm_lifetime(weather_alert),
             timestamp=datetimeproxy.now(),
+            source_alarm_id=weather_alert.alert_id,
         )
         
         logger.info(f'Created weather alarm: {alarm.signature} - {alarm.title}')

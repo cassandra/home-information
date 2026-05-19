@@ -73,3 +73,7 @@ class NwsSimAlert( models.Model ):
         help_text = 'When the alert expires, relative to "now" in seconds.',
     )
     created_datetime = models.DateTimeField( auto_now_add = True )
+    # Bumped on every save so the NWS-shaped feature id changes each
+    # time the row is modified, matching real NWS behavior where any
+    # Update / Cancel issuance carries a new identifier.
+    updated_datetime = models.DateTimeField( auto_now = True )

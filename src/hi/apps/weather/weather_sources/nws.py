@@ -1101,7 +1101,14 @@ class NationalWeatherService( WeatherDataSource, WeatherMixin ):
                 properties = feature.get('properties', {})
                 if not properties:
                     continue
-                    
+
+                # NWS publishes a stable per-alert id at the feature
+                # level (typically a URI). Threading it onto the
+                # parsed WeatherAlert lets the alarm mapper use it as
+                # source_alarm_id to dedup repeat polls of the same
+                # active alert.
+                alert_id = feature.get('id')
+
                 # Extract basic alert information
                 event = properties.get('event', 'Unknown Event')
                 headline = properties.get('headline', '')
@@ -1186,6 +1193,7 @@ class NationalWeatherService( WeatherDataSource, WeatherMixin ):
                     severity = severity,
                     certainty = certainty,
                     urgency = urgency,
+                    alert_id = alert_id,
                 )
                 
                 weather_alerts.append(weather_alert)

@@ -473,6 +473,11 @@ class WeatherAlert:
     severity        : AlertSeverity
     certainty       : AlertCertainty
     urgency         : AlertUrgency
+    # Source-stable identifier for this specific alert. NWS provides
+    # one at the GeoJSON feature level; other sources may not. Used
+    # downstream as ``Alarm.source_alarm_id`` so repeat polls of the
+    # same upstream alert don't tick the alarm counter.
+    alert_id        : str | None = None
 
     def css_class(self):
         """Return Bootstrap alert CSS class for this alert's severity."""

@@ -44,7 +44,16 @@ class NwsAlertsActiveView( View ):
                 properties['eventCode'] = {
                     'NationalWeatherService': [ alert.event_code ],
                 }
-            features.append({ 'properties': properties })
+            # Feature id changes on each row save (toggle / edit) so
+            # the main app treats each issuance as distinct, matching
+            # real NWS where every Update / Cancel publishes a new
+            # identifier. Repeat polls of an unchanged row share the
+            # same id.
+            issuance = int( alert.updated_datetime.timestamp() )
+            features.append({
+                'id': f'sim-nws-alert-{alert.id}-{issuance}',
+                'properties': properties,
+            })
         return JsonResponse( { 'features': features } )
 
 
