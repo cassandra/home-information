@@ -33,6 +33,7 @@ from .transient_models import (
     IntervalWeatherHistory,
     IntervalAstronomical,
     WeatherAlert,
+    WeatherPaneStatus,
     WeatherStats,
 )
 from .interval_data_manager import IntervalDataManager
@@ -126,6 +127,77 @@ class WeatherManager( Singleton, SettingsMixin, AlertMixin ):
             current_conditions_data = self.get_current_conditions_data(),
             todays_weather_stats = self.get_weather_stats_today(),
             todays_astronomical_data = self.get_todays_astronomical_data(),
+        )
+
+    def get_weather_pane_status(self) -> WeatherPaneStatus:
+        """Status line content for the current-conditions pane,
+        computed from (data freshness × weather monitor health). See
+        the design discussion in the commit that introduced this for
+        the cross-product rules. The pane always renders something at
+        the bottom: in the healthy path, the existing
+        ``At HH:MM from <SOURCE>`` timestamp; otherwise this method's
+        result drives the swap to a captioned/iconified line."""
+        # Lazy imports keep the transient-models import graph quiet
+        # (these modules also import from weather indirectly).
+        from hi.apps.monitor.monitor_manager import AppMonitorManager
+        from .monitors import WeatherMonitor
+
+        conditions = self.get_current_conditions_data()
+        if conditions.temperature is None:
+            data_state = 'none'
+        else:
+            age_secs = (
+                datetimeproxy.now() - conditions.temperature.source_datetime
+            ).total_seconds()
+            if age_secs > WeatherConstants.CONDITIONS_STALE_THRESHOLD_SECS:
+                data_state = 'stale'
+            else:
+                data_state = 'fresh'
+
+        health_status = None
+        try:
+            provider = AppMonitorManager().get_health_status_by_monitor_id(
+                WeatherMonitor.MONITOR_ID,
+            )
+            health_status = provider.health_status
+        except KeyError:
+            # Monitor isn't registered. Treat the same as the defensive
+            # "none × healthy" cell below — caller will surface the
+            # fallback caption.
+            pass
+
+        is_healthy = ( health_status is not None and health_status.is_healthy )
+
+        if data_state == 'fresh':
+            # The pane's existing timestamp line is sufficient.
+            return WeatherPaneStatus()
+
+        if data_state == 'stale' and is_healthy:
+            # Keep the timestamp line; just tint it.
+            return WeatherPaneStatus( is_timestamp_stale = True )
+
+        if data_state == 'none' and is_healthy:
+            # Should be unreachable in normal operation: the warmup /
+            # awaiting-first-poll window is supposed to keep the monitor
+            # in a non-healthy state. Log so the gap surfaces, and fall
+            # back to a generic info caption rather than going blank.
+            logger.warning(
+                'WeatherPaneStatus: no current conditions data but the'
+                ' weather monitor reports healthy — surfacing defensive'
+                ' "Waiting for data" caption.'
+            )
+            return WeatherPaneStatus( caption_text = 'Waiting for data' )
+
+        # Non-healthy: surface the monitor's own message.
+        caption_text = None
+        if health_status is not None:
+            caption_text = health_status.last_message or health_status.status_display
+        if not caption_text:
+            caption_text = 'Weather data unavailable'
+        return WeatherPaneStatus(
+            caption_text = caption_text,
+            health_status = health_status,
+            is_timestamp_stale = ( data_state == 'stale' ),
         )
 
     def get_weather_stats_today(self) -> WeatherStats:
@@ -435,6 +507,7 @@ class WeatherManager( Singleton, SettingsMixin, AlertMixin ):
         weather_overview_data = self.get_weather_overview_data()
         context = {
             'weather_overview_data': weather_overview_data,
+            'weather_pane_status': self.get_weather_pane_status(),
         }
         template = get_template( WeatherConstants.WEATHER_OVERVIEW_TEMPLATE_NAME )
         weather_overview_html_str = template.render( context, request = request )

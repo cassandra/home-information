@@ -4,6 +4,7 @@ from typing import Dict, Generic, List, Optional, Set, TypeVar
 
 from pint.errors import OffsetUnitCalculusError
 
+from hi.apps.system.health_status import HealthStatus
 from hi.transient_models import GeographicLocation
 from hi.units import UnitQuantity
 
@@ -433,6 +434,55 @@ class WeatherOverviewData:
     current_conditions_data   : WeatherConditionsData
     todays_weather_stats      : WeatherStats          = None
     todays_astronomical_data  : AstronomicalData      = None
+
+
+@dataclass( kw_only = True )
+class WeatherPaneStatus:
+    """Caption + timestamp-shading hints for the current-conditions
+    pane, computed from (data freshness × weather monitor health).
+
+    ``caption_text``: text to render in a small status line above the
+    pane, or ``None`` to suppress. ``health_status``: the underlying
+    ``HealthStatus`` when the caption was sourced from the monitor —
+    the template uses its ``status_icon`` and ``status_alert_class``
+    helpers for severity styling. ``None`` for the defensive
+    ``Waiting for data`` fallback, which uses info styling.
+    ``is_timestamp_stale``: tint the existing "At HH:MM" line."""
+
+    caption_text        : Optional[str]          = None
+    health_status       : Optional[HealthStatus] = None
+    is_timestamp_stale  : bool                   = False
+
+    @property
+    def caption_text_class(self) -> str:
+        """Bootstrap text-* class for the status caption. Critical
+        (ERROR) goes red; everything else (WARNING / UNKNOWN /
+        DISABLED) goes yellow; the defensive ``health_status is None``
+        fallback goes blue."""
+        if self.health_status is None:
+            return 'text-info'
+        if self.health_status.is_critical:
+            return 'text-danger'
+        return 'text-warning'
+
+    @property
+    def caption_icon(self) -> str:
+        """Bootstrap icon name for the status caption, taken from the
+        underlying ``HealthStatus`` when present (it already maps each
+        status to an icon) or ``info-circle`` for the defensive
+        fallback."""
+        if self.health_status is None:
+            return 'info-circle'
+        return self.health_status.status_icon
+
+    @property
+    def caption_alert_class(self) -> str:
+        """Bootstrap alert-* class for the status caption banner."""
+        if self.health_status is None:
+            return 'alert-info'
+        if self.health_status.is_critical:
+            return 'alert-danger'
+        return 'alert-warning'
 
     
 @dataclass( kw_only = True )

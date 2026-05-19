@@ -13,16 +13,19 @@ class ConsoleSideHelper( ConsoleMixin, SecurityMixin, WeatherMixin ):
     def get_side_template_name_and_context( self, request, *args, **kwargs ):
         weather_overview_data = None
         weather_alert_list = []
+        weather_pane_status = None
         try:
             weather_manager = self.weather_manager()
             weather_overview_data = weather_manager.get_weather_overview_data()
             weather_alert_list = weather_manager.get_active_weather_alerts()
+            weather_pane_status = weather_manager.get_weather_pane_status()
         except Exception as e:
             logger.error( f'Weather data unavailable: {e}' )
 
         context = {
             'weather_overview_data': weather_overview_data,
             'weather_alert_list': weather_alert_list,
+            'weather_pane_status': weather_pane_status,
             'security_status_data': self.security_manager().get_security_status_data(),
             'camera_control_display_list': self.console_manager().get_camera_control_display_list(),
         }
