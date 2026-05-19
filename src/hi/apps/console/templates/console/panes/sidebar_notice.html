@@ -1,0 +1,7 @@
+<div id="{{ DIVID.SIDEBAR_NOTICE }}">
+  {% if weather_alert_list %}
+  {% include "weather/panes/weather_alerts.html" %}
+  {% else %}
+  {% include "console/panes/datetime_header.html" %}
+  {% endif %}
+</div>

@@ -425,17 +425,9 @@ class WeatherManager( Singleton, SettingsMixin, AlertMixin ):
         }
         template = get_template( WeatherConstants.WEATHER_OVERVIEW_TEMPLATE_NAME )
         weather_overview_html_str = template.render( context, request = request )
-        
-        weather_alert_list = self.get_weather_alerts()
-        alerts_context = { 
-            'weather_alert_list': weather_alert_list
-        }
-        alerts_template = get_template( 'weather/panes/weather_alerts.html' )
-        weather_alerts_html_str = alerts_template.render( alerts_context, request = request )
-        
+
         return {
             DIVID['WEATHER_OVERVIEW']: weather_overview_html_str,
-            DIVID['WEATHER_ALERTS']: weather_alerts_html_str,
         }
     
     def _get_location_key(self):
