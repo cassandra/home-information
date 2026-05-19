@@ -283,7 +283,7 @@ class TestHassConverterMapping(TestCase):
         # Test that sensor-only domains are never controllable
         for domain in HassConverter.SENSOR_ONLY_DOMAINS:
             # Test with various entity types
-            for entity_type in [EntityStateType.ON_OFF, EntityStateType.TEMPERATURE, 
+            for entity_type in [EntityStateType.ON_OFF, EntityStateType.TEMPERATURE,
                                 EntityStateType.BLOB, EntityStateType.MOVEMENT]:
                 is_controllable = HassConverter._is_controllable_domain_and_type(domain, entity_type)
                 self.assertFalse(is_controllable,
