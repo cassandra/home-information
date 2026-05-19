@@ -150,6 +150,12 @@
     }
 
     function applyControllerValue( element, value ) {
+        // Skip if the user currently has this control focused: prevents
+        // poll updates from clobbering a value mid-edit on selects,
+        // text/number inputs, and freshly-clicked checkboxes. Slider
+        // drag does not always keep :focus, so the activeSliders
+        // WeakSet still handles that case below.
+        if ( element === document.activeElement ) return;
         const tag = element.tagName;
         if ( tag === 'INPUT' ) {
             const type = element.type;
