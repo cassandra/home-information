@@ -32,6 +32,7 @@ class NwsConverters:
         'severe' : AlertSeverity.SEVERE,
         'moderate' : AlertSeverity.MODERATE,
         'minor' : AlertSeverity.MINOR,
+        'unknown' : AlertSeverity.UNKNOWN,
     }
     NwsAlertUrgencyMp = {
         'immediate' : AlertUrgency.IMMEDIATE,
@@ -44,6 +45,7 @@ class NwsConverters:
         'likely' : AlertCertainty.LIKELY,
         'possible' : AlertCertainty.POSSIBLE,
         'unlikely' : AlertCertainty.UNLIKELY,
+        'unknown' : AlertCertainty.UNKNOWN,
     }
     NwsAlertStatusMap = {
         'actual' : AlertStatus.ACTUAL,
