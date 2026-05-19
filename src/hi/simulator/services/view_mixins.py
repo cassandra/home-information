@@ -1,7 +1,5 @@
-from typing import List
-
 from django.core.exceptions import BadRequest
-from django.http import Http404, HttpRequest
+from django.http import Http404
 
 from .models import DbSimEntity
 from .service_simulator import ServiceSimulator
@@ -11,34 +9,9 @@ from .base_models import SimEntityDefinition
 
 class ServiceSimulatorViewMixin:
 
-    def get_current_simulator( self,
-                               request         : HttpRequest,
-                               simulator_list  : List[ ServiceSimulator ] ) -> ServiceSimulator:
-        if not simulator_list:
-            return None
-        current_simulator_id = request.sim_view_parameters.simulator_id
-        for simulator in simulator_list:
-            if simulator.id == current_simulator_id:
-                return simulator
-            continue
-        return simulator_list[0]
-
-    def set_current_simulator( self,
-                               request    : HttpRequest,
-                               simulator  : ServiceSimulator ):
-        request.sim_view_parameters.simulator_id = simulator.id
-        request.sim_view_parameters.to_session( request )
-        return
-
     def get_simulator( self, request, *args, **kwargs ) -> ServiceSimulator:
-        """ Side effect of setting current simulator in session. """
         simulator_id = kwargs.get( 'simulator_id' )
-        simulator = self.get_simulator_by_id( simulator_id = simulator_id )
-        self.set_current_simulator(
-            request = request,
-            simulator = simulator,
-        )
-        return simulator
+        return self.get_simulator_by_id( simulator_id = simulator_id )
 
     def get_simulator_by_id( self, simulator_id : str ) -> ServiceSimulator:
         if not simulator_id:
