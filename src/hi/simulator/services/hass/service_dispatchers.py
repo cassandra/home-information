@@ -26,7 +26,7 @@ list. ``color_temp_kelvin`` is degrees Kelvin.
 """
 from typing import Any, Dict, List, Optional, Tuple
 
-from hi.simulator.enums import SimStateType
+from hi.simulator.services.enums import SimStateType
 
 from .unit_translation import UnitTranslationHelper
 from .sim_models import (

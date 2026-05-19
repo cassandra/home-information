@@ -3,7 +3,7 @@ from unittest.mock import patch
 
 from django.test import TestCase
 
-from hi.simulator.enums import SimTemperatureUnit
+from hi.simulator.settings.enums import SimTemperatureUnit
 from hi.simulator.services.hass.unit_translation import UnitTranslationHelper
 
 logging.disable(logging.CRITICAL)

@@ -209,8 +209,11 @@ class TestWeatherAlertIntegration(AsyncTaskFastTestCase):
         expected_types = {WeatherEventType.TORNADO.name, WeatherEventType.SEVERE_THUNDERSTORM.name}
         self.assertEqual(alarm_types, expected_types)
         
-        # Verify weather alerts were stored
-        stored_alerts = mock_weather_manager.get_active_weather_alerts()
+        # Verify weather alerts were stored. Read from internal storage
+        # directly because the public getter filters out alerts whose
+        # ``expires`` is in the past — the fixture intentionally uses
+        # 2024 dates, which would always be expired.
+        stored_alerts = mock_weather_manager._weather_alerts
         self.assertEqual(len(stored_alerts), 3)  # All alerts stored, regardless of alarm creation
     
     def _create_test_alert(self, event_type, severity, headline):

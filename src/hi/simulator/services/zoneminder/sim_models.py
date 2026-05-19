@@ -5,9 +5,9 @@ from typing import ClassVar, List, Tuple
 import hi.apps.common.datetimeproxy as datetimeproxy
 from hi.apps.common.utils import str_to_bool
 
-from hi.simulator.base_models import SimEntityFields, SimState, SimEntityDefinition
-from hi.simulator.enums import SimEntityType, SimStateType
-from hi.simulator.sim_entity import SimEntity
+from hi.simulator.services.base_models import SimEntityFields, SimState, SimEntityDefinition
+from hi.simulator.services.enums import SimEntityType, SimStateType
+from hi.simulator.services.sim_entity import SimEntity
 
 from .constants import ZmSimConstants
 from .enums import ZmMonitorFunction, ZmRunStateType
@@ -297,7 +297,7 @@ class ZmSimEvent:
     start_datetime  : datetime
     end_datetime    : datetime
     name            : str
-    cause           : str        = 'Simulator',
+    cause           : str        = 'ServiceSimulator',
     length_secs     : float      = 0.0
     total_frames    : int        = 0
     alarm_frames    : int        = 0

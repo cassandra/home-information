@@ -1,9 +1,9 @@
 from typing import List, Set
 
-from hi.simulator.base_models import SimEntityDefinition, SimEntityFields, SimState
-from hi.simulator.exceptions import SimEntityValidationError
-from hi.simulator.simulator import Simulator
-from hi.simulator.sim_entity import SimEntity
+from hi.simulator.services.base_models import SimEntityDefinition, SimEntityFields, SimState
+from hi.simulator.services.exceptions import SimEntityValidationError
+from hi.simulator.services.service_simulator import ServiceSimulator
+from hi.simulator.services.sim_entity import SimEntity
 
 from .enums import ZmMonitorFunction, ZmRunStateType
 from .sim_models import (
@@ -21,7 +21,7 @@ from .sim_models import (
 from .zm_event_manager import ZmSimEventManager
 
 
-class ZoneMinderSimulator( Simulator ):
+class ZoneMinderSimulator( ServiceSimulator ):
 
     @property
     def id(self):
@@ -77,8 +77,8 @@ class ZoneMinderSimulator( Simulator ):
 
     def _auto_create_default_server_entity( self ):
         # Imported locally to avoid a module-load-time cycle: the
-        # SimulatorManager imports the simulator subclasses at startup.
-        from hi.simulator.simulator_manager import SimulatorManager
+        # ServiceSimulatorManager imports the simulator subclasses at startup.
+        from hi.simulator.services.service_simulator_manager import ServiceSimulatorManager
 
         server_definition = None
         for definition in self.sim_entity_definition_list:
@@ -90,7 +90,7 @@ class ZoneMinderSimulator( Simulator ):
             raise ValueError( 'No ZmServerSimEntityFields definition registered.' )
 
         try:
-            SimulatorManager().add_sim_entity(
+            ServiceSimulatorManager().add_sim_entity(
                 simulator = self,
                 sim_entity_definition = server_definition,
                 sim_entity_fields = ZmServerSimEntityFields(),

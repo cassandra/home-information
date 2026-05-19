@@ -14,10 +14,13 @@ INSTALLED_APPS = [
     'custom',
     'hi.apps.common',
     'hi.simulator',
+    'hi.simulator.services',
+    'hi.simulator.weather_sources',
+    'hi.simulator.settings',
     'hi.simulator.services.hass',
     'hi.simulator.services.homebox',
     'hi.simulator.services.zoneminder',
-    'hi.simulator.weather.nws',
+    'hi.simulator.weather_sources.nws',
 ]
 
 MIDDLEWARE = [
@@ -30,8 +33,8 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 
-    'hi.simulator.middleware.SimViewMiddleware',
-    'hi.simulator.middleware.SimulatorFaultInjectionMiddleware',
+    'hi.simulator.services.middleware.SimViewMiddleware',
+    'hi.simulator.services.middleware.ServiceFaultInjectionMiddleware',
 ]
 
 ROOT_URLCONF = 'hi.simulator.urls'

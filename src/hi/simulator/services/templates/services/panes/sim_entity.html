@@ -1,0 +1,25 @@
+{% load icons %}
+<div class="row sim-entity-row">
+  <div class="col-3 sim-entity-name">
+    {{ sim_entity.name }}
+  </div>
+  <div class="col-7">
+    {% for sim_state in sim_entity.sim_state_list %}
+    {% include "services/panes/sim_state.html" with sim_state=sim_state %}
+    {% empty %}
+    <div class="alert alert-warning">No simulation states defined.</div>
+    {% endfor %}
+  </div>
+  <div class="col-2 sim-entity-actions">
+    <a href="{% url 'simulator_entity_edit' sim_entity_id=sim_entity.id %}"
+       class="btn btn-primary sim-icon-btn" data-async="modal"
+       title="Edit {{ sim_entity.name }}" aria-label="Edit">
+      {% icon "edit" size="md" %}
+    </a>
+    <a href="{% url 'simulator_entity_delete' sim_entity_id=sim_entity.id %}"
+       class="btn btn-danger sim-icon-btn" data-async="modal"
+       title="Delete {{ sim_entity.name }}" aria-label="Delete">
+      {% icon "delete" size="md" %}
+    </a>
+  </div>
+</div>

@@ -1,0 +1,8 @@
+{% extends "simulator/pages/base.html" %}
+
+{% block content %}
+<main class="sim-main" data-states-url="{% url 'simulator_api_states' %}">
+  {% include "services/panes/sim_profile_header.html" %}
+  {% include "services/panes/simulator_control_tabs.html" %}
+</main>
+{% endblock %}

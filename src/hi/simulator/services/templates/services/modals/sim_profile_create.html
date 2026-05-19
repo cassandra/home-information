@@ -1,0 +1,28 @@
+{% extends "modals/action_with_cancel.html" %}
+{% load icons %}
+
+{% block preamble %}
+<form action="{% url 'simulator_profile_create' %}" method="post"
+      class="form" data-async="modal">
+  {% csrf_token %}
+{% endblock %}
+
+{% block title_text %}
+Create Simulator Profile
+{% endblock %}
+
+{% block body %}
+{% include "services/panes/sim_profile_form.html" %}
+{% endblock %}
+
+{% block action_right %}
+<button id="hi-simulator-profile-create-submit" type="submit" class="btn btn-primary"
+        name="action" value="create">
+  {% icon "plus" size="sm" css_class="hi-icon-left" %}CREATE
+</button>
+{% endblock %}
+
+{% block postamble %}
+</form>
+{% endblock %}
+
