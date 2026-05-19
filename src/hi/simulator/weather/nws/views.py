@@ -124,5 +124,10 @@ class NwsSimAlertToggleView( View ):
     def post( self, request, alert_id, *args, **kwargs ):
         alert = get_object_or_404( NwsSimAlert, id = alert_id )
         alert.is_active = not alert.is_active
-        alert.save( update_fields = [ 'is_active' ] )
+        # Save the whole row (not just is_active) so the auto_now
+        # ``updated_datetime`` is bumped — that timestamp drives the
+        # NWS-shaped feature id, and the main app's alarm dedup needs
+        # to see a fresh id when a previously-inactive alert is
+        # re-activated.
+        alert.save()
         return antinode.refresh_response()
