@@ -4,7 +4,6 @@ import logging
 import requests
 from typing import Any, Dict, List
 
-from django.conf import settings
 
 import hi.apps.common.datetimeproxy as datetimeproxy
 from hi.apps.weather.weather_data_source import WeatherDataSource
@@ -39,7 +38,6 @@ class OpenMeteo(WeatherDataSource, WeatherMixin):
     FORECAST_DATA_CACHE_EXPIRY_SECS = 60 * 60  # Cache for 1 hour
     HISTORICAL_DATA_CACHE_EXPIRY_SECS = 30 * 24 * 60 * 60  # 30 days - historical data rarely changes
     
-    SKIP_CACHE = False  # For debugging    
     
     @classmethod
     def weather_source_id(cls):
@@ -726,7 +724,7 @@ class OpenMeteo(WeatherDataSource, WeatherMixin):
         cache_key = f'ws:{self.id}:current:{geographic_location}'
         current_data_str = self.redis_client.get(cache_key)
 
-        if settings.DEBUG and self.SKIP_CACHE:
+        if not self.is_cache_enabled:
             logger.warning('Skip caching in effect.')
             current_data_str = None
             
@@ -746,7 +744,7 @@ class OpenMeteo(WeatherDataSource, WeatherMixin):
 
     def _get_current_weather_data_from_api(self, geographic_location: GeographicLocation) -> Dict[str, Any]:
         # Request current weather plus additional hourly data for current hour
-        url = (f"{self.BASE_URL}forecast?"
+        url = (f"{self._get_base_url()}forecast?"
                f"latitude={geographic_location.latitude}&"
                f"longitude={geographic_location.longitude}&"
                f"current_weather=true&"
@@ -767,7 +765,7 @@ class OpenMeteo(WeatherDataSource, WeatherMixin):
         cache_key = f'ws:{self.id}:forecast-hourly:{geographic_location}'
         forecast_data_str = self.redis_client.get(cache_key)
 
-        if settings.DEBUG and self.SKIP_CACHE:
+        if not self.is_cache_enabled:
             logger.warning('Skip caching in effect.')
             forecast_data_str = None
             
@@ -787,7 +785,7 @@ class OpenMeteo(WeatherDataSource, WeatherMixin):
 
     def _get_hourly_forecast_data_from_api(self, geographic_location: GeographicLocation) -> Dict[str, Any]:
         # Request 7 days of hourly forecast data
-        url = (f"{self.BASE_URL}forecast?"
+        url = (f"{self._get_base_url()}forecast?"
                f"latitude={geographic_location.latitude}&"
                f"longitude={geographic_location.longitude}&"
                f"hourly=temperature_2m,relativehumidity_2m,windspeed_10m,winddirection_10m,precipitation,weathercode&"
@@ -808,7 +806,7 @@ class OpenMeteo(WeatherDataSource, WeatherMixin):
         cache_key = f'ws:{self.id}:forecast-daily:{geographic_location}'
         forecast_data_str = self.redis_client.get(cache_key)
 
-        if settings.DEBUG and self.SKIP_CACHE:
+        if not self.is_cache_enabled:
             logger.warning('Skip caching in effect.')
             forecast_data_str = None
             
@@ -828,7 +826,7 @@ class OpenMeteo(WeatherDataSource, WeatherMixin):
 
     def _get_daily_forecast_data_from_api(self, geographic_location: GeographicLocation) -> Dict[str, Any]:
         # Request 14 days of daily forecast data
-        url = (f"{self.BASE_URL}forecast?"
+        url = (f"{self._get_base_url()}forecast?"
                f"latitude={geographic_location.latitude}&"
                f"longitude={geographic_location.longitude}&"
                f"daily=weathercode,temperature_2m_max,temperature_2m_min,precipitation_sum&"
@@ -852,7 +850,7 @@ class OpenMeteo(WeatherDataSource, WeatherMixin):
         cache_key = f'ws:{self.id}:historical:{geographic_location}:{start_date}:{end_date}'
         historical_data_str = self.redis_client.get(cache_key)
 
-        if settings.DEBUG and self.SKIP_CACHE:
+        if not self.is_cache_enabled:
             logger.warning('Skip caching in effect.')
             historical_data_str = None
             

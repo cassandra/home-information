@@ -19,20 +19,25 @@ logger = logging.getLogger(__name__)
 class WeatherMonitor( PeriodicMonitor, AlertMixin, SettingsMixin ):
 
     MONITOR_ID = 'hi.apps.weather.monitor'
-    WEATHER_POLLING_INTERVAL_SECS = 150
-    STARTUP_SAFETY_SECS = 30
-    
+
     def __init__( self ):
+        self._settings_helper = WeatherSettingsHelper()
         super().__init__(
             id = self.MONITOR_ID,
-            interval_secs = self.WEATHER_POLLING_INTERVAL_SECS,
+            # Provisional interval; ``initialize()`` reads the configured
+            # value via the async settings path and overwrites it. The
+            # async loop reads self._query_interval_secs each tick so a
+            # post-init change takes effect before the next sleep.
+            interval_secs = WeatherSettingsHelper.DEFAULT_POLLING_INTERVAL_SECONDS,
         )
         self._weather_data_source_instance_list = list()
         self._started_datetime = datetimeproxy.now()
-        self._settings_helper = WeatherSettingsHelper()
         return
-    
+
     async def initialize(self) -> None:
+        self._query_interval_secs = (
+            await self._settings_helper.get_default_polling_interval_secs_async()
+        )
         discovered_sources = WeatherSourceDiscovery.discover_weather_data_source_instances()
         self._weather_data_source_instance_list = discovered_sources
 
@@ -59,16 +64,18 @@ class WeatherMonitor( PeriodicMonitor, AlertMixin, SettingsMixin ):
             provider_id = cls.MONITOR_ID,
             provider_name = 'Weather Monitor',
             description = 'Weather data collection and monitoring',
-            expected_heartbeat_interval_secs = cls.WEATHER_POLLING_INTERVAL_SECS,
+            expected_heartbeat_interval_secs = (
+                WeatherSettingsHelper.DEFAULT_POLLING_INTERVAL_SECONDS
+            ),
         )
 
     def alarm_ceiling(self):
         # Cap at INFO for two reasons:
         #   1. Weather staleness is informational — the user is not
-        #      typically depending on a 150-second freshness window.
-        #   2. The monitor records WARNING during its 30-second startup-
-        #      safety window. Capping at INFO prevents that startup
-        #      transition from firing alarms on every server restart.
+        #      typically depending on the configured freshness window.
+        #   2. The monitor records WARNING during its startup-safety
+        #      window. Capping at INFO prevents that startup transition
+        #      from firing alarms on every server restart.
         return AlarmLevel.INFO
 
     async def do_work(self):
@@ -80,7 +87,8 @@ class WeatherMonitor( PeriodicMonitor, AlertMixin, SettingsMixin ):
 
         weather_source_manager = WeatherSourceManager()
         uptime = datetimeproxy.now() - self._started_datetime
-        if uptime.total_seconds() < self.STARTUP_SAFETY_SECS:
+        warmup_secs = await self._settings_helper.get_startup_warmup_secs_async()
+        if uptime.total_seconds() < warmup_secs:
             message = 'Startup safety period. Waiting to fetch.'
             logger.debug( message )
             self.record_warning( message )

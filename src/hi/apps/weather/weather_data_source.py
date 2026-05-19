@@ -19,6 +19,22 @@ class WeatherDataSource( ApiHealthStatusProvider ):
 
     TRACE = False
     FORCE_CAN_POLL = False  # For debugging
+    BASE_URL = ''  # Override in each subclass with the canonical upstream URL.
+
+    def _get_base_url( self ) -> str:
+        """Effective base URL for this source's HTTP calls.
+
+        Consults the configured ``<SOURCE>_BASE_URL`` setting (lets
+        operators point a source at a simulator, mirror, etc.) and
+        falls back to the subclass's canonical ``BASE_URL`` constant
+        when the setting is unset.
+        """
+        helper = self._get_weather_settings_helper()
+        if helper:
+            override = helper.get_weather_source_base_url( self.weather_source_id() )
+            if override:
+                return override
+        return self.BASE_URL
 
     @classmethod
     @abstractmethod

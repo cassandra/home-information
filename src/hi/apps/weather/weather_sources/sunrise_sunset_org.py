@@ -6,7 +6,6 @@ import pytz
 import requests
 from typing import Any, Dict, List
 
-from django.conf import settings
 
 import hi.apps.common.datetimeproxy as datetimeproxy
 from hi.apps.weather.weather_data_source import WeatherDataSource
@@ -40,7 +39,6 @@ class SunriseSunsetOrg(WeatherDataSource, WeatherMixin):
     # Cache for 25 hours - astronomical data only changes once per day per location
     ASTRONOMICAL_DATA_CACHE_EXPIRY_SECS = 25 * 60 * 60
     
-    SKIP_CACHE = False  # For debugging    
     
     @classmethod
     def weather_source_id(cls):
@@ -253,7 +251,7 @@ class SunriseSunsetOrg(WeatherDataSource, WeatherMixin):
         cache_key = f'ws:{self.id}:astronomical:{geographic_location.latitude:.3f}:{geographic_location.longitude:.3f}:{target_date}'
         api_data_str = self.redis_client.get(cache_key)
 
-        if settings.DEBUG and self.SKIP_CACHE:
+        if not self.is_cache_enabled:
             logger.warning('Skip caching in effect.')
             api_data_str = None
             
@@ -278,7 +276,7 @@ class SunriseSunsetOrg(WeatherDataSource, WeatherMixin):
                                              geographic_location : GeographicLocation,
                                              target_date         : date) -> Dict[str, Any]:
         # Build API URL with parameters
-        url = (f"{self.BASE_URL}?"
+        url = (f"{self._get_base_url()}?"
                f"lat={geographic_location.latitude}&"
                f"lng={geographic_location.longitude}&"
                f"date={target_date.isoformat()}&"

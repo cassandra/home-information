@@ -4,8 +4,6 @@ import logging
 import requests
 from typing import Any, Dict, List
 
-from django.conf import settings
-
 import hi.apps.common.datetimeproxy as datetimeproxy
 import hi.apps.common.geo_utils as geo_utils
 from hi.apps.common.utils import str_to_bool
@@ -52,8 +50,6 @@ class NationalWeatherService( WeatherDataSource, WeatherMixin ):
     OBSERVATIONS_DATA_CACHE_EXPIRY_SECS = 5 * 60  # Cache for rate-limit risk reduction
     FORECAST_DATA_CACHE_EXPIRY_SECS = 60 * 60
     ALERTS_DATA_CACHE_EXPIRY_SECS = 10 * 60  # Alerts can change frequently, short cache
-    
-    SKIP_CACHE = False  # For debugging    
 
     @classmethod
     def weather_source_id(cls):
@@ -492,7 +488,7 @@ class NationalWeatherService( WeatherDataSource, WeatherMixin ):
         cache_key = f'ws:{self.id}:observations:{station.key}'
         observations_data_str = self.redis_client.get( cache_key )
 
-        if settings.DEBUG and self.SKIP_CACHE:
+        if not self.is_cache_enabled:
             logger.warning( 'Skip caching in effect.' )
             observations_data_str = None
             
@@ -526,7 +522,7 @@ class NationalWeatherService( WeatherDataSource, WeatherMixin ):
         cache_key = f'ws:{self.id}:forecast-hourly:{station.key}'
         forecast_hourly_data_str = self.redis_client.get( cache_key )
 
-        if settings.DEBUG and self.SKIP_CACHE:
+        if not self.is_cache_enabled:
             logger.warning( 'Skip caching in effect.' )
             forecast_hourly_data_str = None
             
@@ -559,7 +555,7 @@ class NationalWeatherService( WeatherDataSource, WeatherMixin ):
         cache_key = f'ws:{self.id}:forecast-12h:{station.key}'
         forecast_12h_data_str = self.redis_client.get( cache_key )
 
-        if settings.DEBUG and self.SKIP_CACHE:
+        if not self.is_cache_enabled:
             logger.warning( 'Skip caching in effect.' )
             forecast_12h_data_str = None
             
@@ -599,7 +595,7 @@ class NationalWeatherService( WeatherDataSource, WeatherMixin ):
         cache_key = f'ws:{self.id}:stations:{geographic_location}'
         stations_data_str = self.redis_client.get( cache_key )
 
-        if settings.DEBUG and self.SKIP_CACHE:
+        if not self.is_cache_enabled:
             logger.warning( 'Skip caching in effect.' )
             stations_data_str = None
             
@@ -636,7 +632,7 @@ class NationalWeatherService( WeatherDataSource, WeatherMixin ):
         cache_key = f'ws:{self.id}:points:{geographic_location}'
         points_data_str = self.redis_client.get( cache_key )
 
-        if settings.DEBUG and self.SKIP_CACHE:
+        if not self.is_cache_enabled:
             logger.warning( 'Skip caching in effect.' )
             points_data_str = None
             
@@ -656,7 +652,7 @@ class NationalWeatherService( WeatherDataSource, WeatherMixin ):
 
     def _get_points_data_from_api( self, geographic_location : GeographicLocation ) -> Dict[ str, Any ]:
         # Can cache this data, expires 12 hours-ish (they do not change often)
-        points_url = f'{self.BASE_URL}points/{geographic_location.latitude},{geographic_location.longitude}'
+        points_url = f'{self._get_base_url()}points/{geographic_location.latitude},{geographic_location.longitude}'
 
         with self.api_call_context( 'nws_points' ):
             points_response = requests.get(
@@ -1058,8 +1054,7 @@ class NationalWeatherService( WeatherDataSource, WeatherMixin ):
         cache_key = f'ws:{self.id}:alerts:{geographic_location.latitude:.3f}:{geographic_location.longitude:.3f}'
         alerts_data_str = self.redis_client.get(cache_key)
 
-        if settings.DEBUG and self.SKIP_CACHE:
-            logger.warning('Skip caching in effect.')
+        if not self.is_cache_enabled:
             alerts_data_str = None
             
         if alerts_data_str:
@@ -1080,7 +1075,7 @@ class NationalWeatherService( WeatherDataSource, WeatherMixin ):
 
     def _get_alerts_data_from_api( self, geographic_location : GeographicLocation ) -> Dict[str, Any]:
         """Make API call to NWS for alerts data."""
-        alerts_url = f'{self.BASE_URL}alerts/active?point={geographic_location.latitude},{geographic_location.longitude}'
+        alerts_url = f'{self._get_base_url()}alerts/active?point={geographic_location.latitude},{geographic_location.longitude}'
         logger.debug(f'NWS alerts API request: {alerts_url}')
         
         with self.api_call_context( 'nws_alerts' ):
