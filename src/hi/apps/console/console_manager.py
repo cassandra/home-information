@@ -58,7 +58,7 @@ class ConsoleManager( Singleton, SettingsMixin, SensorResponseMixin, WeatherMixi
 
         weather_alert_list = []
         try:
-            weather_alert_list = self.weather_manager().get_weather_alerts()
+            weather_alert_list = self.weather_manager().get_active_weather_alerts()
         except Exception as e:
             logger.error( f'Weather data unavailable for sidebar notice: {e}' )
 

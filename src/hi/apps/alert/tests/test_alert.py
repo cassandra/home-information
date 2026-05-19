@@ -77,7 +77,7 @@ class TestAlert(BaseTestCase):
         self.assertFalse(alert.is_matching_alarm(non_matching_alarm))
         return
 
-    def test_alert_add_alarm_aggregation(self):
+    def test_alert_upsert_alarm_aggregation(self):
         """Test adding alarms to alert - complex aggregation logic with deque management."""
         alert = Alert(self.test_alarm)
         initial_end_time = alert.end_datetime
@@ -94,7 +94,7 @@ class TestAlert(BaseTestCase):
             timestamp=datetimeproxy.now(),
         )
         
-        alert.add_alarm(second_alarm)
+        alert.upsert_alarm(second_alarm)
         
         # Should update alarm count and end time
         self.assertEqual(alert.alarm_count, 2)
@@ -108,8 +108,8 @@ class TestAlert(BaseTestCase):
         self.assertEqual(alert.get_latest_alarm(), second_alarm)
         return
 
-    def test_alert_add_alarm_signature_assertion(self):
-        """Test add_alarm signature validation - critical error handling."""
+    def test_alert_upsert_alarm_signature_assertion(self):
+        """Test upsert_alarm signature validation - critical error handling."""
         alert = Alert(self.test_alarm)
         
         # Create alarm with different signature
@@ -126,7 +126,7 @@ class TestAlert(BaseTestCase):
         
         # Should raise assertion error for signature mismatch
         with self.assertRaises(AssertionError):
-            alert.add_alarm(different_alarm)
+            alert.upsert_alarm(different_alarm)
         return
 
     def test_alert_title_generation_with_count(self):
@@ -149,7 +149,7 @@ class TestAlert(BaseTestCase):
             timestamp=datetimeproxy.now(),
         )
         
-        alert.add_alarm(second_alarm)
+        alert.upsert_alarm(second_alarm)
         expected_title_with_count = f'{AlarmLevel.WARNING.label}: Test Alarm (2)'
         self.assertEqual(alert.title, expected_title_with_count)
         return
@@ -170,7 +170,7 @@ class TestAlert(BaseTestCase):
                 alarm_lifetime_secs=300,
                 timestamp=datetimeproxy.now(),
             )
-            alert.add_alarm(new_alarm)
+            alert.upsert_alarm(new_alarm)
         
         # Should not exceed max size
         self.assertEqual(alert.alarm_count, Alert.MAX_ALARM_LIST_SIZE)
@@ -246,7 +246,7 @@ class TestAlert(BaseTestCase):
             timestamp=datetimeproxy.now(),
         )
         
-        alert.add_alarm(second_alarm)
+        alert.upsert_alarm(second_alarm)
         self.assertFalse(alert.has_single_alarm)
         return
 
@@ -356,7 +356,7 @@ class TestAlert(BaseTestCase):
         )
         
         alert = Alert(first_alarm_with_image)
-        alert.add_alarm(second_alarm_no_image)
+        alert.upsert_alarm(second_alarm_no_image)
         visual_content = alert.get_first_visual_content()
         
         self.assertIsNotNone(visual_content)
@@ -410,7 +410,7 @@ class TestAlert(BaseTestCase):
         )
         
         alert = Alert(first_alarm_no_image)
-        alert.add_alarm(second_alarm_with_image)
+        alert.upsert_alarm(second_alarm_with_image)
         visual_content = alert.get_first_visual_content()
         
         self.assertIsNotNone(visual_content)

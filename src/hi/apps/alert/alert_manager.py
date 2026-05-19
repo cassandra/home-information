@@ -82,19 +82,19 @@ class AlertManager( Singleton, NotificationMixin, SecurityMixin ):
         self._alert_queue.acknowledge_alert( alert_id = alert_id )
         return
     
-    async def add_alarm_async( self, alarm : Alarm ):
+    async def upsert_alarm_async( self, alarm : Alarm ):
         notification_manager = await self.notification_manager_async()
         if not notification_manager:
             return
-        self._add_alarm_impl(
+        self._upsert_alarm_impl(
             alarm = alarm,
             notification_manager = notification_manager,
         )
         return
 
-    def add_alarm( self, alarm : Alarm ):
+    def upsert_alarm( self, alarm : Alarm ):
         """
-        Synchronous peer of add_alarm_async. Both AlertQueue.add_alarm
+        Synchronous peer of upsert_alarm_async. Both AlertQueue.add_alarm
         and NotificationManager.add_notification_item are sync
         thread-safe; the async wrapper exists only for compatibility
         with async callers. Use this from sync code (e.g.,
@@ -103,13 +103,13 @@ class AlertManager( Singleton, NotificationMixin, SecurityMixin ):
         notification_manager = self.notification_manager()
         if not notification_manager:
             return
-        self._add_alarm_impl(
+        self._upsert_alarm_impl(
             alarm = alarm,
             notification_manager = notification_manager,
         )
         return
 
-    def _add_alarm_impl( self, alarm : Alarm, notification_manager ):
+    def _upsert_alarm_impl( self, alarm : Alarm, notification_manager ):
         logging.debug( f'Adding Alarm: {alarm}' )
         security_state = self.security_manager().security_state
         try:

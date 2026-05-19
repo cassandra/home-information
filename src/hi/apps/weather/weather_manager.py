@@ -8,6 +8,7 @@ from django.http import HttpRequest
 from django.template.loader import get_template
 
 from hi.apps.alert.alert_mixins import AlertMixin
+from hi.apps.common import datetimeproxy
 from hi.apps.common.singleton import Singleton
 from hi.apps.config.settings_mixins import SettingsMixin
 from hi.apps.console.console_helper import ConsoleSettingsHelper
@@ -147,9 +148,21 @@ class WeatherManager( Singleton, SettingsMixin, AlertMixin ):
         with self._data_sync_lock:
             return self._daily_astronomical_data
     
-    def get_weather_alerts(self) -> List[WeatherAlert]:
+    def get_active_weather_alerts(self) -> List[WeatherAlert]:
+        """Stored alerts whose ``expires`` is still in the future (or
+        unset). Filtering on read means a self-expiring alert drops
+        from the UI on the next read, without waiting for the slower
+        weather-source poll to overwrite the stored list.
+
+        If a caller ever needs the unfiltered set, add an explicit
+        ``get_all_weather_alerts`` rather than relaxing this method.
+        """
+        now = datetimeproxy.now()
         with self._data_sync_lock:
-            return self._weather_alerts
+            return [
+                alert for alert in self._weather_alerts
+                if alert.expires is None or alert.expires > now
+            ]
     
     async def update_current_conditions( self,
                                          data_point_source        : DataPointSource,
@@ -275,7 +288,7 @@ class WeatherManager( Singleton, SettingsMixin, AlertMixin ):
                 alert_manager = await self.alert_manager_async()
                 if alert_manager:
                     for alarm in alarms:
-                        await alert_manager.add_alarm_async(alarm)
+                        await alert_manager.upsert_alarm_async(alarm)
                         logger.info(f'Added weather alarm to system: {alarm.signature}')
                 else:
                     logger.warning('Alert manager not available, weather alarms not created')

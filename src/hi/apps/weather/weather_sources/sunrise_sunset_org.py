@@ -100,7 +100,7 @@ class SunriseSunsetOrg(WeatherDataSource, WeatherMixin):
                 )
         except Exception as e:
             self.record_error( 'Multi-data astronomical fetch error: {e}' )
-            logger.exception(f'Problem fetching Sunrise-Sunset.org multi-day astronomical data: {e}')
+            self._log_fetch_error( 'multi-day astronomical data', e )
                 
         # Also update today's astronomical data for backwards compatibility
         try:
@@ -114,7 +114,7 @@ class SunriseSunsetOrg(WeatherDataSource, WeatherMixin):
                 )
         except Exception as e:
             self.record_error( 'Today\'s atronomical fetch error: {e}' )
-            logger.exception(f'Problem fetching Sunrise-Sunset.org today\'s astronomical data: {e}')
+            self._log_fetch_error( "today's astronomical data", e )
 
         return
 
@@ -252,7 +252,6 @@ class SunriseSunsetOrg(WeatherDataSource, WeatherMixin):
         api_data_str = self.redis_client.get(cache_key)
 
         if not self.is_cache_enabled:
-            logger.warning('Skip caching in effect.')
             api_data_str = None
             
         if api_data_str:

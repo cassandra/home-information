@@ -262,7 +262,7 @@ class IntegrationSyncCheck:
             alarm_lifetime_secs = Alarm.MAX_LIFETIME_SECS,
             timestamp = datetimeproxy.now(),
         )
-        AlertManager().add_alarm( alarm )
+        AlertManager().upsert_alarm( alarm )
 
     @classmethod
     def clear_state( cls, integration_id : str ) -> None:

@@ -2,6 +2,8 @@ from abc import abstractmethod
 from datetime import datetime
 import logging
 import redis
+import requests
+from urllib.parse import urlparse
 
 from django.conf import settings
 
@@ -18,8 +20,39 @@ logger = logging.getLogger(__name__)
 class WeatherDataSource( ApiHealthStatusProvider ):
 
     TRACE = False
-    FORCE_CAN_POLL = False  # For debugging
     BASE_URL = ''  # Override in each subclass with the canonical upstream URL.
+
+    LOCALHOST_HOSTNAMES = ( '127.0.0.1', 'localhost', '::1' )
+
+    def _log_fetch_error( self, label : str, exc : Exception ) -> None:
+        """Log an upstream-fetch failure at the right level / verbosity.
+
+        HTTP errors and other ``requests`` failures emit a single-line
+        ERROR — the status/url/message is the whole story and a
+        traceback is just noise. Anything else still gets the full
+        ``logger.exception`` traceback because it's likely a real bug
+        in the parsing or wiring path.
+        """
+        if isinstance( exc, requests.exceptions.HTTPError ):
+            response = exc.response
+            if response is not None:
+                logger.error(
+                    f'Problem fetching {self._abbreviation} {label}: '
+                    f'HTTP {response.status_code} for {response.url}'
+                )
+                return
+        if isinstance( exc, requests.exceptions.RequestException ):
+            logger.error(
+                f'Problem fetching {self._abbreviation} {label}: '
+                f'{type(exc).__name__}: {exc}'
+            )
+            return
+        logger.exception( f'Problem fetching {self._abbreviation} {label}: {exc}' )
+        return
+
+    def _is_localhost_target( self ) -> bool:
+        host = urlparse( self._get_base_url() ).hostname or ''
+        return host.lower() in self.LOCALHOST_HOSTNAMES
 
     def _get_base_url( self ) -> str:
         """Effective base URL for this source's HTTP calls.
@@ -191,10 +224,14 @@ class WeatherDataSource( ApiHealthStatusProvider ):
     
     def can_fetch(self):
 
-        if settings.DEBUG and self.FORCE_CAN_POLL:
-            logger.warning( 'Force polling in effect.' )
+        # Targeting a localhost simulator in DEBUG means the operator
+        # is iterating against a fake API — rate limits don't apply.
+        if settings.DEBUG and self._is_localhost_target():
+            logger.debug(
+                f'[{self.id}] Bypassing rate limit (DEBUG + localhost target)'
+            )
             return True
-        
+
         last_poll_datetime = self.fetch_last_poll_datetime()
         if not last_poll_datetime:
             logger.info( f'No last polling data for: {self.label}' )

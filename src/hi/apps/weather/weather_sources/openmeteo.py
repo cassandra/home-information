@@ -98,7 +98,7 @@ class OpenMeteo(WeatherDataSource, WeatherMixin):
                 )
         except Exception as e:
             self.record_error( 'Current conditions fetch error: {e}' )
-            logger.exception(f'Problem fetching OpenMeteo current conditions: {e}')
+            self._log_fetch_error( 'current conditions', e )
 
         # Fetch hourly forecast data
         try:
@@ -112,7 +112,7 @@ class OpenMeteo(WeatherDataSource, WeatherMixin):
                 )
         except Exception as e:
             self.record_error( 'Hourly forecast fetch error: {e}' )
-            logger.exception(f'Problem fetching OpenMeteo hourly forecast: {e}')
+            self._log_fetch_error( 'hourly forecast', e )
 
         # Fetch daily forecast data
         try:
@@ -126,7 +126,7 @@ class OpenMeteo(WeatherDataSource, WeatherMixin):
                 )
         except Exception as e:
             self.record_error( 'Daily forecast fetch error: {e}' )
-            logger.exception(f'Problem fetching OpenMeteo daily forecast: {e}')
+            self._log_fetch_error( 'daily forecast', e )
 
         # Fetch historical weather data (last 7 days)
         try:
@@ -144,7 +144,7 @@ class OpenMeteo(WeatherDataSource, WeatherMixin):
                 logger.warning('OpenMeteo returned no historical weather data')
         except Exception as e:
             self.record_error( 'Historical data fetch error: {e}' )
-            logger.exception(f'Problem fetching OpenMeteo historical data: {e}')
+            self._log_fetch_error( 'historical data', e )
 
         # Note: OpenMeteo does not provide astronomical data
         # This would need to be fetched from other sources if needed
@@ -725,7 +725,6 @@ class OpenMeteo(WeatherDataSource, WeatherMixin):
         current_data_str = self.redis_client.get(cache_key)
 
         if not self.is_cache_enabled:
-            logger.warning('Skip caching in effect.')
             current_data_str = None
             
         if current_data_str:
@@ -766,7 +765,6 @@ class OpenMeteo(WeatherDataSource, WeatherMixin):
         forecast_data_str = self.redis_client.get(cache_key)
 
         if not self.is_cache_enabled:
-            logger.warning('Skip caching in effect.')
             forecast_data_str = None
             
         if forecast_data_str:
@@ -807,7 +805,6 @@ class OpenMeteo(WeatherDataSource, WeatherMixin):
         forecast_data_str = self.redis_client.get(cache_key)
 
         if not self.is_cache_enabled:
-            logger.warning('Skip caching in effect.')
             forecast_data_str = None
             
         if forecast_data_str:
@@ -851,7 +848,6 @@ class OpenMeteo(WeatherDataSource, WeatherMixin):
         historical_data_str = self.redis_client.get(cache_key)
 
         if not self.is_cache_enabled:
-            logger.warning('Skip caching in effect.')
             historical_data_str = None
             
         if historical_data_str:

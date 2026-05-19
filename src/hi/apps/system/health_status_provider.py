@@ -184,7 +184,7 @@ class HealthStatusProvider(ABC):
         )
         if alarm is None:
             return
-        AlertManager().add_alarm( alarm = alarm )
+        AlertManager().upsert_alarm( alarm = alarm )
         return
     
     

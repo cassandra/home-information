@@ -308,7 +308,7 @@ class TestWeatherManager( AsyncTaskFastTestCase ):
                     )
                     
                     # Verify alerts are stored
-                    stored_alerts = weather_manager.get_weather_alerts()
+                    stored_alerts = weather_manager.get_active_weather_alerts()
                     self.assertEqual(len(stored_alerts), 1)
                     self.assertEqual(stored_alerts[0].event, "Severe Thunderstorm Warning")
         
@@ -684,7 +684,7 @@ class TestWeatherManager( AsyncTaskFastTestCase ):
                 )
                 
                 # Verify actual behavior: alerts are stored
-                stored_alerts = weather_manager.get_weather_alerts()
+                stored_alerts = weather_manager.get_active_weather_alerts()
                 self.assertEqual(len(stored_alerts), 1)
                 self.assertEqual(stored_alerts[0].event, "Severe Thunderstorm Warning")
                 self.assertEqual(stored_alerts[0].severity, AlertSeverity.SEVERE)
@@ -713,7 +713,7 @@ class TestWeatherManager( AsyncTaskFastTestCase ):
             )
             
             # Verify actual behavior: no alerts stored when disabled
-            stored_alerts = weather_manager.get_weather_alerts()
+            stored_alerts = weather_manager.get_active_weather_alerts()
             self.assertEqual(len(stored_alerts), 0,
                              "No alerts should be stored when alerts are disabled")
     
@@ -726,7 +726,7 @@ class TestWeatherManager( AsyncTaskFastTestCase ):
         weather_manager._weather_alerts = []
         
         # Initially should be empty
-        alerts = weather_manager.get_weather_alerts()
+        alerts = weather_manager.get_active_weather_alerts()
         self.assertEqual(len(alerts), 0)
         
         # Add test alert directly to verify getter works
@@ -734,7 +734,38 @@ class TestWeatherManager( AsyncTaskFastTestCase ):
         weather_manager._weather_alerts = [test_alert]
         
         # Verify getter returns the alert
-        alerts = weather_manager.get_weather_alerts()
+        alerts = weather_manager.get_active_weather_alerts()
         self.assertEqual(len(alerts), 1)
         self.assertEqual(alerts[0].event, "Severe Thunderstorm Warning")
-    
+
+    def test_get_active_weather_alerts_filters_expired(self):
+        """Expired alerts are filtered out on read; non-expired and
+        ``expires=None`` alerts pass through. Storage is left untouched
+        (deliberate — wholesale-replace from the next source fetch is
+        the only path that mutates ``_weather_alerts``)."""
+        weather_manager = WeatherManager()
+        weather_manager.ensure_initialized()
+
+        now = datetimeproxy.now()
+        expired_alert = self._create_test_weather_alert()
+        expired_alert.expires = now - timedelta(seconds=10)
+        future_alert = self._create_test_weather_alert()
+        future_alert.event = 'Tornado Warning'
+        future_alert.expires = now + timedelta(minutes=30)
+        permanent_alert = self._create_test_weather_alert()
+        permanent_alert.event = 'Flood Watch'
+        permanent_alert.expires = None
+
+        weather_manager._weather_alerts = [
+            expired_alert, future_alert, permanent_alert,
+        ]
+
+        active = weather_manager.get_active_weather_alerts()
+
+        self.assertEqual(len(active), 2)
+        events = { a.event for a in active }
+        self.assertEqual(events, { 'Tornado Warning', 'Flood Watch' })
+        # Storage is intentionally not mutated by the read path.
+        self.assertEqual(len(weather_manager._weather_alerts), 3)
+
+

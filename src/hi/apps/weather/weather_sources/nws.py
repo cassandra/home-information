@@ -108,7 +108,7 @@ class NationalWeatherService( WeatherDataSource, WeatherMixin ):
                     weather_conditions_data = current_conditions_data,
                 )
         except Exception as e:
-            logger.exception( f'Problem fetching NWS current conditions: {e}' )
+            self._log_fetch_error( 'current conditions', e )
 
         # Fetch hourly forecast data
         try:
@@ -121,7 +121,7 @@ class NationalWeatherService( WeatherDataSource, WeatherMixin ):
                     forecast_data_list = interval_hourly_forecast_list,
                 )
         except Exception as e:
-            logger.exception( f'Problem fetching NWS hourly forecast: {e}' )
+            self._log_fetch_error( 'hourly forecast', e )
 
         # Fetch 12-hour forecast data (used for daily forecast)
         try:
@@ -134,20 +134,22 @@ class NationalWeatherService( WeatherDataSource, WeatherMixin ):
                     forecast_data_list = interval_daily_forecast_list,
                 )
         except Exception as e:
-            logger.exception( f'Problem fetching NWS daily forecast: {e}' )
+            self._log_fetch_error( 'daily forecast', e )
 
-        # Fetch weather alerts
+        # Fetch weather alerts. Always push the result — even an empty
+        # list — so removed-upstream alerts clear from our stored list.
+        # NWS /alerts/active is contractually the full set of active
+        # alerts, so wholesale replacement is correct.
         try:
             weather_alerts = self.get_weather_alerts(
                 geographic_location = geographic_location,
             )
-            if weather_alerts:
-                await weather_manager.update_weather_alerts(
-                    data_point_source = self.data_point_source,
-                    weather_alerts = weather_alerts,
-                )
+            await weather_manager.update_weather_alerts(
+                data_point_source = self.data_point_source,
+                weather_alerts = weather_alerts,
+            )
         except Exception as e:
-            logger.exception( f'Problem fetching NWS weather alerts: {e}' )
+            self._log_fetch_error( 'weather alerts', e )
 
         # Note: NWS does not provide historical weather data or astronomical data
         # These would need to be fetched from other sources if needed
@@ -489,7 +491,6 @@ class NationalWeatherService( WeatherDataSource, WeatherMixin ):
         observations_data_str = self.redis_client.get( cache_key )
 
         if not self.is_cache_enabled:
-            logger.warning( 'Skip caching in effect.' )
             observations_data_str = None
             
         if observations_data_str:
@@ -523,7 +524,6 @@ class NationalWeatherService( WeatherDataSource, WeatherMixin ):
         forecast_hourly_data_str = self.redis_client.get( cache_key )
 
         if not self.is_cache_enabled:
-            logger.warning( 'Skip caching in effect.' )
             forecast_hourly_data_str = None
             
         if forecast_hourly_data_str:
@@ -556,7 +556,6 @@ class NationalWeatherService( WeatherDataSource, WeatherMixin ):
         forecast_12h_data_str = self.redis_client.get( cache_key )
 
         if not self.is_cache_enabled:
-            logger.warning( 'Skip caching in effect.' )
             forecast_12h_data_str = None
             
         if forecast_12h_data_str:
@@ -596,7 +595,6 @@ class NationalWeatherService( WeatherDataSource, WeatherMixin ):
         stations_data_str = self.redis_client.get( cache_key )
 
         if not self.is_cache_enabled:
-            logger.warning( 'Skip caching in effect.' )
             stations_data_str = None
             
         if stations_data_str:
@@ -633,7 +631,6 @@ class NationalWeatherService( WeatherDataSource, WeatherMixin ):
         points_data_str = self.redis_client.get( cache_key )
 
         if not self.is_cache_enabled:
-            logger.warning( 'Skip caching in effect.' )
             points_data_str = None
             
         if points_data_str:

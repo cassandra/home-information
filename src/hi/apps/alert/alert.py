@@ -116,7 +116,7 @@ class Alert:
     def is_matching_alarm( self, alarm : Alarm ) -> bool:
         return bool( self._first_alarm.signature == alarm.signature )
 
-    def add_alarm( self, alarm : Alarm ):
+    def upsert_alarm( self, alarm : Alarm ):
         assert alarm.signature == self.first_alarm.signature
         self._end_datetime = datetimeproxy.now() + timedelta( seconds = alarm.alarm_lifetime_secs )
         self._latest_alarms.appendleft( alarm )

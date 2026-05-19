@@ -16,7 +16,7 @@ class ConsoleSideHelper( ConsoleMixin, SecurityMixin, WeatherMixin ):
         try:
             weather_manager = self.weather_manager()
             weather_overview_data = weather_manager.get_weather_overview_data()
-            weather_alert_list = weather_manager.get_weather_alerts()
+            weather_alert_list = weather_manager.get_active_weather_alerts()
         except Exception as e:
             logger.error( f'Weather data unavailable: {e}' )
 
