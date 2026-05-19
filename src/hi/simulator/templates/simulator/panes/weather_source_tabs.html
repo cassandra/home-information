@@ -1,0 +1,42 @@
+<div>
+  <ul id="hi-simulator-weather-tabs" class="nav nav-tabs" role="tablist">
+    {% for weather_source in weather_source_data_list %}
+    <li class="nav-item">
+      <a id="hi-simulator-weather-tab-{{ weather_source.short_name }}" role="tab"
+         class="nav-link {% if forloop.first %}active{% endif %}"
+         data-toggle="tab"
+         href="#weather-source-{{ weather_source.short_name }}"
+         aria-controls="weather-source-{{ weather_source.short_name }}"
+         aria-selected="{% if forloop.first %}true{% else %}false{% endif %}">
+        {{ weather_source.label }}</a>
+    </li>
+    {% endfor %}
+  </ul>
+
+  <div id="hi-simulator-weather-content" class="tab-content">
+    {% for weather_source in weather_source_data_list %}
+    <div id="weather-source-{{ weather_source.short_name }}" role="tabpanel"
+         class="tab-pane fade {% if forloop.first %}show active{% endif %}"
+         aria-labelledby="hi-simulator-weather-tab-{{ weather_source.short_name }}">
+      {% include weather_source.tab_template %}
+    </div>
+    {% endfor %}
+  </div>
+</div>
+
+<script>
+  $(document).ready(function () {
+   $('#hi-simulator-weather-tabs a[data-toggle="tab"]').on('shown.bs.tab', function (event) {
+     const tabId = $(event.target).attr('href');
+     history.replaceState(null, null, tabId);
+   });
+
+   const hash = window.location.hash;
+   if ( hash ) {
+     const targetTab = document.querySelector(`#hi-simulator-weather-tabs .nav-link[href="${hash}"]`);
+     if ( targetTab ) {
+       new bootstrap.Tab( targetTab ).show();
+     }
+   }
+ });
+</script>

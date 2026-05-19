@@ -17,6 +17,7 @@ INSTALLED_APPS = [
     'hi.simulator.services.hass',
     'hi.simulator.services.homebox',
     'hi.simulator.services.zoneminder',
+    'hi.simulator.weather.nws',
 ]
 
 MIDDLEWARE = [

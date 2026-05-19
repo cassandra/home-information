@@ -15,6 +15,7 @@ from .runtime_settings import SimulatorRuntimeSettings
 from .simulator_manager import SimulatorManager
 from .sim_entity import SimEntity
 from .view_mixins import SimulatorViewMixin
+from .weather_registry import get_weather_source_data_list
 
 
 class ServicesView( View, SimulatorViewMixin ):
@@ -45,7 +46,11 @@ class ServicesView( View, SimulatorViewMixin ):
 class WeatherView( View ):
 
     def get(self, request, *args, **kwargs):
-        context = { 'active_section': 'weather' }
+        weather_source_data_list = get_weather_source_data_list()
+        context = {
+            'active_section': 'weather',
+            'weather_source_data_list': weather_source_data_list,
+        }
         return render( request, 'simulator/pages/weather.html', context )
 
 

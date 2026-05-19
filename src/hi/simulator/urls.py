@@ -110,3 +110,34 @@ for short_name, urls_module in discover_urls().items():
         re_path(f"services/{short_name}/", include( urls_module ))
     )
     continue
+
+
+def discover_weather_urls():
+    """ Add urls (if any) from all simulated weather-source apps """
+
+    discovered_url_modules = dict()
+    for app_config in apps.get_app_configs():
+        if not app_config.name.startswith( 'hi.simulator.weather.' ):
+            continue
+        module_name = f'{app_config.name}.urls'
+        short_name = app_config.name.split('.')[-1]
+        try:
+            urls_module = import_module_safe( module_name = module_name )
+            if not urls_module:
+                continue
+
+            discovered_url_modules[short_name] = urls_module
+
+        except Exception:
+            logger.exception( f'Problem importing URL module: {module_name}' )
+            pass
+        continue
+
+    return discovered_url_modules
+
+
+for short_name, urls_module in discover_weather_urls().items():
+    urlpatterns.append(
+        re_path( f"weather/{short_name}/", include( urls_module ))
+    )
+    continue
