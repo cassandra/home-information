@@ -3,6 +3,7 @@ import logging
 from django.apps import apps
 from django.contrib import admin
 from django.urls import include, path, re_path
+from django.views.generic import RedirectView
 
 from hi.apps.common.module_utils import import_module_safe
 
@@ -15,8 +16,20 @@ urlpatterns = [
     path( 'admin/', admin.site.urls ),
 
     path( '',
-          views.HomeView.as_view(),
+          RedirectView.as_view( pattern_name = 'simulator_services', permanent = False ),
           name = 'simulator_home' ),
+
+    path( 'services/',
+          views.ServicesView.as_view(),
+          name = 'simulator_services' ),
+
+    path( 'weather/',
+          views.WeatherView.as_view(),
+          name = 'simulator_weather' ),
+
+    path( 'settings/',
+          views.SettingsView.as_view(),
+          name = 'simulator_settings' ),
     
     path( 'profile/create',
           views.ProfileCreateView.as_view(),

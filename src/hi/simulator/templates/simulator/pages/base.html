@@ -5,7 +5,7 @@
   <head>
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
-    <title>{% block head_title %}Service Simulators{% endblock %}</title>
+    <title>{% block head_title %}Home Information Simulator{% endblock %}</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <link rel="shortcut icon" type="image/png" href="{% static 'favicon.png' %}"/>
     <link rel="icon" type="image/png" href="{% static 'img/hi-icon-16x16.png' %}" sizes="16x16">  
@@ -25,7 +25,9 @@
     <script type="text/javascript" src="{% static 'js/autosize.min.js' %}" charset="utf-8"></script>
     <script type="text/javascript" src="{% static 'js/simulator.js' %}" charset="utf-8"></script>
 
+    {% include "simulator/panes/top_nav.html" %}
+
     {% block content %}{% endblock %}
-    
+
   </body>
 </html>

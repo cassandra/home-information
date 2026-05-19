@@ -17,7 +17,7 @@ from .sim_entity import SimEntity
 from .view_mixins import SimulatorViewMixin
 
 
-class HomeView( View, SimulatorViewMixin ):
+class ServicesView( View, SimulatorViewMixin ):
 
     def get(self, request, *args, **kwargs):
         simulator_manager = SimulatorManager()
@@ -30,6 +30,7 @@ class HomeView( View, SimulatorViewMixin ):
         )
         runtime_settings = SimulatorRuntimeSettings()
         context = {
+            'active_section': 'services',
             'sim_profile_list': sim_profile_list,
             'current_sim_profile': current_sim_profile,
             'simulator_data_list': simulator_data_list,
@@ -38,7 +39,21 @@ class HomeView( View, SimulatorViewMixin ):
             'temperature_unit_choices': list( SimTemperatureUnit ),
             'temperature_unit_override': runtime_settings.temperature_unit_override,
         }
-        return render( request, 'simulator/pages/home.html', context )
+        return render( request, 'simulator/pages/services.html', context )
+
+
+class WeatherView( View ):
+
+    def get(self, request, *args, **kwargs):
+        context = { 'active_section': 'weather' }
+        return render( request, 'simulator/pages/weather.html', context )
+
+
+class SettingsView( View ):
+
+    def get(self, request, *args, **kwargs):
+        context = { 'active_section': 'settings' }
+        return render( request, 'simulator/pages/settings.html', context )
 
     
 class ProfileCreateView( View ):

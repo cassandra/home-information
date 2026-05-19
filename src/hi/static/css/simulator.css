@@ -27,6 +27,76 @@
 
   --top-buttons-height: 2.5rem;
   --bottom-buttons-height: 2.5rem;
+
+  --sim-top-nav-height: 3rem;
+}
+
+.sim-top-nav {
+    display: flex;
+    align-items: center;
+    height: var(--sim-top-nav-height);
+    padding: 0 1rem;
+    background-color: var(--primary-color);
+    color: var(--on-primary-color);
+    border-bottom: 2px solid var(--secondary-color);
+}
+.sim-top-nav-brand {
+    display: flex;
+    align-items: center;
+    margin-right: 1.5rem;
+}
+.sim-top-nav-logo {
+    width: 1.5rem;
+    height: 1.5rem;
+    margin-right: 0.5rem;
+}
+.sim-top-nav-title {
+    font-weight: bold;
+    font-size: 1.05rem;
+    letter-spacing: 0.02em;
+}
+.sim-top-nav-links {
+    display: flex;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    height: 100%;
+}
+.sim-top-nav-links li {
+    height: 100%;
+}
+.sim-top-nav-link {
+    display: flex;
+    align-items: center;
+    height: 100%;
+    padding: 0 1rem;
+    color: var(--on-primary-color);
+    text-decoration: none;
+    border-bottom: 3px solid transparent;
+}
+.sim-top-nav-link:hover,
+.sim-top-nav-link:focus {
+    color: var(--on-primary-color);
+    background-color: rgba(255, 255, 255, 0.08);
+    text-decoration: none;
+    opacity: 1;
+}
+.sim-top-nav-link.active {
+    border-bottom-color: var(--secondary-color);
+    background-color: rgba(0, 0, 0, 0.15);
+}
+
+.sim-placeholder {
+    padding-top: 2rem;
+}
+.sim-placeholder-card {
+    max-width: 36rem;
+    margin: 2rem auto;
+    padding: 2rem;
+    background-color: var(--white-bg-color);
+    border: 1px solid var(--line-color);
+    border-radius: 0.25rem;
+    text-align: center;
 }
 
 html, body {
