@@ -31,6 +31,13 @@ class ZoneMinderSimulator( Simulator ):
     def label(self) -> str:
         return 'ZoneMinder'
 
+    @property
+    def integration_urls(self):
+        return [
+            ( 'API URL', 'services/zoneminder/api' ),
+            ( 'Portal URL', 'services/zoneminder' ),
+        ]
+
     def get_zm_monitor_sim_entity_list( self ) -> List[ ZmSimMonitor ]:
         return [ ZmSimMonitor( sim_entity = x ) for x in self.sim_entities
                  if x.sim_entity_definition.sim_entity_fields_class == ZmMonitorSimEntityFields ]

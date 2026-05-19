@@ -78,6 +78,16 @@ class Simulator( Singleton ):
         return self.__class__.__module__.split('.')[-2]
 
     @property
+    def integration_urls(self) -> List[ tuple ]:
+        """
+        URL path(s) operators paste into the main app's integration
+        settings to point at this simulator. Each entry is a tuple of
+        (label, path) where ``path`` is appended to ``<scheme>://<host>/``.
+        Default empty; subclasses opt in by overriding.
+        """
+        return []
+
+    @property
     def fault_mode(self) -> SimulatorFaultMode:
         return self._fault_mode
 

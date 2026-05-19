@@ -18,6 +18,10 @@ class HassSimulator( Simulator ):
     def label(self):
         return 'Home Assistant'
 
+    @property
+    def integration_urls(self):
+        return [ ( 'API URL', 'services/hass' ) ]
+
     def get_hass_sim_state_list( self ) -> List[ HassState ]:
         sim_state_list = list()
         for sim_entity in self.sim_entities:

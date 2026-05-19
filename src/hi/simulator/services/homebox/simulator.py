@@ -21,6 +21,10 @@ class HomeBoxSimulator( Simulator ):
         return 'HomeBox'
 
     @property
+    def integration_urls(self):
+        return [ ( 'API URL', 'services/homebox/api' ) ]
+
+    @property
     def sim_entity_definition_list(self) -> List[ SimEntityDefinition ]:
         return HOMEBOX_SIM_ENTITY_DEFINITION_LIST
 
