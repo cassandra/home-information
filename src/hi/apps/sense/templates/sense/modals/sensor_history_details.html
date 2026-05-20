@@ -1,4 +1,5 @@
-{% extends "modals/action_done.html" %}
+{% extends "modals/action_3.html" %}
+{% load icons %}
 {% load video_tags %}
 
 {% block title_text %}
@@ -48,6 +49,27 @@ Sensor Response Details
         {% endfor %}
       </tbody>
     </table>
-  </div>  
+  </div>
 </div>
+{% endblock %}
+
+{% block action_left %}
+<a class="btn btn-primary"
+   href="{% url 'entity_status' entity_id=sensor_history.sensor.entity_state.entity.id %}"
+   data-async="modal">
+  {% icon "info-circle" size="sm" css_class="hi-icon-left" %}STATUS
+</a>
+{% endblock %}
+
+{% block action_center %}
+<a class="btn btn-primary"
+   href="{% url 'entity_history' entity_id=sensor_history.sensor.entity_state.entity.id %}"
+   data-async="modal">
+  {% icon "history" size="sm" css_class="hi-icon-left" %}HISTORY
+</a>
+{% endblock %}
+
+{% block action_right %}
+<a id="hi-modal-done" role="button" {% if autofocus %}autofocus="autofocus"{% endif %}
+   class="btn btn-primary" href="#" data-dismiss="modal">DONE</a>
 {% endblock %}
