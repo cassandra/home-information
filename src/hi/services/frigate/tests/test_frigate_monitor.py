@@ -245,6 +245,51 @@ class TestFrigateSensorResponseGeneration( TestCase ):
         # "video unavailable" placeholder.
         self.assertTrue( obj.has_event_video_snapshot )
 
+    def test_active_state_detail_attrs_carry_event_metadata(self):
+        opened = _make_event(
+            event_id = '99', start = self.t0, label = 'person',
+        )
+        opened.score = 0.91
+        opened.sub_label = 'jane_doe'
+        opened.zones = [ 'driveway', 'walkway' ]
+        states = self.monitor._aggregate_camera_states( [ opened ], [] )
+        responses = self.monitor._generate_sensor_responses_from_states( states )
+        obj = self._object_response( responses )
+
+        from hi.services.frigate.constants import FrigateDetailKeys
+        self.assertEqual( obj.detail_attrs[ FrigateDetailKeys.EVENT_ID ], '99' )
+        self.assertEqual(
+            obj.detail_attrs[ FrigateDetailKeys.OBJECT_CLASS ], 'person',
+        )
+        self.assertEqual( obj.detail_attrs[ FrigateDetailKeys.SCORE ], '0.91' )
+        self.assertEqual(
+            obj.detail_attrs[ FrigateDetailKeys.SUB_LABEL ], 'jane_doe',
+        )
+        self.assertEqual(
+            obj.detail_attrs[ FrigateDetailKeys.ZONES ], 'driveway, walkway',
+        )
+        # Duration is omitted while event is open — value isn't known
+        # until the event closes.
+        self.assertNotIn(
+            FrigateDetailKeys.DURATION_SECS, obj.detail_attrs,
+        )
+
+    def test_idle_state_detail_attrs_include_duration(self):
+        closed = _make_event(
+            event_id = '7',
+            start = self.t0,
+            end = self.t0 + timedelta( seconds = 15 ),
+            label = 'person',
+        )
+        states = self.monitor._aggregate_camera_states( [], [ closed ] )
+        responses = self.monitor._generate_sensor_responses_from_states( states )
+        obj = self._object_response( responses )
+
+        from hi.services.frigate.constants import FrigateDetailKeys
+        self.assertEqual(
+            obj.detail_attrs[ FrigateDetailKeys.DURATION_SECS ], '15.0',
+        )
+
     def test_no_snapshot_event_omits_snapshot_flag(self):
         # Events Frigate flagged ``has_snapshot=False`` for produce
         # responses with ``has_event_video_snapshot=False`` — honest

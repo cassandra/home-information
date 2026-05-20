@@ -16,7 +16,7 @@ from hi.apps.sense.transient_models import SensorResponse
 from hi.apps.system.provider_info import ProviderInfo
 from hi.testing.dev_overrides import DevOverrideManager
 
-from .constants import FrigateTimeouts
+from .constants import FrigateDetailKeys, FrigateTimeouts
 from .frigate_converter import FrigateConverter
 from .frigate_manager import FrigateManager
 from .frigate_mixins import FrigateMixin
@@ -334,6 +334,10 @@ class FrigateMonitor( PeriodicMonitor, FrigateMixin, SensorResponseMixin ):
                 correlation_id = state.canonical_event.event_id,
                 has_event_video_clip = state.canonical_event.has_clip,
                 has_event_video_snapshot = state.canonical_event.has_snapshot,
+                detail_attrs = self._build_event_detail_attrs(
+                    event = state.canonical_event,
+                    is_closed = state.is_idle,
+                ),
             )
             sensor_response_map[ response.integration_key ] = response
 
@@ -398,6 +402,7 @@ class FrigateMonitor( PeriodicMonitor, FrigateMixin, SensorResponseMixin ):
             correlation_id               : str = None,
             has_event_video_clip         : bool = False,
             has_event_video_snapshot     : bool = False,
+            detail_attrs                 : Dict = None,
     ) -> SensorResponse:
         """OBJECT_PRESENCE SensorResponse. ``value`` is one of the
         canonical bucket strings produced by
@@ -414,4 +419,28 @@ class FrigateMonitor( PeriodicMonitor, FrigateMixin, SensorResponseMixin ):
             correlation_id = correlation_id,
             has_event_video_clip = has_event_video_clip,
             has_event_video_snapshot = has_event_video_snapshot,
+            detail_attrs = detail_attrs,
         )
+
+    def _build_event_detail_attrs( self,
+                                   event      : FrigateEvent,
+                                   is_closed  : bool ) -> Dict[ str, str ]:
+        """Pack the event's metadata into a SensorResponse.detail_attrs
+        dict so the event-detail UI surfaces the rich payload. Duration
+        is omitted for open (START) responses — the value isn't known
+        until the event closes."""
+        attrs : Dict[ str, str ] = {
+            FrigateDetailKeys.EVENT_ID: event.event_id,
+            FrigateDetailKeys.START_TIME: event.start_datetime.isoformat(),
+            FrigateDetailKeys.OBJECT_CLASS: event.object_class,
+        }
+        if event.score is not None:
+            attrs[ FrigateDetailKeys.SCORE ] = f'{event.score:.2f}'
+        if event.sub_label:
+            attrs[ FrigateDetailKeys.SUB_LABEL ] = event.sub_label
+        if event.zones:
+            attrs[ FrigateDetailKeys.ZONES ] = ', '.join( event.zones )
+        if is_closed and event.end_datetime is not None:
+            duration = ( event.end_datetime - event.start_datetime ).total_seconds()
+            attrs[ FrigateDetailKeys.DURATION_SECS ] = f'{duration:.1f}'
+        return attrs

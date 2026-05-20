@@ -48,8 +48,6 @@ class FrigateDetailKeys:
     SUB_LABEL = 'Sub Label'
     ZONES = 'Zones'
     DURATION_SECS = 'Duration (secs)'
-    SNAPSHOT_URL = 'Snapshot Url'
-    CLIP_URL = 'Clip Url'
 
 
 class FrigateTimeouts:
