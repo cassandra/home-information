@@ -78,21 +78,7 @@ class FrigateManager( SingletonManager, AggregateHealthProvider, ApiHealthStatus
         Called under ``SingletonManager``'s data lock. The client is
         nulled on every reload and only re-created when the integration
         DB row is present and enabled. Sync / monitor consumers should
-        gate on ``frigate_client is not None`` before calling out.
-
-        Sets the manager's API-health slot as a side effect of every
-        reload. The manager registers itself as an API health provider
-        (the aggregator pulls from that slot when computing overall
-        health), and the registration's default status is UNKNOWN —
-        which the aggregator maps to WARNING and the UI surfaces as
-        an "integration degraded" banner regardless of what the
-        monitor reports. Recording the reload outcome (HEALTHY on a
-        clean build, DISABLED when the integration row is off,
-        UNAVAILABLE on an attribute / build failure) keeps the
-        aggregate honest. Note that we use the API-side ``update_api_
-        health_status`` rather than the HealthStatusProvider-side
-        ``record_*`` methods, because the leaking-WARNING is on the
-        api_status_map (not on _base_status)."""
+        gate on ``frigate_client is not None`` before calling out."""
         self._frigate_client = None
         try:
             integration = Integration.objects.get(
@@ -146,7 +132,8 @@ class FrigateManager( SingletonManager, AggregateHealthProvider, ApiHealthStatus
         client = self.frigate_client
         if client is None:
             raise RuntimeError( 'Frigate client not available.' )
-        return client.get_cameras()
+        with self.api_call_context( 'frigate_cameras' ):
+            return client.get_cameras()
 
     async def get_cameras_async( self ) -> List[ Dict ]:
         return await sync_to_async(
@@ -163,7 +150,8 @@ class FrigateManager( SingletonManager, AggregateHealthProvider, ApiHealthStatus
         client = self.frigate_client
         if client is None:
             raise RuntimeError( 'Frigate client not available.' )
-        return client.get_events( after = after, limit = limit )
+        with self.api_call_context( 'frigate_events' ):
+            return client.get_events( after = after, limit = limit )
 
     async def get_events_async( self,
                                 after  : Optional[ float ] = None,
@@ -174,19 +162,10 @@ class FrigateManager( SingletonManager, AggregateHealthProvider, ApiHealthStatus
         )( after = after, limit = limit )
 
     # ---- Media URL helpers ------------------------------------------
-    #
-    # Real Frigate exposes both still images at well-known paths
-    # under the same base URL as the JSON API. HI consumes those URLs
-    # directly (browser-side <img> for snapshots, no proxy) so the
-    # base URL needs to be reachable from the browser, not just from
-    # the server. The cache-bust timestamp mirrors the ZM URL helpers
-    # — without it, re-rendering an <img> with the same src triggers
-    # the browser cache rather than refetching.
 
     def get_camera_snapshot_url( self, camera_name : str ) -> Optional[ str ]:
-        """Live-frame JPEG URL for a camera (``/api/<camera>/latest.jpg``).
-        Returns ``None`` when the client isn't available — callers
-        should treat that as "no snapshot capability right now"."""
+        """Live-frame JPEG URL for a camera. Returns ``None`` when the
+        client isn't available."""
         client = self.frigate_client
         if client is None:
             return None
@@ -196,10 +175,8 @@ class FrigateManager( SingletonManager, AggregateHealthProvider, ApiHealthStatus
         return f'{client.base_url}{path}?_t={int(time.time())}'
 
     def get_event_snapshot_url( self, event_id : str ) -> Optional[ str ]:
-        """Event-frame JPEG URL (``/api/events/<id>/snapshot.jpg``).
-        Attached to SensorResponses as ``source_image_url`` so the
-        alert / history views can show the frame the detection fired
-        on. Returns ``None`` when the client isn't available."""
+        """Event-frame JPEG URL. Returns ``None`` when the client
+        isn't available."""
         client = self.frigate_client
         if client is None:
             return None

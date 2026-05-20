@@ -315,19 +315,10 @@ class FrigateMonitor( PeriodicMonitor, FrigateMixin, SensorResponseMixin ):
                     raw_class = state.canonical_event.object_class,
                 )
                 correlation_role = CorrelationRole.START
-                # Attach the per-event snapshot URL only on the START
-                # response — Frigate's snapshot.jpg is captured at the
-                # frame the detection fired on, so it's meaningful for
-                # ACTIVE but vacuous for OBJECT_NONE (the lifecycle's
-                # closing transition isn't tied to a new image).
                 source_image_url = self.frigate_manager().get_event_snapshot_url(
                     event_id = state.canonical_event.event_id,
                 )
             else:
-                # Camera transitioned to no-current-detection — pair
-                # the END with the closing event so alarm dedup matches
-                # this OBJECT_NONE with the START that opened the
-                # lifecycle.
                 object_value = FrigateConverter.OBJECT_NONE_VALUE
                 correlation_role = CorrelationRole.END
                 source_image_url = None
