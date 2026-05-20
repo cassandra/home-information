@@ -117,28 +117,28 @@
                     {% sensor_response_event_snapshot_url sensor_history_data.current_sensor_response as event_snapshot_url %}
                     {% if video_stream and video_stream.source_url %}
                     {% if video_stream.stream_type|stringformat:"s" == "mp4" %}
-                    <div class="hi-video-recording hi-video-recording--mp4">
-                      <video class="img-fluid" data-video-recording controls autoplay muted playsinline
+                    <div class="hi-video-clip hi-video-clip--mp4">
+                      <video class="img-fluid" data-video-clip controls autoplay muted playsinline
                              src="{{ video_stream.source_url }}"
-                             aria-label="Video recording from {{ sensor_history_data.current_sensor_response.timestamp|localtime|date:'F j, Y g:i A' }}"
+                             aria-label="Video clip from {{ sensor_history_data.current_sensor_response.timestamp|localtime|date:'F j, Y g:i A' }}"
                              data-event-id="{{ sensor_history_data.current_sensor_response.sensor_history_id }}">
                       </video>
-                      {% include "console/panes/video_recording_replay_button.html" %}
+                      {% include "console/panes/video_clip_replay_button.html" %}
                     </div>
                     {% else %}
-                    <div class="hi-video-recording">
-                      <img class="img-fluid" data-video-recording
+                    <div class="hi-video-clip">
+                      <img class="img-fluid" data-video-clip
                            src="{{ video_stream.source_url }}"
-                           alt="Video recording from {{ sensor_history_data.current_sensor_response.timestamp|localtime|date:'F j, Y g:i A' }}"
+                           alt="Video clip from {{ sensor_history_data.current_sensor_response.timestamp|localtime|date:'F j, Y g:i A' }}"
                            data-event-id="{{ sensor_history_data.current_sensor_response.sensor_history_id }}">
-                      {% include "console/panes/video_recording_replay_button.html" %}
+                      {% include "console/panes/video_clip_replay_button.html" %}
                     </div>
                     {% endif %}
                     {% elif event_snapshot_url %}
                     <!-- Snapshot-only: event carries a captured frame but no playable clip -->
                     <img class="img-fluid" src="{{ event_snapshot_url }}" alt="Image from {{ sensor_history_data.current_sensor_response.timestamp|localtime|date:'F j, Y g:i A' }}" data-event-id="{{ sensor_history_data.current_sensor_response.sensor_history_id }}">
                     {% else %}
-                    {% include "console/panes/video_unavailable_placeholder.html" with heading="Video Stream Unavailable" subtitle="Video recording may not be available for this event" %}
+                    {% include "console/panes/video_unavailable_placeholder.html" with heading="Video Stream Unavailable" subtitle="Video clip may not be available for this event" %}
                     {% endif %}
                 </div>
 

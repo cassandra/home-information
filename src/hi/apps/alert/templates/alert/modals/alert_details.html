@@ -60,14 +60,14 @@
         </h6>
       </div>
       <div class="card-body p-2">
-        <div class="hi-video-recording">
+        <div class="hi-video-clip">
           {% if video_stream.stream_type|stringformat:"s" == "mp4" %}
-          <video class="img-fluid" data-video-recording controls autoplay muted playsinline
+          <video class="img-fluid" data-video-clip controls autoplay muted playsinline
                  src="{{ video_stream.source_url }}" aria-label="{{ alert_visual_content.alarm.title }}"></video>
           {% else %}
-          <img class="img-fluid" data-video-recording src="{{ video_stream.source_url }}" alt="{{ alert_visual_content.alarm.title }}">
+          <img class="img-fluid" data-video-clip src="{{ video_stream.source_url }}" alt="{{ alert_visual_content.alarm.title }}">
           {% endif %}
-          {% include "console/panes/video_recording_replay_button.html" %}
+          {% include "console/panes/video_clip_replay_button.html" %}
         </div>
         {% if not alert_visual_content.is_from_latest %}
         <small class="text-muted d-block mt-1">From: {{ alert_visual_content.alarm.timestamp|localtime|date:"M j, Y H:i" }}</small>
@@ -122,14 +122,14 @@
                   <small class="text-muted">Source {{ video_source.index }} - {{ video_source.alarm.timestamp|localtime|date:"M j H:i" }}</small>
                 </div>
                 <div class="card-body p-2">
-                  <div class="hi-video-recording">
+                  <div class="hi-video-clip">
                     {% if video_stream.stream_type|stringformat:"s" == "mp4" %}
-                    <video class="img-fluid" data-video-recording controls muted playsinline
+                    <video class="img-fluid" data-video-clip controls muted playsinline
                            src="{{ video_stream.source_url }}" aria-label="Source {{ video_source.index }}"></video>
                     {% else %}
-                    <img class="img-fluid" data-video-recording src="{{ video_stream.source_url }}" alt="Source {{ video_source.index }}">
+                    <img class="img-fluid" data-video-clip src="{{ video_stream.source_url }}" alt="Source {{ video_source.index }}">
                     {% endif %}
-                    {% include "console/panes/video_recording_replay_button.html" %}
+                    {% include "console/panes/video_clip_replay_button.html" %}
                   </div>
                 </div>
               </div>

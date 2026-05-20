@@ -13,11 +13,11 @@
     // removal so browser per-host connection slots are released. The
     // markers themselves are disjoint by content type:
     //   - ``data-video-stream``    : continuous live MJPEG (camera).
-    //   - ``data-video-recording`` : finite recorded MJPEG (event playback).
+    //   - ``data-video-clip`` : finite recorded MJPEG (event playback).
     // The replay click handler at the bottom of this file applies
-    // only to the recording case.
+    // only to the clip case.
     const LONG_LIVED_VIDEO_SELECTOR =
-        'img[data-video-stream], img[data-video-recording]';
+        'img[data-video-stream], img[data-video-clip]';
 
     // Tracks every long-lived video connection currently attached to
     // the document.
@@ -107,7 +107,7 @@
     //   - ``data-stream-fps``         : polling rate (parallel to the Entity
     //                                   model's ``video_snapshot_stream_fps``).
     //
-    // Distinct from ``data-video-stream`` / ``data-video-recording``
+    // Distinct from ``data-video-stream`` / ``data-video-clip``
     // which are continuous MJPEG fetches managed by VideoConnectionManager.
     const SnapshotStreamManager = {
 
@@ -205,7 +205,7 @@
     };
 
     // Generic ``error``-event handler for the three video-marker <img>
-    // elements (``data-video-stream``, ``data-video-recording``,
+    // elements (``data-video-stream``, ``data-video-clip``,
     // ``data-video-snapshot``). On load failure, hides the <img> and
     // inserts a sibling placeholder; on a subsequent successful load,
     // hides the placeholder and reveals the <img> again. Self-healing
@@ -219,7 +219,7 @@
     // URI, but we also explicitly skip ``data:`` URLs as defense.
     const VideoErrorHandler = {
 
-        SELECTOR: 'img[data-video-stream], img[data-video-recording], img[data-video-snapshot]',
+        SELECTOR: 'img[data-video-stream], img[data-video-clip], img[data-video-snapshot]',
         PLACEHOLDER_CLASS: 'video-load-error-placeholder',
         REGISTERED_FLAG: 'videoErrorHandlerRegistered',
 
@@ -232,9 +232,9 @@
                 heading: 'Live View Unavailable',
                 subtitle: 'The integration may be offline or the camera unreachable',
             },
-            'data-video-recording': {
+            'data-video-clip': {
                 heading: 'Video No Longer Available',
-                subtitle: 'This recording could not be loaded',
+                subtitle: 'This clip could not be loaded',
             },
             'data-video-snapshot': {
                 heading: 'Snapshot Unavailable',
@@ -412,7 +412,7 @@
             // Tag the current video element with its event id for
             // debug visibility in console logs / DOM inspection. The
             // connection manager handles registration itself via the
-            // ``data-video-stream`` / ``data-video-recording`` markers.
+            // ``data-video-stream`` / ``data-video-clip`` markers.
             this.tagCurrentVideoWithEventId();
         },
 
@@ -487,34 +487,34 @@
         SnapshotStreamManager.cleanup();
     });
 
-    // Replay-from-start for finite recordings. Templates wrap each
-    // ``[data-video-recording]`` <img> in a ``.hi-video-recording``
-    // container that also holds a ``.hi-video-recording-replay``
+    // Replay-from-start for finite clips. Templates wrap each
+    // ``[data-video-clip]`` <img> in a ``.hi-video-clip``
+    // container that also holds a ``.hi-video-clip-replay``
     // button. Delegated on body so async-loaded fragments work
     // without an init pass.
     //
     // Mechanism: append a fresh ``_replay`` query parameter to the
     // cached original URL on each click. The browser sees a new URL,
     // abandons the previous fetch, and starts a new one. ZoneMinder
-    // serves the recording from the start on each request
+    // serves the clip from the start on each request
     // (``replay=single``). Avoids blanking the ``src`` — an empty
     // src would fire ``error`` and trigger ``VideoErrorHandler``'s
     // placeholder.
-    function videoRecordingReplayBuster( baseUrl ) {
+    function videoClipReplayBuster( baseUrl ) {
         const sep = baseUrl.includes('?') ? '&' : '?';
         return baseUrl + sep + '_replay=' + Date.now();
     }
     jQuery(function($) {
-        $( 'body' ).on( 'click', '.hi-video-recording-replay', function( ev ) {
+        $( 'body' ).on( 'click', '.hi-video-clip-replay', function( ev ) {
             ev.preventDefault();
             ev.stopPropagation();
-            const wrapper = this.closest( '.hi-video-recording' );
+            const wrapper = this.closest( '.hi-video-clip' );
             if ( ! wrapper ) return;
 
-            // <video> path (native MP4 recording): seek-to-zero +
+            // <video> path (native MP4 clip): seek-to-zero +
             // play. The native element has its own seek/playhead so
             // we don't need the cache-bust trick that <img> uses.
-            const video = wrapper.querySelector( 'video[data-video-recording]' );
+            const video = wrapper.querySelector( 'video[data-video-clip]' );
             if ( video ) {
                 try { video.currentTime = 0; } catch ( e ) {}
                 const playPromise = video.play();
@@ -524,18 +524,18 @@
                 return;
             }
 
-            // <img> path (multipart MJPEG recording). Cache the
+            // <img> path (multipart MJPEG clip). Cache the
             // original URL on first click; subsequent clicks always
             // rebuild from this cached base so the ``_replay``
             // parameter doesn't stack.
-            const img = wrapper.querySelector( 'img[data-video-recording]' );
+            const img = wrapper.querySelector( 'img[data-video-clip]' );
             if ( ! img ) return;
-            if ( ! img.dataset.videoRecordingSrc ) {
-                img.dataset.videoRecordingSrc = img.src;
+            if ( ! img.dataset.videoClipSrc ) {
+                img.dataset.videoClipSrc = img.src;
             }
-            const baseUrl = img.dataset.videoRecordingSrc;
+            const baseUrl = img.dataset.videoClipSrc;
             if ( ! baseUrl || baseUrl.startsWith('data:') ) return;
-            img.src = videoRecordingReplayBuster( baseUrl );
+            img.src = videoClipReplayBuster( baseUrl );
         });
     });
 

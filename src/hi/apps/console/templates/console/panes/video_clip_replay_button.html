@@ -1,11 +1,11 @@
 {% load icons %}
-{# Replay-from-start affordance for a ``<img data-video-recording>``  #}
-{# element. Expected to sit inside a ``.hi-video-recording`` wrapper  #}
+{# Replay-from-start affordance for a ``<img data-video-clip>``  #}
+{# element. Expected to sit inside a ``.hi-video-clip`` wrapper  #}
 {# alongside the img; the wrapper provides ``position: relative`` so  #}
 {# this button anchors to the top-right of the video frame. The      #}
 {# click handler (delegated in video-timeline.js) re-fetches the     #}
-{# img's URL to play the recording from the start.                   #}
-<button type="button" class="hi-video-recording-replay"
+{# img's URL to play the clip from the start.                   #}
+<button type="button" class="hi-video-clip-replay"
         title="Replay from start" aria-label="Replay from start">
   {% icon "rotate" size="sm" %}
 </button>

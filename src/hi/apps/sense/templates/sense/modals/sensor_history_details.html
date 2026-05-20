@@ -14,14 +14,14 @@ Sensor Response Details
       {% sensor_response_video_stream sensor_response as video_stream %}
       {% if video_stream and video_stream.source_url %}
       <div>
-        <div class="hi-video-recording">
+        <div class="hi-video-clip">
           {% if video_stream.stream_type|stringformat:"s" == "mp4" %}
-          <video class="img-fluid" data-video-recording controls autoplay muted playsinline
+          <video class="img-fluid" data-video-clip controls autoplay muted playsinline
                  src="{{ video_stream.source_url }}" aria-label="Sensor History"></video>
           {% else %}
-          <img class="img-fluid" data-video-recording src="{{ video_stream.source_url }}" alt="Sensor History">
+          <img class="img-fluid" data-video-clip src="{{ video_stream.source_url }}" alt="Sensor History">
           {% endif %}
-          {% include "console/panes/video_recording_replay_button.html" %}
+          {% include "console/panes/video_clip_replay_button.html" %}
         </div>
       </div>
       {% elif event_snapshot_url %}

@@ -26,7 +26,7 @@ class FrigateEvent:
     snapshot_url    : Optional[ str ]      = None
     clip_url        : Optional[ str ]      = None
     # Frigate emits ``has_clip``/``has_snapshot`` booleans per event
-    # so the UI can avoid offering playback for events whose recording
+    # so the UI can avoid offering playback for events whose clip
     # never made it to disk. Default ``True`` matches Frigate's own
     # default behavior (events come with clips unless explicitly
     # disabled).

@@ -146,7 +146,7 @@ class FrigateGateway( IntegrationGateway, FrigateMixin ):
             self,
             sensor_response : SensorResponse,
     ) -> Optional[ VideoStream ]:
-        """Event-recording MP4 URL for a Frigate SensorResponse.
+        """Event-clip MP4 URL for a Frigate SensorResponse.
         Returns ``None`` when the response carries no clip
         (``has_event_video_clip`` False), when the
         ``correlation_id`` — Frigate's event_id — is absent, or when

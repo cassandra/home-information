@@ -2174,12 +2174,12 @@ g[hover] {
     overflow-y: auto;
 }
 
-/* Wrapper around a finite-recording <img> + its replay-from-start
+/* Wrapper around a finite-clip <img> + its replay-from-start
    overlay button. ``position: relative`` anchors the button to the
    image's top-right; ``display: block`` and ``line-height: 0`` let
    the wrapper shrink to the image's actual rendered dimensions so
    the overlay sits on the image, not on padding around it. */
-.hi-video-recording {
+.hi-video-clip {
     position: relative;
     display: block;
     line-height: 0;
@@ -2188,7 +2188,7 @@ g[hover] {
 /* Replay-from-start overlay button. Always visible (touch screens
    don't reliably support hover-reveal), semi-transparent backdrop
    so it reads against any video content underneath. */
-.hi-video-recording-replay {
+.hi-video-clip-replay {
     position: absolute;
     top: 8px;
     right: 8px;
@@ -2221,7 +2221,7 @@ g[hover] {
    touch-target guidance while keeping the icon compact on the video
    frame. Pseudo-element shares the button's pointer-events, so taps
    in the extended area dispatch the click handler. */
-.hi-video-recording-replay::before {
+.hi-video-clip-replay::before {
     content: '';
     position: absolute;
     top: -8px;
@@ -2230,13 +2230,13 @@ g[hover] {
     bottom: -8px;
 }
 
-.hi-video-recording-replay:hover,
-.hi-video-recording-replay:focus {
+.hi-video-clip-replay:hover,
+.hi-video-clip-replay:focus {
     opacity: 1;
     background: rgba(0, 0, 0, 0.75);
     outline: none;
 }
-.hi-video-recording-replay:active {
+.hi-video-clip-replay:active {
     background: rgba(0, 0, 0, 0.9);
     transform: scale(0.92);
 }

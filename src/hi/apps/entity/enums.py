@@ -552,10 +552,10 @@ class VideoStreamType(LabeledEnum):
     """Discrimination of what kind of media lives at ``VideoStream.source_url``.
     Drives the HI render layer's choice between ``<img>`` (browsers
     render multipart/x-mixed-replace MJPEG inside <img>) and
-    ``<video>`` (for actual MP4 / HLS / WebM recordings)."""
+    ``<video>`` (for actual MP4 / HLS / WebM clips)."""
 
     MJPEG = ('MJPEG', 'multipart/x-mixed-replace stream rendered by <img>')
-    MP4 = ('MP4', 'MP4 recording rendered by <video>')
+    MP4 = ('MP4', 'MP4 clip rendered by <video>')
     OTHER = ('Other', 'Other video stream type for future extensibility')
 
     @classmethod

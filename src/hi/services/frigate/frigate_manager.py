@@ -232,7 +232,7 @@ class FrigateManager( SingletonManager, AggregateHealthProvider, ApiHealthStatus
         return f'{client.base_url}{path}?_t={int(time.time())}'
 
     def get_event_clip_url( self, event_id : str ) -> Optional[ str ]:
-        """Event-recording MP4 URL. Returns ``None`` when the client
+        """Event-clip MP4 URL. Returns ``None`` when the client
         isn't available."""
         client = self.frigate_client
         if client is None:

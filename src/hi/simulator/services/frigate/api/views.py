@@ -215,7 +215,7 @@ class CameraDetectSetView( View ):
 
 
 class EventClipMp4View( View ):
-    """``GET /api/events/<id>/clip.mp4`` — event recording playback.
+    """``GET /api/events/<id>/clip.mp4`` — event clip playback.
 
     Real Frigate streams an MP4 of the event's clip. The simulator
     serves a fixed-content placeholder MP4 (frame-counter + clock
