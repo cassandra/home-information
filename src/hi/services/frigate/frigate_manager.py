@@ -10,6 +10,7 @@ from hi.apps.system.provider_info import ProviderInfo
 from hi.integrations.models import IntegrationAttribute
 from hi.integrations.transient_models import (
     ConnectionTestResult,
+    IntegrationKey,
     IntegrationValidationResult,
 )
 
@@ -94,7 +95,7 @@ class FrigateManager( SingletonManager, AggregateHealthProvider, ApiHealthStatus
         """Schema-only validation. No network calls."""
         base_url = self._attr_value(
             integration_attributes = integration_attributes,
-            attr_type_name = FrigateAttributeType.BASE_URL.name,
+            attr_type = FrigateAttributeType.BASE_URL,
         )
         if not base_url:
             return IntegrationValidationResult.error(
@@ -122,10 +123,18 @@ class FrigateManager( SingletonManager, AggregateHealthProvider, ApiHealthStatus
     @staticmethod
     def _attr_value(
             integration_attributes : List[ IntegrationAttribute ],
-            attr_type_name         : str,
+            attr_type              : FrigateAttributeType,
     ) -> Optional[ str ]:
+        """Look up an attribute value by type. ``IntegrationAttribute``
+        carries an ``integration_key`` whose ``integration_name`` is
+        ``str(attr_type)`` (the lowercased slug LabeledEnum yields);
+        matching directly on that field is the framework's convention."""
+        target_key = IntegrationKey(
+            integration_id = FrigateMetaData.integration_id,
+            integration_name = str( attr_type ),
+        )
         for attr in integration_attributes:
-            if attr.integration_attr_type == attr_type_name:
+            if attr.integration_key == target_key:
                 return attr.value
             continue
         return None

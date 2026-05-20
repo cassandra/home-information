@@ -2,9 +2,11 @@ import logging
 from typing import List, Optional
 
 from hi.integrations.models import IntegrationAttribute
+from hi.integrations.transient_models import IntegrationKey
 
 from .enums import FrigateAttributeType
 from .frigate_client import FrigateClient
+from .frigate_metadata import FrigateMetaData
 
 logger = logging.getLogger(__name__)
 
@@ -31,10 +33,18 @@ class FrigateClientFactory:
 
     @staticmethod
     def _attributes_to_options( integration_attributes : List[ IntegrationAttribute ] ) -> dict:
-        value_by_name = {
-            attr.integration_attr_type: attr.value for attr in integration_attributes
+        key_to_attr = {
+            attr.integration_key: attr for attr in integration_attributes
         }
+
+        def _lookup( attr_type : FrigateAttributeType ) -> Optional[ str ]:
+            key = IntegrationKey(
+                integration_id = FrigateMetaData.integration_id,
+                integration_name = str( attr_type ),
+            )
+            attr = key_to_attr.get( key )
+            return attr.value if attr else None
         return {
-            FrigateClient.BASE_URL: value_by_name.get( FrigateAttributeType.BASE_URL.name ),
-            FrigateClient.AUTH_HEADER: value_by_name.get( FrigateAttributeType.AUTH_HEADER.name ),
+            FrigateClient.BASE_URL: _lookup( FrigateAttributeType.BASE_URL ),
+            FrigateClient.AUTH_HEADER: _lookup( FrigateAttributeType.AUTH_HEADER ),
         }
