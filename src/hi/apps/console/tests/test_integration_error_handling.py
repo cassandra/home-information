@@ -41,7 +41,7 @@ class TestIntegrationErrorHandling(TransactionTestCase):
             name='Error Test Sensor',
             entity_state=self.entity_state,
             sensor_type_str='binary',
-            provides_video_stream=True
+            provides_event_video_clip=True
         )
 
     def test_helper_method_database_constraint_violations(self):
@@ -51,7 +51,7 @@ class TestIntegrationErrorHandling(TransactionTestCase):
             sensor=self.video_sensor,
             value='active',
             response_datetime=timezone.now(),
-            has_video_stream=True
+            has_event_video_clip=True
         )
         
         # Test constraint violation scenarios
@@ -63,7 +63,7 @@ class TestIntegrationErrorHandling(TransactionTestCase):
                     sensor=self.video_sensor,
                     value='duplicate',
                     response_datetime=timezone.now(),
-                    has_video_stream=True
+                    has_event_video_clip=True
                 )
     
     def test_helper_method_failure_recovery(self):
@@ -73,7 +73,7 @@ class TestIntegrationErrorHandling(TransactionTestCase):
             sensor=self.video_sensor,
             value='valid_record',
             response_datetime=timezone.now(),
-            has_video_stream=True
+            has_event_video_clip=True
         )
         
         # Test that view handles helper method exceptions gracefully
@@ -104,7 +104,7 @@ class TestIntegrationErrorHandling(TransactionTestCase):
             sensor=self.video_sensor,
             value='connection_test',
             response_datetime=timezone.now(),
-            has_video_stream=True
+            has_event_video_clip=True
         )
         
         # Test database query failure simulation
@@ -126,7 +126,7 @@ class TestIntegrationErrorHandling(TransactionTestCase):
             sensor=self.video_sensor,
             value='concurrent_test',
             response_datetime=base_time,
-            has_video_stream=True
+            has_event_video_clip=True
         )
         
         # Test concurrent modification by modifying record between queries

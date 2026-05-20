@@ -213,10 +213,10 @@ class TestFrigateSensorResponseGeneration( TestCase ):
         self.assertEqual( obj.correlation_role, CorrelationRole.START )
         self.assertEqual( obj.correlation_id, '99' )
         self.assertEqual( obj.timestamp, opened.start_datetime )
-        # source_image_url points at the canonical event's snapshot.jpg
+        # event_video_snapshot_url points at the canonical event's snapshot.jpg
         # so the alert / history views can show what fired the detection.
         self.assertEqual(
-            obj.source_image_url,
+            obj.event_video_snapshot_url,
             'http://frigate.example/api/events/99/snapshot.jpg?_t=1',
         )
 
@@ -236,10 +236,10 @@ class TestFrigateSensorResponseGeneration( TestCase ):
         self.assertEqual( obj.correlation_role, CorrelationRole.END )
         self.assertEqual( obj.correlation_id, '7' )
         self.assertEqual( obj.timestamp, closed.end_datetime )
-        # No source_image_url on END — Frigate's snapshot.jpg is the
+        # No event_video_snapshot_url on END — Frigate's snapshot.jpg is the
         # frame the detection fired on, vacuous for the lifecycle's
         # closing transition.
-        self.assertIsNone( obj.source_image_url )
+        self.assertIsNone( obj.event_video_snapshot_url )
 
     def test_object_presence_uses_canonical_bucket_for_active_state(self):
         """Raw Frigate label runs through the converter table; tests

@@ -1220,7 +1220,7 @@ class TestEntityStateHistoryView(DualModeViewTestCase):
         self.assertIn( '%2B00%3A00', body )
 
     def test_video_browse_affordance_rendered_for_video_stream_rows(self):
-        """Rows whose underlying SensorHistory has_video_stream render a
+        """Rows whose underlying SensorHistory has_event_video_clip render a
         click-through to the per-event video browser; rows without it
         do not."""
         from django.urls import reverse as _reverse
@@ -1229,7 +1229,7 @@ class TestEntityStateHistoryView(DualModeViewTestCase):
         video_obs = SensorHistory.objects.create(
             sensor = self.sensor, value = 'on',
             response_datetime = '2024-03-01T12:00:00Z',
-            has_video_stream = True,
+            has_event_video_clip = True,
         )
         expected_url = _reverse(
             'console_entity_video_sensor_history_detail',

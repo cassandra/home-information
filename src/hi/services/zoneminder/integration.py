@@ -158,7 +158,7 @@ class ZoneMinderGateway( IntegrationGateway, ZoneMinderMixin ):
             self,
             sensor_response: SensorResponse) -> Optional[VideoStream]:
         """Get video stream from sensor response (recorded events)"""
-        # if not sensor_response.has_video_stream:
+        # if not sensor_response.has_event_video_clip:
         #     return None
 
         event_id_fieldname = ZmDetailKeys.EVENT_ID_ATTR_NAME

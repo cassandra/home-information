@@ -66,7 +66,7 @@
                                aria-label="View event from {{ response.timestamp|localtime|date:'g:i A' }}{% if response.sensor_history_id == sensor_history_data.current_sensor_response.sensor_history_id %} - Currently viewing{% endif %}">
                                 <div>
                                     <span class="time">{{ response.timestamp|localtime|date:"g:i A" }}</span>
-                                    {% if response.has_video_stream %}
+                                    {% if response.has_event_video_clip %}
                                     {% sensor_response_video_stream response as video_stream %}
                                     {% if video_stream and video_stream.metadata.duration_secs %}
                                     <small class="text-muted d-block duration">{{ video_stream.metadata.duration_secs|format_duration }}</small>
@@ -122,9 +122,9 @@
                            data-event-id="{{ sensor_history_data.current_sensor_response.sensor_history_id }}">
                       {% include "console/panes/video_recording_replay_button.html" %}
                     </div>
-                    {% elif sensor_history_data.current_sensor_response.source_image_url %}
+                    {% elif sensor_history_data.current_sensor_response.event_video_snapshot_url %}
                     <!-- Fallback to image when video stream is not available -->
-                    <img class="img-fluid" src="{{ sensor_history_data.current_sensor_response.source_image_url }}" alt="Image from {{ sensor_history_data.current_sensor_response.timestamp|localtime|date:'F j, Y g:i A' }}" data-event-id="{{ sensor_history_data.current_sensor_response.sensor_history_id }}">
+                    <img class="img-fluid" src="{{ sensor_history_data.current_sensor_response.event_video_snapshot_url }}" alt="Image from {{ sensor_history_data.current_sensor_response.timestamp|localtime|date:'F j, Y g:i A' }}" data-event-id="{{ sensor_history_data.current_sensor_response.sensor_history_id }}">
                     <div class="text-center mt-2">
                         <small class="text-muted">Image - video may be processing</small>
                     </div>

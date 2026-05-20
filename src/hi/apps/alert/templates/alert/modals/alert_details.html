@@ -70,7 +70,7 @@
     </div>
   </div>
 </div>
-{% elif alert_visual_content.source_image_url %}
+{% elif alert_visual_content.event_video_snapshot_url %}
 <!-- Fallback to snapshot image when video stream is not available -->
 <div class="row mb-3">
   <div class="col-12">
@@ -81,7 +81,7 @@
         </h6>
       </div>
       <div class="card-body p-2">
-        <img class="img-fluid" src="{{ alert_visual_content.source_image_url }}" alt="{{ alert_visual_content.alarm.title }}">
+        <img class="img-fluid" src="{{ alert_visual_content.event_video_snapshot_url }}" alt="{{ alert_visual_content.alarm.title }}">
         {% if not alert_visual_content.is_from_latest %}
         <small class="text-muted d-block mt-1">From: {{ alert_visual_content.alarm.timestamp|localtime|date:"M j, Y H:i" }}</small>
         {% endif %}

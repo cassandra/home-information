@@ -272,7 +272,7 @@ class HassConverter:
         # Note: CAMERA_DOMAIN entities expose video_snapshot capability
         # via has_video_snapshot (set during _create_or_reconnect_entity),
         # not via an EntityStateType here. They have no native video
-        # stream so has_video_stream stays False.
+        # stream so has_event_video_clip stays False.
         (HassApi.SUN_DOMAIN, None, None): EntityStateType.MULTIVALUED,
         (HassApi.WEATHER_DOMAIN, None, None): EntityStateType.MULTIVALUED,
     }

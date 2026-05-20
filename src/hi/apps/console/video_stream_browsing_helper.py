@@ -32,7 +32,7 @@ class VideoStreamBrowsingHelper:
         """
         Find the first sensor with video capability for an entity.
         Uses priority order to select the best sensor and optimizes
-        queries. Eligibility is sensor-level (``provides_video_stream``);
+        queries. Eligibility is sensor-level (``provides_event_video_clip``);
         independent of whether the parent entity has its own live feed.
         """
         if not entity:
@@ -54,7 +54,7 @@ class VideoStreamBrowsingHelper:
                 state_type_to_sensors[state_type_str] = []
             state_type_to_sensors[state_type_str].extend(
                 sensor for sensor in state.sensors.all() 
-                if sensor.provides_video_stream
+                if sensor.provides_event_video_clip
             )
         
         # Check sensors in priority order
@@ -343,7 +343,7 @@ class VideoStreamBrowsingHelper:
             current_record = SensorHistory.objects.get(
                 id=current_history_id,
                 sensor=sensor,
-                has_video_stream=True
+                has_event_video_clip=True
             )
         except SensorHistory.DoesNotExist:
             return (None, None)
@@ -627,7 +627,7 @@ class VideoStreamBrowsingHelper:
                 current_history_record = SensorHistory.objects.get(
                     id=sensor_history_id,
                     sensor=sensor,
-                    has_video_stream=True
+                    has_event_video_clip=True
                 )
                 
                 # Check if we should preserve timeline (record is within preserve window)

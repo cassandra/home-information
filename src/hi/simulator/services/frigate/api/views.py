@@ -209,7 +209,7 @@ class EventSnapshotJpegView( View ):
 
     Real Frigate returns the single frame captured at the time of
     detection. HI attaches this URL to the OBJECT_PRESENCE
-    SensorResponse as ``source_image_url`` so the alert / history
+    SensorResponse as ``event_video_snapshot_url`` so the alert / history
     views can show what the camera saw. The simulator returns a
     placeholder JPEG stamped with the event id and label.
 

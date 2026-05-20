@@ -74,7 +74,7 @@ class TestAlertManagerDelegation(BaseTestCase):
             name='Motion Sensor'
         )
         
-        # Phase 3: VIDEO_STREAM EntityState removed - video capability now indicated by has_video_stream=True
+        # Phase 3: VIDEO_STREAM EntityState removed - video capability now indicated by has_event_video_clip=True
         entity.has_video_stream = True
         entity.save()
         
@@ -85,8 +85,8 @@ class TestAlertManagerDelegation(BaseTestCase):
             timestamp=timezone.now(),
             sensor=motion_sensor,  # Motion sensor that triggered the alarm
             detail_attrs={'location': 'Front Door'},
-            source_image_url=None,
-            has_video_stream=False
+            event_video_snapshot_url=None,
+            has_event_video_clip=False
         )
         
         motion_alarm = Alarm(
@@ -213,8 +213,8 @@ class TestAlertManagerDelegation(BaseTestCase):
             timestamp=timezone.now(),
             sensor=motion_sensor1,  # First motion sensor
             detail_attrs={},
-            source_image_url=None,
-            has_video_stream=False
+            event_video_snapshot_url=None,
+            has_event_video_clip=False
         )
         
         source_details_2 = SensorResponse(
@@ -223,8 +223,8 @@ class TestAlertManagerDelegation(BaseTestCase):
             timestamp=timezone.now(),
             sensor=motion_sensor2,  # Second motion sensor
             detail_attrs={},
-            source_image_url=None,
-            has_video_stream=False
+            event_video_snapshot_url=None,
+            has_event_video_clip=False
         )
         
         # Create alarms with different types to ensure separate alerts

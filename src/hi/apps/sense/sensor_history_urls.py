@@ -16,15 +16,15 @@ def sensor_history_video_browse_url(
         entity_id              : int,
         sensor_id              : int,
         sensor_history_id      : Optional[ int ],
-        has_video_stream       : bool,
-        provides_video_stream  : bool,
+        has_event_video_clip       : bool,
+        provides_event_video_clip  : bool,
 ) -> Optional[ str ]:
     """Best URL to the video event browser for a given sensor-history
     data point. Returns the per-event detail URL when the data point
     itself has a stream; falls back to the sensor's event-timeline URL
     when the sensor produces streams generally; returns ``None`` when
     no video affordance is appropriate."""
-    if has_video_stream and sensor_history_id:
+    if has_event_video_clip and sensor_history_id:
         return reverse(
             'console_entity_video_sensor_history_detail',
             kwargs = {
@@ -33,7 +33,7 @@ def sensor_history_video_browse_url(
                 'sensor_history_id': sensor_history_id,
             },
         )
-    if provides_video_stream:
+    if provides_event_video_clip:
         return reverse(
             'console_entity_video_sensor_history',
             kwargs = {

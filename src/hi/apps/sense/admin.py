@@ -40,10 +40,10 @@ class SensorHistoryAdmin(admin.ModelAdmin):
         'value',
         'response_datetime',
         'details',
-        'has_video_stream',
+        'has_event_video_clip',
         'correlation_role_str',
         'correlation_id',
-        'source_image_url',
+        'event_video_snapshot_url',
     )
 
     search_fields = ['sensor__name']

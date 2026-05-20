@@ -355,8 +355,8 @@ class WeatherAlertAlarmMapper:
             timestamp=weather_alert.effective or datetimeproxy.now(),
             sensor=None,  # No sensor for weather alerts
             detail_attrs=detail_attrs,
-            source_image_url=None,  # Weather alerts don't have images
-            has_video_stream=False
+            event_video_snapshot_url=None,  # Weather alerts don't have images
+            has_event_video_clip=False
         )]
     
     def create_alarm(self, weather_alert: WeatherAlert) -> Optional[Alarm]:

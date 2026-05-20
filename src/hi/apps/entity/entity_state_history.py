@@ -75,8 +75,8 @@ class EntityStateHistoryValue:
     confirming observation within the window (or where the
     observation's value did not match).
 
-    Click-through metadata (``sensor_history_id``, ``has_video_stream``,
-    ``has_details``, ``provides_video_stream``) is populated on
+    Click-through metadata (``sensor_history_id``, ``has_event_video_clip``,
+    ``has_details``, ``provides_event_video_clip``) is populated on
     OBSERVATION rows from the underlying ``SensorHistory`` and the
     parent ``Sensor``. INTENT rows leave these at defaults since
     controllers don't have video or details to link to."""
@@ -88,9 +88,9 @@ class EntityStateHistoryValue:
     history_value_type    : StateHistoryValueType
     matched_intent        : Optional[ MatchedIntent ] = None
     sensor_history_id     : Optional[ int ]           = None
-    has_video_stream      : bool                      = False
+    has_event_video_clip      : bool                      = False
     has_details           : bool                      = False
-    provides_video_stream : bool                      = False
+    provides_event_video_clip : bool                      = False
 
     @property
     def video_browse_url(self) -> Optional[ str ]:
@@ -103,8 +103,8 @@ class EntityStateHistoryValue:
             entity_id = self.entity_state.entity.id,
             sensor_id = self.instrument.id,
             sensor_history_id = self.sensor_history_id,
-            has_video_stream = self.has_video_stream,
-            provides_video_stream = self.provides_video_stream,
+            has_event_video_clip = self.has_event_video_clip,
+            provides_event_video_clip = self.provides_event_video_clip,
         )
 
     @property
@@ -238,9 +238,9 @@ def merge_history(
             history_value_type = StateHistoryValueType.OBSERVATION,
             matched_intent = matched_intent,
             sensor_history_id = obs.id,
-            has_video_stream = obs.has_video_stream,
+            has_event_video_clip = obs.has_event_video_clip,
             has_details = bool( obs.detail_attrs ),
-            provides_video_stream = obs.sensor.provides_video_stream,
+            provides_event_video_clip = obs.sensor.provides_event_video_clip,
         ))
         continue
     for intent_history in unmatched_intents:

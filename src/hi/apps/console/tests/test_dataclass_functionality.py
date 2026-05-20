@@ -38,7 +38,7 @@ class TestEntitySensorHistoryData(TestCase):
                 detail_attrs={
                     'duration_seconds': str(60 + i * 30)
                 },
-                has_video_stream=True,
+                has_event_video_clip=True,
                 sensor_history_id=1000 + i  # Set as direct property
             )
             self.sensor_responses.append(response)

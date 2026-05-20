@@ -145,19 +145,19 @@ class Alert:
         """
         for alarm in self.alarm_list:
             for sensor_response in alarm.sensor_response_list:
-                # Check for video stream capability first (preferred over static source_image_url)
-                if sensor_response.has_video_stream:
+                # Check for video stream capability first (preferred over static event_video_snapshot_url)
+                if sensor_response.has_event_video_clip:
                     return {
-                        'source_image_url': sensor_response.source_image_url,
+                        'event_video_snapshot_url': sensor_response.event_video_snapshot_url,
                         'alarm': alarm,
                         'source_details': sensor_response,  # Keep for backward compatibility
                         'sensor_response': sensor_response,
                         'is_from_latest': alarm == self.alarm_list[0] if self.alarm_list else False,
                     }
-                # Fallback to static source_image_url if no video stream
-                elif sensor_response.source_image_url:
+                # Fallback to static event_video_snapshot_url if no video stream
+                elif sensor_response.event_video_snapshot_url:
                     return {
-                        'source_image_url': sensor_response.source_image_url,
+                        'event_video_snapshot_url': sensor_response.event_video_snapshot_url,
                         'alarm': alarm,
                         'source_details': sensor_response,  # Keep for backward compatibility
                         'sensor_response': sensor_response,
@@ -173,7 +173,7 @@ class Alert:
         video_sources = []
         for alarm in self.alarm_list:
             for sensor_response in alarm.sensor_response_list:
-                if sensor_response.has_video_stream:
+                if sensor_response.has_event_video_clip:
                     video_sources.append({
                         'sensor_response': sensor_response,
                         'alarm': alarm,

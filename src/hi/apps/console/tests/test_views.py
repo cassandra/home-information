@@ -118,7 +118,7 @@ class TestEntityVideoSensorHistoryView(BaseTestCase):
             name='Motion Sensor',
             entity_state=self.entity_state,
             sensor_type_str='binary',
-            provides_video_stream=True
+            provides_event_video_clip=True
         )
         
         # Create sensor history records for testing
@@ -129,7 +129,7 @@ class TestEntityVideoSensorHistoryView(BaseTestCase):
                 sensor=self.video_sensor,
                 value='active' if i % 2 == 0 else 'idle',
                 response_datetime=base_time - timezone.timedelta(hours=i),
-                has_video_stream=True,
+                has_event_video_clip=True,
                 correlation_role_str=str(CorrelationRole.END),
                 correlation_id='test',
                 details='{"test": "data"}'
@@ -145,7 +145,7 @@ class TestEntityVideoSensorHistoryView(BaseTestCase):
             name='Temperature Sensor',
             entity_state=self.entity_state,
             sensor_type_str='sensor',
-            provides_video_stream=False
+            provides_event_video_clip=False
         )
         
         view = EntityVideoSensorHistoryView()
@@ -174,7 +174,7 @@ class TestEntityVideoSensorHistoryView(BaseTestCase):
                 sensor=self.video_sensor,
                 value=f'motion_detected_{i}',
                 response_datetime=base_time - timezone.timedelta(hours=i),
-                has_video_stream=True,
+                has_event_video_clip=True,
                 correlation_role_str=str(CorrelationRole.END),
                 correlation_id='test',
                 details=f'{{"event": "test_{i}", "confidence": 0.9}}'
@@ -233,7 +233,7 @@ class TestEntityVideoSensorHistoryView(BaseTestCase):
                 sensor=self.video_sensor,
                 value=f'older_motion_{i}',
                 response_datetime=base_time - timezone.timedelta(hours=3 + i),
-                has_video_stream=True,
+                has_event_video_clip=True,
                 correlation_role_str=str(CorrelationRole.END),
                 correlation_id='test',
                 details=f'{{"event": "older_{i}", "confidence": 0.8}}'
@@ -246,7 +246,7 @@ class TestEntityVideoSensorHistoryView(BaseTestCase):
                 sensor=self.video_sensor,
                 value=f'newer_motion_{i}',
                 response_datetime=base_time - timezone.timedelta(minutes=30 * i),
-                has_video_stream=True,
+                has_event_video_clip=True,
                 correlation_role_str=str(CorrelationRole.END),
                 correlation_id='test',
                 details=f'{{"event": "newer_{i}", "confidence": 0.9}}'
@@ -302,7 +302,7 @@ class TestEntityVideoSensorHistoryView(BaseTestCase):
                 sensor=self.video_sensor,
                 value=f'older_motion_{i}',
                 response_datetime=base_time - timezone.timedelta(hours=5 + i),
-                has_video_stream=True,
+                has_event_video_clip=True,
                 correlation_role_str=str(CorrelationRole.END),
                 correlation_id='test',
                 details=f'{{"event": "older_{i}", "confidence": 0.7}}'
@@ -315,7 +315,7 @@ class TestEntityVideoSensorHistoryView(BaseTestCase):
                 sensor=self.video_sensor,
                 value=f'newer_motion_{i}',
                 response_datetime=base_time - timezone.timedelta(hours=2.5) + timezone.timedelta(minutes=15 * i),
-                has_video_stream=True,
+                has_event_video_clip=True,
                 correlation_role_str=str(CorrelationRole.END),
                 correlation_id='test',
                 details=f'{{"event": "newer_{i}", "confidence": 0.95}}'
@@ -372,14 +372,14 @@ class TestEntityVideoSensorHistoryView(BaseTestCase):
             sensor=self.video_sensor,
             value='outside_before_window',
             response_datetime=base_time - timezone.timedelta(hours=4),
-            has_video_stream=True
+            has_event_video_clip=True
         )
         
         SensorHistory.objects.create(
             sensor=self.video_sensor,
             value='outside_after_window',
             response_datetime=base_time,
-            has_video_stream=True
+            has_event_video_clip=True
         )
         
         # Records inside the window (should appear in results)
@@ -389,7 +389,7 @@ class TestEntityVideoSensorHistoryView(BaseTestCase):
                 sensor=self.video_sensor,
                 value=f'inside_window_{i}',
                 response_datetime=base_time - timezone.timedelta(hours=2) + timezone.timedelta(minutes=20 * i),
-                has_video_stream=True,
+                has_event_video_clip=True,
                 correlation_role_str=str(CorrelationRole.END),
                 correlation_id='test',
                 details=f'{{"window_test": "record_{i}"}}'
@@ -487,7 +487,7 @@ class TestEntityVideoSensorHistoryView(BaseTestCase):
             sensor=self.video_sensor,
             value='active',
             response_datetime=timezone.now(),
-            has_video_stream=True,
+            has_event_video_clip=True,
             correlation_role_str=str(CorrelationRole.END),
             correlation_id='test',
             details='invalid-json-format{not valid}'
@@ -583,7 +583,7 @@ class TestEntityVideoSensorHistoryView(BaseTestCase):
                 sensor=self.video_sensor,
                 value=f'large_dataset_record_{i}',
                 response_datetime=base_time - timezone.timedelta(minutes=i * 10),
-                has_video_stream=True,
+                has_event_video_clip=True,
                 correlation_role_str=str(CorrelationRole.END),
                 correlation_id='test',
                 details=f'{{"large_test": true, "index": {i}}}'
@@ -630,7 +630,7 @@ class TestEntityVideoSensorHistoryView(BaseTestCase):
                 sensor=self.video_sensor,
                 value=f'same_time_{i}',
                 response_datetime=same_timestamp,
-                has_video_stream=True,
+                has_event_video_clip=True,
                 correlation_role_str=str(CorrelationRole.END),
                 correlation_id='test',
                 details=f'{{"same_timestamp_test": {i}}}'
@@ -642,7 +642,7 @@ class TestEntityVideoSensorHistoryView(BaseTestCase):
             sensor=self.video_sensor,
             value='after_midnight',
             response_datetime=midnight_boundary,
-            has_video_stream=True
+            has_event_video_clip=True
         )
         
         before_midnight = midnight_boundary - timezone.timedelta(minutes=2)
@@ -650,7 +650,7 @@ class TestEntityVideoSensorHistoryView(BaseTestCase):
             sensor=self.video_sensor,
             value='before_midnight',
             response_datetime=before_midnight,
-            has_video_stream=True
+            has_event_video_clip=True
         )
         
         view = EntityVideoSensorHistoryView()

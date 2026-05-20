@@ -105,7 +105,7 @@ class BaseEntityVideoSensorHistoryView( HiGridView, EntityViewMixin, SenseViewMi
         sensor = self.get_sensor( request, *args, **kwargs )
         
         # Check if sensor provides video stream capability
-        if not sensor.provides_video_stream:
+        if not sensor.provides_event_video_clip:
             raise BadRequest( 'Sensor does not provide video stream capability.' )
                 
         # Build sensor history data using subclass-specific method

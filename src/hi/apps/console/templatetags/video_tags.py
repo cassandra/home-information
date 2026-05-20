@@ -21,7 +21,7 @@ def sensor_response_video_stream(sensor_response):
     Returns:
         VideoStream object or None if no video available
     """
-    if not sensor_response or not sensor_response.has_video_stream:
+    if not sensor_response or not sensor_response.has_event_video_clip:
         return None
 
     try:

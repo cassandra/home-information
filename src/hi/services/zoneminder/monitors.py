@@ -383,7 +383,7 @@ class ZoneMinderMonitor( PeriodicMonitor, ZoneMinderMixin, SensorResponseMixin )
 
         return sensor_response_map
       
-    def _has_video_stream_capability(self, detail_attrs: dict = None) -> bool:
+    def _has_event_video_clip_capability(self, detail_attrs: dict = None) -> bool:
         """
         Determine if a SensorResponse should have video stream capability.
         For ZoneMinder, this means the response contains an Event ID.
@@ -406,8 +406,8 @@ class ZoneMinderMonitor( PeriodicMonitor, ZoneMinderMixin, SensorResponseMixin )
             value = str(EntityStateValue.ACTIVE),
             timestamp = zm_event.start_datetime,
             detail_attrs = detail_attrs,
-            source_image_url = zm_event.image_url( self.zm_manager() ),
-            has_video_stream = self._has_video_stream_capability(detail_attrs),
+            event_video_snapshot_url = zm_event.image_url( self.zm_manager() ),
+            has_event_video_clip = self._has_event_video_clip_capability(detail_attrs),
             correlation_role = CorrelationRole.START,
             correlation_id = all_detail_attrs.get(ZmDetailKeys.EVENT_ID_ATTR_NAME),
         )
@@ -425,7 +425,7 @@ class ZoneMinderMonitor( PeriodicMonitor, ZoneMinderMixin, SensorResponseMixin )
             value = str(EntityStateValue.IDLE),
             timestamp = zm_event.end_datetime,
             detail_attrs = detail_attrs,
-            has_video_stream = self._has_video_stream_capability(detail_attrs),
+            has_event_video_clip = self._has_event_video_clip_capability(detail_attrs),
             correlation_role = CorrelationRole.END,
             correlation_id = all_detail_attrs.get(ZmDetailKeys.EVENT_ID_ATTR_NAME),
         )
@@ -438,7 +438,7 @@ class ZoneMinderMonitor( PeriodicMonitor, ZoneMinderMixin, SensorResponseMixin )
             ),
             value = str(EntityStateValue.IDLE),
             timestamp = timestamp,
-            has_video_stream = False,
+            has_event_video_clip = False,
         )
 
     def _create_monitor_function_sensor_response( self, zm_monitor : ZmMonitor, timestamp : datetime ):
@@ -450,7 +450,7 @@ class ZoneMinderMonitor( PeriodicMonitor, ZoneMinderMixin, SensorResponseMixin )
             ),
             value = str( zm_monitor.function() ),
             timestamp = timestamp,
-            has_video_stream = False,
+            has_event_video_clip = False,
         )
 
     def _create_run_state_sensor_response( self, run_state_name : str, timestamp : datetime ):
@@ -458,6 +458,6 @@ class ZoneMinderMonitor( PeriodicMonitor, ZoneMinderMixin, SensorResponseMixin )
             integration_key = self.zm_manager()._zm_run_state_integration_key(),
             value = run_state_name,
             timestamp = timestamp,
-            has_video_stream = False,
+            has_event_video_clip = False,
         )
     

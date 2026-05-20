@@ -360,14 +360,14 @@ class TestMergeHistory( BaseTestCase ):
         self.assertEqual( len( result ), 1 )
         self.assertEqual( result[ 0 ].sensor_history_id, obs.id )
 
-    def test_observation_row_reflects_has_video_stream_from_source(self):
+    def test_observation_row_reflects_has_event_video_clip_from_source(self):
         obs_with = SensorHistory.objects.create(
             sensor = self.sensor, value = 'on',
-            response_datetime = _at( 0 ), has_video_stream = True,
+            response_datetime = _at( 0 ), has_event_video_clip = True,
         )
         obs_without = SensorHistory.objects.create(
             sensor = self.sensor, value = 'on',
-            response_datetime = _at( 1 ), has_video_stream = False,
+            response_datetime = _at( 1 ), has_event_video_clip = False,
         )
 
         result = merge_history(
@@ -377,8 +377,8 @@ class TestMergeHistory( BaseTestCase ):
         )
 
         by_id = { r.sensor_history_id: r for r in result }
-        self.assertTrue( by_id[ obs_with.id ].has_video_stream )
-        self.assertFalse( by_id[ obs_without.id ].has_video_stream )
+        self.assertTrue( by_id[ obs_with.id ].has_event_video_clip )
+        self.assertFalse( by_id[ obs_without.id ].has_event_video_clip )
 
     def test_observation_row_has_details_when_details_present(self):
         obs_with = SensorHistory.objects.create(
@@ -398,15 +398,15 @@ class TestMergeHistory( BaseTestCase ):
         self.assertTrue( by_id[ obs_with.id ].has_details )
         self.assertFalse( by_id[ obs_without.id ].has_details )
 
-    def test_observation_row_reflects_provides_video_stream_from_sensor(self):
-        # Two sensors on the same state, one with provides_video_stream
+    def test_observation_row_reflects_provides_event_video_clip_from_sensor(self):
+        # Two sensors on the same state, one with provides_event_video_clip
         # set. Each observation row carries its sensor's flag.
         video_sensor = Sensor.objects.create(
             entity_state = self.state,
             name = 'cam-sensor',
             sensor_type_str = 'DEFAULT',
             integration_payload = '{}',
-            provides_video_stream = True,
+            provides_event_video_clip = True,
         )
         obs_video = self._observation( 'on', _at( 0 ), sensor = video_sensor )
         obs_plain = self._observation( 'on', _at( 1 ) )
@@ -418,8 +418,8 @@ class TestMergeHistory( BaseTestCase ):
         )
 
         by_id = { r.sensor_history_id: r for r in result }
-        self.assertTrue( by_id[ obs_video.id ].provides_video_stream )
-        self.assertFalse( by_id[ obs_plain.id ].provides_video_stream )
+        self.assertTrue( by_id[ obs_video.id ].provides_event_video_clip )
+        self.assertFalse( by_id[ obs_plain.id ].provides_event_video_clip )
 
     def test_intent_row_click_through_fields_at_defaults(self):
         intent = self._intent( 'on', _at( 0 ) )
@@ -433,9 +433,9 @@ class TestMergeHistory( BaseTestCase ):
         self.assertEqual( len( result ), 1 )
         row = result[ 0 ]
         self.assertIsNone( row.sensor_history_id )
-        self.assertFalse( row.has_video_stream )
+        self.assertFalse( row.has_event_video_clip )
         self.assertFalse( row.has_details )
-        self.assertFalse( row.provides_video_stream )
+        self.assertFalse( row.provides_event_video_clip )
 
     # ------------------------------------------------------------------
     # Click-through URL properties on the row type.
@@ -443,7 +443,7 @@ class TestMergeHistory( BaseTestCase ):
     def test_observation_with_video_stream_has_video_browse_url(self):
         obs = SensorHistory.objects.create(
             sensor = self.sensor, value = 'on',
-            response_datetime = _at( 0 ), has_video_stream = True,
+            response_datetime = _at( 0 ), has_event_video_clip = True,
         )
 
         result = merge_history(
@@ -501,7 +501,7 @@ class TestMergeHistory( BaseTestCase ):
         obs = SensorHistory.objects.create(
             sensor = self.sensor, value = 'on',
             response_datetime = _at( 0 ),
-            has_video_stream = True,
+            has_event_video_clip = True,
             details = '{"trigger": "motion"}',
         )
 

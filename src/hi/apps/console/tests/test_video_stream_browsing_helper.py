@@ -45,7 +45,7 @@ class TestVideoStreamBrowsingHelper(TransactionTestCase):
             name='Motion Sensor',
             entity_state=self.entity_state,
             sensor_type_str='binary',
-            provides_video_stream=True
+            provides_event_video_clip=True
         )
         
         # Create another entity without video capability for find_video_sensor tests
@@ -80,7 +80,7 @@ class TestVideoStreamBrowsingHelper(TransactionTestCase):
             response_datetime=timezone.now(),
             correlation_role_str=str(CorrelationRole.END),
             correlation_id='test',
-            has_video_stream=True,
+            has_event_video_clip=True,
             details='{"original": "data"}'
         )
         
@@ -100,7 +100,7 @@ class TestVideoStreamBrowsingHelper(TransactionTestCase):
             response_datetime=timezone.now(),
             correlation_role_str=str(CorrelationRole.END),
             correlation_id='test',
-            has_video_stream=True,
+            has_event_video_clip=True,
             details='{"existing": "value", "duration": "120"}'
         )
         
@@ -125,7 +125,7 @@ class TestVideoStreamBrowsingHelper(TransactionTestCase):
                 response_datetime=base_time - timezone.timedelta(hours=i),
                 correlation_role_str=str(CorrelationRole.END),
                 correlation_id=str(i),
-                has_video_stream=True,
+                has_event_video_clip=True,
             )
             records.append(record)
         
@@ -154,7 +154,7 @@ class TestVideoStreamBrowsingHelper(TransactionTestCase):
                 response_datetime=base_time - timezone.timedelta(hours=i),
                 correlation_role_str=str(CorrelationRole.END),
                 correlation_id=str(i),
-                has_video_stream=True,
+                has_event_video_clip=True,
             )
             records.append(record)
         
@@ -191,7 +191,7 @@ class TestVideoStreamBrowsingHelper(TransactionTestCase):
                 response_datetime=base_time - timezone.timedelta(hours=i),
                 correlation_role_str=str(CorrelationRole.END),
                 correlation_id=str(i),
-                has_video_stream=True,
+                has_event_video_clip=True,
             )
             records.append(record)
         
@@ -240,7 +240,7 @@ class TestVideoStreamBrowsingHelper(TransactionTestCase):
                     timestamp=timestamp,
                     sensor=self.video_sensor,
                     detail_attrs={'duration_seconds': '120', 'details': f'Motion event {days_ago}_{hour_offset}'},
-                    has_video_stream=True,
+                    has_event_video_clip=True,
                     sensor_history_id=int(f'{days_ago}{hour_offset}')  # Use unique ID for test
                 )
                 sensor_responses.append(response)
@@ -282,7 +282,7 @@ class TestVideoStreamBrowsingHelper(TransactionTestCase):
                 timestamp=timestamp,
                 sensor=self.video_sensor,
                 detail_attrs={'duration_seconds': '90', 'details': f'Motion event hour {hour}'},
-                has_video_stream=True,
+                has_event_video_clip=True,
                 sensor_history_id=hour
             )
             sensor_responses.append(response)
@@ -308,7 +308,7 @@ class TestVideoStreamBrowsingHelper(TransactionTestCase):
                 response_datetime=base_time - timezone.timedelta(hours=i),
                 correlation_role_str=str(CorrelationRole.END),
                 correlation_id=str(i),
-                has_video_stream=True,
+                has_event_video_clip=True,
             )
             records.append(record)
         
@@ -338,7 +338,7 @@ class TestVideoStreamBrowsingHelper(TransactionTestCase):
                 response_datetime=base_time - timezone.timedelta(hours=i),
                 correlation_role_str=str(CorrelationRole.END),
                 correlation_id=str(i),
-                has_video_stream=True,
+                has_event_video_clip=True,
             )
             records.append(record)
         
@@ -373,7 +373,7 @@ class TestVideoStreamBrowsingHelper(TransactionTestCase):
                 response_datetime=base_time - timezone.timedelta(hours=i),
                 correlation_role_str=str(CorrelationRole.END),
                 correlation_id=str(i),
-                has_video_stream=True,
+                has_event_video_clip=True,
             )
         
         result = VideoStreamBrowsingHelper.build_sensor_history_data(self.video_sensor)
@@ -404,7 +404,7 @@ class TestVideoStreamBrowsingHelper(TransactionTestCase):
                 response_datetime=base_time - timezone.timedelta(hours=i),
                 correlation_role_str=str(CorrelationRole.END),
                 correlation_id=str(i),
-                has_video_stream=True,
+                has_event_video_clip=True,
             )
             records.append(record)
         
@@ -446,7 +446,7 @@ class TestVideoStreamBrowsingHelper(TransactionTestCase):
                 response_datetime=base_time - timezone.timedelta(hours=i),
                 correlation_role_str=str(CorrelationRole.END),
                 correlation_id=str(i),
-                has_video_stream=True,
+                has_event_video_clip=True,
             )
             records.append(record)
         
@@ -486,7 +486,7 @@ class TestVideoStreamBrowsingHelper(TransactionTestCase):
                 response_datetime=base_time - timezone.timedelta(hours=i),
                 correlation_role_str=str(CorrelationRole.END),
                 correlation_id=str(i),
-                has_video_stream=True,
+                has_event_video_clip=True,
             )
         
         result = VideoStreamBrowsingHelper.build_sensor_history_data(
@@ -526,7 +526,7 @@ class TestVideoStreamBrowsingHelper(TransactionTestCase):
             response_datetime=base_time,
             correlation_role_str=str(CorrelationRole.END),
             correlation_id='base_time',
-            has_video_stream=True
+            has_event_video_clip=True
         )
         
         # Test with invalid window bounds (end before start)
@@ -562,7 +562,7 @@ class TestVideoStreamBrowsingHelper(TransactionTestCase):
                 timestamp=same_timestamp,  # Same timestamp for all
                 sensor=self.video_sensor,
                 detail_attrs={'sensor_history_id': str(1000 + i)},
-                has_video_stream=True,
+                has_event_video_clip=True,
             )
             sensor_responses.append(response)
         
@@ -585,7 +585,7 @@ class TestVideoStreamBrowsingHelper(TransactionTestCase):
             sensor=self.video_sensor,
             value='extreme_past',
             response_datetime=datetime(1970, 1, 1, tzinfo=UTC),
-            has_video_stream=True
+            has_event_video_clip=True
         )
         
         SensorHistory.objects.create(
@@ -594,7 +594,7 @@ class TestVideoStreamBrowsingHelper(TransactionTestCase):
             response_datetime=base_time,
             correlation_role_str=str(CorrelationRole.END),
             correlation_id='base_time',
-            has_video_stream=True
+            has_event_video_clip=True
         )
         
         # Should handle extreme timestamp ranges
@@ -660,7 +660,7 @@ class TestVideoDispatchResult(TransactionTestCase):
             name='Dispatch Motion Sensor',
             entity_state=self.entity_state,
             sensor_type_str='binary',
-            provides_video_stream=True
+            provides_event_video_clip=True
         )
         
         # Create entity without video capability for error testing
@@ -709,7 +709,7 @@ class TestVideoDispatchResult(TransactionTestCase):
             response_datetime=earlier_time,
             correlation_role_str=str(CorrelationRole.END),
             correlation_id='earlier',
-            has_video_stream=True
+            has_event_video_clip=True
         )
         
         SensorHistory.objects.create(
@@ -718,7 +718,7 @@ class TestVideoDispatchResult(TransactionTestCase):
             response_datetime=later_time,
             correlation_role_str=str(CorrelationRole.END),
             correlation_id='later',
-            has_video_stream=True
+            has_event_video_clip=True
         )
         
         # Test with an earlier view URL that should trigger fallback logic
@@ -825,7 +825,7 @@ class TestVideoDispatchResult(TransactionTestCase):
             sensor=self.video_sensor,
             value='test_event',
             response_datetime=base_time - timezone.timedelta(hours=1),
-            has_video_stream=True,
+            has_event_video_clip=True,
             correlation_role_str=str(CorrelationRole.END),
             correlation_id='integration_test'
         )
@@ -876,7 +876,7 @@ class TestTimezoneHandling(TransactionTestCase):
             name='Timezone Test Sensor',
             entity_state=self.entity_state,
             sensor_type_str='binary',
-            provides_video_stream=True
+            provides_event_video_clip=True
         )
 
     def test_group_responses_by_time_with_user_timezone(self):
@@ -895,7 +895,7 @@ class TestTimezoneHandling(TransactionTestCase):
             response_datetime=utc_time_1,
             correlation_role_str=str(CorrelationRole.END),
             correlation_id='utc1',
-            has_video_stream=True
+            has_event_video_clip=True
         )
         
         record_2 = SensorHistory.objects.create(
@@ -904,7 +904,7 @@ class TestTimezoneHandling(TransactionTestCase):
             response_datetime=utc_time_2,
             correlation_role_str=str(CorrelationRole.END),
             correlation_id='utc2',
-            has_video_stream=True
+            has_event_video_clip=True
         )
         
         # Create sensor responses
@@ -946,7 +946,7 @@ class TestTimezoneHandling(TransactionTestCase):
             response_datetime=utc_before,
             correlation_role_str=str(CorrelationRole.END),
             correlation_id='utc_before',
-            has_video_stream=True
+            has_event_video_clip=True
         )
         
         record_after = SensorHistory.objects.create(
@@ -955,7 +955,7 @@ class TestTimezoneHandling(TransactionTestCase):
             response_datetime=utc_after,
             correlation_role_str=str(CorrelationRole.END),
             correlation_id='utc_after',
-            has_video_stream=True
+            has_event_video_clip=True
         )
         
         response_before = VideoStreamBrowsingHelper.create_sensor_response_with_history_id(record_before)
@@ -986,14 +986,14 @@ class TestTimezoneHandling(TransactionTestCase):
             sensor=self.video_sensor,
             value='late_night',
             response_datetime=pst_late_night,
-            has_video_stream=True
+            has_event_video_clip=True
         )
         
         record_early = SensorHistory.objects.create(
             sensor=self.video_sensor,
             value='early_morning',
             response_datetime=pst_early_morning,
-            has_video_stream=True
+            has_event_video_clip=True
         )
         
         response_late = VideoStreamBrowsingHelper.create_sensor_response_with_history_id(record_late)
@@ -1027,7 +1027,7 @@ class TestTimezoneHandling(TransactionTestCase):
             sensor=self.video_sensor,
             value='test_event',
             response_datetime=utc_time,
-            has_video_stream=True
+            has_event_video_clip=True
         )
         
         response = VideoStreamBrowsingHelper.create_sensor_response_with_history_id(record)
@@ -1064,7 +1064,7 @@ class TestTimezoneHandling(TransactionTestCase):
             sensor=self.video_sensor,
             value='test_event',
             response_datetime=utc_time,
-            has_video_stream=True
+            has_event_video_clip=True
         )
         
         # Test build_sensor_history_data_default with timezone

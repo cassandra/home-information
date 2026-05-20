@@ -76,8 +76,8 @@ class SensorHistorySyntheticData:
                 timestamp=timestamp,
                 sensor=sensor,
                 detail_attrs=detail_attrs,
-                source_image_url=f'/static/mock/video_{i}.mp4' if is_active else None,
-                has_video_stream=True,
+                event_video_snapshot_url=f'/static/mock/video_{i}.mp4' if is_active else None,
+                has_event_video_clip=True,
             )
             
             mock_responses.append(sensor_response)
@@ -110,9 +110,9 @@ class SensorHistorySyntheticData:
             'sensor': sensor,
             'value': value,
             'timestamp': timestamp,
-            'has_video_stream': has_video,
+            'has_event_video_clip': has_video,
             'details': f'{value.capitalize()} state detected',
-            'source_image_url': f'/static/mock/snapshot_{timestamp.timestamp()}.jpg' if has_video else None,
+            'event_video_snapshot_url': f'/static/mock/snapshot_{timestamp.timestamp()}.jpg' if has_video else None,
         }
     
     @staticmethod
@@ -146,7 +146,7 @@ class SensorHistorySyntheticData:
                     'value': 'active' if minute_offset == 0 else 'idle',
                     'timestamp': timestamp,
                     'duration_seconds': 120,
-                    'has_video_stream': True,
+                    'has_event_video_clip': True,
                     'details': f'Event at {timestamp.strftime("%H:%M")}',
                 })
             item_counter += 36
@@ -162,7 +162,7 @@ class SensorHistorySyntheticData:
                 'value': 'active',
                 'timestamp': timestamp,
                 'duration_seconds': 180,
-                'has_video_stream': True,
+                'has_event_video_clip': True,
                 'details': f'Yesterday event at {hour}:00',
             })
         item_counter += len(yesterday_hours)
@@ -177,7 +177,7 @@ class SensorHistorySyntheticData:
                 'value': 'idle',
                 'timestamp': timestamp,
                 'duration_seconds': 90,
-                'has_video_stream': True,
+                'has_event_video_clip': True,
                 'details': f'Event {days_ago} days ago',
             })
         
@@ -225,7 +225,7 @@ class SensorHistorySyntheticData:
                     sensor=sensor,
                     value='active' if hours_ago % 3 == 0 else 'idle',
                     response_datetime=timestamp,
-                    has_video_stream=True,
+                    has_event_video_clip=True,
                     correlation_role_str=str(CorrelationRole.END),
                     correlation_id=str(hours_ago),
                     details=f'{{"event_id": "{hours_ago}", "duration_seconds": "{60 + hours_ago * 15}"}}'
@@ -249,7 +249,7 @@ class SensorHistorySyntheticData:
                     sensor=sensor,
                     value=f'event_{hours_ago}',
                     response_datetime=timestamp,
-                    has_video_stream=True,
+                    has_event_video_clip=True,
                     correlation_role_str=str(CorrelationRole.END),
                     correlation_id=str(hours_ago),
                     details=f'{{"hours_ago": "{hours_ago}"}}'
@@ -278,7 +278,7 @@ class SensorHistorySyntheticData:
                     sensor=sensor,
                     value=f'record_{i}',
                     response_datetime=timestamp,
-                    has_video_stream=True,
+                    has_event_video_clip=True,
                     correlation_role_str=str(CorrelationRole.END),
                     correlation_id=str(i),
                     details=f'{{"record_index": "{i}", "window_size": "{window}"}}'
@@ -335,7 +335,7 @@ class SensorHistorySyntheticData:
                     'duration_seconds': str(90 + i * 30),
                     'details': f'Test event {i} - {timestamp.strftime("%Y-%m-%d %H:%M:%S %Z")}'
                 },
-                has_video_stream=True
+                has_event_video_clip=True
             )
             responses.append(response)
         
@@ -346,7 +346,7 @@ class SensorHistorySyntheticData:
         sensor: Sensor,
         value: str = 'active',
         response_datetime: Optional[datetime] = None,
-        has_video_stream: bool = True,
+        has_event_video_clip: bool = True,
         correlation_role: CorrelationRole = CorrelationRole.END,
         correlation_id: Optional[str] = None,
         details: Optional[str] = None
@@ -365,7 +365,7 @@ class SensorHistorySyntheticData:
             sensor=sensor,
             value=value,
             response_datetime=response_datetime,
-            has_video_stream=has_video_stream,
+            has_event_video_clip=has_event_video_clip,
             correlation_role_str=str(correlation_role),
             correlation_id=correlation_id,
             details=details
@@ -378,7 +378,7 @@ class SensorHistorySyntheticData:
         base_time: Optional[datetime] = None,
         time_interval_minutes: int = 1,
         value_prefix: str = 'test_record',
-        has_video_stream: bool = True,
+        has_event_video_clip: bool = True,
         correlation_role: CorrelationRole = CorrelationRole.END
     ) -> List[SensorHistory]:
         """
@@ -394,7 +394,7 @@ class SensorHistorySyntheticData:
                 sensor=sensor,
                 value=f'{value_prefix}_{i}',
                 response_datetime=timestamp,
-                has_video_stream=has_video_stream,
+                has_event_video_clip=has_event_video_clip,
                 correlation_role_str=str(correlation_role),
                 correlation_id=str(i),
                 details=f'{{"{value_prefix}": {i}}}'

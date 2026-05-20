@@ -18,7 +18,7 @@ class TestSensorHistoryVideoBrowseUrl( BaseTestCase ):
     def test_specific_event_url_when_data_point_has_stream(self):
         url = sensor_history_video_browse_url(
             entity_id = 1, sensor_id = 2, sensor_history_id = 3,
-            has_video_stream = True, provides_video_stream = True,
+            has_event_video_clip = True, provides_event_video_clip = True,
         )
         self.assertIsNotNone( url )
         self.assertIn( '3', url )
@@ -29,7 +29,7 @@ class TestSensorHistoryVideoBrowseUrl( BaseTestCase ):
         # in the path).
         url = sensor_history_video_browse_url(
             entity_id = 1, sensor_id = 2, sensor_history_id = 3,
-            has_video_stream = False, provides_video_stream = True,
+            has_event_video_clip = False, provides_event_video_clip = True,
         )
         self.assertIsNotNone( url )
         self.assertNotIn( '3', url )
@@ -37,27 +37,27 @@ class TestSensorHistoryVideoBrowseUrl( BaseTestCase ):
     def test_none_when_neither_stream_capability(self):
         url = sensor_history_video_browse_url(
             entity_id = 1, sensor_id = 2, sensor_history_id = 3,
-            has_video_stream = False, provides_video_stream = False,
+            has_event_video_clip = False, provides_event_video_clip = False,
         )
         self.assertIsNone( url )
 
     def test_none_when_has_stream_but_no_history_id(self):
-        # has_video_stream=True without a sensor_history_id can't form
-        # a per-event URL; the fallback (provides_video_stream=False)
+        # has_event_video_clip=True without a sensor_history_id can't form
+        # a per-event URL; the fallback (provides_event_video_clip=False)
         # also doesn't apply, so the result is None.
         url = sensor_history_video_browse_url(
             entity_id = 1, sensor_id = 2, sensor_history_id = None,
-            has_video_stream = True, provides_video_stream = False,
+            has_event_video_clip = True, provides_event_video_clip = False,
         )
         self.assertIsNone( url )
 
     def test_falls_back_to_per_sensor_when_has_stream_but_no_history_id(self):
-        # Edge: has_video_stream=True but sensor_history_id missing.
+        # Edge: has_event_video_clip=True but sensor_history_id missing.
         # If the sensor itself provides streams, fall back to the
         # per-sensor timeline.
         url = sensor_history_video_browse_url(
             entity_id = 1, sensor_id = 2, sensor_history_id = None,
-            has_video_stream = True, provides_video_stream = True,
+            has_event_video_clip = True, provides_event_video_clip = True,
         )
         self.assertIsNotNone( url )
         self.assertIn( '1', url )

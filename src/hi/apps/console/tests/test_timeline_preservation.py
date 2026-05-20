@@ -37,7 +37,7 @@ class TestTimelinePreservationLogic(TransactionTestCase):
             name='Timeline Test Sensor',
             entity_state=self.entity_state,
             sensor_type_str='binary',
-            provides_video_stream=True
+            provides_event_video_clip=True
         )
 
     def test_timeline_preserved_when_target_record_within_window(self):
@@ -168,7 +168,7 @@ class TestTimelinePreservationLogic(TransactionTestCase):
                 sensor=self.video_sensor,
                 value='active',
                 response_datetime=base_time.replace(hour=hour),
-                has_video_stream=True,
+                has_event_video_clip=True,
                 correlation_role_str=str(CorrelationRole.END),
                 correlation_id='test',
                 details='{"day": "today"}'
@@ -181,7 +181,7 @@ class TestTimelinePreservationLogic(TransactionTestCase):
             sensor=self.video_sensor,
             value='active',
             response_datetime=yesterday,
-            has_video_stream=True,
+            has_event_video_clip=True,
             correlation_role_str=str(CorrelationRole.END),
             correlation_id='test',
             details='{"day": "yesterday"}'
@@ -193,7 +193,7 @@ class TestTimelinePreservationLogic(TransactionTestCase):
             sensor=self.video_sensor,
             value='active',
             response_datetime=old_time,
-            has_video_stream=True,
+            has_event_video_clip=True,
             correlation_role_str=str(CorrelationRole.END),
             correlation_id='test',
             details='{"day": "old"}'
@@ -242,7 +242,7 @@ class TestTimelinePreservationLogic(TransactionTestCase):
                 sensor=self.video_sensor,
                 value=f'nav_test_{i}',
                 response_datetime=base_time - timezone.timedelta(hours=i),
-                has_video_stream=True,
+                has_event_video_clip=True,
                 correlation_role_str=str(CorrelationRole.END),
                 correlation_id='test',
                 details=f'{{"nav_order": "{i}"}}'
@@ -282,7 +282,7 @@ class TestTimelinePreservationLogic(TransactionTestCase):
                 sensor=self.video_sensor,
                 value=response.value,
                 response_datetime=response.timestamp,
-                has_video_stream=True,
+                has_event_video_clip=True,
                 correlation_role_str=str(CorrelationRole.END),
                 correlation_id='test',
                 details='{"timezone": "aware"}'

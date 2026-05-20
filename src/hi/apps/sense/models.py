@@ -51,8 +51,17 @@ class Sensor( IntegrationDetailsModel ):
         'Persist History',
         default = True,
     )
-    provides_video_stream = models.BooleanField(
-        'Provides Video Stream',
+    # Event-level capability flags. These describe what kind of
+    # historical-playback artifact each reading of this sensor
+    # carries. Distinct from any entity-level live-feed concept
+    # (``Entity.has_video_stream`` / ``has_video_snapshot``), which
+    # is about observing the camera in real time.
+    provides_event_video_clip = models.BooleanField(
+        'Provides Event Video Clip',
+        default = False,
+    )
+    provides_event_video_snapshot = models.BooleanField(
+        'Provides Event Video Snapshot',
         default = False,
     )
     
@@ -110,12 +119,12 @@ class SensorHistory(models.Model):
         'Details',
         blank = True, null = True,
     )
-    source_image_url = models.TextField(
-        'Image URL',
+    event_video_snapshot_url = models.TextField(
+        'Event Video Snapshot URL',
         blank = True, null = True,
     )
-    has_video_stream = models.BooleanField(
-        'Has Video Stream',
+    has_event_video_clip = models.BooleanField(
+        'Has Event Video Clip',
         default = False,
     )
     correlation_role_str = models.CharField(
@@ -171,15 +180,15 @@ class SensorHistory(models.Model):
 
     @property
     def video_browse_url(self) -> str:
-        if self.has_video_stream:
+        if self.has_event_video_clip:
             return reverse( 'console_entity_video_sensor_history_detail',
                             kwargs = { 'entity_id': self.entity.id,
                                        'sensor_id': self.sensor.id,
                                        'sensor_history_id': self.id })
-        if self.sensor.provides_video_stream:
+        if self.sensor.provides_event_video_clip:
             return reverse( 'console_entity_video_sensor_history',
                             kwargs = { 'entity_id': self.entity.id,
-                                       'sensor_id': self.sensor.id })        
+                                       'sensor_id': self.sensor.id })
         return None
     
     @property

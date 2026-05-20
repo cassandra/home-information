@@ -341,8 +341,8 @@ class TestAlert(BaseTestCase):
                     timestamp=datetimeproxy.now(),
                     sensor=None,
                     detail_attrs={'Location': 'Kitchen'},
-                    source_image_url='/static/img/test-image.png',
-                    has_video_stream=False
+                    event_video_snapshot_url='/static/img/test-image.png',
+                    has_event_video_clip=False
                 )
             ],
             security_level=SecurityLevel.LOW,
@@ -354,7 +354,7 @@ class TestAlert(BaseTestCase):
         visual_content = alert.get_first_visual_content()
         
         self.assertIsNotNone(visual_content)
-        self.assertEqual(visual_content['source_image_url'], '/static/img/test-image.png')
+        self.assertEqual(visual_content['event_video_snapshot_url'], '/static/img/test-image.png')
         self.assertEqual(visual_content['alarm'], alarm_with_image)
         self.assertTrue(visual_content['is_from_latest'])
         return
@@ -373,8 +373,8 @@ class TestAlert(BaseTestCase):
                     timestamp=datetimeproxy.now(),
                     sensor=None,
                     detail_attrs={'Location': 'Front Door'},
-                    source_image_url=None,
-                    has_video_stream=False
+                    event_video_snapshot_url=None,
+                    has_event_video_clip=False
                 )
             ],
             security_level=SecurityLevel.LOW,
@@ -402,8 +402,8 @@ class TestAlert(BaseTestCase):
                     timestamp=datetimeproxy.now(),
                     sensor=None,
                     detail_attrs={'Location': 'Kitchen'},
-                    source_image_url='/static/img/first-image.png',
-                    has_video_stream=False
+                    event_video_snapshot_url='/static/img/first-image.png',
+                    has_event_video_clip=False
                 )
             ],
             security_level=SecurityLevel.LOW,
@@ -423,8 +423,8 @@ class TestAlert(BaseTestCase):
                     timestamp=datetimeproxy.now(),
                     sensor=None,
                     detail_attrs={'Location': 'Kitchen'},
-                    source_image_url=None,
-                    has_video_stream=False
+                    event_video_snapshot_url=None,
+                    has_event_video_clip=False
                 )
             ],
             security_level=SecurityLevel.LOW,
@@ -437,7 +437,7 @@ class TestAlert(BaseTestCase):
         visual_content = alert.get_first_visual_content()
         
         self.assertIsNotNone(visual_content)
-        self.assertEqual(visual_content['source_image_url'], '/static/img/first-image.png')
+        self.assertEqual(visual_content['event_video_snapshot_url'], '/static/img/first-image.png')
         self.assertEqual(visual_content['alarm'], first_alarm_with_image)
         self.assertFalse(visual_content['is_from_latest'])  # first_alarm_with_image is not at index 0 after adding second alarm
         return
@@ -456,8 +456,8 @@ class TestAlert(BaseTestCase):
                     timestamp=datetimeproxy.now(),
                     sensor=None,
                     detail_attrs={'Location': 'Kitchen'},
-                    source_image_url=None,
-                    has_video_stream=False
+                    event_video_snapshot_url=None,
+                    has_event_video_clip=False
                 )
             ],
             security_level=SecurityLevel.LOW,
@@ -477,8 +477,8 @@ class TestAlert(BaseTestCase):
                     timestamp=datetimeproxy.now(),
                     sensor=None,
                     detail_attrs={'Location': 'Kitchen'},
-                    source_image_url='/static/img/second-image.png',
-                    has_video_stream=False
+                    event_video_snapshot_url='/static/img/second-image.png',
+                    has_event_video_clip=False
                 )
             ],
             security_level=SecurityLevel.LOW,
@@ -491,7 +491,7 @@ class TestAlert(BaseTestCase):
         visual_content = alert.get_first_visual_content()
         
         self.assertIsNotNone(visual_content)
-        self.assertEqual(visual_content['source_image_url'], '/static/img/second-image.png')
+        self.assertEqual(visual_content['event_video_snapshot_url'], '/static/img/second-image.png')
         self.assertEqual(visual_content['alarm'], second_alarm_with_image)
         self.assertTrue(visual_content['is_from_latest'])  # second_alarm_with_image is at index 0 after being added
         return

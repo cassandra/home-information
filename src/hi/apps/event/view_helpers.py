@@ -67,7 +67,7 @@ class EventHistoryViewHelper:
         for clause in event_history.event_definition.event_clauses.all():
             entity = clause.entity_state.entity
             for sensor in clause.entity_state.sensors.all():
-                if sensor.provides_video_stream:
+                if sensor.provides_event_video_clip:
                     if entity.id not in video_entities:
                         video_entities[entity.id] = {
                             'entity': entity,

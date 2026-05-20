@@ -249,8 +249,8 @@ class IntegrationSyncCheck:
                     '%Y-%m-%d %H:%M:%S',
                 ),
             },
-            source_image_url = None,
-            has_video_stream = False,
+            event_video_snapshot_url = None,
+            has_event_video_clip = False,
         )
         alarm = Alarm(
             alarm_source = AlarmSource.INTEGRATION,

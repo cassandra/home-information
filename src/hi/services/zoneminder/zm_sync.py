@@ -341,7 +341,7 @@ class ZoneMinderSynchronizer( IntegrationSynchronizer, ZoneMinderMixin ):
                     prefix = zm_manager.MOVEMENT_SENSOR_PREFIX,
                     zm_monitor_id = zm_monitor.id(),
                 ),
-                provides_video_stream = True,
+                provides_event_video_clip = True,
             )
             HiModelHelper.create_discrete_controller(
                 entity = entity,

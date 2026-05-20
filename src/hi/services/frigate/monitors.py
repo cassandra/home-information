@@ -322,13 +322,13 @@ class FrigateMonitor( PeriodicMonitor, FrigateMixin, SensorResponseMixin ):
                     raw_class = state.canonical_event.object_class,
                 )
                 correlation_role = CorrelationRole.START
-                source_image_url = self.frigate_manager().get_event_snapshot_url(
+                event_video_snapshot_url = self.frigate_manager().get_event_snapshot_url(
                     event_id = state.canonical_event.event_id,
                 )
             else:
                 object_value = FrigateConverter.OBJECT_NONE_VALUE
                 correlation_role = CorrelationRole.END
-                source_image_url = None
+                event_video_snapshot_url = None
 
             response = self._create_object_presence_sensor_response(
                 camera_name = state.camera_name,
@@ -336,7 +336,7 @@ class FrigateMonitor( PeriodicMonitor, FrigateMixin, SensorResponseMixin ):
                 timestamp = state.effective_timestamp,
                 correlation_role = correlation_role,
                 correlation_id = state.canonical_event.event_id,
-                source_image_url = source_image_url,
+                event_video_snapshot_url = event_video_snapshot_url,
             )
             sensor_response_map[ response.integration_key ] = response
 
@@ -399,7 +399,7 @@ class FrigateMonitor( PeriodicMonitor, FrigateMixin, SensorResponseMixin ):
             timestamp        : datetime,
             correlation_role : 'CorrelationRole' = None,
             correlation_id   : str = None,
-            source_image_url : str = None,
+            event_video_snapshot_url : str = None,
     ) -> SensorResponse:
         """OBJECT_PRESENCE SensorResponse. ``value`` is one of the
         canonical bucket strings produced by
@@ -414,5 +414,5 @@ class FrigateMonitor( PeriodicMonitor, FrigateMixin, SensorResponseMixin ):
             timestamp = timestamp,
             correlation_role = correlation_role,
             correlation_id = correlation_id,
-            source_image_url = source_image_url,
+            event_video_snapshot_url = event_video_snapshot_url,
         )
