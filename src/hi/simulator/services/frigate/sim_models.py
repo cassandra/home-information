@@ -18,6 +18,7 @@ from hi.simulator.services.base_models import (
     SimState,
 )
 from hi.simulator.services.enums import SimEntityType, SimStateType
+from hi.simulator.services.sim_entity import SimEntity
 
 
 @dataclass( frozen = True )
@@ -91,6 +92,44 @@ class FrigateCameraObjectPresenceState( SimState ):
     @property
     def choices(self) -> List[ Tuple[ str, str ] ]:
         return FRIGATE_OBJECT_LABEL_CHOICES
+
+
+@dataclass( frozen = True )
+class FrigateSimCamera:
+    """Per-entity accessor wrapper for a simulated Frigate camera.
+
+    Mirrors ``ZmSimMonitor`` in role: convenient typed property
+    access onto a single camera ``SimEntity`` so views / event
+    managers don't reach into ``sim_entity_fields`` / ``sim_state_list``
+    directly. Pure projection — no behavior beyond reads."""
+
+    sim_entity  : SimEntity
+
+    @property
+    def camera_name(self) -> str:
+        return self.sim_entity.sim_entity_fields.camera_name
+
+    @property
+    def display_name(self) -> str:
+        return self.sim_entity.sim_entity_fields.name
+
+    @property
+    def motion_sim_state(self) -> FrigateCameraMotionState:
+        for sim_state in self.sim_entity.sim_state_list:
+            if isinstance( sim_state, FrigateCameraMotionState ):
+                return sim_state
+            continue
+        raise ValueError( f'No motion sim state for Frigate camera {self.sim_entity}' )
+
+    @property
+    def object_presence_sim_state(self) -> FrigateCameraObjectPresenceState:
+        for sim_state in self.sim_entity.sim_state_list:
+            if isinstance( sim_state, FrigateCameraObjectPresenceState ):
+                return sim_state
+            continue
+        raise ValueError(
+            f'No object-presence sim state for Frigate camera {self.sim_entity}'
+        )
 
 
 FRIGATE_SIM_ENTITY_DEFINITION_LIST: List[ SimEntityDefinition ] = [

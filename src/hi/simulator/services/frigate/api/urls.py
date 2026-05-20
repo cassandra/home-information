@@ -1,17 +1,17 @@
 """Frigate API endpoints (simulator-side).
 
-Scaffolding stub — feature work fills in the routes that the HI
-Frigate integration will hit:
-
-- ``GET /api/events`` — list events
-- ``GET /api/events/<id>`` — single event detail
-- ``GET /api/events/<id>/snapshot.jpg`` — event snapshot
-- ``GET /api/events/<id>/clip.mp4`` — event clip
-- ``GET /api/<camera>/latest.jpg`` — live snapshot
-- ``GET /api/config`` — Frigate config (camera list lives here)
-- ``GET /api/stats`` — Frigate stats
+Mirrors the shape of Frigate's real HTTP API. Routes are added in
+parallel with the HI client's per-endpoint support — at any given
+point only the endpoints HI talks to need to exist.
 """
-from django.urls import path  # noqa: F401
+from django.urls import path
+
+from . import views
 
 
-urlpatterns: list = []
+urlpatterns = [
+
+    path( 'config',
+          views.ConfigView.as_view(),
+          name = 'frigate_api_config' ),
+]
