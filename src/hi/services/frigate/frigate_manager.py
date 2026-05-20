@@ -15,6 +15,7 @@ from hi.integrations.transient_models import (
 )
 
 from .enums import FrigateAttributeType
+from .frigate_client_factory import FrigateClientFactory
 from .frigate_metadata import FrigateMetaData
 
 logger = logging.getLogger(__name__)
@@ -109,12 +110,30 @@ class FrigateManager( SingletonManager, AggregateHealthProvider, ApiHealthStatus
             integration_attributes : List[ IntegrationAttribute ],
             timeout_secs           : Optional[ float ],
     ) -> ConnectionTestResult:
-        """Live probe against the configured base URL. Scaffolding
-        stub returns a "not yet implemented" failure so the operator
-        gets a clear signal until the real probe is wired in."""
-        return ConnectionTestResult.failure(
-            'Frigate connection probe not yet implemented (scaffolding).'
-        )
+        """Live probe against the configured base URL.
+
+        Builds a temporary ``FrigateClient`` from the proposed
+        attributes and calls ``ping()``. Bounded by ``timeout_secs``
+        so the Configure form can fail interactively rather than
+        wait on a stalled host."""
+        try:
+            client = FrigateClientFactory.create_client(
+                integration_attributes = integration_attributes,
+                timeout_secs = timeout_secs,
+            )
+        except ValueError as e:
+            return ConnectionTestResult.failure( str( e ) )
+        except Exception as e:
+            logger.exception( f'Error building Frigate client for test_connection: {e}' )
+            return ConnectionTestResult.failure( f'Configuration error: {e}' )
+
+        try:
+            client.ping()
+        except ValueError as e:
+            return ConnectionTestResult.failure( str( e ) )
+        except Exception as e:
+            return ConnectionTestResult.failure( f'Connection error: {e}' )
+        return ConnectionTestResult.success()
 
     @property
     def integration_id(self) -> str:
