@@ -4,10 +4,12 @@ from hi.apps.entity.state_panel_base import EntityStatePanel
 
 _OPTIONAL_ROLES = {
     EntityStateRole.MOVEMENT,
+    EntityStateRole.OBJECT_PRESENCE,
 }
 
 _ROLE_DATA_TEMPLATE_ALIASES = {
     'motion_data': EntityStateRole.MOVEMENT,
+    'object_data': EntityStateRole.OBJECT_PRESENCE,
 }
 
 

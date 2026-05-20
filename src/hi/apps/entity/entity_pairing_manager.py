@@ -23,6 +23,7 @@ class EntityPairingManager(Singleton):
         # added to a location view for the first time.
 
         enums.EntityStateType.MOVEMENT: enums.EntityType.AREA,
+        enums.EntityStateType.OBJECT_PRESENCE: enums.EntityType.AREA,
         enums.EntityStateType.PRESENCE: enums.EntityType.AREA,
         enums.EntityStateType.SOUND_LEVEL: enums.EntityType.AREA,
     }

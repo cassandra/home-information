@@ -1,11 +1,11 @@
 {# Aliases declared in panel.py (role_data_template_aliases):           #}
-{#   motion_data (optional).                                            #}
+{#   motion_data (optional), object_data (optional).                    #}
 {#                                                                      #}
-{# Stream rendering goes through the standard live-view template so     #}
-{# the panel inherits its offline placeholder, click-through, and       #}
-{# polling-driven snapshot refresh. Anything beyond the stream (and     #}
-{# the optional motion chip) flows into the framework extras section    #}
-{# beneath the panel body.                                              #}
+{# Chip prefers object_data over motion_data when both are present:     #}
+{# OBJECT_PRESENCE carries the finer-grained class info, and a camera   #}
+{# is unlikely to have both, but if it does the object class wins.     #}
+{# OBJECT_PRESENCE also renders as a state row below the stream so      #}
+{# the user can see the current class and click through to history.    #}
 <div class="hi-state-panel-camera hi-state-panel-camera--modal">
 
   <div class="stream">
@@ -14,9 +14,17 @@
     {% else %}
       <div class="stream-unavailable">Live view not available</div>
     {% endif %}
-    {% if motion_data %}
+    {% if object_data %}
+      {% include "entity/state_panels/camera/motion_chip.html" with motion_data=object_data %}
+    {% elif motion_data %}
       {% include "entity/state_panels/camera/motion_chip.html" %}
     {% endif %}
   </div>
+
+  {% if object_data %}
+  <div class="mt-3">
+    {% include "entity/state_panels/fallback/state_row.html" with entity_state_status_data=object_data %}
+  </div>
+  {% endif %}
 
 </div>

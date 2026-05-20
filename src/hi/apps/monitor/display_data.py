@@ -315,7 +315,10 @@ class EntityStateDisplayData:
 
         if self.entity_state.entity_state_type == EntityStateType.MOVEMENT:
             return self._get_movement_status_style()
-        
+
+        if self.entity_state.entity_state_type == EntityStateType.OBJECT_PRESENCE:
+            return self._get_object_presence_status_style()
+
         if self.entity_state.entity_state_type == EntityStateType.PRESENCE:
             return self._get_presence_status_style()
             
@@ -404,6 +407,29 @@ class EntityStateDisplayData:
                 return StatusStyle.MovementRecent
 
             elif presence_timedelta.total_seconds() < self.PAST_MOVEMENT_THRESHOLD_SECS:
+                return StatusStyle.MovementPast
+
+        return StatusStyle.MovementIdle
+
+    def _get_object_presence_status_style( self ):
+        # OBJECT_PRESENCE collapses onto the Movement Active/Recent/
+        # Past/Idle vocabulary: any non-OBJECT_NONE value is treated
+        # as "active" (detection happening). Same decay thresholds as
+        # MOVEMENT so the visual treatment is uniform across both
+        # state types — see the StatusStyle.Movement* status_values
+        # and the CSS rules keyed off them.
+        object_none_value = str(EntityStateValue.OBJECT_NONE)
+
+        if self.latest_sensor_value and self.latest_sensor_value != object_none_value:
+            return StatusStyle.MovementActive
+
+        if ( self.penultimate_sensor_value
+             and self.penultimate_sensor_value != object_none_value ):
+            object_timedelta = datetimeproxy.now() - self.penultimate_sensor_timestamp
+            if object_timedelta.total_seconds() < self.RECENT_MOVEMENT_THRESHOLD_SECS:
+                return StatusStyle.MovementRecent
+
+            elif object_timedelta.total_seconds() < self.PAST_MOVEMENT_THRESHOLD_SECS:
                 return StatusStyle.MovementPast
 
         return StatusStyle.MovementIdle

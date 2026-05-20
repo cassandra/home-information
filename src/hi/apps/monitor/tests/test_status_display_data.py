@@ -318,6 +318,91 @@ class TestEntityStateDisplayData(BaseTestCase):
         # Should return MovementIdle for inactive presence
         self.assertEqual(display_data.svg_status_style, StatusStyle.MovementIdle)
 
+    # OBJECT_PRESENCE State Type Tests
+    #
+    # Same decay thresholds as MOVEMENT, but the "active" discriminator
+    # is "value is not OBJECT_NONE" (any detected class counts).
+
+    @patch('hi.apps.common.datetimeproxy.now')
+    def test_object_presence_detected_returns_movement_active(self, mock_now):
+        mock_now.return_value = datetime(2023, 1, 1, 12, 0, 0)
+        sensor_response = self._create_mock_sensor_response(
+            str(EntityStateValue.OBJECT_PERSON),
+        )
+        status_data = self._create_entity_state_status_data(
+            'OBJECT_PRESENCE', [sensor_response],
+        )
+        display_data = EntityStateDisplayData(status_data)
+        self.assertEqual(display_data.svg_status_style, StatusStyle.MovementActive)
+
+    @patch('hi.apps.common.datetimeproxy.now')
+    def test_object_presence_other_class_also_active(self, mock_now):
+        # Any non-NONE class — including OTHER — keeps the style active.
+        mock_now.return_value = datetime(2023, 1, 1, 12, 0, 0)
+        sensor_response = self._create_mock_sensor_response(
+            str(EntityStateValue.OBJECT_OTHER),
+        )
+        status_data = self._create_entity_state_status_data(
+            'OBJECT_PRESENCE', [sensor_response],
+        )
+        display_data = EntityStateDisplayData(status_data)
+        self.assertEqual(display_data.svg_status_style, StatusStyle.MovementActive)
+
+    @patch('hi.apps.common.datetimeproxy.now')
+    def test_object_presence_recent_within_threshold(self, mock_now):
+        base_time = datetime(2023, 1, 1, 12, 0, 0)
+        mock_now.return_value = base_time
+        # Penultimate detected a class 60s ago (within RECENT 90s);
+        # current is NONE.
+        recent_response = self._create_mock_sensor_response(
+            str(EntityStateValue.OBJECT_NONE), base_time,
+        )
+        past_response = self._create_mock_sensor_response(
+            str(EntityStateValue.OBJECT_ANIMAL),
+            base_time - timedelta(seconds=60),
+        )
+        status_data = self._create_entity_state_status_data(
+            'OBJECT_PRESENCE', [recent_response, past_response],
+        )
+        display_data = EntityStateDisplayData(status_data)
+        self.assertEqual(display_data.svg_status_style, StatusStyle.MovementRecent)
+
+    @patch('hi.apps.common.datetimeproxy.now')
+    def test_object_presence_past_within_threshold(self, mock_now):
+        base_time = datetime(2023, 1, 1, 12, 0, 0)
+        mock_now.return_value = base_time
+        # Penultimate detected a class 120s ago (between 90s and 180s).
+        recent_response = self._create_mock_sensor_response(
+            str(EntityStateValue.OBJECT_NONE), base_time,
+        )
+        past_response = self._create_mock_sensor_response(
+            str(EntityStateValue.OBJECT_CAR),
+            base_time - timedelta(seconds=120),
+        )
+        status_data = self._create_entity_state_status_data(
+            'OBJECT_PRESENCE', [recent_response, past_response],
+        )
+        display_data = EntityStateDisplayData(status_data)
+        self.assertEqual(display_data.svg_status_style, StatusStyle.MovementPast)
+
+    @patch('hi.apps.common.datetimeproxy.now')
+    def test_object_presence_idle_beyond_threshold(self, mock_now):
+        base_time = datetime(2023, 1, 1, 12, 0, 0)
+        mock_now.return_value = base_time
+        # Penultimate detected a class 200s ago (beyond PAST 180s).
+        recent_response = self._create_mock_sensor_response(
+            str(EntityStateValue.OBJECT_NONE), base_time,
+        )
+        past_response = self._create_mock_sensor_response(
+            str(EntityStateValue.OBJECT_PACKAGE),
+            base_time - timedelta(seconds=200),
+        )
+        status_data = self._create_entity_state_status_data(
+            'OBJECT_PRESENCE', [recent_response, past_response],
+        )
+        display_data = EntityStateDisplayData(status_data)
+        self.assertEqual(display_data.svg_status_style, StatusStyle.MovementIdle)
+
     # OPEN_CLOSE State Type Tests with Time Thresholds
     
     @patch('hi.apps.common.datetimeproxy.now')

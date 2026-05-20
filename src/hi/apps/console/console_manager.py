@@ -29,8 +29,9 @@ class ConsoleManager( Singleton, SettingsMixin, SensorResponseMixin, WeatherMixi
 
     # Priority order for status entity state selection
     STATUS_ENTITY_STATE_PRIORITY = [
+        EntityStateType.OBJECT_PRESENCE,
         EntityStateType.MOVEMENT,
-        EntityStateType.PRESENCE, 
+        EntityStateType.PRESENCE,
         EntityStateType.OPEN_CLOSE,
         EntityStateType.ON_OFF,
         EntityStateType.HIGH_LOW,

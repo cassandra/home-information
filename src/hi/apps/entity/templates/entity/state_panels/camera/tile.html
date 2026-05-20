@@ -1,5 +1,6 @@
 {# Aliases declared in panel.py (role_data_template_aliases):           #}
-{#   motion_data (optional).                                            #}
+{#   motion_data (optional), object_data (optional).                    #}
+{# Chip prefers object_data over motion_data — see modal.html.         #}
 <div class="hi-state-panel-camera hi-state-panel-camera--tile">
 
   <div class="stream">
@@ -8,7 +9,9 @@
     {% else %}
       <div class="stream-unavailable">Offline</div>
     {% endif %}
-    {% if motion_data %}
+    {% if object_data %}
+      {% include "entity/state_panels/camera/motion_chip.html" with motion_data=object_data %}
+    {% elif motion_data %}
       {% include "entity/state_panels/camera/motion_chip.html" %}
     {% endif %}
   </div>
