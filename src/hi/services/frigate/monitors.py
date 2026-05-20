@@ -14,6 +14,7 @@ from hi.apps.sense.transient_models import SensorResponse
 from hi.apps.system.provider_info import ProviderInfo
 
 from .constants import FrigateTimeouts
+from .frigate_converter import FrigateConverter
 from .frigate_manager import FrigateManager
 from .frigate_mixins import FrigateMixin
 from .frigate_models import AggregatedCameraState, FrigateEvent
@@ -194,6 +195,14 @@ class FrigateMonitor( PeriodicMonitor, FrigateMixin, SensorResponseMixin ):
                     timestamp = current_poll_datetime,
                 )
                 sensor_response_map[ idle_response.integration_key ] = idle_response
+                # Pair the MOVEMENT IDLE with an OBJECT_NONE so the
+                # object-presence state doesn't go stale either.
+                object_idle = self._create_object_presence_sensor_response(
+                    camera_name = camera_name,
+                    value = FrigateConverter.OBJECT_NONE_VALUE,
+                    timestamp = current_poll_datetime,
+                )
+                sensor_response_map[ object_idle.integration_key ] = object_idle
             continue
 
         # Phase 4 — advance the polling cursor.
@@ -276,27 +285,50 @@ class FrigateMonitor( PeriodicMonitor, FrigateMixin, SensorResponseMixin ):
             self,
             aggregated_states : Dict[ str, AggregatedCameraState ],
     ) -> Dict:
-        """Emit a single MOVEMENT SensorResponse per aggregated camera
-        state, with ``correlation_role`` + ``correlation_id`` set so
-        downstream alarm dedup pairs ACTIVE / IDLE for the same event.
+        """Emit MOVEMENT + OBJECT_PRESENCE SensorResponses per
+        aggregated camera state.
+
+        - MOVEMENT carries ``ACTIVE`` / ``IDLE`` with
+          ``correlation_role`` + ``correlation_id`` set so downstream
+          alarm dedup pairs each ACTIVE with its eventual IDLE.
+        - OBJECT_PRESENCE carries the canonical class bucket
+          (``OBJECT_PERSON`` / ``OBJECT_CAR`` / ``OBJECT_ANIMAL`` /
+          ``OBJECT_PACKAGE`` / ``OBJECT_OTHER`` / ``OBJECT_NONE``)
+          derived from the canonical event's raw label via
+          ``FrigateConverter.to_canonical_object_class``. IDLE camera
+          states emit ``OBJECT_NONE`` — once the event closes, nothing
+          is currently being detected.
 
         Also updates the per-event caches: closed events are marked
         ``_fully_processed_event_ids`` so they won't be re-emitted on
         the next poll; all events are marked
         ``_start_processed_event_ids`` (kept symmetric with ZM even
-        though the start-cache isn't read by the current pipeline)."""
+        though the start-cache isn't read by the current pipeline).
+        """
         sensor_response_map : Dict = {}
         for state in aggregated_states.values():
             if state.is_active:
-                response = self._create_movement_active_sensor_response(
+                movement = self._create_movement_active_sensor_response(
                     event = state.canonical_event,
+                )
+                object_value = FrigateConverter.to_canonical_object_class(
+                    raw_class = state.canonical_event.object_class,
                 )
             else:
-                response = self._create_movement_idle_sensor_response(
+                movement = self._create_movement_idle_sensor_response(
                     event = state.canonical_event,
                 )
-            response.timestamp = state.effective_timestamp
-            sensor_response_map[ response.integration_key ] = response
+                # No active detection → object presence resets.
+                object_value = FrigateConverter.OBJECT_NONE_VALUE
+            movement.timestamp = state.effective_timestamp
+            sensor_response_map[ movement.integration_key ] = movement
+
+            object_response = self._create_object_presence_sensor_response(
+                camera_name = state.camera_name,
+                value = object_value,
+                timestamp = state.effective_timestamp,
+            )
+            sensor_response_map[ object_response.integration_key ] = object_response
 
             for event in state.all_events:
                 self._start_processed_event_ids[ event.event_id ] = True
@@ -339,8 +371,8 @@ class FrigateMonitor( PeriodicMonitor, FrigateMixin, SensorResponseMixin ):
     def _create_idle_sensor_response(
             self, camera_name : str, timestamp : datetime,
     ) -> SensorResponse:
-        """No-event-this-cycle IDLE response. No correlation id
-        because there's no event to pair with — this is just a
+        """No-event-this-cycle MOVEMENT IDLE response. No correlation
+        id because there's no event to pair with — this is just a
         "currently quiet" signal."""
         return SensorResponse(
             integration_key = FrigateManager._to_integration_key(
@@ -348,5 +380,21 @@ class FrigateMonitor( PeriodicMonitor, FrigateMixin, SensorResponseMixin ):
                 camera_name = camera_name,
             ),
             value = str( EntityStateValue.IDLE ),
+            timestamp = timestamp,
+        )
+
+    def _create_object_presence_sensor_response(
+            self, camera_name : str, value : str, timestamp : datetime,
+    ) -> SensorResponse:
+        """OBJECT_PRESENCE SensorResponse. ``value`` is one of the
+        canonical bucket strings produced by
+        ``FrigateConverter.to_canonical_object_class`` (or
+        ``OBJECT_NONE_VALUE`` for IDLE / no-event cycles)."""
+        return SensorResponse(
+            integration_key = FrigateManager._to_integration_key(
+                prefix = FrigateManager.OBJECT_PRESENCE_SENSOR_PREFIX,
+                camera_name = camera_name,
+            ),
+            value = value,
             timestamp = timestamp,
         )
