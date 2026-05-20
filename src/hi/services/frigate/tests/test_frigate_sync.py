@@ -5,6 +5,7 @@ from django.test import TestCase
 
 from hi.apps.entity.enums import EntityStateType, EntityType
 from hi.apps.entity.models import Entity
+from hi.apps.event.models import EventDefinition
 from hi.apps.sense.models import Sensor
 
 from hi.services.frigate.frigate_manager import FrigateManager
@@ -19,6 +20,10 @@ class _FrigateSyncTestBase( TestCase ):
     def setUp(self):
         self.synchronizer = FrigateSynchronizer()
         self.mock_manager = Mock( spec = FrigateManager )
+        # Default: alarm-event auto-creation off so tests that don't
+        # care about it don't silently exercise the event-creation
+        # path. Tests that need it set this to True explicitly.
+        self.mock_manager.should_add_alarm_events = False
         self.synchronizer._frigate_manager = self.mock_manager
 
     def _set_upstream_cameras( self, cameras : list ) -> None:
@@ -203,3 +208,55 @@ class TestFrigateSyncImpl( _FrigateSyncTestBase ):
         self.assertEqual( len( result.placement_input.groups ), 1 )
         self.assertEqual( result.placement_input.groups[0].label, 'Cameras' )
         self.assertEqual( len( result.placement_input.groups[0].items ), 3 )
+
+    def test_sync_skips_event_definition_when_alarm_events_disabled(self):
+        # Default in setUp is should_add_alarm_events=False.
+        self._set_upstream_cameras( [ 'front_yard' ] )
+        self.synchronizer._sync_impl( is_initial_import = True )
+        self.assertEqual(
+            EventDefinition.objects.filter(
+                integration_id = FrigateMetaData.integration_id,
+            ).count(),
+            0,
+        )
+
+    def test_sync_creates_event_definition_when_alarm_events_enabled(self):
+        self.mock_manager.should_add_alarm_events = True
+        self._set_upstream_cameras( [ 'front_yard' ] )
+        self.synchronizer._sync_impl( is_initial_import = True )
+
+        event_definitions = list( EventDefinition.objects.filter(
+            integration_id = FrigateMetaData.integration_id,
+        ))
+        self.assertEqual( len( event_definitions ), 1 )
+        event_definition = event_definitions[0]
+        self.assertEqual(
+            event_definition.integration_name,
+            'camera.object.event.front_yard',
+        )
+        # One clause keyed on the OBJECT_PRESENCE sensor with the
+        # conservative EQ OBJECT_PERSON default (see Issue #346 for
+        # the broader operator vocabulary that would let this default
+        # widen to "any non-NONE detection").
+        clauses = list( event_definition.event_clauses.all() )
+        self.assertEqual( len( clauses ), 1 )
+        self.assertEqual( clauses[0].value, 'object_person' )
+        self.assertEqual(
+            clauses[0].entity_state.entity_state_type_str,
+            str( EntityStateType.OBJECT_PRESENCE ),
+        )
+
+    def test_sync_is_idempotent_for_event_definitions(self):
+        self.mock_manager.should_add_alarm_events = True
+        self._set_upstream_cameras( [ 'front_yard' ] )
+        self.synchronizer._sync_impl( is_initial_import = True )
+        self.synchronizer._sync_impl( is_initial_import = False )
+        # Second sync against the same upstream — no new event
+        # definitions; existing entity's update path doesn't
+        # re-create the definition.
+        self.assertEqual(
+            EventDefinition.objects.filter(
+                integration_id = FrigateMetaData.integration_id,
+            ).count(),
+            1,
+        )

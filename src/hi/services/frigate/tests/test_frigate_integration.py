@@ -21,9 +21,12 @@ from hi.apps.entity.models import Entity
 from hi.apps.system.enums import ApiHealthStatusType
 from hi.integrations.models import Integration
 
+from hi.services.frigate.enums import FrigateAttributeType
 from hi.services.frigate.frigate_manager import FrigateManager
 from hi.services.frigate.frigate_metadata import FrigateMetaData
 from hi.services.frigate.integration import FrigateGateway
+from hi.integrations.models import IntegrationAttribute
+from hi.integrations.transient_models import IntegrationKey
 
 logging.disable( logging.CRITICAL )
 
@@ -218,3 +221,41 @@ class TestFrigateManagerHealthRecording( TestCase ):
             ApiHealthStatusType.UNAVAILABLE,
         )
         self.assertIsNone( self.manager._frigate_client )
+
+
+class TestFrigateManagerShouldAddAlarmEvents( TestCase ):
+    """``FrigateManager.should_add_alarm_events`` reads the boolean
+    ``ADD_ALARM_EVENTS`` integration attribute. Default off so a
+    freshly-imported install isn't unexpectedly noisy with alarms."""
+
+    def setUp(self):
+        self.manager = FrigateManager()
+        # Bypass ensure_initialized so the test fixture's
+        # _attribute_map isn't clobbered by a reload triggered on
+        # first property read.
+        self.manager._was_initialized = True
+        self.manager._attribute_map = {}
+
+    def _make_attribute( self, value : str ) -> IntegrationAttribute:
+        return IntegrationAttribute(
+            integration_key = IntegrationKey(
+                integration_id = FrigateMetaData.integration_id,
+                integration_name = str( FrigateAttributeType.ADD_ALARM_EVENTS ),
+            ),
+            value = value,
+        )
+
+    def test_default_when_attribute_absent_is_false(self):
+        self.assertFalse( self.manager.should_add_alarm_events )
+
+    def test_attribute_true_value_returns_true(self):
+        self.manager._attribute_map = {
+            FrigateAttributeType.ADD_ALARM_EVENTS: self._make_attribute( 'True' ),
+        }
+        self.assertTrue( self.manager.should_add_alarm_events )
+
+    def test_attribute_false_value_returns_false(self):
+        self.manager._attribute_map = {
+            FrigateAttributeType.ADD_ALARM_EVENTS: self._make_attribute( 'False' ),
+        }
+        self.assertFalse( self.manager.should_add_alarm_events )

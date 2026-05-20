@@ -4,6 +4,7 @@ from typing import Dict, List, Optional
 
 from asgiref.sync import sync_to_async
 
+from hi.apps.common.utils import str_to_bool
 from hi.apps.system.enums import ApiHealthStatusType
 
 from hi.apps.common.singleton_manager import SingletonManager
@@ -48,11 +49,13 @@ class FrigateManager( SingletonManager, AggregateHealthProvider, ApiHealthStatus
     FRIGATE_SYSTEM_INTEGRATION_NAME = 'system'
     FRIGATE_CAMERA_INTEGRATION_NAME_PREFIX = 'camera'
     OBJECT_PRESENCE_SENSOR_PREFIX = 'camera.object'
+    OBJECT_PRESENCE_EVENT_PREFIX = 'camera.object.event'
 
     def __init_singleton__(self):
         super().__init_singleton__()
         self._change_listeners = set()
         self._frigate_client : Optional[ FrigateClient ] = None
+        self._attribute_map : Dict[ FrigateAttributeType, IntegrationAttribute ] = {}
         self.add_api_health_status_provider( self )
         return
 
@@ -80,6 +83,7 @@ class FrigateManager( SingletonManager, AggregateHealthProvider, ApiHealthStatus
         DB row is present and enabled. Sync / monitor consumers should
         gate on ``frigate_client is not None`` before calling out."""
         self._frigate_client = None
+        self._attribute_map = {}
         try:
             integration = Integration.objects.get(
                 integration_id = FrigateMetaData.integration_id,
@@ -91,6 +95,9 @@ class FrigateManager( SingletonManager, AggregateHealthProvider, ApiHealthStatus
             self.update_api_health_status( ApiHealthStatusType.DISABLED )
             return
         integration_attributes = list( integration.attributes.all() )
+        self._attribute_map = self._build_attribute_map(
+            integration_attributes = integration_attributes,
+        )
         try:
             self._frigate_client = FrigateClientFactory.create_client(
                 integration_attributes = integration_attributes,
@@ -101,6 +108,32 @@ class FrigateManager( SingletonManager, AggregateHealthProvider, ApiHealthStatus
             return
         self.update_api_health_status( ApiHealthStatusType.HEALTHY )
         return
+
+    @staticmethod
+    def _build_attribute_map(
+            integration_attributes : List[ IntegrationAttribute ],
+    ) -> Dict[ FrigateAttributeType, IntegrationAttribute ]:
+        attribute_map : Dict[ FrigateAttributeType, IntegrationAttribute ] = {}
+        for attr_type in FrigateAttributeType:
+            target_key = IntegrationKey(
+                integration_id = FrigateMetaData.integration_id,
+                integration_name = str( attr_type ),
+            )
+            for attr in integration_attributes:
+                if attr.integration_key == target_key:
+                    attribute_map[ attr_type ] = attr
+                    break
+                continue
+            continue
+        return attribute_map
+
+    @property
+    def should_add_alarm_events( self ) -> bool:
+        self.ensure_initialized()
+        attribute = self._attribute_map.get( FrigateAttributeType.ADD_ALARM_EVENTS )
+        if attribute:
+            return str_to_bool( attribute.value )
+        return False
 
     @property
     def frigate_client(self) -> Optional[ FrigateClient ]:

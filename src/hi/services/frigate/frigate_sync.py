@@ -269,13 +269,23 @@ class FrigateSynchronizer( IntegrationSynchronizer, FrigateMixin ):
             # model doesn't expose motion independent of object
             # detection, so a separate MOVEMENT sensor would always
             # mirror this one's state.
-            HiModelHelper.create_object_presence_sensor(
+            object_presence_sensor = HiModelHelper.create_object_presence_sensor(
                 entity = entity,
                 integration_key = FrigateManager._to_integration_key(
                     prefix = FrigateManager.OBJECT_PRESENCE_SENSOR_PREFIX,
                     camera_name = camera_name,
                 ),
             )
+
+            if self.frigate_manager().should_add_alarm_events:
+                HiModelHelper.create_object_presence_event_definition(
+                    name = f'{object_presence_sensor.name} Alarm',
+                    entity_state = object_presence_sensor.entity_state,
+                    integration_key = FrigateManager._to_integration_key(
+                        prefix = FrigateManager.OBJECT_PRESENCE_EVENT_PREFIX,
+                        camera_name = camera_name,
+                    ),
+                )
 
         result.created_list.append( entity.name )
         return entity

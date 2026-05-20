@@ -701,12 +701,38 @@ class HiModelHelper:
             name                 : str,
             entity_state         : EntityState,
             integration_key      : IntegrationKey  = None ) -> EventDefinition:
-        
+
         return EventManager().create_simple_alarm_event_definition(
             name = name,
             event_type = EventType.SECURITY,
             entity_state = entity_state,
             value = EntityStateValue.ACTIVE,
+            security_to_alarm_level = {
+                SecurityLevel.HIGH: AlarmLevel.CRITICAL,
+                SecurityLevel.LOW: AlarmLevel.INFO,
+            },
+            event_window_secs = cls.DEFAULT_MOVEMENT_EVENT_WINDOW_SECS,
+            dedupe_window_secs = cls.DEFAULT_MOVEMENT_DEDUPE_WINDOW_SECS,
+            alarm_lifetime_secs = cls.DEFAULT_MOVEMENT_ALARM_LIFETIME_SECS,
+            integration_key = integration_key,
+        )
+
+    @classmethod
+    def create_object_presence_event_definition(
+            cls,
+            name                 : str,
+            entity_state         : EntityState,
+            integration_key      : IntegrationKey  = None ) -> EventDefinition:
+        # Conservative default: alarm on PERSON only. The
+        # EventClauseOperator vocabulary doesn't yet support NEQ/IN
+        # (see Issue #346), so "any detection" can't be expressed as
+        # a single clause. Operators wanting broader rules (car,
+        # package, etc.) can add EventDefinitions in the UI.
+        return EventManager().create_simple_alarm_event_definition(
+            name = name,
+            event_type = EventType.SECURITY,
+            entity_state = entity_state,
+            value = EntityStateValue.OBJECT_PERSON,
             security_to_alarm_level = {
                 SecurityLevel.HIGH: AlarmLevel.CRITICAL,
                 SecurityLevel.LOW: AlarmLevel.INFO,
