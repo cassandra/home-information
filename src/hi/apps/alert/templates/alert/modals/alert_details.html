@@ -49,6 +49,7 @@
 {% if video_source_count == 1 and alert_visual_content and alert_visual_content.sensor_response %}
 <!-- Show single video at alert level to avoid duplication -->
 {% sensor_response_video_stream alert_visual_content.sensor_response as video_stream %}
+{% sensor_response_event_snapshot_url alert_visual_content.sensor_response as event_snapshot_url %}
 {% if video_stream and video_stream.source_url %}
 <div class="row mb-3">
   <div class="col-12">
@@ -60,7 +61,12 @@
       </div>
       <div class="card-body p-2">
         <div class="hi-video-recording">
+          {% if video_stream.stream_type|stringformat:"s" == "mp4" %}
+          <video class="img-fluid" data-video-recording controls autoplay muted playsinline
+                 src="{{ video_stream.source_url }}" aria-label="{{ alert_visual_content.alarm.title }}"></video>
+          {% else %}
           <img class="img-fluid" data-video-recording src="{{ video_stream.source_url }}" alt="{{ alert_visual_content.alarm.title }}">
+          {% endif %}
           {% include "console/panes/video_recording_replay_button.html" %}
         </div>
         {% if not alert_visual_content.is_from_latest %}
@@ -70,7 +76,7 @@
     </div>
   </div>
 </div>
-{% elif alert_visual_content.event_video_snapshot_url %}
+{% elif event_snapshot_url %}
 <!-- Fallback to snapshot image when video stream is not available -->
 <div class="row mb-3">
   <div class="col-12">
@@ -81,7 +87,7 @@
         </h6>
       </div>
       <div class="card-body p-2">
-        <img class="img-fluid" src="{{ alert_visual_content.event_video_snapshot_url }}" alt="{{ alert_visual_content.alarm.title }}">
+        <img class="img-fluid" src="{{ event_snapshot_url }}" alt="{{ alert_visual_content.alarm.title }}">
         {% if not alert_visual_content.is_from_latest %}
         <small class="text-muted d-block mt-1">From: {{ alert_visual_content.alarm.timestamp|localtime|date:"M j, Y H:i" }}</small>
         {% endif %}
@@ -117,7 +123,12 @@
                 </div>
                 <div class="card-body p-2">
                   <div class="hi-video-recording">
+                    {% if video_stream.stream_type|stringformat:"s" == "mp4" %}
+                    <video class="img-fluid" data-video-recording controls muted playsinline
+                           src="{{ video_stream.source_url }}" aria-label="Source {{ video_source.index }}"></video>
+                    {% else %}
                     <img class="img-fluid" data-video-recording src="{{ video_stream.source_url }}" alt="Source {{ video_source.index }}">
+                    {% endif %}
                     {% include "console/panes/video_recording_replay_button.html" %}
                   </div>
                 </div>

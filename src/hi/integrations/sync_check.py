@@ -249,7 +249,6 @@ class IntegrationSyncCheck:
                     '%Y-%m-%d %H:%M:%S',
                 ),
             },
-            event_video_snapshot_url = None,
             has_event_video_clip = False,
         )
         alarm = Alarm(

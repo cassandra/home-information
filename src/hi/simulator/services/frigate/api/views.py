@@ -238,10 +238,11 @@ class EventSnapshotJpegView( View ):
     """``GET /api/events/<id>/snapshot.jpg`` — event snapshot.
 
     Real Frigate returns the single frame captured at the time of
-    detection. HI attaches this URL to the OBJECT_PRESENCE
-    SensorResponse as ``event_video_snapshot_url`` so the alert / history
-    views can show what the camera saw. The simulator returns a
-    placeholder JPEG stamped with the event id and label.
+    detection. HI's Frigate gateway builds this URL on demand from
+    the event id (the SensorResponse carries the existence flag
+    ``has_event_video_snapshot``) so the alert / history views can
+    show what the camera saw. The simulator returns a placeholder
+    JPEG stamped with the event id and label.
 
     404s for unknown event ids so the HI client distinguishes "event
     missing" from "simulator broken" — same posture as ``GET

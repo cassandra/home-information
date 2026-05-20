@@ -200,14 +200,7 @@ class TestFrigateSensorResponseGeneration( TestCase ):
     def test_active_state_emits_object_class_with_start_correlation(self):
         opened = _make_event( event_id = '99', start = self.t0, label = 'person' )
         states = self.monitor._aggregate_camera_states( [ opened ], [] )
-        with patch.object(
-            self.monitor, 'frigate_manager',
-            return_value = Mock( get_event_snapshot_url = Mock(
-                return_value = 'http://frigate.example/api/events/99/snapshot.jpg?_t=1',
-            )),
-        ):
-            responses = self.monitor._generate_sensor_responses_from_states( states )
-        # One OBJECT_PRESENCE response per camera.
+        responses = self.monitor._generate_sensor_responses_from_states( states )
         self.assertEqual( len( responses ), 1 )
 
         obj = self._object_response( responses )
@@ -215,27 +208,18 @@ class TestFrigateSensorResponseGeneration( TestCase ):
         self.assertEqual( obj.correlation_role, CorrelationRole.START )
         self.assertEqual( obj.correlation_id, '99' )
         self.assertEqual( obj.timestamp, opened.start_datetime )
-        # event_video_snapshot_url points at the canonical event's snapshot.jpg
-        # so the alert / history views can show what fired the detection.
-        self.assertEqual(
-            obj.event_video_snapshot_url,
-            'http://frigate.example/api/events/99/snapshot.jpg?_t=1',
-        )
-        # has_clip propagates from FrigateEvent to the SensorResponse
-        # so the gateway can decide whether to surface a playable
-        # event clip URL.
+        # has_clip / has_snapshot propagate from FrigateEvent to the
+        # SensorResponse; the gateway uses correlation_id (the
+        # event_id) to build URLs on demand.
         self.assertTrue( obj.has_event_video_clip )
+        self.assertTrue( obj.has_event_video_snapshot )
 
     def test_active_state_with_no_clip_does_not_advertise_clip(self):
         opened = _make_event(
             event_id = '99', start = self.t0, label = 'person', has_clip = False,
         )
         states = self.monitor._aggregate_camera_states( [ opened ], [] )
-        with patch.object(
-            self.monitor, 'frigate_manager',
-            return_value = Mock( get_event_snapshot_url = Mock( return_value = None )),
-        ):
-            responses = self.monitor._generate_sensor_responses_from_states( states )
+        responses = self.monitor._generate_sensor_responses_from_states( states )
         obj = self._object_response( responses )
         self.assertFalse( obj.has_event_video_clip )
 
@@ -255,10 +239,27 @@ class TestFrigateSensorResponseGeneration( TestCase ):
         self.assertEqual( obj.correlation_role, CorrelationRole.END )
         self.assertEqual( obj.correlation_id, '7' )
         self.assertEqual( obj.timestamp, closed.end_datetime )
-        # No event_video_snapshot_url on END — Frigate's snapshot.jpg is the
-        # frame the detection fired on, vacuous for the lifecycle's
-        # closing transition.
-        self.assertIsNone( obj.event_video_snapshot_url )
+        # END responses carry the snapshot flag too — the Video Browse
+        # page filters to END rows, and a clip-disabled event should
+        # still fall back to its captured frame instead of the
+        # "video unavailable" placeholder.
+        self.assertTrue( obj.has_event_video_snapshot )
+
+    def test_no_snapshot_event_omits_snapshot_flag(self):
+        # Events Frigate flagged ``has_snapshot=False`` for produce
+        # responses with ``has_event_video_snapshot=False`` — honest
+        # data rather than offering a URL that would 404.
+        closed = _make_event(
+            event_id = '7',
+            start = self.t0,
+            end = self.t0 + timedelta( seconds = 15 ),
+            label = 'person',
+        )
+        closed.has_snapshot = False
+        states = self.monitor._aggregate_camera_states( [], [ closed ] )
+        responses = self.monitor._generate_sensor_responses_from_states( states )
+        obj = self._object_response( responses )
+        self.assertFalse( obj.has_event_video_snapshot )
 
     def test_object_presence_uses_canonical_bucket_for_active_state(self):
         """Raw Frigate label runs through the converter table; tests

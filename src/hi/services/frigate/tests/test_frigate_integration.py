@@ -172,6 +172,57 @@ class TestFrigateManagerEventClipUrl( TestCase ):
             self.assertIsNone( self.manager.get_event_clip_url( event_id = '42' ))
 
 
+class TestFrigateGatewayEventSnapshotUrl( TestCase ):
+    """``FrigateGateway.get_sensor_response_event_snapshot_url``
+    builds the snapshot URL fresh from the response's correlation_id
+    each call so the URL always reflects current manager state."""
+
+    def setUp(self):
+        self.gateway = FrigateGateway()
+
+    def _make_response( self, has_snapshot = True, correlation_id = 'evt-1' ):
+        from datetime import datetime
+        return SensorResponse(
+            integration_key = IntegrationKey(
+                integration_id = FrigateMetaData.integration_id,
+                integration_name = 'camera.object.front_yard',
+            ),
+            value = 'object_person',
+            timestamp = datetime.now(),
+            correlation_id = correlation_id,
+            has_event_video_snapshot = has_snapshot,
+        )
+
+    def test_returns_url_for_snapshot_bearing_response(self):
+        response = self._make_response()
+        with patch.object(
+            FrigateManager, 'get_event_snapshot_url',
+            return_value = 'http://frigate.example/api/events/evt-1/snapshot.jpg?_t=1',
+        ):
+            url = self.gateway.get_sensor_response_event_snapshot_url(
+                sensor_response = response,
+            )
+        self.assertEqual(
+            url, 'http://frigate.example/api/events/evt-1/snapshot.jpg?_t=1',
+        )
+
+    def test_returns_none_when_response_has_no_snapshot(self):
+        response = self._make_response( has_snapshot = False )
+        self.assertIsNone(
+            self.gateway.get_sensor_response_event_snapshot_url(
+                sensor_response = response,
+            )
+        )
+
+    def test_returns_none_when_response_has_no_correlation_id(self):
+        response = self._make_response( correlation_id = None )
+        self.assertIsNone(
+            self.gateway.get_sensor_response_event_snapshot_url(
+                sensor_response = response,
+            )
+        )
+
+
 class TestFrigateGatewayVideoStream( TestCase ):
     """``FrigateGateway.get_sensor_response_video_stream`` returns
     the event clip MP4 URL for SensorResponses carrying a clip; None

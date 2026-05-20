@@ -149,7 +149,7 @@ class AsyncSensorHistoryManagerTestCase(AsyncTaskFastTestCase):
             timestamp=timezone.make_aware(datetime(2023, 1, 1, 12, 0, 0)),
             sensor=self.sensor,
             detail_attrs={'key': 'value'},
-            event_video_snapshot_url='http://example.com/image.jpg'
+            has_event_video_snapshot=True
         )
 
         history = response.to_sensor_history()
@@ -157,7 +157,7 @@ class AsyncSensorHistoryManagerTestCase(AsyncTaskFastTestCase):
         self.assertEqual(history.sensor, self.sensor)
         self.assertEqual(len(history.value), 255)  # Should be truncated
         self.assertEqual(history.response_datetime, response.timestamp)
-        self.assertEqual(history.event_video_snapshot_url, response.event_video_snapshot_url)
+        self.assertEqual(history.has_event_video_snapshot, response.has_event_video_snapshot)
         self.assertIn('key', history.detail_attrs)
 
 

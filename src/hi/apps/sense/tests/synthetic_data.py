@@ -76,8 +76,8 @@ class SensorHistorySyntheticData:
                 timestamp=timestamp,
                 sensor=sensor,
                 detail_attrs=detail_attrs,
-                event_video_snapshot_url=f'/static/mock/video_{i}.mp4' if is_active else None,
                 has_event_video_clip=True,
+                has_event_video_snapshot=is_active,
             )
             
             mock_responses.append(sensor_response)
@@ -111,8 +111,8 @@ class SensorHistorySyntheticData:
             'value': value,
             'timestamp': timestamp,
             'has_event_video_clip': has_video,
+            'has_event_video_snapshot': has_video,
             'details': f'{value.capitalize()} state detected',
-            'event_video_snapshot_url': f'/static/mock/snapshot_{timestamp.timestamp()}.jpg' if has_video else None,
         }
     
     @staticmethod

@@ -117,7 +117,7 @@ class TestAlarmWithSensorResponse(BaseTestCase):
             timestamp=datetimeproxy.now(),
             sensor=None,
             detail_attrs=detail_attrs,
-            event_video_snapshot_url='https://example.com/sensor.jpg',
+            has_event_video_snapshot=True,
             has_event_video_clip=False
         )
         
@@ -134,7 +134,7 @@ class TestAlarmWithSensorResponse(BaseTestCase):
         
         self.assertEqual(len(alarm.sensor_response_list), 1)
         self.assertEqual(alarm.sensor_response_list[0].detail_attrs, detail_attrs)
-        self.assertEqual(alarm.sensor_response_list[0].event_video_snapshot_url, 'https://example.com/sensor.jpg')
+        self.assertTrue(alarm.sensor_response_list[0].has_event_video_snapshot)
         return
 
     def test_alarm_with_weather_sensor_response(self):
@@ -151,7 +151,6 @@ class TestAlarmWithSensorResponse(BaseTestCase):
             timestamp=datetimeproxy.now(),
             sensor=None,
             detail_attrs=detail_attrs,
-            event_video_snapshot_url=None,
             has_event_video_clip=False
         )
         
@@ -167,6 +166,6 @@ class TestAlarmWithSensorResponse(BaseTestCase):
         )
         
         self.assertEqual(alarm.sensor_response_list[0].detail_attrs, detail_attrs)
-        self.assertIsNone(alarm.sensor_response_list[0].event_video_snapshot_url)
+        self.assertFalse(alarm.sensor_response_list[0].has_event_video_snapshot)
         self.assertIsNone(alarm.sensor_response_list[0].sensor)
         return

@@ -96,3 +96,16 @@ class IntegrationGateway:
             self,
             sensor_response: SensorResponse) -> Optional[VideoStream]:
         return None
+
+    def get_sensor_response_event_snapshot_url(
+            self,
+            sensor_response: SensorResponse) -> Optional[str]:
+        """Return the URL to the per-event captured snapshot frame for
+        a SensorResponse, or ``None`` when the integration cannot
+        produce one. Generated at render time from the event id so the
+        URL always reflects current integration configuration (e.g.,
+        an operator who moves the upstream host doesn't get stale
+        URLs on historical rows). Pair with
+        ``SensorResponse.has_event_video_snapshot`` — only call when
+        the flag is True."""
+        return None

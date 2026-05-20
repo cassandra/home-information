@@ -154,6 +154,32 @@ class ZoneMinderGateway( IntegrationGateway, ZoneMinderMixin ):
                 
         return None
         
+    def get_sensor_response_event_snapshot_url(
+            self,
+            sensor_response: SensorResponse) -> Optional[str]:
+        """Per-event snapshot URL for a ZM SensorResponse. Reads the
+        event_id from detail_attrs (where the monitor stores it on
+        every START / END row), builds the portal URL fresh each
+        call so an operator-side portal-URL change auto-heals every
+        historical row."""
+        if not sensor_response.has_event_video_snapshot:
+            return None
+        event_id_fieldname = ZmDetailKeys.EVENT_ID_ATTR_NAME
+        if not sensor_response.detail_attrs:
+            return None
+        raw_event_id = sensor_response.detail_attrs.get(event_id_fieldname)
+        if raw_event_id is None:
+            return None
+        try:
+            event_id = int(raw_event_id)
+        except (ValueError, TypeError):
+            logger.warning(
+                'Could not parse event ID from ZM sensor response: %s',
+                sensor_response.detail_attrs,
+            )
+            return None
+        return self.zm_manager().get_event_snapshot_url(event_id=event_id)
+
     def get_sensor_response_video_stream(
             self,
             sensor_response: SensorResponse) -> Optional[VideoStream]:

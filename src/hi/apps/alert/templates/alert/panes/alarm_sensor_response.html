@@ -3,17 +3,23 @@
 <div>
   {% if show_video_inline %}
     {% sensor_response_video_stream sensor_response as video_stream %}
+    {% sensor_response_event_snapshot_url sensor_response as event_snapshot_url %}
     {% if video_stream and video_stream.source_url %}
     <div class="mb-2">
       <div class="hi-video-recording">
+        {% if video_stream.stream_type|stringformat:"s" == "mp4" %}
+        <video class="img-fluid" data-video-recording controls autoplay muted playsinline
+               src="{{ video_stream.source_url }}" aria-label="{{ alarm.title }}"></video>
+        {% else %}
         <img class="img-fluid" data-video-recording src="{{ video_stream.source_url }}" alt="{{ alarm.title }}">
+        {% endif %}
         {% include "console/panes/video_recording_replay_button.html" %}
       </div>
     </div>
-    {% elif sensor_response.event_video_snapshot_url %}
+    {% elif event_snapshot_url %}
     <!-- Fallback to image when video stream is not available -->
     <div class="mb-2">
-      <img class="img-fluid" src="{{ sensor_response.event_video_snapshot_url }}" alt="{{ alarm.title }}">
+      <img class="img-fluid" src="{{ event_snapshot_url }}" alt="{{ alarm.title }}">
     </div>
     {% endif %}
   {% endif %}

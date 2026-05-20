@@ -29,7 +29,6 @@ def create_test_sensor_response(value, timestamp, detail_attrs=None):
         value=value,
         timestamp=timestamp,
         detail_attrs=detail_attrs or {},
-        event_video_snapshot_url=None
     )
 
 

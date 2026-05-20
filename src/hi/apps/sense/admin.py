@@ -43,7 +43,7 @@ class SensorHistoryAdmin(admin.ModelAdmin):
         'has_event_video_clip',
         'correlation_role_str',
         'correlation_id',
-        'event_video_snapshot_url',
+        'has_event_video_snapshot',
     )
 
     search_fields = ['sensor__name']

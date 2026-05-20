@@ -127,6 +127,21 @@ class FrigateGateway( IntegrationGateway, FrigateMixin ):
             metadata = { 'camera_name': camera_name },
         )
 
+    def get_sensor_response_event_snapshot_url(
+            self,
+            sensor_response : SensorResponse,
+    ) -> Optional[ str ]:
+        """Per-event snapshot URL for a Frigate SensorResponse. Pulls
+        the event_id from ``correlation_id`` and builds the URL fresh
+        each call so operator-side base_url changes auto-heal every
+        historical row."""
+        if not sensor_response.has_event_video_snapshot:
+            return None
+        event_id = sensor_response.correlation_id
+        if not event_id:
+            return None
+        return FrigateManager().get_event_snapshot_url( event_id = event_id )
+
     def get_sensor_response_video_stream(
             self,
             sensor_response : SensorResponse,

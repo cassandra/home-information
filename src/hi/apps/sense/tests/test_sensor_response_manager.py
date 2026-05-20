@@ -210,7 +210,7 @@ class AsyncSensorResponseManagerTestCase(AsyncTaskFastTestCase):
             value='test_value',
             timestamp=timezone.make_aware(datetime(2023, 1, 1, 12, 0, 0)),
             detail_attrs={'key': 'value'},
-            event_video_snapshot_url='http://example.com/image.jpg'
+            has_event_video_snapshot=True
         )
         
         # Serialize to string
@@ -224,7 +224,7 @@ class AsyncSensorResponseManagerTestCase(AsyncTaskFastTestCase):
         self.assertEqual(deserialized.value, original_response.value)
         self.assertEqual(deserialized.timestamp, original_response.timestamp)
         self.assertEqual(deserialized.detail_attrs, original_response.detail_attrs)
-        self.assertEqual(deserialized.event_video_snapshot_url, original_response.event_video_snapshot_url)
+        self.assertEqual(deserialized.has_event_video_snapshot, original_response.has_event_video_snapshot)
 
     def test_get_latest_sensor_response_map_empty_list_short_circuits(self):
         """Empty integration_keys returns empty dict without touching Redis."""

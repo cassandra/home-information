@@ -119,12 +119,12 @@ class SensorHistory(models.Model):
         'Details',
         blank = True, null = True,
     )
-    event_video_snapshot_url = models.TextField(
-        'Event Video Snapshot URL',
-        blank = True, null = True,
-    )
     has_event_video_clip = models.BooleanField(
         'Has Event Video Clip',
+        default = False,
+    )
+    has_event_video_snapshot = models.BooleanField(
+        'Has Event Video Snapshot',
         default = False,
     )
     correlation_role_str = models.CharField(

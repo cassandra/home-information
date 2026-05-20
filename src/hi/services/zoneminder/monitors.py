@@ -398,6 +398,7 @@ class ZoneMinderMonitor( PeriodicMonitor, ZoneMinderMixin, SensorResponseMixin )
             ZmDetailKeys.START_TIME: all_detail_attrs.get(ZmDetailKeys.START_TIME),
             ZmDetailKeys.NOTES: all_detail_attrs.get(ZmDetailKeys.NOTES),
         }
+        has_event_id = self._has_event_video_clip_capability(detail_attrs)
         return SensorResponse(
             integration_key = self.zm_manager()._to_integration_key(
                 prefix = ZoneMinderManager.MOVEMENT_SENSOR_PREFIX,
@@ -406,8 +407,8 @@ class ZoneMinderMonitor( PeriodicMonitor, ZoneMinderMixin, SensorResponseMixin )
             value = str(EntityStateValue.ACTIVE),
             timestamp = zm_event.start_datetime,
             detail_attrs = detail_attrs,
-            event_video_snapshot_url = zm_event.image_url( self.zm_manager() ),
-            has_event_video_clip = self._has_event_video_clip_capability(detail_attrs),
+            has_event_video_clip = has_event_id,
+            has_event_video_snapshot = has_event_id,
             correlation_role = CorrelationRole.START,
             correlation_id = all_detail_attrs.get(ZmDetailKeys.EVENT_ID_ATTR_NAME),
         )
@@ -417,6 +418,7 @@ class ZoneMinderMonitor( PeriodicMonitor, ZoneMinderMixin, SensorResponseMixin )
         # For idle (end) events, include all detail attributes
         detail_attrs = all_detail_attrs
 
+        has_event_id = self._has_event_video_clip_capability(detail_attrs)
         return SensorResponse(
             integration_key = self.zm_manager()._to_integration_key(
                 prefix = ZoneMinderManager.MOVEMENT_SENSOR_PREFIX,
@@ -425,7 +427,8 @@ class ZoneMinderMonitor( PeriodicMonitor, ZoneMinderMixin, SensorResponseMixin )
             value = str(EntityStateValue.IDLE),
             timestamp = zm_event.end_datetime,
             detail_attrs = detail_attrs,
-            has_event_video_clip = self._has_event_video_clip_capability(detail_attrs),
+            has_event_video_clip = has_event_id,
+            has_event_video_snapshot = has_event_id,
             correlation_role = CorrelationRole.END,
             correlation_id = all_detail_attrs.get(ZmDetailKeys.EVENT_ID_ATTR_NAME),
         )

@@ -85,7 +85,6 @@ class TestAlertManagerDelegation(BaseTestCase):
             timestamp=timezone.now(),
             sensor=motion_sensor,  # Motion sensor that triggered the alarm
             detail_attrs={'location': 'Front Door'},
-            event_video_snapshot_url=None,
             has_event_video_clip=False
         )
         
@@ -213,7 +212,6 @@ class TestAlertManagerDelegation(BaseTestCase):
             timestamp=timezone.now(),
             sensor=motion_sensor1,  # First motion sensor
             detail_attrs={},
-            event_video_snapshot_url=None,
             has_event_video_clip=False
         )
         
@@ -223,7 +221,6 @@ class TestAlertManagerDelegation(BaseTestCase):
             timestamp=timezone.now(),
             sensor=motion_sensor2,  # Second motion sensor
             detail_attrs={},
-            event_video_snapshot_url=None,
             has_event_video_clip=False
         )
         

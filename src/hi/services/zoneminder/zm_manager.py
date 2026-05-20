@@ -373,6 +373,17 @@ class ZoneMinderManager( SingletonManager, AggregateHealthProvider, ApiHealthSta
         timestamp = int(time.time())
         return f'{self.zm_client.portal_url}/cgi-bin/nph-zms?mode=jpeg&scale=100&rate=5&maxfps=5&replay=single&source=event&event={event_id}&_t={timestamp}'
 
+    def get_event_snapshot_url( self, event_id : int ) -> Optional[ str ]:
+        """Per-event captured-frame URL — points at the snapshot
+        attached to a ZoneMinder event (``view=image&fid=snapshot``).
+        Returns ``None`` when the ZM client isn't available."""
+        if not self.zm_client:
+            return None
+        return (
+            f'{self.zm_client.portal_url}/index.php'
+            f'?view=image&eid={event_id}&fid=snapshot'
+        )
+
     def get_video_snapshot_url( self, monitor_id : int ):
         """Return a URL to a single still frame for the monitor's
         current view (ZoneMinder's ``mode=single`` variant). Cache-bust
