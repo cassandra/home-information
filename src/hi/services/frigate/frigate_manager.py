@@ -1,5 +1,7 @@
 import logging
-from typing import List, Optional
+from typing import Dict, List, Optional
+
+from asgiref.sync import sync_to_async
 
 from hi.apps.common.singleton_manager import SingletonManager
 from hi.apps.system.aggregate_health_provider import AggregateHealthProvider
@@ -112,6 +114,42 @@ class FrigateManager( SingletonManager, AggregateHealthProvider, ApiHealthStatus
             integration_id = FrigateMetaData.integration_id,
             integration_name = f'{prefix}.{camera_name}',
         )
+
+    # ---- Client-facing helpers (used by FrigateMonitor) -------------
+
+    def get_cameras( self ) -> List[ Dict ]:
+        """Camera list from ``/api/config``. Raises when the client
+        isn't built yet (integration disabled / unconfigured) — the
+        monitor's outer try/except records this as a health warning."""
+        client = self.frigate_client
+        if client is None:
+            raise RuntimeError( 'Frigate client not available.' )
+        return client.get_cameras()
+
+    async def get_cameras_async( self ) -> List[ Dict ]:
+        return await sync_to_async(
+            self.get_cameras,
+            thread_sensitive = True,
+        )()
+
+    def get_events( self,
+                    after  : Optional[ float ] = None,
+                    limit  : Optional[ int ]   = None ) -> List[ Dict ]:
+        """Events from ``/api/events``. ``after`` is the polling
+        cursor in epoch seconds; ``limit`` caps the returned count
+        when set."""
+        client = self.frigate_client
+        if client is None:
+            raise RuntimeError( 'Frigate client not available.' )
+        return client.get_events( after = after, limit = limit )
+
+    async def get_events_async( self,
+                                after  : Optional[ float ] = None,
+                                limit  : Optional[ int ]   = None ) -> List[ Dict ]:
+        return await sync_to_async(
+            self.get_events,
+            thread_sensitive = True,
+        )( after = after, limit = limit )
 
     @classmethod
     def _frigate_integration_key( cls ) -> IntegrationKey:
