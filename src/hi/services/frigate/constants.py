@@ -14,6 +14,7 @@ class FrigateApi:
 
     CAMERA_SNAPSHOT_PATH_TEMPLATE = '/api/{camera_name}/latest.jpg'
     EVENT_SNAPSHOT_PATH_TEMPLATE = '/api/events/{event_id}/snapshot.jpg'
+    EVENT_CLIP_PATH_TEMPLATE = '/api/events/{event_id}/clip.mp4'
 
     # Outbound (control) endpoint to toggle per-camera object
     # detection. Frigate's wire values for the state query parameter

@@ -266,10 +266,11 @@ class HiModelHelper:
 
     @classmethod
     def create_object_presence_sensor( cls,
-                                       entity              : Entity,
-                                       integration_key     : IntegrationKey  = None,
-                                       name                : str             = None,
-                                       provides_event_video_clip : bool          = False ) -> Sensor:
+                                       entity                        : Entity,
+                                       integration_key               : IntegrationKey  = None,
+                                       name                          : str             = None,
+                                       provides_event_video_clip     : bool            = False,
+                                       provides_event_video_snapshot : bool            = False ) -> Sensor:
         """OBJECT_PRESENCE sensor — typed discrete state whose value
         space is the canonical object-class bucket set
         (NONE / PERSON / CAR / ANIMAL / PACKAGE / OTHER). The
@@ -284,6 +285,7 @@ class HiModelHelper:
             name = name,
             integration_key = integration_key,
             provides_event_video_clip = provides_event_video_clip,
+            provides_event_video_snapshot = provides_event_video_snapshot,
         )
 
     @classmethod
@@ -554,15 +556,16 @@ class HiModelHelper:
 
     @classmethod
     def create_sensor( cls,
-                       entity             : Entity,
-                       entity_state_type  : EntityStateType,
-                       name               : str               = None,
-                       sensor_type        : SensorType        = SensorType.DEFAULT,
-                       integration_key    : IntegrationKey    = None,
-                       value_range_str    : str               = '',
-                       units              : str               = None,
-                       entity_state_role  : EntityStateRole   = None,
-                       provides_event_video_clip : bool           = False ) -> Sensor:
+                       entity                        : Entity,
+                       entity_state_type             : EntityStateType,
+                       name                          : str               = None,
+                       sensor_type                   : SensorType        = SensorType.DEFAULT,
+                       integration_key               : IntegrationKey    = None,
+                       value_range_str               : str               = '',
+                       units                         : str               = None,
+                       entity_state_role             : EntityStateRole   = None,
+                       provides_event_video_clip     : bool              = False,
+                       provides_event_video_snapshot : bool              = False ) -> Sensor:
         if not name:
             name = f'{entity.name}'
 
@@ -582,6 +585,7 @@ class HiModelHelper:
             sensor_type_str = str( sensor_type ),
             persist_history = bool( entity_state_type not in cls.EXCLUDE_FROM_SENSOR_HISTORY ),
             provides_event_video_clip = provides_event_video_clip,
+            provides_event_video_snapshot = provides_event_video_snapshot,
         )
         sensor.integration_key = integration_key
         sensor.save()

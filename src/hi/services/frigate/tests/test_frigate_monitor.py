@@ -28,7 +28,8 @@ def _make_event(
         camera_name : str   = 'front_yard',
         start       : datetime = None,
         end         : datetime = None,
-        label       : str   = 'person' ) -> FrigateEvent:
+        label       : str   = 'person',
+        has_clip    : bool  = True ) -> FrigateEvent:
     if start is None:
         start = datetime( 2026, 5, 20, 12, 0, 0, tzinfo = timezone.utc )
     return FrigateEvent(
@@ -37,6 +38,7 @@ def _make_event(
         object_class = label,
         start_datetime = start,
         end_datetime = end,
+        has_clip = has_clip,
     )
 
 
@@ -219,6 +221,23 @@ class TestFrigateSensorResponseGeneration( TestCase ):
             obj.event_video_snapshot_url,
             'http://frigate.example/api/events/99/snapshot.jpg?_t=1',
         )
+        # has_clip propagates from FrigateEvent to the SensorResponse
+        # so the gateway can decide whether to surface a playable
+        # event clip URL.
+        self.assertTrue( obj.has_event_video_clip )
+
+    def test_active_state_with_no_clip_does_not_advertise_clip(self):
+        opened = _make_event(
+            event_id = '99', start = self.t0, label = 'person', has_clip = False,
+        )
+        states = self.monitor._aggregate_camera_states( [ opened ], [] )
+        with patch.object(
+            self.monitor, 'frigate_manager',
+            return_value = Mock( get_event_snapshot_url = Mock( return_value = None )),
+        ):
+            responses = self.monitor._generate_sensor_responses_from_states( states )
+        obj = self._object_response( responses )
+        self.assertFalse( obj.has_event_video_clip )
 
     def test_idle_state_emits_object_none_with_end_correlation(self):
         closed = _make_event(
@@ -358,6 +377,27 @@ class TestFrigateEventFromApiDict( TestCase ):
             event.end_datetime,
             datetime.fromtimestamp( end_epoch, tz = timezone.utc ),
         )
+
+    def test_parses_has_clip_field(self):
+        # Real Frigate emits has_clip / has_snapshot booleans per
+        # event; HI carries them through to gate UI playback
+        # affordances.
+        api_dict = {
+            'id': '42', 'camera': 'front_yard', 'label': 'person',
+            'start_time': 1747750800.0, 'has_clip': False, 'has_snapshot': True,
+        }
+        event = FrigateEvent.from_api_dict( api_dict )
+        self.assertFalse( event.has_clip )
+        self.assertTrue( event.has_snapshot )
+
+    def test_has_clip_defaults_to_true_when_absent(self):
+        # Older Frigate responses don't carry the boolean. Default to
+        # True (Frigate's own startup default).
+        event = FrigateEvent.from_api_dict({
+            'id': '42', 'camera': 'front_yard', 'label': 'person',
+            'start_time': 1747750800.0,
+        })
+        self.assertTrue( event.has_clip )
 
     def test_missing_required_field_raises(self):
         with self.assertRaises( ValueError ) as ctx:

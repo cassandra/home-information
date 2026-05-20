@@ -87,6 +87,11 @@ class TestFrigateSyncImpl( _FrigateSyncTestBase ):
         self.assertEqual( len( sensors ), 1 )
         sensor = sensors[0]
         self.assertEqual( sensor.integration_name, 'camera.object.front_yard' )
+        # Frigate stores a clip + snapshot per event by default;
+        # advertise both capabilities so the Video Browse / history
+        # views offer the playback affordances.
+        self.assertTrue( sensor.provides_event_video_clip )
+        self.assertTrue( sensor.provides_event_video_snapshot )
 
         # Per-camera Detect on/off controller is created alongside
         # the OBJECT_PRESENCE sensor.

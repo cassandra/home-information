@@ -337,6 +337,7 @@ class FrigateMonitor( PeriodicMonitor, FrigateMixin, SensorResponseMixin ):
                 correlation_role = correlation_role,
                 correlation_id = state.canonical_event.event_id,
                 event_video_snapshot_url = event_video_snapshot_url,
+                has_event_video_clip = state.canonical_event.has_clip,
             )
             sensor_response_map[ response.integration_key ] = response
 
@@ -394,12 +395,13 @@ class FrigateMonitor( PeriodicMonitor, FrigateMixin, SensorResponseMixin ):
 
     def _create_object_presence_sensor_response(
             self,
-            camera_name      : str,
-            value            : str,
-            timestamp        : datetime,
-            correlation_role : 'CorrelationRole' = None,
-            correlation_id   : str = None,
+            camera_name              : str,
+            value                    : str,
+            timestamp                : datetime,
+            correlation_role         : 'CorrelationRole' = None,
+            correlation_id           : str = None,
             event_video_snapshot_url : str = None,
+            has_event_video_clip     : bool = False,
     ) -> SensorResponse:
         """OBJECT_PRESENCE SensorResponse. ``value`` is one of the
         canonical bucket strings produced by
@@ -415,4 +417,5 @@ class FrigateMonitor( PeriodicMonitor, FrigateMixin, SensorResponseMixin ):
             correlation_role = correlation_role,
             correlation_id = correlation_id,
             event_video_snapshot_url = event_video_snapshot_url,
+            has_event_video_clip = has_event_video_clip,
         )

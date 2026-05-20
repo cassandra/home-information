@@ -509,11 +509,27 @@
             ev.preventDefault();
             ev.stopPropagation();
             const wrapper = this.closest( '.hi-video-recording' );
-            const img = wrapper && wrapper.querySelector( 'img[data-video-recording]' );
+            if ( ! wrapper ) return;
+
+            // <video> path (native MP4 recording): seek-to-zero +
+            // play. The native element has its own seek/playhead so
+            // we don't need the cache-bust trick that <img> uses.
+            const video = wrapper.querySelector( 'video[data-video-recording]' );
+            if ( video ) {
+                try { video.currentTime = 0; } catch ( e ) {}
+                const playPromise = video.play();
+                if ( playPromise && playPromise.catch ) {
+                    playPromise.catch( () => {} );
+                }
+                return;
+            }
+
+            // <img> path (multipart MJPEG recording). Cache the
+            // original URL on first click; subsequent clicks always
+            // rebuild from this cached base so the ``_replay``
+            // parameter doesn't stack.
+            const img = wrapper.querySelector( 'img[data-video-recording]' );
             if ( ! img ) return;
-            // Cache the original URL on first click. Subsequent
-            // clicks always rebuild from this cached base so the
-            // ``_replay`` parameter doesn't stack.
             if ( ! img.dataset.videoRecordingSrc ) {
                 img.dataset.videoRecordingSrc = img.src;
             }

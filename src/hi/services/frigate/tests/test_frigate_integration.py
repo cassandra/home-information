@@ -21,6 +21,8 @@ from hi.apps.entity.models import Entity
 from hi.apps.system.enums import ApiHealthStatusType
 from hi.integrations.models import Integration
 
+from hi.apps.entity.enums import VideoStreamType
+from hi.apps.sense.transient_models import SensorResponse
 from hi.services.frigate.enums import FrigateAttributeType
 from hi.services.frigate.frigate_manager import FrigateManager
 from hi.services.frigate.frigate_metadata import FrigateMetaData
@@ -142,6 +144,94 @@ class TestFrigateGatewayVideoSnapshot( TestCase ):
             FrigateManager, 'get_camera_snapshot_url', return_value = None,
         ):
             self.assertIsNone( self.gateway.get_entity_video_snapshot( entity = entity ))
+
+
+class TestFrigateManagerEventClipUrl( TestCase ):
+
+    def setUp(self):
+        self.manager = FrigateManager()
+        self.mock_client = Mock( base_url = 'http://frigate.example' )
+
+    def test_event_clip_url_uses_clip_mp4_path(self):
+        with patch.object(
+            type( self.manager ), 'frigate_client',
+            new_callable = lambda: property( lambda _ : self.mock_client ),
+        ):
+            url = self.manager.get_event_clip_url( event_id = '42' )
+        self.assertIsNotNone( url )
+        self.assertTrue(
+            url.startswith( 'http://frigate.example/api/events/42/clip.mp4' )
+        )
+        self.assertIn( '_t=', url )
+
+    def test_event_clip_url_returns_none_when_client_unavailable(self):
+        with patch.object(
+            type( self.manager ), 'frigate_client',
+            new_callable = lambda: property( lambda _ : None ),
+        ):
+            self.assertIsNone( self.manager.get_event_clip_url( event_id = '42' ))
+
+
+class TestFrigateGatewayVideoStream( TestCase ):
+    """``FrigateGateway.get_sensor_response_video_stream`` returns
+    the event clip MP4 URL for SensorResponses carrying a clip; None
+    otherwise (no clip flag, no event id, or no client)."""
+
+    def setUp(self):
+        self.gateway = FrigateGateway()
+
+    def _make_response(
+            self, has_clip = True, correlation_id = 'evt-1',
+    ) -> SensorResponse:
+        from datetime import datetime
+        return SensorResponse(
+            integration_key = IntegrationKey(
+                integration_id = FrigateMetaData.integration_id,
+                integration_name = 'camera.object.front_yard',
+            ),
+            value = 'object_person',
+            timestamp = datetime.now(),
+            correlation_id = correlation_id,
+            has_event_video_clip = has_clip,
+        )
+
+    def test_returns_mp4_stream_for_clip_bearing_response(self):
+        response = self._make_response()
+        with patch.object(
+            FrigateManager, 'get_event_clip_url',
+            return_value = 'http://frigate.example/api/events/evt-1/clip.mp4?_t=1',
+        ):
+            stream = self.gateway.get_sensor_response_video_stream(
+                sensor_response = response,
+            )
+        self.assertIsNotNone( stream )
+        self.assertEqual( stream.stream_type, VideoStreamType.MP4 )
+        self.assertEqual(
+            stream.source_url,
+            'http://frigate.example/api/events/evt-1/clip.mp4?_t=1',
+        )
+        self.assertEqual( stream.metadata, { 'event_id': 'evt-1' } )
+
+    def test_returns_none_when_response_has_no_clip(self):
+        response = self._make_response( has_clip = False )
+        self.assertIsNone(
+            self.gateway.get_sensor_response_video_stream( sensor_response = response )
+        )
+
+    def test_returns_none_when_response_has_no_correlation_id(self):
+        response = self._make_response( correlation_id = None )
+        self.assertIsNone(
+            self.gateway.get_sensor_response_video_stream( sensor_response = response )
+        )
+
+    def test_returns_none_when_manager_has_no_client(self):
+        response = self._make_response()
+        with patch.object(
+            FrigateManager, 'get_event_clip_url', return_value = None,
+        ):
+            self.assertIsNone(
+                self.gateway.get_sensor_response_video_stream( sensor_response = response )
+            )
 
 
 class TestFrigateManagerHealthRecording( TestCase ):

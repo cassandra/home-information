@@ -141,7 +141,7 @@ class ZoneMinderGateway( IntegrationGateway, ZoneMinderMixin ):
                 video_url = self.zm_manager().get_video_stream_url(monitor_id)
                 
                 return VideoStream(
-                    stream_type=VideoStreamType.URL,
+                    stream_type=VideoStreamType.MJPEG,
                     source_url=video_url,
                     metadata={
                         'monitor_id': monitor_id,
@@ -187,7 +187,7 @@ class ZoneMinderGateway( IntegrationGateway, ZoneMinderMixin ):
                                      f" {sensor_response.detail_attrs.get(ZmDetailKeys.DURATION_SECS)}")
 
                 return VideoStream(
-                    stream_type=VideoStreamType.URL,
+                    stream_type=VideoStreamType.MJPEG,
                     source_url=video_url,
                     metadata=metadata
                 )

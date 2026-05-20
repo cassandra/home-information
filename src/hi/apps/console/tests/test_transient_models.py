@@ -91,10 +91,10 @@ class TestVideoStream(BaseTestCase):
     def test_video_stream_creation_with_minimal_fields(self):
         """Test creating a VideoStream with minimal required fields."""
         video_stream = VideoStream(
-            stream_type=VideoStreamType.URL
+            stream_type=VideoStreamType.MJPEG
         )
         
-        self.assertEqual(video_stream.stream_type, VideoStreamType.URL)
+        self.assertEqual(video_stream.stream_type, VideoStreamType.MJPEG)
         self.assertIsNone(video_stream.source_url)
         self.assertEqual(video_stream.metadata, {})
 
@@ -108,12 +108,12 @@ class TestVideoStream(BaseTestCase):
         }
         
         video_stream = VideoStream(
-            stream_type=VideoStreamType.URL,
+            stream_type=VideoStreamType.MJPEG,
             source_url='https://example.com/stream.m3u8',
             metadata=metadata
         )
         
-        self.assertEqual(video_stream.stream_type, VideoStreamType.URL)
+        self.assertEqual(video_stream.stream_type, VideoStreamType.MJPEG)
         self.assertEqual(video_stream.source_url, 'https://example.com/stream.m3u8')
         self.assertEqual(video_stream.metadata, metadata)
         self.assertEqual(video_stream.metadata['width'], 1920)
@@ -123,10 +123,10 @@ class TestVideoStream(BaseTestCase):
         """Test VideoStream creation with different stream types."""
         # Test URL stream
         url_stream = VideoStream(
-            stream_type=VideoStreamType.URL,
+            stream_type=VideoStreamType.MJPEG,
             source_url='http://camera.local/mjpeg'
         )
-        self.assertEqual(url_stream.stream_type, VideoStreamType.URL)
+        self.assertEqual(url_stream.stream_type, VideoStreamType.MJPEG)
         
         # Test OTHER stream  
         other_stream = VideoStream(
@@ -138,7 +138,7 @@ class TestVideoStream(BaseTestCase):
     def test_video_stream_metadata_defaults_to_empty_dict(self):
         """Test that VideoStream metadata defaults to empty dictionary."""
         video_stream = VideoStream(
-            stream_type=VideoStreamType.URL,
+            stream_type=VideoStreamType.MJPEG,
             source_url='http://test.local/stream'
         )
         
@@ -160,7 +160,7 @@ class TestVideoStream(BaseTestCase):
         }
         
         video_stream = VideoStream(
-            stream_type=VideoStreamType.URL,
+            stream_type=VideoStreamType.MJPEG,
             source_url='https://test.local/stream.m3u8',
             metadata=metadata
         )
@@ -175,7 +175,7 @@ class TestVideoStream(BaseTestCase):
     def test_video_stream_is_dataclass(self):
         """Test that VideoStream behaves as a proper dataclass."""
         video_stream = VideoStream(
-            stream_type=VideoStreamType.URL,
+            stream_type=VideoStreamType.MJPEG,
             source_url='http://test.local/mjpeg',
             metadata={'test': 'value'}
         )
@@ -192,9 +192,9 @@ class TestVideoStream(BaseTestCase):
     def test_video_stream_with_none_source_url(self):
         """Test VideoStream with None source_url (valid use case)."""
         video_stream = VideoStream(
-            stream_type=VideoStreamType.URL,
+            stream_type=VideoStreamType.MJPEG,
             source_url=None
         )
         
-        self.assertEqual(video_stream.stream_type, VideoStreamType.URL)
+        self.assertEqual(video_stream.stream_type, VideoStreamType.MJPEG)
         self.assertIsNone(video_stream.source_url)

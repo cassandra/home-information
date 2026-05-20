@@ -25,6 +25,13 @@ class FrigateEvent:
     zones           : Optional[ List[ str ] ] = None
     snapshot_url    : Optional[ str ]      = None
     clip_url        : Optional[ str ]      = None
+    # Frigate emits ``has_clip``/``has_snapshot`` booleans per event
+    # so the UI can avoid offering playback for events whose recording
+    # never made it to disk. Default ``True`` matches Frigate's own
+    # default behavior (events come with clips unless explicitly
+    # disabled).
+    has_clip        : bool                 = True
+    has_snapshot    : bool                 = True
 
     @property
     def is_open(self) -> bool:
@@ -67,6 +74,8 @@ class FrigateEvent:
             score = api_dict.get( 'top_score' ),
             sub_label = api_dict.get( 'sub_label' ),
             zones = api_dict.get( 'zones' ),
+            has_clip = bool( api_dict.get( 'has_clip', True )),
+            has_snapshot = bool( api_dict.get( 'has_snapshot', True )),
         )
 
     @staticmethod

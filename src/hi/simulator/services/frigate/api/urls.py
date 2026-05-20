@@ -19,12 +19,16 @@ urlpatterns = [
           views.EventsListView.as_view(),
           name = 'frigate_api_events' ),
 
-    # ``events/<id>/snapshot.jpg`` precedes the generic
-    # ``events/<id>`` route so the trailing path segment is matched
-    # before the JSON-detail catch-all.
+    # ``events/<id>/snapshot.jpg`` and ``events/<id>/clip.mp4`` both
+    # precede the generic ``events/<id>`` route so the trailing path
+    # segment is matched before the JSON-detail catch-all.
     path( 'events/<str:event_id>/snapshot.jpg',
           views.EventSnapshotJpegView.as_view(),
           name = 'frigate_api_event_snapshot' ),
+
+    path( 'events/<str:event_id>/clip.mp4',
+          views.EventClipMp4View.as_view(),
+          name = 'frigate_api_event_clip' ),
 
     path( 'events/<str:event_id>',
           views.EventDetailView.as_view(),

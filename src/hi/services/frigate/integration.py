@@ -1,8 +1,10 @@
 import logging
 from typing import List, Optional
 
+from hi.apps.entity.enums import VideoStreamType
 from hi.apps.entity.models import Entity
-from hi.apps.entity.transient_models import VideoSnapshot
+from hi.apps.entity.transient_models import VideoSnapshot, VideoStream
+from hi.apps.sense.transient_models import SensorResponse
 from hi.apps.monitor.periodic_monitor import PeriodicMonitor
 from hi.apps.system.enums import HealthStatusType
 from hi.apps.system.health_status_provider import HealthStatusProvider
@@ -123,4 +125,27 @@ class FrigateGateway( IntegrationGateway, FrigateMixin ):
         return VideoSnapshot(
             source_url = source_url,
             metadata = { 'camera_name': camera_name },
+        )
+
+    def get_sensor_response_video_stream(
+            self,
+            sensor_response : SensorResponse,
+    ) -> Optional[ VideoStream ]:
+        """Event-recording MP4 URL for a Frigate SensorResponse.
+        Returns ``None`` when the response carries no clip
+        (``has_event_video_clip`` False), when the
+        ``correlation_id`` — Frigate's event_id — is absent, or when
+        the integration client isn't ready."""
+        if not sensor_response.has_event_video_clip:
+            return None
+        event_id = sensor_response.correlation_id
+        if not event_id:
+            return None
+        source_url = FrigateManager().get_event_clip_url( event_id = event_id )
+        if source_url is None:
+            return None
+        return VideoStream(
+            stream_type = VideoStreamType.MP4,
+            source_url = source_url,
+            metadata = { 'event_id': event_id },
         )

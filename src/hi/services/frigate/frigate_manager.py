@@ -231,6 +231,17 @@ class FrigateManager( SingletonManager, AggregateHealthProvider, ApiHealthStatus
         )
         return f'{client.base_url}{path}?_t={int(time.time())}'
 
+    def get_event_clip_url( self, event_id : str ) -> Optional[ str ]:
+        """Event-recording MP4 URL. Returns ``None`` when the client
+        isn't available."""
+        client = self.frigate_client
+        if client is None:
+            return None
+        path = FrigateApi.EVENT_CLIP_PATH_TEMPLATE.format(
+            event_id = event_id,
+        )
+        return f'{client.base_url}{path}?_t={int(time.time())}'
+
     @classmethod
     def _frigate_integration_key( cls ) -> IntegrationKey:
         """Integration key for the (future) singleton Frigate service

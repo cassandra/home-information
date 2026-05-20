@@ -6,9 +6,10 @@ the browser-side <img> tags HI emits for snapshots) can talk to the
 simulator without any client-side branching.
 """
 import logging
+import os
 from datetime import datetime, timezone
 
-from django.http import Http404, HttpResponse, JsonResponse
+from django.http import FileResponse, Http404, HttpResponse, JsonResponse
 from django.utils.decorators import method_decorator
 from django.views.decorators.csrf import csrf_exempt
 from django.views.generic import View
@@ -17,6 +18,15 @@ from hi.simulator.media import render_jpeg_frame
 from hi.simulator.services.frigate.event_manager import FrigateSimEventManager
 from hi.simulator.services.frigate.sim_models import FrigateCameraDetectState
 from hi.simulator.services.frigate.simulator import FrigateSimulator
+
+
+# Pre-generated short MP4 (~14 KB, H.264 baseline) ships alongside
+# the simulator so the event-playback view shows a labeled,
+# animated clip for every event without runtime media synthesis.
+_EVENT_PLAYBACK_MP4_PATH = os.path.join(
+    os.path.dirname( os.path.dirname( __file__ )),
+    'static_assets', 'event_playback.mp4',
+)
 
 logger = logging.getLogger(__name__)
 
@@ -202,6 +212,26 @@ class CameraDetectSetView( View ):
         return JsonResponse(
             { 'success': True, 'camera': camera_name, 'state': normalized_state },
         )
+
+
+class EventClipMp4View( View ):
+    """``GET /api/events/<id>/clip.mp4`` — event recording playback.
+
+    Real Frigate streams an MP4 of the event's clip. The simulator
+    serves a fixed-content placeholder MP4 (frame-counter + clock
+    overlay) so HI's Video Browse can demonstrate the round-trip
+    without runtime media synthesis. 404s for unknown event ids."""
+
+    def get(self, request, event_id : str, *args, **kwargs):
+        event = FrigateSimEventManager().find_event_by_id( event_id = event_id )
+        if event is None:
+            raise Http404( f'Unknown Frigate event id: {event_id!r}' )
+        response = FileResponse(
+            open( _EVENT_PLAYBACK_MP4_PATH, 'rb' ),
+            content_type = 'video/mp4',
+        )
+        _apply_no_cache_headers( response )
+        return response
 
 
 class EventSnapshotJpegView( View ):

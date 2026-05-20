@@ -549,9 +549,13 @@ class VideoStreamMode(LabeledEnum):
 
 
 class VideoStreamType(LabeledEnum):
-    """Types of video streams that can be provided by entities or sensor responses."""
+    """Discrimination of what kind of media lives at ``VideoStream.source_url``.
+    Drives the HI render layer's choice between ``<img>`` (browsers
+    render multipart/x-mixed-replace MJPEG inside <img>) and
+    ``<video>`` (for actual MP4 / HLS / WebM recordings)."""
 
-    URL = ('URL', 'Direct video stream URL')
+    MJPEG = ('MJPEG', 'multipart/x-mixed-replace stream rendered by <img>')
+    MP4 = ('MP4', 'MP4 recording rendered by <video>')
     OTHER = ('Other', 'Other video stream type for future extensibility')
 
     @classmethod

@@ -275,6 +275,8 @@ class FrigateSynchronizer( IntegrationSynchronizer, FrigateMixin ):
                     prefix = FrigateManager.OBJECT_PRESENCE_SENSOR_PREFIX,
                     camera_name = camera_name,
                 ),
+                provides_event_video_clip = True,
+                provides_event_video_snapshot = True,
             )
 
             HiModelHelper.create_on_off_controller(
