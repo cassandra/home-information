@@ -2,31 +2,33 @@
 {% load icons %}
 {% generate_uuid as unique_id %}
 {% if not event_clause_form.instance.pk %}
-<div class="my-3">
-  <a class="" data-toggle="collapse" href="#hi-event-clause-new-{{ unique_id }}"
+<div class="event-edit-add">
+  <a class="btn btn-sm btn-outline-primary" data-toggle="collapse"
+     href="#hi-event-clause-new-{{ unique_id }}"
      role="button" aria-expanded="false" aria-controls="hi-event-clause-new-{{ unique_id }}">
-    {% icon "plus" size="sm" css_class="hi-icon-left" %} Add New Clause
+    {% icon "plus" size="sm" css_class="hi-icon-left" %}Add New Clause
   </a>
 </div>
-<div class="collapse my-2" id="hi-event-clause-new-{{ unique_id }}">
+<div class="collapse event-edit-action-card event-edit-action-card-new"
+     id="hi-event-clause-new-{{ unique_id }}">
 {% else %}
-<div class="my-3">
+<div class="event-edit-action-card">
 {% endif %}
 
-  <div class="d-flex justify-content-between" >
-    <div class="h6"><em>Clause {{ forloop.counter }}</em></div>
+  <div class="event-edit-action-card-head">
+    <span class="event-edit-action-card-label">Clause {{ forloop.counter }}</span>
     {% if event_clause_form.instance.pk %}
-    <div class="">
-      {{ event_clause_form.DELETE }}<span class="pl-2">Delete</span>
-    </div>
+    <label class="event-edit-remove">
+      {{ event_clause_form.DELETE }}<span>Remove</span>
+    </label>
     {% endif %}
   </div>
 
-  <div class="pl-2">
+  <div class="event-edit-action-card-body">
     {% for hidden in event_clause_form.hidden_fields %}
     {{ hidden }}
     {% endfor %}
-    
+
     {% if event_clause_form.non_field_errors %}
     <div class="non-field-errors">
       {% for err in event_clause_form.non_field_errors %}
@@ -35,31 +37,37 @@
     </div>
     {% endif %}
 
-    <div class="input-group mb-2 mr-sm-2 w-100">
-      <div class="input-group-prepend" >
-        <label for="{{ event_clause_form.entity_state.id_for_label }}"
-               class="input-group-text" >{{ event_clause_form.entity_state.label }}</label>
+    <div class="event-edit-field">
+      <div class="input-group">
+        <div class="input-group-prepend">
+          <label for="{{ event_clause_form.entity_state.id_for_label }}"
+                 class="input-group-text">{{ event_clause_form.entity_state.label }}</label>
+        </div>
         {{ event_clause_form.entity_state }}
-        <small class="form-error text-danger" >{{ event_clause_form.entity_state.errors }}</small>
       </div>
+      <small class="form-error text-danger">{{ event_clause_form.entity_state.errors }}</small>
     </div>
 
-    <div class="input-group mb-2 mr-sm-2 w-100">
-      <div class="input-group-prepend" >
-        <label for="{{ event_clause_form.value_operator_str.id_for_label }}"
-               class="input-group-text" >{{ event_clause_form.value_operator_str.label }}</label>
+    <div class="event-edit-field">
+      <div class="input-group">
+        <div class="input-group-prepend">
+          <label for="{{ event_clause_form.value_operator_str.id_for_label }}"
+                 class="input-group-text">{{ event_clause_form.value_operator_str.label }}</label>
+        </div>
         {{ event_clause_form.value_operator_str }}
-        <small class="form-error text-danger" >{{ event_clause_form.value_operator_str.errors }}</small>
       </div>
+      <small class="form-error text-danger">{{ event_clause_form.value_operator_str.errors }}</small>
     </div>
 
-    <div class="input-group mb-2 mr-sm-2 w-100">
-      <div class="input-group-prepend" >
-        <label for="{{ event_clause_form.value.id_for_label }}"
-               class="input-group-text" >{{ event_clause_form.value.label }}</label>
+    <div class="event-edit-field">
+      <div class="input-group">
+        <div class="input-group-prepend">
+          <label for="{{ event_clause_form.value.id_for_label }}"
+                 class="input-group-text">{{ event_clause_form.value.label }}</label>
+        </div>
         {{ event_clause_form.value }}
-        <small class="form-error text-danger" >{{ event_clause_form.value.errors }}</small>
       </div>
+      <small class="form-error text-danger">{{ event_clause_form.value.errors }}</small>
     </div>
-  </div>  
+  </div>
 </div>

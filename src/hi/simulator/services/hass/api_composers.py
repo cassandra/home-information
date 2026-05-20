@@ -22,7 +22,7 @@ it per SimEntity and concatenates the results.
 """
 from typing import Dict, List
 
-from hi.simulator.base_models import SimState
+from hi.simulator.services.base_models import SimState
 
 from .sim_models import (
     HassCameraMotionDetectionState,

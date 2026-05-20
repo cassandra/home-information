@@ -1,4 +1,5 @@
 {% load static %}
+{% load icons %}
 {% load units %}
 {% load tz %}
 {% timezone USER_TIMEZONE %}
@@ -72,9 +73,16 @@
 
 </div>
 
-{% if conditions.temperature.source %}
-<div class="text-muted">
-  <small><em>At {{ conditions.temperature.source_datetime |localtime|date:"g:i A" }} from {{ conditions.temperature.source.abbreviation }} </em></small>
+<div class="weather-pane-status mt-2">
+  {% if weather_pane_status.caption_text %}
+  <div class="alert {{ weather_pane_status.caption_alert_class }} py-1 px-2 mb-0 d-flex align-items-center small" role="status">
+    {% icon weather_pane_status.caption_icon size="sm" css_class="hi-icon-left" %}<span>{{ weather_pane_status.caption_text }}</span>
+  </div>
+  {% if conditions.temperature.source %}
+  <small class="text-muted d-block mt-1"><em>Last reading: {{ conditions.temperature.source_datetime |localtime|date:"g:i A" }} from {{ conditions.temperature.source.abbreviation }}</em></small>
+  {% endif %}
+  {% elif conditions.temperature.source %}
+  <small class="{% if weather_pane_status.is_timestamp_stale %}text-warning{% else %}text-muted{% endif %}"><em>At {{ conditions.temperature.source_datetime |localtime|date:"g:i A" }} from {{ conditions.temperature.source.abbreviation }}</em></small>
+  {% endif %}
 </div>
-{% endif %}
 {% endtimezone%}

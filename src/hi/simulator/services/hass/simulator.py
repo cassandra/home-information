@@ -1,14 +1,14 @@
 from typing import List, Set
 
-from hi.simulator.base_models import SimEntityDefinition, SimEntityFields, SimState
-from hi.simulator.exceptions import SimEntityValidationError
-from hi.simulator.simulator import Simulator
-from hi.simulator.sim_entity import SimEntity
+from hi.simulator.services.base_models import SimEntityDefinition, SimEntityFields, SimState
+from hi.simulator.services.exceptions import SimEntityValidationError
+from hi.simulator.services.service_simulator import ServiceSimulator
+from hi.simulator.services.sim_entity import SimEntity
 
 from .sim_models import HASS_SIM_ENTITY_DEFINITION_LIST, HassInsteonSimEntityFields, HassState
 
 
-class HassSimulator( Simulator ):
+class HassSimulator( ServiceSimulator ):
 
     @property
     def id(self):
@@ -17,6 +17,10 @@ class HassSimulator( Simulator ):
     @property
     def label(self):
         return 'Home Assistant'
+
+    @property
+    def integration_urls(self):
+        return [ ( 'API URL', 'services/hass' ) ]
 
     def get_hass_sim_state_list( self ) -> List[ HassState ]:
         sim_state_list = list()

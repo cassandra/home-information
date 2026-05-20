@@ -8,6 +8,7 @@ from django.http import HttpRequest
 from django.template.loader import get_template
 
 from hi.apps.alert.alert_mixins import AlertMixin
+from hi.apps.common import datetimeproxy
 from hi.apps.common.singleton import Singleton
 from hi.apps.config.settings_mixins import SettingsMixin
 from hi.apps.console.console_helper import ConsoleSettingsHelper
@@ -32,6 +33,7 @@ from .transient_models import (
     IntervalWeatherHistory,
     IntervalAstronomical,
     WeatherAlert,
+    WeatherPaneStatus,
     WeatherStats,
 )
 from .interval_data_manager import IntervalDataManager
@@ -127,6 +129,74 @@ class WeatherManager( Singleton, SettingsMixin, AlertMixin ):
             todays_astronomical_data = self.get_todays_astronomical_data(),
         )
 
+    def get_weather_pane_status(self) -> WeatherPaneStatus:
+        """Status line content for the current-conditions pane,
+        computed from (data freshness × weather monitor health). See
+        the design discussion in the commit that introduced this for
+        the cross-product rules. The pane always renders something at
+        the bottom: in the healthy path, the existing
+        ``At HH:MM from <SOURCE>`` timestamp; otherwise this method's
+        result drives the swap to a captioned/iconified line."""
+        # Lazy imports keep the transient-models import graph quiet
+        # (these modules also import from weather indirectly).
+        from hi.apps.monitor.monitor_manager import AppMonitorManager
+        from .monitors import WeatherMonitor
+
+        conditions = self.get_current_conditions_data()
+        if conditions.temperature is None:
+            data_state = 'none'
+        else:
+            age_secs = (
+                datetimeproxy.now() - conditions.temperature.source_datetime
+            ).total_seconds()
+            if age_secs > WeatherConstants.CONDITIONS_STALE_THRESHOLD_SECS:
+                data_state = 'stale'
+            else:
+                data_state = 'fresh'
+
+        health_status = None
+        try:
+            provider = AppMonitorManager().get_health_status_by_monitor_id(
+                WeatherMonitor.MONITOR_ID,
+            )
+            health_status = provider.health_status
+        except KeyError:
+            # Monitor isn't registered. Treat the same as the defensive
+            # "none × healthy" cell below — caller will surface the
+            # fallback caption.
+            pass
+
+        is_healthy = ( health_status is not None and health_status.is_healthy )
+
+        if data_state == 'fresh':
+            # The pane's existing timestamp line is sufficient.
+            return WeatherPaneStatus()
+
+        if data_state == 'stale' and is_healthy:
+            # Keep the timestamp line; just tint it.
+            return WeatherPaneStatus( is_timestamp_stale = True )
+
+        if data_state == 'none' and is_healthy:
+            # Reachable in practice — the weather monitor reports
+            # aggregate health across multiple endpoints, so it can
+            # land HEALTHY when only some of the underlying endpoints
+            # succeed. Operators can drill into System Info for the
+            # per-endpoint detail; the pane just shows a neutral
+            # fallback instead of going blank.
+            return WeatherPaneStatus( caption_text = 'Waiting for data' )
+
+        # Non-healthy: surface the monitor's own message.
+        caption_text = None
+        if health_status is not None:
+            caption_text = health_status.last_message or health_status.status_display
+        if not caption_text:
+            caption_text = 'Weather data unavailable'
+        return WeatherPaneStatus(
+            caption_text = caption_text,
+            health_status = health_status,
+            is_timestamp_stale = ( data_state == 'stale' ),
+        )
+
     def get_weather_stats_today(self) -> WeatherStats:
         location_key = self._get_location_key()
         return self._daily_weather_tracker.get_weather_stats_today(location_key)
@@ -147,9 +217,21 @@ class WeatherManager( Singleton, SettingsMixin, AlertMixin ):
         with self._data_sync_lock:
             return self._daily_astronomical_data
     
-    def get_weather_alerts(self) -> List[WeatherAlert]:
+    def get_active_weather_alerts(self) -> List[WeatherAlert]:
+        """Stored alerts whose ``expires`` is still in the future (or
+        unset). Filtering on read means a self-expiring alert drops
+        from the UI on the next read, without waiting for the slower
+        weather-source poll to overwrite the stored list.
+
+        If a caller ever needs the unfiltered set, add an explicit
+        ``get_all_weather_alerts`` rather than relaxing this method.
+        """
+        now = datetimeproxy.now()
         with self._data_sync_lock:
-            return self._weather_alerts
+            return [
+                alert for alert in self._weather_alerts
+                if alert.expires is None or alert.expires > now
+            ]
     
     async def update_current_conditions( self,
                                          data_point_source        : DataPointSource,
@@ -275,7 +357,7 @@ class WeatherManager( Singleton, SettingsMixin, AlertMixin ):
                 alert_manager = await self.alert_manager_async()
                 if alert_manager:
                     for alarm in alarms:
-                        await alert_manager.add_alarm_async(alarm)
+                        await alert_manager.upsert_alarm_async(alarm)
                         logger.info(f'Added weather alarm to system: {alarm.signature}')
                 else:
                     logger.warning('Alert manager not available, weather alarms not created')
@@ -422,20 +504,13 @@ class WeatherManager( Singleton, SettingsMixin, AlertMixin ):
         weather_overview_data = self.get_weather_overview_data()
         context = {
             'weather_overview_data': weather_overview_data,
+            'weather_pane_status': self.get_weather_pane_status(),
         }
         template = get_template( WeatherConstants.WEATHER_OVERVIEW_TEMPLATE_NAME )
         weather_overview_html_str = template.render( context, request = request )
-        
-        weather_alert_list = self.get_weather_alerts()
-        alerts_context = { 
-            'weather_alert_list': weather_alert_list
-        }
-        alerts_template = get_template( 'weather/panes/weather_alerts.html' )
-        weather_alerts_html_str = alerts_template.render( alerts_context, request = request )
-        
+
         return {
             DIVID['WEATHER_OVERVIEW']: weather_overview_html_str,
-            DIVID['WEATHER_ALERTS']: weather_alerts_html_str,
         }
     
     def _get_location_key(self):

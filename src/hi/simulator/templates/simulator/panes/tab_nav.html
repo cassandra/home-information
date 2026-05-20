@@ -1,0 +1,18 @@
+{% comment %}
+URL-routed tab strip used by the Services and Weather sections. Active
+tab is determined server-side by URL match (each tab is its own route).
+
+Context: ``tab_specs`` — list of dicts with keys ``label``, ``url``,
+``is_active``.
+{% endcomment %}
+<ul class="nav nav-tabs sim-tab-nav" role="tablist">
+  {% for spec in tab_specs %}
+  <li class="nav-item">
+    <a class="nav-link {% if spec.is_active %}active{% endif %}"
+       href="{{ spec.url }}"
+       aria-selected="{% if spec.is_active %}true{% else %}false{% endif %}">
+      {{ spec.label }}
+    </a>
+  </li>
+  {% endfor %}
+</ul>

@@ -13,14 +13,15 @@ from hi.apps.entity.entity_manager import EntityManager
 from hi.apps.entity.models import Entity, EntityState
 from hi.apps.entity.enums import EntityStateType
 from hi.apps.sense.sensor_response_manager import SensorResponseMixin
+from hi.apps.weather.weather_mixins import WeatherMixin
 
-from .constants import ConsoleConstants
+from .console_helper import ConsoleSettingsHelper
 from .transient_models import CameraControlDisplayData
 
 logger = logging.getLogger(__name__)
 
 
-class ConsoleManager( Singleton, SettingsMixin, SensorResponseMixin ):
+class ConsoleManager( Singleton, SettingsMixin, SensorResponseMixin, WeatherMixin ):
 
     # TTL cache settings
     CAMERA_CONTROL_CACHE_SIZE = 5
@@ -55,11 +56,19 @@ class ConsoleManager( Singleton, SettingsMixin, SensorResponseMixin ):
 
     def get_status_id_replace_map( self, request : HttpRequest ) -> Dict[ str, str ]:
 
-        context = dict()
-        template = get_template( ConsoleConstants.DATETIME_HEADER_TEMPLATE_NAME )
-        datetime_header_html_str = template.render( context, request = request )
+        weather_alert_list = []
+        try:
+            weather_alert_list = self.weather_manager().get_active_weather_alerts()
+        except Exception as e:
+            logger.error( f'Weather data unavailable for sidebar notice: {e}' )
+
+        context = {
+            'weather_alert_list': weather_alert_list,
+        }
+        template = get_template( 'console/panes/sidebar_notice.html' )
+        sidebar_notice_html_str = template.render( context, request = request )
         return {
-            DIVID['DATETIME_HEADER']: datetime_header_html_str,
+            DIVID['SIDEBAR_NOTICE']: sidebar_notice_html_str,
         }
         
     def get_camera_control_display_list(self) -> List[CameraControlDisplayData]:
@@ -94,16 +103,19 @@ class ConsoleManager( Singleton, SettingsMixin, SensorResponseMixin ):
             .prefetch_related('states')
             .order_by('name')
         )
-        
+
+        short_name_map = ConsoleSettingsHelper.compute_camera_short_names( entity_list )
+
         display_data_list = []
         for entity in entity_list:
             status_entity_state = self._find_priority_entity_state(entity)
             display_data = CameraControlDisplayData(
                 entity=entity,
-                status_entity_state=status_entity_state
+                status_entity_state=status_entity_state,
+                short_name=short_name_map.get( entity.id, entity.name ),
             )
             display_data_list.append(display_data)
-        
+
         return display_data_list
 
     def _find_priority_entity_state(self, entity: Entity) -> Optional[EntityState]:

@@ -1,0 +1,49 @@
+{% extends "pages/tabbed.html" %}
+
+{% block main_attrs %} data-states-url="{% url 'simulator_api_states' %}"{% endblock %}
+
+{% block tab_body %}
+<div class="d-flex align-items-center justify-content-between mb-2">
+  {% include "profile/panes/profile_selector.html" with module=module profile_list=profile_list current_profile=current_profile %}
+
+  <div class="dropdown">
+    <button class="btn btn-secondary btn-control dropdown-toggle" type="button"
+            id="hi-sim-entity-{{ simulator.id }}-menu" data-toggle="dropdown">
+      ADD {{ simulator.label }} ENTITY
+      <span class="caret"></span>
+    </button>
+    <div class="dropdown-menu dropdown-menu-right"
+         role="menu" aria-labelledby="hi-sim-entity-{{ simulator.id }}-menu">
+      {% for sim_entity_definition in simulator.sim_entity_definition_list %}
+      {% if forloop.counter > 1 %}
+      <div class="dropdown-divider"></div>
+      {% endif %}
+      <a role="menuitem" class="dropdown-item plain"
+         href="{% url 'simulator_entity_add' simulator_id=simulator.id class_id=sim_entity_definition.class_id %}"
+         data-async="modal">
+        {{ sim_entity_definition.class_label }}
+      </a>
+      {% endfor %}
+    </div>
+  </div>
+
+  {% if simulator.integration_urls %}
+  <div class="text-muted small mx-3 flex-grow-1 text-center">
+    {% for url_label, url_path in simulator.integration_urls %}
+    <span class="mr-2">
+      <strong>{{ url_label }}:</strong>
+      <code>{{ request.scheme }}://{{ request.get_host }}/{{ url_path }}</code>
+    </span>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  {% include "services/panes/fault_mode_form.html" with simulator=simulator fault_mode_choices=fault_mode_choices %}
+</div>
+
+{% for sim_entity in simulator.sim_entities %}
+{% include "services/panes/sim_entity.html" with simulator=simulator sim_entity=sim_entity %}
+{% empty %}
+<div class="alert alert-info">No {{ simulator.label }} simulator entities defined.</div>
+{% endfor %}
+{% endblock %}

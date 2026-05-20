@@ -1,0 +1,27 @@
+{% load static %}
+<nav class="sim-top-nav">
+  <div class="sim-top-nav-brand">
+    <img src="{% static 'img/hi-icon-32x32.png' %}" alt="" class="sim-top-nav-logo">
+    <span class="sim-top-nav-title">Home Information Simulator</span>
+  </div>
+  <ul class="sim-top-nav-links">
+    <li>
+      <a href="{% url 'simulator_services' %}"
+         class="sim-top-nav-link {% if active_section == 'services' %}active{% endif %}">
+        Services
+      </a>
+    </li>
+    <li>
+      <a href="{% url 'simulator_weather' %}"
+         class="sim-top-nav-link {% if active_section == 'weather' %}active{% endif %}">
+        Weather
+      </a>
+    </li>
+    <li>
+      <a href="{% url 'simulator_settings' %}"
+         class="sim-top-nav-link {% if active_section == 'settings' %}active{% endif %}">
+        Settings
+      </a>
+    </li>
+  </ul>
+</nav>

@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Optional, Tuple
 
 from hi.apps.common.svg_models import SvgRadius
 from hi.apps.entity.enums import EntityType
@@ -116,3 +116,41 @@ class PathGeometry:
             end_x = center_x + radius_x
             end_y = center_y
             return f'M {start_x},{start_y} L {end_x},{end_y}'
+
+    @classmethod
+    def create_coverage_triangle_path_string(
+            cls,
+            location_view : LocationView,
+            apex_x        : float,
+            apex_y        : float,
+            direction     : Tuple[float, float],
+    ) -> str:
+        """Closed-path SVG triangle representing a directional coverage
+        area. Apex at ``(apex_x, apex_y)``; base extends along the
+        ``direction`` unit vector. Sized to roughly match the default
+        rectangle path so the visual scale is consistent with other
+        auto-placed Area delegates.
+        """
+        dx, dy = direction
+        # Both dimensions scaled from viewbox so the triangle reads at
+        # the same magnitude as the default rectangle path
+        # (DEFAULT_RADIUS_PERCENT controls both).
+        size_fraction = cls.DEFAULT_RADIUS_PERCENT / 50.0
+        height = location_view.svg_view_box.width * size_fraction * 2.0
+        base_half_width = location_view.svg_view_box.height * size_fraction
+
+        # Perpendicular to direction (rotate 90° counter-clockwise in
+        # SVG coordinates).
+        perp_dx, perp_dy = -dy, dx
+
+        # Base center
+        base_cx = apex_x + ( dx * height )
+        base_cy = apex_y + ( dy * height )
+
+        # Base corners
+        c1x = base_cx + ( perp_dx * base_half_width )
+        c1y = base_cy + ( perp_dy * base_half_width )
+        c2x = base_cx - ( perp_dx * base_half_width )
+        c2y = base_cy - ( perp_dy * base_half_width )
+
+        return f'M {apex_x},{apex_y} L {c1x},{c1y} L {c2x},{c2y} Z'

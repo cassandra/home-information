@@ -103,16 +103,18 @@ class AlertSeverity( LabeledEnum ):
     SEVERE       = ( 'Severe'     , '' )
     MODERATE     = ( 'Moderate'   , '' )
     MINOR        = ( 'Minor'      , '' )
+    UNKNOWN      = ( 'Unknown'    , '' )
 
     def css_class(self):
         """Return Bootstrap alert CSS class for this severity level."""
         severity_css_map = {
             'EXTREME': 'danger',
-            'SEVERE': 'warning', 
+            'SEVERE': 'warning',
             'MODERATE': 'primary',
-            'MINOR': 'info'
+            'MINOR': 'info',
+            'UNKNOWN': 'tertiary',
         }
-        return severity_css_map.get(self.name, 'secondary')
+        return severity_css_map.get(self.name, 'tertiary')
 
 
 class AlertUrgency( LabeledEnum ):
@@ -127,6 +129,7 @@ class AlertCertainty( LabeledEnum ):
     LIKELY       = ( 'Likely'     , '' )
     POSSIBLE     = ( 'Possible'   , '' )
     UNLIKELY     = ( 'Unlikely'   , '' )
+    UNKNOWN      = ( 'Unknown'    , '' )
 
     
 class AlertStatus( LabeledEnum ):

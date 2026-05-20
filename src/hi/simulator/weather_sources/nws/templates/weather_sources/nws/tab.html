@@ -1,0 +1,80 @@
+{% load icons %}
+<div class="nws-sim-alert-tab">
+  <div class="d-flex justify-content-between align-items-center my-3">
+    <div class="text-muted small">
+      To route NWS API calls here, paste this into the main app's
+      Weather settings under <em>NWS Base URL</em>:
+      <code>{{ request.scheme }}://{{ request.get_host }}/weather/nws/api/</code>
+    </div>
+    <a class="btn btn-sm btn-outline-primary" data-async="modal"
+       href="{% url 'simulator_weather_nws_alert_add' %}">
+      {% icon "plus" size="sm" css_class="hi-icon-left" %}Add Alert
+    </a>
+  </div>
+
+  {% load nws_sim_alert_tags %}
+  {% nws_sim_alert_list as nws_sim_alert_list %}
+
+  {% if nws_sim_alert_list %}
+  <table class="table table-sm">
+    <thead>
+      <tr>
+        <th style="width: 4rem;">Active</th>
+        <th>Event</th>
+        <th>Severity</th>
+        <th>Certainty</th>
+        <th>Urgency</th>
+        <th>Effective / Expires</th>
+        <th style="width: 6rem;"></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for alert in nws_sim_alert_list %}
+      <tr>
+        <td>
+          <form action="{% url 'simulator_weather_nws_alert_toggle' alert_id=alert.id %}"
+                method="post" class="form m-0" data-async="true">
+            {% csrf_token %}
+            <label class="switch">
+              <input type="checkbox" {% if alert.is_active %}checked{% endif %}
+                     onchange-async="true">
+              <span class="slider"></span>
+            </label>
+          </form>
+        </td>
+        <td>
+          <div><strong>{{ alert.event_name }}</strong></div>
+          {% if alert.event_code %}
+          <small class="text-muted">{{ alert.event_code }}</small>
+          {% endif %}
+        </td>
+        <td>{{ alert.severity_str }}</td>
+        <td>{{ alert.certainty_str }}</td>
+        <td>{{ alert.urgency_str }}</td>
+        <td>
+          <small>
+            {{ alert.effective_offset_secs }}s / +{{ alert.expires_offset_secs }}s
+          </small>
+        </td>
+        <td class="text-right">
+          <a class="btn btn-sm btn-primary sim-icon-btn" data-async="modal"
+             href="{% url 'simulator_weather_nws_alert_edit' alert_id=alert.id %}"
+             title="Edit">
+            {% icon "edit" size="sm" %}
+          </a>
+          <a class="btn btn-sm btn-danger sim-icon-btn" data-async="modal"
+             href="{% url 'simulator_weather_nws_alert_delete' alert_id=alert.id %}"
+             title="Delete">
+            {% icon "delete" size="sm" %}
+          </a>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <div class="alert alert-info">
+    No simulated alerts defined. Use <strong>Add Alert</strong> to create one.
+  </div>
+  {% endif %}
+</div>

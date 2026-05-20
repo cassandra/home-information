@@ -1,0 +1,19 @@
+{% extends "simulator/pages/base.html" %}
+
+{% comment %}
+Shared base for the Services and Weather sections. Each tab is its
+own URL — selecting a tab is a full page navigation, not a client-side
+bootstrap-tab swap. Per-tab pages extend this and fill ``tab_body``.
+
+Context required:
+  - tab_specs : list of dicts with keys ``label``, ``url``, ``is_active``
+{% endcomment %}
+
+{% block content %}
+<main class="sim-main"{% block main_attrs %}{% endblock %}>
+  {% include "simulator/panes/tab_nav.html" %}
+  <div class="sim-tab-body">
+    {% block tab_body %}{% endblock %}
+  </div>
+</main>
+{% endblock %}

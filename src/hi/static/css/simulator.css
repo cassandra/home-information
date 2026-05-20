@@ -27,6 +27,169 @@
 
   --top-buttons-height: 2.5rem;
   --bottom-buttons-height: 2.5rem;
+
+  --sim-top-nav-height: 3rem;
+}
+
+.sim-top-nav {
+    display: flex;
+    align-items: center;
+    height: var(--sim-top-nav-height);
+    padding: 0 1rem;
+    background-color: var(--primary-color);
+    color: var(--on-primary-color);
+    border-bottom: 2px solid var(--secondary-color);
+}
+.sim-top-nav-brand {
+    display: flex;
+    align-items: center;
+    margin-right: 1.5rem;
+}
+.sim-top-nav-logo {
+    width: 1.5rem;
+    height: 1.5rem;
+    margin-right: 0.5rem;
+}
+.sim-top-nav-title {
+    font-weight: bold;
+    font-size: 1.05rem;
+    letter-spacing: 0.02em;
+}
+.sim-top-nav-links {
+    display: flex;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    height: 100%;
+}
+.sim-top-nav-links li {
+    height: 100%;
+}
+.sim-top-nav-link {
+    display: flex;
+    align-items: center;
+    height: 100%;
+    padding: 0 1rem;
+    color: var(--on-primary-color);
+    text-decoration: none;
+    border-bottom: 3px solid transparent;
+}
+.sim-top-nav-link:hover,
+.sim-top-nav-link:focus {
+    color: var(--on-primary-color);
+    background-color: rgba(255, 255, 255, 0.08);
+    text-decoration: none;
+    opacity: 1;
+}
+.sim-top-nav-link.active {
+    border-bottom-color: var(--secondary-color);
+    background-color: rgba(0, 0, 0, 0.15);
+}
+
+.sim-main {
+    padding: 1rem 1.25rem;
+}
+
+.sim-profile-header {
+    padding: 0.5rem 0.25rem 0.75rem;
+    margin-bottom: 0.5rem;
+    border-bottom: 1px solid var(--line-color);
+    gap: 0.75rem 1rem;
+}
+.sim-profile-name {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 0.5rem;
+}
+.sim-profile-name small {
+    font-size: 0.7rem;
+    letter-spacing: 0.05em;
+}
+.sim-profile-name-value {
+    font-size: 1.15rem;
+    font-weight: 600;
+}
+.sim-profile-actions .btn + .btn {
+    margin-left: 0;
+}
+.sim-profile-actions .btn {
+    display: inline-flex;
+    align-items: center;
+    line-height: 1.2;
+}
+.sim-profile-actions .btn .hi-icon {
+    vertical-align: middle;
+    width: 0.875rem;
+    height: 0.875rem;
+    flex: 0 0 auto;
+}
+
+.sim-main .nav-tabs {
+    margin-top: 1rem;
+    border-bottom-color: var(--line-color);
+}
+.sim-main .nav-tabs .nav-link {
+    color: var(--tertiary-color);
+    border: none;
+    border-bottom: 2px solid transparent;
+    padding: 0.5rem 1rem;
+}
+.sim-main .nav-tabs .nav-link:hover {
+    color: var(--primary-color);
+    background-color: transparent;
+    border-color: transparent transparent var(--line-color);
+}
+.sim-main .nav-tabs .nav-link.active {
+    color: var(--primary-color);
+    background-color: transparent;
+    border-color: transparent transparent var(--primary-color);
+    font-weight: 600;
+}
+.sim-main .tab-content {
+    padding-top: 0.75rem;
+}
+
+.sim-entity-row {
+    align-items: center;
+    padding: 0.4rem 0;
+    margin: 0;
+    border-bottom: 1px solid var(--line-color);
+}
+.sim-entity-row:last-child {
+    border-bottom: none;
+}
+.sim-entity-name {
+    font-weight: 500;
+}
+.sim-entity-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.4rem;
+}
+.sim-icon-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.4rem 0.65rem;
+    line-height: 1;
+}
+.sim-icon-btn .hi-icon {
+    margin: 0;
+    width: 1.1rem;
+    height: 1.1rem;
+}
+
+.sim-placeholder {
+    padding-top: 2rem;
+}
+.sim-placeholder-card {
+    max-width: 36rem;
+    margin: 2rem auto;
+    padding: 2rem;
+    background-color: var(--white-bg-color);
+    border: 1px solid var(--line-color);
+    border-radius: 0.25rem;
+    text-align: center;
 }
 
 html, body {

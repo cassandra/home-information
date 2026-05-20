@@ -179,12 +179,14 @@ class HassConverter:
     # All controllable domains
     ALL_CONTROLLABLE_DOMAINS = ON_OFF_CONTROLLABLE_DOMAINS | COMPLEX_CONTROLLABLE_DOMAINS
     
-    # Domains for sensor-only devices (read-only)
+    # Domains for sensor-only devices (read-only). The camera domain
+    # is intentionally NOT here despite its primary state being
+    # read-only: its ``motion_detection`` substate is controllable, so
+    # the domain as a whole is not purely sensor-only.
     #
     SENSOR_ONLY_DOMAINS = {
         HassApi.BINARY_SENSOR_DOMAIN,
         HassApi.SENSOR_DOMAIN,
-        HassApi.CAMERA_DOMAIN,
         HassApi.SUN_DOMAIN,
         HassApi.WEATHER_DOMAIN,
     }
@@ -363,7 +365,22 @@ class HassConverter:
                 HassApi.VOLUME_LEVEL_PARAM: 'percentage_decimal',  # 0.0-1.0
             },
         },
+
+        # Camera Domain Services — the camera's own primary state is
+        # read-only (no entry in HASS_STATE_TO_ENTITY_STATE_TYPE_MAPPING
+        # for the CAMERA_DOMAIN); the only controllable surface is the
+        # ``motion_detection`` substate, dispatched via the ``substate``
+        # branch in ``_substate_service_call`` rather than the
+        # bare-key on/off path. The mapping below populates the
+        # substate controller's payload so the dispatch finds the
+        # right enable/disable services.
+        (HassApi.CAMERA_DOMAIN, EntityStateType.ON_OFF): {
+            'on_service': HassApi.ENABLE_MOTION_DETECTION_SERVICE,
+            'off_service': HassApi.DISABLE_MOTION_DETECTION_SERVICE,
+            'parameters': {},
+        },
     }
+
 
     INSTEON_ADDRESS_ATTR_NAME = 'Insteon Address'
 
@@ -701,8 +718,15 @@ class HassConverter:
                         # multi-substate lights have no parent model.
                         model_with_entity_state = controller if controller else sensor
                         existing_entity_state_type = model_with_entity_state.entity_state.entity_state_type
-                        is_controllable = cls._is_controllable_domain_and_type(hass_state.domain, existing_entity_state_type)
-                        new_payload = cls._create_service_payload(hass_state, existing_entity_state_type, is_controllable)
+                        is_controllable = cls._is_controllable_domain_and_type(
+                            hass_state.domain,
+                            existing_entity_state_type,
+                        )
+                        new_payload = cls._create_service_payload(
+                            hass_state,
+                            existing_entity_state_type,
+                            is_controllable,
+                        )
                         for model, model_type in [(sensor, 'sensor'), (controller, 'controller')]:
                             if model:
                                 changed_fields = model.update_integration_payload(new_payload)
@@ -1158,6 +1182,8 @@ class HassConverter:
             return cls._fan_state_specs( hass_state )
         if hass_state.domain == HassApi.CLIMATE_DOMAIN:
             return cls._climate_state_specs( hass_state )
+        if hass_state.domain == HassApi.CAMERA_DOMAIN:
+            return cls._camera_state_specs( hass_state )
         return []
 
     @classmethod
@@ -1427,6 +1453,41 @@ class HassConverter:
             ))
         return specs
 
+    # HA's fixed set of camera state values. Listed here (rather than
+    # read from an attribute) because HA's camera spec declares the
+    # set itself, not the entity — same shape as ``_HVAC_ACTION_CHOICES``.
+    _CAMERA_STATE_VALUES = (
+        HassApi.CAMERA_STATE_IDLE,
+        HassApi.CAMERA_STATE_STREAMING,
+        HassApi.CAMERA_STATE_RECORDING,
+    )
+
+    @classmethod
+    def _camera_state_specs(
+            cls, hass_state : HassState ) -> List[ '_StateSpec' ]:
+        """Substates for a ``camera.x`` entity. A read-only ``state``
+        substate carries the primary mode (idle / streaming /
+        recording); when the entity reports ``motion_detection`` in
+        its attributes a controllable ON_OFF substate is exposed for
+        the HA enable/disable services."""
+        specs = [
+            cls._StateSpec(
+                suffix = HassApi.STATE_FIELD,
+                entity_state_type = EntityStateType.DISCRETE,
+                is_controllable = False,
+                value_range = { v: v for v in cls._CAMERA_STATE_VALUES },
+                label = 'Mode',
+            ),
+        ]
+        if HassApi.MOTION_DETECTION_ATTR in hass_state.attributes:
+            specs.append( cls._StateSpec(
+                suffix = HassApi.MOTION_DETECTION_ATTR,
+                entity_state_type = EntityStateType.ON_OFF,
+                is_controllable = True,
+                label = 'Motion Detection',
+            ))
+        return specs
+
     @classmethod
     def _setpoint_value_range( cls ) -> Dict[ str, float ]:
         """Slider bounds for thermostat setpoints, in HI's canonical
@@ -1457,6 +1518,8 @@ class HassConverter:
             return cls._fan_substate_value( hass_state, spec.suffix )
         if hass_state.domain == HassApi.CLIMATE_DOMAIN:
             return cls._climate_substate_value( hass_state, spec )
+        if hass_state.domain == HassApi.CAMERA_DOMAIN:
+            return cls._camera_substate_value( hass_state, spec.suffix )
         return None
 
     @classmethod
@@ -1527,6 +1590,24 @@ class HassConverter:
             return attrs.get( HassApi.DIRECTION_ATTR )
         if suffix == HassApi.PRESET_MODE_ATTR:
             return attrs.get( HassApi.PRESET_MODE_ATTR )
+        return None
+
+    @classmethod
+    def _camera_substate_value(
+            cls, hass_state : HassState, suffix : str ) -> Optional[ str ]:
+        """Camera-domain substate values. The ``state`` substate
+        passes HA's primary state field through (idle / streaming /
+        recording); ``motion_detection`` arrives as a JSON bool on the
+        camera entity's attributes (HA folds the enable-motion-detection
+        flag into its attributes rather than exposing it as a separate
+        entity)."""
+        if suffix == HassApi.STATE_FIELD:
+            return hass_state.state_value
+        if suffix == HassApi.MOTION_DETECTION_ATTR:
+            value = hass_state.attributes.get( HassApi.MOTION_DETECTION_ATTR )
+            if value is None:
+                return None
+            return str( EntityStateValue.ON ) if value else str( EntityStateValue.OFF )
         return None
 
     @classmethod
@@ -2277,6 +2358,8 @@ class HassConverter:
             return cls._fan_to_sensor_value_map( hass_state )
         if domain == HassApi.CLIMATE_DOMAIN:
             return cls._climate_to_sensor_value_map( hass_state )
+        if domain == HassApi.CAMERA_DOMAIN:
+            return cls._camera_to_sensor_value_map( hass_state )
         if domain == HassApi.SENSOR_DOMAIN:
             return cls._sensor_domain_to_sensor_value_map( hass_state )
         return cls._passthrough_to_sensor_value_map( hass_state )
@@ -2496,6 +2579,26 @@ class HassConverter:
         except ( TypeError, ValueError ):
             return {}
         return { cls.hass_state_to_integration_key( hass_state ) : str( percentage ) }
+
+    @classmethod
+    def _camera_to_sensor_value_map(
+            cls, hass_state : HassState ) -> Dict[ IntegrationKey, str ]:
+        """Camera domain: pure substate decomposition. The primary
+        ``state`` substate carries idle / streaming / recording; the
+        ``motion_detection`` substate carries the toggle when HA
+        reports the attribute."""
+        result : Dict[ IntegrationKey, str ] = {}
+        for spec in cls._state_specs_for_hass_state( hass_state ):
+            value = cls._extract_substate_value( hass_state, spec )
+            if value is None:
+                continue
+            substate_key = cls._substate_integration_key(
+                hass_state = hass_state,
+                suffix = spec.suffix,
+            )
+            result[ substate_key ] = value
+            continue
+        return result
 
     @classmethod
     def _climate_to_sensor_value_map(
@@ -2833,6 +2936,14 @@ class HassConverter:
                 domain = domain,
                 hass_substate_id = parent_entity_id,
                 fan_mode = hi_control_value,
+            )
+
+        if substate == HassApi.MOTION_DETECTION_ATTR:
+            return HassServiceComposer.for_motion_detection(
+                domain = domain,
+                hass_substate_id = parent_entity_id,
+                enabled = ( cls.to_ha_on_off_intent( hi_control_value )
+                            == ControlIntent.ON ),
             )
 
         raise ValueError( f'Unknown substate: {substate}' )

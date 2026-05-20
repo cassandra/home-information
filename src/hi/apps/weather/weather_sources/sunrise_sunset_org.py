@@ -3,10 +3,8 @@ from enum import Enum
 import json
 import logging
 import pytz
-import requests
 from typing import Any, Dict, List
 
-from django.conf import settings
 
 import hi.apps.common.datetimeproxy as datetimeproxy
 from hi.apps.weather.weather_data_source import WeatherDataSource
@@ -40,7 +38,6 @@ class SunriseSunsetOrg(WeatherDataSource, WeatherMixin):
     # Cache for 25 hours - astronomical data only changes once per day per location
     ASTRONOMICAL_DATA_CACHE_EXPIRY_SECS = 25 * 60 * 60
     
-    SKIP_CACHE = False  # For debugging    
     
     @classmethod
     def weather_source_id(cls):
@@ -102,7 +99,7 @@ class SunriseSunsetOrg(WeatherDataSource, WeatherMixin):
                 )
         except Exception as e:
             self.record_error( 'Multi-data astronomical fetch error: {e}' )
-            logger.exception(f'Problem fetching Sunrise-Sunset.org multi-day astronomical data: {e}')
+            self._log_fetch_error( 'multi-day astronomical data', e )
                 
         # Also update today's astronomical data for backwards compatibility
         try:
@@ -116,7 +113,7 @@ class SunriseSunsetOrg(WeatherDataSource, WeatherMixin):
                 )
         except Exception as e:
             self.record_error( 'Today\'s atronomical fetch error: {e}' )
-            logger.exception(f'Problem fetching Sunrise-Sunset.org today\'s astronomical data: {e}')
+            self._log_fetch_error( "today's astronomical data", e )
 
         return
 
@@ -253,8 +250,7 @@ class SunriseSunsetOrg(WeatherDataSource, WeatherMixin):
         cache_key = f'ws:{self.id}:astronomical:{geographic_location.latitude:.3f}:{geographic_location.longitude:.3f}:{target_date}'
         api_data_str = self.redis_client.get(cache_key)
 
-        if settings.DEBUG and self.SKIP_CACHE:
-            logger.warning('Skip caching in effect.')
+        if not self.is_cache_enabled:
             api_data_str = None
             
         if api_data_str:
@@ -278,18 +274,14 @@ class SunriseSunsetOrg(WeatherDataSource, WeatherMixin):
                                              geographic_location : GeographicLocation,
                                              target_date         : date) -> Dict[str, Any]:
         # Build API URL with parameters
-        url = (f"{self.BASE_URL}?"
+        url = (f"{self._get_base_url()}?"
                f"lat={geographic_location.latitude}&"
                f"lng={geographic_location.longitude}&"
                f"date={target_date.isoformat()}&"
                f"formatted=0")  # Get ISO format times
         
-        with self.api_call_context( 'sunrise_sunset' ):
-            response = requests.get(
-                url,
-                headers = self._headers,
-                timeout = self.get_api_timeout(),
-            )
-        response.raise_for_status()
-        api_data = response.json()           
-        return api_data
+        return self._api_get_json(
+            operation_name = 'sunrise_sunset',
+            url = url,
+            headers = self._headers,
+        )

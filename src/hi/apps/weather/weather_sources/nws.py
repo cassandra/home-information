@@ -1,10 +1,7 @@
 from datetime import datetime
 import json
 import logging
-import requests
 from typing import Any, Dict, List
-
-from django.conf import settings
 
 import hi.apps.common.datetimeproxy as datetimeproxy
 import hi.apps.common.geo_utils as geo_utils
@@ -52,8 +49,6 @@ class NationalWeatherService( WeatherDataSource, WeatherMixin ):
     OBSERVATIONS_DATA_CACHE_EXPIRY_SECS = 5 * 60  # Cache for rate-limit risk reduction
     FORECAST_DATA_CACHE_EXPIRY_SECS = 60 * 60
     ALERTS_DATA_CACHE_EXPIRY_SECS = 10 * 60  # Alerts can change frequently, short cache
-    
-    SKIP_CACHE = False  # For debugging    
 
     @classmethod
     def weather_source_id(cls):
@@ -112,7 +107,7 @@ class NationalWeatherService( WeatherDataSource, WeatherMixin ):
                     weather_conditions_data = current_conditions_data,
                 )
         except Exception as e:
-            logger.exception( f'Problem fetching NWS current conditions: {e}' )
+            self._log_fetch_error( 'current conditions', e )
 
         # Fetch hourly forecast data
         try:
@@ -125,7 +120,7 @@ class NationalWeatherService( WeatherDataSource, WeatherMixin ):
                     forecast_data_list = interval_hourly_forecast_list,
                 )
         except Exception as e:
-            logger.exception( f'Problem fetching NWS hourly forecast: {e}' )
+            self._log_fetch_error( 'hourly forecast', e )
 
         # Fetch 12-hour forecast data (used for daily forecast)
         try:
@@ -138,20 +133,22 @@ class NationalWeatherService( WeatherDataSource, WeatherMixin ):
                     forecast_data_list = interval_daily_forecast_list,
                 )
         except Exception as e:
-            logger.exception( f'Problem fetching NWS daily forecast: {e}' )
+            self._log_fetch_error( 'daily forecast', e )
 
-        # Fetch weather alerts
+        # Fetch weather alerts. Always push the result — even an empty
+        # list — so removed-upstream alerts clear from our stored list.
+        # NWS /alerts/active is contractually the full set of active
+        # alerts, so wholesale replacement is correct.
         try:
             weather_alerts = self.get_weather_alerts(
                 geographic_location = geographic_location,
             )
-            if weather_alerts:
-                await weather_manager.update_weather_alerts(
-                    data_point_source = self.data_point_source,
-                    weather_alerts = weather_alerts,
-                )
+            await weather_manager.update_weather_alerts(
+                data_point_source = self.data_point_source,
+                weather_alerts = weather_alerts,
+            )
         except Exception as e:
-            logger.exception( f'Problem fetching NWS weather alerts: {e}' )
+            self._log_fetch_error( 'weather alerts', e )
 
         # Note: NWS does not provide historical weather data or astronomical data
         # These would need to be fetched from other sources if needed
@@ -492,8 +489,7 @@ class NationalWeatherService( WeatherDataSource, WeatherMixin ):
         cache_key = f'ws:{self.id}:observations:{station.key}'
         observations_data_str = self.redis_client.get( cache_key )
 
-        if settings.DEBUG and self.SKIP_CACHE:
-            logger.warning( 'Skip caching in effect.' )
+        if not self.is_cache_enabled:
             observations_data_str = None
             
         if observations_data_str:
@@ -511,23 +507,17 @@ class NationalWeatherService( WeatherDataSource, WeatherMixin ):
         return observations_data
 
     def _get_observations_data_from_api( self, station : Station ) -> Dict[ str, Any ]:
-        with self.api_call_context( 'nws_observations' ):
-            observations_response = requests.get(
-                station.observations_url,
-                headers = self._headers,
-                timeout = self.get_api_timeout(),
-            )
-            
-        observations_response.raise_for_status()
-        observations_data = observations_response.json()           
-        return observations_data
+        return self._api_get_json(
+            operation_name = 'nws_observations',
+            url = station.observations_url,
+            headers = self._headers,
+        )
 
     def _get_forecast_hourly_data( self, station : Station ) -> Dict[ str, Any ]:
         cache_key = f'ws:{self.id}:forecast-hourly:{station.key}'
         forecast_hourly_data_str = self.redis_client.get( cache_key )
 
-        if settings.DEBUG and self.SKIP_CACHE:
-            logger.warning( 'Skip caching in effect.' )
+        if not self.is_cache_enabled:
             forecast_hourly_data_str = None
             
         if forecast_hourly_data_str:
@@ -545,22 +535,17 @@ class NationalWeatherService( WeatherDataSource, WeatherMixin ):
         return forecast_hourly_data
 
     def _get_forecast_hourly_data_from_api( self, station : Station ) -> Dict[ str, Any ]:
-        with self.api_call_context( 'nws_forecast_hourly' ):
-            forecast_hourly_response = requests.get(
-                station.forecast_url,
-                headers = self._headers,
-                timeout = self.get_api_timeout(),
-            )
-        forecast_hourly_response.raise_for_status()
-        forecast_hourly_data = forecast_hourly_response.json()           
-        return forecast_hourly_data
+        return self._api_get_json(
+            operation_name = 'nws_forecast_hourly',
+            url = station.forecast_url,
+            headers = self._headers,
+        )
 
     def _get_forecast_12h_data( self, station : Station ) -> Dict[ str, Any ]:
         cache_key = f'ws:{self.id}:forecast-12h:{station.key}'
         forecast_12h_data_str = self.redis_client.get( cache_key )
 
-        if settings.DEBUG and self.SKIP_CACHE:
-            logger.warning( 'Skip caching in effect.' )
+        if not self.is_cache_enabled:
             forecast_12h_data_str = None
             
         if forecast_12h_data_str:
@@ -578,15 +563,11 @@ class NationalWeatherService( WeatherDataSource, WeatherMixin ):
         return forecast_12h_data
 
     def _get_forecast_12h_data_from_api( self, station : Station ) -> Dict[ str, Any ]:
-        with self.api_call_context( 'nws_forecast' ):
-            forecast_12h_response = requests.get(
-                station.forecast_url,
-                headers = self._headers,
-                timeout = self.get_api_timeout(),
-            )
-        forecast_12h_response.raise_for_status()
-        forecast_12h_data = forecast_12h_response.json()           
-        return forecast_12h_data
+        return self._api_get_json(
+            operation_name = 'nws_forecast',
+            url = station.forecast_url,
+            headers = self._headers,
+        )
     
     def _get_station( self, geographic_location : GeographicLocation  ) -> Station:
         stations_data = self._get_stations_data( geographic_location = geographic_location )
@@ -599,8 +580,7 @@ class NationalWeatherService( WeatherDataSource, WeatherMixin ):
         cache_key = f'ws:{self.id}:stations:{geographic_location}'
         stations_data_str = self.redis_client.get( cache_key )
 
-        if settings.DEBUG and self.SKIP_CACHE:
-            logger.warning( 'Skip caching in effect.' )
+        if not self.is_cache_enabled:
             stations_data_str = None
             
         if stations_data_str:
@@ -622,22 +602,17 @@ class NationalWeatherService( WeatherDataSource, WeatherMixin ):
         points_data = self._get_points_data( geographic_location = geographic_location )
         stations_url = points_data['properties']['observationStations']
 
-        with self.api_call_context( 'nws_stations' ):
-            stations_response = requests.get(
-                stations_url,
-                headers = self._headers,
-                timeout = self.get_api_timeout(),
-            )
-        stations_response.raise_for_status()
-        stations_data = stations_response.json()
-        return stations_data
+        return self._api_get_json(
+            operation_name = 'nws_stations',
+            url = stations_url,
+            headers = self._headers,
+        )
         
     def _get_points_data( self, geographic_location : GeographicLocation ) -> Dict[ str, Any ]:
         cache_key = f'ws:{self.id}:points:{geographic_location}'
         points_data_str = self.redis_client.get( cache_key )
 
-        if settings.DEBUG and self.SKIP_CACHE:
-            logger.warning( 'Skip caching in effect.' )
+        if not self.is_cache_enabled:
             points_data_str = None
             
         if points_data_str:
@@ -656,17 +631,13 @@ class NationalWeatherService( WeatherDataSource, WeatherMixin ):
 
     def _get_points_data_from_api( self, geographic_location : GeographicLocation ) -> Dict[ str, Any ]:
         # Can cache this data, expires 12 hours-ish (they do not change often)
-        points_url = f'{self.BASE_URL}points/{geographic_location.latitude},{geographic_location.longitude}'
+        points_url = f'{self._get_base_url()}points/{geographic_location.latitude},{geographic_location.longitude}'
 
-        with self.api_call_context( 'nws_points' ):
-            points_response = requests.get(
-                points_url,
-                headers = self._headers,
-                timeout = self.get_api_timeout(),
-            )
-        points_response.raise_for_status()
-        points_data = points_response.json()
-        return points_data
+        return self._api_get_json(
+            operation_name = 'nws_points',
+            url = points_url,
+            headers = self._headers,
+        )
     
     def _get_closest_station( self,
                               geographic_location : GeographicLocation,
@@ -1058,8 +1029,7 @@ class NationalWeatherService( WeatherDataSource, WeatherMixin ):
         cache_key = f'ws:{self.id}:alerts:{geographic_location.latitude:.3f}:{geographic_location.longitude:.3f}'
         alerts_data_str = self.redis_client.get(cache_key)
 
-        if settings.DEBUG and self.SKIP_CACHE:
-            logger.warning('Skip caching in effect.')
+        if not self.is_cache_enabled:
             alerts_data_str = None
             
         if alerts_data_str:
@@ -1080,18 +1050,14 @@ class NationalWeatherService( WeatherDataSource, WeatherMixin ):
 
     def _get_alerts_data_from_api( self, geographic_location : GeographicLocation ) -> Dict[str, Any]:
         """Make API call to NWS for alerts data."""
-        alerts_url = f'{self.BASE_URL}alerts/active?point={geographic_location.latitude},{geographic_location.longitude}'
+        alerts_url = f'{self._get_base_url()}alerts/active?point={geographic_location.latitude},{geographic_location.longitude}'
         logger.debug(f'NWS alerts API request: {alerts_url}')
         
-        with self.api_call_context( 'nws_alerts' ):
-            response = requests.get(
-                alerts_url,
-                headers=self._headers,
-                timeout = self.get_api_timeout(),
-            )
-        response.raise_for_status()
-        alerts_data = response.json()
-        return alerts_data
+        return self._api_get_json(
+            operation_name = 'nws_alerts',
+            url = alerts_url,
+            headers = self._headers,
+        )
 
     def _parse_alerts_data( self, 
                             alerts_data : Dict[str, Any],
@@ -1109,7 +1075,14 @@ class NationalWeatherService( WeatherDataSource, WeatherMixin ):
                 properties = feature.get('properties', {})
                 if not properties:
                     continue
-                    
+
+                # NWS publishes a stable per-alert id at the feature
+                # level (typically a URI). Threading it onto the
+                # parsed WeatherAlert lets the alarm mapper use it as
+                # source_alarm_id to dedup repeat polls of the same
+                # active alert.
+                alert_id = feature.get('id')
+
                 # Extract basic alert information
                 event = properties.get('event', 'Unknown Event')
                 headline = properties.get('headline', '')
@@ -1194,6 +1167,7 @@ class NationalWeatherService( WeatherDataSource, WeatherMixin ):
                     severity = severity,
                     certainty = certainty,
                     urgency = urgency,
+                    alert_id = alert_id,
                 )
                 
                 weather_alerts.append(weather_alert)

@@ -24,6 +24,7 @@ heuristic live here as the canonical home.
 """
 
 from decimal import Decimal
+import math
 import re
 from typing import Optional, Tuple
 
@@ -33,9 +34,12 @@ from hi.hi_styles import EntityStyle
 
 class PositionGeometry:
 
-    DEFAULT_ICON_SIZE_PERCENT_OF_VIEWBOX = 10.0
-    DEFAULT_GRID_COLUMNS = 4
-    DEFAULT_GRID_SPACING_FRACTION = 0.18
+    DEFAULT_ICON_SIZE_PERCENT_OF_VIEWBOX = 7.5
+    # Default center-to-center distance between bulk-placement grid
+    # slots, as a fraction of viewbox dimension. Used as a target for
+    # modest counts; large grids tighten below this to fit the
+    # viewbox without clamping.
+    DEFAULT_GRID_SPACING_FRACTION = 0.12
     DEFAULT_VIEWBOX_MARGIN_FRACTION = 0.05
 
     @classmethod
@@ -57,7 +61,17 @@ class PositionGeometry:
         if grid_total <= 1:
             return center_x, center_y
 
-        columns = min( max( 2, cls.DEFAULT_GRID_COLUMNS ), grid_total )
+        # Column count adapts to ``grid_total`` and viewbox aspect:
+        # wider views get more columns, taller views get more rows.
+        # Cap at ``grid_total`` so a small batch in a wide view does
+        # not produce trailing empty cells that skew item centering.
+        aspect_ratio = (
+            view_box.width / view_box.height if view_box.height > 0 else 1.0
+        )
+        columns = min(
+            grid_total,
+            max( 2, math.ceil( math.sqrt( grid_total * aspect_ratio ) ) ),
+        )
         rows = ( grid_total + columns - 1 ) // columns
 
         column_index = grid_index % columns
@@ -66,8 +80,26 @@ class PositionGeometry:
         column_offset = column_index - ( ( columns - 1 ) / 2.0 )
         row_offset = row_index - ( ( rows - 1 ) / 2.0 )
 
-        spacing_x = view_box.width * cls.DEFAULT_GRID_SPACING_FRACTION
-        spacing_y = view_box.height * cls.DEFAULT_GRID_SPACING_FRACTION
+        # Default spacing for modest counts; for grids large enough
+        # that the default would overflow the viewbox (minus margin),
+        # tighten so the full grid fits without clamping. Items may
+        # still overlap each other at very large counts — that is
+        # the natural consequence of "user added many items at once,"
+        # not a layout failure.
+        default_spacing_x = view_box.width * cls.DEFAULT_GRID_SPACING_FRACTION
+        default_spacing_y = view_box.height * cls.DEFAULT_GRID_SPACING_FRACTION
+        margin = cls.DEFAULT_VIEWBOX_MARGIN_FRACTION
+        usable_width = view_box.width * ( 1.0 - ( 2.0 * margin ) )
+        usable_height = view_box.height * ( 1.0 - ( 2.0 * margin ) )
+
+        spacing_x = (
+            min( default_spacing_x, usable_width / ( columns - 1 ) )
+            if columns > 1 else 0.0
+        )
+        spacing_y = (
+            min( default_spacing_y, usable_height / ( rows - 1 ) )
+            if rows > 1 else 0.0
+        )
 
         svg_x = center_x + ( column_offset * spacing_x )
         svg_y = center_y + ( row_offset * spacing_y )
@@ -105,7 +137,10 @@ class PositionGeometry:
                             entity,
                             location_view : LocationView ) -> Decimal:
         """Default scale for an icon entity: ~10% of the viewbox's
-        smaller dimension, clamped to the location's
+        smaller dimension, multiplied by the entity type's opt-in
+        size factor (defaults to 1.0; only entity types with
+        meaningfully different intended layout sizes — e.g.
+        Automobile — override it), clamped to the location's
         svg_position_bounds.min_scale / max_scale."""
         view_box = location_view.svg_view_box
         icon_view_box = EntityStyle.get_svg_icon_viewbox( entity.entity_type )
@@ -116,7 +151,8 @@ class PositionGeometry:
 
         viewbox_min_dimension = min( view_box.width, view_box.height )
         size_fraction = cls.DEFAULT_ICON_SIZE_PERCENT_OF_VIEWBOX / 100.0
-        target_icon_size = viewbox_min_dimension * size_fraction
+        size_factor = EntityStyle.get_icon_size_factor( entity.entity_type )
+        target_icon_size = viewbox_min_dimension * size_fraction * size_factor
         scale = target_icon_size / icon_max_dimension
 
         position_bounds = location_view.location.svg_position_bounds

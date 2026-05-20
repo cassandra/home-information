@@ -415,7 +415,7 @@ class TransitionAlarmTests(TestCase):
         with patch(
                 'hi.apps.alert.alert_manager.AlertManager',
         ) as mock_manager_class:
-            mock_manager_class.return_value.add_alarm = capture
+            mock_manager_class.return_value.upsert_alarm = capture
             IntegrationSyncCheck._fire_needs_sync_alarm(
                 integration_id=self.INTEGRATION_ID,
                 result=self._result(needs_sync=True),

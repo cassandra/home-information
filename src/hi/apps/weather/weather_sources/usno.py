@@ -3,10 +3,8 @@ from enum import Enum
 import json
 import logging
 import pytz
-import requests
 from typing import Any, Dict, List
 
-from django.conf import settings
 
 import hi.apps.common.datetimeproxy as datetimeproxy
 from hi.apps.weather.weather_data_source import WeatherDataSource
@@ -49,7 +47,6 @@ class USNO( WeatherDataSource, WeatherMixin ):
     # Cache for 25 hours - astronomical data only changes once per day per location
     ASTRONOMICAL_DATA_CACHE_EXPIRY_SECS = 25 * 60 * 60
     
-    SKIP_CACHE = False  # For debugging    
     
     @classmethod
     def weather_source_id(cls):
@@ -111,7 +108,7 @@ class USNO( WeatherDataSource, WeatherMixin ):
                 )
         except Exception as e:
             self.record_error( 'Multi-data astronomical fetch error: {e}' )
-            logger.exception(f'Problem fetching USNO multi-day astronomical data: {e}')
+            self._log_fetch_error( 'multi-day astronomical data', e )
                 
         # Also update today's astronomical data for backwards compatibility
         try:
@@ -125,7 +122,7 @@ class USNO( WeatherDataSource, WeatherMixin ):
                 )
         except Exception as e:
             self.record_error( 'Today\'s astronomical fetch error: {e}' )
-            logger.exception(f'Problem fetching USNO today\'s astronomical data: {e}')
+            self._log_fetch_error( "today's astronomical data", e )
 
         return
 
@@ -358,8 +355,7 @@ class USNO( WeatherDataSource, WeatherMixin ):
         cache_key = f'ws:{self.id}:astronomical:{geographic_location.latitude:.3f}:{geographic_location.longitude:.3f}:{target_date}'
         api_data_str = self.redis_client.get(cache_key)
 
-        if settings.DEBUG and self.SKIP_CACHE:
-            logger.warning('Skip caching in effect.')
+        if not self.is_cache_enabled:
             api_data_str = None
             
         if api_data_str:
@@ -391,19 +387,15 @@ class USNO( WeatherDataSource, WeatherMixin ):
         tz_offset = offset_seconds / 3600  # Convert to hours
         
         # Build API URL with parameters
-        url = (f"{self.BASE_URL}?"
+        url = (f"{self._get_base_url()}?"
                f"date={target_date.isoformat()}&"
                f"coords={geographic_location.latitude},{geographic_location.longitude}&"
                f"tz={tz_offset}")
         
         logger.debug(f'USNO API request: {url}')
         
-        with self.api_call_context( 'usno' ):
-            response = requests.get(
-                url,
-                headers = self._headers,
-                timeout = self.get_api_timeout(),
-            )
-        response.raise_for_status()
-        api_data = response.json()           
-        return api_data
+        return self._api_get_json(
+            operation_name = 'usno',
+            url = url,
+            headers = self._headers,
+        )

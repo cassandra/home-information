@@ -214,7 +214,7 @@ class TestWeatherEnums(BaseTestCase):
 
     def test_AlertSeverity_basic_functionality(self):
         """Test AlertSeverity enum has expected values"""
-        expected_severities = ['MINOR', 'MODERATE', 'SEVERE', 'EXTREME']
+        expected_severities = ['MINOR', 'MODERATE', 'SEVERE', 'EXTREME', 'UNKNOWN']
         
         for severity_name in expected_severities:
             with self.subTest(severity=severity_name):
@@ -239,7 +239,7 @@ class TestWeatherEnums(BaseTestCase):
 
     def test_AlertCertainty_basic_functionality(self):
         """Test AlertCertainty enum has expected values"""
-        expected_certainties = ['OBSERVED', 'LIKELY', 'POSSIBLE', 'UNLIKELY']
+        expected_certainties = ['OBSERVED', 'LIKELY', 'POSSIBLE', 'UNLIKELY', 'UNKNOWN']
         
         for certainty_name in expected_certainties:
             with self.subTest(certainty=certainty_name):

@@ -132,7 +132,7 @@ class AlertSyntheticData:
                 alarm_lifetime_secs = alarm_lifetime_secs,
                 timestamp = reference_datetime - timedelta(minutes=time_interval_mins * (alarm_count - i)),
             )
-            alert.add_alarm( additional_alarm )
+            alert.upsert_alarm( additional_alarm )
         
         return alert
 
@@ -315,7 +315,7 @@ class AlertSyntheticData:
                     alarm_lifetime_secs = alarm_lifetime_secs,
                     timestamp = alarm_timestamp,
                 )
-                alert.add_alarm( alarm )
+                alert.upsert_alarm( alarm )
                 continue
             alert_list.append( alert )
             continue

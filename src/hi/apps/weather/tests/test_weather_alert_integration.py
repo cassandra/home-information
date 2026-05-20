@@ -197,10 +197,10 @@ class TestWeatherAlertIntegration(AsyncTaskFastTestCase):
         self.run_async(test_update())
         
         # Verify alert manager was called to add alarms
-        self.assertEqual(mock_alert_manager.add_alarm_async.call_count, 2)  # Only 2 should create alarms
+        self.assertEqual(mock_alert_manager.upsert_alarm_async.call_count, 2)  # Only 2 should create alarms
         
         # Verify the alarms that were created
-        call_args_list = mock_alert_manager.add_alarm_async.call_args_list
+        call_args_list = mock_alert_manager.upsert_alarm_async.call_args_list
         alarm1 = call_args_list[0][0][0]  # First alarm
         alarm2 = call_args_list[1][0][0]  # Second alarm
         
@@ -209,8 +209,11 @@ class TestWeatherAlertIntegration(AsyncTaskFastTestCase):
         expected_types = {WeatherEventType.TORNADO.name, WeatherEventType.SEVERE_THUNDERSTORM.name}
         self.assertEqual(alarm_types, expected_types)
         
-        # Verify weather alerts were stored
-        stored_alerts = mock_weather_manager.get_weather_alerts()
+        # Verify weather alerts were stored. Read from internal storage
+        # directly because the public getter filters out alerts whose
+        # ``expires`` is in the past — the fixture intentionally uses
+        # 2024 dates, which would always be expired.
+        stored_alerts = mock_weather_manager._weather_alerts
         self.assertEqual(len(stored_alerts), 3)  # All alerts stored, regardless of alarm creation
     
     def _create_test_alert(self, event_type, severity, headline):

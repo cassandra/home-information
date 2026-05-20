@@ -1,0 +1,27 @@
+{% extends "modals/action_with_cancel.html" %}
+{% load icons %}
+
+{% block preamble %}
+<form action="{% url 'simulator_profile_edit' module_key=module.module_key profile_id=sim_profile.id %}"
+      method="post" class="form" data-async="modal">
+  {% csrf_token %}
+{% endblock %}
+
+{% block title_text %}
+Edit {{ module.label }} Profile
+{% endblock %}
+
+{% block body %}
+{% include "profile/panes/profile_form.html" %}
+{% endblock %}
+
+{% block action_right %}
+<button id="hi-simulator-profile-edit-submit" type="submit" class="btn btn-primary"
+        name="action" value="edit">
+  {% icon "save" size="sm" css_class="hi-icon-left" %}UPDATE
+</button>
+{% endblock %}
+
+{% block postamble %}
+</form>
+{% endblock %}

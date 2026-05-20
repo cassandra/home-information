@@ -77,7 +77,7 @@ class TestAlert(BaseTestCase):
         self.assertFalse(alert.is_matching_alarm(non_matching_alarm))
         return
 
-    def test_alert_add_alarm_aggregation(self):
+    def test_alert_upsert_alarm_aggregation(self):
         """Test adding alarms to alert - complex aggregation logic with deque management."""
         alert = Alert(self.test_alarm)
         initial_end_time = alert.end_datetime
@@ -94,7 +94,7 @@ class TestAlert(BaseTestCase):
             timestamp=datetimeproxy.now(),
         )
         
-        alert.add_alarm(second_alarm)
+        alert.upsert_alarm(second_alarm)
         
         # Should update alarm count and end time
         self.assertEqual(alert.alarm_count, 2)
@@ -108,8 +108,85 @@ class TestAlert(BaseTestCase):
         self.assertEqual(alert.get_latest_alarm(), second_alarm)
         return
 
-    def test_alert_add_alarm_signature_assertion(self):
-        """Test add_alarm signature validation - critical error handling."""
+    def test_alert_upsert_alarm_skips_duplicate_source_alarm_id(self):
+        """Resubmitting an alarm with a known source_alarm_id refreshes
+        expiry but does not increment alarm_count — the count reflects
+        distinct incidents, not how often a source re-reported the
+        same one."""
+        first_alarm = Alarm(
+            alarm_source = AlarmSource.EVENT,
+            alarm_type = 'test_alarm',
+            alarm_level = AlarmLevel.WARNING,
+            title = 'Test Alarm',
+            sensor_response_list = [],
+            security_level = SecurityLevel.LOW,
+            alarm_lifetime_secs = 300,
+            timestamp = datetimeproxy.now(),
+            source_alarm_id = 'INCIDENT-A',
+        )
+        alert = Alert( first_alarm )
+
+        # Re-poll of the same incident: different timestamp / lifetime,
+        # same source_alarm_id. Expiry should refresh; count must not.
+        repoll_alarm = Alarm(
+            alarm_source = AlarmSource.EVENT,
+            alarm_type = 'test_alarm',
+            alarm_level = AlarmLevel.WARNING,
+            title = 'Test Alarm (re-polled)',
+            sensor_response_list = [],
+            security_level = SecurityLevel.LOW,
+            alarm_lifetime_secs = 600,
+            timestamp = datetimeproxy.now(),
+            source_alarm_id = 'INCIDENT-A',
+        )
+        before_end = alert.end_datetime
+        alert.upsert_alarm( repoll_alarm )
+
+        self.assertEqual( alert.alarm_count, 1 )
+        self.assertGreater( alert.end_datetime, before_end )
+
+        # A distinct incident (different source_alarm_id) of the same
+        # kind is still counted as a new occurrence.
+        distinct_alarm = Alarm(
+            alarm_source = AlarmSource.EVENT,
+            alarm_type = 'test_alarm',
+            alarm_level = AlarmLevel.WARNING,
+            title = 'Test Alarm (different incident)',
+            sensor_response_list = [],
+            security_level = SecurityLevel.LOW,
+            alarm_lifetime_secs = 300,
+            timestamp = datetimeproxy.now(),
+            source_alarm_id = 'INCIDENT-B',
+        )
+        alert.upsert_alarm( distinct_alarm )
+        self.assertEqual( alert.alarm_count, 2 )
+        return
+
+    def test_alert_upsert_alarm_no_source_id_always_counts(self):
+        """Legacy behavior: when source_alarm_id is None on both the
+        existing and incoming alarm, every submission counts. Existing
+        callers that have not adopted the new field see unchanged
+        behavior."""
+        alert = Alert( self.test_alarm )
+
+        followup_alarm = Alarm(
+            alarm_source = AlarmSource.EVENT,
+            alarm_type = 'test_alarm',
+            alarm_level = AlarmLevel.WARNING,
+            title = 'Test Alarm',
+            sensor_response_list = [],
+            security_level = SecurityLevel.LOW,
+            alarm_lifetime_secs = 300,
+            timestamp = datetimeproxy.now(),
+        )
+        alert.upsert_alarm( followup_alarm )
+        alert.upsert_alarm( followup_alarm )
+
+        self.assertEqual( alert.alarm_count, 3 )
+        return
+
+    def test_alert_upsert_alarm_signature_assertion(self):
+        """Test upsert_alarm signature validation - critical error handling."""
         alert = Alert(self.test_alarm)
         
         # Create alarm with different signature
@@ -126,7 +203,7 @@ class TestAlert(BaseTestCase):
         
         # Should raise assertion error for signature mismatch
         with self.assertRaises(AssertionError):
-            alert.add_alarm(different_alarm)
+            alert.upsert_alarm(different_alarm)
         return
 
     def test_alert_title_generation_with_count(self):
@@ -149,7 +226,7 @@ class TestAlert(BaseTestCase):
             timestamp=datetimeproxy.now(),
         )
         
-        alert.add_alarm(second_alarm)
+        alert.upsert_alarm(second_alarm)
         expected_title_with_count = f'{AlarmLevel.WARNING.label}: Test Alarm (2)'
         self.assertEqual(alert.title, expected_title_with_count)
         return
@@ -170,7 +247,7 @@ class TestAlert(BaseTestCase):
                 alarm_lifetime_secs=300,
                 timestamp=datetimeproxy.now(),
             )
-            alert.add_alarm(new_alarm)
+            alert.upsert_alarm(new_alarm)
         
         # Should not exceed max size
         self.assertEqual(alert.alarm_count, Alert.MAX_ALARM_LIST_SIZE)
@@ -246,7 +323,7 @@ class TestAlert(BaseTestCase):
             timestamp=datetimeproxy.now(),
         )
         
-        alert.add_alarm(second_alarm)
+        alert.upsert_alarm(second_alarm)
         self.assertFalse(alert.has_single_alarm)
         return
 
@@ -356,7 +433,7 @@ class TestAlert(BaseTestCase):
         )
         
         alert = Alert(first_alarm_with_image)
-        alert.add_alarm(second_alarm_no_image)
+        alert.upsert_alarm(second_alarm_no_image)
         visual_content = alert.get_first_visual_content()
         
         self.assertIsNotNone(visual_content)
@@ -410,7 +487,7 @@ class TestAlert(BaseTestCase):
         )
         
         alert = Alert(first_alarm_no_image)
-        alert.add_alarm(second_alarm_with_image)
+        alert.upsert_alarm(second_alarm_with_image)
         visual_content = alert.get_first_visual_content()
         
         self.assertIsNotNone(visual_content)

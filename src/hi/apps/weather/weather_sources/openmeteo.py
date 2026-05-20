@@ -1,10 +1,8 @@
 from datetime import date, datetime, timedelta
 import json
 import logging
-import requests
 from typing import Any, Dict, List
 
-from django.conf import settings
 
 import hi.apps.common.datetimeproxy as datetimeproxy
 from hi.apps.weather.weather_data_source import WeatherDataSource
@@ -39,7 +37,6 @@ class OpenMeteo(WeatherDataSource, WeatherMixin):
     FORECAST_DATA_CACHE_EXPIRY_SECS = 60 * 60  # Cache for 1 hour
     HISTORICAL_DATA_CACHE_EXPIRY_SECS = 30 * 24 * 60 * 60  # 30 days - historical data rarely changes
     
-    SKIP_CACHE = False  # For debugging    
     
     @classmethod
     def weather_source_id(cls):
@@ -100,7 +97,7 @@ class OpenMeteo(WeatherDataSource, WeatherMixin):
                 )
         except Exception as e:
             self.record_error( 'Current conditions fetch error: {e}' )
-            logger.exception(f'Problem fetching OpenMeteo current conditions: {e}')
+            self._log_fetch_error( 'current conditions', e )
 
         # Fetch hourly forecast data
         try:
@@ -114,7 +111,7 @@ class OpenMeteo(WeatherDataSource, WeatherMixin):
                 )
         except Exception as e:
             self.record_error( 'Hourly forecast fetch error: {e}' )
-            logger.exception(f'Problem fetching OpenMeteo hourly forecast: {e}')
+            self._log_fetch_error( 'hourly forecast', e )
 
         # Fetch daily forecast data
         try:
@@ -128,7 +125,7 @@ class OpenMeteo(WeatherDataSource, WeatherMixin):
                 )
         except Exception as e:
             self.record_error( 'Daily forecast fetch error: {e}' )
-            logger.exception(f'Problem fetching OpenMeteo daily forecast: {e}')
+            self._log_fetch_error( 'daily forecast', e )
 
         # Fetch historical weather data (last 7 days)
         try:
@@ -146,7 +143,7 @@ class OpenMeteo(WeatherDataSource, WeatherMixin):
                 logger.warning('OpenMeteo returned no historical weather data')
         except Exception as e:
             self.record_error( 'Historical data fetch error: {e}' )
-            logger.exception(f'Problem fetching OpenMeteo historical data: {e}')
+            self._log_fetch_error( 'historical data', e )
 
         # Note: OpenMeteo does not provide astronomical data
         # This would need to be fetched from other sources if needed
@@ -726,8 +723,7 @@ class OpenMeteo(WeatherDataSource, WeatherMixin):
         cache_key = f'ws:{self.id}:current:{geographic_location}'
         current_data_str = self.redis_client.get(cache_key)
 
-        if settings.DEBUG and self.SKIP_CACHE:
-            logger.warning('Skip caching in effect.')
+        if not self.is_cache_enabled:
             current_data_str = None
             
         if current_data_str:
@@ -746,29 +742,24 @@ class OpenMeteo(WeatherDataSource, WeatherMixin):
 
     def _get_current_weather_data_from_api(self, geographic_location: GeographicLocation) -> Dict[str, Any]:
         # Request current weather plus additional hourly data for current hour
-        url = (f"{self.BASE_URL}forecast?"
+        url = (f"{self._get_base_url()}forecast?"
                f"latitude={geographic_location.latitude}&"
                f"longitude={geographic_location.longitude}&"
                f"current_weather=true&"
                f"hourly=temperature_2m,relativehumidity_2m,dewpoint_2m,precipitation,pressure_msl&"
                f"units=metric")
         
-        with self.api_call_context( 'openmeteo_current' ):
-            response = requests.get(
-                url,
-                headers = self._headers,
-                timeout = self.get_api_timeout(),
-            )
-        response.raise_for_status()
-        current_data = response.json()           
-        return current_data
+        return self._api_get_json(
+            operation_name = 'openmeteo_current',
+            url = url,
+            headers = self._headers,
+        )
 
     def _get_hourly_forecast_data(self, geographic_location: GeographicLocation) -> Dict[str, Any]:
         cache_key = f'ws:{self.id}:forecast-hourly:{geographic_location}'
         forecast_data_str = self.redis_client.get(cache_key)
 
-        if settings.DEBUG and self.SKIP_CACHE:
-            logger.warning('Skip caching in effect.')
+        if not self.is_cache_enabled:
             forecast_data_str = None
             
         if forecast_data_str:
@@ -787,29 +778,24 @@ class OpenMeteo(WeatherDataSource, WeatherMixin):
 
     def _get_hourly_forecast_data_from_api(self, geographic_location: GeographicLocation) -> Dict[str, Any]:
         # Request 7 days of hourly forecast data
-        url = (f"{self.BASE_URL}forecast?"
+        url = (f"{self._get_base_url()}forecast?"
                f"latitude={geographic_location.latitude}&"
                f"longitude={geographic_location.longitude}&"
                f"hourly=temperature_2m,relativehumidity_2m,windspeed_10m,winddirection_10m,precipitation,weathercode&"
                f"forecast_days=7&"
                f"units=metric")
         
-        with self.api_call_context( 'openmeteo_forecast_hourly' ):
-            response = requests.get(
-                url,
-                headers = self._headers,
-                timeout = self.get_api_timeout(),
-            )
-        response.raise_for_status()
-        forecast_data = response.json()           
-        return forecast_data
+        return self._api_get_json(
+            operation_name = 'openmeteo_forecast_hourly',
+            url = url,
+            headers = self._headers,
+        )
 
     def _get_daily_forecast_data(self, geographic_location: GeographicLocation) -> Dict[str, Any]:
         cache_key = f'ws:{self.id}:forecast-daily:{geographic_location}'
         forecast_data_str = self.redis_client.get(cache_key)
 
-        if settings.DEBUG and self.SKIP_CACHE:
-            logger.warning('Skip caching in effect.')
+        if not self.is_cache_enabled:
             forecast_data_str = None
             
         if forecast_data_str:
@@ -828,22 +814,18 @@ class OpenMeteo(WeatherDataSource, WeatherMixin):
 
     def _get_daily_forecast_data_from_api(self, geographic_location: GeographicLocation) -> Dict[str, Any]:
         # Request 14 days of daily forecast data
-        url = (f"{self.BASE_URL}forecast?"
+        url = (f"{self._get_base_url()}forecast?"
                f"latitude={geographic_location.latitude}&"
                f"longitude={geographic_location.longitude}&"
                f"daily=weathercode,temperature_2m_max,temperature_2m_min,precipitation_sum&"
                f"forecast_days=14&"
                f"units=metric")
         
-        with self.api_call_context( 'openmeteo_forecast_daily' ):
-            response = requests.get(
-                url,
-                headers = self._headers,
-                timeout = self.get_api_timeout(),
-            )
-        response.raise_for_status()
-        forecast_data = response.json()           
-        return forecast_data
+        return self._api_get_json(
+            operation_name = 'openmeteo_forecast_daily',
+            url = url,
+            headers = self._headers,
+        )
 
     def _get_historical_weather_data( self,
                                       geographic_location  : GeographicLocation,
@@ -852,8 +834,7 @@ class OpenMeteo(WeatherDataSource, WeatherMixin):
         cache_key = f'ws:{self.id}:historical:{geographic_location}:{start_date}:{end_date}'
         historical_data_str = self.redis_client.get(cache_key)
 
-        if settings.DEBUG and self.SKIP_CACHE:
-            logger.warning('Skip caching in effect.')
+        if not self.is_cache_enabled:
             historical_data_str = None
             
         if historical_data_str:
@@ -887,12 +868,8 @@ class OpenMeteo(WeatherDataSource, WeatherMixin):
                f"daily=weathercode,temperature_2m_max,temperature_2m_min,precipitation_sum&"
                f"units=metric")
         
-        with self.api_call_context( 'openmeteo_history' ):
-            response = requests.get(
-                url,
-                headers = self._headers,
-                timeout = self.get_api_timeout(),
-            )
-        response.raise_for_status()
-        historical_data = response.json()           
-        return historical_data
+        return self._api_get_json(
+            operation_name = 'openmeteo_history',
+            url = url,
+            headers = self._headers,
+        )

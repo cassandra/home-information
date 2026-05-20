@@ -73,14 +73,20 @@ class TestEntityPlacerPersistence(BaseTestCase):
         # Centered on the viewbox: 100 + 400/2 = 300, 200 + 300/2 = 350.
         self.assertEqual(entity_position.svg_x, Decimal('300'))
         self.assertEqual(entity_position.svg_y, Decimal('350'))
-        # Default icon size is a percentage of the viewbox's smaller dimension.
+        # Default icon size is a percentage of the viewbox's smaller
+        # dimension. Tolerance-based comparison to avoid coupling to
+        # the field's storage rounding mode (the field rounds to 6
+        # decimal places; the exact rounding mode is an implementation
+        # detail).
         expected_scale = (
             Decimal('300')
             * Decimal(str(PositionGeometry.DEFAULT_ICON_SIZE_PERCENT_OF_VIEWBOX))
             / Decimal('100')
             / Decimal('64')
         )
-        self.assertEqual(entity_position.svg_scale, expected_scale)
+        self.assertAlmostEqual(
+            float(entity_position.svg_scale), float(expected_scale), places=5,
+        )
         self.assertEqual(entity_position.svg_rotate, Decimal('0.0'))
 
         # Re-call must not create a duplicate row.
@@ -156,9 +162,10 @@ class TestEntityPlacementCalculatorBulkShapes(BaseTestCase):
         self.assertEqual(len(shapes), len(entities))
         for shape in shapes:
             self.assertIsInstance(shape, PlacementPoint)
-        # Distinct x positions in a single row.
-        xs = [s.svg_x for s in shapes]
-        self.assertEqual(len(set(xs)), 4)
+        # All placement positions are distinct — adaptive grid shape
+        # (rows × cols) is an implementation detail and not asserted.
+        positions = [(s.svg_x, s.svg_y) for s in shapes]
+        self.assertEqual(len(set(positions)), 4)
 
 
 class TestEntityPlacerSetEntityPath(BaseTestCase):

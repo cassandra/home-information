@@ -71,12 +71,14 @@ class SettingsInitializer:
         return subsystem
 
     def _create_attributes_if_needed( self, subsystem, app_settings ):
-        all_defined_setting_definitions_map = app_settings.all_setting_definitions()        
-        for setting_key, setting_definition in all_defined_setting_definitions_map.items():
+        all_defined_setting_definitions_map = app_settings.all_setting_definitions()
+        for order_id, ( setting_key, setting_definition ) in enumerate(
+                all_defined_setting_definitions_map.items() ):
             _ = self._create_setting_attribute_if_needed(
                 subsystem = subsystem,
                 setting_key = setting_key,
                 setting_definition = setting_definition,
+                order_id = order_id,
             )
             continue
         return
@@ -84,7 +86,8 @@ class SettingsInitializer:
     def _create_setting_attribute_if_needed( self,
                                              subsystem,
                                              setting_key,
-                                             setting_definition ):
+                                             setting_definition,
+                                             order_id ):
         from hi.apps.attribute.enums import AttributeType
         from hi.apps.config.models import SubsystemAttribute
 
@@ -104,12 +107,19 @@ class SettingsInitializer:
                 attribute_type_str = AttributeType.PREDEFINED,
                 is_editable = setting_definition.is_editable,
                 is_required = setting_definition.is_required,
+                order_id = order_id,
             )
         else:
+            update_fields = []
             if attribute.name != setting_definition.label:
                 attribute.name = setting_definition.label
+                update_fields.append( 'name' )
+            if attribute.order_id != order_id:
+                attribute.order_id = order_id
+                update_fields.append( 'order_id' )
+            if update_fields:
                 attribute.save(
-                    update_fields = ['name'],
+                    update_fields = update_fields,
                     track_history = False,
                 )
         return attribute

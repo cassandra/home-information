@@ -15,8 +15,8 @@ purely at this boundary.
 """
 from typing import Optional
 
-from hi.simulator.enums import SimTemperatureUnit
-from hi.simulator.runtime_settings import SimulatorRuntimeSettings
+from hi.simulator.settings.enums import SimTemperatureUnit
+from hi.simulator.settings.runtime_settings import SimulatorRuntimeSettings
 
 
 class UnitTranslationHelper:

@@ -8,8 +8,8 @@ from typing import ClassVar, Dict, List, Tuple
 import hi.apps.common.datetimeproxy as datetimeproxy
 from hi.apps.common.utils import str_to_bool
 
-from hi.simulator.base_models import SimEntityFields, SimState, SimEntityDefinition
-from hi.simulator.enums import SimEntityType, SimStateType
+from hi.simulator.services.base_models import SimEntityFields, SimState, SimEntityDefinition
+from hi.simulator.services.enums import SimEntityType, SimStateType
 
 
 @dataclass

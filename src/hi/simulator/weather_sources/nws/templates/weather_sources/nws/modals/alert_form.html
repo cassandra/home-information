@@ -1,0 +1,53 @@
+{% extends "modals/action_with_cancel.html" %}
+{% load icons %}
+
+{% block modal_dialog_class %}hi-modal-dialog-600{% endblock %}
+
+{% block preamble %}
+<form action="{% if is_add %}{% url 'simulator_weather_nws_alert_add' %}{% else %}{% url 'simulator_weather_nws_alert_edit' alert_id=alert.id %}{% endif %}"
+      method="post" class="form" data-async="modal">
+  {% csrf_token %}
+{% endblock %}
+
+{% block title_text %}
+{% if is_add %}New NWS Alert{% else %}Edit NWS Alert{% endif %}
+{% endblock %}
+
+{% block body %}
+<div>
+  {% if form.non_field_errors %}
+  <div class="non-field-errors">
+    {% for err in form.non_field_errors %}
+    <p class="form-error text-danger">ERROR: {{ err }}</p>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  <div class="form-group">
+    {{ form.is_active }}
+    <label for="{{ form.is_active.id_for_label }}">Active (include in feed)</label>
+  </div>
+
+  {% for field in form %}
+  {% if field.name != 'is_active' %}
+  <div class="form-group">
+    <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+    {{ field }}
+    {% if field.help_text %}<small class="text-muted">{{ field.help_text }}</small>{% endif %}
+    {% if field.errors %}<small class="form-error text-danger">{{ field.errors }}</small>{% endif %}
+  </div>
+  {% endif %}
+  {% endfor %}
+</div>
+{% endblock %}
+
+{% block action_right %}
+<button type="submit" class="btn btn-primary"
+        name="action" value="{% if is_add %}add{% else %}edit{% endif %}">
+  {% icon "save" size="sm" css_class="hi-icon-left" %}{% if is_add %}ADD{% else %}UPDATE{% endif %}
+</button>
+{% endblock %}
+
+{% block postamble %}
+</form>
+{% endblock %}

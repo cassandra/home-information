@@ -109,7 +109,7 @@ class AlertQueue:
             for alert in self._alert_list:
                 if not alert.is_matching_alarm( alarm = alarm ):
                     continue
-                alert.add_alarm( alarm = alarm )
+                alert.upsert_alarm( alarm = alarm )
                 self._last_changed_datetime = datetimeproxy.now()
                 logger.debug( f'Added to existing alert: alarm={alarm}, alert={alert}' )
                 return alert

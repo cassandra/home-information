@@ -1,6 +1,5 @@
 from dataclasses import dataclass
 from datetime import datetime
-import re
 from typing import Dict, List, Optional
 
 from hi.apps.entity.models import Entity, EntityState
@@ -31,15 +30,15 @@ class CameraControlDisplayData:
     """
     Data container for camera control display information.
     Encapsulates entity and its primary status entity state for template rendering.
+
+    ``short_name`` is computed by the manager when the full camera list
+    is assembled — see ``ConsoleSettingsHelper.compute_camera_short_names`` —
+    so the label can honor cross-entity context (e.g., stripping a
+    leading token that is common across all displayed cameras).
     """
     entity: Entity
     status_entity_state: Optional[EntityState] = None
-
-    @property
-    def short_name(self):
-        """ Heuristic rules to reduce name length to fit in side panel narrow buttons """
-        short_name = re.sub( r'camera$', '', self.entity.name, flags = re.IGNORECASE )
-        return short_name.strip()
+    short_name: str = ''
 
     
 @dataclass

@@ -376,6 +376,27 @@ class HassServiceComposer:
         )
 
     @classmethod
+    def for_motion_detection(
+            cls,
+            domain           : str,
+            hass_substate_id : str,
+            enabled          : bool,
+    ) -> HassServiceCall:
+        """Camera ``motion_detection`` toggle. HA exposes two distinct
+        services (``enable_motion_detection`` / ``disable_motion_detection``)
+        rather than a single parametric one — same pattern as
+        ``lock`` / ``unlock`` and ``open_cover`` / ``close_cover``."""
+        service = (
+            HassApi.ENABLE_MOTION_DETECTION_SERVICE if enabled
+            else HassApi.DISABLE_MOTION_DETECTION_SERVICE
+        )
+        return HassServiceCall(
+            domain = domain,
+            service = service,
+            hass_entity_id = hass_substate_id,
+        )
+
+    @classmethod
     def for_direction(
             cls,
             domain           : str,

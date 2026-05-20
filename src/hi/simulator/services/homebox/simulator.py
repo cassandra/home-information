@@ -1,7 +1,7 @@
 from typing import List
 
-from hi.simulator.base_models import SimEntityDefinition
-from hi.simulator.simulator import Simulator
+from hi.simulator.services.base_models import SimEntityDefinition
+from hi.simulator.services.service_simulator import ServiceSimulator
 
 from .sim_models import (
     HOMEBOX_SIM_ENTITY_DEFINITION_LIST,
@@ -10,7 +10,7 @@ from .sim_models import (
 )
 
 
-class HomeBoxSimulator( Simulator ):
+class HomeBoxSimulator( ServiceSimulator ):
 
     @property
     def id(self):
@@ -19,6 +19,10 @@ class HomeBoxSimulator( Simulator ):
     @property
     def label(self):
         return 'HomeBox'
+
+    @property
+    def integration_urls(self):
+        return [ ( 'API URL', 'services/homebox/api' ) ]
 
     @property
     def sim_entity_definition_list(self) -> List[ SimEntityDefinition ]:

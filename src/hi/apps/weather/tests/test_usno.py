@@ -58,7 +58,7 @@ class TestUSNO(BaseTestCase):
     # These tests focus on testing the public interface of USNO
     # rather than testing private implementation details
     
-    @patch('hi.apps.weather.weather_sources.usno.requests.get')
+    @patch('hi.apps.weather.weather_data_source.requests.get')
     def test_get_astronomical_data_returns_complete_data(self, mock_get):
         """Test that get_astronomical_data returns properly structured astronomical data."""
         # Mock successful API response with comprehensive data
@@ -132,7 +132,7 @@ class TestUSNO(BaseTestCase):
         self.assertEqual(result.sunrise.station.source.id, 'usno')
         return
     
-    @patch('hi.apps.weather.weather_sources.usno.requests.get')
+    @patch('hi.apps.weather.weather_data_source.requests.get')
     def test_get_astronomical_data_handles_api_errors_gracefully(self, mock_get):
         """Test that API errors are handled gracefully in public interface."""
         # Mock API error - need to mock the redis client to skip cache
@@ -152,7 +152,7 @@ class TestUSNO(BaseTestCase):
                 )
         return
     
-    @patch('hi.apps.weather.weather_sources.usno.requests.get')
+    @patch('hi.apps.weather.weather_data_source.requests.get')
     def test_get_astronomical_data_uses_caching(self, mock_get):
         """Test that the public interface properly uses Redis caching."""
         # Mock cached data
@@ -262,7 +262,7 @@ class TestUSNO(BaseTestCase):
     
     # ============= ORIGINAL TESTS (TO BE DEPRECATED) =============
 
-    @patch('hi.apps.weather.weather_sources.usno.requests.get')
+    @patch('hi.apps.weather.weather_data_source.requests.get')
     def test_get_astronomical_api_data_from_api_success(self, mock_get):
         """Test successful API call for astronomical data."""
         # Mock successful API response based on real USNO API response
@@ -328,7 +328,7 @@ class TestUSNO(BaseTestCase):
         self.assertIn('tz=', actual_url)
         return
 
-    @patch('hi.apps.weather.weather_sources.usno.requests.get')
+    @patch('hi.apps.weather.weather_data_source.requests.get')
     def test_get_astronomical_api_data_from_api_error(self, mock_get):
         """Test API error handling."""
         # Mock HTTP error response

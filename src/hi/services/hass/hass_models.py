@@ -50,6 +50,8 @@ class HassApi:
     SET_DIRECTION_SERVICE = 'set_direction'
     SET_PRESET_MODE_SERVICE = 'set_preset_mode'
     SET_FAN_MODE_SERVICE = 'set_fan_mode'
+    ENABLE_MOTION_DETECTION_SERVICE = 'enable_motion_detection'
+    DISABLE_MOTION_DETECTION_SERVICE = 'disable_motion_detection'
     
     # Legacy aliases for backward compatibility (remove after migration)
     AUTOMATION_ID_PREFIX = AUTOMATION_DOMAIN
@@ -175,6 +177,12 @@ class HassApi:
     DIRECTION_ATTR        = 'direction'
     PRESET_MODE_ATTR      = 'preset_mode'
     PRESET_MODES_ATTR     = 'preset_modes'
+
+    # Camera-domain attributes and state values.
+    MOTION_DETECTION_ATTR = 'motion_detection'
+    CAMERA_STATE_IDLE = 'idle'
+    CAMERA_STATE_STREAMING = 'streaming'
+    CAMERA_STATE_RECORDING = 'recording'
     FAN_DIRECTION_FORWARD = 'forward'
     FAN_DIRECTION_REVERSE = 'reverse'
 

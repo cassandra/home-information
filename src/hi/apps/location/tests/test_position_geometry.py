@@ -51,19 +51,36 @@ class TestPositionGeometryGridSlot(BaseTestCase):
             PositionGeometry.grid_slot(location_view=view, grid_index=i, grid_total=4)
             for i in range(4)
         ]
-        xs = [p[0] for p in positions]
-        ys = [p[1] for p in positions]
-        self.assertAlmostEqual(xs[0] + xs[3], 1000.0)
-        self.assertAlmostEqual(xs[1] + xs[2], 1000.0)
-        self.assertEqual(len(set(round(y, 6) for y in ys)), 1)
-        self.assertAlmostEqual(ys[0], 500.0)
+        # All four positions are distinct, all sit inside the viewbox
+        # margin, and the distribution is symmetric around the view
+        # center (mean position equals center). Specific grid shape
+        # (2x2 vs 1x4) is an implementation detail of the column-count
+        # adaptation and is not asserted.
+        self.assertEqual(len(set(positions)), 4)
+        margin = 1000 * PositionGeometry.DEFAULT_VIEWBOX_MARGIN_FRACTION
+        for x, y in positions:
+            self.assertGreaterEqual(x, margin)
+            self.assertLessEqual(x, 1000 - margin)
+            self.assertGreaterEqual(y, margin)
+            self.assertLessEqual(y, 1000 - margin)
+        mean_x = sum(p[0] for p in positions) / len(positions)
+        mean_y = sum(p[1] for p in positions) / len(positions)
+        self.assertAlmostEqual(mean_x, 500.0)
+        self.assertAlmostEqual(mean_y, 500.0)
 
     def test_grid_wraps_to_multiple_rows(self):
         view = self._make_view(0, 0, 1000, 1000)
-        x_0, y_0 = PositionGeometry.grid_slot(location_view=view, grid_index=0, grid_total=8)
-        x_4, y_4 = PositionGeometry.grid_slot(location_view=view, grid_index=4, grid_total=8)
-        self.assertAlmostEqual(x_0, x_4)
-        self.assertLess(y_0, y_4)
+        positions = [
+            PositionGeometry.grid_slot(location_view=view, grid_index=i, grid_total=8)
+            for i in range(8)
+        ]
+        # Grid spans multiple rows AND multiple columns (eight items
+        # cannot fit in a single row or single column at the default
+        # adaptive shape).
+        distinct_xs = {round(p[0], 6) for p in positions}
+        distinct_ys = {round(p[1], 6) for p in positions}
+        self.assertGreater(len(distinct_xs), 1)
+        self.assertGreater(len(distinct_ys), 1)
 
     def test_clamps_to_viewbox_margin(self):
         view = self._make_view(0, 0, 100, 100)
