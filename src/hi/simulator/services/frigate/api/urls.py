@@ -14,4 +14,12 @@ urlpatterns = [
     path( 'config',
           views.ConfigView.as_view(),
           name = 'frigate_api_config' ),
+
+    path( 'events',
+          views.EventsListView.as_view(),
+          name = 'frigate_api_events' ),
+
+    path( 'events/<str:event_id>',
+          views.EventDetailView.as_view(),
+          name = 'frigate_api_event_detail' ),
 ]
