@@ -8,7 +8,7 @@ equivalent invariants here.
 """
 import logging
 from datetime import datetime, timedelta, timezone
-from unittest.mock import Mock
+from unittest.mock import Mock, patch
 
 from django.test import TestCase
 
@@ -198,7 +198,13 @@ class TestFrigateSensorResponseGeneration( TestCase ):
     def test_active_state_emits_object_class_with_start_correlation(self):
         opened = _make_event( event_id = '99', start = self.t0, label = 'person' )
         states = self.monitor._aggregate_camera_states( [ opened ], [] )
-        responses = self.monitor._generate_sensor_responses_from_states( states )
+        with patch.object(
+            self.monitor, 'frigate_manager',
+            return_value = Mock( get_event_snapshot_url = Mock(
+                return_value = 'http://frigate.example/api/events/99/snapshot.jpg?_t=1',
+            )),
+        ):
+            responses = self.monitor._generate_sensor_responses_from_states( states )
         # One OBJECT_PRESENCE response per camera.
         self.assertEqual( len( responses ), 1 )
 
@@ -207,6 +213,12 @@ class TestFrigateSensorResponseGeneration( TestCase ):
         self.assertEqual( obj.correlation_role, CorrelationRole.START )
         self.assertEqual( obj.correlation_id, '99' )
         self.assertEqual( obj.timestamp, opened.start_datetime )
+        # source_image_url points at the canonical event's snapshot.jpg
+        # so the alert / history views can show what fired the detection.
+        self.assertEqual(
+            obj.source_image_url,
+            'http://frigate.example/api/events/99/snapshot.jpg?_t=1',
+        )
 
     def test_idle_state_emits_object_none_with_end_correlation(self):
         closed = _make_event(
@@ -224,13 +236,21 @@ class TestFrigateSensorResponseGeneration( TestCase ):
         self.assertEqual( obj.correlation_role, CorrelationRole.END )
         self.assertEqual( obj.correlation_id, '7' )
         self.assertEqual( obj.timestamp, closed.end_datetime )
+        # No source_image_url on END — Frigate's snapshot.jpg is the
+        # frame the detection fired on, vacuous for the lifecycle's
+        # closing transition.
+        self.assertIsNone( obj.source_image_url )
 
     def test_object_presence_uses_canonical_bucket_for_active_state(self):
         """Raw Frigate label runs through the converter table; tests
         for the table itself live in TestFrigateConverter below."""
         opened = _make_event( event_id = '1', start = self.t0, label = 'dog' )
         states = self.monitor._aggregate_camera_states( [ opened ], [] )
-        responses = self.monitor._generate_sensor_responses_from_states( states )
+        with patch.object(
+            self.monitor, 'frigate_manager',
+            return_value = Mock( get_event_snapshot_url = Mock( return_value = None )),
+        ):
+            responses = self.monitor._generate_sensor_responses_from_states( states )
         obj = self._object_response( responses )
         self.assertEqual( obj.value, str( EntityStateValue.OBJECT_ANIMAL ) )
 
@@ -247,7 +267,11 @@ class TestFrigateSensorResponseGeneration( TestCase ):
             end = self.t0 + timedelta( seconds = 5 ),
         )
         states = self.monitor._aggregate_camera_states( [ opened ], [ closed ] )
-        self.monitor._generate_sensor_responses_from_states( states )
+        with patch.object(
+            self.monitor, 'frigate_manager',
+            return_value = Mock( get_event_snapshot_url = Mock( return_value = None )),
+        ):
+            self.monitor._generate_sensor_responses_from_states( states )
 
         self.assertIn( 'closed-1', self.monitor._fully_processed_event_ids )
         self.assertNotIn( 'open-1', self.monitor._fully_processed_event_ids )

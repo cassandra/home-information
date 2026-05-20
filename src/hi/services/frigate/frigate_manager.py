@@ -1,4 +1,5 @@
 import logging
+import time
 from typing import Dict, List, Optional
 
 from asgiref.sync import sync_to_async
@@ -18,6 +19,7 @@ from hi.integrations.transient_models import (
 
 from hi.integrations.models import Integration
 
+from .constants import FrigateApi
 from .enums import FrigateAttributeType
 from .frigate_client import FrigateClient
 from .frigate_client_factory import FrigateClientFactory
@@ -149,6 +151,41 @@ class FrigateManager( SingletonManager, AggregateHealthProvider, ApiHealthStatus
             self.get_events,
             thread_sensitive = True,
         )( after = after, limit = limit )
+
+    # ---- Media URL helpers ------------------------------------------
+    #
+    # Real Frigate exposes both still images at well-known paths
+    # under the same base URL as the JSON API. HI consumes those URLs
+    # directly (browser-side <img> for snapshots, no proxy) so the
+    # base URL needs to be reachable from the browser, not just from
+    # the server. The cache-bust timestamp mirrors the ZM URL helpers
+    # — without it, re-rendering an <img> with the same src triggers
+    # the browser cache rather than refetching.
+
+    def get_camera_snapshot_url( self, camera_name : str ) -> Optional[ str ]:
+        """Live-frame JPEG URL for a camera (``/api/<camera>/latest.jpg``).
+        Returns ``None`` when the client isn't available — callers
+        should treat that as "no snapshot capability right now"."""
+        client = self.frigate_client
+        if client is None:
+            return None
+        path = FrigateApi.CAMERA_SNAPSHOT_PATH_TEMPLATE.format(
+            camera_name = camera_name,
+        )
+        return f'{client.base_url}{path}?_t={int(time.time())}'
+
+    def get_event_snapshot_url( self, event_id : str ) -> Optional[ str ]:
+        """Event-frame JPEG URL (``/api/events/<id>/snapshot.jpg``).
+        Attached to SensorResponses as ``source_image_url`` so the
+        alert / history views can show the frame the detection fired
+        on. Returns ``None`` when the client isn't available."""
+        client = self.frigate_client
+        if client is None:
+            return None
+        path = FrigateApi.EVENT_SNAPSHOT_PATH_TEMPLATE.format(
+            event_id = event_id,
+        )
+        return f'{client.base_url}{path}?_t={int(time.time())}'
 
     @classmethod
     def _frigate_integration_key( cls ) -> IntegrationKey:

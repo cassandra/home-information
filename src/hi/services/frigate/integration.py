@@ -1,6 +1,8 @@
 import logging
 from typing import List, Optional
 
+from hi.apps.entity.models import Entity
+from hi.apps.entity.transient_models import VideoSnapshot
 from hi.apps.monitor.periodic_monitor import PeriodicMonitor
 from hi.apps.system.enums import HealthStatusType
 from hi.apps.system.health_status_provider import HealthStatusProvider
@@ -93,3 +95,32 @@ class FrigateGateway( IntegrationGateway, FrigateMixin ):
         except Exception as e:
             logger.exception( f'Error in Frigate connection test: {e}' )
             return ConnectionTestResult.failure( f'Connection test error: {e}' )
+
+    def get_entity_video_snapshot(self, entity : Entity) -> Optional[ VideoSnapshot ]:
+        """Live still-frame for the Frigate camera backing this entity
+        (``/api/<camera>/latest.jpg``). Returns ``None`` when the
+        entity isn't a Frigate camera, when ``has_video_snapshot`` is
+        off (operator opt-out), or when the integration client isn't
+        ready."""
+        if not entity.has_video_snapshot:
+            return None
+        if entity.integration_id != FrigateMetaData.integration_id:
+            return None
+
+        prefix = FrigateManager.FRIGATE_CAMERA_INTEGRATION_NAME_PREFIX + '.'
+        integration_name = entity.integration_name or ''
+        if not integration_name.startswith( prefix ):
+            return None
+        camera_name = integration_name[ len( prefix ): ]
+        if not camera_name:
+            return None
+
+        source_url = FrigateManager().get_camera_snapshot_url(
+            camera_name = camera_name,
+        )
+        if source_url is None:
+            return None
+        return VideoSnapshot(
+            source_url = source_url,
+            metadata = { 'camera_name': camera_name },
+        )

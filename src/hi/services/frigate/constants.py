@@ -12,6 +12,16 @@ class FrigateApi:
     STATS_PATH = '/api/stats'
     CONFIG_PATH = '/api/config'
 
+    # Per-camera live snapshot — Frigate exposes the most recent
+    # decoded frame as a JPEG at this path. Used by HI's
+    # ``get_entity_video_snapshot`` for the camera entity.
+    CAMERA_SNAPSHOT_PATH_TEMPLATE = '/api/{camera_name}/latest.jpg'
+
+    # Per-event snapshot — the frame captured at the time of
+    # detection, attached to a SensorResponse as ``source_image_url``
+    # so the alert / history views can show what the camera saw.
+    EVENT_SNAPSHOT_PATH_TEMPLATE = '/api/events/{event_id}/snapshot.jpg'
+
     # --- Frigate object-class wire values (subset; extended as needed) ---
     OBJECT_CLASS_PERSON = 'person'
     OBJECT_CLASS_CAR = 'car'
