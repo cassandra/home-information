@@ -56,10 +56,10 @@ class FrigateController( IntegrationController, FrigateMixin ):
                 new_value = None,
                 error_list = [ message ],
             )
-        detect_state = FrigateConverter.hi_control_to_detect_state(
+        detect_enabled = FrigateConverter.hi_control_to_detect_enabled(
             hi_control_value = hi_control_value,
         )
-        if detect_state is None:
+        if detect_enabled is None:
             message = (
                 f'Unsupported HI control value for Frigate detect: '
                 f'{hi_control_value!r}.'
@@ -72,7 +72,7 @@ class FrigateController( IntegrationController, FrigateMixin ):
         try:
             self.frigate_manager().set_camera_detect(
                 camera_name = camera_name,
-                state = detect_state,
+                enabled = detect_enabled,
             )
         except Exception as e:
             logger.warning( f'Frigate detect control failed: {e}' )

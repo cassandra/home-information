@@ -729,32 +729,32 @@ class TestFrigateConverterObjectClassMapping( TestCase ):
         )
 
 
-class TestFrigateConverterHiControlToDetectState( TestCase ):
-    """HI's on/off controller vocabulary → Frigate's wire state.
-    Mapping is explicit (no string transforms); unknown HI values
-    return None so the controller surfaces a clean error."""
+class TestFrigateConverterHiControlToDetectEnabled( TestCase ):
+    """HI's on/off controller vocabulary → Frigate's
+    ``cameras.<name>.detect.enabled`` config-set wire value
+    (``'true'`` / ``'false'``). Mapping is explicit (no string
+    transforms); unknown HI values return None."""
 
-    def test_on_maps_to_uppercase_on(self):
+    def test_on_maps_to_true(self):
         self.assertEqual(
-            FrigateConverter.hi_control_to_detect_state( 'on' ), 'ON',
+            FrigateConverter.hi_control_to_detect_enabled( 'on' ), 'true',
         )
 
-    def test_off_maps_to_uppercase_off(self):
+    def test_off_maps_to_false(self):
         self.assertEqual(
-            FrigateConverter.hi_control_to_detect_state( 'off' ), 'OFF',
+            FrigateConverter.hi_control_to_detect_enabled( 'off' ), 'false',
         )
 
     def test_unknown_value_returns_none(self):
         self.assertIsNone(
-            FrigateConverter.hi_control_to_detect_state( 'maybe' ),
+            FrigateConverter.hi_control_to_detect_enabled( 'maybe' ),
         )
 
     def test_uppercase_input_is_not_silently_accepted(self):
         # HI's wire format is lowercase; uppercase 'ON' would
-        # indicate a caller bug, not a Frigate-side value showing
-        # up where it shouldn't. The mapping rejects it.
+        # indicate a caller bug. The mapping rejects it.
         self.assertIsNone(
-            FrigateConverter.hi_control_to_detect_state( 'ON' ),
+            FrigateConverter.hi_control_to_detect_enabled( 'ON' ),
         )
 
     def test_detect_enabled_true_maps_to_hi_on(self):

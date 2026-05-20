@@ -39,24 +39,24 @@ class TestFrigateControllerDoControl( TestCase ):
             ),
         )
 
-    def test_on_value_translates_to_frigate_state_on(self):
+    def test_on_value_translates_to_frigate_enabled_true(self):
         result = self.controller.do_control(
             integration_details = self._detect_details( 'front_yard' ),
             hi_control_value = 'on',
         )
         self.mock_manager.set_camera_detect.assert_called_once_with(
-            camera_name = 'front_yard', state = 'ON',
+            camera_name = 'front_yard', enabled = 'true',
         )
         self.assertEqual( result.new_value, 'on' )
         self.assertEqual( result.error_list, [] )
 
-    def test_off_value_translates_to_frigate_state_off(self):
+    def test_off_value_translates_to_frigate_enabled_false(self):
         result = self.controller.do_control(
             integration_details = self._detect_details( 'driveway' ),
             hi_control_value = 'off',
         )
         self.mock_manager.set_camera_detect.assert_called_once_with(
-            camera_name = 'driveway', state = 'OFF',
+            camera_name = 'driveway', enabled = 'false',
         )
         self.assertEqual( result.new_value, 'off' )
 

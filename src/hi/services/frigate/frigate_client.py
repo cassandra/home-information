@@ -2,7 +2,7 @@ import json
 import logging
 from typing import Any, Dict, List, Optional
 
-from requests import get, post
+from requests import get, post, put
 
 from .constants import FrigateApi, FrigateTimeouts
 
@@ -129,24 +129,31 @@ class FrigateClient:
 
     # ---- Outbound (control) endpoints ----------------------------------
 
-    def set_camera_detect( self, camera_name : str, state : str ) -> None:
-        """Toggle object detection for a camera. ``state`` must be one
-        of the Frigate-side wire values (``FrigateApi.DETECT_STATE_ON``
-        / ``DETECT_STATE_OFF``). Translation from HI's controller
-        vocabulary belongs upstream of this method — see
-        ``FrigateConverter.hi_control_to_detect_state``. Raises
-        ``ValueError`` for unknown states or on a non-2xx response."""
-        if state not in ( FrigateApi.DETECT_STATE_ON, FrigateApi.DETECT_STATE_OFF ):
+    def set_camera_detect( self, camera_name : str, enabled : str ) -> None:
+        """Toggle object detection for a camera by PUTting a runtime
+        config update at ``/api/config/set``. ``enabled`` must be one
+        of the Frigate-side bool wire values
+        (``FrigateApi.DETECT_ENABLED_TRUE`` / ``DETECT_ENABLED_FALSE``).
+        Translation from HI's controller vocabulary belongs upstream
+        — see ``FrigateConverter.hi_control_to_detect_enabled``.
+        Frigate requires admin role for ``/api/config/set``; the
+        operator must supply an admin-scoped Authorization header.
+        Raises ``ValueError`` for unknown values or on a non-2xx
+        response."""
+        if enabled not in (
+                FrigateApi.DETECT_ENABLED_TRUE,
+                FrigateApi.DETECT_ENABLED_FALSE ):
             raise ValueError(
-                f'Frigate detect state must be {FrigateApi.DETECT_STATE_ON!r}'
-                f' or {FrigateApi.DETECT_STATE_OFF!r}; got {state!r}.'
+                f'Frigate detect enabled value must be'
+                f' {FrigateApi.DETECT_ENABLED_TRUE!r} or'
+                f' {FrigateApi.DETECT_ENABLED_FALSE!r}; got {enabled!r}.'
             )
-        path = FrigateApi.DETECT_SET_PATH_TEMPLATE.format(
+        key = FrigateApi.DETECT_ENABLED_CONFIG_KEY_TEMPLATE.format(
             camera_name = camera_name,
         )
-        self._post(
-            path = path,
-            params = { FrigateApi.DETECT_STATE_QUERY_PARAM: state },
+        self._put(
+            path = FrigateApi.CONFIG_SET_PATH,
+            params = { key: enabled },
         )
         return
 
@@ -219,6 +226,28 @@ class FrigateClient:
         if response.status_code not in (200, 201, 204):
             raise ValueError(
                 f'Frigate {path} POST failed:'
+                f' {response.status_code} {response.text}'
+            )
+        return
+
+    def _put(
+            self,
+            path    : str,
+            params  : Optional[ Dict[ str, Any ] ] = None,
+    ) -> None:
+        """PUT against the configured base URL. Parallel to ``_post``
+        — used by control endpoints whose response body is not
+        consumed. Frigate's ``/api/config/set`` notably requires PUT."""
+        url = f'{self._base_url}{path}'
+        response = put(
+            url,
+            headers = self._headers,
+            timeout = self._timeout_secs,
+            params = params,
+        )
+        if response.status_code not in (200, 201, 204):
+            raise ValueError(
+                f'Frigate {path} PUT failed:'
                 f' {response.status_code} {response.text}'
             )
         return

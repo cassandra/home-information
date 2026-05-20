@@ -81,19 +81,21 @@ class FrigateConverter:
         return str( canonical )
 
     # HI controller value (lowercase, per LabeledEnum.__str__) →
-    # Frigate detect-state wire value. Independent vocabularies.
-    _HI_CONTROL_TO_DETECT_STATE = {
-        str( EntityStateValue.ON ): FrigateApi.DETECT_STATE_ON,
-        str( EntityStateValue.OFF ): FrigateApi.DETECT_STATE_OFF,
+    # Frigate config-set wire value for the detect-enabled bool key.
+    # Independent vocabularies — never derive one from the other.
+    _HI_CONTROL_TO_DETECT_ENABLED = {
+        str( EntityStateValue.ON ): FrigateApi.DETECT_ENABLED_TRUE,
+        str( EntityStateValue.OFF ): FrigateApi.DETECT_ENABLED_FALSE,
     }
 
     @classmethod
-    def hi_control_to_detect_state( cls, hi_control_value : str ) -> Optional[ str ]:
-        """Map an HI on/off controller value to the Frigate detect
-        state string. Returns ``None`` for unknown input so the
-        controller can surface a clean error to the operator rather
-        than firing a malformed POST at Frigate."""
-        return cls._HI_CONTROL_TO_DETECT_STATE.get( hi_control_value )
+    def hi_control_to_detect_enabled( cls, hi_control_value : str ) -> Optional[ str ]:
+        """Map an HI on/off controller value to the Frigate detect-
+        enabled wire value (``'true'`` / ``'false'``) for the
+        ``cameras.<name>.detect.enabled`` config-set key. Returns
+        ``None`` for unknown input so the controller surfaces a clean
+        error rather than firing a malformed PUT at Frigate."""
+        return cls._HI_CONTROL_TO_DETECT_ENABLED.get( hi_control_value )
 
     # Inbound mapping: Frigate ``/api/config`` carries ``cameras.<n>.
     # detect.enabled`` as a bool. Translate to HI's wire value via

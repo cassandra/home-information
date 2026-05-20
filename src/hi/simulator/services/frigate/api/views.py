@@ -31,10 +31,15 @@ _EVENT_PLAYBACK_MP4_PATH = os.path.join(
 logger = logging.getLogger(__name__)
 
 
-# Real Frigate's detect/set accepts these two values (case-sensitive
-# uppercase). The simulator accepts either case as a defensive
-# safety net against version drift on the integration side.
-_FRIGATE_DETECT_STATES = { 'ON', 'OFF' }
+# Wire values for Frigate's detect-enabled config key on
+# ``PUT /api/config/set``. Real Frigate parses these as JSON bool
+# literals; the simulator accepts either case ("true"/"True"/"TRUE")
+# as a defensive safety net against version drift on the integration
+# side.
+_FRIGATE_DETECT_ENABLED_TRUE_VALUES = { 'true' }
+_FRIGATE_DETECT_ENABLED_FALSE_VALUES = { 'false' }
+_FRIGATE_DETECT_ENABLED_CONFIG_KEY_PREFIX = 'cameras.'
+_FRIGATE_DETECT_ENABLED_CONFIG_KEY_SUFFIX = '.detect.enabled'
 
 
 def _apply_no_cache_headers( response ) -> None:
@@ -163,54 +168,83 @@ class CameraLatestJpegView( View ):
 
 
 @method_decorator( csrf_exempt, name = 'dispatch' )
-class CameraDetectSetView( View ):
-    """``POST /api/<camera_name>/detect/set`` — toggle per-camera
-    object detection. Accepts a ``state`` query parameter; mirrors
-    real Frigate's wire shape. The simulator is permissive on the
-    state value's case (real Frigate is case-sensitive), since the
-    HI side is the source of truth for the outbound value and we'd
-    rather demonstrate the round-trip than enforce a wire
-    convention. Returns 400 for an unknown state and 404 for an
-    unknown camera so the HI client surfaces a clean error."""
+class ConfigSetView( View ):
+    """``PUT /api/config/set`` — runtime config update.
 
-    def post(self, request, camera_name : str, *args, **kwargs):
-        state_value = request.GET.get( 'state' )
-        if state_value is None:
+    Real Frigate accepts a dotted-path key in the query string (e.g.
+    ``cameras.<name>.detect.enabled=true``) and applies it to the
+    persisted config. The simulator recognizes the
+    detect-enabled key specifically and updates the camera's
+    ``FrigateCameraDetectState`` sim-state so the operator observes
+    the round-trip in the simulator UI. Other config keys are
+    accepted but no-op; real Frigate would persist them but the
+    simulator has no config to mutate. 400 on missing or invalid
+    detect-enabled value; 404 on unknown camera."""
+
+    def put(self, request, *args, **kwargs):
+        # Find the detect-enabled key in the query string. Frigate's
+        # config-set accepts multiple updates per call; we only
+        # honor the detect-enabled one here.
+        params = dict( request.GET.items() )
+        detect_key = None
+        detect_camera_name = None
+        for key in params:
+            if (
+                key.startswith( _FRIGATE_DETECT_ENABLED_CONFIG_KEY_PREFIX )
+                and key.endswith( _FRIGATE_DETECT_ENABLED_CONFIG_KEY_SUFFIX )
+            ):
+                detect_key = key
+                detect_camera_name = key[
+                    len( _FRIGATE_DETECT_ENABLED_CONFIG_KEY_PREFIX ):
+                    -len( _FRIGATE_DETECT_ENABLED_CONFIG_KEY_SUFFIX )
+                ]
+                break
+            continue
+        if detect_key is None:
             return JsonResponse(
-                { 'error': 'Missing "state" query parameter.' },
-                status = 400,
+                { 'success': True, 'message': 'No simulator-honored keys in update.' },
             )
-        normalized_state = state_value.upper()
-        if normalized_state not in _FRIGATE_DETECT_STATES:
+
+        raw_value = params[ detect_key ]
+        normalized = raw_value.lower()
+        if normalized in _FRIGATE_DETECT_ENABLED_TRUE_VALUES:
+            new_state = 'ON'
+        elif normalized in _FRIGATE_DETECT_ENABLED_FALSE_VALUES:
+            new_state = 'OFF'
+        else:
             return JsonResponse(
-                { 'error': f'Invalid state {state_value!r}; expected ON or OFF.' },
+                {
+                    'success': False,
+                    'message': f'Invalid detect.enabled value {raw_value!r}; '
+                               'expected true or false.',
+                },
                 status = 400,
             )
 
         simulator = FrigateSimulator()
         sim_camera = None
         for candidate in simulator.get_sim_cameras():
-            if candidate.camera_name == camera_name:
+            if candidate.camera_name == detect_camera_name:
                 sim_camera = candidate
                 break
             continue
         if sim_camera is None:
-            raise Http404( f'Unknown Frigate camera: {camera_name!r}' )
+            raise Http404( f'Unknown Frigate camera: {detect_camera_name!r}' )
 
         detect_state = sim_camera.detect_sim_state
         if detect_state is not None:
             simulator.set_sim_state(
                 sim_entity_id = sim_camera.sim_entity.id,
                 sim_state_id = FrigateCameraDetectState.DETECT_SIM_STATE_ID,
-                value_str = normalized_state,
+                value_str = new_state,
             )
 
         logger.info(
-            'Frigate simulator received detect/set for %s: %s',
-            camera_name, normalized_state,
+            'Frigate simulator received config/set for %s detect.enabled=%s',
+            detect_camera_name, raw_value,
         )
         return JsonResponse(
-            { 'success': True, 'camera': camera_name, 'state': normalized_state },
+            { 'success': True, 'message': 'Config successfully updated.' },
         )
 
 

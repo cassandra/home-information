@@ -263,46 +263,49 @@ class TestFrigateClientSetCameraDetect( TestCase ):
             FrigateClient.BASE_URL: 'http://frigate.local:5000',
         })
 
-    def test_set_camera_detect_posts_to_expected_url(self):
-        with patch( 'hi.services.frigate.frigate_client.post' ) as mock_post:
-            mock_post.return_value = _mock_response( body = '' )
-            self.client.set_camera_detect( camera_name = 'front_yard', state = 'ON' )
-            url = mock_post.call_args.args[ 0 ]
+    def test_set_camera_detect_puts_to_config_set(self):
+        with patch( 'hi.services.frigate.frigate_client.put' ) as mock_put:
+            mock_put.return_value = _mock_response( body = '' )
+            self.client.set_camera_detect(
+                camera_name = 'front_yard', enabled = 'true',
+            )
+            url = mock_put.call_args.args[ 0 ]
             self.assertEqual(
-                url,
-                'http://frigate.local:5000/api/front_yard/detect/set',
+                url, 'http://frigate.local:5000/api/config/set',
             )
             self.assertEqual(
-                mock_post.call_args.kwargs[ 'params' ],
-                { 'state': 'ON' },
-            )
-
-    def test_set_camera_detect_off_passes_off_state(self):
-        with patch( 'hi.services.frigate.frigate_client.post' ) as mock_post:
-            mock_post.return_value = _mock_response( body = '' )
-            self.client.set_camera_detect( camera_name = 'driveway', state = 'OFF' )
-            self.assertEqual(
-                mock_post.call_args.kwargs[ 'params' ],
-                { 'state': 'OFF' },
+                mock_put.call_args.kwargs[ 'params' ],
+                { 'cameras.front_yard.detect.enabled': 'true' },
             )
 
-    def test_set_camera_detect_rejects_unknown_state(self):
-        # Wire-side guard: anything but Frigate's verbatim values is
-        # a caller bug; raise before issuing the request.
-        with patch( 'hi.services.frigate.frigate_client.post' ) as mock_post:
+    def test_set_camera_detect_false_passes_false_value(self):
+        with patch( 'hi.services.frigate.frigate_client.put' ) as mock_put:
+            mock_put.return_value = _mock_response( body = '' )
+            self.client.set_camera_detect(
+                camera_name = 'driveway', enabled = 'false',
+            )
+            self.assertEqual(
+                mock_put.call_args.kwargs[ 'params' ],
+                { 'cameras.driveway.detect.enabled': 'false' },
+            )
+
+    def test_set_camera_detect_rejects_unknown_value(self):
+        # Wire-side guard: anything but Frigate's verbatim bool
+        # literals is a caller bug; raise before issuing the request.
+        with patch( 'hi.services.frigate.frigate_client.put' ) as mock_put:
             with self.assertRaises( ValueError ):
                 self.client.set_camera_detect(
-                    camera_name = 'front_yard', state = 'on',  # lowercase
+                    camera_name = 'front_yard', enabled = 'ON',  # legacy
                 )
-            mock_post.assert_not_called()
+            mock_put.assert_not_called()
 
     def test_set_camera_detect_raises_on_non_2xx(self):
-        with patch( 'hi.services.frigate.frigate_client.post' ) as mock_post:
-            mock_post.return_value = _mock_response(
-                status_code = 500, body = 'server error',
+        with patch( 'hi.services.frigate.frigate_client.put' ) as mock_put:
+            mock_put.return_value = _mock_response(
+                status_code = 401, body = 'admin role required',
             )
             with self.assertRaises( ValueError ) as ctx:
                 self.client.set_camera_detect(
-                    camera_name = 'front_yard', state = 'ON',
+                    camera_name = 'front_yard', enabled = 'true',
                 )
-            self.assertIn( '500', str( ctx.exception ) )
+            self.assertIn( '401', str( ctx.exception ) )

@@ -195,16 +195,17 @@ class FrigateManager( SingletonManager, AggregateHealthProvider, ApiHealthStatus
             thread_sensitive = True,
         )( after = after, limit = limit )
 
-    def set_camera_detect( self, camera_name : str, state : str ) -> None:
-        """Send the detect-state toggle to Frigate. ``state`` is a
-        Frigate-side wire value (``FrigateApi.DETECT_STATE_ON`` /
-        ``DETECT_STATE_OFF``); HI vocabulary translation belongs in
-        ``FrigateConverter.hi_control_to_detect_state``."""
+    def set_camera_detect( self, camera_name : str, enabled : str ) -> None:
+        """Send the detect-enabled toggle to Frigate via
+        ``PUT /api/config/set``. ``enabled`` is a Frigate-side wire
+        value (``FrigateApi.DETECT_ENABLED_TRUE`` /
+        ``DETECT_ENABLED_FALSE``); HI vocabulary translation belongs
+        in ``FrigateConverter.hi_control_to_detect_enabled``."""
         client = self.frigate_client
         if client is None:
             raise RuntimeError( 'Frigate client not available.' )
         with self.api_call_context( 'frigate_set_detect' ):
-            client.set_camera_detect( camera_name = camera_name, state = state )
+            client.set_camera_detect( camera_name = camera_name, enabled = enabled )
         return
 
     # ---- Media URL helpers ------------------------------------------
