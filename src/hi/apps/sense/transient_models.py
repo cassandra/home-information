@@ -19,6 +19,13 @@ from .sensor_history_urls import (
 
 @dataclass
 class SensorResponse:
+    """One sensor reading flowing through the live pipeline.
+
+    ``correlation_id`` pairs the START / END readings of a single
+    upstream event but is SENSOR-SCOPED — uniqueness is guaranteed
+    only within a single Sensor's history. Never compare or look up
+    ``correlation_id`` without a sensor scope; independent
+    integrations can produce overlapping id strings."""
     integration_key            : IntegrationKey
     value                      : str
     timestamp                  : datetime

@@ -132,6 +132,13 @@ class SensorHistory(models.Model):
         max_length = 32,
         null = True, blank = True,
     )
+    # SENSOR-SCOPED identifier — uniqueness is guaranteed only within
+    # a single ``Sensor``'s history (the integration's upstream
+    # event_id, opaque to us). Never query by ``correlation_id``
+    # alone across all SensorHistory rows: scope every lookup with
+    # the ``sensor`` foreign key (or, equivalently, the entity_state /
+    # entity). A global query risks collisions between independent
+    # integrations whose upstream id-space coincidentally overlap.
     correlation_id = models.CharField(
         'Correlation ID',
         max_length = 32,
