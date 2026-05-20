@@ -4,6 +4,8 @@ from typing import Dict, List, Optional
 
 from asgiref.sync import sync_to_async
 
+from hi.apps.system.enums import ApiHealthStatusType
+
 from hi.apps.common.singleton_manager import SingletonManager
 from hi.apps.system.aggregate_health_provider import AggregateHealthProvider
 from hi.apps.system.api_health_status_provider import ApiHealthStatusProvider
@@ -76,15 +78,31 @@ class FrigateManager( SingletonManager, AggregateHealthProvider, ApiHealthStatus
         Called under ``SingletonManager``'s data lock. The client is
         nulled on every reload and only re-created when the integration
         DB row is present and enabled. Sync / monitor consumers should
-        gate on ``frigate_client is not None`` before calling out."""
+        gate on ``frigate_client is not None`` before calling out.
+
+        Sets the manager's API-health slot as a side effect of every
+        reload. The manager registers itself as an API health provider
+        (the aggregator pulls from that slot when computing overall
+        health), and the registration's default status is UNKNOWN —
+        which the aggregator maps to WARNING and the UI surfaces as
+        an "integration degraded" banner regardless of what the
+        monitor reports. Recording the reload outcome (HEALTHY on a
+        clean build, DISABLED when the integration row is off,
+        UNAVAILABLE on an attribute / build failure) keeps the
+        aggregate honest. Note that we use the API-side ``update_api_
+        health_status`` rather than the HealthStatusProvider-side
+        ``record_*`` methods, because the leaking-WARNING is on the
+        api_status_map (not on _base_status)."""
         self._frigate_client = None
         try:
             integration = Integration.objects.get(
                 integration_id = FrigateMetaData.integration_id,
             )
         except Integration.DoesNotExist:
+            self.update_api_health_status( ApiHealthStatusType.DISABLED )
             return
         if not integration.is_enabled:
+            self.update_api_health_status( ApiHealthStatusType.DISABLED )
             return
         integration_attributes = list( integration.attributes.all() )
         try:
@@ -93,6 +111,9 @@ class FrigateManager( SingletonManager, AggregateHealthProvider, ApiHealthStatus
             )
         except Exception:
             logger.exception( 'Failed to build Frigate client.' )
+            self.update_api_health_status( ApiHealthStatusType.UNAVAILABLE )
+            return
+        self.update_api_health_status( ApiHealthStatusType.HEALTHY )
         return
 
     @property

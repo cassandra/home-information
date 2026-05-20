@@ -33,9 +33,22 @@ class FrigateSynchronizer( IntegrationSynchronizer, FrigateMixin ):
     no dedicated cameras endpoint), reconciles it against existing
     HI entities by integration_key, creates / updates / removes as
     needed. Per-camera entity creation produces an
-    ``Entity(CAMERA, has_video_stream, has_video_snapshot)`` with a
-    ``Movement`` sensor (MOVEMENT) and an ``ObjectPresence`` sensor
-    (OBJECT_PRESENCE)."""
+    ``Entity(CAMERA, has_video_snapshot, video_snapshot_stream_fps)``
+    with one ``ObjectPresence`` sensor (OBJECT_PRESENCE).
+
+    Frigate v1 doesn't expose a native moving stream — its events
+    API gives snapshot.jpg per event and latest.jpg per camera, but
+    MJPEG/RTSP require go2rtc on the operator's end. We model this
+    as ``has_video_snapshot + video_snapshot_stream_fps>0`` so the
+    Live View pane polls the camera snapshot at a useful cadence
+    rather than asking the gateway for a native stream that doesn't
+    exist."""
+
+    # Polling cadence (Hz) for the snapshot-as-stream display.
+    # Frigate's latest.jpg is the most recent decoded frame; polling
+    # at ~1 Hz gives a recognizable "live" feel without hammering the
+    # detect pipeline or the operator's network.
+    CAMERA_SNAPSHOT_STREAM_FPS = 1.0
 
     def get_integration_metadata(self):
         return FrigateMetaData
@@ -256,8 +269,12 @@ class FrigateSynchronizer( IntegrationSynchronizer, FrigateMixin ):
             # on reconnect so the entity reflects current upstream state.
             entity.integration_key = entity_integration_key
             entity.can_user_delete = FrigateMetaData.allow_entity_deletion
-            entity.has_video_stream = True
+            # Snapshot-as-stream model: no native MJPEG/RTSP in v1,
+            # so the camera presents as a pollable snapshot rather
+            # than a native stream. See class docstring.
+            entity.has_video_stream = False
             entity.has_video_snapshot = True
+            entity.video_snapshot_stream_fps = self.CAMERA_SNAPSHOT_STREAM_FPS
             entity.save()
 
             # Single sensor per camera — OBJECT_PRESENCE subsumes the
@@ -272,7 +289,6 @@ class FrigateSynchronizer( IntegrationSynchronizer, FrigateMixin ):
                     prefix = FrigateManager.OBJECT_PRESENCE_SENSOR_PREFIX,
                     camera_name = camera_name,
                 ),
-                provides_video_stream = True,
             )
 
         result.created_list.append( entity.name )
@@ -285,14 +301,22 @@ class FrigateSynchronizer( IntegrationSynchronizer, FrigateMixin ):
         """Refresh integration-owned capability flags on an existing
         camera entity. Like the ZM integration, ``entity.name`` is
         treated as user-owned after creation: this method does not
-        touch it on update."""
+        touch it on update.
+
+        Also self-heals entities created by the earlier Frigate sync
+        revision that flagged ``has_video_stream=True`` against a
+        non-existent native stream — flip it off so the Live View
+        pane routes to the snapshot-as-stream branch."""
         update_fields = []
-        if not entity.has_video_stream:
-            entity.has_video_stream = True
+        if entity.has_video_stream:
+            entity.has_video_stream = False
             update_fields.append( 'has_video_stream' )
         if not entity.has_video_snapshot:
             entity.has_video_snapshot = True
             update_fields.append( 'has_video_snapshot' )
+        if entity.video_snapshot_stream_fps != self.CAMERA_SNAPSHOT_STREAM_FPS:
+            entity.video_snapshot_stream_fps = self.CAMERA_SNAPSHOT_STREAM_FPS
+            update_fields.append( 'video_snapshot_stream_fps' )
         if update_fields:
             entity.save( update_fields = update_fields )
         return

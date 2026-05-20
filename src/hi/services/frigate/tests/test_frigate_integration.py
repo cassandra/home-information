@@ -7,6 +7,9 @@ These cover:
   * ``FrigateGateway.get_entity_video_snapshot`` — entry point the
     presentation layer uses to fetch a live snapshot for a camera
     entity.
+  * ``FrigateManager._reload_implementation`` health-recording —
+    keeps the aggregate health honest so the UI banner doesn't show
+    a degraded state while the monitor is reporting Healthy.
 """
 import logging
 from unittest.mock import Mock, patch
@@ -15,6 +18,8 @@ from django.test import TestCase
 
 from hi.apps.entity.enums import EntityType
 from hi.apps.entity.models import Entity
+from hi.apps.system.enums import ApiHealthStatusType
+from hi.integrations.models import Integration
 
 from hi.services.frigate.frigate_manager import FrigateManager
 from hi.services.frigate.frigate_metadata import FrigateMetaData
@@ -134,3 +139,82 @@ class TestFrigateGatewayVideoSnapshot( TestCase ):
             FrigateManager, 'get_camera_snapshot_url', return_value = None,
         ):
             self.assertIsNone( self.gateway.get_entity_video_snapshot( entity = entity ))
+
+
+class TestFrigateManagerHealthRecording( TestCase ):
+    """``FrigateManager._reload_implementation`` must record its own
+    API-health outcome on every reload. The manager registers itself
+    as an API health provider; without an explicit record_* call the
+    default UNKNOWN status leaks into the aggregate and the UI banner
+    shows WARNING even when the monitor is reporting Healthy.
+
+    Mirrors ``ZoneMinderManager._reload_implementation`` — same bug
+    pattern, same fix shape."""
+
+    def setUp(self):
+        # Fresh manager per test — the singleton retains health state
+        # across tests otherwise.
+        self.manager = FrigateManager()
+
+    def test_no_integration_row_marks_disabled(self):
+        Integration.objects.filter(
+            integration_id = FrigateMetaData.integration_id,
+        ).delete()
+        self.manager._reload_implementation()
+        self.assertEqual(
+            self.manager.api_health_status.status,
+            ApiHealthStatusType.DISABLED,
+        )
+        self.assertIsNone( self.manager._frigate_client )
+
+    def test_disabled_integration_marks_disabled(self):
+        integration, _ = Integration.objects.get_or_create(
+            integration_id = FrigateMetaData.integration_id,
+            defaults = { 'is_enabled': False },
+        )
+        integration.is_enabled = False
+        integration.save()
+        self.manager._reload_implementation()
+        self.assertEqual(
+            self.manager.api_health_status.status,
+            ApiHealthStatusType.DISABLED,
+        )
+
+    def test_successful_reload_marks_healthy(self):
+        integration, _ = Integration.objects.get_or_create(
+            integration_id = FrigateMetaData.integration_id,
+            defaults = { 'is_enabled': True },
+        )
+        integration.is_enabled = True
+        integration.save()
+        with patch(
+            'hi.services.frigate.frigate_manager.FrigateClientFactory.create_client',
+            return_value = Mock( base_url = 'http://frigate.example' ),
+        ):
+            self.manager._reload_implementation()
+        self.assertEqual(
+            self.manager.api_health_status.status,
+            ApiHealthStatusType.HEALTHY,
+        )
+        self.assertIsNotNone( self.manager._frigate_client )
+
+    def test_client_build_failure_marks_unavailable(self):
+        integration, _ = Integration.objects.get_or_create(
+            integration_id = FrigateMetaData.integration_id,
+            defaults = { 'is_enabled': True },
+        )
+        integration.is_enabled = True
+        integration.save()
+        with patch(
+            'hi.services.frigate.frigate_manager.FrigateClientFactory.create_client',
+            side_effect = ValueError( 'Base URL is required.' ),
+        ):
+            self.manager._reload_implementation()
+        # record_error pushes the API status to UNAVAILABLE so the
+        # aggregate maps the manager's own slot to ERROR rather than
+        # the leak-through WARNING that UNKNOWN would produce.
+        self.assertEqual(
+            self.manager.api_health_status.status,
+            ApiHealthStatusType.UNAVAILABLE,
+        )
+        self.assertIsNone( self.manager._frigate_client )

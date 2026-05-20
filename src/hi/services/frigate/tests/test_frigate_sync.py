@@ -65,8 +65,14 @@ class TestFrigateSyncImpl( _FrigateSyncTestBase ):
         self.assertEqual( entity.name, 'front_yard' )
         self.assertEqual( entity.entity_type_str, str( EntityType.CAMERA ) )
         self.assertEqual( entity.integration_name, 'camera.front_yard' )
-        self.assertTrue( entity.has_video_stream )
+        # Frigate v1 has no native MJPEG/RTSP — the camera presents
+        # as a pollable snapshot, not a native stream.
+        self.assertFalse( entity.has_video_stream )
         self.assertTrue( entity.has_video_snapshot )
+        self.assertEqual(
+            entity.video_snapshot_stream_fps,
+            self.synchronizer.CAMERA_SNAPSHOT_STREAM_FPS,
+        )
 
         sensors = list( Sensor.objects.filter( entity_state__entity = entity ))
         self.assertEqual( len( sensors ), 1 )
@@ -129,15 +135,41 @@ class TestFrigateSyncImpl( _FrigateSyncTestBase ):
             integration_id = FrigateMetaData.integration_id,
         )
         entity.name = 'Front Porch'
-        entity.has_video_stream = False  # toggle off so update flips it back
+        # Toggle integration-owned flags away from the canonical
+        # values so the update path has something to heal.
+        entity.has_video_snapshot = False
+        entity.video_snapshot_stream_fps = None
         entity.save()
 
         result = self.synchronizer._sync_impl( is_initial_import = False )
 
         entity.refresh_from_db()
         self.assertEqual( entity.name, 'Front Porch' )
-        self.assertTrue( entity.has_video_stream )
+        self.assertTrue( entity.has_video_snapshot )
+        self.assertEqual(
+            entity.video_snapshot_stream_fps,
+            self.synchronizer.CAMERA_SNAPSHOT_STREAM_FPS,
+        )
         self.assertEqual( result.error_list, [] )
+
+    def test_sync_heals_stale_has_video_stream_flag(self):
+        """Self-heal: entities created by the earlier sync revision
+        flagged ``has_video_stream=True``, but Frigate v1 has no
+        native stream. The update path must flip that off so the
+        Live View pane routes to the snapshot-as-stream branch
+        instead of the (broken) native-stream branch."""
+        self._set_upstream_cameras( [ 'front_yard' ] )
+        self.synchronizer._sync_impl( is_initial_import = True )
+
+        entity = Entity.objects.get(
+            integration_id = FrigateMetaData.integration_id,
+        )
+        entity.has_video_stream = True  # simulate the stale shape
+        entity.save( update_fields = [ 'has_video_stream' ] )
+
+        self.synchronizer._sync_impl( is_initial_import = False )
+        entity.refresh_from_db()
+        self.assertFalse( entity.has_video_stream )
 
     def test_sync_uses_friendly_name_when_present(self):
         """Real Frigate carries a ``friendly_name`` on each camera's
