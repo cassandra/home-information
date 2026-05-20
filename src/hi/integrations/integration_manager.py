@@ -412,6 +412,14 @@ class IntegrationManager( Singleton ):
                             update_fields = ['description'],
                             track_history = False,
                         )
+                    # Repair order_id on rows created before
+                    # _create_integration_attribute started seeding it.
+                    if existing_attr.order_id != attribute_type.value:
+                        existing_attr.order_id = attribute_type.value
+                        existing_attr.save(
+                            update_fields = ['order_id'],
+                            track_history = False,
+                        )
                 continue
 
             if new_attribute_types:
@@ -431,6 +439,11 @@ class IntegrationManager( Singleton ):
             integration_id = integration.integration_id,
             integration_name = str(attribute_type),
         )
+        # LabeledEnum auto-numbers members 1, 2, 3, ... in definition
+        # order (see hi.apps.common.enums.LabeledEnum.__new__). Using
+        # ``attribute_type.value`` as the row's ``order_id`` makes the
+        # config-page render order match the operator-facing order
+        # the integration author defined.
         attribute = IntegrationAttribute(
             integration = integration,
             name = attribute_type.label,
@@ -442,6 +455,7 @@ class IntegrationManager( Singleton ):
             attribute_type_str = AttributeType.PREDEFINED,
             is_editable = attribute_type.is_editable,
             is_required = attribute_type.is_required,
+            order_id = attribute_type.value,
         )
         attribute.save( track_history = False )  # Do not want this initial value in history
         return
