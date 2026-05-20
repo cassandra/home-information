@@ -33,6 +33,7 @@ DEFAULT_ENTITY_STATE_ROLE_ORDER : List[ EntityStateRole ] = [
     EntityStateRole.MOISTURE,
     EntityStateRole.MOVEMENT,
     EntityStateRole.PRESENCE,
+    EntityStateRole.OBJECT_PRESENCE,
     EntityStateRole.OPEN_CLOSE,
 
     # Primary control axes.

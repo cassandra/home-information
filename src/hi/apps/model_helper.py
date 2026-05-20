@@ -265,6 +265,28 @@ class HiModelHelper:
         return sensor
 
     @classmethod
+    def create_object_presence_sensor( cls,
+                                       entity              : Entity,
+                                       integration_key     : IntegrationKey  = None,
+                                       name                : str             = None,
+                                       provides_video_stream : bool          = False ) -> Sensor:
+        """OBJECT_PRESENCE sensor — typed discrete state whose value
+        space is the canonical object-class bucket set
+        (NONE / PERSON / CAR / ANIMAL / PACKAGE / OTHER). The
+        integration's converter is responsible for mapping raw
+        upstream labels onto the canonical set; the resting value
+        is OBJECT_NONE."""
+        if not name:
+            name = f'{entity.name} Object'
+        return cls.create_sensor(
+            entity = entity,
+            entity_state_type = EntityStateType.OBJECT_PRESENCE,
+            name = name,
+            integration_key = integration_key,
+            provides_video_stream = provides_video_stream,
+        )
+
+    @classmethod
     def create_presence_sensor( cls,
                                 entity              : Entity,
                                 integration_key     : IntegrationKey  = None,

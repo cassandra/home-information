@@ -14,7 +14,10 @@ from hi.integrations.transient_models import (
     IntegrationValidationResult,
 )
 
+from hi.integrations.models import Integration
+
 from .enums import FrigateAttributeType
+from .frigate_client import FrigateClient
 from .frigate_client_factory import FrigateClientFactory
 from .frigate_metadata import FrigateMetaData
 
@@ -44,6 +47,7 @@ class FrigateManager( SingletonManager, AggregateHealthProvider, ApiHealthStatus
     def __init_singleton__(self):
         super().__init_singleton__()
         self._change_listeners = set()
+        self._frigate_client : Optional[ FrigateClient ] = None
         self.add_api_health_status_provider( self )
         return
 
@@ -65,9 +69,59 @@ class FrigateManager( SingletonManager, AggregateHealthProvider, ApiHealthStatus
 
     def _reload_implementation(self):
         """Pull current attribute values and (re)build the API client.
-        Scaffolding stub — feature work plumbs the client construction
-        and any cached state derived from the configuration."""
+
+        Called under ``SingletonManager``'s data lock. The client is
+        nulled on every reload and only re-created when the integration
+        DB row is present and enabled. Sync / monitor consumers should
+        gate on ``frigate_client is not None`` before calling out."""
+        self._frigate_client = None
+        try:
+            integration = Integration.objects.get(
+                integration_id = FrigateMetaData.integration_id,
+            )
+        except Integration.DoesNotExist:
+            return
+        if not integration.is_enabled:
+            return
+        integration_attributes = list( integration.attributes.all() )
+        try:
+            self._frigate_client = FrigateClientFactory.create_client(
+                integration_attributes = integration_attributes,
+            )
+        except Exception:
+            logger.exception( 'Failed to build Frigate client.' )
         return
+
+    @property
+    def frigate_client(self) -> Optional[ FrigateClient ]:
+        """Lazily-constructed ``FrigateClient`` built against current
+        integration attributes. Returns ``None`` when the integration
+        is disabled or the configuration is unusable."""
+        self.ensure_initialized()
+        return self._frigate_client
+
+    # ---- Integration-key helpers ------------------------------------
+
+    @classmethod
+    def _to_integration_key( cls, prefix : str, camera_name : str ) -> IntegrationKey:
+        """Build a per-camera ``IntegrationKey`` with a stable scheme:
+        ``<prefix>.<camera_name>`` for the integration_name slot. The
+        prefixes (``camera`` / ``camera.motion`` / ``camera.object``)
+        live as constants on this manager."""
+        return IntegrationKey(
+            integration_id = FrigateMetaData.integration_id,
+            integration_name = f'{prefix}.{camera_name}',
+        )
+
+    @classmethod
+    def _frigate_integration_key( cls ) -> IntegrationKey:
+        """Integration key for the (future) singleton Frigate service
+        entity. Held in reserve for v2 when ``/api/stats`` lands;
+        unused in v1, which is cameras-only."""
+        return IntegrationKey(
+            integration_id = FrigateMetaData.integration_id,
+            integration_name = cls.FRIGATE_SYSTEM_INTEGRATION_NAME,
+        )
 
     # ---- Settings-change plumbing -----------------------------------
 

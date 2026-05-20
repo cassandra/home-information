@@ -236,6 +236,19 @@ class EntityStateValue(LabeledEnum):
     GAS_DETECTED   = ( 'Gas Detected', '' )
     GAS_CLEAR      = ( 'Clear', '' )
 
+    # OBJECT_PRESENCE values — canonical buckets the integration's
+    # converter maps raw upstream object-detection labels onto. The
+    # raw label (e.g. Frigate's ``dog`` / ``truck`` / arbitrary
+    # custom-model class) is preserved on the sensor's
+    # ``detail_attrs``; the typed-enum value lets rule matching and
+    # styling key off a stable, bounded vocabulary.
+    OBJECT_NONE     = ( 'No Object', '' )
+    OBJECT_PERSON   = ( 'Person', '' )
+    OBJECT_CAR      = ( 'Car', '' )
+    OBJECT_ANIMAL   = ( 'Animal', '' )
+    OBJECT_PACKAGE  = ( 'Package', '' )
+    OBJECT_OTHER    = ( 'Other Object', '' )
+
     # COLOR_MODE values — modes a smart bulb can be in. UNKNOWN
     # covers integrations that don't report a mode and cases where
     # the bulb hasn't yet declared one. Names follow HA's modes;
@@ -304,6 +317,7 @@ class EntityStateRole(LabeledEnum):
     LIGHT_LEVEL          = ( 'Light Level'        , '' )
     MOISTURE             = ( 'Moisture'           , '' )
     MOVEMENT             = ( 'Movement'           , '' )
+    OBJECT_PRESENCE      = ( 'Object Presence'    , '' )
     ON_OFF               = ( 'On/Off'             , '' )
     OPEN_CLOSE           = ( 'Open/Close'         , '' )
     OPEN_CLOSE_POSITION  = ( 'Open/Close Position', '' )
@@ -432,7 +446,20 @@ class EntityStateType(LabeledEnum):
                            EntityStateValue.MOISTURE_CLEAR ] )
     MOVEMENT         = ( 'Movement'         , '',
                          [ EntityStateValue.ACTIVE,
-                           EntityStateValue.IDLE ] )    
+                           EntityStateValue.IDLE ] )
+    # OBJECT_PRESENCE — discrete object-class detection. Value space
+    # is the canonical bucket set; the integration's converter
+    # (e.g. ``FrigateConverter.to_canonical_object_class``) maps raw
+    # upstream labels onto these so rule matching and styling key
+    # off a bounded vocabulary. ``OBJECT_NONE`` is the resting
+    # value; everything else is an alarm-style detection.
+    OBJECT_PRESENCE  = ( 'Object Presence' , '',
+                         [ EntityStateValue.OBJECT_NONE,
+                           EntityStateValue.OBJECT_PERSON,
+                           EntityStateValue.OBJECT_CAR,
+                           EntityStateValue.OBJECT_ANIMAL,
+                           EntityStateValue.OBJECT_PACKAGE,
+                           EntityStateValue.OBJECT_OTHER ] )
     ON_OFF           = ( 'On/Off'           , '',
                          [ EntityStateValue.ON,
                            EntityStateValue.OFF ] )    
