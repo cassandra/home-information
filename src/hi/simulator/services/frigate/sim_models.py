@@ -12,7 +12,6 @@ from datetime import datetime
 from typing import ClassVar, List, Optional, Tuple
 
 import hi.apps.common.datetimeproxy as datetimeproxy
-from hi.apps.common.utils import str_to_bool
 
 from hi.simulator.services.base_models import (
     SimEntityDefinition,
@@ -54,31 +53,22 @@ FRIGATE_OBJECT_LABEL_NONE = 'none'
 
 
 @dataclass
-class FrigateCameraMotionState( SimState ):
-    """ON/OFF motion flag for the camera. Toggling this in the
-    simulator UI is what synthesizes Frigate-shape events (see the
-    forthcoming ``FrigateSimEventManager`` in step D1)."""
-
-    sim_entity_fields  : FrigateCameraSimEntityFields
-    sim_state_type     : SimStateType                  = SimStateType.MOVEMENT
-    sim_state_id       : str                           = 'motion'
-
-    @property
-    def name(self):
-        return 'Camera Motion'
-
-    def set_value_from_string( self, value_str : str ):
-        self.value = str_to_bool( value_str )
-        return
-
-
-@dataclass
 class FrigateCameraObjectPresenceState( SimState ):
-    """Currently-detected object class. Discrete enum whose value
-    space carries raw Frigate-side labels; the HI converter buckets
-    those onto the canonical ``OBJECT_PRESENCE`` set
+    """Currently-detected object class — the SINGLE per-camera state
+    the simulator exposes. Frigate's data model couples motion to
+    object detection (no motion-without-class signal on the events
+    API), so this discrete state is the only control the operator
+    needs: pick the raw class to declare "this is what's currently
+    being detected"; pick ``none`` to declare "nothing is detected".
+
+    The HI-side ``FrigateConverter`` buckets the raw label onto the
+    canonical ``OBJECT_PRESENCE`` set
     (``person`` / ``car`` / ``animal`` / ``package`` / ``other`` /
-    ``none``)."""
+    ``none``). The simulator's ``set_sim_state`` override translates
+    value changes into the underlying event lifecycle (open / close /
+    swap), so the operator never has to manage motion + label as
+    separate controls.
+    """
 
     OBJECT_PRESENCE_SIM_STATE_ID : ClassVar[ str ] = 'object_presence'
 
@@ -114,14 +104,6 @@ class FrigateSimCamera:
     @property
     def display_name(self) -> str:
         return self.sim_entity.sim_entity_fields.name
-
-    @property
-    def motion_sim_state(self) -> FrigateCameraMotionState:
-        for sim_state in self.sim_entity.sim_state_list:
-            if isinstance( sim_state, FrigateCameraMotionState ):
-                return sim_state
-            continue
-        raise ValueError( f'No motion sim state for Frigate camera {self.sim_entity}' )
 
     @property
     def object_presence_sim_state(self) -> FrigateCameraObjectPresenceState:
@@ -198,7 +180,6 @@ FRIGATE_SIM_ENTITY_DEFINITION_LIST: List[ SimEntityDefinition ] = [
         sim_entity_type = SimEntityType.CAMERA,
         sim_entity_fields_class = FrigateCameraSimEntityFields,
         sim_state_class_list = [
-            FrigateCameraMotionState,
             FrigateCameraObjectPresenceState,
         ],
     ),

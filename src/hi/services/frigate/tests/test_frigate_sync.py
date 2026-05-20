@@ -48,11 +48,15 @@ class TestFrigateSyncImpl( _FrigateSyncTestBase ):
         self.assertIn( 'integration disabled', result.error_list[0].lower() )
         self.assertEqual( Entity.objects.count(), 0 )
 
-    def test_sync_creates_entity_with_motion_and_object_presence_sensors(self):
+    def test_sync_creates_entity_with_object_presence_sensor(self):
+        """Each Frigate camera becomes one HI CAMERA entity carrying
+        a single OBJECT_PRESENCE sensor. Frigate couples motion to
+        object detection (no motion-without-class signal on the events
+        API), so OBJECT_PRESENCE subsumes the "is motion happening"
+        signal and a separate MOVEMENT sensor would always mirror it."""
         self._set_upstream_cameras( [ 'front_yard' ] )
         result = self.synchronizer._sync_impl( is_initial_import = True )
 
-        # One CAMERA entity with the right integration_key.
         entities = list( Entity.objects.filter(
             integration_id = FrigateMetaData.integration_id,
         ))
@@ -64,26 +68,15 @@ class TestFrigateSyncImpl( _FrigateSyncTestBase ):
         self.assertTrue( entity.has_video_stream )
         self.assertTrue( entity.has_video_snapshot )
 
-        # Exactly two sensors on the entity: MOVEMENT and OBJECT_PRESENCE.
         sensors = list( Sensor.objects.filter( entity_state__entity = entity ))
-        self.assertEqual( len( sensors ), 2 )
-        types_seen = {
-            sensor.entity_state.entity_state_type_str for sensor in sensors
-        }
+        self.assertEqual( len( sensors ), 1 )
+        sensor = sensors[0]
         self.assertEqual(
-            types_seen,
-            { str( EntityStateType.MOVEMENT ),
-              str( EntityStateType.OBJECT_PRESENCE ) },
+            sensor.entity_state.entity_state_type_str,
+            str( EntityStateType.OBJECT_PRESENCE ),
         )
+        self.assertEqual( sensor.integration_name, 'camera.object.front_yard' )
 
-        # Sensors carry suffix-extended integration_keys.
-        names = { s.integration_name for s in sensors }
-        self.assertEqual(
-            names,
-            { 'camera.motion.front_yard', 'camera.object.front_yard' },
-        )
-
-        # Result reflects what was created.
         self.assertIn( 'front_yard', result.created_list )
         self.assertEqual( result.error_list, [] )
 
@@ -106,7 +99,7 @@ class TestFrigateSyncImpl( _FrigateSyncTestBase ):
         sensors = Sensor.objects.filter(
             entity_state__entity__integration_id = FrigateMetaData.integration_id,
         )
-        self.assertEqual( sensors.count(), 2 )
+        self.assertEqual( sensors.count(), 1 )
 
     def test_sync_removes_entities_for_cameras_no_longer_present(self):
         self._set_upstream_cameras( [ 'front_yard', 'back_door' ] )

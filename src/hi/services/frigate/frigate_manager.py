@@ -43,7 +43,6 @@ class FrigateManager( SingletonManager, AggregateHealthProvider, ApiHealthStatus
     FRIGATE_ENTITY_NAME = 'Frigate'
     FRIGATE_SYSTEM_INTEGRATION_NAME = 'system'
     FRIGATE_CAMERA_INTEGRATION_NAME_PREFIX = 'camera'
-    MOVEMENT_SENSOR_PREFIX = 'camera.motion'
     OBJECT_PRESENCE_SENSOR_PREFIX = 'camera.object'
 
     def __init_singleton__(self):

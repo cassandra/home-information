@@ -50,8 +50,6 @@ class TestFrigateEventAggregation( TestCase ):
         self.monitor = FrigateMonitor()
         self.t0 = datetime( 2026, 5, 20, 12, 0, 0, tzinfo = timezone.utc )
 
-    # ---- single-camera permutations: open/closed × {none, one, many}
-
     def test_no_events_yields_empty_aggregation(self):
         self.assertEqual(
             self.monitor._aggregate_camera_states( [], [] ),
@@ -87,7 +85,6 @@ class TestFrigateEventAggregation( TestCase ):
         self.assertTrue( s.is_idle )
         self.assertIs( s.canonical_event, later )
         self.assertEqual( s.effective_timestamp, later.end_datetime )
-        # All events make it onto the aggregated state for cache bookkeeping.
         self.assertCountEqual( s.all_events, [ earlier, later ] )
 
     def test_one_open_event_yields_active(self):
@@ -160,7 +157,6 @@ class TestFrigateEventAggregation( TestCase ):
         )
         self.assertEqual( set( states.keys() ), { 'front_yard', 'back_door' } )
 
-        # Front: ACTIVE, earliest-start open is canonical.
         front = states[ 'front_yard' ]
         self.assertTrue( front.is_active )
         self.assertIs( front.canonical_event, front_open )
@@ -168,7 +164,6 @@ class TestFrigateEventAggregation( TestCase ):
             front.all_events, [ front_open, front_open_later ],
         )
 
-        # Back: IDLE, latest-end closed is canonical.
         back = states[ 'back_door' ]
         self.assertTrue( back.is_idle )
         self.assertIs( back.canonical_event, back_closed_later )
@@ -178,21 +173,16 @@ class TestFrigateEventAggregation( TestCase ):
 
 
 class TestFrigateSensorResponseGeneration( TestCase ):
+    """One OBJECT_PRESENCE response per aggregated camera state.
+
+    OBJECT_PRESENCE is the single per-camera state the Frigate
+    integration tracks — any non-OBJECT_NONE value implies motion is
+    currently happening *and* names the class. There is no separate
+    MOVEMENT sensor."""
 
     def setUp(self):
         self.monitor = FrigateMonitor()
         self.t0 = datetime( 2026, 5, 20, 12, 0, 0, tzinfo = timezone.utc )
-
-    def _movement_response( self, responses, camera_name = 'front_yard' ):
-        for r in responses.values():
-            if r.integration_key.integration_name == (
-                f'{FrigateManager.MOVEMENT_SENSOR_PREFIX}.{camera_name}'
-            ):
-                return r
-            continue
-        raise AssertionError(
-            f'No MOVEMENT response found for {camera_name!r}'
-        )
 
     def _object_response( self, responses, camera_name = 'front_yard' ):
         for r in responses.values():
@@ -205,25 +195,20 @@ class TestFrigateSensorResponseGeneration( TestCase ):
             f'No OBJECT_PRESENCE response found for {camera_name!r}'
         )
 
-    def test_active_state_emits_active_response_with_start_correlation(self):
+    def test_active_state_emits_object_class_with_start_correlation(self):
         opened = _make_event( event_id = '99', start = self.t0, label = 'person' )
         states = self.monitor._aggregate_camera_states( [ opened ], [] )
         responses = self.monitor._generate_sensor_responses_from_states( states )
-        # Two responses per camera (MOVEMENT + OBJECT_PRESENCE).
-        self.assertEqual( len( responses ), 2 )
-
-        mv = self._movement_response( responses )
-        self.assertEqual( mv.value, str( EntityStateValue.ACTIVE ) )
-        self.assertEqual( mv.correlation_role, CorrelationRole.START )
-        self.assertEqual( mv.correlation_id, '99' )
-        self.assertEqual( mv.timestamp, opened.start_datetime )
+        # One OBJECT_PRESENCE response per camera.
+        self.assertEqual( len( responses ), 1 )
 
         obj = self._object_response( responses )
         self.assertEqual( obj.value, str( EntityStateValue.OBJECT_PERSON ) )
-        self.assertIsNone( obj.correlation_role )
+        self.assertEqual( obj.correlation_role, CorrelationRole.START )
+        self.assertEqual( obj.correlation_id, '99' )
         self.assertEqual( obj.timestamp, opened.start_datetime )
 
-    def test_idle_state_emits_idle_response_with_end_correlation(self):
+    def test_idle_state_emits_object_none_with_end_correlation(self):
         closed = _make_event(
             event_id = '7',
             start = self.t0,
@@ -232,18 +217,13 @@ class TestFrigateSensorResponseGeneration( TestCase ):
         )
         states = self.monitor._aggregate_camera_states( [], [ closed ] )
         responses = self.monitor._generate_sensor_responses_from_states( states )
-        self.assertEqual( len( responses ), 2 )
+        self.assertEqual( len( responses ), 1 )
 
-        mv = self._movement_response( responses )
-        self.assertEqual( mv.value, str( EntityStateValue.IDLE ) )
-        self.assertEqual( mv.correlation_role, CorrelationRole.END )
-        self.assertEqual( mv.correlation_id, '7' )
-        self.assertEqual( mv.timestamp, closed.end_datetime )
-
-        # When the camera transitions to IDLE, OBJECT_PRESENCE resets
-        # to OBJECT_NONE — no current detection.
         obj = self._object_response( responses )
         self.assertEqual( obj.value, str( EntityStateValue.OBJECT_NONE ) )
+        self.assertEqual( obj.correlation_role, CorrelationRole.END )
+        self.assertEqual( obj.correlation_id, '7' )
+        self.assertEqual( obj.timestamp, closed.end_datetime )
 
     def test_object_presence_uses_canonical_bucket_for_active_state(self):
         """Raw Frigate label runs through the converter table; tests
@@ -269,40 +249,41 @@ class TestFrigateSensorResponseGeneration( TestCase ):
         states = self.monitor._aggregate_camera_states( [ opened ], [ closed ] )
         self.monitor._generate_sensor_responses_from_states( states )
 
-        # closed-1 in fully_processed → won't be re-emitted next poll.
         self.assertIn( 'closed-1', self.monitor._fully_processed_event_ids )
-        # open-1 NOT in fully_processed → cursor + skip-check will let
-        # us see it again next poll so we can detect when it closes.
         self.assertNotIn( 'open-1', self.monitor._fully_processed_event_ids )
-        # Both in start_processed (symmetric with ZM's bookkeeping).
         self.assertIn( 'open-1', self.monitor._start_processed_event_ids )
         self.assertIn( 'closed-1', self.monitor._start_processed_event_ids )
 
 
-class TestFrigateIdleSensorResponse( TestCase ):
-    """The no-event-this-cycle IDLE response that keeps every camera's
-    state fresh even when nothing happened in the poll window."""
+class TestFrigateNoEventIdleResponse( TestCase ):
+    """The no-event-this-cycle response that keeps every camera's
+    OBJECT_PRESENCE fresh even when nothing happened in the poll
+    window."""
 
     def setUp(self):
         self.monitor = FrigateMonitor()
         self.now = datetime( 2026, 5, 20, 12, 0, 0, tzinfo = timezone.utc )
 
-    def test_idle_response_uses_camera_movement_key(self):
-        resp = self.monitor._create_idle_sensor_response(
-            camera_name = 'driveway', timestamp = self.now,
+    def test_uses_object_presence_key_with_object_none_value(self):
+        resp = self.monitor._create_object_presence_sensor_response(
+            camera_name = 'driveway',
+            value = FrigateConverter.OBJECT_NONE_VALUE,
+            timestamp = self.now,
         )
-        self.assertEqual( resp.value, str( EntityStateValue.IDLE ) )
+        self.assertEqual( resp.value, str( EntityStateValue.OBJECT_NONE ) )
         self.assertEqual( resp.timestamp, self.now )
         self.assertEqual(
             resp.integration_key.integration_name,
-            f'{FrigateManager.MOVEMENT_SENSOR_PREFIX}.driveway',
+            f'{FrigateManager.OBJECT_PRESENCE_SENSOR_PREFIX}.driveway',
         )
 
-    def test_idle_response_has_no_correlation(self):
-        """No correlation id on the no-event-this-cycle IDLE — there's
-        no event to pair with."""
-        resp = self.monitor._create_idle_sensor_response(
-            camera_name = 'driveway', timestamp = self.now,
+    def test_no_correlation_on_unseen_cycle_response(self):
+        """No correlation id on the no-event-this-cycle response —
+        there's no event to pair with."""
+        resp = self.monitor._create_object_presence_sensor_response(
+            camera_name = 'driveway',
+            value = FrigateConverter.OBJECT_NONE_VALUE,
+            timestamp = self.now,
         )
         self.assertIsNone( resp.correlation_role )
         self.assertIsNone( resp.correlation_id )
@@ -370,14 +351,10 @@ class TestFrigateProcessEventsCursor( TestCase ):
 
     def setUp(self):
         self.monitor = FrigateMonitor()
-        # _process_events relies on these being set; bypass the
-        # async _initialize path for these focused tests.
         self.monitor._was_initialized = True
         self.start = datetime( 2026, 5, 20, 12, 0, 0, tzinfo = timezone.utc )
         self.monitor._poll_from_datetime = self.start
 
-        # Mock the manager with both async shims so the monitor can
-        # call get_events_async / get_cameras_async.
         self.mock_manager = Mock( spec = FrigateManager )
 
         async def empty_events( after = None, limit = None ):
@@ -426,7 +403,6 @@ class TestFrigateProcessEventsCursor( TestCase ):
               'end_time': end_2.timestamp() },
         ])
         asyncio.run( self._run_process_events() )
-        # Cursor sits at the latest closed event's end_time.
         self.assertEqual( self.monitor._poll_from_datetime, end_2 )
 
     def test_cursor_holds_back_to_earliest_open_when_any_open(self):
@@ -442,8 +418,6 @@ class TestFrigateProcessEventsCursor( TestCase ):
               'end_time': None },  # open
         ])
         asyncio.run( self._run_process_events() )
-        # Cursor held back to the open event's start so the next poll
-        # still sees it until it closes.
         self.assertEqual( self.monitor._poll_from_datetime, open_start )
 
     def test_fully_processed_event_is_skipped_on_next_poll(self):
@@ -457,60 +431,47 @@ class TestFrigateProcessEventsCursor( TestCase ):
 
         self._set_events([ api_event ])
         responses = asyncio.run( self._run_process_events() )
-        # MOVEMENT + OBJECT_PRESENCE for the camera.
-        self.assertEqual( len( responses ), 2 )
+        # One OBJECT_PRESENCE response for the camera.
+        self.assertEqual( len( responses ), 1 )
         self.assertIn( 'reposted', self.monitor._fully_processed_event_ids )
 
         # Even though the API returns the same closed event again on
         # the next poll, it's filtered out by the fully-processed cache
         # → no event-driven response. The idle-for-unseen pass emits
-        # MOVEMENT IDLE + OBJECT_NONE for the camera if it's still in
+        # an OBJECT_NONE response for the camera if it's still in
         # the camera list.
         self._set_cameras([ 'front_yard' ])
         responses = asyncio.run( self._run_process_events() )
-        self.assertEqual( len( responses ), 2 )
-        # Find MOVEMENT and OBJECT_PRESENCE by prefix matching.
-        movement = next(
-            r for r in responses.values()
-            if r.integration_key.integration_name.startswith(
-                FrigateManager.MOVEMENT_SENSOR_PREFIX + '.'
-            )
-        )
+        self.assertEqual( len( responses ), 1 )
         obj = next(
             r for r in responses.values()
             if r.integration_key.integration_name.startswith(
                 FrigateManager.OBJECT_PRESENCE_SENSOR_PREFIX + '.'
             )
         )
-        self.assertEqual( movement.value, str( EntityStateValue.IDLE ) )
-        self.assertIsNone( movement.correlation_role )
         self.assertEqual( obj.value, str( EntityStateValue.OBJECT_NONE ) )
+        # No correlation on the unseen-cycle idle response.
+        self.assertIsNone( obj.correlation_role )
 
     def test_idle_response_for_camera_with_no_events_this_cycle(self):
         import asyncio
         self._set_cameras([ 'driveway', 'back_door' ])
         responses = asyncio.run( self._run_process_events() )
-        # Both cameras produced no events → both get MOVEMENT IDLE +
-        # OBJECT_PRESENCE OBJECT_NONE = 4 responses total.
-        self.assertEqual( len( responses ), 4 )
-        movement_count = 0
-        object_count = 0
+        # Both cameras produced no events → both get OBJECT_NONE.
+        self.assertEqual( len( responses ), 2 )
         for resp in responses.values():
             name = resp.integration_key.integration_name
-            if name.startswith( FrigateManager.MOVEMENT_SENSOR_PREFIX + '.' ):
-                self.assertEqual( resp.value, str( EntityStateValue.IDLE ) )
-                self.assertIsNone( resp.correlation_role )
-                movement_count += 1
-            elif name.startswith( FrigateManager.OBJECT_PRESENCE_SENSOR_PREFIX + '.' ):
-                self.assertEqual( resp.value, str( EntityStateValue.OBJECT_NONE ) )
-                object_count += 1
+            self.assertTrue(
+                name.startswith( FrigateManager.OBJECT_PRESENCE_SENSOR_PREFIX + '.' )
+            )
+            self.assertEqual( resp.value, str( EntityStateValue.OBJECT_NONE ) )
+            self.assertIsNone( resp.correlation_role )
             continue
-        self.assertEqual( movement_count, 2 )
-        self.assertEqual( object_count, 2 )
 
     def test_open_event_overrides_idle_for_unseen(self):
-        """A camera with an open event gets ACTIVE — the
-        idle-for-unseen pass must NOT clobber it."""
+        """A camera with an open event gets a class-bearing
+        OBJECT_PRESENCE — the idle-for-unseen pass must NOT clobber
+        it with OBJECT_NONE."""
         import asyncio
         self._set_events([
             { 'id': '7', 'camera': 'front_yard', 'label': 'person',
@@ -520,34 +481,27 @@ class TestFrigateProcessEventsCursor( TestCase ):
         self._set_cameras([ 'front_yard', 'back_door' ])
         responses = asyncio.run( self._run_process_events() )
 
-        # 2 cameras × (MOVEMENT + OBJECT_PRESENCE) = 4 responses.
-        self.assertEqual( len( responses ), 4 )
+        # 2 cameras × 1 OBJECT_PRESENCE response each = 2 responses.
+        self.assertEqual( len( responses ), 2 )
 
-        def _find( prefix, camera ):
-            target = f'{prefix}.{camera}'
+        def _find( camera ):
+            target = f'{FrigateManager.OBJECT_PRESENCE_SENSOR_PREFIX}.{camera}'
             for r in responses.values():
                 if r.integration_key.integration_name == target:
                     return r
                 continue
             raise AssertionError( f'No response for {target}' )
 
-        # front_yard had an open event → ACTIVE + matching object class.
-        front_mv = _find( FrigateManager.MOVEMENT_SENSOR_PREFIX, 'front_yard' )
-        self.assertEqual( front_mv.value, str( EntityStateValue.ACTIVE ) )
-        self.assertEqual( front_mv.correlation_id, '7' )
-        front_obj = _find(
-            FrigateManager.OBJECT_PRESENCE_SENSOR_PREFIX, 'front_yard',
-        )
+        # front_yard had an open event → OBJECT_PERSON + START correlation.
+        front_obj = _find( 'front_yard' )
         self.assertEqual( front_obj.value, str( EntityStateValue.OBJECT_PERSON ) )
+        self.assertEqual( front_obj.correlation_role, CorrelationRole.START )
+        self.assertEqual( front_obj.correlation_id, '7' )
 
-        # back_door had no events → MOVEMENT IDLE + OBJECT_NONE.
-        back_mv = _find( FrigateManager.MOVEMENT_SENSOR_PREFIX, 'back_door' )
-        self.assertEqual( back_mv.value, str( EntityStateValue.IDLE ) )
-        self.assertIsNone( back_mv.correlation_id )
-        back_obj = _find(
-            FrigateManager.OBJECT_PRESENCE_SENSOR_PREFIX, 'back_door',
-        )
+        # back_door had no events → OBJECT_NONE with no correlation.
+        back_obj = _find( 'back_door' )
         self.assertEqual( back_obj.value, str( EntityStateValue.OBJECT_NONE ) )
+        self.assertIsNone( back_obj.correlation_role )
 
 
 class TestFrigateConverterObjectClassMapping( TestCase ):

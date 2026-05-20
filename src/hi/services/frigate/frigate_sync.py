@@ -260,14 +260,12 @@ class FrigateSynchronizer( IntegrationSynchronizer, FrigateMixin ):
             entity.has_video_snapshot = True
             entity.save()
 
-            HiModelHelper.create_movement_sensor(
-                entity = entity,
-                integration_key = FrigateManager._to_integration_key(
-                    prefix = FrigateManager.MOVEMENT_SENSOR_PREFIX,
-                    camera_name = camera_name,
-                ),
-                provides_video_stream = True,
-            )
+            # Single sensor per camera — OBJECT_PRESENCE subsumes the
+            # "is motion happening" signal (any non-OBJECT_NONE value
+            # implies motion + the class causing it). Frigate's data
+            # model doesn't expose motion independent of object
+            # detection, so a separate MOVEMENT sensor would always
+            # mirror this one's state.
             HiModelHelper.create_object_presence_sensor(
                 entity = entity,
                 integration_key = FrigateManager._to_integration_key(

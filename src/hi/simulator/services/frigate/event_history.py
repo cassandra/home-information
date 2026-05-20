@@ -1,9 +1,7 @@
 """Per-camera event history for the Frigate simulator.
 
-Mirrors ``ZmSimEventHistory`` in structure: a bounded ring buffer of
-events that the event manager consults to satisfy ``/api/events``
-queries. Events are synthesized from operator motion-state toggles —
-no DB row, no CRUD UI.
+Per-camera ring buffer of events. Events are synthesized from the
+operator's ObjectPresence sim-state changes — no DB row, no CRUD UI.
 """
 from collections import deque
 from datetime import datetime
@@ -17,12 +15,10 @@ from .sim_models import FrigateSimCamera, FrigateSimEvent
 class FrigateSimEventHistory:
     """Per-camera ring buffer of events.
 
-    The label on a new event comes from whatever the camera's
-    ObjectPresence sim-state currently reads at the moment motion
-    toggles ON. ObjectPresence changes during an open event do NOT
-    relabel the event — they take effect on the next motion-cycle
-    (matching real Frigate's "label fixed at first detection" behavior
-    closely enough for the simulator).
+    The state machine is driven by ``set_current_object(label)``:
+    transitioning to a different non-none label closes the current
+    event and opens a new one; transitioning to ``none`` closes
+    the current event; transitioning to the same label is a no-op.
     """
 
     DEFAULT_MAX_EVENTS = 500
@@ -30,40 +26,42 @@ class FrigateSimEventHistory:
     def __init__( self,
                   frigate_sim_camera  : FrigateSimCamera,
                   event_id_allocator  : Callable[ [], str ],
+                  none_label          : str = 'none',
                   max_events          : int = DEFAULT_MAX_EVENTS ):
         self._frigate_sim_camera = frigate_sim_camera
         self._event_id_allocator = event_id_allocator
+        self._none_label = none_label
         self._events : deque = deque( maxlen = max_events )
         return
 
     def __len__(self) -> int:
         return len( self._events )
 
-    def add_motion_value( self,
-                          motion_value  : bool,
-                          object_label  : str ) -> Optional[ FrigateSimEvent ]:
-        """Driven by the camera's Motion sim-state toggling.
+    def set_current_object( self, object_label : str ) -> Optional[ FrigateSimEvent ]:
+        """Drive the camera's event lifecycle from the current
+        ObjectPresence value.
 
-        ``motion_value`` True with no open event → start a new event
-        labeled ``object_label``. True with an open event → no-op
-        (the existing event stays open). False with an open event
-        → close it. Returns the event that was touched (or None when
-        nothing changed)."""
-        if len( self._events ) == 0:
-            if motion_value:
-                return self._open_event( object_label = object_label )
-            return None
+        Returns the event that was touched (the newly-opened event
+        on START or label switch, the just-closed event on transition
+        to none, or None if no transition was needed)."""
+        latest = self._events[-1] if self._events else None
+        currently_open = latest if ( latest is not None and latest.is_open ) else None
 
-        latest = self._events[-1]
-        if motion_value:
-            if latest.is_active:
-                return latest
+        if object_label == self._none_label:
+            if currently_open is None:
+                return None
+            currently_open.close()
+            return currently_open
+
+        if currently_open is None:
             return self._open_event( object_label = object_label )
 
-        if latest.is_active:
-            latest.close()
-            return latest
-        return None
+        if currently_open.label == object_label:
+            return None
+
+        # Label change while an event is open — close current, open new.
+        currently_open.close()
+        return self._open_event( object_label = object_label )
 
     def _open_event( self, object_label : str ) -> FrigateSimEvent:
         event = FrigateSimEvent(

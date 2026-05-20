@@ -6,7 +6,8 @@ from hi.simulator.services.service_simulator import ServiceSimulator
 from .event_manager import FrigateSimEventManager
 from .sim_models import (
     FRIGATE_SIM_ENTITY_DEFINITION_LIST,
-    FrigateCameraMotionState,
+    FRIGATE_OBJECT_LABEL_NONE,
+    FrigateCameraObjectPresenceState,
     FrigateCameraSimEntityFields,
     FrigateSimCamera,
 )
@@ -15,9 +16,11 @@ from .sim_models import (
 class FrigateSimulator( ServiceSimulator ):
     """Simulator entry point for the Frigate integration.
 
-    Mirrors the ZoneMinder simulator in role: discovers per-camera
-    sim_entities, dispatches Frigate-shape API calls to
-    ``service_dispatchers``, serves JPEG snapshots, etc.
+    Each camera exposes a single discrete ``ObjectPresence``
+    sim-state. Picking a class value declares "this is what's
+    currently being detected"; picking ``none`` declares
+    "nothing is detected". The override below translates value
+    changes into the underlying event lifecycle.
     """
 
     @property
@@ -52,27 +55,29 @@ class FrigateSimulator( ServiceSimulator ):
                        sim_entity_id  : int,
                        sim_state_id   : str,
                        value_str      : str ) -> SimState:
-        """Override so Motion sim-state toggles synthesize Frigate
-        events via ``FrigateSimEventManager``. The event's ``label``
-        comes from the camera's current ObjectPresence sim-state at
-        the moment motion-ON fires — matching real Frigate's "label
-        fixed at first detection" closely enough for the simulator.
-        ObjectPresence changes during an open event don't relabel it;
-        the operator can close + reopen motion to start a new event
-        with the new label.
+        """Override so ObjectPresence value changes drive Frigate's
+        event lifecycle in the ``FrigateSimEventManager``:
+
+        - New value ``none`` → close the currently-open event (if any).
+        - New value matches the open event's label → no-op (the
+          operator re-picked the same class).
+        - New value differs from the open event's label → close current,
+          open new event with the new label. Mirrors real Frigate's
+          "new object class -> new tracked event" behavior.
+        - New value with no open event → open new event with this label.
         """
         sim_state = super().set_sim_state(
             sim_entity_id = sim_entity_id,
             sim_state_id = sim_state_id,
             value_str = value_str,
         )
-        if isinstance( sim_state, FrigateCameraMotionState ):
+
+        if isinstance( sim_state, FrigateCameraObjectPresenceState ):
             sim_entity = self.get_sim_entity_by_id( sim_entity_id = sim_entity_id )
             sim_camera = FrigateSimCamera( sim_entity = sim_entity )
-            object_label = sim_camera.object_presence_sim_state.value
-            FrigateSimEventManager().add_motion_value(
+            FrigateSimEventManager().set_current_object(
                 frigate_sim_camera = sim_camera,
-                motion_value = bool( sim_state.value ),
-                object_label = object_label,
+                object_label = sim_state.value,
+                none_label = FRIGATE_OBJECT_LABEL_NONE,
             )
         return sim_state

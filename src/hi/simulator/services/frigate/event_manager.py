@@ -30,13 +30,15 @@ class FrigateSimEventManager( Singleton ):
         self._next_event_id += 1
         return str( self._next_event_id )
 
-    def add_motion_value( self,
-                          frigate_sim_camera  : FrigateSimCamera,
-                          motion_value        : bool,
-                          object_label        : str ) -> Optional[ FrigateSimEvent ]:
-        """Driven by the camera Motion sim-state. Routes to the
-        per-camera history, allocating one on first use. Returns the
-        event the toggle touched (or ``None`` when nothing changed)."""
+    def set_current_object( self,
+                            frigate_sim_camera  : FrigateSimCamera,
+                            object_label        : str,
+                            none_label          : str ) -> Optional[ FrigateSimEvent ]:
+        """Driven by the camera ObjectPresence sim-state. Routes to
+        the per-camera history, allocating one on first use. Returns
+        the event the transition touched (or ``None`` when no
+        transition was needed). ``none_label`` is the wire value that
+        means "no current detection" (e.g. ``'none'``)."""
         with self._data_lock:
             camera_name = frigate_sim_camera.camera_name
             history = self._histories.get( camera_name )
@@ -44,12 +46,10 @@ class FrigateSimEventManager( Singleton ):
                 history = FrigateSimEventHistory(
                     frigate_sim_camera = frigate_sim_camera,
                     event_id_allocator = self._allocate_event_id,
+                    none_label = none_label,
                 )
                 self._histories[ camera_name ] = history
-            return history.add_motion_value(
-                motion_value = motion_value,
-                object_label = object_label,
-            )
+            return history.set_current_object( object_label = object_label )
 
     def get_events_after( self, start_datetime : datetime ) -> List[ FrigateSimEvent ]:
         """All events across all cameras with start time at or after
