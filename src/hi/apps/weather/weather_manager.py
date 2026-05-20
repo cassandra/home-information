@@ -177,15 +177,12 @@ class WeatherManager( Singleton, SettingsMixin, AlertMixin ):
             return WeatherPaneStatus( is_timestamp_stale = True )
 
         if data_state == 'none' and is_healthy:
-            # Should be unreachable in normal operation: the warmup /
-            # awaiting-first-poll window is supposed to keep the monitor
-            # in a non-healthy state. Log so the gap surfaces, and fall
-            # back to a generic info caption rather than going blank.
-            logger.warning(
-                'WeatherPaneStatus: no current conditions data but the'
-                ' weather monitor reports healthy — surfacing defensive'
-                ' "Waiting for data" caption.'
-            )
+            # Reachable in practice — the weather monitor reports
+            # aggregate health across multiple endpoints, so it can
+            # land HEALTHY when only some of the underlying endpoints
+            # succeed. Operators can drill into System Info for the
+            # per-endpoint detail; the pane just shows a neutral
+            # fallback instead of going blank.
             return WeatherPaneStatus( caption_text = 'Waiting for data' )
 
         # Non-healthy: surface the monitor's own message.

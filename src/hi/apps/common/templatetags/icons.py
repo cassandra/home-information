@@ -34,6 +34,7 @@ AVAILABLE_ICONS = {
     'close',
     'cloud',
     'collection',
+    'copy',
     'delete',
     'disabled',
     'download',
