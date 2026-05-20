@@ -235,6 +235,12 @@ class FrigateSynchronizer( IntegrationSynchronizer, FrigateMixin ):
         the user-editable ``name`` is preserved across the
         intervening disconnect."""
         camera_name = camera[ 'name' ]
+        # Frigate's camera key (snake_case) is the technical identifier;
+        # the ``friendly_name`` on the per-camera config is the operator's
+        # display label. Prefer it for the HI entity name and fall back
+        # to the snake_case key when no friendly_name is set.
+        camera_config = camera.get( 'config' ) or {}
+        display_name = camera_config.get( 'friendly_name' ) or camera_name
         with transaction.atomic():
             entity_integration_key = FrigateManager._to_integration_key(
                 prefix = FrigateManager.FRIGATE_CAMERA_INTEGRATION_NAME_PREFIX,
@@ -242,7 +248,7 @@ class FrigateSynchronizer( IntegrationSynchronizer, FrigateMixin ):
             )
             if entity is None:
                 entity = Entity(
-                    name = camera_name,
+                    name = display_name,
                     entity_type_str = str( EntityType.CAMERA ),
                 )
 

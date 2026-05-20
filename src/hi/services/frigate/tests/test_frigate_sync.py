@@ -22,11 +22,20 @@ class _FrigateSyncTestBase( TestCase ):
         self.synchronizer._frigate_manager = self.mock_manager
 
     def _set_upstream_cameras( self, cameras : list ) -> None:
-        """Configure the mocked client to return the given camera list."""
+        """Configure the mocked client to return the given camera list.
+
+        ``cameras`` accepts either bare camera-name strings or
+        ``(name, config_dict)`` tuples for tests that want to set
+        per-camera config fields like ``friendly_name``."""
         self.mock_manager.frigate_client = Mock()
-        self.mock_manager.frigate_client.get_cameras.return_value = [
-            { 'name': name, 'config': { 'enabled': True } } for name in cameras
-        ]
+        normalized = []
+        for entry in cameras:
+            if isinstance( entry, tuple ):
+                name, config = entry
+            else:
+                name, config = entry, { 'enabled': True }
+            normalized.append( { 'name': name, 'config': config } )
+        self.mock_manager.frigate_client.get_cameras.return_value = normalized
 
 
 class TestFrigateSyncImpl( _FrigateSyncTestBase ):
@@ -136,6 +145,23 @@ class TestFrigateSyncImpl( _FrigateSyncTestBase ):
         self.assertEqual( entity.name, 'Front Porch' )
         self.assertTrue( entity.has_video_stream )
         self.assertEqual( result.error_list, [] )
+
+    def test_sync_uses_friendly_name_when_present(self):
+        """Real Frigate carries a ``friendly_name`` on each camera's
+        config for display; HI should prefer it over the snake_case
+        camera key so the imported entity has a human-readable name."""
+        self._set_upstream_cameras( [
+            ( 'front_yard', { 'enabled': True, 'friendly_name': 'Front Yard' } ),
+            ( 'back_door', { 'enabled': True } ),  # no friendly_name
+        ])
+        self.synchronizer._sync_impl( is_initial_import = True )
+
+        names_by_key = dict( Entity.objects.filter(
+            integration_id = FrigateMetaData.integration_id,
+        ).values_list( 'integration_name', 'name' ))
+        self.assertEqual( names_by_key[ 'camera.front_yard' ], 'Front Yard' )
+        # No friendly_name → falls back to the camera key.
+        self.assertEqual( names_by_key[ 'camera.back_door' ], 'back_door' )
 
     def test_sync_creates_multiple_camera_entities(self):
         self._set_upstream_cameras( [ 'front_yard', 'back_door', 'driveway' ] )

@@ -30,6 +30,7 @@ class ConfigView( View ):
             for sim_camera in simulator.get_sim_cameras():
                 cameras[ sim_camera.camera_name ] = {
                     'name': sim_camera.camera_name,
+                    'friendly_name': sim_camera.display_name,
                     'enabled': True,
                 }
             return JsonResponse( { 'cameras': cameras } )
