@@ -1,6 +1,6 @@
 import json
 import logging
-from typing import Dict, List, Optional
+from typing import Any, Dict, List, Optional
 
 from requests import get
 
@@ -91,14 +91,41 @@ class FrigateClient:
     def get_events( self,
                     after   : Optional[ float ] = None,
                     limit   : Optional[ int ]   = None ) -> List[ Dict ]:
-        """``GET /api/events`` — list events; ``after`` filters by
-        start_time epoch seconds. Implemented in Phase E1."""
-        raise NotImplementedError( 'FrigateClient.get_events not yet implemented' )
+        """``GET /api/events`` — list events.
+
+        ``after`` (epoch seconds) is the polling cursor: only events
+        whose start_time is at-or-after the cutoff are returned. The
+        simulator (and real Frigate) sort newest-first by start_time.
+        ``limit`` caps the returned count when set."""
+        params : Dict[ str, Any ] = {}
+        if after is not None:
+            params[ 'after' ] = after
+        if limit is not None:
+            params[ 'limit' ] = limit
+        data = self._get_json(
+            path = FrigateApi.EVENTS_PATH,
+            params = params or None,
+        )
+        if not isinstance( data, list ):
+            raise ValueError(
+                f'Frigate /api/events response was not a list:'
+                f' got {type(data).__name__}'
+            )
+        return data
 
     def get_event( self, event_id : str ) -> Dict:
-        """``GET /api/events/<id>`` — single event detail.
-        Implemented in Phase E1."""
-        raise NotImplementedError( 'FrigateClient.get_event not yet implemented' )
+        """``GET /api/events/<id>`` — single event detail. Non-2xx
+        responses (including 404) surface as ``ValueError`` with the
+        status code in the message; callers that need to distinguish
+        "event missing" from "Frigate broken" can match on it."""
+        path = f'{FrigateApi.EVENTS_PATH}/{event_id}'
+        data = self._get_json( path = path )
+        if not isinstance( data, dict ):
+            raise ValueError(
+                f'Frigate /api/events/{event_id} response was not a JSON object:'
+                f' got {type(data).__name__}'
+            )
+        return data
 
     # ---- Outbound (control) endpoints ----------------------------------
 
@@ -112,26 +139,49 @@ class FrigateClient:
     # ---- Internal: shared request + validation -------------------------
 
     def _get_config(self) -> Dict:
-        """Fetch ``/api/config`` and validate the response shape.
-        Shared by ``ping()`` and ``get_cameras()`` since both rely
-        on this endpoint."""
-        url = f'{self._base_url}{FrigateApi.CONFIG_PATH}'
-        response = get( url, headers = self._headers, timeout = self._timeout_secs )
+        """Fetch ``/api/config`` and validate the response is a dict.
+        Shared by ``ping()`` and ``get_cameras()``."""
+        data = self._get_json( path = FrigateApi.CONFIG_PATH )
+        if not isinstance( data, dict ):
+            raise ValueError(
+                f'Frigate /api/config response was not a JSON object:'
+                f' got {type(data).__name__}'
+            )
+        return data
+
+    def _get_json(
+            self,
+            path    : str,
+            params  : Optional[ Dict[ str, Any ] ] = None,
+    ) -> Any:
+        """GET ``path`` against the configured base URL and return
+        parsed JSON. Status code, content-type, and JSON-parse errors
+        all raise ``ValueError`` with diagnostic messages that include
+        the path so monitor / test_connection paths can record what
+        failed."""
+        url = f'{self._base_url}{path}'
+        response = get(
+            url,
+            headers = self._headers,
+            timeout = self._timeout_secs,
+            params = params,
+        )
         if response.status_code not in (200, 201):
             raise ValueError(
-                f'Frigate /api/config request failed:'
+                f'Frigate {path} request failed:'
                 f' {response.status_code} {response.text}'
             )
         content_type = ( response.headers or {} ).get( 'content-type', '' )
         if 'json' not in content_type.lower():
             raise ValueError(
-                f'Frigate API URL may be incorrect. Expected JSON response but'
-                f' received {content_type or "unknown content type"}.'
+                f'Frigate API URL may be incorrect. Expected JSON response'
+                f' from {path} but received'
+                f' {content_type or "unknown content type"}.'
                 f' Ensure the URL points at the Frigate API root.'
             )
         try:
             return json.loads( response.text )
         except json.JSONDecodeError as e:
             raise ValueError(
-                f'Frigate /api/config response was not valid JSON: {e}'
+                f'Frigate {path} response was not valid JSON: {e}'
             ) from e

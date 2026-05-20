@@ -151,3 +151,106 @@ class TestFrigateClientGetCameras( TestCase ):
             )
             with self.assertRaises( ValueError ):
                 self.client.get_cameras()
+
+
+class TestFrigateClientGetEvents( TestCase ):
+
+    def setUp(self):
+        self.client = FrigateClient( api_options = {
+            FrigateClient.BASE_URL: 'http://frigate.local:5000',
+        })
+
+    def test_get_events_returns_empty_list_for_no_events(self):
+        with patch( 'hi.services.frigate.frigate_client.get' ) as mock_get:
+            mock_get.return_value = _mock_response( body = '[]' )
+            self.assertEqual( self.client.get_events(), [] )
+
+    def test_get_events_returns_parsed_list(self):
+        payload = [
+            { 'id': '2', 'camera': 'front_yard', 'label': 'dog' },
+            { 'id': '1', 'camera': 'front_yard', 'label': 'person' },
+        ]
+        with patch( 'hi.services.frigate.frigate_client.get' ) as mock_get:
+            mock_get.return_value = _mock_response( body = json.dumps( payload ) )
+            result = self.client.get_events()
+            self.assertEqual( result, payload )
+
+    def test_get_events_passes_after_as_query_param(self):
+        with patch( 'hi.services.frigate.frigate_client.get' ) as mock_get:
+            mock_get.return_value = _mock_response( body = '[]' )
+            self.client.get_events( after = 1234567890.5 )
+            kwargs = mock_get.call_args.kwargs
+            self.assertEqual( kwargs[ 'params' ], { 'after': 1234567890.5 } )
+
+    def test_get_events_passes_limit_as_query_param(self):
+        with patch( 'hi.services.frigate.frigate_client.get' ) as mock_get:
+            mock_get.return_value = _mock_response( body = '[]' )
+            self.client.get_events( after = 0, limit = 50 )
+            kwargs = mock_get.call_args.kwargs
+            self.assertEqual( kwargs[ 'params' ], { 'after': 0, 'limit': 50 } )
+
+    def test_get_events_omits_params_when_no_filters(self):
+        with patch( 'hi.services.frigate.frigate_client.get' ) as mock_get:
+            mock_get.return_value = _mock_response( body = '[]' )
+            self.client.get_events()
+            kwargs = mock_get.call_args.kwargs
+            self.assertIsNone( kwargs[ 'params' ] )
+
+    def test_get_events_raises_when_response_not_list(self):
+        with patch( 'hi.services.frigate.frigate_client.get' ) as mock_get:
+            mock_get.return_value = _mock_response( body = '{"events": []}' )
+            with self.assertRaises( ValueError ) as ctx:
+                self.client.get_events()
+            self.assertIn( 'not a list', str( ctx.exception ) )
+
+    def test_get_events_raises_on_non_2xx(self):
+        with patch( 'hi.services.frigate.frigate_client.get' ) as mock_get:
+            mock_get.return_value = _mock_response(
+                status_code = 500, body = 'Internal Server Error',
+            )
+            with self.assertRaises( ValueError ) as ctx:
+                self.client.get_events()
+            self.assertIn( '500', str( ctx.exception ) )
+
+
+class TestFrigateClientGetEvent( TestCase ):
+
+    def setUp(self):
+        self.client = FrigateClient( api_options = {
+            FrigateClient.BASE_URL: 'http://frigate.local:5000',
+        })
+
+    def test_get_event_returns_parsed_dict(self):
+        payload = {
+            'id': '42', 'camera': 'front_yard', 'label': 'person',
+            'top_score': 0.9,
+        }
+        with patch( 'hi.services.frigate.frigate_client.get' ) as mock_get:
+            mock_get.return_value = _mock_response( body = json.dumps( payload ) )
+            self.assertEqual( self.client.get_event( '42' ), payload )
+
+    def test_get_event_targets_correct_url(self):
+        with patch( 'hi.services.frigate.frigate_client.get' ) as mock_get:
+            mock_get.return_value = _mock_response( body = '{"id": "42"}' )
+            self.client.get_event( '42' )
+            url = mock_get.call_args.args[ 0 ]
+            self.assertEqual(
+                url,
+                'http://frigate.local:5000/api/events/42',
+            )
+
+    def test_get_event_raises_on_404(self):
+        with patch( 'hi.services.frigate.frigate_client.get' ) as mock_get:
+            mock_get.return_value = _mock_response(
+                status_code = 404, body = 'Not Found',
+            )
+            with self.assertRaises( ValueError ) as ctx:
+                self.client.get_event( 'nope' )
+            self.assertIn( '404', str( ctx.exception ) )
+
+    def test_get_event_raises_when_response_not_dict(self):
+        with patch( 'hi.services.frigate.frigate_client.get' ) as mock_get:
+            mock_get.return_value = _mock_response( body = '[]' )
+            with self.assertRaises( ValueError ) as ctx:
+                self.client.get_event( '1' )
+            self.assertIn( 'not a JSON object', str( ctx.exception ) )
