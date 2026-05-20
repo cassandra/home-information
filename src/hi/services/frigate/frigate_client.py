@@ -1,5 +1,8 @@
+import json
 import logging
 from typing import Dict, List, Optional
+
+from requests import get
 
 from .constants import FrigateApi, FrigateTimeouts
 
@@ -15,8 +18,10 @@ class FrigateClient:
     reverse proxy" with an optional verbatim ``Authorization`` header
     the operator pastes in (no JWT login flow in v1).
 
-    Scaffolding stub. Methods raise ``NotImplementedError`` until
-    feature work fills them in.
+    Methods raise ``ValueError`` with a descriptive message at the
+    boundary so the monitor / connection-test paths can record a
+    meaningful error rather than letting opaque JSON / decode errors
+    bubble up to operators.
     """
 
     BASE_URL = 'base_url'
@@ -51,39 +56,82 @@ class FrigateClient:
     # ---- Reachability probe (used by test_connection) ------------------
 
     def ping(self) -> None:
-        """Lightweight reachability probe against Frigate's ``/api/config``
-        endpoint. Confirms the base URL points at a Frigate instance (or
-        whatever is fronting it) and that the response is JSON-shaped —
-        a 200 with HTML usually means the URL is fronting the Frigate
-        web UI, not the API."""
-        # Scaffolding stub — fills in during feature work.
-        raise NotImplementedError( 'FrigateClient.ping not yet implemented' )
+        """Lightweight reachability probe against ``/api/config``.
+
+        Confirms the base URL points at a Frigate instance (or whatever
+        is fronting it) and that the response is JSON-shaped — a 200
+        with HTML usually means the URL is fronting the Frigate web UI
+        rather than the API, and we want ``test_connection`` to fail
+        at save time instead of letting the polling path JSONDecode
+        later. Returns ``None`` on success; raises ``ValueError`` with
+        a diagnostic message on failure. Network errors propagate."""
+        self._get_config()
+        return
 
     # ---- Inbound (query) endpoints -------------------------------------
+
+    def get_cameras( self ) -> List[ Dict ]:
+        """Camera list, derived from the ``cameras`` map in
+        ``/api/config``. Frigate exposes its camera set through the
+        live config rather than a dedicated endpoint. Each returned
+        dict carries ``{'name': <camera_name>, 'config': <per-camera
+        config dict>}``."""
+        config_data = self._get_config()
+        cameras_map = config_data.get( 'cameras' )
+        if not isinstance( cameras_map, dict ):
+            raise ValueError(
+                f'Frigate /api/config response missing or malformed "cameras"'
+                f' field: got {type(cameras_map).__name__}'
+            )
+        return [
+            { 'name': camera_name, 'config': camera_config }
+            for camera_name, camera_config in cameras_map.items()
+        ]
 
     def get_events( self,
                     after   : Optional[ float ] = None,
                     limit   : Optional[ int ]   = None ) -> List[ Dict ]:
         """``GET /api/events`` — list events; ``after`` filters by
-        start_time epoch seconds."""
-        _ = FrigateApi.EVENTS_PATH  # placeholder reference so the import isn't unused
+        start_time epoch seconds. Implemented in Phase E1."""
         raise NotImplementedError( 'FrigateClient.get_events not yet implemented' )
 
     def get_event( self, event_id : str ) -> Dict:
-        """``GET /api/events/<id>`` — single event detail."""
+        """``GET /api/events/<id>`` — single event detail.
+        Implemented in Phase E1."""
         raise NotImplementedError( 'FrigateClient.get_event not yet implemented' )
-
-    def get_cameras( self ) -> List[ Dict ]:
-        """Cameras as reported by ``/api/config`` (Frigate doesn't have
-        a dedicated ``/api/cameras`` endpoint; the camera set is read
-        from the live config)."""
-        raise NotImplementedError( 'FrigateClient.get_cameras not yet implemented' )
 
     # ---- Outbound (control) endpoints ----------------------------------
 
     def set_camera_detect( self, camera_name : str, enabled : bool ) -> None:
-        """Toggle object detection for a camera (Frigate's
-        ``/api/<camera>/detect/<set|on|off>`` family)."""
+        """Toggle object detection for a camera. Implemented in
+        Phase H3 (optional)."""
         raise NotImplementedError(
             'FrigateClient.set_camera_detect not yet implemented'
         )
+
+    # ---- Internal: shared request + validation -------------------------
+
+    def _get_config(self) -> Dict:
+        """Fetch ``/api/config`` and validate the response shape.
+        Shared by ``ping()`` and ``get_cameras()`` since both rely
+        on this endpoint."""
+        url = f'{self._base_url}{FrigateApi.CONFIG_PATH}'
+        response = get( url, headers = self._headers, timeout = self._timeout_secs )
+        if response.status_code not in (200, 201):
+            raise ValueError(
+                f'Frigate /api/config request failed:'
+                f' {response.status_code} {response.text}'
+            )
+        content_type = ( response.headers or {} ).get( 'content-type', '' )
+        if 'json' not in content_type.lower():
+            raise ValueError(
+                f'Frigate API URL may be incorrect. Expected JSON response but'
+                f' received {content_type or "unknown content type"}.'
+                f' Ensure the URL points at the Frigate API root.'
+            )
+        try:
+            return json.loads( response.text )
+        except json.JSONDecodeError as e:
+            raise ValueError(
+                f'Frigate /api/config response was not valid JSON: {e}'
+            ) from e
