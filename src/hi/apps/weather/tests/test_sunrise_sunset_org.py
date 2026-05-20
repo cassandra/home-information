@@ -53,7 +53,7 @@ class TestSunriseSunsetOrg(BaseTestCase):
         self.assertEqual(self.sunrise_sunset.id, SunriseSunsetOrg.SOURCE_ID)
         return
 
-    @patch('hi.apps.weather.weather_sources.sunrise_sunset_org.requests.get')
+    @patch('hi.apps.weather.weather_data_source.requests.get')
     def test_get_astronomical_api_data_from_api_success(self, mock_get):
         """Test successful API call for astronomical data."""
         # Mock successful API response based on sunrise-sunset.org documentation
@@ -97,7 +97,7 @@ class TestSunriseSunsetOrg(BaseTestCase):
         self.assertIn('formatted=0', actual_url)
         return
 
-    @patch('hi.apps.weather.weather_sources.sunrise_sunset_org.requests.get')
+    @patch('hi.apps.weather.weather_data_source.requests.get')
     def test_get_astronomical_api_data_from_api_error(self, mock_get):
         """Test API error handling."""
         # Mock HTTP error response

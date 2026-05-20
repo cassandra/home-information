@@ -3,7 +3,6 @@ from enum import Enum
 import json
 import logging
 import pytz
-import requests
 from typing import Any, Dict, List
 
 
@@ -281,12 +280,8 @@ class SunriseSunsetOrg(WeatherDataSource, WeatherMixin):
                f"date={target_date.isoformat()}&"
                f"formatted=0")  # Get ISO format times
         
-        with self.api_call_context( 'sunrise_sunset' ):
-            response = requests.get(
-                url,
-                headers = self._headers,
-                timeout = self.get_api_timeout(),
-            )
-        response.raise_for_status()
-        api_data = response.json()           
-        return api_data
+        return self._api_get_json(
+            operation_name = 'sunrise_sunset',
+            url = url,
+            headers = self._headers,
+        )

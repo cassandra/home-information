@@ -1,7 +1,6 @@
 from datetime import date, datetime, timedelta
 import json
 import logging
-import requests
 from typing import Any, Dict, List
 
 
@@ -750,15 +749,11 @@ class OpenMeteo(WeatherDataSource, WeatherMixin):
                f"hourly=temperature_2m,relativehumidity_2m,dewpoint_2m,precipitation,pressure_msl&"
                f"units=metric")
         
-        with self.api_call_context( 'openmeteo_current' ):
-            response = requests.get(
-                url,
-                headers = self._headers,
-                timeout = self.get_api_timeout(),
-            )
-        response.raise_for_status()
-        current_data = response.json()           
-        return current_data
+        return self._api_get_json(
+            operation_name = 'openmeteo_current',
+            url = url,
+            headers = self._headers,
+        )
 
     def _get_hourly_forecast_data(self, geographic_location: GeographicLocation) -> Dict[str, Any]:
         cache_key = f'ws:{self.id}:forecast-hourly:{geographic_location}'
@@ -790,15 +785,11 @@ class OpenMeteo(WeatherDataSource, WeatherMixin):
                f"forecast_days=7&"
                f"units=metric")
         
-        with self.api_call_context( 'openmeteo_forecast_hourly' ):
-            response = requests.get(
-                url,
-                headers = self._headers,
-                timeout = self.get_api_timeout(),
-            )
-        response.raise_for_status()
-        forecast_data = response.json()           
-        return forecast_data
+        return self._api_get_json(
+            operation_name = 'openmeteo_forecast_hourly',
+            url = url,
+            headers = self._headers,
+        )
 
     def _get_daily_forecast_data(self, geographic_location: GeographicLocation) -> Dict[str, Any]:
         cache_key = f'ws:{self.id}:forecast-daily:{geographic_location}'
@@ -830,15 +821,11 @@ class OpenMeteo(WeatherDataSource, WeatherMixin):
                f"forecast_days=14&"
                f"units=metric")
         
-        with self.api_call_context( 'openmeteo_forecast_daily' ):
-            response = requests.get(
-                url,
-                headers = self._headers,
-                timeout = self.get_api_timeout(),
-            )
-        response.raise_for_status()
-        forecast_data = response.json()           
-        return forecast_data
+        return self._api_get_json(
+            operation_name = 'openmeteo_forecast_daily',
+            url = url,
+            headers = self._headers,
+        )
 
     def _get_historical_weather_data( self,
                                       geographic_location  : GeographicLocation,
@@ -881,12 +868,8 @@ class OpenMeteo(WeatherDataSource, WeatherMixin):
                f"daily=weathercode,temperature_2m_max,temperature_2m_min,precipitation_sum&"
                f"units=metric")
         
-        with self.api_call_context( 'openmeteo_history' ):
-            response = requests.get(
-                url,
-                headers = self._headers,
-                timeout = self.get_api_timeout(),
-            )
-        response.raise_for_status()
-        historical_data = response.json()           
-        return historical_data
+        return self._api_get_json(
+            operation_name = 'openmeteo_history',
+            url = url,
+            headers = self._headers,
+        )

@@ -39,7 +39,7 @@ class TestOpenMeteo(BaseTestCase):
         self.assertEqual(self.openmeteo.priority, 2)
         return
 
-    @patch('hi.apps.weather.weather_sources.openmeteo.requests.get')
+    @patch('hi.apps.weather.weather_data_source.requests.get')
     def test_current_weather_api_integration(self, mock_get):
         """Test that OpenMeteo API integration works correctly end-to-end."""
         # Mock realistic OpenMeteo API response

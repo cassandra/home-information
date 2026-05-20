@@ -1417,7 +1417,7 @@ class TestNationalWeatherService( BaseTestCase ):
             continue
         return
 
-    @patch('hi.apps.weather.weather_sources.nws.requests.get')
+    @patch('hi.apps.weather.weather_data_source.requests.get')
     def test_get_points_data_from_api(self, mock_get):
         """Test API call for points data."""
         nws = NationalWeatherService()
@@ -1445,7 +1445,7 @@ class TestNationalWeatherService( BaseTestCase ):
         self.assertEqual(actual_url, expected_url)
         return
 
-    @patch('hi.apps.weather.weather_sources.nws.requests.get')
+    @patch('hi.apps.weather.weather_data_source.requests.get')
     def test_get_points_data_from_api_error(self, mock_get):
         """Test API call error handling."""
         nws = NationalWeatherService()
@@ -2333,7 +2333,7 @@ class TestNationalWeatherService( BaseTestCase ):
 
         return
 
-    @patch('hi.apps.weather.weather_sources.nws.requests.get')
+    @patch('hi.apps.weather.weather_data_source.requests.get')
     def test_get_alerts_data_from_api_success(self, mock_get):
         """Test successful API call for weather alerts - HIGH VALUE for alerts integration."""
         # Mock successful API response based on NWS alerts API format
@@ -2403,7 +2403,7 @@ class TestNationalWeatherService( BaseTestCase ):
         self.assertIn('alerts/active', actual_url)
         return
 
-    @patch('hi.apps.weather.weather_sources.nws.requests.get')
+    @patch('hi.apps.weather.weather_data_source.requests.get')
     def test_get_alerts_data_from_api_no_alerts(self, mock_get):
         """Test API response with no active alerts - HIGH VALUE for empty response handling."""
         # Mock API response with no alerts

@@ -164,6 +164,37 @@ class WeatherDataSource( ApiHealthStatusProvider ):
     
     def get_api_timeout(self) -> float:
         return 30.0
+
+    def _api_get_json( self,
+                       operation_name : str,
+                       url            : str,
+                       *,
+                       headers        : dict  = None,
+                       timeout        : float = None ) -> dict:
+        """Issue a GET, track it for API health, and return parsed JSON.
+
+        Wraps the entire request lifecycle (HTTP status check + JSON
+        parse) inside ``api_call_context`` so that:
+
+        - 4xx/5xx responses (HTTPError from ``raise_for_status``)
+        - JSON parse failures
+        - network errors / timeouts (RequestException)
+
+        all count against the API success rate. Tracking only the
+        ``requests.get`` call would let HTTP errors slip through as
+        ``SUCCESS`` because ``requests`` returns a Response object
+        even for non-2xx status — that was the original bug.
+        """
+        if timeout is None:
+            timeout = self.get_api_timeout()
+        with self.api_call_context( operation_name ):
+            response = requests.get(
+                url,
+                headers = headers,
+                timeout = timeout,
+            )
+            response.raise_for_status()
+            return response.json()
     
     def _get_weather_settings_helper(self):
         """Lazy initialization of weather settings helper to avoid circular imports."""
