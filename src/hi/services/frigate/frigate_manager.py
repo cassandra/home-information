@@ -1,0 +1,131 @@
+import logging
+from typing import List, Optional
+
+from hi.apps.common.singleton_manager import SingletonManager
+from hi.apps.system.aggregate_health_provider import AggregateHealthProvider
+from hi.apps.system.api_health_status_provider import ApiHealthStatusProvider
+from hi.apps.system.enums import HealthStatusType
+from hi.apps.system.provider_info import ProviderInfo
+
+from hi.integrations.models import IntegrationAttribute
+from hi.integrations.transient_models import (
+    ConnectionTestResult,
+    IntegrationValidationResult,
+)
+
+from .enums import FrigateAttributeType
+from .frigate_metadata import FrigateMetaData
+
+logger = logging.getLogger(__name__)
+
+
+class FrigateManager( SingletonManager, AggregateHealthProvider, ApiHealthStatusProvider ):
+    """Singleton coordinator for the Frigate integration.
+
+    Owns the lazily-constructed ``FrigateClient`` (built from persisted
+    IntegrationAttribute records), brokers configuration validation and
+    connection probes, and dispatches settings-changed notifications to
+    registered listeners. Mirrors ``ZoneMinderManager`` in role.
+
+    Scaffolding stub: ``_reload_implementation`` is a no-op,
+    ``test_connection`` returns a "not yet implemented" failure, and
+    ``validate_configuration`` does the minimum schema check (BASE_URL
+    must be present). Filled out incrementally during feature work.
+    """
+
+    FRIGATE_ENTITY_NAME = 'Frigate'
+    FRIGATE_SYSTEM_INTEGRATION_NAME = 'system'
+    FRIGATE_CAMERA_INTEGRATION_NAME_PREFIX = 'camera'
+    MOVEMENT_SENSOR_PREFIX = 'camera.motion'
+    OBJECT_PRESENCE_SENSOR_PREFIX = 'camera.object'
+
+    def __init_singleton__(self):
+        super().__init_singleton__()
+        self._change_listeners = set()
+        self.add_api_health_status_provider( self )
+        return
+
+    @classmethod
+    def get_provider_info(cls) -> ProviderInfo:
+        return ProviderInfo(
+            provider_id = 'hi.services.frigate.manager',
+            provider_name = 'Frigate Integration',
+            description = '',
+        )
+
+    @classmethod
+    def get_api_provider_info(cls) -> ProviderInfo:
+        return ProviderInfo(
+            provider_id = 'hi.services.frigate.api',
+            provider_name = 'Frigate API',
+            description = 'Frigate NVR HTTP API',
+        )
+
+    def _reload_implementation(self):
+        """Pull current attribute values and (re)build the API client.
+        Scaffolding stub — feature work plumbs the client construction
+        and any cached state derived from the configuration."""
+        return
+
+    # ---- Settings-change plumbing -----------------------------------
+
+    def register_change_listener( self, callback ):
+        if callback not in self._change_listeners:
+            logger.debug( f'Adding Frigate setting change listener from {callback.__module__}' )
+            self._change_listeners.add( callback )
+        return
+
+    def notify_settings_changed(self):
+        self.reload()
+        for callback in self._change_listeners:
+            try:
+                callback()
+            except Exception:
+                logger.exception( 'Problem calling Frigate change-listener callback.' )
+            continue
+        return
+
+    # ---- Gateway-facing API -----------------------------------------
+
+    def validate_configuration(
+            self,
+            integration_attributes : List[ IntegrationAttribute ],
+    ) -> IntegrationValidationResult:
+        """Schema-only validation. No network calls."""
+        base_url = self._attr_value(
+            integration_attributes = integration_attributes,
+            attr_type_name = FrigateAttributeType.BASE_URL.name,
+        )
+        if not base_url:
+            return IntegrationValidationResult.error(
+                status = HealthStatusType.WARNING,
+                error_message = 'Base URL is required.',
+            )
+        return IntegrationValidationResult.success()
+
+    def test_connection(
+            self,
+            integration_attributes : List[ IntegrationAttribute ],
+            timeout_secs           : Optional[ float ],
+    ) -> ConnectionTestResult:
+        """Live probe against the configured base URL. Scaffolding
+        stub returns a "not yet implemented" failure so the operator
+        gets a clear signal until the real probe is wired in."""
+        return ConnectionTestResult.failure(
+            'Frigate connection probe not yet implemented (scaffolding).'
+        )
+
+    @property
+    def integration_id(self) -> str:
+        return FrigateMetaData.integration_id
+
+    @staticmethod
+    def _attr_value(
+            integration_attributes : List[ IntegrationAttribute ],
+            attr_type_name         : str,
+    ) -> Optional[ str ]:
+        for attr in integration_attributes:
+            if attr.integration_attr_type == attr_type_name:
+                return attr.value
+            continue
+        return None

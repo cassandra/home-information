@@ -127,6 +127,7 @@ INSTALLED_APPS = [
     'hi.services.zoneminder',
     'hi.services.hass',
     'hi.services.homebox',
+    'hi.services.frigate',
     'hi.apps.profiles',
 ]
 
