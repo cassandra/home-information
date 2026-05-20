@@ -33,4 +33,8 @@ urlpatterns = [
     path( '<str:camera_name>/latest.jpg',
           views.CameraLatestJpegView.as_view(),
           name = 'frigate_api_camera_snapshot' ),
+
+    path( '<str:camera_name>/detect/set',
+          views.CameraDetectSetView.as_view(),
+          name = 'frigate_api_camera_detect_set' ),
 ]

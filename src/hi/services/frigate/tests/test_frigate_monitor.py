@@ -400,9 +400,25 @@ class TestFrigateProcessEventsCursor( TestCase ):
 
         self.mock_manager.get_events_async = Mock( side_effect = fake_events )
 
-    def _set_cameras(self, names):
+    def _set_cameras(self, names, detect_enabled = None):
+        # ``detect_enabled`` mirrors what /api/config carries at
+        # ``cameras.<name>.detect.enabled``. Maps camera name → bool;
+        # omitted cameras carry no detect block (older Frigate / not
+        # configured) so the monitor emits no detect SensorResponse
+        # for them.
+        detect_enabled = detect_enabled or {}
+
         async def fake_cameras():
-            return [ { 'name': n } for n in names ]
+            return [
+                {
+                    'name': n,
+                    'config': (
+                        { 'detect': { 'enabled': detect_enabled[ n ] } }
+                        if n in detect_enabled else {}
+                    ),
+                }
+                for n in names
+            ]
 
         self.mock_manager.get_cameras_async = Mock( side_effect = fake_cameras )
 
@@ -490,6 +506,45 @@ class TestFrigateProcessEventsCursor( TestCase ):
             )
             self.assertEqual( resp.value, str( EntityStateValue.OBJECT_NONE ) )
             self.assertIsNone( resp.correlation_role )
+            continue
+
+    def test_detect_state_emitted_per_camera_when_config_carries_it(self):
+        """Each /api/config camera entry that carries ``detect.enabled``
+        produces a SensorResponse keyed on the detect controller's
+        integration key. Drives the panel's detect on/off display."""
+        import asyncio
+        self._set_cameras(
+            [ 'front_yard', 'back_door' ],
+            detect_enabled = { 'front_yard': True, 'back_door': False },
+        )
+        responses = asyncio.run( self._run_process_events() )
+
+        detect_by_camera = {}
+        for resp in responses.values():
+            name = resp.integration_key.integration_name
+            if name.startswith( FrigateManager.DETECT_CONTROLLER_PREFIX + '.' ):
+                camera = name[ len( FrigateManager.DETECT_CONTROLLER_PREFIX ) + 1: ]
+                detect_by_camera[ camera ] = resp.value
+            continue
+        self.assertEqual(
+            detect_by_camera,
+            { 'front_yard': 'on', 'back_door': 'off' },
+        )
+
+    def test_detect_state_omitted_when_config_has_no_detect_block(self):
+        """Older Frigate versions / unconfigured cameras may omit
+        ``detect``. Monitor skips emitting a detect SensorResponse
+        rather than guessing — keeps the panel from showing a fake
+        value."""
+        import asyncio
+        self._set_cameras( [ 'front_yard' ] )  # no detect_enabled
+        responses = asyncio.run( self._run_process_events() )
+        for resp in responses.values():
+            self.assertFalse(
+                resp.integration_key.integration_name.startswith(
+                    FrigateManager.DETECT_CONTROLLER_PREFIX + '.'
+                ),
+            )
             continue
 
     def test_open_event_overrides_idle_for_unseen(self):
@@ -585,4 +640,45 @@ class TestFrigateConverterObjectClassMapping( TestCase ):
         self.assertEqual(
             FrigateConverter.to_canonical_object_class( 'Dog' ),
             str( EntityStateValue.OBJECT_ANIMAL ),
+        )
+
+
+class TestFrigateConverterHiControlToDetectState( TestCase ):
+    """HI's on/off controller vocabulary → Frigate's wire state.
+    Mapping is explicit (no string transforms); unknown HI values
+    return None so the controller surfaces a clean error."""
+
+    def test_on_maps_to_uppercase_on(self):
+        self.assertEqual(
+            FrigateConverter.hi_control_to_detect_state( 'on' ), 'ON',
+        )
+
+    def test_off_maps_to_uppercase_off(self):
+        self.assertEqual(
+            FrigateConverter.hi_control_to_detect_state( 'off' ), 'OFF',
+        )
+
+    def test_unknown_value_returns_none(self):
+        self.assertIsNone(
+            FrigateConverter.hi_control_to_detect_state( 'maybe' ),
+        )
+
+    def test_uppercase_input_is_not_silently_accepted(self):
+        # HI's wire format is lowercase; uppercase 'ON' would
+        # indicate a caller bug, not a Frigate-side value showing
+        # up where it shouldn't. The mapping rejects it.
+        self.assertIsNone(
+            FrigateConverter.hi_control_to_detect_state( 'ON' ),
+        )
+
+    def test_detect_enabled_true_maps_to_hi_on(self):
+        self.assertEqual(
+            FrigateConverter.detect_enabled_to_hi_value( True ),
+            str( EntityStateValue.ON ),
+        )
+
+    def test_detect_enabled_false_maps_to_hi_off(self):
+        self.assertEqual(
+            FrigateConverter.detect_enabled_to_hi_value( False ),
+            str( EntityStateValue.OFF ),
         )

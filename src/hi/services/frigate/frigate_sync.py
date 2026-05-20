@@ -277,6 +277,15 @@ class FrigateSynchronizer( IntegrationSynchronizer, FrigateMixin ):
                 ),
             )
 
+            HiModelHelper.create_on_off_controller(
+                entity = entity,
+                integration_key = FrigateManager._to_integration_key(
+                    prefix = FrigateManager.DETECT_CONTROLLER_PREFIX,
+                    camera_name = camera_name,
+                ),
+                name = f'{entity.name} Detect',
+            )
+
             if self.frigate_manager().should_add_alarm_events:
                 HiModelHelper.create_object_presence_event_definition(
                     name = f'{object_presence_sensor.name} Alarm',

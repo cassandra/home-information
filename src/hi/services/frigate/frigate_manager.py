@@ -50,6 +50,7 @@ class FrigateManager( SingletonManager, AggregateHealthProvider, ApiHealthStatus
     FRIGATE_CAMERA_INTEGRATION_NAME_PREFIX = 'camera'
     OBJECT_PRESENCE_SENSOR_PREFIX = 'camera.object'
     OBJECT_PRESENCE_EVENT_PREFIX = 'camera.object.event'
+    DETECT_CONTROLLER_PREFIX = 'camera.detect'
 
     def __init_singleton__(self):
         super().__init_singleton__()
@@ -193,6 +194,18 @@ class FrigateManager( SingletonManager, AggregateHealthProvider, ApiHealthStatus
             self.get_events,
             thread_sensitive = True,
         )( after = after, limit = limit )
+
+    def set_camera_detect( self, camera_name : str, state : str ) -> None:
+        """Send the detect-state toggle to Frigate. ``state`` is a
+        Frigate-side wire value (``FrigateApi.DETECT_STATE_ON`` /
+        ``DETECT_STATE_OFF``); HI vocabulary translation belongs in
+        ``FrigateConverter.hi_control_to_detect_state``."""
+        client = self.frigate_client
+        if client is None:
+            raise RuntimeError( 'Frigate client not available.' )
+        with self.api_call_context( 'frigate_set_detect' ):
+            client.set_camera_detect( camera_name = camera_name, state = state )
+        return
 
     # ---- Media URL helpers ------------------------------------------
 

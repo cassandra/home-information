@@ -52,6 +52,17 @@ FRIGATE_OBJECT_LABEL_CHOICES: List[ Tuple[ str, str ] ] = [
 FRIGATE_OBJECT_LABEL_NONE = 'none'
 
 
+# Detect on/off choices. Frigate's wire value is uppercase
+# ``ON`` / ``OFF`` — kept verbatim here since this sim-state IS
+# Frigate's wire representation. Don't conflate with HI's lowercase
+# on/off controller vocabulary.
+FRIGATE_DETECT_STATE_CHOICES: List[ Tuple[ str, str ] ] = [
+    ( 'ON', 'On' ),
+    ( 'OFF', 'Off' ),
+]
+FRIGATE_DETECT_STATE_DEFAULT = 'ON'
+
+
 @dataclass
 class FrigateCameraObjectPresenceState( SimState ):
     """Currently-detected object class — the SINGLE per-camera state
@@ -86,6 +97,34 @@ class FrigateCameraObjectPresenceState( SimState ):
         return FRIGATE_OBJECT_LABEL_CHOICES
 
 
+@dataclass
+class FrigateCameraDetectState( SimState ):
+    """Per-camera object detection on/off — observable wire
+    counterpart to Frigate's ``POST /api/<camera>/detect/set``. The
+    simulator updates this value when HI sends the toggle, so the
+    operator can see the round-trip happen in the simulator UI.
+
+    Independent of the object-presence event lifecycle by design:
+    real Frigate would gate detection on this flag, but the
+    simulator keeps the two controls independent so each signal can
+    be exercised on its own."""
+
+    DETECT_SIM_STATE_ID : ClassVar[ str ] = 'detect_state'
+
+    sim_entity_fields  : FrigateCameraSimEntityFields
+    sim_state_type     : SimStateType                  = SimStateType.DISCRETE
+    sim_state_id       : str                           = DETECT_SIM_STATE_ID
+    value              : str                           = FRIGATE_DETECT_STATE_DEFAULT
+
+    @property
+    def name(self):
+        return 'Detect'
+
+    @property
+    def choices(self) -> List[ Tuple[ str, str ] ]:
+        return FRIGATE_DETECT_STATE_CHOICES
+
+
 @dataclass( frozen = True )
 class FrigateSimCamera:
     """Per-entity accessor wrapper for a simulated Frigate camera.
@@ -114,6 +153,18 @@ class FrigateSimCamera:
         raise ValueError(
             f'No object-presence sim state for Frigate camera {self.sim_entity}'
         )
+
+    @property
+    def detect_sim_state(self) -> Optional[ FrigateCameraDetectState ]:
+        # Optional accessor — older seeded profiles may not yet
+        # carry the detect sim-state (operator can reseed with
+        # ``--reset`` to pick it up). Returning None lets the API
+        # view skip the write rather than crash on a legacy row.
+        for sim_state in self.sim_entity.sim_state_list:
+            if isinstance( sim_state, FrigateCameraDetectState ):
+                return sim_state
+            continue
+        return None
 
 
 @dataclass
@@ -181,6 +232,7 @@ FRIGATE_SIM_ENTITY_DEFINITION_LIST: List[ SimEntityDefinition ] = [
         sim_entity_fields_class = FrigateCameraSimEntityFields,
         sim_state_class_list = [
             FrigateCameraObjectPresenceState,
+            FrigateCameraDetectState,
         ],
     ),
 ]

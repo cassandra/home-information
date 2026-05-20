@@ -15,6 +15,15 @@ class FrigateApi:
     CAMERA_SNAPSHOT_PATH_TEMPLATE = '/api/{camera_name}/latest.jpg'
     EVENT_SNAPSHOT_PATH_TEMPLATE = '/api/events/{event_id}/snapshot.jpg'
 
+    # Outbound (control) endpoint to toggle per-camera object
+    # detection. Frigate's wire values for the state query parameter
+    # are kept verbatim — these are the strings Frigate's API accepts,
+    # and they must not be confused with HI's own on/off vocabulary.
+    DETECT_SET_PATH_TEMPLATE = '/api/{camera_name}/detect/set'
+    DETECT_STATE_QUERY_PARAM = 'state'
+    DETECT_STATE_ON = 'ON'
+    DETECT_STATE_OFF = 'OFF'
+
     # --- Frigate object-class wire values (subset; extended as needed) ---
     OBJECT_CLASS_PERSON = 'person'
     OBJECT_CLASS_CAR = 'car'

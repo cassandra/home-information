@@ -6,6 +6,8 @@ from hi.integrations.transient_models import (
     IntegrationDetails,
 )
 
+from .frigate_converter import FrigateConverter
+from .frigate_manager import FrigateManager
 from .frigate_mixins import FrigateMixin
 
 logger = logging.getLogger(__name__)
@@ -14,12 +16,9 @@ logger = logging.getLogger(__name__)
 class FrigateController( IntegrationController, FrigateMixin ):
     """Routes HI control commands to Frigate API calls.
 
-    v1 control surface (added in feature work):
-    - Per-camera Detect On/Off controller → ``camera.enable_detection``
-      / ``camera.disable_detection`` (or the relevant Frigate API
-      endpoint).
-
-    Scaffolding stub: returns "not yet implemented" for every action.
+    v1 control surface:
+      Per-camera Detect On/Off — integration_name shape
+      ``<DETECT_CONTROLLER_PREFIX>.<camera_name>``.
     """
 
     def do_control(
@@ -28,11 +27,60 @@ class FrigateController( IntegrationController, FrigateMixin ):
             hi_control_value    : str,
     ) -> IntegrationControlResult:
         integration_key = integration_details.key
-        logger.warning(
-            f'Frigate control not yet implemented (scaffolding):'
-            f' key={integration_key} value={hi_control_value}'
-        )
+        integration_name = integration_key.integration_name or ''
+
+        detect_prefix = FrigateManager.DETECT_CONTROLLER_PREFIX + '.'
+        if integration_name.startswith( detect_prefix ):
+            camera_name = integration_name[ len( detect_prefix ): ]
+            return self._do_detect_control(
+                camera_name = camera_name,
+                hi_control_value = hi_control_value,
+            )
+
+        message = f'No Frigate control mapping for integration_name {integration_name!r}.'
+        logger.warning( message )
         return IntegrationControlResult(
             new_value = None,
-            error_list = [ 'Frigate control not yet implemented (scaffolding).' ],
+            error_list = [ message ],
+        )
+
+    def _do_detect_control(
+            self,
+            camera_name      : str,
+            hi_control_value : str,
+    ) -> IntegrationControlResult:
+        if not camera_name:
+            message = 'Frigate detect controller missing camera_name in integration key.'
+            logger.warning( message )
+            return IntegrationControlResult(
+                new_value = None,
+                error_list = [ message ],
+            )
+        detect_state = FrigateConverter.hi_control_to_detect_state(
+            hi_control_value = hi_control_value,
+        )
+        if detect_state is None:
+            message = (
+                f'Unsupported HI control value for Frigate detect: '
+                f'{hi_control_value!r}.'
+            )
+            logger.warning( message )
+            return IntegrationControlResult(
+                new_value = None,
+                error_list = [ message ],
+            )
+        try:
+            self.frigate_manager().set_camera_detect(
+                camera_name = camera_name,
+                state = detect_state,
+            )
+        except Exception as e:
+            logger.warning( f'Frigate detect control failed: {e}' )
+            return IntegrationControlResult(
+                new_value = None,
+                error_list = [ str( e ) ],
+            )
+        return IntegrationControlResult(
+            new_value = hi_control_value,
+            error_list = [],
         )

@@ -2,7 +2,7 @@ import json
 import logging
 from typing import Any, Dict, List, Optional
 
-from requests import get
+from requests import get, post
 
 from .constants import FrigateApi, FrigateTimeouts
 
@@ -129,12 +129,26 @@ class FrigateClient:
 
     # ---- Outbound (control) endpoints ----------------------------------
 
-    def set_camera_detect( self, camera_name : str, enabled : bool ) -> None:
-        """Toggle object detection for a camera. Implemented in
-        Phase H3 (optional)."""
-        raise NotImplementedError(
-            'FrigateClient.set_camera_detect not yet implemented'
+    def set_camera_detect( self, camera_name : str, state : str ) -> None:
+        """Toggle object detection for a camera. ``state`` must be one
+        of the Frigate-side wire values (``FrigateApi.DETECT_STATE_ON``
+        / ``DETECT_STATE_OFF``). Translation from HI's controller
+        vocabulary belongs upstream of this method — see
+        ``FrigateConverter.hi_control_to_detect_state``. Raises
+        ``ValueError`` for unknown states or on a non-2xx response."""
+        if state not in ( FrigateApi.DETECT_STATE_ON, FrigateApi.DETECT_STATE_OFF ):
+            raise ValueError(
+                f'Frigate detect state must be {FrigateApi.DETECT_STATE_ON!r}'
+                f' or {FrigateApi.DETECT_STATE_OFF!r}; got {state!r}.'
+            )
+        path = FrigateApi.DETECT_SET_PATH_TEMPLATE.format(
+            camera_name = camera_name,
         )
+        self._post(
+            path = path,
+            params = { FrigateApi.DETECT_STATE_QUERY_PARAM: state },
+        )
+        return
 
     # ---- Internal: shared request + validation -------------------------
 
@@ -185,3 +199,26 @@ class FrigateClient:
             raise ValueError(
                 f'Frigate {path} response was not valid JSON: {e}'
             ) from e
+
+    def _post(
+            self,
+            path    : str,
+            params  : Optional[ Dict[ str, Any ] ] = None,
+    ) -> None:
+        """POST against the configured base URL. Used by control
+        endpoints whose useful response is the status code, not the
+        body. Raises ``ValueError`` on non-2xx so the controller can
+        surface a meaningful failure."""
+        url = f'{self._base_url}{path}'
+        response = post(
+            url,
+            headers = self._headers,
+            timeout = self._timeout_secs,
+            params = params,
+        )
+        if response.status_code not in (200, 201, 204):
+            raise ValueError(
+                f'Frigate {path} POST failed:'
+                f' {response.status_code} {response.text}'
+            )
+        return

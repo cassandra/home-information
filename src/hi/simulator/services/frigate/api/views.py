@@ -9,13 +9,22 @@ import logging
 from datetime import datetime, timezone
 
 from django.http import Http404, HttpResponse, JsonResponse
+from django.utils.decorators import method_decorator
+from django.views.decorators.csrf import csrf_exempt
 from django.views.generic import View
 
 from hi.simulator.media import render_jpeg_frame
 from hi.simulator.services.frigate.event_manager import FrigateSimEventManager
+from hi.simulator.services.frigate.sim_models import FrigateCameraDetectState
 from hi.simulator.services.frigate.simulator import FrigateSimulator
 
 logger = logging.getLogger(__name__)
+
+
+# Real Frigate's detect/set accepts these two values (case-sensitive
+# uppercase). The simulator accepts either case as a defensive
+# safety net against version drift on the integration side.
+_FRIGATE_DETECT_STATES = { 'ON', 'OFF' }
 
 
 def _apply_no_cache_headers( response ) -> None:
@@ -42,10 +51,15 @@ class ConfigView( View ):
             simulator = FrigateSimulator()
             cameras = {}
             for sim_camera in simulator.get_sim_cameras():
+                detect_state = sim_camera.detect_sim_state
+                detect_enabled = (
+                    detect_state.value == 'ON' if detect_state else True
+                )
                 cameras[ sim_camera.camera_name ] = {
                     'name': sim_camera.camera_name,
                     'friendly_name': sim_camera.display_name,
                     'enabled': True,
+                    'detect': { 'enabled': detect_enabled },
                 }
             return JsonResponse( { 'cameras': cameras } )
         except Exception:
@@ -136,6 +150,58 @@ class CameraLatestJpegView( View ):
                 return sim_camera
             continue
         return None
+
+
+@method_decorator( csrf_exempt, name = 'dispatch' )
+class CameraDetectSetView( View ):
+    """``POST /api/<camera_name>/detect/set`` — toggle per-camera
+    object detection. Accepts a ``state`` query parameter; mirrors
+    real Frigate's wire shape. The simulator is permissive on the
+    state value's case (real Frigate is case-sensitive), since the
+    HI side is the source of truth for the outbound value and we'd
+    rather demonstrate the round-trip than enforce a wire
+    convention. Returns 400 for an unknown state and 404 for an
+    unknown camera so the HI client surfaces a clean error."""
+
+    def post(self, request, camera_name : str, *args, **kwargs):
+        state_value = request.GET.get( 'state' )
+        if state_value is None:
+            return JsonResponse(
+                { 'error': 'Missing "state" query parameter.' },
+                status = 400,
+            )
+        normalized_state = state_value.upper()
+        if normalized_state not in _FRIGATE_DETECT_STATES:
+            return JsonResponse(
+                { 'error': f'Invalid state {state_value!r}; expected ON or OFF.' },
+                status = 400,
+            )
+
+        simulator = FrigateSimulator()
+        sim_camera = None
+        for candidate in simulator.get_sim_cameras():
+            if candidate.camera_name == camera_name:
+                sim_camera = candidate
+                break
+            continue
+        if sim_camera is None:
+            raise Http404( f'Unknown Frigate camera: {camera_name!r}' )
+
+        detect_state = sim_camera.detect_sim_state
+        if detect_state is not None:
+            simulator.set_sim_state(
+                sim_entity_id = sim_camera.sim_entity.id,
+                sim_state_id = FrigateCameraDetectState.DETECT_SIM_STATE_ID,
+                value_str = normalized_state,
+            )
+
+        logger.info(
+            'Frigate simulator received detect/set for %s: %s',
+            camera_name, normalized_state,
+        )
+        return JsonResponse(
+            { 'success': True, 'camera': camera_name, 'state': normalized_state },
+        )
 
 
 class EventSnapshotJpegView( View ):

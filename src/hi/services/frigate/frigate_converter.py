@@ -1,6 +1,9 @@
 import logging
+from typing import Optional
 
 from hi.apps.entity.enums import EntityStateValue
+
+from .constants import FrigateApi
 
 logger = logging.getLogger(__name__)
 
@@ -9,14 +12,16 @@ class FrigateConverter:
     """Wire-format ↔ HI model translation for Frigate.
 
     Owns the boundary between Frigate's raw event payloads and HI's
-    typed model. Today's two responsibilities:
+    typed model. Responsibilities:
 
     - Map Frigate's raw object-class label (model-dependent — default
       YOLO has ~80 classes; custom models can have arbitrary classes)
       onto the canonical ``EntityStateType.OBJECT_PRESENCE`` value
       range.
-    - (Future: outbound control translation lands in H3 alongside
-      ``set_camera_detect``.)
+    - Map HI's outbound on/off controller value to Frigate's detect
+      state vocabulary. Explicit dict lookup; no string transforms
+      (HI's lowercase ``on`` and Frigate's uppercase ``ON`` are
+      independent vocabularies that coincidentally rhyme).
     """
 
     # Raw-label → canonical-bucket map. Entries are lowercase-canonical
@@ -74,3 +79,32 @@ class FrigateConverter:
         if canonical is None:
             return cls.OBJECT_OTHER_VALUE
         return str( canonical )
+
+    # HI controller value (lowercase, per LabeledEnum.__str__) →
+    # Frigate detect-state wire value. Independent vocabularies.
+    _HI_CONTROL_TO_DETECT_STATE = {
+        str( EntityStateValue.ON ): FrigateApi.DETECT_STATE_ON,
+        str( EntityStateValue.OFF ): FrigateApi.DETECT_STATE_OFF,
+    }
+
+    @classmethod
+    def hi_control_to_detect_state( cls, hi_control_value : str ) -> Optional[ str ]:
+        """Map an HI on/off controller value to the Frigate detect
+        state string. Returns ``None`` for unknown input so the
+        controller can surface a clean error to the operator rather
+        than firing a malformed POST at Frigate."""
+        return cls._HI_CONTROL_TO_DETECT_STATE.get( hi_control_value )
+
+    # Inbound mapping: Frigate ``/api/config`` carries ``cameras.<n>.
+    # detect.enabled`` as a bool. Translate to HI's wire value via
+    # explicit lookup so the polling path never produces an
+    # off-vocabulary string.
+    _DETECT_ENABLED_TO_HI_VALUE = {
+        True: str( EntityStateValue.ON ),
+        False: str( EntityStateValue.OFF ),
+    }
+
+    @classmethod
+    def detect_enabled_to_hi_value( cls, detect_enabled : bool ) -> str:
+        """Map a Frigate detect-enabled flag to the HI on/off value."""
+        return cls._DETECT_ENABLED_TO_HI_VALUE[ bool( detect_enabled ) ]
