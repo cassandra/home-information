@@ -8,8 +8,10 @@ a deliberately uncategorized label (``unicorn``) in the operator's
 choice list keeps the ``other`` bucket on the demo path.
 """
 from dataclasses import dataclass
-from typing import ClassVar, List, Tuple
+from datetime import datetime
+from typing import ClassVar, List, Optional, Tuple
 
+import hi.apps.common.datetimeproxy as datetimeproxy
 from hi.apps.common.utils import str_to_bool
 
 from hi.simulator.services.base_models import (
@@ -130,6 +132,64 @@ class FrigateSimCamera:
         raise ValueError(
             f'No object-presence sim state for Frigate camera {self.sim_entity}'
         )
+
+
+@dataclass
+class FrigateSimEvent:
+    """One synthesized Frigate event, tracked in memory by
+    ``FrigateSimEventHistory``.
+
+    ``label`` is the raw Frigate-side object class (e.g. ``person``,
+    ``dog``) — the same value space the camera's ObjectPresence
+    sim-state carries. ``start_datetime`` / ``end_datetime`` follow
+    Frigate's event lifecycle: ``end_datetime is None`` means the
+    event is still open. ``score`` is a generated placeholder for v1;
+    real Frigate emits a 0..1 best-score-so-far per event."""
+
+    event_id        : str
+    camera_name     : str
+    label           : str
+    start_datetime  : datetime
+    end_datetime    : Optional[ datetime ] = None
+    score           : float                = 0.85
+
+    @property
+    def is_active(self) -> bool:
+        return self.end_datetime is None
+
+    @property
+    def is_open(self) -> bool:
+        return self.end_datetime is None
+
+    @property
+    def is_closed(self) -> bool:
+        return self.end_datetime is not None
+
+    def close( self ) -> None:
+        if self.end_datetime is None:
+            self.end_datetime = datetimeproxy.now()
+        return
+
+    def to_api_dict(self) -> dict:
+        """Frigate-shape ``/api/events`` JSON for one event. Field set
+        is the subset HI's integration cares about plus a few real
+        Frigate fields kept so the response is recognizable. Times
+        are epoch seconds (Frigate's wire convention)."""
+        end_epoch = self.end_datetime.timestamp() if self.end_datetime else None
+        return {
+            'id': self.event_id,
+            'camera': self.camera_name,
+            'label': self.label,
+            'sub_label': None,
+            'start_time': self.start_datetime.timestamp(),
+            'end_time': end_epoch,
+            'top_score': self.score,
+            'false_positive': False,
+            'zones': [],
+            'thumbnail': None,
+            'has_clip': True,
+            'has_snapshot': True,
+        }
 
 
 FRIGATE_SIM_ENTITY_DEFINITION_LIST: List[ SimEntityDefinition ] = [
