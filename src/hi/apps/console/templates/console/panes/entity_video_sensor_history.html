@@ -135,11 +135,8 @@
                     </div>
                     {% endif %}
                     {% elif event_snapshot_url %}
-                    <!-- Fallback to image when video stream is not available -->
+                    <!-- Snapshot-only: event carries a captured frame but no playable clip -->
                     <img class="img-fluid" src="{{ event_snapshot_url }}" alt="Image from {{ sensor_history_data.current_sensor_response.timestamp|localtime|date:'F j, Y g:i A' }}" data-event-id="{{ sensor_history_data.current_sensor_response.sensor_history_id }}">
-                    <div class="text-center mt-2">
-                        <small class="text-muted">Image - video may be processing</small>
-                    </div>
                     {% else %}
                     {% include "console/panes/video_unavailable_placeholder.html" with heading="Video Stream Unavailable" subtitle="Video recording may not be available for this event" %}
                     {% endif %}
