@@ -23,6 +23,12 @@ own profile namespace), so the seed catalog is partitioned by module:
     * baseline-changed
     * volume              — 1 server + 10 monitors
 
+  Frigate (hi.simulator.services.frigate)
+    * empty
+    * baseline
+    * baseline-changed
+    * volume              — 10 cameras
+
   NWS (hi.simulator.weather_sources.nws)
     * sample              — curated 8-alert catalog spanning event
                             types; every alert starts inactive so
@@ -108,6 +114,10 @@ from hi.simulator.services.hass.sim_models import (
     HassWindowBlindCoverFields,
     HassWindowContactSensorFields,
 )
+from hi.simulator.services.frigate.apps import FrigateConfig
+from hi.simulator.services.frigate.sim_models import (
+    FrigateCameraSimEntityFields,
+)
 from hi.simulator.services.homebox.apps import HomeBoxConfig
 from hi.simulator.services.homebox.attachment_catalog import AttachmentTemplate
 from hi.simulator.services.homebox.sim_models import (
@@ -129,6 +139,7 @@ MODULE_SHORT_NAMES = {
     'hass': HassConfig.name,
     'homebox': HomeBoxConfig.name,
     'zoneminder': ZoneminderConfig.name,
+    'frigate': FrigateConfig.name,
     'nws': NwsWeatherSimConfig.name,
 }
 
@@ -195,6 +206,7 @@ class Command(BaseCommand):
         hass = HassConfig.name
         homebox = HomeBoxConfig.name
         zoneminder = ZoneminderConfig.name
+        frigate = FrigateConfig.name
         nws = NwsWeatherSimConfig.name
         return [
             ( hass       , 'empty'            , self._build_empty ),
@@ -211,6 +223,11 @@ class Command(BaseCommand):
             ( zoneminder , 'baseline'         , self._build_zm_baseline ),
             ( zoneminder , 'baseline-changed' , self._build_zm_baseline_changed ),
             ( zoneminder , 'volume'           , self._build_zm_volume ),
+
+            ( frigate    , 'empty'            , self._build_empty ),
+            ( frigate    , 'baseline'         , self._build_frigate_baseline ),
+            ( frigate    , 'baseline-changed' , self._build_frigate_baseline_changed ),
+            ( frigate    , 'volume'           , self._build_frigate_volume ),
 
             ( nws        , 'sample'           , self._build_nws_sample ),
         ]
@@ -489,6 +506,43 @@ class Command(BaseCommand):
                 profile,
                 f'Volume Camera {index + 1:02}',
                 monitor_id = 100 + index,
+            )
+        return profile.db_sim_entities.count()
+
+    # ----- Frigate builders -----
+
+    def _build_frigate_baseline(self, profile: SimProfile) -> int:
+        # 3 cameras + a ★-prefixed camera anchor for the detach/reconnect
+        # cycle.
+        self._add_frigate_camera( profile, 'Front Yard', camera_name = 'front_yard' )
+        self._add_frigate_camera( profile, 'Driveway'  , camera_name = 'driveway' )
+        self._add_frigate_camera( profile, 'Kitchen'   , camera_name = 'kitchen' )
+        self._add_frigate_camera(
+            profile, '★ Custom Attr Needed ★ Backyard Camera',
+            camera_name = 'backyard',
+        )
+        return profile.db_sim_entities.count()
+
+    def _build_frigate_baseline_changed(self, profile: SimProfile) -> int:
+        # Frigate deltas vs baseline:
+        #   Front Yard       — kept
+        #   Driveway         — REMOVED (no user attr → hard delete)
+        #   Kitchen          — kept
+        #   ★ Backyard       — ABSENT (camera_name absent) → Detached
+        #                       via user-attribute anchor
+        #   <new> Patio      — ADDED (new camera_name)
+        self._add_frigate_camera( profile, 'Front Yard', camera_name = 'front_yard' )
+        self._add_frigate_camera( profile, 'Kitchen'   , camera_name = 'kitchen' )
+        self._add_frigate_camera( profile, 'Patio'     , camera_name = 'patio' )
+        return profile.db_sim_entities.count()
+
+    def _build_frigate_volume(self, profile: SimProfile) -> int:
+        # 10 cameras.
+        for index in range(10):
+            self._add_frigate_camera(
+                profile,
+                f'Volume Camera {index + 1:02}',
+                camera_name = f'volume_camera_{index + 1:02}',
             )
         return profile.db_sim_entities.count()
 
@@ -978,6 +1032,14 @@ class Command(BaseCommand):
             fields_class = ZmMonitorSimEntityFields,
             sim_entity_type = SimEntityType.MOTION_SENSOR,
             fields_kwargs = {'name': name, 'monitor_id': monitor_id},
+        )
+
+    def _add_frigate_camera(self, profile, name, camera_name):
+        self._create_db_entity(
+            profile = profile,
+            fields_class = FrigateCameraSimEntityFields,
+            sim_entity_type = SimEntityType.CAMERA,
+            fields_kwargs = {'name': name, 'camera_name': camera_name},
         )
 
     def _add_nws_alert(self, profile, *,
