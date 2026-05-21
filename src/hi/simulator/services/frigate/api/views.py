@@ -10,13 +10,10 @@ import os
 from datetime import datetime, timezone
 
 from django.http import FileResponse, Http404, HttpResponse, JsonResponse
-from django.utils.decorators import method_decorator
-from django.views.decorators.csrf import csrf_exempt
 from django.views.generic import View
 
 from hi.simulator.media import render_jpeg_frame
 from hi.simulator.services.frigate.event_manager import FrigateSimEventManager
-from hi.simulator.services.frigate.sim_models import FrigateCameraDetectState
 from hi.simulator.services.frigate.simulator import FrigateSimulator
 
 
@@ -29,17 +26,6 @@ _EVENT_PLAYBACK_MP4_PATH = os.path.join(
 )
 
 logger = logging.getLogger(__name__)
-
-
-# Wire values for Frigate's detect-enabled config key on
-# ``PUT /api/config/set``. Real Frigate parses these as JSON bool
-# literals; the simulator accepts either case ("true"/"True"/"TRUE")
-# as a defensive safety net against version drift on the integration
-# side.
-_FRIGATE_DETECT_ENABLED_TRUE_VALUES = { 'true' }
-_FRIGATE_DETECT_ENABLED_FALSE_VALUES = { 'false' }
-_FRIGATE_DETECT_ENABLED_CONFIG_KEY_PREFIX = 'cameras.'
-_FRIGATE_DETECT_ENABLED_CONFIG_KEY_SUFFIX = '.detect.enabled'
 
 
 def _apply_no_cache_headers( response ) -> None:
@@ -66,15 +52,10 @@ class ConfigView( View ):
             simulator = FrigateSimulator()
             cameras = {}
             for sim_camera in simulator.get_sim_cameras():
-                detect_state = sim_camera.detect_sim_state
-                detect_enabled = (
-                    detect_state.value == 'ON' if detect_state else True
-                )
                 cameras[ sim_camera.camera_name ] = {
                     'name': sim_camera.camera_name,
                     'friendly_name': sim_camera.display_name,
                     'enabled': True,
-                    'detect': { 'enabled': detect_enabled },
                 }
             return JsonResponse( { 'cameras': cameras } )
         except Exception:
@@ -165,87 +146,6 @@ class CameraLatestJpegView( View ):
                 return sim_camera
             continue
         return None
-
-
-@method_decorator( csrf_exempt, name = 'dispatch' )
-class ConfigSetView( View ):
-    """``PUT /api/config/set`` — runtime config update.
-
-    Real Frigate accepts a dotted-path key in the query string (e.g.
-    ``cameras.<name>.detect.enabled=true``) and applies it to the
-    persisted config. The simulator recognizes the
-    detect-enabled key specifically and updates the camera's
-    ``FrigateCameraDetectState`` sim-state so the operator observes
-    the round-trip in the simulator UI. Other config keys are
-    accepted but no-op; real Frigate would persist them but the
-    simulator has no config to mutate. 400 on missing or invalid
-    detect-enabled value; 404 on unknown camera."""
-
-    def put(self, request, *args, **kwargs):
-        # Find the detect-enabled key in the query string. Frigate's
-        # config-set accepts multiple updates per call; we only
-        # honor the detect-enabled one here.
-        params = dict( request.GET.items() )
-        detect_key = None
-        detect_camera_name = None
-        for key in params:
-            if (
-                key.startswith( _FRIGATE_DETECT_ENABLED_CONFIG_KEY_PREFIX )
-                and key.endswith( _FRIGATE_DETECT_ENABLED_CONFIG_KEY_SUFFIX )
-            ):
-                detect_key = key
-                detect_camera_name = key[
-                    len( _FRIGATE_DETECT_ENABLED_CONFIG_KEY_PREFIX ):
-                    -len( _FRIGATE_DETECT_ENABLED_CONFIG_KEY_SUFFIX )
-                ]
-                break
-            continue
-        if detect_key is None:
-            return JsonResponse(
-                { 'success': True, 'message': 'No simulator-honored keys in update.' },
-            )
-
-        raw_value = params[ detect_key ]
-        normalized = raw_value.lower()
-        if normalized in _FRIGATE_DETECT_ENABLED_TRUE_VALUES:
-            new_state = 'ON'
-        elif normalized in _FRIGATE_DETECT_ENABLED_FALSE_VALUES:
-            new_state = 'OFF'
-        else:
-            return JsonResponse(
-                {
-                    'success': False,
-                    'message': f'Invalid detect.enabled value {raw_value!r}; '
-                               'expected true or false.',
-                },
-                status = 400,
-            )
-
-        simulator = FrigateSimulator()
-        sim_camera = None
-        for candidate in simulator.get_sim_cameras():
-            if candidate.camera_name == detect_camera_name:
-                sim_camera = candidate
-                break
-            continue
-        if sim_camera is None:
-            raise Http404( f'Unknown Frigate camera: {detect_camera_name!r}' )
-
-        detect_state = sim_camera.detect_sim_state
-        if detect_state is not None:
-            simulator.set_sim_state(
-                sim_entity_id = sim_camera.sim_entity.id,
-                sim_state_id = FrigateCameraDetectState.DETECT_SIM_STATE_ID,
-                value_str = new_state,
-            )
-
-        logger.info(
-            'Frigate simulator received config/set for %s detect.enabled=%s',
-            detect_camera_name, raw_value,
-        )
-        return JsonResponse(
-            { 'success': True, 'message': 'Config successfully updated.' },
-        )
 
 
 class EventClipMp4View( View ):

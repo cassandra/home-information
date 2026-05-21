@@ -207,13 +207,6 @@ class FrigateMonitor( PeriodicMonitor, FrigateMixin, SensorResponseMixin ):
                         integration_value = idle_response.value,
                         camera_name = camera_name,
                     )
-
-            detect_response = self._create_detect_sensor_response_from_camera(
-                camera = camera,
-                timestamp = current_poll_datetime,
-            )
-            if detect_response is not None:
-                sensor_response_map[ detect_response.integration_key ] = detect_response
             continue
 
         # Phase 4 — advance the polling cursor.
@@ -364,34 +357,6 @@ class FrigateMonitor( PeriodicMonitor, FrigateMixin, SensorResponseMixin ):
         return sensor_response_map
 
     # ---- SensorResponse factory helpers ------------------------------
-
-    def _create_detect_sensor_response_from_camera(
-            self,
-            camera     : Dict,
-            timestamp  : datetime,
-    ) -> 'SensorResponse':
-        """Read the detect-enabled field from a ``/api/config`` camera
-        entry and emit a SensorResponse keyed on the detect controller's
-        integration key. Returns ``None`` if the upstream camera entry
-        doesn't carry a detect block — older Frigate versions or
-        unconfigured cameras."""
-        config = camera.get( 'config' ) or {}
-        detect_block = config.get( 'detect' )
-        if not isinstance( detect_block, dict ):
-            return None
-        if 'enabled' not in detect_block:
-            return None
-        hi_value = FrigateConverter.detect_enabled_to_hi_value(
-            detect_enabled = detect_block[ 'enabled' ],
-        )
-        return SensorResponse(
-            integration_key = FrigateManager._to_integration_key(
-                prefix = FrigateManager.DETECT_CONTROLLER_PREFIX,
-                camera_name = camera[ 'name' ],
-            ),
-            value = hi_value,
-            timestamp = timestamp,
-        )
 
     def _create_object_presence_sensor_response(
             self,

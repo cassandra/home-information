@@ -16,19 +16,6 @@ class FrigateApi:
     EVENT_SNAPSHOT_PATH_TEMPLATE = '/api/events/{event_id}/snapshot.jpg'
     EVENT_CLIP_PATH_TEMPLATE = '/api/events/{event_id}/clip.mp4'
 
-    # Outbound (control) endpoint for runtime config updates. Frigate
-    # has no dedicated detect-toggle endpoint — toggling detection is
-    # a config update through this admin-only PUT, with the change
-    # encoded as a dotted-path key in the query string. Requires
-    # operator-supplied admin credentials in the Authorization header.
-    # The wire values for the boolean are the JSON literals
-    # ("true" / "false") Frigate's config parser accepts; kept verbatim
-    # and not to be confused with HI's on/off controller vocabulary.
-    CONFIG_SET_PATH = '/api/config/set'
-    DETECT_ENABLED_CONFIG_KEY_TEMPLATE = 'cameras.{camera_name}.detect.enabled'
-    DETECT_ENABLED_TRUE = 'true'
-    DETECT_ENABLED_FALSE = 'false'
-
     # --- Frigate object-class wire values (subset; extended as needed) ---
     OBJECT_CLASS_PERSON = 'person'
     OBJECT_CLASS_CAR = 'car'

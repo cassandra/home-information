@@ -34,10 +34,6 @@ urlpatterns = [
           views.EventDetailView.as_view(),
           name = 'frigate_api_event_detail' ),
 
-    path( 'config/set',
-          views.ConfigSetView.as_view(),
-          name = 'frigate_api_config_set' ),
-
     path( '<str:camera_name>/latest.jpg',
           views.CameraLatestJpegView.as_view(),
           name = 'frigate_api_camera_snapshot' ),

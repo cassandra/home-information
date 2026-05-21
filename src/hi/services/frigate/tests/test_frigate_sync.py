@@ -93,19 +93,12 @@ class TestFrigateSyncImpl( _FrigateSyncTestBase ):
         self.assertTrue( sensor.provides_event_video_clip )
         self.assertTrue( sensor.provides_event_video_snapshot )
 
-        # Per-camera Detect on/off controller is created alongside
-        # the OBJECT_PRESENCE sensor.
+        # v1 exposes no Controllers — Frigate's only HTTP-reachable
+        # operator-toggle (cameras.<name>.detect.enabled) is a config
+        # edit rather than transient state, so we don't surface it
+        # as a HI control. See FrigateController docstring.
         controllers = list( Controller.objects.filter( entity_state__entity = entity ))
-        self.assertEqual( len( controllers ), 1 )
-        detect_controller = controllers[0]
-        self.assertEqual(
-            detect_controller.entity_state.entity_state_type_str,
-            str( EntityStateType.ON_OFF ),
-        )
-        self.assertEqual(
-            detect_controller.integration_name,
-            'camera.detect.front_yard',
-        )
+        self.assertEqual( controllers, [] )
 
         self.assertIn( 'front_yard', result.created_list )
         self.assertEqual( result.error_list, [] )
@@ -131,11 +124,6 @@ class TestFrigateSyncImpl( _FrigateSyncTestBase ):
             entity_state__entity_state_type_str = str( EntityStateType.OBJECT_PRESENCE ),
         )
         self.assertEqual( object_presence_sensors.count(), 1 )
-        detect_controllers = Controller.objects.filter(
-            entity_state__entity__integration_id = FrigateMetaData.integration_id,
-            entity_state__entity_state_type_str = str( EntityStateType.ON_OFF ),
-        )
-        self.assertEqual( detect_controllers.count(), 1 )
 
     def test_sync_removes_entities_for_cameras_no_longer_present(self):
         self._set_upstream_cameras( [ 'front_yard', 'back_door' ] )
