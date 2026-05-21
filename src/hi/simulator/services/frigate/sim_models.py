@@ -52,10 +52,11 @@ FRIGATE_OBJECT_LABEL_CHOICES: List[ Tuple[ str, str ] ] = [
 FRIGATE_OBJECT_LABEL_NONE = 'none'
 
 
-# Detect on/off choices. Frigate's wire value is uppercase
-# ``ON`` / ``OFF`` — kept verbatim here since this sim-state IS
-# Frigate's wire representation. Don't conflate with HI's lowercase
-# on/off controller vocabulary.
+# Detect on/off choices for the simulator's per-camera sim-state.
+# The string values are internal to the simulator (independent of
+# Frigate's ``cameras.<name>.detect.enabled`` wire bool and of HI's
+# own ``on`` / ``off`` controller vocabulary); the simulator's API
+# views translate at the boundary.
 FRIGATE_DETECT_STATE_CHOICES: List[ Tuple[ str, str ] ] = [
     ( 'ON', 'On' ),
     ( 'OFF', 'Off' ),
