@@ -221,25 +221,46 @@
     }
     
     function _setEventClauseValueOperatorWidget( operatorFieldId, valueFieldId ) {
-        // EventClause operator change handler. For non-EQ operators
-        // (LT / LTE / GT / GTE) the value is a numeric threshold —
-        // swap the value field to a number input so users can enter
-        // one even when the entity_state has discrete choices. EQ
-        // leaves the existing widget alone; the entity_state-driven
-        // choice swap is the authoritative source for that case.
-        const op = $(`#${operatorFieldId}`).val().toLowerCase();
-        if (op === 'eq') {
+        // EventClause operator change handler. Four cases:
+        //   numeric ops → number input; IN → multi-select; EQ/NEQ →
+        //   leave widget alone (collapsing a prior IN multi-select if
+        //   needed). The numeric-ops list comes from the operator
+        //   field's ``data-numeric-ops`` attribute so the enum stays
+        //   the single source of truth.
+        const operatorElement = $(`#${operatorFieldId}`);
+        const op = operatorElement.val().toLowerCase();
+        const numericOps = JSON.parse(
+            operatorElement.attr( 'data-numeric-ops' ) || '[]'
+        );
+        const valueElement = $(`#${valueFieldId}`);
+        const isSelect = ( valueElement.prop( 'tagName' ).toLowerCase() === 'select' );
+
+        if ( numericOps.includes( op )) {
+            const currentValue = isSelect ? '' : valueElement.val();
+            const numericInput = $('<input>')
+                .attr( 'type', 'number' )
+                .attr( 'step', 'any' )
+                .attr( 'id', valueElement.attr('id') )
+                .attr( 'name', valueElement.attr('name') )
+                .val( currentValue );
+            valueElement.replaceWith( numericInput );
             return;
         }
-        const valueElement = $(`#${valueFieldId}`);
-        const currentValue = valueElement.val();
-        const numericInput = $('<input>')
-            .attr( 'type', 'number' )
-            .attr( 'step', 'any' )
-            .attr( 'id', valueElement.attr('id') )
-            .attr( 'name', valueElement.attr('name') )
-            .val( currentValue );
-        valueElement.replaceWith( numericInput );
+
+        if ( op === 'in' ) {
+            if ( isSelect ) {
+                valueElement.attr( 'multiple', 'multiple' );
+            }
+            return;
+        }
+
+        if ( isSelect && valueElement.attr( 'multiple' )) {
+            valueElement.removeAttr( 'multiple' );
+            const selected = valueElement.find( 'option:selected' );
+            if ( selected.length > 1 ) {
+                selected.slice( 1 ).prop( 'selected', false );
+            }
+        }
     }
 
     function _setEntityStateValueSelect( valueFieldId, instanceName, instanceId ) {

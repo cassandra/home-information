@@ -1,3 +1,4 @@
+import json
 import logging
 
 from django import forms
@@ -69,15 +70,33 @@ class EventClauseForm( forms.ModelForm, EntityStateSelectModelFormMixin ):
         )
         self.fields['entity_state'].widget.attrs.update({ 'class': 'custom-select' })
         self.fields['value'].widget.attrs.update({ 'class': 'custom-select' })
-        # When the operator changes, swap the value widget to a numeric
-        # input (for non-EQ) so threshold clauses are editable on the
-        # spot. EQ leaves whatever widget the entity_state-driven swap
-        # rendered (Select for discrete states, text input otherwise).
+        # When the saved operator is IN and the state has discrete
+        # choices, render value as SelectMultiple so the persisted
+        # selection round-trips on edit-page load.
+        operator_str = self[ 'value_operator_str' ].value() or ''
+        if ( operator_str == str( EventClauseOperator.IN )
+             and entity_state and entity_state.choices() ):
+            self.fields['value'].widget = forms.SelectMultiple(
+                choices = entity_state.choices(),
+            )
+            self.fields['value'].widget.attrs['class'] = 'custom-select'
+            if self.instance and self.instance.pk:
+                self.initial['value'] = sorted(
+                    self.instance.in_value_members(),
+                )
         value_field_id = f'id_{self.prefix}-value' if self.prefix else 'id_value'
         operator_field_id = f'id_{self.prefix}-value_operator_str' if self.prefix else 'id_value_operator_str'
         self.fields['value_operator_str'].widget.attrs['onchange'] = (
             f'Hi.setEventClauseValueOperatorWidget('
             f'"{operator_field_id}", "{value_field_id}");'
+        )
+        # Single source of truth for "which operators are numeric":
+        # the enum. JS reads this attribute to drive its on-change
+        # widget swap rather than hard-coding the list.
+        self.fields['value_operator_str'].widget.attrs['data-numeric-ops'] = (
+            json.dumps([
+                str( op ) for op in EventClauseOperator if op.is_numeric
+            ])
         )
         if 'class' not in self.fields['value'].widget.attrs:
             self.fields['value'].widget.attrs['class'] = 'form-control'
@@ -86,12 +105,19 @@ class EventClauseForm( forms.ModelForm, EntityStateSelectModelFormMixin ):
     def clean(self):
         cleaned = super().clean()
         op_str = cleaned.get( 'value_operator_str' )
+        op = EventClauseOperator.from_name_safe( op_str ) if op_str else None
+        # For IN, reassemble the POSTed value(s) into the model's
+        # comma-delimited storage shape. ``getlist`` is uniform across
+        # SelectMultiple (N entries) and TextInput (1 entry with
+        # embedded commas) — the latter round-trips unchanged.
+        if op == EventClauseOperator.IN:
+            submitted = self.data.getlist( self.add_prefix( 'value' ))
+            cleaned['value'] = models.EventClause.serialize_in_members( submitted )
         value = cleaned.get( 'value' )
-        # Numeric operators require a numeric value. The matcher silently
-        # no-ops on parse failure at runtime; reject at form time so the
-        # user gets immediate feedback instead of a clause that never
-        # fires.
-        if op_str and op_str != str(EventClauseOperator.EQ) and value:
+        # The matcher silently no-ops on parse failure for numeric ops;
+        # reject at form time so the user gets immediate feedback
+        # instead of a clause that never fires.
+        if op and op.is_numeric and value:
             try:
                 float( value )
             except ( ValueError, TypeError ):

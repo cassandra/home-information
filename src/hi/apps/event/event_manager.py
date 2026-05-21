@@ -148,14 +148,19 @@ class EventManager( Singleton, AlertMixin, ControllerMixin, SecurityMixin ):
     @staticmethod
     def _clause_matches( entity_state_value : str, event_clause : EventClause ) -> bool:
         """Compare a live EntityState reading against an EventClause
-        target per the clause's operator. EQ is plain string equality
-        (the historical behavior for discrete-value alarms). The
-        numeric operators parse both sides as ``float()`` and silently
-        no-op on parse failure so a transient non-numeric reading
-        never raises into the matcher."""
+        target per the clause's operator. EQ / NEQ are plain string
+        comparisons; IN parses the clause value as a comma-separated
+        list and tests membership. The numeric operators parse both
+        sides as ``float()`` and silently no-op on parse failure so
+        a transient non-numeric reading never raises into the
+        matcher."""
         op = event_clause.value_operator
         if op == EventClauseOperator.EQ:
             return entity_state_value == event_clause.value
+        if op == EventClauseOperator.NEQ:
+            return entity_state_value != event_clause.value
+        if op == EventClauseOperator.IN:
+            return entity_state_value in event_clause.in_value_members()
         try:
             lhs = float( entity_state_value )
             rhs = float( event_clause.value )

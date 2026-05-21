@@ -724,3 +724,46 @@ class TestClauseMatchesOperatorDispatch(BaseTestCase):
         self.assertFalse( EventManager._clause_matches( '', clause ) )
         return
 
+    def test_neq_matches_non_target_string( self ):
+        clause = self._clause( 'object_none', EventClauseOperator.NEQ )
+        self.assertTrue( EventManager._clause_matches( 'object_person', clause ) )
+        self.assertTrue( EventManager._clause_matches( 'object_car', clause ) )
+        self.assertFalse( EventManager._clause_matches( 'object_none', clause ) )
+        return
+
+    def test_neq_does_not_parse_value_as_float( self ):
+        # NEQ short-circuits before the float-parse path, so a
+        # non-numeric stored value (the common case for object/state
+        # comparisons) must match exactly without raising.
+        clause = self._clause( 'object_none', EventClauseOperator.NEQ )
+        self.assertTrue( EventManager._clause_matches( 'object_person', clause ) )
+        return
+
+    def test_in_matches_any_listed_value( self ):
+        clause = self._clause( 'a,b,c', EventClauseOperator.IN )
+        self.assertTrue( EventManager._clause_matches( 'a', clause ) )
+        self.assertTrue( EventManager._clause_matches( 'b', clause ) )
+        self.assertTrue( EventManager._clause_matches( 'c', clause ) )
+        self.assertFalse( EventManager._clause_matches( 'd', clause ) )
+        return
+
+    def test_in_tolerates_whitespace_around_delimiters( self ):
+        # The form may submit values with whitespace (`'a, b , c'`)
+        # depending on how the operator hand-typed the list; the
+        # matcher must trim consistently so the rule still fires.
+        clause = self._clause( 'a, b , c', EventClauseOperator.IN )
+        self.assertTrue( EventManager._clause_matches( 'a', clause ) )
+        self.assertTrue( EventManager._clause_matches( 'b', clause ) )
+        self.assertTrue( EventManager._clause_matches( 'c', clause ) )
+        return
+
+    def test_in_empty_list_matches_nothing_without_raising( self ):
+        for raw in ( '', ',,', '   ,   ,' ):
+            with self.subTest( raw = raw ):
+                clause = self._clause( raw, EventClauseOperator.IN )
+                self.assertFalse(
+                    EventManager._clause_matches( 'anything', clause ),
+                )
+            continue
+        return
+

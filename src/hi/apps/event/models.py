@@ -126,6 +126,8 @@ class EventClause( models.Model ):
         verbose_name = 'Trigger Clause'
         verbose_name_plural = 'Trigger Clauses'
 
+    IN_VALUE_DELIMITER = ','
+
     @property
     def value_operator(self) -> EventClauseOperator:
         return EventClauseOperator.from_name_safe( self.value_operator_str )
@@ -134,6 +136,26 @@ class EventClause( models.Model ):
     def value_operator( self, value_operator : EventClauseOperator ):
         self.value_operator_str = str(value_operator)
         return
+
+    def in_value_members(self) -> set:
+        """Members of the comma-delimited ``value`` used by the IN
+        operator. Returns an empty set when ``value`` is empty or
+        only contains delimiters / whitespace."""
+        return {
+            m.strip() for m in ( self.value or '' ).split(
+                self.IN_VALUE_DELIMITER,
+            )
+            if m.strip()
+        }
+
+    @classmethod
+    def serialize_in_members(cls, values) -> str:
+        """Inverse of :meth:`in_value_members` — joins an iterable of
+        member strings into the comma-delimited storage shape.
+        Whitespace-tolerant, deduplicated, sorted for determinism."""
+        return cls.IN_VALUE_DELIMITER.join( sorted({
+            v.strip() for v in ( values or [] ) if v and v.strip()
+        }))
 
 
 class AlarmAction( models.Model ):
