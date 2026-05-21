@@ -5,7 +5,6 @@ from typing import Dict, List, Optional
 from asgiref.sync import sync_to_async
 
 from hi.apps.common.utils import str_to_bool
-from hi.apps.system.enums import ApiHealthStatusType
 
 from hi.apps.common.singleton_manager import SingletonManager
 from hi.apps.system.aggregate_health_provider import AggregateHealthProvider
@@ -89,10 +88,10 @@ class FrigateManager( SingletonManager, AggregateHealthProvider, ApiHealthStatus
                 integration_id = FrigateMetaData.integration_id,
             )
         except Integration.DoesNotExist:
-            self.update_api_health_status( ApiHealthStatusType.DISABLED )
+            self.record_disabled( 'Frigate integration disabled' )
             return
         if not integration.is_enabled:
-            self.update_api_health_status( ApiHealthStatusType.DISABLED )
+            self.record_disabled( 'Frigate integration disabled' )
             return
         integration_attributes = list( integration.attributes.all() )
         self._attribute_map = self._build_attribute_map(
@@ -104,9 +103,9 @@ class FrigateManager( SingletonManager, AggregateHealthProvider, ApiHealthStatus
             )
         except Exception:
             logger.exception( 'Failed to build Frigate client.' )
-            self.update_api_health_status( ApiHealthStatusType.UNAVAILABLE )
+            self.record_error( 'Failed to build Frigate client' )
             return
-        self.update_api_health_status( ApiHealthStatusType.HEALTHY )
+        self.record_healthy( 'Reloaded' )
         return
 
     @staticmethod

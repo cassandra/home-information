@@ -18,7 +18,7 @@ from django.test import TestCase
 
 from hi.apps.entity.enums import EntityType
 from hi.apps.entity.models import Entity
-from hi.apps.system.enums import ApiHealthStatusType
+from hi.apps.system.enums import ApiHealthStatusType, HealthStatusType
 from hi.integrations.models import Integration
 
 from hi.apps.entity.enums import VideoStreamType
@@ -286,32 +286,36 @@ class TestFrigateGatewayVideoStream( TestCase ):
 
 
 class TestFrigateManagerHealthRecording( TestCase ):
-    """``FrigateManager._reload_implementation`` must record its own
-    API-health outcome on every reload. The manager registers itself
-    as an API health provider; without an explicit record_* call the
-    default UNKNOWN status leaks into the aggregate and the UI banner
-    shows WARNING even when the monitor is reporting Healthy.
-
-    Mirrors ``ZoneMinderManager._reload_implementation`` — same bug
-    pattern, same fix shape."""
+    """``FrigateManager._reload_implementation`` records the manager's
+    own health based on what reload actually does (DB read + client
+    construction). The api_health_status slot is reserved for actual
+    API-call outcomes set by ``api_call_context`` wrappers; reload
+    never touches it because reload doesn't call the API."""
 
     def setUp(self):
-        # Fresh manager per test — the singleton retains health state
-        # across tests otherwise.
+        # FrigateManager is a singleton — health state from prior tests
+        # leaks otherwise. Force a fresh provider setup on both slots.
         self.manager = FrigateManager()
+        self.manager._health_status = self.manager.initial_health_status
+        if hasattr( self.manager, '_api_health_status' ):
+            del self.manager._api_health_status
 
-    def test_no_integration_row_marks_disabled(self):
+    def test_no_integration_row_records_disabled(self):
         Integration.objects.filter(
             integration_id = FrigateMetaData.integration_id,
         ).delete()
         self.manager._reload_implementation()
         self.assertEqual(
+            self.manager.health_status._base_status,
+            HealthStatusType.DISABLED,
+        )
+        self.assertEqual(
             self.manager.api_health_status.status,
-            ApiHealthStatusType.DISABLED,
+            ApiHealthStatusType.UNKNOWN,
         )
         self.assertIsNone( self.manager._frigate_client )
 
-    def test_disabled_integration_marks_disabled(self):
+    def test_disabled_integration_records_disabled(self):
         integration, _ = Integration.objects.get_or_create(
             integration_id = FrigateMetaData.integration_id,
             defaults = { 'is_enabled': False },
@@ -320,11 +324,16 @@ class TestFrigateManagerHealthRecording( TestCase ):
         integration.save()
         self.manager._reload_implementation()
         self.assertEqual(
-            self.manager.api_health_status.status,
-            ApiHealthStatusType.DISABLED,
+            self.manager.health_status._base_status,
+            HealthStatusType.DISABLED,
         )
+        self.assertEqual(
+            self.manager.api_health_status.status,
+            ApiHealthStatusType.UNKNOWN,
+        )
+        self.assertIsNone( self.manager._frigate_client )
 
-    def test_successful_reload_marks_healthy(self):
+    def test_successful_reload_records_manager_healthy_and_leaves_api_unknown(self):
         integration, _ = Integration.objects.get_or_create(
             integration_id = FrigateMetaData.integration_id,
             defaults = { 'is_enabled': True },
@@ -337,12 +346,16 @@ class TestFrigateManagerHealthRecording( TestCase ):
         ):
             self.manager._reload_implementation()
         self.assertEqual(
+            self.manager.health_status._base_status,
+            HealthStatusType.HEALTHY,
+        )
+        self.assertEqual(
             self.manager.api_health_status.status,
-            ApiHealthStatusType.HEALTHY,
+            ApiHealthStatusType.UNKNOWN,
         )
         self.assertIsNotNone( self.manager._frigate_client )
 
-    def test_client_build_failure_marks_unavailable(self):
+    def test_client_build_failure_records_manager_error_and_leaves_api_unknown(self):
         integration, _ = Integration.objects.get_or_create(
             integration_id = FrigateMetaData.integration_id,
             defaults = { 'is_enabled': True },
@@ -354,12 +367,13 @@ class TestFrigateManagerHealthRecording( TestCase ):
             side_effect = ValueError( 'Base URL is required.' ),
         ):
             self.manager._reload_implementation()
-        # record_error pushes the API status to UNAVAILABLE so the
-        # aggregate maps the manager's own slot to ERROR rather than
-        # the leak-through WARNING that UNKNOWN would produce.
+        self.assertEqual(
+            self.manager.health_status._base_status,
+            HealthStatusType.ERROR,
+        )
         self.assertEqual(
             self.manager.api_health_status.status,
-            ApiHealthStatusType.UNAVAILABLE,
+            ApiHealthStatusType.UNKNOWN,
         )
         self.assertIsNone( self.manager._frigate_client )
 
