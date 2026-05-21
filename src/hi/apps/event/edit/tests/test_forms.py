@@ -117,10 +117,13 @@ class TestEventClauseFormDiscreteOperators(BaseTestCase):
             [ 'object_car', 'object_person' ],
         )
         # The widget must carry the entity_state's choices — a
-        # regression that strips them would render an empty
-        # multi-select and the initial-list assertion alone wouldn't
-        # notice.
-        self.assertTrue( form.fields['value'].widget.choices )
+        # regression that strips them or hands a stale list would
+        # render an empty (or wrong) multi-select and the initial-
+        # list assertion alone wouldn't notice.
+        self.assertEqual(
+            list( form.fields['value'].widget.choices ),
+            list( self.discrete_state.choices() ),
+        )
         return
 
     def test_in_clause_on_free_text_state_stays_text_input(self):
@@ -184,6 +187,27 @@ class TestEventClauseFormDiscreteOperators(BaseTestCase):
         form = EventClauseForm( data = data )
         self.assertTrue( form.is_valid(), msg = form.errors )
         self.assertEqual( form.cleaned_data['value'], 'object_person' )
+        return
+
+    def test_operator_widget_emits_data_numeric_ops_from_enum(self):
+        # The JS widget swap reads this attribute to decide when to
+        # promote the value field to a number input. Keeping the list
+        # enum-driven (instead of hard-coded JS) prevents drift when
+        # the enum gains or loses a numeric operator.
+        import json
+        form = EventClauseForm( data = {
+            'entity_state': str( self.discrete_state.id ),
+            'value_operator_str': 'eq',
+            'value': 'object_person',
+        })
+        attr = form.fields['value_operator_str'].widget.attrs.get(
+            'data-numeric-ops',
+        )
+        self.assertIsNotNone( attr )
+        self.assertEqual(
+            sorted( json.loads( attr )),
+            [ 'gt', 'gte', 'lt', 'lte' ],
+        )
         return
 
     def _make_in_clause( self, value : str ):

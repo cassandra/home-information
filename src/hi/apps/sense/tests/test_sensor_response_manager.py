@@ -621,3 +621,36 @@ class TestUpdateWithLatestSensorResponseLists(AsyncTaskFastTestCase):
 
         self.run_async( run() )
         self.assertEqual( captured['arg'], { self.key_a: [ response ] } )
+
+    def test_event_manager_dispatch_is_awaited_when_transitions_exist(self):
+        # Regression guard for the dispatch site: if the production
+        # code ever stops awaiting ``add_entity_state_transitions``,
+        # the transition-list assertions in the other tests still
+        # pass (because they capture the side_effect arg) — but the
+        # transitions are no longer delivered to downstream
+        # consumers. Assert the call was made.
+        cached = self._response( self.key_a, 'off', offset_secs = -10 )
+        submitted = self._response( self.key_a, 'on' )
+
+        mock_pipeline = Mock()
+        mock_pipeline.execute.return_value = [ str( cached ) ]
+        mock_redis = Mock()
+        mock_redis.pipeline.return_value = mock_pipeline
+
+        mock_event_manager = Mock()
+        mock_event_manager.add_entity_state_transitions = AsyncMock()
+
+        async def run():
+            with patch.object( self.manager, '_redis_client', mock_redis ), \
+                 patch.object( self.manager, '_add_latest_sensor_responses',
+                               new = AsyncMock() ), \
+                 patch.object( self.manager, 'event_manager_async',
+                               return_value = mock_event_manager ), \
+                 patch.object( self.manager, '_create_entity_state_transition',
+                               new = AsyncMock( return_value = ( 'off', 'on' ))):
+                await self.manager.update_with_latest_sensor_response_lists({
+                    self.key_a: [ submitted ],
+                })
+
+        self.run_async( run() )
+        mock_event_manager.add_entity_state_transitions.assert_awaited_once()

@@ -351,12 +351,17 @@ class _PipelineTestBase( AsyncTaskFastTestCase ):
         }
 
     def _find_response(self, responses, camera_name):
-        """Return the last (latest) response for the given camera.
-        Equivalent to the historical "winner" of the single-response
-        contract; multi-response tests should use ``_find_responses``
-        and assert on the full list."""
+        """Return the sole response for the given camera. Asserts the
+        list has exactly one entry — tests that legitimately expect a
+        multi-response cycle must use ``_find_responses`` and assert
+        on the full list explicitly."""
         response_list = self._find_responses( responses, camera_name )
-        return response_list[ -1 ]
+        if len( response_list ) != 1:
+            raise AssertionError(
+                f'Expected exactly one response for {camera_name!r}, '
+                f'got {len(response_list)}: {response_list}'
+            )
+        return response_list[ 0 ]
 
     def _find_responses(self, responses, camera_name):
         target = f'{FrigateManager.OBJECT_PRESENCE_SENSOR_PREFIX}.{camera_name}'
@@ -441,12 +446,17 @@ class TestFrigateScanNewEventsPhase( _PipelineTestBase ):
         )
 
     def test_malformed_event_payload_is_skipped(self):
+        # Use an open event for 'good' so the test exercises the
+        # malformed-skip path without also producing a START+END pair
+        # that would obscure the assertion.
         s = self.start + timedelta( seconds = 5 )
         self._set_events([
             { 'id': 'bad', 'camera': 'front_yard' },  # missing label/start
-            self._api_event( event_id = 'good', start = s,
-                             end = s + timedelta( seconds = 2 )),
+            self._api_event( event_id = 'good', start = s, end = None ),
         ])
+        self._set_event_by_id({
+            'good': self._api_event( event_id = 'good', start = s, end = None ),
+        })
         responses = self.run_async( self._run() )
         self.assertEqual(
             self._find_response( responses, 'front_yard' ).correlation_id,

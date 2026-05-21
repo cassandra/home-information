@@ -520,3 +520,103 @@ class TestEventHistoryAdvanced(BaseTestCase):
         timestamps = [h.event_datetime for h in all_history]
         self.assertTrue(all(t == same_timestamp for t in timestamps))
         return
+
+
+class TestEventClauseInValueMembers(BaseTestCase):
+    """``EventClause.in_value_members()`` is the parse side of the
+    IN-operator comma-delimited storage. The matcher and the form
+    both rely on it; pinning the contract at the lowest layer keeps
+    behavior consistent across both consumers."""
+
+    def _clause(self, value):
+        return EventClause( value = value )
+
+    def test_returns_empty_set_for_empty_string(self):
+        self.assertEqual( self._clause( '' ).in_value_members(), set() )
+        return
+
+    def test_returns_empty_set_for_none_value(self):
+        # value is normally a non-null CharField, but defensively the
+        # parser tolerates a None — exercised when an EventClause is
+        # constructed in memory without a value set yet.
+        clause = EventClause()
+        clause.value = None
+        self.assertEqual( clause.in_value_members(), set() )
+        return
+
+    def test_returns_set_of_members(self):
+        self.assertEqual(
+            self._clause( 'a,b,c' ).in_value_members(),
+            { 'a', 'b', 'c' },
+        )
+        return
+
+    def test_strips_whitespace_around_members(self):
+        self.assertEqual(
+            self._clause( ' a , b , c ' ).in_value_members(),
+            { 'a', 'b', 'c' },
+        )
+        return
+
+    def test_dedupes_repeated_members(self):
+        self.assertEqual(
+            self._clause( 'a,a,b' ).in_value_members(),
+            { 'a', 'b' },
+        )
+        return
+
+    def test_drops_empty_members(self):
+        for raw in ( ',,', '   ,   ,', 'a,,b' ):
+            with self.subTest( raw = raw ):
+                self.assertNotIn( '', self._clause( raw ).in_value_members() )
+            continue
+        return
+
+
+class TestEventClauseSerializeInMembers(BaseTestCase):
+    """``EventClause.serialize_in_members()`` is the inverse of
+    :meth:`in_value_members`. It produces a deterministic
+    (sorted, deduplicated, whitespace-stripped) storage shape from
+    an arbitrary iterable of member strings."""
+
+    def test_empty_iterable_returns_empty_string(self):
+        self.assertEqual( EventClause.serialize_in_members( [] ), '' )
+        return
+
+    def test_none_returns_empty_string(self):
+        self.assertEqual( EventClause.serialize_in_members( None ), '' )
+        return
+
+    def test_joins_members_sorted_for_determinism(self):
+        self.assertEqual(
+            EventClause.serialize_in_members([ 'c', 'a', 'b' ]),
+            'a,b,c',
+        )
+        return
+
+    def test_strips_whitespace_and_dedupes(self):
+        self.assertEqual(
+            EventClause.serialize_in_members([ ' a ', 'a', 'b ' ]),
+            'a,b',
+        )
+        return
+
+    def test_drops_empty_and_whitespace_only_members(self):
+        self.assertEqual(
+            EventClause.serialize_in_members([ '', '   ', 'a', None ]),
+            'a',
+        )
+        return
+
+    def test_round_trip_via_in_value_members_is_stable(self):
+        # parse → serialize is idempotent: feeding the serialized form
+        # back through the parser and re-serializing yields the same
+        # string. Documents the contract storage-shape callers depend
+        # on.
+        original = 'a,b,c'
+        clause = EventClause( value = original )
+        re_serialized = EventClause.serialize_in_members(
+            clause.in_value_members(),
+        )
+        self.assertEqual( re_serialized, original )
+        return
