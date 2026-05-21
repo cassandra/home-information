@@ -34,8 +34,8 @@ enter it.
   surveillance. Imports ZM monitors as cameras with motion sensors and
   function controllers; provides live stream playback in HI.
 - **[Frigate](integrations/frigate.md)** — open-source NVR with
-  object detection. Imports Frigate cameras with motion and
-  object-presence sensors.
+  object detection. Imports Frigate cameras with an object-presence
+  sensor that drives event playback in HI.
 - **[HomeBox](integrations/homebox.md)** — home inventory tracking.
   Imports HomeBox items as read-only HI items with custom fields and
   attached files (manuals, receipts, photos).

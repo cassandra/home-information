@@ -2,6 +2,7 @@ import json
 import logging
 from unittest.mock import Mock, patch
 
+from django.http import Http404
 from django.test import TestCase
 from requests.exceptions import ConnectionError
 
@@ -239,14 +240,13 @@ class TestFrigateClientGetEvent( TestCase ):
                 'http://frigate.local:5000/api/events/42',
             )
 
-    def test_get_event_raises_on_404(self):
+    def test_get_event_raises_http404_on_404(self):
         with patch( 'hi.services.frigate.frigate_client.get' ) as mock_get:
             mock_get.return_value = _mock_response(
                 status_code = 404, body = 'Not Found',
             )
-            with self.assertRaises( ValueError ) as ctx:
+            with self.assertRaises( Http404 ):
                 self.client.get_event( 'nope' )
-            self.assertIn( '404', str( ctx.exception ) )
 
     def test_get_event_raises_when_response_not_dict(self):
         with patch( 'hi.services.frigate.frigate_client.get' ) as mock_get:

@@ -2,8 +2,6 @@ from dataclasses import dataclass
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
 
-from hi.apps.entity.enums import EntityStateValue
-
 
 @dataclass
 class FrigateEvent:
@@ -84,28 +82,14 @@ class FrigateEvent:
 
 
 @dataclass
-class AggregatedCameraState:
-    """Per-camera aggregation result emitted by the polling pipeline.
+class OpenFrigateEvent:
+    """One entry in the monitor's open-event set.
 
-    Mirrors ``AggregatedMonitorState`` (ZM): one instance per camera
-    that produced events in the current poll window. ``current_state``
-    is ACTIVE iff any open event was seen; otherwise IDLE.
-    ``effective_timestamp`` reflects when the state took effect — the
-    start of the earliest open event for ACTIVE, the end of the
-    latest closed event for IDLE — so downstream history reflects
-    the correct moment.
-    """
+    ``first_observed_at`` is captured in HI's clock (not Frigate's
+    ``start_time``) so the force-close timeout sidesteps any clock
+    skew between the two systems. ``event`` snapshots the payload as
+    last seen — it's refreshed on each per-id poll until the event
+    closes (``end_time`` set) or is force-closed."""
 
-    camera_name          : str
-    current_state        : EntityStateValue
-    effective_timestamp  : datetime
-    canonical_event      : FrigateEvent
-    all_events           : List[ FrigateEvent ]
-
-    @property
-    def is_active(self) -> bool:
-        return self.current_state == EntityStateValue.ACTIVE
-
-    @property
-    def is_idle(self) -> bool:
-        return self.current_state == EntityStateValue.IDLE
+    event              : FrigateEvent
+    first_observed_at  : datetime

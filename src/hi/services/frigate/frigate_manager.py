@@ -194,6 +194,21 @@ class FrigateManager( SingletonManager, AggregateHealthProvider, ApiHealthStatus
             thread_sensitive = True,
         )( after = after, limit = limit )
 
+    def get_event( self, event_id : str ) -> Dict:
+        """Single event detail by id. Raises ``Http404`` when the
+        event no longer exists in Frigate (cleared from history)."""
+        client = self.frigate_client
+        if client is None:
+            raise RuntimeError( 'Frigate client not available.' )
+        with self.api_call_context( 'frigate_event_detail' ):
+            return client.get_event( event_id = event_id )
+
+    async def get_event_async( self, event_id : str ) -> Dict:
+        return await sync_to_async(
+            self.get_event,
+            thread_sensitive = True,
+        )( event_id = event_id )
+
     # ---- Media URL helpers ------------------------------------------
 
     def get_camera_snapshot_url( self, camera_name : str ) -> Optional[ str ]:

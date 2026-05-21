@@ -50,3 +50,9 @@ class FrigateTimeouts:
 
     HEALTH_CHECK_INTERVAL_SECS = 30
     MONITOR_HEARTBEAT_TIMEOUT_SECS = 20
+
+    # Upper bound on how long an event may stay open in HI's tracking
+    # set before we force-close it. Frigate normally closes events
+    # within minutes; an event still open after this threshold is
+    # treated as orphaned (Frigate restart, dropped detection, etc.).
+    MAX_OPEN_EVENT_AGE_SECS = 60 * 60

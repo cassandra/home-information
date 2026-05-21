@@ -2,6 +2,7 @@ import json
 import logging
 from typing import Any, Dict, List, Optional
 
+from django.http import Http404
 from requests import get
 
 from .constants import FrigateApi, FrigateTimeouts
@@ -114,10 +115,7 @@ class FrigateClient:
         return data
 
     def get_event( self, event_id : str ) -> Dict:
-        """``GET /api/events/<id>`` — single event detail. Non-2xx
-        responses (including 404) surface as ``ValueError`` with the
-        status code in the message; callers that need to distinguish
-        "event missing" from "Frigate broken" can match on it."""
+        """``GET /api/events/<id>`` — single event detail."""
         path = f'{FrigateApi.EVENTS_PATH}/{event_id}'
         data = self._get_json( path = path )
         if not isinstance( data, dict ):
@@ -157,6 +155,8 @@ class FrigateClient:
             timeout = self._timeout_secs,
             params = params,
         )
+        if response.status_code == 404:
+            raise Http404( f'Frigate {path}: {response.text}' )
         if response.status_code not in (200, 201):
             raise ValueError(
                 f'Frigate {path} request failed:'

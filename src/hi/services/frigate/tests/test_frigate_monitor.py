@@ -1,10 +1,12 @@
-"""Tests for the load-bearing FrigateMonitor pipeline.
+"""Tests for the FrigateMonitor polling pipeline.
 
-The ZM monitor's event-aggregation logic has known pitfalls (multiple
-events on the same monitor overwriting each other; cursor advance
-when there were no events; open events going stale across polls).
-Frigate's monitor uses the same shape — these tests guard the
-equivalent invariants here.
+Frigate's ``?after=T`` filters strictly on ``start_time > T``, so
+once the cursor advances past an event's start_time that event is
+invisible to cursor scans even after it closes. The pipeline mixes
+a monotonic cursor scan for new events with a per-id direct refresh
+for events currently in the open-tracking set. These tests cover
+each phase's invariants and the open→closed transition that the
+cursor-only approach drops.
 """
 import logging
 from datetime import datetime, timedelta, timezone
@@ -42,306 +44,50 @@ def _make_event(
     )
 
 
-class TestFrigateEventAggregation( TestCase ):
-    """``_aggregate_camera_states`` correctness across the cross-product
-    of open / closed event counts. Direct mirror of the ZM monitor's
-    aggregation tests — same logic, same pitfalls to guard against.
-    """
+class TestFrigateEventDetailAttrs( TestCase ):
+    """``_build_event_detail_attrs`` packs a FrigateEvent's metadata
+    into the dict that's persisted on SensorResponse.detail_attrs and
+    surfaced in the event-detail UI. The keys are wire-stable (see
+    FrigateDetailKeys docstring) so regressions need a guard here."""
 
     def setUp(self):
         self.monitor = FrigateMonitor()
         self.t0 = datetime( 2026, 5, 20, 12, 0, 0, tzinfo = timezone.utc )
 
-    def test_no_events_yields_empty_aggregation(self):
-        self.assertEqual(
-            self.monitor._aggregate_camera_states( [], [] ),
-            {},
-        )
-
-    def test_one_closed_event_yields_idle(self):
-        closed = _make_event(
-            event_id = '1',
-            start = self.t0,
-            end = self.t0 + timedelta( seconds = 30 ),
-        )
-        states = self.monitor._aggregate_camera_states( [], [ closed ] )
-        self.assertEqual( set( states.keys() ), { 'front_yard' } )
-        s = states[ 'front_yard' ]
-        self.assertTrue( s.is_idle )
-        self.assertIs( s.canonical_event, closed )
-        self.assertEqual( s.effective_timestamp, closed.end_datetime )
-
-    def test_multiple_closed_events_pick_latest_end_as_canonical(self):
-        earlier = _make_event(
-            event_id = '1',
-            start = self.t0,
-            end = self.t0 + timedelta( seconds = 10 ),
-        )
-        later = _make_event(
-            event_id = '2',
-            start = self.t0 + timedelta( seconds = 20 ),
-            end = self.t0 + timedelta( seconds = 60 ),
-        )
-        states = self.monitor._aggregate_camera_states( [], [ earlier, later ] )
-        s = states[ 'front_yard' ]
-        self.assertTrue( s.is_idle )
-        self.assertIs( s.canonical_event, later )
-        self.assertEqual( s.effective_timestamp, later.end_datetime )
-        self.assertCountEqual( s.all_events, [ earlier, later ] )
-
-    def test_one_open_event_yields_active(self):
-        opened = _make_event( event_id = '1', start = self.t0 )
-        states = self.monitor._aggregate_camera_states( [ opened ], [] )
-        s = states[ 'front_yard' ]
-        self.assertTrue( s.is_active )
-        self.assertIs( s.canonical_event, opened )
-        self.assertEqual( s.effective_timestamp, opened.start_datetime )
-
-    def test_open_event_wins_over_closed_event_on_same_camera(self):
-        """Even one open event keeps the camera ACTIVE — closed events
-        on the same camera don't downgrade it."""
-        opened = _make_event(
-            event_id = '2',
-            start = self.t0 + timedelta( seconds = 30 ),
-        )
-        closed = _make_event(
-            event_id = '1',
-            start = self.t0,
-            end = self.t0 + timedelta( seconds = 10 ),
-        )
-        states = self.monitor._aggregate_camera_states( [ opened ], [ closed ] )
-        s = states[ 'front_yard' ]
-        self.assertTrue( s.is_active )
-        self.assertIs( s.canonical_event, opened )
-
-    def test_multiple_open_events_pick_earliest_start_as_canonical(self):
-        later_open = _make_event(
-            event_id = '2',
-            start = self.t0 + timedelta( seconds = 30 ),
-        )
-        earlier_open = _make_event(
-            event_id = '1',
-            start = self.t0,
-        )
-        states = self.monitor._aggregate_camera_states(
-            [ later_open, earlier_open ], [],
-        )
-        s = states[ 'front_yard' ]
-        self.assertTrue( s.is_active )
-        self.assertIs( s.canonical_event, earlier_open )
-        self.assertEqual( s.effective_timestamp, earlier_open.start_datetime )
-
-    def test_multiple_cameras_aggregate_independently(self):
-        """Regression for the original ZM bug: same-camera events used
-        to overwrite each other; here we verify independent aggregation
-        across cameras AND multiple events on the same camera collapse
-        to one entry without losing the canonical-event picks."""
-        front_open = _make_event(
-            event_id = 'A1', camera_name = 'front_yard', start = self.t0,
-        )
-        front_open_later = _make_event(
-            event_id = 'A2', camera_name = 'front_yard',
-            start = self.t0 + timedelta( seconds = 5 ),
-        )
-        back_closed_earlier = _make_event(
-            event_id = 'B1', camera_name = 'back_door',
-            start = self.t0,
-            end = self.t0 + timedelta( seconds = 10 ),
-        )
-        back_closed_later = _make_event(
-            event_id = 'B2', camera_name = 'back_door',
-            start = self.t0 + timedelta( seconds = 20 ),
-            end = self.t0 + timedelta( seconds = 40 ),
-        )
-        states = self.monitor._aggregate_camera_states(
-            [ front_open, front_open_later ],
-            [ back_closed_earlier, back_closed_later ],
-        )
-        self.assertEqual( set( states.keys() ), { 'front_yard', 'back_door' } )
-
-        front = states[ 'front_yard' ]
-        self.assertTrue( front.is_active )
-        self.assertIs( front.canonical_event, front_open )
-        self.assertCountEqual(
-            front.all_events, [ front_open, front_open_later ],
-        )
-
-        back = states[ 'back_door' ]
-        self.assertTrue( back.is_idle )
-        self.assertIs( back.canonical_event, back_closed_later )
-        self.assertCountEqual(
-            back.all_events, [ back_closed_earlier, back_closed_later ],
-        )
-
-
-class TestFrigateSensorResponseGeneration( TestCase ):
-    """One OBJECT_PRESENCE response per aggregated camera state.
-
-    OBJECT_PRESENCE is the single per-camera state the Frigate
-    integration tracks — any non-OBJECT_NONE value implies motion is
-    currently happening *and* names the class. There is no separate
-    MOVEMENT sensor."""
-
-    def setUp(self):
-        self.monitor = FrigateMonitor()
-        self.t0 = datetime( 2026, 5, 20, 12, 0, 0, tzinfo = timezone.utc )
-
-    def _object_response( self, responses, camera_name = 'front_yard' ):
-        for r in responses.values():
-            if r.integration_key.integration_name == (
-                f'{FrigateManager.OBJECT_PRESENCE_SENSOR_PREFIX}.{camera_name}'
-            ):
-                return r
-            continue
-        raise AssertionError(
-            f'No OBJECT_PRESENCE response found for {camera_name!r}'
-        )
-
-    def test_active_state_emits_object_class_with_start_correlation(self):
-        opened = _make_event( event_id = '99', start = self.t0, label = 'person' )
-        states = self.monitor._aggregate_camera_states( [ opened ], [] )
-        responses = self.monitor._generate_sensor_responses_from_states( states )
-        self.assertEqual( len( responses ), 1 )
-
-        obj = self._object_response( responses )
-        self.assertEqual( obj.value, str( EntityStateValue.OBJECT_PERSON ) )
-        self.assertEqual( obj.correlation_role, CorrelationRole.START )
-        self.assertEqual( obj.correlation_id, '99' )
-        self.assertEqual( obj.timestamp, opened.start_datetime )
-        # has_clip / has_snapshot propagate from FrigateEvent to the
-        # SensorResponse; the gateway uses correlation_id (the
-        # event_id) to build URLs on demand.
-        self.assertTrue( obj.has_event_video_clip )
-        self.assertTrue( obj.has_event_video_snapshot )
-
-    def test_active_state_with_no_clip_does_not_advertise_clip(self):
-        opened = _make_event(
-            event_id = '99', start = self.t0, label = 'person', has_clip = False,
-        )
-        states = self.monitor._aggregate_camera_states( [ opened ], [] )
-        responses = self.monitor._generate_sensor_responses_from_states( states )
-        obj = self._object_response( responses )
-        self.assertFalse( obj.has_event_video_clip )
-
-    def test_idle_state_emits_object_none_with_end_correlation(self):
-        closed = _make_event(
-            event_id = '7',
-            start = self.t0,
-            end = self.t0 + timedelta( seconds = 15 ),
-            label = 'person',
-        )
-        states = self.monitor._aggregate_camera_states( [], [ closed ] )
-        responses = self.monitor._generate_sensor_responses_from_states( states )
-        self.assertEqual( len( responses ), 1 )
-
-        obj = self._object_response( responses )
-        self.assertEqual( obj.value, str( EntityStateValue.OBJECT_NONE ) )
-        self.assertEqual( obj.correlation_role, CorrelationRole.END )
-        self.assertEqual( obj.correlation_id, '7' )
-        self.assertEqual( obj.timestamp, closed.end_datetime )
-        # END responses carry the snapshot flag too — the Video Browse
-        # page filters to END rows, and a clip-disabled event should
-        # still fall back to its captured frame instead of the
-        # "video unavailable" placeholder.
-        self.assertTrue( obj.has_event_video_snapshot )
-
-    def test_active_state_detail_attrs_carry_event_metadata(self):
+    def test_open_event_packs_metadata_without_duration(self):
         opened = _make_event(
             event_id = '99', start = self.t0, label = 'person',
         )
         opened.score = 0.91
         opened.sub_label = 'jane_doe'
         opened.zones = [ 'driveway', 'walkway' ]
-        states = self.monitor._aggregate_camera_states( [ opened ], [] )
-        responses = self.monitor._generate_sensor_responses_from_states( states )
-        obj = self._object_response( responses )
 
+        attrs = self.monitor._build_event_detail_attrs(
+            event = opened, is_closed = False,
+        )
         from hi.services.frigate.constants import FrigateDetailKeys
-        self.assertEqual( obj.detail_attrs[ FrigateDetailKeys.EVENT_ID ], '99' )
+        self.assertEqual( attrs[ FrigateDetailKeys.EVENT_ID ], '99' )
+        self.assertEqual( attrs[ FrigateDetailKeys.OBJECT_CLASS ], 'person' )
+        self.assertEqual( attrs[ FrigateDetailKeys.SCORE ], '0.91' )
+        self.assertEqual( attrs[ FrigateDetailKeys.SUB_LABEL ], 'jane_doe' )
         self.assertEqual(
-            obj.detail_attrs[ FrigateDetailKeys.OBJECT_CLASS ], 'person',
+            attrs[ FrigateDetailKeys.ZONES ], 'driveway, walkway',
         )
-        self.assertEqual( obj.detail_attrs[ FrigateDetailKeys.SCORE ], '0.91' )
-        self.assertEqual(
-            obj.detail_attrs[ FrigateDetailKeys.SUB_LABEL ], 'jane_doe',
-        )
-        self.assertEqual(
-            obj.detail_attrs[ FrigateDetailKeys.ZONES ], 'driveway, walkway',
-        )
-        # Duration is omitted while event is open — value isn't known
-        # until the event closes.
-        self.assertNotIn(
-            FrigateDetailKeys.DURATION_SECS, obj.detail_attrs,
-        )
+        # Duration is omitted while the event is open — value isn't
+        # known until the event closes.
+        self.assertNotIn( FrigateDetailKeys.DURATION_SECS, attrs )
 
-    def test_idle_state_detail_attrs_include_duration(self):
+    def test_closed_event_includes_duration(self):
         closed = _make_event(
             event_id = '7',
             start = self.t0,
             end = self.t0 + timedelta( seconds = 15 ),
-            label = 'person',
         )
-        states = self.monitor._aggregate_camera_states( [], [ closed ] )
-        responses = self.monitor._generate_sensor_responses_from_states( states )
-        obj = self._object_response( responses )
-
+        attrs = self.monitor._build_event_detail_attrs(
+            event = closed, is_closed = True,
+        )
         from hi.services.frigate.constants import FrigateDetailKeys
-        self.assertEqual(
-            obj.detail_attrs[ FrigateDetailKeys.DURATION_SECS ], '15.0',
-        )
-
-    def test_no_snapshot_event_omits_snapshot_flag(self):
-        # Events Frigate flagged ``has_snapshot=False`` for produce
-        # responses with ``has_event_video_snapshot=False`` — honest
-        # data rather than offering a URL that would 404.
-        closed = _make_event(
-            event_id = '7',
-            start = self.t0,
-            end = self.t0 + timedelta( seconds = 15 ),
-            label = 'person',
-        )
-        closed.has_snapshot = False
-        states = self.monitor._aggregate_camera_states( [], [ closed ] )
-        responses = self.monitor._generate_sensor_responses_from_states( states )
-        obj = self._object_response( responses )
-        self.assertFalse( obj.has_event_video_snapshot )
-
-    def test_object_presence_uses_canonical_bucket_for_active_state(self):
-        """Raw Frigate label runs through the converter table; tests
-        for the table itself live in TestFrigateConverter below."""
-        opened = _make_event( event_id = '1', start = self.t0, label = 'dog' )
-        states = self.monitor._aggregate_camera_states( [ opened ], [] )
-        with patch.object(
-            self.monitor, 'frigate_manager',
-            return_value = Mock( get_event_snapshot_url = Mock( return_value = None )),
-        ):
-            responses = self.monitor._generate_sensor_responses_from_states( states )
-        obj = self._object_response( responses )
-        self.assertEqual( obj.value, str( EntityStateValue.OBJECT_ANIMAL ) )
-
-    def test_event_cache_updates_correctly(self):
-        """Closed events go to fully_processed (won't be re-emitted);
-        all events go to start_processed."""
-        opened = _make_event(
-            event_id = 'open-1', start = self.t0,
-        )
-        closed = _make_event(
-            event_id = 'closed-1',
-            camera_name = 'back_door',
-            start = self.t0,
-            end = self.t0 + timedelta( seconds = 5 ),
-        )
-        states = self.monitor._aggregate_camera_states( [ opened ], [ closed ] )
-        with patch.object(
-            self.monitor, 'frigate_manager',
-            return_value = Mock( get_event_snapshot_url = Mock( return_value = None )),
-        ):
-            self.monitor._generate_sensor_responses_from_states( states )
-
-        self.assertIn( 'closed-1', self.monitor._fully_processed_event_ids )
-        self.assertNotIn( 'open-1', self.monitor._fully_processed_event_ids )
-        self.assertIn( 'open-1', self.monitor._start_processed_event_ids )
-        self.assertIn( 'closed-1', self.monitor._start_processed_event_ids )
+        self.assertEqual( attrs[ FrigateDetailKeys.DURATION_SECS ], '15.0' )
 
 
 class TestFrigateNoEventIdleResponse( TestCase ):
@@ -454,167 +200,6 @@ class TestFrigateEventFromApiDict( TestCase ):
         self.assertIn( 'missing required field', str( ctx.exception ) )
 
 
-class TestFrigateProcessEventsCursor( TestCase ):
-    """The cursor-advance invariants — the bit that took the most
-    debugging on the ZM side.
-    """
-
-    def setUp(self):
-        self.monitor = FrigateMonitor()
-        self.monitor._was_initialized = True
-        self.start = datetime( 2026, 5, 20, 12, 0, 0, tzinfo = timezone.utc )
-        self.monitor._poll_from_datetime = self.start
-
-        self.mock_manager = Mock( spec = FrigateManager )
-
-        async def empty_events( after = None, limit = None ):
-            return []
-
-        async def empty_cameras():
-            return []
-
-        self.mock_manager.get_events_async = Mock( side_effect = empty_events )
-        self.mock_manager.get_cameras_async = Mock( side_effect = empty_cameras )
-        self.monitor._frigate_manager = self.mock_manager
-
-    async def _run_process_events(self):
-        return await self.monitor._process_events()
-
-    def _set_events(self, events_api_list):
-        async def fake_events( after = None, limit = None ):
-            return events_api_list
-
-        self.mock_manager.get_events_async = Mock( side_effect = fake_events )
-
-    def _set_cameras(self, names):
-        async def fake_cameras():
-            return [ { 'name': n, 'config': {} } for n in names ]
-
-        self.mock_manager.get_cameras_async = Mock( side_effect = fake_cameras )
-
-    def test_cursor_unchanged_when_no_events(self):
-        """With no events, advancing the cursor risks missing an event
-        that started right after the request — invariant from the ZM
-        monitor."""
-        import asyncio
-        asyncio.run( self._run_process_events() )
-        self.assertEqual( self.monitor._poll_from_datetime, self.start )
-
-    def test_cursor_advances_to_latest_end_when_all_closed(self):
-        import asyncio
-        end_1 = self.start + timedelta( seconds = 10 )
-        end_2 = self.start + timedelta( seconds = 30 )
-        self._set_events([
-            { 'id': '1', 'camera': 'front_yard', 'label': 'person',
-              'start_time': self.start.timestamp(),
-              'end_time': end_1.timestamp() },
-            { 'id': '2', 'camera': 'front_yard', 'label': 'person',
-              'start_time': (self.start + timedelta(seconds=15)).timestamp(),
-              'end_time': end_2.timestamp() },
-        ])
-        asyncio.run( self._run_process_events() )
-        self.assertEqual( self.monitor._poll_from_datetime, end_2 )
-
-    def test_cursor_holds_back_to_earliest_open_when_any_open(self):
-        import asyncio
-        open_start = self.start + timedelta( seconds = 5 )
-        closed_end = self.start + timedelta( seconds = 30 )
-        self._set_events([
-            { 'id': '1', 'camera': 'front_yard', 'label': 'person',
-              'start_time': self.start.timestamp(),
-              'end_time': closed_end.timestamp() },
-            { 'id': '2', 'camera': 'front_yard', 'label': 'person',
-              'start_time': open_start.timestamp(),
-              'end_time': None },  # open
-        ])
-        asyncio.run( self._run_process_events() )
-        self.assertEqual( self.monitor._poll_from_datetime, open_start )
-
-    def test_fully_processed_event_is_skipped_on_next_poll(self):
-        import asyncio
-        end_t = self.start + timedelta( seconds = 10 )
-        api_event = {
-            'id': 'reposted', 'camera': 'front_yard', 'label': 'person',
-            'start_time': self.start.timestamp(),
-            'end_time': end_t.timestamp(),
-        }
-
-        self._set_events([ api_event ])
-        responses = asyncio.run( self._run_process_events() )
-        # One OBJECT_PRESENCE response for the camera.
-        self.assertEqual( len( responses ), 1 )
-        self.assertIn( 'reposted', self.monitor._fully_processed_event_ids )
-
-        # Even though the API returns the same closed event again on
-        # the next poll, it's filtered out by the fully-processed cache
-        # → no event-driven response. The idle-for-unseen pass emits
-        # an OBJECT_NONE response for the camera if it's still in
-        # the camera list.
-        self._set_cameras([ 'front_yard' ])
-        responses = asyncio.run( self._run_process_events() )
-        self.assertEqual( len( responses ), 1 )
-        obj = next(
-            r for r in responses.values()
-            if r.integration_key.integration_name.startswith(
-                FrigateManager.OBJECT_PRESENCE_SENSOR_PREFIX + '.'
-            )
-        )
-        self.assertEqual( obj.value, str( EntityStateValue.OBJECT_NONE ) )
-        # No correlation on the unseen-cycle idle response.
-        self.assertIsNone( obj.correlation_role )
-
-    def test_idle_response_for_camera_with_no_events_this_cycle(self):
-        import asyncio
-        self._set_cameras([ 'driveway', 'back_door' ])
-        responses = asyncio.run( self._run_process_events() )
-        # Both cameras produced no events → both get OBJECT_NONE.
-        self.assertEqual( len( responses ), 2 )
-        for resp in responses.values():
-            name = resp.integration_key.integration_name
-            self.assertTrue(
-                name.startswith( FrigateManager.OBJECT_PRESENCE_SENSOR_PREFIX + '.' )
-            )
-            self.assertEqual( resp.value, str( EntityStateValue.OBJECT_NONE ) )
-            self.assertIsNone( resp.correlation_role )
-            continue
-
-
-    def test_open_event_overrides_idle_for_unseen(self):
-        """A camera with an open event gets a class-bearing
-        OBJECT_PRESENCE — the idle-for-unseen pass must NOT clobber
-        it with OBJECT_NONE."""
-        import asyncio
-        self._set_events([
-            { 'id': '7', 'camera': 'front_yard', 'label': 'person',
-              'start_time': self.start.timestamp(),
-              'end_time': None },
-        ])
-        self._set_cameras([ 'front_yard', 'back_door' ])
-        responses = asyncio.run( self._run_process_events() )
-
-        # 2 cameras × 1 OBJECT_PRESENCE response each = 2 responses.
-        self.assertEqual( len( responses ), 2 )
-
-        def _find( camera ):
-            target = f'{FrigateManager.OBJECT_PRESENCE_SENSOR_PREFIX}.{camera}'
-            for r in responses.values():
-                if r.integration_key.integration_name == target:
-                    return r
-                continue
-            raise AssertionError( f'No response for {target}' )
-
-        # front_yard had an open event → OBJECT_PERSON + START correlation.
-        front_obj = _find( 'front_yard' )
-        self.assertEqual( front_obj.value, str( EntityStateValue.OBJECT_PERSON ) )
-        self.assertEqual( front_obj.correlation_role, CorrelationRole.START )
-        self.assertEqual( front_obj.correlation_id, '7' )
-
-        # back_door had no events → OBJECT_NONE with no correlation.
-        back_obj = _find( 'back_door' )
-        self.assertEqual( back_obj.value, str( EntityStateValue.OBJECT_NONE ) )
-        self.assertIsNone( back_obj.correlation_role )
-
-
 class TestFrigateConverterObjectClassMapping( TestCase ):
     """Raw Frigate label → canonical OBJECT_PRESENCE bucket. The
     table is integration-specific (no other integration maps to this
@@ -673,5 +258,428 @@ class TestFrigateConverterObjectClassMapping( TestCase ):
             FrigateConverter.to_canonical_object_class( 'Dog' ),
             str( EntityStateValue.OBJECT_ANIMAL ),
         )
+
+
+class _PipelineTestBase( TestCase ):
+    """Shared scaffolding for the cursor + per-id refresh pipeline.
+
+    Frigate's ``?after=T`` filters strictly on ``start_time > T``, so
+    the cursor advances monotonically over each event's start_time and
+    open events are tracked by id and refreshed via direct fetch. These
+    tests verify each phase's invariants in isolation and across the
+    open→closed transition.
+    """
+
+    def setUp(self):
+        self.monitor = FrigateMonitor()
+        self.monitor._was_initialized = True
+        self.start = datetime( 2026, 5, 20, 12, 0, 0, tzinfo = timezone.utc )
+        self.monitor._poll_cursor_datetime = self.start
+        self.monitor._open_events = {}
+
+        # Pin ``datetimeproxy.now`` to ``self.start`` so phase-2 age
+        # math operates on test-relative time. Without this, real
+        # wall-clock vs ``self.start`` is ~years apart and seeded
+        # open events always look aged-out.
+        self._now_patcher = patch(
+            'hi.services.frigate.monitors.datetimeproxy.now',
+            return_value = self.start,
+        )
+        self._now_patcher.start()
+        self.addCleanup( self._now_patcher.stop )
+
+        self.mock_manager = Mock( spec = FrigateManager )
+
+        async def empty_events( after = None, limit = None ):
+            return []
+
+        async def empty_cameras():
+            return []
+
+        async def event_not_found( event_id ):
+            from django.http import Http404
+            raise Http404( event_id )
+
+        self.mock_manager.get_events_async = Mock( side_effect = empty_events )
+        self.mock_manager.get_cameras_async = Mock( side_effect = empty_cameras )
+        self.mock_manager.get_event_async = Mock( side_effect = event_not_found )
+        self.monitor._frigate_manager = self.mock_manager
+        return
+
+    def _set_events(self, events_api_list):
+        async def fake_events( after = None, limit = None ):
+            return events_api_list
+
+        self.mock_manager.get_events_async = Mock( side_effect = fake_events )
+
+    def _set_event_by_id(self, by_id):
+        async def fake_event( event_id ):
+            from django.http import Http404
+            if event_id not in by_id:
+                raise Http404( event_id )
+            return by_id[ event_id ]
+
+        self.mock_manager.get_event_async = Mock( side_effect = fake_event )
+
+    def _set_cameras(self, names):
+        async def fake_cameras():
+            return [ { 'name': n, 'config': {} } for n in names ]
+
+        self.mock_manager.get_cameras_async = Mock( side_effect = fake_cameras )
+
+    def _api_event(
+            self,
+            event_id    = '1',
+            camera_name = 'front_yard',
+            label       = 'person',
+            start       = None,
+            end         = None,
+            has_clip    = True,
+            has_snapshot = True,
+    ):
+        if start is None:
+            start = self.start + timedelta( seconds = 1 )
+        return {
+            'id': event_id,
+            'camera': camera_name,
+            'label': label,
+            'start_time': start.timestamp(),
+            'end_time': end.timestamp() if end is not None else None,
+            'has_clip': has_clip,
+            'has_snapshot': has_snapshot,
+        }
+
+    def _find_response(self, responses, camera_name):
+        target = f'{FrigateManager.OBJECT_PRESENCE_SENSOR_PREFIX}.{camera_name}'
+        for r in responses.values():
+            if r.integration_key.integration_name == target:
+                return r
+            continue
+        raise AssertionError( f'No OBJECT_PRESENCE response for {camera_name!r}' )
+
+    async def _run(self):
+        return await self.monitor._process_events()
+
+
+class TestFrigateScanNewEventsPhase( _PipelineTestBase ):
+    """Phase 1: ``?after=cursor`` scan.
+
+    Cursor advance is monotonic on ``start_time``. Each event seen
+    here is brand-new to us; START is always emitted, END too if the
+    event was already closed when first observed (lifetime shorter
+    than poll interval)."""
+
+    def test_cursor_unchanged_when_no_events(self):
+        import asyncio
+        asyncio.run( self._run() )
+        self.assertEqual( self.monitor._poll_cursor_datetime, self.start )
+
+    def test_cursor_advances_to_latest_start_time(self):
+        import asyncio
+        s1 = self.start + timedelta( seconds = 5 )
+        s2 = self.start + timedelta( seconds = 20 )
+        self._set_events([
+            self._api_event( event_id = '1', start = s1 ),
+            self._api_event( event_id = '2', start = s2,
+                             end = s2 + timedelta( seconds = 10 )),
+        ])
+        # Phase 2 will refresh id '1'; pretend Frigate still has it.
+        self._set_event_by_id({
+            '1': self._api_event( event_id = '1', start = s1 ),
+        })
+        asyncio.run( self._run() )
+        self.assertEqual( self.monitor._poll_cursor_datetime, s2 )
+
+    def test_open_event_enters_open_set_and_emits_start(self):
+        """The open→closed transition bug fix: after the open event
+        is seen once, the cursor advances PAST its start_time. Future
+        cursor scans won't return it — phase 2 must track it by id."""
+        import asyncio
+        open_start = self.start + timedelta( seconds = 5 )
+        self._set_events([
+            self._api_event( event_id = 'A', start = open_start, end = None ),
+        ])
+        self._set_event_by_id({
+            'A': self._api_event( event_id = 'A', start = open_start, end = None ),
+        })
+        responses = asyncio.run( self._run() )
+
+        self.assertIn( 'A', self.monitor._open_events )
+        self.assertEqual( self.monitor._poll_cursor_datetime, open_start )
+
+        obj = self._find_response( responses, 'front_yard' )
+        self.assertEqual( obj.value, str( EntityStateValue.OBJECT_PERSON ) )
+        self.assertEqual( obj.correlation_role, CorrelationRole.START )
+        self.assertEqual( obj.correlation_id, 'A' )
+
+    def test_open_and_closed_within_one_cycle_emits_both_rows(self):
+        """Lifetime shorter than poll interval: a single scan returns
+        the event already-closed. Emit START and END in this cycle,
+        don't enter the open set."""
+        import asyncio
+        s = self.start + timedelta( seconds = 5 )
+        e = s + timedelta( seconds = 1 )
+        self._set_events([
+            self._api_event( event_id = 'X', start = s, end = e ),
+        ])
+        responses = asyncio.run( self._run() )
+
+        self.assertNotIn( 'X', self.monitor._open_events )
+        # The map is keyed by integration_key so START and END for the
+        # same camera collapse to one entry — the latest assignment
+        # wins. END should be the survivor since it's assigned after.
+        obj = self._find_response( responses, 'front_yard' )
+        self.assertEqual( obj.correlation_role, CorrelationRole.END )
+        self.assertEqual( obj.correlation_id, 'X' )
+
+    def test_malformed_event_payload_is_skipped(self):
+        import asyncio
+        s = self.start + timedelta( seconds = 5 )
+        self._set_events([
+            { 'id': 'bad', 'camera': 'front_yard' },  # missing label/start
+            self._api_event( event_id = 'good', start = s,
+                             end = s + timedelta( seconds = 2 )),
+        ])
+        responses = asyncio.run( self._run() )
+        self.assertEqual(
+            self._find_response( responses, 'front_yard' ).correlation_id,
+            'good',
+        )
+
+
+class TestFrigateRefreshOpenEventsPhase( _PipelineTestBase ):
+    """Phase 2: per-id refresh for events currently in the open set.
+
+    Each refresh is one ``GET /api/events/<id>``. Closed → emit END,
+    remove. 404 → force-close. Aged out → force-close. Still open →
+    keep, refresh snapshot."""
+
+    def _seed_open(
+            self, event_id = 'A', camera = 'front_yard',
+            first_observed_at = None,
+    ):
+        from hi.services.frigate.frigate_models import OpenFrigateEvent
+        if first_observed_at is None:
+            first_observed_at = self.start
+        start = self.start + timedelta( seconds = 1 )
+        event = FrigateEvent(
+            event_id = event_id,
+            camera_name = camera,
+            object_class = 'person',
+            start_datetime = start,
+        )
+        self.monitor._open_events[ event_id ] = OpenFrigateEvent(
+            event = event,
+            first_observed_at = first_observed_at,
+        )
+        # Advance cursor past the open event to mirror what phase 1
+        # would have done.
+        self.monitor._poll_cursor_datetime = start
+        return event
+
+    def test_closed_event_emits_end_and_clears_from_open_set(self):
+        """The headline bug fix: a previously-open event, now closed
+        in Frigate, must emit an END row with correlation_id matching
+        the original event."""
+        import asyncio
+        self._seed_open( event_id = 'A' )
+        end_dt = self.start + timedelta( seconds = 30 )
+        self._set_event_by_id({
+            'A': self._api_event(
+                event_id = 'A',
+                start = self.start + timedelta( seconds = 1 ),
+                end = end_dt,
+            ),
+        })
+        responses = asyncio.run( self._run() )
+
+        self.assertNotIn( 'A', self.monitor._open_events )
+        obj = self._find_response( responses, 'front_yard' )
+        self.assertEqual( obj.correlation_role, CorrelationRole.END )
+        self.assertEqual( obj.correlation_id, 'A' )
+        self.assertEqual( obj.value, str( EntityStateValue.OBJECT_NONE ) )
+        self.assertEqual( obj.timestamp, end_dt )
+
+    def test_still_open_event_stays_tracked(self):
+        import asyncio
+        self._seed_open( event_id = 'A' )
+        self._set_event_by_id({
+            'A': self._api_event(
+                event_id = 'A',
+                start = self.start + timedelta( seconds = 1 ),
+                end = None,
+            ),
+        })
+        asyncio.run( self._run() )
+        self.assertIn( 'A', self.monitor._open_events )
+
+    def test_404_force_closes_and_removes(self):
+        """Frigate dropped the event (cleared from history) → end the
+        correlation pair with a synthesized END so the UI doesn't show
+        a dangling start."""
+        import asyncio
+        self._seed_open( event_id = 'gone' )
+        self._set_event_by_id({})  # any id → 404
+        responses = asyncio.run( self._run() )
+
+        self.assertNotIn( 'gone', self.monitor._open_events )
+        obj = self._find_response( responses, 'front_yard' )
+        self.assertEqual( obj.correlation_role, CorrelationRole.END )
+        self.assertEqual( obj.correlation_id, 'gone' )
+
+    def test_force_close_timeout_fires_on_aged_open_event(self):
+        import asyncio
+        very_old = self.start - timedelta(
+            seconds = self.monitor.MAX_OPEN_EVENT_AGE_SECS + 60,
+        )
+        self._seed_open( event_id = 'old', first_observed_at = very_old )
+        self._set_event_by_id({
+            'old': self._api_event(
+                event_id = 'old',
+                start = self.start + timedelta( seconds = 1 ),
+                end = None,
+            ),
+        })
+        responses = asyncio.run( self._run() )
+
+        self.assertNotIn( 'old', self.monitor._open_events )
+        obj = self._find_response( responses, 'front_yard' )
+        self.assertEqual( obj.correlation_role, CorrelationRole.END )
+        self.assertEqual( obj.correlation_id, 'old' )
+
+    def test_transient_failure_keeps_event_and_does_not_force_close(self):
+        """Non-404 failures (network blip, 500) shouldn't force-close
+        unless the age timeout has also been crossed. Next cycle
+        retries the refresh."""
+        import asyncio
+        self._seed_open( event_id = 'A', first_observed_at = self.start )
+
+        async def boom( event_id ):
+            raise ValueError( 'simulated transport failure' )
+        self.mock_manager.get_event_async = Mock( side_effect = boom )
+
+        responses = asyncio.run( self._run() )
+        self.assertIn( 'A', self.monitor._open_events )
+        # No END emitted for the still-tracked event.
+        with self.assertRaises( AssertionError ):
+            obj = self._find_response( responses, 'front_yard' )
+            self.assertEqual( obj.correlation_role, CorrelationRole.END )
+
+
+class TestFrigateHeartbeatPhase( _PipelineTestBase ):
+    """Phase 3: OBJECT_NONE heartbeat for cameras with no activity
+    this cycle and no event in the open set. Without this, a camera
+    that's been quiet since startup would never produce a response."""
+
+    def test_idle_camera_gets_object_none_heartbeat(self):
+        import asyncio
+        self._set_cameras([ 'driveway' ])
+        responses = asyncio.run( self._run() )
+        obj = self._find_response( responses, 'driveway' )
+        self.assertEqual( obj.value, str( EntityStateValue.OBJECT_NONE ) )
+        self.assertIsNone( obj.correlation_role )
+
+    def test_camera_with_open_event_skips_heartbeat(self):
+        """A camera that's actively tracking an open event must not
+        get an OBJECT_NONE clobber — phase 2's END (or future close)
+        is what drives its state."""
+        import asyncio
+        from hi.services.frigate.frigate_models import OpenFrigateEvent
+        event = FrigateEvent(
+            event_id = 'A',
+            camera_name = 'front_yard',
+            object_class = 'person',
+            start_datetime = self.start + timedelta( seconds = 1 ),
+        )
+        self.monitor._open_events[ 'A' ] = OpenFrigateEvent(
+            event = event,
+            first_observed_at = self.start,
+        )
+        # Refresh keeps it open.
+        self._set_event_by_id({
+            'A': self._api_event(
+                event_id = 'A',
+                start = self.start + timedelta( seconds = 1 ),
+                end = None,
+            ),
+        })
+        self._set_cameras([ 'front_yard', 'back_door' ])
+        responses = asyncio.run( self._run() )
+
+        # back_door gets a heartbeat; front_yard does not get clobbered.
+        back = self._find_response( responses, 'back_door' )
+        self.assertEqual( back.value, str( EntityStateValue.OBJECT_NONE ) )
+        self.assertIsNone( back.correlation_role )
+        # front_yard's response should NOT be OBJECT_NONE — Phase 2
+        # left it alone (event still open, no END this cycle).
+        target = (
+            f'{FrigateManager.OBJECT_PRESENCE_SENSOR_PREFIX}.front_yard'
+        )
+        for r in responses.values():
+            if r.integration_key.integration_name == target:
+                self.fail(
+                    'front_yard should not receive a phase-3 heartbeat'
+                    ' while it has an open event in the tracking set.'
+                )
+
+    def test_camera_active_this_cycle_skips_heartbeat(self):
+        """A camera whose START was emitted this cycle (phase 1) must
+        not also get a phase-3 OBJECT_NONE."""
+        import asyncio
+        s = self.start + timedelta( seconds = 5 )
+        self._set_events([
+            self._api_event( event_id = 'A', start = s, end = None ),
+        ])
+        self._set_event_by_id({
+            'A': self._api_event( event_id = 'A', start = s, end = None ),
+        })
+        self._set_cameras([ 'front_yard' ])
+        responses = asyncio.run( self._run() )
+
+        obj = self._find_response( responses, 'front_yard' )
+        # Phase 1's START survives — not overwritten by an OBJECT_NONE.
+        self.assertEqual( obj.correlation_role, CorrelationRole.START )
+
+
+class TestFrigateOpenCloseTransitionAcrossCycles( _PipelineTestBase ):
+    """End-to-end: the bug we're fixing. A typical motion event sees
+    its open form on cycle N and its closed form on cycle N+1. The
+    old pipeline lost the closure to Frigate's strict ``>`` filter on
+    ``start_time``. The new pipeline tracks the event by id."""
+
+    def test_open_then_close_emits_paired_start_and_end_rows(self):
+        import asyncio
+        start_dt = self.start + timedelta( seconds = 5 )
+        end_dt = self.start + timedelta( seconds = 30 )
+
+        # Cycle 1: cursor scan returns the open event.
+        self._set_events([
+            self._api_event( event_id = 'evt', start = start_dt, end = None ),
+        ])
+        self._set_event_by_id({
+            'evt': self._api_event( event_id = 'evt', start = start_dt, end = None ),
+        })
+        cycle1 = asyncio.run( self._run() )
+        start_obj = self._find_response( cycle1, 'front_yard' )
+        self.assertEqual( start_obj.correlation_role, CorrelationRole.START )
+        self.assertEqual( start_obj.correlation_id, 'evt' )
+
+        # Cycle 2: cursor scan returns nothing (cursor has advanced
+        # past the event's start_time). Phase 2's direct fetch
+        # returns the now-closed form → END emitted.
+        self._set_events([])
+        self._set_event_by_id({
+            'evt': self._api_event(
+                event_id = 'evt', start = start_dt, end = end_dt,
+            ),
+        })
+        cycle2 = asyncio.run( self._run() )
+        end_obj = self._find_response( cycle2, 'front_yard' )
+        self.assertEqual( end_obj.correlation_role, CorrelationRole.END )
+        self.assertEqual( end_obj.correlation_id, 'evt' )
+        self.assertEqual( end_obj.timestamp, end_dt )
+
+        # Open set is empty again — ready to receive the next event.
+        self.assertEqual( self.monitor._open_events, {} )
 
 

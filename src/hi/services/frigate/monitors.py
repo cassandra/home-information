@@ -1,14 +1,12 @@
-from cachetools import TTLCache
-from collections import defaultdict
-from datetime import datetime
+from datetime import datetime, timedelta
 import logging
-from typing import Dict, List
+from typing import Dict, List, Optional
 
 from django.conf import settings
+from django.http import Http404
 
 import hi.apps.common.datetimeproxy as datetimeproxy
 from hi.apps.alert.enums import AlarmLevel
-from hi.apps.entity.enums import EntityStateValue
 from hi.apps.monitor.periodic_monitor import PeriodicMonitor
 from hi.apps.sense.enums import CorrelationRole
 from hi.apps.sense.sensor_response_manager import SensorResponseMixin
@@ -20,7 +18,7 @@ from .constants import FrigateDetailKeys, FrigateTimeouts
 from .frigate_converter import FrigateConverter
 from .frigate_manager import FrigateManager
 from .frigate_mixins import FrigateMixin
-from .frigate_models import AggregatedCameraState, FrigateEvent
+from .frigate_models import FrigateEvent, OpenFrigateEvent
 
 logger = logging.getLogger(__name__)
 
@@ -28,27 +26,26 @@ logger = logging.getLogger(__name__)
 class FrigateMonitor( PeriodicMonitor, FrigateMixin, SensorResponseMixin ):
     """Periodic poll for Frigate cameras and events.
 
-    Mirrors ``ZoneMinderMonitor`` carefully — the time-window event
-    handling has known pitfalls that took several debugging rounds to
-    get right on the ZM side. Preserve the order of operations:
+    Frigate's ``/api/events?after=T`` filters strictly on
+    ``start_time > T``: once the cursor advances past an event's
+    start_time, that event is invisible to cursor scans forever, even
+    after it closes. So the pipeline doesn't pin the cursor to keep
+    open events visible (the ZM-style approach is incompatible with
+    Frigate's filter). Instead:
 
-      1. Fetch events with ``after=<polling-cursor>``.
-      2. Two-phase collate: filter out fully-processed events, then
-         partition the rest into open vs closed.
-      3. Per-camera aggregation: pick ONE canonical event per camera
-         (earliest open → ACTIVE; latest closed → IDLE).
-      4. Emit SensorResponses from the aggregated states.
-      5. Emit explicit IDLE for cameras that produced no events this
-         cycle so their state doesn't go stale.
-      6. Advance the polling cursor: hold it at the earliest open
-         event's start when any open events remain; otherwise advance
-         to the latest closed event's end. If there are NO events,
-         do NOT advance (would risk missing an event that started
-         right after the poll).
+      Phase 1 — cursor scan (``?after=cursor``): emit START for each
+        new event; emit END too if it was already closed when seen;
+        track open ones in ``_open_events`` by id. Cursor advances
+        monotonically to the latest start_time of any event observed.
 
-    Open events stay visible across polls until they close, so the
-    ``_fully_processed_event_ids`` TTLCache only blocks closed events
-    from being re-emitted.
+      Phase 2 — per-id refresh (``GET /api/events/<id>``): for each
+        tracked id, fetch its canonical state. Closed → emit END,
+        drop from tracking. 404 → force-close, drop. Aged past
+        ``MAX_OPEN_EVENT_AGE_SECS`` → force-close, drop.
+
+      Phase 3 — heartbeat: emit OBJECT_NONE for cameras with no
+        activity this cycle and no event currently tracked, so quiet
+        cameras don't go stale.
     """
 
     MONITOR_ID = 'hi.services.frigate.monitor'
@@ -56,26 +53,18 @@ class FrigateMonitor( PeriodicMonitor, FrigateMixin, SensorResponseMixin ):
     POLLING_INTERVAL_SECS = FrigateTimeouts.POLLING_INTERVAL_SECS
     API_TIMEOUT_SECS = FrigateTimeouts.API_TIMEOUT_SECS
 
-    # Cache sizing mirrors the ZM monitor — events are small dicts
-    # keyed by id; 1000 entries comfortably covers a busy install over
-    # the 100k-second TTL window.
-    EVENT_ID_CACHE_MAXSIZE = 1000
-    EVENT_ID_CACHE_TTL_SECS = 100000
+    # Force-close an open event whose age in HI's tracking set
+    # exceeds this. Pulled into a class attribute so tests can shrink
+    # the threshold to exercise the timeout path.
+    MAX_OPEN_EVENT_AGE_SECS = FrigateTimeouts.MAX_OPEN_EVENT_AGE_SECS
 
     def __init__(self):
         super().__init__(
             id = self.MONITOR_ID,
             interval_secs = self.POLLING_INTERVAL_SECS,
         )
-        self._fully_processed_event_ids = TTLCache(
-            maxsize = self.EVENT_ID_CACHE_MAXSIZE,
-            ttl = self.EVENT_ID_CACHE_TTL_SECS,
-        )
-        self._start_processed_event_ids = TTLCache(
-            maxsize = self.EVENT_ID_CACHE_MAXSIZE,
-            ttl = self.EVENT_ID_CACHE_TTL_SECS,
-        )
-        self._poll_from_datetime = None
+        self._poll_cursor_datetime : Optional[ datetime ] = None
+        self._open_events : Dict[ str, OpenFrigateEvent ] = {}
         self._was_initialized = False
         return
 
@@ -101,7 +90,8 @@ class FrigateMonitor( PeriodicMonitor, FrigateMixin, SensorResponseMixin ):
         if not frigate_manager:
             return
         _ = await self.sensor_response_manager_async()
-        self._poll_from_datetime = datetimeproxy.now()
+        self._poll_cursor_datetime = datetimeproxy.now()
+        self._open_events = {}
         frigate_manager.register_change_listener( self.refresh )
         frigate_manager.add_subordinate_health_status_provider( self )
         self._was_initialized = True
@@ -129,232 +119,6 @@ class FrigateMonitor( PeriodicMonitor, FrigateMixin, SensorResponseMixin ):
         )
         self.record_healthy( f'Processed {len(sensor_response_map)} Frigate states.' )
         return
-
-    # ---- Event processing pipeline (mirrors ZoneMinderMonitor) -------
-
-    async def _process_events(self) -> Dict:
-        current_poll_datetime = datetimeproxy.now()
-        after_epoch = self._poll_from_datetime.timestamp()
-
-        try:
-            api_events = await self.frigate_manager().get_events_async(
-                after = after_epoch,
-            )
-        except Exception as e:
-            logger.error( f'Frigate events API call failed: {e}' )
-            raise
-
-        # Phase 1 — collate into open / closed, skip already-fully-processed.
-        # Same shape as ZoneMinderMonitor: open events stay in scope across
-        # polls (cursor is held back to keep them visible), closed events
-        # get the fully-processed-cache treatment to prevent re-emission.
-        open_event_list : List[ FrigateEvent ] = []
-        closed_event_list : List[ FrigateEvent ] = []
-        camera_names_seen = set()
-        for api_event in api_events:
-            try:
-                event = FrigateEvent.from_api_dict( api_event )
-            except ValueError as e:
-                logger.warning( f'Skipping malformed Frigate event: {e}' )
-                continue
-            if event.event_id in self._fully_processed_event_ids:
-                continue
-            camera_names_seen.add( event.camera_name )
-            if event.is_open:
-                open_event_list.append( event )
-            else:
-                closed_event_list.append( event )
-            continue
-
-        # Phase 2 — per-camera aggregation. Multiple events on the same
-        # camera collapse to a single canonical event so per-event
-        # response generation doesn't have responses overwriting each
-        # other in the sensor_response_map. (This was the core bug the
-        # ZM monitor's two-phase rewrite fixed.)
-        aggregated_states = self._aggregate_camera_states(
-            open_event_list, closed_event_list,
-        )
-        sensor_response_map = self._generate_sensor_responses_from_states(
-            aggregated_states,
-        )
-
-        # Phase 3 — cameras with no events in this window still need
-        # an IDLE response so their state doesn't go stale. Iterate
-        # the upstream camera list (not the HI Entity table) so a
-        # camera that exists in Frigate but isn't yet imported still
-        # gets a response — the SensorResponseManager drops responses
-        # with no matching EntityState, which is the right behavior
-        # for cameras that haven't been synced yet.
-        try:
-            cameras = await self.frigate_manager().get_cameras_async()
-        except Exception as e:
-            logger.warning( f'Frigate camera list fetch failed during idle pass: {e}' )
-            cameras = []
-        for camera in cameras:
-            camera_name = camera[ 'name' ]
-            if camera_name not in camera_names_seen:
-                idle_response = self._create_object_presence_sensor_response(
-                    camera_name = camera_name,
-                    value = FrigateConverter.OBJECT_NONE_VALUE,
-                    timestamp = current_poll_datetime,
-                )
-                sensor_response_map[ idle_response.integration_key ] = idle_response
-
-                if settings.DEBUG and settings.DEBUG_TRACE_STATE:
-                    DevOverrideManager.trace_state(
-                        'hi.frigate_poll.no_events_object',
-                        integration_name = idle_response.integration_key.integration_name,
-                        integration_value = idle_response.value,
-                        camera_name = camera_name,
-                    )
-            continue
-
-        # Phase 4 — advance the polling cursor.
-        #
-        # Open events keep the cursor BACK so we continue to see them
-        # on subsequent polls until they close. Only when every event
-        # we saw is closed do we advance past them. With no events at
-        # all, we don't advance — an event might have started right
-        # after the API call and we have no way to know its start_time
-        # is before our next cursor.
-        if open_event_list:
-            open_event_list.sort( key = lambda e : e.start_datetime )
-            self._poll_from_datetime = open_event_list[0].start_datetime
-        elif closed_event_list:
-            closed_event_list.sort( key = lambda e : e.end_datetime )
-            self._poll_from_datetime = closed_event_list[-1].end_datetime
-        else:
-            # No events — keep the cursor where it was; advancing
-            # risks missing an event that started right after the
-            # request and whose start_time is therefore < our next
-            # 'after' filter.
-            pass
-
-        return sensor_response_map
-
-    def _aggregate_camera_states(
-            self,
-            open_event_list   : List[ FrigateEvent ],
-            closed_event_list : List[ FrigateEvent ],
-    ) -> Dict[ str, AggregatedCameraState ]:
-        """Per-camera aggregation: one ``AggregatedCameraState`` per
-        camera that produced events this cycle.
-
-        Same logic as ``ZmMonitor._aggregate_monitor_states``: any
-        open event on a camera ⇒ camera is ACTIVE, canonical event
-        is the earliest-start open one (so the effective timestamp
-        reflects when motion actually started). All-closed ⇒ camera
-        is IDLE, canonical event is the latest-end closed one (the
-        most recent transition out of motion).
-        """
-        camera_events : Dict[ str, Dict[ str, list ] ] = defaultdict(
-            lambda: { 'open': [], 'closed': [] }
-        )
-        for event in open_event_list:
-            camera_events[ event.camera_name ][ 'open' ].append( event )
-        for event in closed_event_list:
-            camera_events[ event.camera_name ][ 'closed' ].append( event )
-
-        aggregated : Dict[ str, AggregatedCameraState ] = {}
-        for camera_name, events in camera_events.items():
-            open_events = events[ 'open' ]
-            closed_events = events[ 'closed' ]
-            all_events = open_events + closed_events
-            all_events.sort( key = lambda e : e.start_datetime )
-
-            if open_events:
-                open_events.sort( key = lambda e : e.start_datetime )
-                canonical = open_events[ 0 ]
-                aggregated[ camera_name ] = AggregatedCameraState(
-                    camera_name = camera_name,
-                    current_state = EntityStateValue.ACTIVE,
-                    effective_timestamp = canonical.start_datetime,
-                    canonical_event = canonical,
-                    all_events = all_events,
-                )
-            else:
-                closed_events.sort( key = lambda e : e.end_datetime )
-                canonical = closed_events[ -1 ]
-                aggregated[ camera_name ] = AggregatedCameraState(
-                    camera_name = camera_name,
-                    current_state = EntityStateValue.IDLE,
-                    effective_timestamp = canonical.end_datetime,
-                    canonical_event = canonical,
-                    all_events = all_events,
-                )
-            continue
-        return aggregated
-
-    def _generate_sensor_responses_from_states(
-            self,
-            aggregated_states : Dict[ str, AggregatedCameraState ],
-    ) -> Dict:
-        """Emit ONE OBJECT_PRESENCE SensorResponse per aggregated
-        camera state. Frigate's data model couples motion to object
-        detection — there's no motion-without-class signal on the
-        events API — so OBJECT_PRESENCE is the single state we track
-        per camera. Any non-OBJECT_NONE value implies motion is
-        currently happening; the value itself names the class.
-
-        - ACTIVE state (any open event) → value = canonical class,
-          correlation_role=START, correlation_id = open event id.
-        - IDLE state (all events closed) → value = OBJECT_NONE,
-          correlation_role=END, correlation_id = latest closed event id
-          (pairs with the START that opened that lifecycle).
-
-        Per-event caches: closed events are marked
-        ``_fully_processed_event_ids`` so they won't re-emit on the
-        next poll; all events are marked
-        ``_start_processed_event_ids`` (kept symmetric with ZM even
-        though the start-cache isn't read by the current pipeline).
-        """
-        sensor_response_map : Dict = {}
-        for state in aggregated_states.values():
-            if state.is_active:
-                object_value = FrigateConverter.to_canonical_object_class(
-                    raw_class = state.canonical_event.object_class,
-                )
-                correlation_role = CorrelationRole.START
-            else:
-                object_value = FrigateConverter.OBJECT_NONE_VALUE
-                correlation_role = CorrelationRole.END
-
-            response = self._create_object_presence_sensor_response(
-                camera_name = state.camera_name,
-                value = object_value,
-                timestamp = state.effective_timestamp,
-                correlation_role = correlation_role,
-                correlation_id = state.canonical_event.event_id,
-                has_event_video_clip = state.canonical_event.has_clip,
-                has_event_video_snapshot = state.canonical_event.has_snapshot,
-                detail_attrs = self._build_event_detail_attrs(
-                    event = state.canonical_event,
-                    is_closed = state.is_idle,
-                ),
-            )
-            sensor_response_map[ response.integration_key ] = response
-
-            if settings.DEBUG and settings.DEBUG_TRACE_STATE:
-                DevOverrideManager.trace_state(
-                    'hi.frigate_poll.event_object',
-                    integration_name = response.integration_key.integration_name,
-                    integration_value = response.value,
-                    camera_name = state.camera_name,
-                    event_count = len( state.all_events ),
-                    canonical_event_id = state.canonical_event.event_id,
-                    raw_object_class = (
-                        state.canonical_event.object_class
-                        if state.is_active else None
-                    ),
-                )
-
-            for event in state.all_events:
-                self._start_processed_event_ids[ event.event_id ] = True
-                if event.is_closed:
-                    self._fully_processed_event_ids[ event.event_id ] = True
-                continue
-            continue
-        return sensor_response_map
 
     # ---- SensorResponse factory helpers ------------------------------
 
@@ -409,3 +173,289 @@ class FrigateMonitor( PeriodicMonitor, FrigateMixin, SensorResponseMixin ):
             duration = ( event.end_datetime - event.start_datetime ).total_seconds()
             attrs[ FrigateDetailKeys.DURATION_SECS ] = f'{duration:.1f}'
         return attrs
+
+    # ---- Event processing pipeline ---------------------------------
+
+    async def _process_events(self) -> Dict:
+        sensor_response_map : Dict = {}
+        current_poll_datetime = datetimeproxy.now()
+
+        cameras_touched : set = set()
+        scan_responses = await self._scan_new_events_phase(
+            cameras_touched = cameras_touched,
+        )
+        sensor_response_map.update( scan_responses )
+
+        refresh_responses = await self._refresh_open_events_phase(
+            current_poll_datetime = current_poll_datetime,
+            cameras_touched = cameras_touched,
+        )
+        sensor_response_map.update( refresh_responses )
+
+        heartbeat_responses = await self._heartbeat_idle_cameras_phase(
+            current_poll_datetime = current_poll_datetime,
+            cameras_touched = cameras_touched,
+        )
+        sensor_response_map.update( heartbeat_responses )
+
+        return sensor_response_map
+
+    async def _scan_new_events_phase(
+            self,
+            cameras_touched : set,
+    ) -> Dict:
+        """Query ``?after=cursor`` for events whose ``start_time``
+        is past our watermark. Cursor is monotonic so any id returned
+        here is new to us (any prior open event has ``start_time
+        <= cursor`` and is tracked through phase 2 instead).
+
+        Each new event:
+          - emit START transition
+          - if already closed: also emit END transition (open-and-close
+            collapsed into a single cycle is unavoidable when an
+            event's lifetime is shorter than the poll interval)
+          - else: enter the open set for phase-2 tracking
+        """
+        after_epoch = self._poll_cursor_datetime.timestamp()
+        try:
+            api_events = await self.frigate_manager().get_events_async(
+                after = after_epoch,
+            )
+        except Exception as e:
+            logger.error( f'Frigate events API call failed: {e}' )
+            raise
+
+        new_events : List[ FrigateEvent ] = []
+        for api_event in api_events:
+            try:
+                event = FrigateEvent.from_api_dict( api_event )
+            except ValueError as e:
+                logger.warning( f'Skipping malformed Frigate event: {e}' )
+                continue
+            if event.event_id in self._open_events:
+                # Cursor is monotonic so this shouldn't happen, but
+                # if Frigate ever serves the same id again, defer to
+                # phase 2's canonical refresh.
+                continue
+            new_events.append( event )
+
+        sensor_response_map : Dict = {}
+        now = datetimeproxy.now()
+        for event in new_events:
+            cameras_touched.add( event.camera_name )
+            start_response = self._build_object_presence_response(
+                event = event,
+                value = FrigateConverter.to_canonical_object_class(
+                    raw_class = event.object_class,
+                ),
+                timestamp = event.start_datetime,
+                correlation_role = CorrelationRole.START,
+            )
+            sensor_response_map[ start_response.integration_key ] = start_response
+            if event.is_closed:
+                end_response = self._build_object_presence_response(
+                    event = event,
+                    value = FrigateConverter.OBJECT_NONE_VALUE,
+                    timestamp = event.end_datetime,
+                    correlation_role = CorrelationRole.END,
+                )
+                sensor_response_map[ end_response.integration_key ] = end_response
+            else:
+                self._open_events[ event.event_id ] = OpenFrigateEvent(
+                    event = event,
+                    first_observed_at = now,
+                )
+            continue
+
+        if new_events:
+            latest_start = max( e.start_datetime for e in new_events )
+            if latest_start > self._poll_cursor_datetime:
+                self._poll_cursor_datetime = latest_start
+        return sensor_response_map
+
+    async def _refresh_open_events_phase(
+            self,
+            current_poll_datetime : datetime,
+            cameras_touched       : set,
+    ) -> Dict:
+        """Per-id refresh for every event currently in the open set.
+        Outcomes per id:
+          - 404 → force-close (vanished)
+          - other failure → leave in set; force-close if aged out
+          - closed → emit END, remove from set
+          - still open → refresh snapshot; force-close if aged out
+        """
+        sensor_response_map : Dict = {}
+        tracked_ids = list( self._open_events.keys() )  # snapshot
+        for event_id in tracked_ids:
+            tracker = self._open_events.get( event_id )
+            if tracker is None:
+                continue
+            try:
+                api_event = await self.frigate_manager().get_event_async(
+                    event_id = event_id,
+                )
+            except Http404:
+                response = self._build_force_close_response(
+                    tracker = tracker,
+                    timestamp = current_poll_datetime,
+                    reason = 'vanished',
+                )
+                sensor_response_map[ response.integration_key ] = response
+                cameras_touched.add( tracker.event.camera_name )
+                del self._open_events[ event_id ]
+                continue
+            except Exception as e:
+                logger.warning(
+                    f'Frigate refresh of open event {event_id} failed: {e}'
+                )
+                if self._should_force_close( tracker, current_poll_datetime ):
+                    response = self._build_force_close_response(
+                        tracker = tracker,
+                        timestamp = current_poll_datetime,
+                        reason = 'force_close_timeout',
+                    )
+                    sensor_response_map[ response.integration_key ] = response
+                    cameras_touched.add( tracker.event.camera_name )
+                    del self._open_events[ event_id ]
+                continue
+
+            try:
+                event = FrigateEvent.from_api_dict( api_event )
+            except ValueError as e:
+                logger.warning(
+                    f'Open event {event_id} returned malformed payload: {e}'
+                )
+                continue
+
+            cameras_touched.add( event.camera_name )
+            if event.is_closed:
+                end_response = self._build_object_presence_response(
+                    event = event,
+                    value = FrigateConverter.OBJECT_NONE_VALUE,
+                    timestamp = event.end_datetime,
+                    correlation_role = CorrelationRole.END,
+                )
+                sensor_response_map[ end_response.integration_key ] = end_response
+                del self._open_events[ event_id ]
+                continue
+
+            tracker.event = event
+            if self._should_force_close( tracker, current_poll_datetime ):
+                response = self._build_force_close_response(
+                    tracker = tracker,
+                    timestamp = current_poll_datetime,
+                    reason = 'force_close_timeout',
+                )
+                sensor_response_map[ response.integration_key ] = response
+                del self._open_events[ event_id ]
+            continue
+        return sensor_response_map
+
+    async def _heartbeat_idle_cameras_phase(
+            self,
+            current_poll_datetime : datetime,
+            cameras_touched       : set,
+    ) -> Dict:
+        """Emit OBJECT_NONE for cameras with no event activity this
+        cycle and no event currently tracked in the open set.
+
+        Without this, a camera that's been quiet since HI started
+        would never produce a SensorResponse and its state would go
+        stale. Cameras with active or in-flight events are skipped —
+        their state is being driven by phases 1 and 2 already."""
+        try:
+            cameras = await self.frigate_manager().get_cameras_async()
+        except Exception as e:
+            logger.warning(
+                f'Frigate camera list fetch failed during heartbeat: {e}'
+            )
+            return {}
+
+        open_camera_names = {
+            tracker.event.camera_name
+            for tracker in self._open_events.values()
+        }
+        sensor_response_map : Dict = {}
+        for camera in cameras:
+            camera_name = camera[ 'name' ]
+            if camera_name in cameras_touched:
+                continue
+            if camera_name in open_camera_names:
+                continue
+            idle_response = self._create_object_presence_sensor_response(
+                camera_name = camera_name,
+                value = FrigateConverter.OBJECT_NONE_VALUE,
+                timestamp = current_poll_datetime,
+            )
+            sensor_response_map[ idle_response.integration_key ] = idle_response
+
+            if settings.DEBUG and settings.DEBUG_TRACE_STATE:
+                DevOverrideManager.trace_state(
+                    'hi.frigate_poll.no_events_object',
+                    integration_name = idle_response.integration_key.integration_name,
+                    integration_value = idle_response.value,
+                    camera_name = camera_name,
+                )
+            continue
+        return sensor_response_map
+
+    def _should_force_close(
+            self,
+            tracker               : OpenFrigateEvent,
+            current_poll_datetime : datetime,
+    ) -> bool:
+        age = current_poll_datetime - tracker.first_observed_at
+        return age > timedelta( seconds = self.MAX_OPEN_EVENT_AGE_SECS )
+
+    def _build_object_presence_response(
+            self,
+            event             : FrigateEvent,
+            value             : str,
+            timestamp         : datetime,
+            correlation_role  : CorrelationRole,
+    ) -> SensorResponse:
+        return self._create_object_presence_sensor_response(
+            camera_name = event.camera_name,
+            value = value,
+            timestamp = timestamp,
+            correlation_role = correlation_role,
+            correlation_id = event.event_id,
+            has_event_video_clip = event.has_clip,
+            has_event_video_snapshot = event.has_snapshot,
+            detail_attrs = self._build_event_detail_attrs(
+                event = event,
+                is_closed = ( correlation_role == CorrelationRole.END ),
+            ),
+        )
+
+    def _build_force_close_response(
+            self,
+            tracker    : OpenFrigateEvent,
+            timestamp  : datetime,
+            reason     : str,
+    ) -> SensorResponse:
+        """END response synthesized when we stop tracking an event
+        without observing its actual close (404 from Frigate, or
+        ``MAX_OPEN_EVENT_AGE_SECS`` exceeded). ``detail_attrs`` use
+        the last-known payload — the real end_time was never seen,
+        so no Duration field is included."""
+        age_secs = ( timestamp - tracker.first_observed_at ).total_seconds()
+        logger.warning(
+            f'Frigate event {tracker.event.event_id}'
+            f' (camera {tracker.event.camera_name})'
+            f' force-closed after {age_secs:.0f}s: {reason}'
+        )
+        return self._create_object_presence_sensor_response(
+            camera_name = tracker.event.camera_name,
+            value = FrigateConverter.OBJECT_NONE_VALUE,
+            timestamp = timestamp,
+            correlation_role = CorrelationRole.END,
+            correlation_id = tracker.event.event_id,
+            has_event_video_clip = tracker.event.has_clip,
+            has_event_video_snapshot = tracker.event.has_snapshot,
+            detail_attrs = self._build_event_detail_attrs(
+                event = tracker.event,
+                is_closed = False,
+            ),
+        )

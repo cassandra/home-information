@@ -74,11 +74,16 @@ class FrigateSimEventHistory:
         return event
 
     def get_events_after( self, start_datetime : datetime ) -> List[ FrigateSimEvent ]:
-        """All events whose start time is at or after ``start_datetime``.
-        Inclusive cutoff keeps the polling-cursor pattern simple
-        (we can advance the cursor up to the latest event's start
-        without losing it on the next query)."""
-        return [ e for e in self._events if e.start_datetime >= start_datetime ]
+        """All events whose start time is STRICTLY after ``start_datetime``.
+
+        Mirrors Frigate's own ``/api/events?after=T`` semantics
+        (``Event.start_time > T``). The HI monitor depends on this
+        strict-``>`` behavior — it advances the cursor past each
+        observed event's ``start_time`` and tracks open events by id,
+        so an inclusive filter here would let stale events leak back
+        into cursor scans and mask bugs that real Frigate would
+        surface."""
+        return [ e for e in self._events if e.start_datetime > start_datetime ]
 
     def all_events( self ) -> List[ FrigateSimEvent ]:
         return list( self._events )
