@@ -82,8 +82,9 @@ class FrigateEvent:
 
 
 @dataclass
-class OpenFrigateEvent:
-    """One entry in the monitor's open-event set.
+class TrackedFrigateEvent:
+    """A Frigate event the monitor is actively tracking — i.e. seen
+    open and not yet observed closed.
 
     ``first_observed_at`` is captured in HI's clock (not Frigate's
     ``start_time``) so the force-close timeout sidesteps any clock

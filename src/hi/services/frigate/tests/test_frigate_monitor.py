@@ -16,6 +16,7 @@ from django.test import TestCase
 
 from hi.apps.entity.enums import EntityStateValue
 from hi.apps.sense.enums import CorrelationRole
+from hi.testing.async_task_utils import AsyncTaskFastTestCase
 
 from hi.services.frigate.frigate_converter import FrigateConverter
 from hi.services.frigate.frigate_models import FrigateEvent
@@ -260,7 +261,7 @@ class TestFrigateConverterObjectClassMapping( TestCase ):
         )
 
 
-class _PipelineTestBase( TestCase ):
+class _PipelineTestBase( AsyncTaskFastTestCase ):
     """Shared scaffolding for the cursor + per-id refresh pipeline.
 
     Frigate's ``?after=T`` filters strictly on ``start_time > T``, so
@@ -275,7 +276,7 @@ class _PipelineTestBase( TestCase ):
         self.monitor._was_initialized = True
         self.start = datetime( 2026, 5, 20, 12, 0, 0, tzinfo = timezone.utc )
         self.monitor._poll_cursor_datetime = self.start
-        self.monitor._open_events = {}
+        self.monitor._tracked_events = {}
 
         # Pin ``datetimeproxy.now`` to ``self.start`` so phase-2 age
         # math operates on test-relative time. Without this, real
@@ -370,12 +371,10 @@ class TestFrigateScanNewEventsPhase( _PipelineTestBase ):
     than poll interval)."""
 
     def test_cursor_unchanged_when_no_events(self):
-        import asyncio
-        asyncio.run( self._run() )
+        self.run_async( self._run() )
         self.assertEqual( self.monitor._poll_cursor_datetime, self.start )
 
     def test_cursor_advances_to_latest_start_time(self):
-        import asyncio
         s1 = self.start + timedelta( seconds = 5 )
         s2 = self.start + timedelta( seconds = 20 )
         self._set_events([
@@ -387,14 +386,13 @@ class TestFrigateScanNewEventsPhase( _PipelineTestBase ):
         self._set_event_by_id({
             '1': self._api_event( event_id = '1', start = s1 ),
         })
-        asyncio.run( self._run() )
+        self.run_async( self._run() )
         self.assertEqual( self.monitor._poll_cursor_datetime, s2 )
 
-    def test_open_event_enters_open_set_and_emits_start(self):
+    def test_open_event_enters_tracked_set_and_emits_start(self):
         """The open→closed transition bug fix: after the open event
         is seen once, the cursor advances PAST its start_time. Future
         cursor scans won't return it — phase 2 must track it by id."""
-        import asyncio
         open_start = self.start + timedelta( seconds = 5 )
         self._set_events([
             self._api_event( event_id = 'A', start = open_start, end = None ),
@@ -402,9 +400,9 @@ class TestFrigateScanNewEventsPhase( _PipelineTestBase ):
         self._set_event_by_id({
             'A': self._api_event( event_id = 'A', start = open_start, end = None ),
         })
-        responses = asyncio.run( self._run() )
+        responses = self.run_async( self._run() )
 
-        self.assertIn( 'A', self.monitor._open_events )
+        self.assertIn( 'A', self.monitor._tracked_events )
         self.assertEqual( self.monitor._poll_cursor_datetime, open_start )
 
         obj = self._find_response( responses, 'front_yard' )
@@ -416,15 +414,14 @@ class TestFrigateScanNewEventsPhase( _PipelineTestBase ):
         """Lifetime shorter than poll interval: a single scan returns
         the event already-closed. Emit START and END in this cycle,
         don't enter the open set."""
-        import asyncio
         s = self.start + timedelta( seconds = 5 )
         e = s + timedelta( seconds = 1 )
         self._set_events([
             self._api_event( event_id = 'X', start = s, end = e ),
         ])
-        responses = asyncio.run( self._run() )
+        responses = self.run_async( self._run() )
 
-        self.assertNotIn( 'X', self.monitor._open_events )
+        self.assertNotIn( 'X', self.monitor._tracked_events )
         # The map is keyed by integration_key so START and END for the
         # same camera collapse to one entry — the latest assignment
         # wins. END should be the survivor since it's assigned after.
@@ -433,21 +430,71 @@ class TestFrigateScanNewEventsPhase( _PipelineTestBase ):
         self.assertEqual( obj.correlation_id, 'X' )
 
     def test_malformed_event_payload_is_skipped(self):
-        import asyncio
         s = self.start + timedelta( seconds = 5 )
         self._set_events([
             { 'id': 'bad', 'camera': 'front_yard' },  # missing label/start
             self._api_event( event_id = 'good', start = s,
                              end = s + timedelta( seconds = 2 )),
         ])
-        responses = asyncio.run( self._run() )
+        responses = self.run_async( self._run() )
         self.assertEqual(
             self._find_response( responses, 'front_yard' ).correlation_id,
             'good',
         )
 
+    def test_cursor_does_not_regress_when_event_returned_below_cursor(self):
+        """Defensive: if upstream ever serves an event with
+        ``start_time <= cursor`` (Frigate bug, replayed payload),
+        the cursor must not move backward."""
+        # Advance the cursor first so we have a meaningful "above".
+        ahead = self.start + timedelta( seconds = 100 )
+        self.monitor._poll_cursor_datetime = ahead
 
-class TestFrigateRefreshOpenEventsPhase( _PipelineTestBase ):
+        # Return an event with start_time well below the cursor.
+        stale_start = self.start + timedelta( seconds = 5 )
+        self._set_events([
+            self._api_event( event_id = 'stale', start = stale_start,
+                             end = stale_start + timedelta( seconds = 1 )),
+        ])
+        self.run_async( self._run() )
+        self.assertEqual( self.monitor._poll_cursor_datetime, ahead )
+
+    def test_duplicate_id_in_tracked_events_is_skipped(self):
+        """Cursor is monotonic so phase 1 shouldn't see an id that's
+        already in ``_tracked_events`` — but if it does (re-served by
+        Frigate after a clock blip), the tracked event must not be
+        replaced and no duplicate START must be emitted."""
+        from hi.services.frigate.frigate_models import TrackedFrigateEvent
+        existing_start = self.start + timedelta( seconds = 1 )
+        existing = FrigateEvent(
+            event_id = 'A',
+            camera_name = 'front_yard',
+            object_class = 'person',
+            start_datetime = existing_start,
+        )
+        original_tracked_event = TrackedFrigateEvent(
+            event = existing,
+            first_observed_at = self.start,
+        )
+        self.monitor._tracked_events[ 'A' ] = original_tracked_event
+
+        # Frigate returns the same id again (phase 2 will refresh it,
+        # so set the by-id mock too).
+        self._set_events([
+            self._api_event( event_id = 'A', start = existing_start, end = None ),
+        ])
+        self._set_event_by_id({
+            'A': self._api_event( event_id = 'A', start = existing_start, end = None ),
+        })
+        self.run_async( self._run() )
+
+        # Tracker object preserved (not replaced) — first_observed_at
+        # would have rolled forward otherwise.
+        self.assertIs( self.monitor._tracked_events[ 'A' ], original_tracked_event )
+        self.assertEqual( original_tracked_event.first_observed_at, self.start )
+
+
+class TestFrigateRefreshTrackedEventsPhase( _PipelineTestBase ):
     """Phase 2: per-id refresh for events currently in the open set.
 
     Each refresh is one ``GET /api/events/<id>``. Closed → emit END,
@@ -458,7 +505,7 @@ class TestFrigateRefreshOpenEventsPhase( _PipelineTestBase ):
             self, event_id = 'A', camera = 'front_yard',
             first_observed_at = None,
     ):
-        from hi.services.frigate.frigate_models import OpenFrigateEvent
+        from hi.services.frigate.frigate_models import TrackedFrigateEvent
         if first_observed_at is None:
             first_observed_at = self.start
         start = self.start + timedelta( seconds = 1 )
@@ -468,7 +515,7 @@ class TestFrigateRefreshOpenEventsPhase( _PipelineTestBase ):
             object_class = 'person',
             start_datetime = start,
         )
-        self.monitor._open_events[ event_id ] = OpenFrigateEvent(
+        self.monitor._tracked_events[ event_id ] = TrackedFrigateEvent(
             event = event,
             first_observed_at = first_observed_at,
         )
@@ -481,7 +528,6 @@ class TestFrigateRefreshOpenEventsPhase( _PipelineTestBase ):
         """The headline bug fix: a previously-open event, now closed
         in Frigate, must emit an END row with correlation_id matching
         the original event."""
-        import asyncio
         self._seed_open( event_id = 'A' )
         end_dt = self.start + timedelta( seconds = 30 )
         self._set_event_by_id({
@@ -491,9 +537,9 @@ class TestFrigateRefreshOpenEventsPhase( _PipelineTestBase ):
                 end = end_dt,
             ),
         })
-        responses = asyncio.run( self._run() )
+        responses = self.run_async( self._run() )
 
-        self.assertNotIn( 'A', self.monitor._open_events )
+        self.assertNotIn( 'A', self.monitor._tracked_events )
         obj = self._find_response( responses, 'front_yard' )
         self.assertEqual( obj.correlation_role, CorrelationRole.END )
         self.assertEqual( obj.correlation_id, 'A' )
@@ -501,7 +547,6 @@ class TestFrigateRefreshOpenEventsPhase( _PipelineTestBase ):
         self.assertEqual( obj.timestamp, end_dt )
 
     def test_still_open_event_stays_tracked(self):
-        import asyncio
         self._seed_open( event_id = 'A' )
         self._set_event_by_id({
             'A': self._api_event(
@@ -510,25 +555,23 @@ class TestFrigateRefreshOpenEventsPhase( _PipelineTestBase ):
                 end = None,
             ),
         })
-        asyncio.run( self._run() )
-        self.assertIn( 'A', self.monitor._open_events )
+        self.run_async( self._run() )
+        self.assertIn( 'A', self.monitor._tracked_events )
 
     def test_404_force_closes_and_removes(self):
         """Frigate dropped the event (cleared from history) → end the
         correlation pair with a synthesized END so the UI doesn't show
         a dangling start."""
-        import asyncio
         self._seed_open( event_id = 'gone' )
         self._set_event_by_id({})  # any id → 404
-        responses = asyncio.run( self._run() )
+        responses = self.run_async( self._run() )
 
-        self.assertNotIn( 'gone', self.monitor._open_events )
+        self.assertNotIn( 'gone', self.monitor._tracked_events )
         obj = self._find_response( responses, 'front_yard' )
         self.assertEqual( obj.correlation_role, CorrelationRole.END )
         self.assertEqual( obj.correlation_id, 'gone' )
 
     def test_force_close_timeout_fires_on_aged_open_event(self):
-        import asyncio
         very_old = self.start - timedelta(
             seconds = self.monitor.MAX_OPEN_EVENT_AGE_SECS + 60,
         )
@@ -540,9 +583,9 @@ class TestFrigateRefreshOpenEventsPhase( _PipelineTestBase ):
                 end = None,
             ),
         })
-        responses = asyncio.run( self._run() )
+        responses = self.run_async( self._run() )
 
-        self.assertNotIn( 'old', self.monitor._open_events )
+        self.assertNotIn( 'old', self.monitor._tracked_events )
         obj = self._find_response( responses, 'front_yard' )
         self.assertEqual( obj.correlation_role, CorrelationRole.END )
         self.assertEqual( obj.correlation_id, 'old' )
@@ -551,15 +594,32 @@ class TestFrigateRefreshOpenEventsPhase( _PipelineTestBase ):
         """Non-404 failures (network blip, 500) shouldn't force-close
         unless the age timeout has also been crossed. Next cycle
         retries the refresh."""
-        import asyncio
         self._seed_open( event_id = 'A', first_observed_at = self.start )
 
         async def boom( event_id ):
             raise ValueError( 'simulated transport failure' )
         self.mock_manager.get_event_async = Mock( side_effect = boom )
 
-        responses = asyncio.run( self._run() )
-        self.assertIn( 'A', self.monitor._open_events )
+        responses = self.run_async( self._run() )
+        self.assertIn( 'A', self.monitor._tracked_events )
+        # No END emitted for the still-tracked event.
+        with self.assertRaises( AssertionError ):
+            obj = self._find_response( responses, 'front_yard' )
+            self.assertEqual( obj.correlation_role, CorrelationRole.END )
+
+    def test_malformed_refresh_payload_leaves_event_tracked(self):
+        """If the direct-fetch returns a payload we can't parse, the
+        open event must stay in the tracking set so a later cycle can
+        retry — dropping it silently would orphan the START with no
+        END pair."""
+        self._seed_open( event_id = 'A' )
+        # By-id returns a dict missing required fields → from_api_dict
+        # raises, and the refresh path logs + continues.
+        self._set_event_by_id({
+            'A': { 'id': 'A', 'camera': 'front_yard' },  # no label / start_time
+        })
+        responses = self.run_async( self._run() )
+        self.assertIn( 'A', self.monitor._tracked_events )
         # No END emitted for the still-tracked event.
         with self.assertRaises( AssertionError ):
             obj = self._find_response( responses, 'front_yard' )
@@ -572,9 +632,8 @@ class TestFrigateHeartbeatPhase( _PipelineTestBase ):
     that's been quiet since startup would never produce a response."""
 
     def test_idle_camera_gets_object_none_heartbeat(self):
-        import asyncio
         self._set_cameras([ 'driveway' ])
-        responses = asyncio.run( self._run() )
+        responses = self.run_async( self._run() )
         obj = self._find_response( responses, 'driveway' )
         self.assertEqual( obj.value, str( EntityStateValue.OBJECT_NONE ) )
         self.assertIsNone( obj.correlation_role )
@@ -583,15 +642,14 @@ class TestFrigateHeartbeatPhase( _PipelineTestBase ):
         """A camera that's actively tracking an open event must not
         get an OBJECT_NONE clobber — phase 2's END (or future close)
         is what drives its state."""
-        import asyncio
-        from hi.services.frigate.frigate_models import OpenFrigateEvent
+        from hi.services.frigate.frigate_models import TrackedFrigateEvent
         event = FrigateEvent(
             event_id = 'A',
             camera_name = 'front_yard',
             object_class = 'person',
             start_datetime = self.start + timedelta( seconds = 1 ),
         )
-        self.monitor._open_events[ 'A' ] = OpenFrigateEvent(
+        self.monitor._tracked_events[ 'A' ] = TrackedFrigateEvent(
             event = event,
             first_observed_at = self.start,
         )
@@ -604,7 +662,7 @@ class TestFrigateHeartbeatPhase( _PipelineTestBase ):
             ),
         })
         self._set_cameras([ 'front_yard', 'back_door' ])
-        responses = asyncio.run( self._run() )
+        responses = self.run_async( self._run() )
 
         # back_door gets a heartbeat; front_yard does not get clobbered.
         back = self._find_response( responses, 'back_door' )
@@ -625,7 +683,6 @@ class TestFrigateHeartbeatPhase( _PipelineTestBase ):
     def test_camera_active_this_cycle_skips_heartbeat(self):
         """A camera whose START was emitted this cycle (phase 1) must
         not also get a phase-3 OBJECT_NONE."""
-        import asyncio
         s = self.start + timedelta( seconds = 5 )
         self._set_events([
             self._api_event( event_id = 'A', start = s, end = None ),
@@ -634,11 +691,25 @@ class TestFrigateHeartbeatPhase( _PipelineTestBase ):
             'A': self._api_event( event_id = 'A', start = s, end = None ),
         })
         self._set_cameras([ 'front_yard' ])
-        responses = asyncio.run( self._run() )
+        responses = self.run_async( self._run() )
 
         obj = self._find_response( responses, 'front_yard' )
         # Phase 1's START survives — not overwritten by an OBJECT_NONE.
         self.assertEqual( obj.correlation_role, CorrelationRole.START )
+
+    def test_camera_list_fetch_failure_does_not_break_pipeline(self):
+        """A transient failure on ``get_cameras_async`` must not
+        propagate — phases 1 and 2 may have produced legitimate
+        responses that should still be delivered, just no heartbeat
+        responses this cycle."""
+        async def boom():
+            raise ValueError( 'simulated camera list failure' )
+        self.mock_manager.get_cameras_async = Mock( side_effect = boom )
+
+        # No phase-1 or phase-2 activity either — pipeline must still
+        # return a dict without raising.
+        result = self.run_async( self._run() )
+        self.assertEqual( result, {} )
 
 
 class TestFrigateOpenCloseTransitionAcrossCycles( _PipelineTestBase ):
@@ -648,7 +719,6 @@ class TestFrigateOpenCloseTransitionAcrossCycles( _PipelineTestBase ):
     ``start_time``. The new pipeline tracks the event by id."""
 
     def test_open_then_close_emits_paired_start_and_end_rows(self):
-        import asyncio
         start_dt = self.start + timedelta( seconds = 5 )
         end_dt = self.start + timedelta( seconds = 30 )
 
@@ -659,7 +729,7 @@ class TestFrigateOpenCloseTransitionAcrossCycles( _PipelineTestBase ):
         self._set_event_by_id({
             'evt': self._api_event( event_id = 'evt', start = start_dt, end = None ),
         })
-        cycle1 = asyncio.run( self._run() )
+        cycle1 = self.run_async( self._run() )
         start_obj = self._find_response( cycle1, 'front_yard' )
         self.assertEqual( start_obj.correlation_role, CorrelationRole.START )
         self.assertEqual( start_obj.correlation_id, 'evt' )
@@ -673,13 +743,13 @@ class TestFrigateOpenCloseTransitionAcrossCycles( _PipelineTestBase ):
                 event_id = 'evt', start = start_dt, end = end_dt,
             ),
         })
-        cycle2 = asyncio.run( self._run() )
+        cycle2 = self.run_async( self._run() )
         end_obj = self._find_response( cycle2, 'front_yard' )
         self.assertEqual( end_obj.correlation_role, CorrelationRole.END )
         self.assertEqual( end_obj.correlation_id, 'evt' )
         self.assertEqual( end_obj.timestamp, end_dt )
 
         # Open set is empty again — ready to receive the next event.
-        self.assertEqual( self.monitor._open_events, {} )
+        self.assertEqual( self.monitor._tracked_events, {} )
 
 

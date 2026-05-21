@@ -1,6 +1,6 @@
 from datetime import datetime, timedelta
 import logging
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Set, Tuple
 
 from django.conf import settings
 from django.http import Http404
@@ -18,7 +18,7 @@ from .constants import FrigateDetailKeys, FrigateTimeouts
 from .frigate_converter import FrigateConverter
 from .frigate_manager import FrigateManager
 from .frigate_mixins import FrigateMixin
-from .frigate_models import FrigateEvent, OpenFrigateEvent
+from .frigate_models import FrigateEvent, TrackedFrigateEvent
 
 logger = logging.getLogger(__name__)
 
@@ -35,7 +35,7 @@ class FrigateMonitor( PeriodicMonitor, FrigateMixin, SensorResponseMixin ):
 
       Phase 1 — cursor scan (``?after=cursor``): emit START for each
         new event; emit END too if it was already closed when seen;
-        track open ones in ``_open_events`` by id. Cursor advances
+        track open ones in ``_tracked_events`` by id. Cursor advances
         monotonically to the latest start_time of any event observed.
 
       Phase 2 — per-id refresh (``GET /api/events/<id>``): for each
@@ -64,7 +64,7 @@ class FrigateMonitor( PeriodicMonitor, FrigateMixin, SensorResponseMixin ):
             interval_secs = self.POLLING_INTERVAL_SECS,
         )
         self._poll_cursor_datetime : Optional[ datetime ] = None
-        self._open_events : Dict[ str, OpenFrigateEvent ] = {}
+        self._tracked_events : Dict[ str, TrackedFrigateEvent ] = {}
         self._was_initialized = False
         return
 
@@ -91,7 +91,7 @@ class FrigateMonitor( PeriodicMonitor, FrigateMixin, SensorResponseMixin ):
             return
         _ = await self.sensor_response_manager_async()
         self._poll_cursor_datetime = datetimeproxy.now()
-        self._open_events = {}
+        self._tracked_events = {}
         frigate_manager.register_change_listener( self.refresh )
         frigate_manager.add_subordinate_health_status_provider( self )
         self._was_initialized = True
@@ -177,33 +177,24 @@ class FrigateMonitor( PeriodicMonitor, FrigateMixin, SensorResponseMixin ):
     # ---- Event processing pipeline ---------------------------------
 
     async def _process_events(self) -> Dict:
-        sensor_response_map : Dict = {}
         current_poll_datetime = datetimeproxy.now()
 
-        cameras_touched : set = set()
-        scan_responses = await self._scan_new_events_phase(
-            cameras_touched = cameras_touched,
-        )
-        sensor_response_map.update( scan_responses )
-
-        refresh_responses = await self._refresh_open_events_phase(
+        scan_map, scan_touched = await self._scan_new_events_phase()
+        refresh_map, refresh_touched = await self._refresh_tracked_events_phase(
             current_poll_datetime = current_poll_datetime,
-            cameras_touched = cameras_touched,
         )
-        sensor_response_map.update( refresh_responses )
-
-        heartbeat_responses = await self._heartbeat_idle_cameras_phase(
+        heartbeat_map = await self._heartbeat_idle_cameras_phase(
             current_poll_datetime = current_poll_datetime,
-            cameras_touched = cameras_touched,
+            cameras_touched = scan_touched | refresh_touched,
         )
-        sensor_response_map.update( heartbeat_responses )
 
+        sensor_response_map : Dict = {}
+        sensor_response_map.update( scan_map )
+        sensor_response_map.update( refresh_map )
+        sensor_response_map.update( heartbeat_map )
         return sensor_response_map
 
-    async def _scan_new_events_phase(
-            self,
-            cameras_touched : set,
-    ) -> Dict:
+    async def _scan_new_events_phase(self) -> Tuple[ Dict, Set[ str ] ]:
         """Query ``?after=cursor`` for events whose ``start_time``
         is past our watermark. Cursor is monotonic so any id returned
         here is new to us (any prior open event has ``start_time
@@ -232,7 +223,7 @@ class FrigateMonitor( PeriodicMonitor, FrigateMixin, SensorResponseMixin ):
             except ValueError as e:
                 logger.warning( f'Skipping malformed Frigate event: {e}' )
                 continue
-            if event.event_id in self._open_events:
+            if event.event_id in self._tracked_events:
                 # Cursor is monotonic so this shouldn't happen, but
                 # if Frigate ever serves the same id again, defer to
                 # phase 2's canonical refresh.
@@ -240,6 +231,7 @@ class FrigateMonitor( PeriodicMonitor, FrigateMixin, SensorResponseMixin ):
             new_events.append( event )
 
         sensor_response_map : Dict = {}
+        cameras_touched : Set[ str ] = set()
         now = datetimeproxy.now()
         for event in new_events:
             cameras_touched.add( event.camera_name )
@@ -261,23 +253,26 @@ class FrigateMonitor( PeriodicMonitor, FrigateMixin, SensorResponseMixin ):
                 )
                 sensor_response_map[ end_response.integration_key ] = end_response
             else:
-                self._open_events[ event.event_id ] = OpenFrigateEvent(
+                self._tracked_events[ event.event_id ] = TrackedFrigateEvent(
                     event = event,
                     first_observed_at = now,
                 )
-            continue
 
         if new_events:
+            # Defensive: Frigate's ``?after=`` filter is strict ``>``,
+            # so all events here should already have start_time past
+            # the cursor — but if upstream ever returns one that
+            # doesn't (proxy replay, Frigate bug, clock skew), don't
+            # let the cursor regress.
             latest_start = max( e.start_datetime for e in new_events )
             if latest_start > self._poll_cursor_datetime:
                 self._poll_cursor_datetime = latest_start
-        return sensor_response_map
+        return sensor_response_map, cameras_touched
 
-    async def _refresh_open_events_phase(
+    async def _refresh_tracked_events_phase(
             self,
             current_poll_datetime : datetime,
-            cameras_touched       : set,
-    ) -> Dict:
+    ) -> Tuple[ Dict, Set[ str ] ]:
         """Per-id refresh for every event currently in the open set.
         Outcomes per id:
           - 404 → force-close (vanished)
@@ -286,76 +281,74 @@ class FrigateMonitor( PeriodicMonitor, FrigateMixin, SensorResponseMixin ):
           - still open → refresh snapshot; force-close if aged out
         """
         sensor_response_map : Dict = {}
-        tracked_ids = list( self._open_events.keys() )  # snapshot
+        cameras_touched : Set[ str ] = set()
+        tracked_ids = list( self._tracked_events.keys() )  # snapshot
         for event_id in tracked_ids:
-            tracker = self._open_events.get( event_id )
-            if tracker is None:
+            tracked_event = self._tracked_events.get( event_id )
+            if tracked_event is None:
                 continue
             try:
                 api_event = await self.frigate_manager().get_event_async(
                     event_id = event_id,
                 )
             except Http404:
-                response = self._build_force_close_response(
-                    tracker = tracker,
+                self._force_close(
+                    tracked_event = tracked_event,
                     timestamp = current_poll_datetime,
                     reason = 'vanished',
+                    sensor_response_map = sensor_response_map,
+                    cameras_touched = cameras_touched,
                 )
-                sensor_response_map[ response.integration_key ] = response
-                cameras_touched.add( tracker.event.camera_name )
-                del self._open_events[ event_id ]
                 continue
             except Exception as e:
                 logger.warning(
                     f'Frigate refresh of open event {event_id} failed: {e}'
                 )
-                if self._should_force_close( tracker, current_poll_datetime ):
-                    response = self._build_force_close_response(
-                        tracker = tracker,
+                if self._should_force_close( tracked_event, current_poll_datetime ):
+                    self._force_close(
+                        tracked_event = tracked_event,
                         timestamp = current_poll_datetime,
                         reason = 'force_close_timeout',
+                        sensor_response_map = sensor_response_map,
+                        cameras_touched = cameras_touched,
                     )
-                    sensor_response_map[ response.integration_key ] = response
-                    cameras_touched.add( tracker.event.camera_name )
-                    del self._open_events[ event_id ]
                 continue
 
             try:
-                event = FrigateEvent.from_api_dict( api_event )
+                frigate_event = FrigateEvent.from_api_dict( api_event )
             except ValueError as e:
                 logger.warning(
                     f'Open event {event_id} returned malformed payload: {e}'
                 )
                 continue
 
-            cameras_touched.add( event.camera_name )
-            if event.is_closed:
+            cameras_touched.add( frigate_event.camera_name )
+            if frigate_event.is_closed:
                 end_response = self._build_object_presence_response(
-                    event = event,
+                    event = frigate_event,
                     value = FrigateConverter.OBJECT_NONE_VALUE,
-                    timestamp = event.end_datetime,
+                    timestamp = frigate_event.end_datetime,
                     correlation_role = CorrelationRole.END,
                 )
                 sensor_response_map[ end_response.integration_key ] = end_response
-                del self._open_events[ event_id ]
+                del self._tracked_events[ event_id ]
                 continue
 
-            tracker.event = event
-            if self._should_force_close( tracker, current_poll_datetime ):
-                response = self._build_force_close_response(
-                    tracker = tracker,
+            tracked_event.event = frigate_event
+            if self._should_force_close( tracked_event, current_poll_datetime ):
+                self._force_close(
+                    tracked_event = tracked_event,
                     timestamp = current_poll_datetime,
                     reason = 'force_close_timeout',
+                    sensor_response_map = sensor_response_map,
+                    cameras_touched = cameras_touched,
                 )
-                sensor_response_map[ response.integration_key ] = response
-                del self._open_events[ event_id ]
-            continue
-        return sensor_response_map
+        return sensor_response_map, cameras_touched
 
     async def _heartbeat_idle_cameras_phase(
             self,
             current_poll_datetime : datetime,
-            cameras_touched       : set,
+            cameras_touched       : Set[ str ],
     ) -> Dict:
         """Emit OBJECT_NONE for cameras with no event activity this
         cycle and no event currently tracked in the open set.
@@ -373,8 +366,8 @@ class FrigateMonitor( PeriodicMonitor, FrigateMixin, SensorResponseMixin ):
             return {}
 
         open_camera_names = {
-            tracker.event.camera_name
-            for tracker in self._open_events.values()
+            tracked_event.event.camera_name
+            for tracked_event in self._tracked_events.values()
         }
         sensor_response_map : Dict = {}
         for camera in cameras:
@@ -397,15 +390,36 @@ class FrigateMonitor( PeriodicMonitor, FrigateMixin, SensorResponseMixin ):
                     integration_value = idle_response.value,
                     camera_name = camera_name,
                 )
-            continue
         return sensor_response_map
+
+    def _force_close(
+            self,
+            tracked_event             : TrackedFrigateEvent,
+            timestamp           : datetime,
+            reason              : str,
+            sensor_response_map : Dict,
+            cameras_touched     : Set[ str ],
+    ) -> None:
+        """Drop ``tracked_event`` from the open set and emit a synthesized
+        END response in ``sensor_response_map``. Used when Frigate's
+        canonical state cannot be obtained (404, persistent fetch
+        failure past the age threshold)."""
+        response = self._build_force_close_response(
+            tracked_event = tracked_event,
+            timestamp = timestamp,
+            reason = reason,
+        )
+        sensor_response_map[ response.integration_key ] = response
+        cameras_touched.add( tracked_event.event.camera_name )
+        del self._tracked_events[ tracked_event.event.event_id ]
+        return
 
     def _should_force_close(
             self,
-            tracker               : OpenFrigateEvent,
+            tracked_event               : TrackedFrigateEvent,
             current_poll_datetime : datetime,
     ) -> bool:
-        age = current_poll_datetime - tracker.first_observed_at
+        age = current_poll_datetime - tracked_event.first_observed_at
         return age > timedelta( seconds = self.MAX_OPEN_EVENT_AGE_SECS )
 
     def _build_object_presence_response(
@@ -431,7 +445,7 @@ class FrigateMonitor( PeriodicMonitor, FrigateMixin, SensorResponseMixin ):
 
     def _build_force_close_response(
             self,
-            tracker    : OpenFrigateEvent,
+            tracked_event    : TrackedFrigateEvent,
             timestamp  : datetime,
             reason     : str,
     ) -> SensorResponse:
@@ -440,22 +454,22 @@ class FrigateMonitor( PeriodicMonitor, FrigateMixin, SensorResponseMixin ):
         ``MAX_OPEN_EVENT_AGE_SECS`` exceeded). ``detail_attrs`` use
         the last-known payload — the real end_time was never seen,
         so no Duration field is included."""
-        age_secs = ( timestamp - tracker.first_observed_at ).total_seconds()
+        age_secs = ( timestamp - tracked_event.first_observed_at ).total_seconds()
         logger.warning(
-            f'Frigate event {tracker.event.event_id}'
-            f' (camera {tracker.event.camera_name})'
+            f'Frigate event {tracked_event.event.event_id}'
+            f' (camera {tracked_event.event.camera_name})'
             f' force-closed after {age_secs:.0f}s: {reason}'
         )
         return self._create_object_presence_sensor_response(
-            camera_name = tracker.event.camera_name,
+            camera_name = tracked_event.event.camera_name,
             value = FrigateConverter.OBJECT_NONE_VALUE,
             timestamp = timestamp,
             correlation_role = CorrelationRole.END,
-            correlation_id = tracker.event.event_id,
-            has_event_video_clip = tracker.event.has_clip,
-            has_event_video_snapshot = tracker.event.has_snapshot,
+            correlation_id = tracked_event.event.event_id,
+            has_event_video_clip = tracked_event.event.has_clip,
+            has_event_video_snapshot = tracked_event.event.has_snapshot,
             detail_attrs = self._build_event_detail_attrs(
-                event = tracker.event,
+                event = tracked_event.event,
                 is_closed = False,
             ),
         )

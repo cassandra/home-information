@@ -73,19 +73,19 @@ The monitor instead runs three phases per cycle:
    `start_time` is past the cursor, emit a START transition. If the
    event was already closed when first seen (lifetime shorter than
    the poll interval), also emit an END. Otherwise add the event to
-   `_open_events`, keyed by id. Advance cursor to the latest
+   `_tracked_events`, keyed by id. Advance cursor to the latest
    `start_time` observed.
 2. **Per-id refresh** (`GET /api/events/<id>`): for each id in
-   `_open_events`, fetch its canonical state.
+   `_tracked_events`, fetch its canonical state.
    - Closed → emit END, drop from tracking.
    - 404 (Frigate cleared the event) → force-close, drop.
    - Aged past `MAX_OPEN_EVENT_AGE_SECS` → force-close, drop.
    - Still open → refresh snapshot, keep tracking.
 3. **Heartbeat**: emit OBJECT_NONE for cameras with no activity
-   this cycle and no event currently in `_open_events`. Without
+   this cycle and no event currently in `_tracked_events`. Without
    this, a quiet camera's state goes stale.
 
-The cursor never moves backward; the open-event set is the only
+The cursor never moves backward; the tracked-event set is the only
 state that can grow during a cycle. API budget per cycle is `1 + N`
 calls where `N` is the count of currently-open events (typically 0
 or 1 in normal home use).
@@ -115,7 +115,7 @@ the v1 posture is "HI's detection window begins when HI starts."
   event without promoting them to typed states. Revisit if/when a
   use case needs rule-based branching on zones.
 - **Force-close timeout.** `MAX_OPEN_EVENT_AGE_SECS` (1 hour) caps
-  how long an event may stay in `_open_events` before HI synthesizes
+  how long an event may stay in `_tracked_events` before HI synthesizes
   an END row. Intended for orphaned events (Frigate restart,
   dropped detection). No equivalent to ZM's auto-close-on-no-update
   behavior — Frigate is consulted by id on every cycle, so a stuck
