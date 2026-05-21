@@ -1,3 +1,4 @@
+from collections import defaultdict
 from datetime import datetime, timedelta
 import logging
 from typing import Dict, List, Optional, Set, Tuple
@@ -11,6 +12,7 @@ from hi.apps.monitor.periodic_monitor import PeriodicMonitor
 from hi.apps.sense.enums import CorrelationRole
 from hi.apps.sense.sensor_response_manager import SensorResponseMixin
 from hi.apps.sense.transient_models import SensorResponse
+from hi.integrations.transient_models import IntegrationKey
 from hi.apps.system.provider_info import ProviderInfo
 from hi.testing.dev_overrides import DevOverrideManager
 
@@ -111,13 +113,13 @@ class FrigateMonitor( PeriodicMonitor, FrigateMixin, SensorResponseMixin ):
             self.record_warning( 'Was not initialized.' )
             return
 
-        sensor_response_map = dict()
-        sensor_response_map.update( await self._process_events() )
+        sensor_response_list_map = await self._process_events()
 
-        await self.sensor_response_manager().update_with_latest_sensor_responses(
-            sensor_response_map = sensor_response_map,
+        await self.sensor_response_manager().update_with_latest_sensor_response_lists(
+            sensor_response_list_map = sensor_response_list_map,
         )
-        self.record_healthy( f'Processed {len(sensor_response_map)} Frigate states.' )
+        response_count = sum( len( v ) for v in sensor_response_list_map.values() )
+        self.record_healthy( f'Processed {response_count} Frigate states.' )
         return
 
     # ---- SensorResponse factory helpers ------------------------------
@@ -176,25 +178,29 @@ class FrigateMonitor( PeriodicMonitor, FrigateMixin, SensorResponseMixin ):
 
     # ---- Event processing pipeline ---------------------------------
 
-    async def _process_events(self) -> Dict:
+    async def _process_events(self) -> Dict[ IntegrationKey, List[ SensorResponse ] ]:
         current_poll_datetime = datetimeproxy.now()
 
-        scan_map, scan_touched = await self._scan_new_events_phase()
-        refresh_map, refresh_touched = await self._refresh_tracked_events_phase(
+        scan_responses, scan_touched = await self._scan_new_events_phase()
+        refresh_responses, refresh_touched = await self._refresh_tracked_events_phase(
             current_poll_datetime = current_poll_datetime,
         )
-        heartbeat_map = await self._heartbeat_idle_cameras_phase(
+        heartbeat_responses = await self._heartbeat_idle_cameras_phase(
             current_poll_datetime = current_poll_datetime,
             cameras_touched = scan_touched | refresh_touched,
         )
 
-        sensor_response_map : Dict = {}
-        sensor_response_map.update( scan_map )
-        sensor_response_map.update( refresh_map )
-        sensor_response_map.update( heartbeat_map )
-        return sensor_response_map
+        # Group all responses by integration_key, preserving multiple
+        # responses per key for the same poll cycle (Person→Car within
+        # one cycle yields END Person + START Car on the same sensor).
+        sensor_response_list_map : Dict[ IntegrationKey, List[ SensorResponse ] ] = (
+            defaultdict( list )
+        )
+        for response in ( scan_responses + refresh_responses + heartbeat_responses ):
+            sensor_response_list_map[ response.integration_key ].append( response )
+        return dict( sensor_response_list_map )
 
-    async def _scan_new_events_phase(self) -> Tuple[ Dict, Set[ str ] ]:
+    async def _scan_new_events_phase(self) -> Tuple[ List[ SensorResponse ], Set[ str ] ]:
         """Query ``?after=cursor`` for events whose ``start_time``
         is past our watermark. Cursor is monotonic so any id returned
         here is new to us (any prior open event has ``start_time
@@ -202,9 +208,8 @@ class FrigateMonitor( PeriodicMonitor, FrigateMixin, SensorResponseMixin ):
 
         Each new event:
           - emit START transition
-          - if already closed: also emit END transition (open-and-close
-            collapsed into a single cycle is unavoidable when an
-            event's lifetime is shorter than the poll interval)
+          - if already closed: also emit END transition (downstream
+            handles both as a multi-response sequence on the same key)
           - else: enter the open set for phase-2 tracking
         """
         after_epoch = self._poll_cursor_datetime.timestamp()
@@ -230,28 +235,26 @@ class FrigateMonitor( PeriodicMonitor, FrigateMixin, SensorResponseMixin ):
                 continue
             new_events.append( event )
 
-        sensor_response_map : Dict = {}
+        responses : List[ SensorResponse ] = []
         cameras_touched : Set[ str ] = set()
         now = datetimeproxy.now()
         for event in new_events:
             cameras_touched.add( event.camera_name )
-            start_response = self._build_object_presence_response(
+            responses.append( self._build_object_presence_response(
                 event = event,
                 value = FrigateConverter.to_canonical_object_class(
                     raw_class = event.object_class,
                 ),
                 timestamp = event.start_datetime,
                 correlation_role = CorrelationRole.START,
-            )
-            sensor_response_map[ start_response.integration_key ] = start_response
+            ))
             if event.is_closed:
-                end_response = self._build_object_presence_response(
+                responses.append( self._build_object_presence_response(
                     event = event,
                     value = FrigateConverter.OBJECT_NONE_VALUE,
                     timestamp = event.end_datetime,
                     correlation_role = CorrelationRole.END,
-                )
-                sensor_response_map[ end_response.integration_key ] = end_response
+                ))
             else:
                 self._tracked_events[ event.event_id ] = TrackedFrigateEvent(
                     event = event,
@@ -267,20 +270,20 @@ class FrigateMonitor( PeriodicMonitor, FrigateMixin, SensorResponseMixin ):
             latest_start = max( e.start_datetime for e in new_events )
             if latest_start > self._poll_cursor_datetime:
                 self._poll_cursor_datetime = latest_start
-        return sensor_response_map, cameras_touched
+        return responses, cameras_touched
 
     async def _refresh_tracked_events_phase(
             self,
             current_poll_datetime : datetime,
-    ) -> Tuple[ Dict, Set[ str ] ]:
-        """Per-id refresh for every event currently in the open set.
+    ) -> Tuple[ List[ SensorResponse ], Set[ str ] ]:
+        """Per-id refresh for every event currently in the tracked set.
         Outcomes per id:
           - 404 → force-close (vanished)
           - other failure → leave in set; force-close if aged out
           - closed → emit END, remove from set
           - still open → refresh snapshot; force-close if aged out
         """
-        sensor_response_map : Dict = {}
+        responses : List[ SensorResponse ] = []
         cameras_touched : Set[ str ] = set()
         tracked_ids = list( self._tracked_events.keys() )  # snapshot
         for event_id in tracked_ids:
@@ -296,7 +299,7 @@ class FrigateMonitor( PeriodicMonitor, FrigateMixin, SensorResponseMixin ):
                     tracked_event = tracked_event,
                     timestamp = current_poll_datetime,
                     reason = 'vanished',
-                    sensor_response_map = sensor_response_map,
+                    responses = responses,
                     cameras_touched = cameras_touched,
                 )
                 continue
@@ -309,7 +312,7 @@ class FrigateMonitor( PeriodicMonitor, FrigateMixin, SensorResponseMixin ):
                         tracked_event = tracked_event,
                         timestamp = current_poll_datetime,
                         reason = 'force_close_timeout',
-                        sensor_response_map = sensor_response_map,
+                        responses = responses,
                         cameras_touched = cameras_touched,
                     )
                 continue
@@ -324,13 +327,12 @@ class FrigateMonitor( PeriodicMonitor, FrigateMixin, SensorResponseMixin ):
 
             cameras_touched.add( frigate_event.camera_name )
             if frigate_event.is_closed:
-                end_response = self._build_object_presence_response(
+                responses.append( self._build_object_presence_response(
                     event = frigate_event,
                     value = FrigateConverter.OBJECT_NONE_VALUE,
                     timestamp = frigate_event.end_datetime,
                     correlation_role = CorrelationRole.END,
-                )
-                sensor_response_map[ end_response.integration_key ] = end_response
+                ))
                 del self._tracked_events[ event_id ]
                 continue
 
@@ -340,16 +342,16 @@ class FrigateMonitor( PeriodicMonitor, FrigateMixin, SensorResponseMixin ):
                     tracked_event = tracked_event,
                     timestamp = current_poll_datetime,
                     reason = 'force_close_timeout',
-                    sensor_response_map = sensor_response_map,
+                    responses = responses,
                     cameras_touched = cameras_touched,
                 )
-        return sensor_response_map, cameras_touched
+        return responses, cameras_touched
 
     async def _heartbeat_idle_cameras_phase(
             self,
             current_poll_datetime : datetime,
             cameras_touched       : Set[ str ],
-    ) -> Dict:
+    ) -> List[ SensorResponse ]:
         """Emit OBJECT_NONE for cameras with no event activity this
         cycle and no event currently tracked in the open set.
 
@@ -363,13 +365,13 @@ class FrigateMonitor( PeriodicMonitor, FrigateMixin, SensorResponseMixin ):
             logger.warning(
                 f'Frigate camera list fetch failed during heartbeat: {e}'
             )
-            return {}
+            return []
 
         open_camera_names = {
             tracked_event.event.camera_name
             for tracked_event in self._tracked_events.values()
         }
-        sensor_response_map : Dict = {}
+        responses : List[ SensorResponse ] = []
         for camera in cameras:
             camera_name = camera[ 'name' ]
             if camera_name in cameras_touched:
@@ -381,7 +383,7 @@ class FrigateMonitor( PeriodicMonitor, FrigateMixin, SensorResponseMixin ):
                 value = FrigateConverter.OBJECT_NONE_VALUE,
                 timestamp = current_poll_datetime,
             )
-            sensor_response_map[ idle_response.integration_key ] = idle_response
+            responses.append( idle_response )
 
             if settings.DEBUG and settings.DEBUG_TRACE_STATE:
                 DevOverrideManager.trace_state(
@@ -390,26 +392,25 @@ class FrigateMonitor( PeriodicMonitor, FrigateMixin, SensorResponseMixin ):
                     integration_value = idle_response.value,
                     camera_name = camera_name,
                 )
-        return sensor_response_map
+        return responses
 
     def _force_close(
             self,
-            tracked_event             : TrackedFrigateEvent,
-            timestamp           : datetime,
-            reason              : str,
-            sensor_response_map : Dict,
-            cameras_touched     : Set[ str ],
+            tracked_event   : TrackedFrigateEvent,
+            timestamp       : datetime,
+            reason          : str,
+            responses       : List[ SensorResponse ],
+            cameras_touched : Set[ str ],
     ) -> None:
-        """Drop ``tracked_event`` from the open set and emit a synthesized
-        END response in ``sensor_response_map``. Used when Frigate's
+        """Drop ``tracked_event`` from the tracked set and append a
+        synthesized END response to ``responses``. Used when Frigate's
         canonical state cannot be obtained (404, persistent fetch
         failure past the age threshold)."""
-        response = self._build_force_close_response(
+        responses.append( self._build_force_close_response(
             tracked_event = tracked_event,
             timestamp = timestamp,
             reason = reason,
-        )
-        sensor_response_map[ response.integration_key ] = response
+        ))
         cameras_touched.add( tracked_event.event.camera_name )
         del self._tracked_events[ tracked_event.event.event_id ]
         return

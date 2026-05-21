@@ -114,19 +114,47 @@ class SensorResponseManager( Singleton, SensorHistoryMixin, EventMixin ):
     async def update_with_latest_sensor_responses(
             self,
             sensor_response_map : Dict[ IntegrationKey, SensorResponse ] ):
-        """
-        Used when states are polled and get current state at a point in time
-        which may or may not represent a change in state.  We only want to
-        keep the history of changed states, so we fetch previous values to
-        detect changes.
-        """
+        """Single-response-per-key entry point. The common case — one
+        transition per sensor per poll cycle. Callers whose poll
+        window may carry multiple transitions for the same sensor
+        (e.g., Frigate switching object class within one cycle)
+        should call :meth:`update_with_latest_sensor_response_lists`
+        directly instead of forcing their multiple responses through
+        this dict shape (which would collapse them on overwrite).
+
+        Thin adapter: wraps each value in a single-element list and
+        delegates to the list-shape entry point."""
         if not sensor_response_map:
+            return
+        await self.update_with_latest_sensor_response_lists(
+            sensor_response_list_map = {
+                key: [ response ]
+                for key, response in sensor_response_map.items()
+            },
+        )
+        return
+
+    async def update_with_latest_sensor_response_lists(
+            self,
+            sensor_response_list_map : Dict[ IntegrationKey, List[ SensorResponse ] ] ):
+        """Multi-response-per-key entry point.
+
+        Each list is treated as chronologically ordered (sorted by
+        timestamp internally as a safety net). Each response is
+        compared against the running previous state — initially the
+        cached latest from Redis, then the prior response in the
+        same list. Equal-value responses are skipped; changes are
+        recorded as both a history row and an entity-state transition.
+        """
+        if not sensor_response_list_map:
             return
         changed_sensor_response_list = list()
         entity_state_transition_list = list()
 
-        list_cache_keys = [ self.to_sensor_response_list_cache_key(x) for x in sensor_response_map.keys() ]
-        integration_keys = list( sensor_response_map.keys() )
+        integration_keys = list( sensor_response_list_map.keys() )
+        list_cache_keys = [
+            self.to_sensor_response_list_cache_key( k ) for k in integration_keys
+        ]
 
         pipeline = self._redis_client.pipeline()
         for list_cache_key in list_cache_keys:
@@ -135,11 +163,19 @@ class SensorResponseManager( Singleton, SensorHistoryMixin, EventMixin ):
         cached_values = pipeline.execute()
 
         for integration_key, cached_value in zip( integration_keys, cached_values ):
-            latest_sensor_response = sensor_response_map.get( integration_key )
+            response_list = sorted(
+                sensor_response_list_map.get( integration_key ) or [],
+                key = lambda r : r.timestamp,
+            )
 
             if cached_value:
                 previous_sensor_response = SensorResponse.from_string( cached_value )
-                if latest_sensor_response.value == previous_sensor_response.value:
+            else:
+                previous_sensor_response = None
+
+            for latest_sensor_response in response_list:
+                if ( previous_sensor_response is not None
+                     and latest_sensor_response.value == previous_sensor_response.value ):
                     if settings.DEBUG and settings.DEBUG_TRACE_STATE:
                         sensor = latest_sensor_response.sensor
                         DevOverrideManager.trace_state(
@@ -150,32 +186,35 @@ class SensorResponseManager( Singleton, SensorHistoryMixin, EventMixin ):
                         )
                     continue
 
-                entity_state_transition = await self._create_entity_state_transition(
-                    previous_sensor_response = previous_sensor_response,
-                    latest_sensor_response = latest_sensor_response,
-                )
-                if entity_state_transition:
-                    entity_state_transition_list.append( entity_state_transition )
-
-                if settings.DEBUG and settings.DEBUG_TRACE_STATE:
-                    sensor = latest_sensor_response.sensor
-                    DevOverrideManager.trace_state(
-                        'hi.sensor.commit',
-                        integration_name = integration_key.integration_name,
-                        hi_entity_state_id = sensor.entity_state.id if sensor else None,
-                        hi_value = f'{previous_sensor_response.value} -> {latest_sensor_response.value}',
+                if previous_sensor_response is not None:
+                    entity_state_transition = await self._create_entity_state_transition(
+                        previous_sensor_response = previous_sensor_response,
+                        latest_sensor_response = latest_sensor_response,
                     )
-            else:
-                if settings.DEBUG and settings.DEBUG_TRACE_STATE:
-                    sensor = latest_sensor_response.sensor
-                    DevOverrideManager.trace_state(
-                        'hi.sensor.first',
-                        integration_name = integration_key.integration_name,
-                        hi_entity_state_id = sensor.entity_state.id if sensor else None,
-                        hi_value = latest_sensor_response.value,
-                    )
+                    if entity_state_transition:
+                        entity_state_transition_list.append( entity_state_transition )
 
-            changed_sensor_response_list.append( latest_sensor_response )
+                    if settings.DEBUG and settings.DEBUG_TRACE_STATE:
+                        sensor = latest_sensor_response.sensor
+                        DevOverrideManager.trace_state(
+                            'hi.sensor.commit',
+                            integration_name = integration_key.integration_name,
+                            hi_entity_state_id = sensor.entity_state.id if sensor else None,
+                            hi_value = f'{previous_sensor_response.value} -> {latest_sensor_response.value}',
+                        )
+                else:
+                    if settings.DEBUG and settings.DEBUG_TRACE_STATE:
+                        sensor = latest_sensor_response.sensor
+                        DevOverrideManager.trace_state(
+                            'hi.sensor.first',
+                            integration_name = integration_key.integration_name,
+                            hi_entity_state_id = sensor.entity_state.id if sensor else None,
+                            hi_value = latest_sensor_response.value,
+                        )
+
+                changed_sensor_response_list.append( latest_sensor_response )
+                previous_sensor_response = latest_sensor_response
+                continue
             continue
 
         await self._add_latest_sensor_responses( changed_sensor_response_list )

@@ -351,12 +351,20 @@ class _PipelineTestBase( AsyncTaskFastTestCase ):
         }
 
     def _find_response(self, responses, camera_name):
+        """Return the last (latest) response for the given camera.
+        Equivalent to the historical "winner" of the single-response
+        contract; multi-response tests should use ``_find_responses``
+        and assert on the full list."""
+        response_list = self._find_responses( responses, camera_name )
+        return response_list[ -1 ]
+
+    def _find_responses(self, responses, camera_name):
         target = f'{FrigateManager.OBJECT_PRESENCE_SENSOR_PREFIX}.{camera_name}'
-        for r in responses.values():
-            if r.integration_key.integration_name == target:
-                return r
+        for integration_key, response_list in responses.items():
+            if integration_key.integration_name == target:
+                return response_list
             continue
-        raise AssertionError( f'No OBJECT_PRESENCE response for {camera_name!r}' )
+        raise AssertionError( f'No OBJECT_PRESENCE responses for {camera_name!r}' )
 
     async def _run(self):
         return await self.monitor._process_events()
@@ -412,8 +420,9 @@ class TestFrigateScanNewEventsPhase( _PipelineTestBase ):
 
     def test_open_and_closed_within_one_cycle_emits_both_rows(self):
         """Lifetime shorter than poll interval: a single scan returns
-        the event already-closed. Emit START and END in this cycle,
-        don't enter the open set."""
+        the event already-closed. Both START and END must travel in
+        the per-key response list — the SensorResponseManager records
+        each as its own history row and transition."""
         s = self.start + timedelta( seconds = 5 )
         e = s + timedelta( seconds = 1 )
         self._set_events([
@@ -422,12 +431,14 @@ class TestFrigateScanNewEventsPhase( _PipelineTestBase ):
         responses = self.run_async( self._run() )
 
         self.assertNotIn( 'X', self.monitor._tracked_events )
-        # The map is keyed by integration_key so START and END for the
-        # same camera collapse to one entry — the latest assignment
-        # wins. END should be the survivor since it's assigned after.
-        obj = self._find_response( responses, 'front_yard' )
-        self.assertEqual( obj.correlation_role, CorrelationRole.END )
-        self.assertEqual( obj.correlation_id, 'X' )
+        response_list = self._find_responses( responses, 'front_yard' )
+        roles = [ r.correlation_role for r in response_list ]
+        self.assertEqual(
+            roles, [ CorrelationRole.START, CorrelationRole.END ],
+        )
+        self.assertTrue(
+            all( r.correlation_id == 'X' for r in response_list ),
+        )
 
     def test_malformed_event_payload_is_skipped(self):
         s = self.start + timedelta( seconds = 5 )
@@ -673,8 +684,8 @@ class TestFrigateHeartbeatPhase( _PipelineTestBase ):
         target = (
             f'{FrigateManager.OBJECT_PRESENCE_SENSOR_PREFIX}.front_yard'
         )
-        for r in responses.values():
-            if r.integration_key.integration_name == target:
+        for integration_key in responses.keys():
+            if integration_key.integration_name == target:
                 self.fail(
                     'front_yard should not receive a phase-3 heartbeat'
                     ' while it has an open event in the tracking set.'
@@ -751,5 +762,66 @@ class TestFrigateOpenCloseTransitionAcrossCycles( _PipelineTestBase ):
 
         # Open set is empty again — ready to receive the next event.
         self.assertEqual( self.monitor._tracked_events, {} )
+
+    def test_object_class_switch_within_one_cycle_emits_both_transitions(self):
+        """Person→Car switch within one poll cycle: Frigate closes the
+        prior Person event and opens a Car event. HI's cursor scan
+        sees the new Car; phase 2 refresh sees the closed Person. Both
+        responses must travel in the per-key list — collapse to one
+        would silently drop the Car START and a downstream rule on
+        ``OBJECT_PRESENCE NEQ OBJECT_NONE`` would fail to re-fire."""
+        # Cycle 1: Person event is open.
+        person_start = self.start + timedelta( seconds = 1 )
+        self._set_events([
+            self._api_event(
+                event_id = 'p', start = person_start, end = None,
+                label = 'person',
+            ),
+        ])
+        self._set_event_by_id({
+            'p': self._api_event(
+                event_id = 'p', start = person_start, end = None,
+                label = 'person',
+            ),
+        })
+        self.run_async( self._run() )
+        self.assertIn( 'p', self.monitor._tracked_events )
+
+        # Cycle 2: user switched Person → Car. Simulator closes the
+        # Person event and opens a Car event with a later start_time.
+        person_end = person_start + timedelta( seconds = 5 )
+        car_start = person_end + timedelta( milliseconds = 1 )
+        self._set_events([
+            self._api_event(
+                event_id = 'c', start = car_start, end = None,
+                label = 'car',
+            ),
+        ])
+        self._set_event_by_id({
+            'p': self._api_event(
+                event_id = 'p', start = person_start, end = person_end,
+                label = 'person',
+            ),
+            'c': self._api_event(
+                event_id = 'c', start = car_start, end = None,
+                label = 'car',
+            ),
+        })
+        cycle2 = self.run_async( self._run() )
+
+        # Person END (phase 2) and Car START (phase 1) must BOTH be
+        # in front_yard's response list, in chronological order. The
+        # SensorResponseManager records each transition independently.
+        response_list = self._find_responses( cycle2, 'front_yard' )
+        sorted_responses = sorted( response_list, key = lambda r : r.timestamp )
+        self.assertEqual( len( sorted_responses ), 2 )
+        self.assertEqual( sorted_responses[ 0 ].correlation_role, CorrelationRole.END )
+        self.assertEqual( sorted_responses[ 0 ].correlation_id, 'p' )
+        self.assertEqual( sorted_responses[ 1 ].correlation_role, CorrelationRole.START )
+        self.assertEqual( sorted_responses[ 1 ].correlation_id, 'c' )
+
+        # Open set has swapped contents: Person gone, Car tracked.
+        self.assertNotIn( 'p', self.monitor._tracked_events )
+        self.assertIn( 'c', self.monitor._tracked_events )
 
 
