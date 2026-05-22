@@ -47,7 +47,7 @@ class HbImporter:
             entity.integration_key = entity_integration_key
             entity.integration_payload = entity_payload
             entity.can_user_delete = HbMetaData.allow_entity_deletion
-            entity.can_add_custom_attributes = HbMetaData.can_add_custom_attributes
+            entity.allow_internal_attributes = HbMetaData.allow_internal_attributes
             entity.save()
 
         return entity
@@ -67,9 +67,9 @@ class HbImporter:
                 messages.append( f'Entity type changed for {entity}. Setting to "{desired_entity_type}"' )
                 entity.entity_type = desired_entity_type
 
-            if entity.can_add_custom_attributes != HbMetaData.can_add_custom_attributes:
-                messages.append( f'can_add_custom_attributes changed for {entity}.' )
-                entity.can_add_custom_attributes = HbMetaData.can_add_custom_attributes
+            if entity.allow_internal_attributes != HbMetaData.allow_internal_attributes:
+                messages.append( f'allow_internal_attributes changed for {entity}.' )
+                entity.allow_internal_attributes = HbMetaData.allow_internal_attributes
 
             new_payload = HbConverter.hb_item_to_entity_payload( hb_item = hb_item )
             if entity.integration_payload != new_payload:

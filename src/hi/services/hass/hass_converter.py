@@ -592,7 +592,7 @@ class HassConverter:
         """Refresh integration-owned components on an existing entity.
 
         ``entity.name`` and ``entity.entity_type`` are user-editable
-        in HI's UI on HASS entities (``can_add_custom_attributes``
+        in HI's UI on HASS entities (``allow_internal_attributes``
         defaults to True), so they're treated as user-owned after
         creation: this method does not touch them on update. The
         operator's choice of name and type sticks across refreshes.

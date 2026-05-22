@@ -316,15 +316,16 @@ class TestEntityEditView(DualModeViewTestCase):
         self.assertIsNotNone(new_attr)
         self.assertEqual(new_attr.value, 'new value')
 
-    def test_get_hides_add_and_update_buttons_when_entity_disallows_custom_attributes(self):
-        """When the entity is integration-managed (cannot add custom
-        attributes), the Add File / Add Info / Update buttons are
-        omitted entirely rather than rendered disabled — disabled-but-
-        visible affordances were confusing on a fully read-only
-        surface, and Update was a no-op there.
+    def test_get_hides_internal_attribute_section_when_entity_disallows_it(self):
+        """When the entity has ``allow_internal_attributes`` False
+        (e.g., an integration-managed entity whose attribute data is
+        owned externally), the entire HI internal attribute section is
+        suppressed: Add File / Add Info buttons, the Files grid, the
+        Properties list, and the Deleted attributes list are all
+        omitted from the rendered surface.
         """
-        self.entity.can_add_custom_attributes = False
-        self.entity.save(update_fields=['can_add_custom_attributes'])
+        self.entity.allow_internal_attributes = False
+        self.entity.save(update_fields=['allow_internal_attributes'])
 
         url = reverse('entity_edit', kwargs={'entity_id': self.entity.id})
         response = self.client.get(url)
@@ -337,8 +338,8 @@ class TestEntityEditView(DualModeViewTestCase):
         self.assertNotIn('>Add Info<', content)
 
     def test_post_rejects_new_attribute_when_entity_disallows_custom_attributes(self):
-        self.entity.can_add_custom_attributes = False
-        self.entity.save(update_fields=['can_add_custom_attributes'])
+        self.entity.allow_internal_attributes = False
+        self.entity.save(update_fields=['allow_internal_attributes'])
 
         url = reverse('entity_edit', kwargs={'entity_id': self.entity.id})
         form_data = EntityAttributeSyntheticData.create_form_data_for_entity_edit(entity=self.entity)
@@ -356,12 +357,15 @@ class TestEntityEditView(DualModeViewTestCase):
 
         response = self.client.post(url, form_data)
 
+        # Defense-in-depth: the formset clean() rejects the new
+        # attribute even though the UI section that would expose the
+        # Add affordances is suppressed under the new semantic. The
+        # surface no longer renders the attribute section (so the
+        # formset's non-form error text is not present in the rendered
+        # body), but the submission still fails and no row is created.
         self.assertErrorResponse(response)
         self.assertJsonResponse(response)
         self.assertFalse(self.entity.attributes.filter(name='blocked_property').exists())
-
-        content = response.content.decode('utf-8')
-        self.assertIn('New attributes cannot be added for this item because attributes are managed externally.', content)
 
     def test_entity_with_complex_attribute_mix(self):
         """Test editing entity with mixed attribute types (text, file, secret)."""

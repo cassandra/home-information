@@ -13,7 +13,7 @@ class IntegrationMetaData:
     label                     : str  # For human-friendly displaying
     attribute_type            : IntegrationAttributeType
     allow_entity_deletion     : bool
-    can_add_custom_attributes : bool = True
+    allow_internal_attributes : bool = True
     logo_static_path          : str  = 'img/integrations/default.svg'
 
     

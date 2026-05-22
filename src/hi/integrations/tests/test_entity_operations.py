@@ -242,7 +242,7 @@ class PreserveWithUserDataFlagTests(TestCase):
             integration_id='test_integration',
             integration_name='locked_device',
             can_user_delete=False,
-            can_add_custom_attributes=False,
+            allow_internal_attributes=False,
         )
         # Has user data so it qualifies for preservation.
         EntityAttribute.objects.create(
@@ -261,7 +261,7 @@ class PreserveWithUserDataFlagTests(TestCase):
         entity.refresh_from_db()
         self.assertIsNone(entity.integration_id)
         self.assertTrue(entity.can_user_delete)
-        self.assertTrue(entity.can_add_custom_attributes)
+        self.assertTrue(entity.allow_internal_attributes)
 
     def test_disconnected_entity_capabilities_are_suppressed(self):
         """

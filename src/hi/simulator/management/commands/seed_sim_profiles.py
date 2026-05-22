@@ -55,7 +55,7 @@ detached / removed transitions for that integration.
      later disappears upstream.
   2. Repeat for ZM: switch ZoneMinder to ``baseline``, sync, add a
      custom attribute to its ★-prefixed monitor. (HomeBox sets
-     ``can_add_custom_attributes = False`` by design, so HB
+     ``allow_internal_attributes = False`` by design, so HB
      entities cannot participate in the detach/reconnect cycle and
      have no anchor item.)
   3. Switch each module to its ``baseline-changed``. Refresh sync.
@@ -365,7 +365,7 @@ class Command(BaseCommand):
 
     def _build_homebox_baseline(self, profile: SimProfile) -> int:
         # 4 items with mixed metadata richness. No ★-prefixed anchor
-        # here: HomeBox sets ``can_add_custom_attributes = False`` (the
+        # here: HomeBox sets ``allow_internal_attributes = False`` (the
         # converter is the source of truth for HB item attributes), so
         # the operator cannot add a custom attribute on the HI side
         # and the detach/reconnect cycle does not apply to HB.

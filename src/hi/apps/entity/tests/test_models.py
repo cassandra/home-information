@@ -20,7 +20,7 @@ class TestEntity(BaseTestCase):
             integration_name='test_integration',
         )
 
-        self.assertTrue(entity.can_add_custom_attributes)
+        self.assertTrue(entity.allow_internal_attributes)
         return
 
     def test_integration_key_enforces_unique_entity_identification(self):

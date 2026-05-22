@@ -51,7 +51,7 @@ class EntityAttributeRegularFormSet(RegularAttributeBaseFormSet):
     def clean(self):
         super().clean()
 
-        if not self.instance or self.instance.can_add_custom_attributes:
+        if not self.instance or self.instance.allow_internal_attributes:
             return
 
         for form in self.forms:

@@ -234,7 +234,7 @@ class CreateModelsForHassDeviceReconnectContractTests(TestCase):
 class UpdateModelsForHassDeviceContractTests(TestCase):
     """Pin that ``update_models_for_hass_device`` treats user-editable
     fields (``name``, ``entity_type``) as user-owned after creation.
-    HASS entities default ``can_add_custom_attributes=True`` so the
+    HASS entities default ``allow_internal_attributes=True`` so the
     operator can edit name/type via the entity-edit modal; once
     edited, refreshes must not silently revert those changes."""
 

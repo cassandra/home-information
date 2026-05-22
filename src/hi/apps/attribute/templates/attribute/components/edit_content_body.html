@@ -90,6 +90,7 @@ by using the AttributeItemEditContext pattern.
       <div class="{{ DIVID.ATTR_V2_ACTION_BUTTONS_CLASS }}">
         {% block additional_actions %}
         {% endblock %}
+        {% if attr_page_context.allow_internal_attributes %}
         {% if attr_page_context.can_add_custom_attributes %}
         {% block file_upload_button %}
         <button type="button"
@@ -107,30 +108,33 @@ by using the AttributeItemEditContext pattern.
         </button>
         {% endblock %}
         {% endif %}
+        {% endif %}
       </div>
     </div>
   </div>
 </div>
+{% if attr_page_context.allow_internal_attributes %}
 <!-- Scrollable Content Area (below sticky panel) -->
 <div id="{{ attr_page_context.scrollable_content_html_id }}"
      class="{{ DIVID.ATTR_V2_SCROLLABLE_CONTENT_CLASS }}">
-  
+
   <!-- Files Section -->
   {% block files_section %}
   {% include "attribute/components/file_grid.html" with file_attributes=file_attributes %}
   {% endblock %}
-  
+
   <!-- Properties Section -->
   {% block properties_section %}
   {% include "attribute/components/regular_attribute_list.html" with regular_attributes_formset=regular_attributes_formset %}
   {% endblock %}
-  
+
   <!-- Additional Sections -->
   {% block additional_sections %}
   {% include "attribute/components/deleted_attribute_list.html" with deleted_attributes=deleted_attributes %}
   {% endblock %}
-  
+
 </div>
+{% endif %}
 
 
 

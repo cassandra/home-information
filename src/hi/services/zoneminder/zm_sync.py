@@ -373,7 +373,7 @@ class ZoneMinderSynchronizer( IntegrationSynchronizer, ZoneMinderMixin ):
         """Refresh integration-owned components on an existing entity.
 
         ``entity.name`` is user-editable in HI's UI on ZM entities
-        (``can_add_custom_attributes`` defaults to True), so it's
+        (``allow_internal_attributes`` defaults to True), so it's
         treated as user-owned after creation: this method does not
         touch it on update. ZM monitor renames upstream are not
         propagated; the operator's chosen name stays.

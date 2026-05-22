@@ -44,7 +44,7 @@ class TestHbConverter(TestCase):
         self.assertEqual(entity.integration_name, 'item-create')
         self.assertEqual(entity.name, 'Drill')
         self.assertEqual(entity.entity_type, EntityType.OTHER)
-        self.assertFalse(entity.can_add_custom_attributes)
+        self.assertFalse(entity.allow_internal_attributes)
         self.assertNotIn('description', entity.integration_payload)
         self.assertEqual(entity.integration_payload.get('location', {}).get('name'), 'Garage')
         self.assertEqual(entity.integration_payload.get('labels')[0].get('name'), 'Tools')
@@ -84,7 +84,7 @@ class TestHbConverter(TestCase):
             name='Old Name',
             entity_type_str=str(EntityType.SERVICE),
             can_user_delete=False,
-            can_add_custom_attributes=True,
+            allow_internal_attributes=True,
             integration_id=HbMetaData.integration_id,
             integration_name='item-update',
             integration_payload={'quantity': 1},
@@ -98,7 +98,7 @@ class TestHbConverter(TestCase):
         entity.refresh_from_db()
         self.assertEqual(entity.name, 'New Name')
         self.assertEqual(entity.entity_type, EntityType.OTHER)
-        self.assertFalse(entity.can_add_custom_attributes)
+        self.assertFalse(entity.allow_internal_attributes)
         self.assertNotIn('description', entity.integration_payload)
         self.assertEqual(entity.integration_payload.get('quantity'), 3)
 

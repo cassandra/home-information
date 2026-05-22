@@ -10,13 +10,12 @@ Extends the generic attribute edit content body with entity-specific field layou
   <div class="col-md-8">
     <div class="form-group mb-0">
       <small class="text-muted">Name</small>
-      <input type="text" 
+      <input type="text"
              id="{{ owner_form.name.id_for_label }}"
              name="{{ owner_form.name.html_name }}"
              value="{{ owner_form.name.value|default:'' }}"
              class="form-control form-control-sm"
-             {% if owner_form.name.field.required %}required{% endif %}
-             {% if not attr_item_context.can_add_custom_attributes %}readonly aria-readonly="true" title="{{ attr_item_context.add_attribute_disabled_message }}"{% endif %}>
+             {% if owner_form.name.field.required %}required{% endif %}>
       {% if owner_form.name.errors %}
         <div class="invalid-feedback d-block">
           {{ owner_form.name.errors }}

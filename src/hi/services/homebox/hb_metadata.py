@@ -8,6 +8,6 @@ HbMetaData = IntegrationMetaData(
     label = 'HomeBox',
     attribute_type = HbAttributeType,
     allow_entity_deletion = False,
-    can_add_custom_attributes = False,
+    allow_internal_attributes = False,
     logo_static_path = 'img/integrations/homebox.svg',
 )

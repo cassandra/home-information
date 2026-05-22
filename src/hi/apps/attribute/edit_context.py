@@ -150,6 +150,20 @@ class AttributePageEditContext:
         return True
 
     @property
+    def allow_internal_attributes(self) -> bool:
+        """Whether the HI internal attribute section is rendered at all on
+        this surface. When False, the entire section (Files + Properties +
+        Deleted attributes + Add buttons) is suppressed; the section does
+        not exist. Independent of ``can_add_custom_attributes`` (which only
+        gates the Add affordance when the section IS rendered) and
+        ``allow_edits`` (which gates UPDATE-button visibility).
+
+        Used by integration-connected entities where the attribute data is
+        owned externally and HI does not present a local attribute
+        surface."""
+        return True
+
+    @property
     def add_attribute_disabled_message(self) -> str:
         return ''
 

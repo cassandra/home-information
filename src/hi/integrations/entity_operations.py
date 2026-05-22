@@ -389,7 +389,7 @@ class EntityIntegrationOperations:
             # entity is no longer integration-managed, so user-management
             # rights are restored.
             entity.can_user_delete = True
-            entity.can_add_custom_attributes = True
+            entity.allow_internal_attributes = True
 
             # Suppress integration-backed capabilities. The intrinsic
             # video-stream capability is genuinely lost (the backing sensor

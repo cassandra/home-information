@@ -53,8 +53,8 @@ class Entity( IntegrationDetailsModel, LocationItemModelMixin ):
         'User Delete?',
         default = True,
     )
-    can_add_custom_attributes = models.BooleanField(
-        'Can Add Attributes?',
+    allow_internal_attributes = models.BooleanField(
+        'Allow Internal Attributes?',
         default = True,
     )
     has_video_stream = models.BooleanField(
