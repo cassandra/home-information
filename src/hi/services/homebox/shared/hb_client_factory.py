@@ -8,9 +8,9 @@ from hi.integrations.exceptions import IntegrationAttributeError
 from hi.integrations.models import IntegrationAttribute
 from hi.integrations.transient_models import IntegrationKey, IntegrationValidationResult
 
-from .enums import HbAttributeType
+from hi.services.homebox.enums import HbAttributeType
 from .hb_client import HbClient
-from .hb_metadata import HbMetaData
+from hi.services.homebox.hb_metadata import HbMetaData
 
 logger = logging.getLogger(__name__)
 

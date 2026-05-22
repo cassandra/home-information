@@ -18,9 +18,9 @@ from hi.apps.monitor.periodic_monitor import PeriodicMonitor
 
 from .hb_controller import HomeBoxController
 from .hb_manage_view_pane import HbManageViewPane
-from .hb_manager import HomeBoxManager
+from .shared.hb_manager import HomeBoxManager
 from .hb_metadata import HbMetaData
-from .hb_sync import HomeBoxSynchronizer
+from .importer.hb_sync import HomeBoxSynchronizer
 from .monitors import HomeBoxMonitor
 
 logger = logging.getLogger(__name__)

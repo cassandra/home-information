@@ -20,10 +20,10 @@ from hi.integrations.transient_models import (
 )
 from hi.integrations.models import Integration, IntegrationAttribute
 
-from .enums import HbAttributeType
+from hi.services.homebox.enums import HbAttributeType
 from .hb_client import HbClient
 from .hb_client_factory import HbClientFactory
-from .hb_metadata import HbMetaData
+from hi.services.homebox.hb_metadata import HbMetaData
 
 logger = logging.getLogger(__name__)
 

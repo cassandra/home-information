@@ -2,7 +2,7 @@ from asgiref.sync import sync_to_async
 import asyncio
 import logging
 
-from .hb_manager import HomeBoxManager
+from .shared.hb_manager import HomeBoxManager
 
 logger = logging.getLogger(__name__)
 

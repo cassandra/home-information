@@ -11,10 +11,11 @@ from hi.integrations.sync_check import IntegrationSyncCheck, SyncDelta
 from hi.integrations.sync_result import IntegrationSyncResult
 from hi.integrations.transient_models import IntegrationKey
 
-from .hb_converter import HbConverter
-from .hb_metadata import HbMetaData
-from .hb_mixins import HomeBoxMixin
-from .hb_models import HbItem
+from hi.services.homebox.shared.hb_converter import HbConverter
+from hi.services.homebox.hb_metadata import HbMetaData
+from hi.services.homebox.hb_mixins import HomeBoxMixin
+from hi.services.homebox.shared.hb_models import HbItem
+from .hb_importer import HbImporter
 
 logger = logging.getLogger(__name__)
 
@@ -202,7 +203,7 @@ class HomeBoxSynchronizer( IntegrationSynchronizer, HomeBoxMixin ):
         existing-entity parameter set, so the converter repopulates
         integration-owned components on the previously-disconnected
         entity rather than creating a fresh one."""
-        HbConverter.create_models_for_hb_item(
+        HbImporter.create_models_for_hb_item(
             hb_item = upstream,
             entity = entity,
         )
@@ -231,7 +232,7 @@ class HomeBoxSynchronizer( IntegrationSynchronizer, HomeBoxMixin ):
     def _create_entity( self,
                         item : HbItem,
                         result : IntegrationSyncResult ) -> Entity:
-        entity = HbConverter.create_models_for_hb_item( hb_item = item )
+        entity = HbImporter.create_models_for_hb_item( hb_item = item )
         result.created_list.append( entity.name )
         return entity
 
@@ -242,7 +243,7 @@ class HomeBoxSynchronizer( IntegrationSynchronizer, HomeBoxMixin ):
         # update_models_for_hb_item returns a list of change
         # description strings — non-empty means at least one
         # operator-visible change was made.
-        change_messages = HbConverter.update_models_for_hb_item(
+        change_messages = HbImporter.update_models_for_hb_item(
             entity = entity, hb_item = item,
         )
         if change_messages and entity.name not in result.updated_list:
@@ -389,7 +390,7 @@ class HomeBoxSynchronizer( IntegrationSynchronizer, HomeBoxMixin ):
                            entity: Entity,
                            hb_field: dict,
                            order_id: int ) -> EntityAttribute:
-        return HbConverter.create_attribute_from_hb_field(
+        return HbImporter.create_attribute_from_hb_field(
             entity = entity,
             hb_field = hb_field,
             order_id = order_id,
@@ -401,7 +402,7 @@ class HomeBoxSynchronizer( IntegrationSynchronizer, HomeBoxMixin ):
                            order_id: int,
                            message_list: List[str],
                            updated_prefix: str ):
-        was_changed = HbConverter.update_attribute_from_hb_field(
+        was_changed = HbImporter.update_attribute_from_hb_field(
             attribute = attribute,
             hb_field = hb_field,
             order_id = order_id,
@@ -433,7 +434,7 @@ class HomeBoxSynchronizer( IntegrationSynchronizer, HomeBoxMixin ):
                                       entity: Entity,
                                       hb_attachment: dict,
                                       order_id: int ) -> EntityAttribute:
-        return HbConverter.create_attribute_from_hb_attachment(
+        return HbImporter.create_attribute_from_hb_attachment(
             entity = entity,
             hb_attachment = hb_attachment,
             order_id = order_id,
@@ -445,7 +446,7 @@ class HomeBoxSynchronizer( IntegrationSynchronizer, HomeBoxMixin ):
                                       order_id: int,
                                       message_list: List[str],
                                       updated_prefix: str ):
-        was_changed = HbConverter.update_attribute_from_hb_attachment(
+        was_changed = HbImporter.update_attribute_from_hb_attachment(
             attribute = attribute,
             hb_attachment = hb_attachment,
             order_id = order_id,

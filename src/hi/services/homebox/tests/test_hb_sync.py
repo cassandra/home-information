@@ -8,7 +8,7 @@ from hi.apps.entity.models import Entity
 from hi.integrations.sync_result import IntegrationSyncResult
 from hi.integrations.transient_models import IntegrationKey
 from hi.services.homebox.hb_metadata import HbMetaData
-from hi.services.homebox.hb_sync import HomeBoxSynchronizer
+from hi.services.homebox.importer.hb_sync import HomeBoxSynchronizer
 from hi.testing.async_task_utils import AsyncTaskTestCase
 
 
@@ -66,13 +66,13 @@ class TestHomeBoxSynchronizer(SimpleTestCase):
         with ExitStack() as stack:
             stack.enter_context(
                 patch(
-                    'hi.services.homebox.hb_sync.transaction.atomic',
+                    'hi.services.homebox.importer.hb_sync.transaction.atomic',
                     return_value=nullcontext(),
                 )
             )
             stack.enter_context(
                 patch(
-                    'hi.services.homebox.hb_sync.HbConverter.hb_item_to_integration_key',
+                    'hi.services.homebox.importer.hb_sync.HbConverter.hb_item_to_integration_key',
                     side_effect=key_from_item,
                 )
             )
@@ -202,31 +202,31 @@ class TestHomeBoxSynchronizer(SimpleTestCase):
         with ExitStack() as stack:
             stack.enter_context(
                 patch(
-                    'hi.services.homebox.hb_sync.transaction.atomic',
+                    'hi.services.homebox.importer.hb_sync.transaction.atomic',
                     return_value=nullcontext(),
                 )
             )
             stack.enter_context(
                 patch(
-                    'hi.services.homebox.hb_sync.HbConverter.hb_item_to_attribute_field_list',
+                    'hi.services.homebox.importer.hb_sync.HbConverter.hb_item_to_attribute_field_list',
                     return_value=[field_existing, field_new],
                 )
             )
             stack.enter_context(
                 patch(
-                    'hi.services.homebox.hb_sync.HbConverter.hb_field_to_integration_key',
+                    'hi.services.homebox.importer.hb_sync.HbConverter.hb_field_to_integration_key',
                     side_effect=field_key_from_field,
                 )
             )
             stack.enter_context(
                 patch(
-                    'hi.services.homebox.hb_sync.HbConverter.hb_item_to_attachment_field_list',
+                    'hi.services.homebox.importer.hb_sync.HbConverter.hb_item_to_attachment_field_list',
                     return_value=[attachment_existing, attachment_new],
                 )
             )
             stack.enter_context(
                 patch(
-                    'hi.services.homebox.hb_sync.HbConverter.hb_attachment_to_integration_key',
+                    'hi.services.homebox.importer.hb_sync.HbConverter.hb_attachment_to_integration_key',
                     side_effect=attachment_key_from_attachment,
                 )
             )
@@ -386,7 +386,7 @@ class TestHomeBoxSynchronizerRebuildIntegrationComponents(SimpleTestCase):
         upstream = Mock(name='hb_item')
 
         with patch(
-                'hi.services.homebox.hb_sync.HbConverter.create_models_for_hb_item'
+                'hi.services.homebox.importer.hb_sync.HbImporter.create_models_for_hb_item'
         ) as mock_converter:
             synchronizer._rebuild_integration_components(
                 entity=existing_entity,

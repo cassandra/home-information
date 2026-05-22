@@ -6,9 +6,10 @@ from django.test import TestCase
 from hi.apps.attribute.enums import AttributeValueType
 from hi.apps.entity.enums import EntityType
 from hi.apps.entity.models import Entity
-from hi.services.homebox.hb_converter import HbConverter
+from hi.services.homebox.importer.hb_importer import HbImporter
+from hi.services.homebox.shared.hb_converter import HbConverter
 from hi.services.homebox.hb_metadata import HbMetaData
-from hi.services.homebox.hb_models import HbItem
+from hi.services.homebox.shared.hb_models import HbItem
 
 
 logging.disable(logging.CRITICAL)
@@ -36,7 +37,7 @@ class TestHbConverter(TestCase):
     def test_create_models_for_hb_item_creates_entity(self):
         item = self._mock_item(item_id='item-create', name='Drill')
 
-        entity = HbConverter.create_models_for_hb_item(hb_item=item)
+        entity = HbImporter.create_models_for_hb_item(hb_item=item)
 
         self.assertIsInstance(entity, Entity)
         self.assertEqual(entity.integration_id, HbMetaData.integration_id)
@@ -60,7 +61,7 @@ class TestHbConverter(TestCase):
         baseline_count = Entity.objects.count()
         item = self._mock_item(item_id='item-reconnect', name='Upstream Drill Name')
 
-        returned = HbConverter.create_models_for_hb_item(
+        returned = HbImporter.create_models_for_hb_item(
             hb_item=item,
             entity=existing,
         )
@@ -91,7 +92,7 @@ class TestHbConverter(TestCase):
 
         item = self._mock_item(item_id='item-update', name='New Name', description='new', quantity=3)
 
-        messages = HbConverter.update_models_for_hb_item(entity=entity, hb_item=item)
+        messages = HbImporter.update_models_for_hb_item(entity=entity, hb_item=item)
 
         self.assertTrue(messages)
         entity.refresh_from_db()
@@ -142,7 +143,7 @@ class TestHbConverter(TestCase):
 
     def test_create_and_update_file_attribute_from_attachment(self):
         item = self._mock_item(item_id='item-file-sync')
-        entity = HbConverter.create_models_for_hb_item(hb_item=item)
+        entity = HbImporter.create_models_for_hb_item(hb_item=item)
 
         attachment = {
             'id': 'att-2',
@@ -165,7 +166,7 @@ class TestHbConverter(TestCase):
             }
         }
 
-        created_attribute = HbConverter.create_attribute_from_hb_attachment(
+        created_attribute = HbImporter.create_attribute_from_hb_attachment(
             entity=entity,
             hb_attachment=attachment_data,
             order_id=0,
@@ -182,7 +183,7 @@ class TestHbConverter(TestCase):
             'filename': 'Teste-v2.txt',
             'source_url': 'https://example/v2',
         }
-        was_changed = HbConverter.update_attribute_from_hb_attachment(
+        was_changed = HbImporter.update_attribute_from_hb_attachment(
             attribute=created_attribute,
             hb_attachment=attachment_data,
             order_id=1,

@@ -7,7 +7,7 @@ from hi.integrations.exceptions import IntegrationAttributeError
 from hi.integrations.models import IntegrationAttribute
 from hi.integrations.transient_models import IntegrationKey
 from hi.services.homebox.enums import HbAttributeType
-from hi.services.homebox.hb_manager import HomeBoxManager
+from hi.services.homebox.shared.hb_manager import HomeBoxManager
 from hi.services.homebox.hb_metadata import HbMetaData
 
 

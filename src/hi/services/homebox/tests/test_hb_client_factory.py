@@ -13,7 +13,7 @@ from hi.integrations.models import IntegrationAttribute
 from hi.integrations.transient_models import IntegrationKey, IntegrationValidationResult
 
 from hi.services.homebox.enums import HbAttributeType
-from hi.services.homebox.hb_client_factory import HbClientFactory
+from hi.services.homebox.shared.hb_client_factory import HbClientFactory
 from hi.services.homebox.hb_metadata import HbMetaData
 
 logging.disable(logging.CRITICAL)
@@ -50,10 +50,10 @@ class TestHbClientFactory(TestCase):
 
         return attributes
 
-    @patch('hi.services.homebox.hb_client_factory.HbClient')
+    @patch('hi.services.homebox.shared.hb_client_factory.HbClient')
     def test_create_client_success(self, mock_client_class):
         """Test successful client creation with valid attributes."""
-        from hi.services.homebox.hb_client import HbClient as RealHbClient
+        from hi.services.homebox.shared.hb_client import HbClient as RealHbClient
         mock_client_class.API_URL = RealHbClient.API_URL
         mock_client_class.API_USER = RealHbClient.API_USER
         mock_client_class.API_PASSWORD = RealHbClient.API_PASSWORD
@@ -148,10 +148,10 @@ class TestHbClientFactory(TestCase):
 
         mock_client.get_items_summary.assert_called_once()
 
-    @patch('hi.services.homebox.hb_client_factory.HbClient')
+    @patch('hi.services.homebox.shared.hb_client_factory.HbClient')
     def test_create_client_threads_timeout_to_client(self, mock_client_class):
         """create_client passes timeout_secs through to the HbClient."""
-        from hi.services.homebox.hb_client import HbClient as RealHbClient
+        from hi.services.homebox.shared.hb_client import HbClient as RealHbClient
         mock_client_class.API_URL = RealHbClient.API_URL
         mock_client_class.API_USER = RealHbClient.API_USER
         mock_client_class.API_PASSWORD = RealHbClient.API_PASSWORD
