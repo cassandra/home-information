@@ -14,6 +14,7 @@ from hi.apps.entity.state_panel_dispatch import StatePanelDispatcher
 from hi.apps.monitor.display_data import EntityDisplayData
 from hi.apps.monitor.status_display_manager import StatusDisplayManager
 
+from hi.integrations.integration_manager import IntegrationManager
 from hi.views import page_not_found_response
 from hi.hi_async_view import HiModalView
 from hi.apps.entity.edit.entity_type_transition_handler import EntityTypeTransitionHandler
@@ -174,8 +175,18 @@ class EntityEditView( HiModalView, EntityViewMixin, AttributeEditViewMixin ):
         template_context = self.create_initial_template_context(
             attr_item_context= attr_item_context,
         )
+        template_context['external_view_data'] = self._get_external_view_data( entity )
         return self.modal_response( request, template_context )
-    
+
+    def _get_external_view_data( self, entity ):
+        if not entity.integration_id:
+            return None
+        try:
+            gateway = IntegrationManager().get_integration_gateway( entity.integration_id )
+        except KeyError:
+            return None
+        return gateway.get_external_view_data( entity )
+
     def post( self, request,*args, **kwargs ):
         entity = self.get_entity(request, *args, **kwargs)
         original_entity_type = entity.entity_type

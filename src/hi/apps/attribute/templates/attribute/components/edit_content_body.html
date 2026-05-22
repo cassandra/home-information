@@ -118,6 +118,14 @@ by using the AttributeItemEditContext pattern.
 <div id="{{ attr_page_context.scrollable_content_html_id }}"
      class="{{ DIVID.ATTR_V2_SCROLLABLE_CONTENT_CLASS }}">
 
+  {% block external_view_data %}
+  {% if external_view_data %}
+  <div class="attr-v2-external-view-data">
+    {% include external_view_data.template_name with view_data=external_view_data %}
+  </div>
+  {% endif %}
+  {% endblock %}
+
   <!-- Files Section -->
   {% block files_section %}
   {% include "attribute/components/file_grid.html" with file_attributes=file_attributes %}

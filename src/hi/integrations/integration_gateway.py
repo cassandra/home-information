@@ -6,6 +6,7 @@ from hi.apps.monitor.periodic_monitor import PeriodicMonitor
 from hi.apps.sense.transient_models import SensorResponse
 from hi.apps.system.health_status_provider import HealthStatusProvider
 
+from .external_view_data import ExternalViewData
 from .integration_controller import IntegrationController
 from .integration_manage_view_pane import IntegrationManageViewPane
 from .integration_synchronizer import IntegrationSynchronizer
@@ -108,4 +109,14 @@ class IntegrationGateway:
         URLs on historical rows). Pair with
         ``SensorResponse.has_event_video_snapshot`` — only call when
         the flag is True."""
+        return None
+
+    def get_external_view_data(self, entity: Entity) -> Optional[ExternalViewData]:
+        """Return the external-data view payload for the entity-detail
+        modal's Section 2. Return ``None`` if this integration has no
+        external view for ``entity`` — the section is suppressed.
+
+        Defaults to ``None``; integrations whose data lives upstream
+        override this hook to return a populated ``ExternalViewData``
+        subclass (typically ``StructuredViewData``)."""
         return None

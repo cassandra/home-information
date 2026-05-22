@@ -1,0 +1,42 @@
+{% comment %}
+StructuredViewData partial — renders a list of name/value rows and a
+grid of attachment thumbnails. Default Section 2 layout for
+integrations whose external entity data fits a generic
+attributes-plus-attachments shape.
+{% endcomment %}
+
+<div class="attr-v2-external-structured">
+  {% if view_data.attributes %}
+  <div class="attr-v2-external-structured-attrs">
+    {% for pair in view_data.attributes %}
+    <div class="attr-v2-external-structured-row">
+      <div class="attr-v2-external-structured-name">{{ pair.name }}</div>
+      <div class="attr-v2-external-structured-value">{{ pair.value }}</div>
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  {% if view_data.attachments %}
+  <div class="attr-v2-external-structured-attachments">
+    {% for attachment in view_data.attachments %}
+    <div class="attr-v2-external-structured-attachment" data-mime-type="{{ attachment.mime_type }}">
+      {% if attachment.thumbnail_url %}
+      <a href="{{ attachment.open_url|default:attachment.thumbnail_url }}" target="_blank">
+        <img src="{{ attachment.thumbnail_url }}" alt="{{ attachment.title }}" />
+      </a>
+      {% else %}
+      <a href="{{ attachment.open_url }}" target="_blank">{{ attachment.title }}</a>
+      {% endif %}
+      <div class="attr-v2-external-structured-attachment-title">{{ attachment.title }}</div>
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  {% if view_data.deep_link_url %}
+  <div class="attr-v2-external-structured-deep-link">
+    <a href="{{ view_data.deep_link_url }}" target="_blank">Open in upstream</a>
+  </div>
+  {% endif %}
+</div>
