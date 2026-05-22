@@ -1,605 +1,416 @@
+"""Tests for ``ZoneMinderMonitor._process_events`` per-transition emit.
+
+The monitor's polling/cursor/cache machinery is preserved verbatim
+from the prior aggregation-based implementation — these tests guard
+both the emit semantics introduced by #351 (one response per real
+transition, no per-monitor collapse) and the hard-won cursor /
+cache invariants that #351 explicitly did not touch.
+"""
 import logging
-from datetime import datetime, timedelta
-from unittest.mock import Mock, patch
-from django.test import TestCase
-import pytz
+from datetime import datetime, timedelta, timezone
+from unittest.mock import Mock
 
 from hi.apps.entity.enums import EntityStateValue
+from hi.apps.sense.enums import CorrelationRole
+from hi.integrations.transient_models import IntegrationKey
+from hi.testing.async_task_utils import AsyncTaskFastTestCase
 
-from hi.services.zoneminder.monitors import ZoneMinderMonitor  
-from hi.services.zoneminder.zm_models import ZmEvent, AggregatedMonitorState
+from hi.services.zoneminder.monitors import ZoneMinderMonitor
 
-logging.disable(logging.CRITICAL)
+logging.disable( logging.CRITICAL )
 
 
-class TestZoneMinderMonitorEventAggregation(TestCase):
-    """
-    Test the core event aggregation logic that fixes the bug where multiple
-    events per monitor would overwrite each other in sensor responses.
-    
-    Tests all permutations of event combinations:
-    - Open events: none, one, multiple
-    - Closed events: none, one, multiple  
-    - Cross product: 9 total scenarios
-    """
-    
+def _mock_zm_event( event_id : str, monitor_id : int, start, end = None ):
+    """Build a duck-typed stand-in for ``ZmEvent``. The monitor only
+    reads ``event_id`` / ``monitor_id`` / ``start_datetime`` /
+    ``end_datetime`` / ``is_open`` on these objects, so a Mock with
+    those attributes suffices and avoids the pyzm-shaped api-dict
+    construction path."""
+    event = Mock()
+    event.event_id = event_id
+    event.monitor_id = monitor_id
+    event.start_datetime = start
+    event.end_datetime = end
+    event.is_open = ( end is None )
+    return event
+
+
+def _mock_zm_monitor( monitor_id : int ):
+    monitor = Mock()
+    monitor.id.return_value = monitor_id
+    return monitor
+
+
+class _ZmMonitorPipelineBase( AsyncTaskFastTestCase ):
+    """Shared scaffolding. ``_process_events`` is async and depends on
+    the ZM manager's events / monitors fetches plus the response-
+    factory helpers. We mock the manager methods and stub the
+    factories with thin tagged-Mock returns so tests can assert on
+    the sequence of emissions per integration_key without involving
+    full ``SensorResponse`` construction."""
+
     def setUp(self):
+        super().setUp()
         self.monitor = ZoneMinderMonitor()
-        
-        # Create mock events with realistic data
-        self.base_time = datetime(2023, 1, 1, 12, 0, 0, tzinfo=pytz.UTC)
-        
-        # Mock ZM API events for creating ZmEvent instances
-        self.mock_open_event_1 = self._create_mock_zm_api_event(
-            event_id='101', monitor_id=1, 
-            start_time='2023-01-01T12:00:00', end_time=None
-        )
-        self.mock_open_event_2 = self._create_mock_zm_api_event(
-            event_id='102', monitor_id=1,
-            start_time='2023-01-01T12:05:00', end_time=None  
-        )
-        self.mock_closed_event_1 = self._create_mock_zm_api_event(
-            event_id='201', monitor_id=1,
-            start_time='2023-01-01T11:50:00', end_time='2023-01-01T11:55:00'
-        )
-        self.mock_closed_event_2 = self._create_mock_zm_api_event(
-            event_id='202', monitor_id=1,
-            start_time='2023-01-01T11:40:00', end_time='2023-01-01T11:45:00'
-        )
-        
-        # Multi-monitor events for different monitors
-        self.mock_monitor_2_open = self._create_mock_zm_api_event(
-            event_id='301', monitor_id=2,
-            start_time='2023-01-01T12:10:00', end_time=None
-        )
-        self.mock_monitor_2_closed = self._create_mock_zm_api_event(
-            event_id='302', monitor_id=2, 
-            start_time='2023-01-01T12:00:00', end_time='2023-01-01T12:05:00'
-        )
-    
-    def _create_mock_zm_api_event(self, event_id, monitor_id, start_time, end_time):
-        """Create mock ZM API event for creating ZmEvent instances."""
-        mock_api_event = Mock()
-        mock_api_event.id.return_value = event_id
-        mock_api_event.monitor_id.return_value = monitor_id
-        mock_api_event.get.return_value = {
-            'StartTime': start_time,
-            'EndTime': end_time,
-            'MaxScoreFrameId': 1
-        }
-        mock_api_event.cause.return_value = 'Motion'
-        mock_api_event.duration.return_value = 60
-        mock_api_event.total_frames.return_value = 30
-        mock_api_event.alarmed_frames.return_value = 15
-        mock_api_event.score.return_value = 85
-        mock_api_event.notes.return_value = 'Test event'
-        return mock_api_event
-    
-    def _create_zm_event(self, mock_api_event):
-        """Helper to create ZmEvent from mock API event."""
-        return ZmEvent(zm_api_event=mock_api_event, zm_tzname='UTC')
+        self.monitor._was_initialized = True
+        self.start = datetime( 2026, 5, 22, 12, 0, 0, tzinfo = timezone.utc )
+        self.monitor._poll_from_datetime = self.start
+        self.monitor._zm_tzname = 'UTC'
 
-    # Test Cases: All permutations of (open_count x closed_count)
-    # where count ∈ {none, one, multiple} = 9 scenarios
-    
-    def test_no_open_no_closed_events(self):
-        """Scenario: No events for monitor - should have no aggregated state."""
-        open_events = []
-        closed_events = []
-        
-        aggregated_states = self.monitor._aggregate_monitor_states(open_events, closed_events)
-        
-        # Behavior: No states should be generated
-        self.assertEqual(len(aggregated_states), 0)
-    
-    def test_no_open_one_closed_event(self):
-        """Scenario: One closed event - monitor should be IDLE."""
-        open_events = []
-        closed_events = [self._create_zm_event(self.mock_closed_event_1)]
-        
-        aggregated_states = self.monitor._aggregate_monitor_states(open_events, closed_events)
-        
-        # Behavior: Single IDLE state with closed event timestamp
-        self.assertEqual(len(aggregated_states), 1)
-        self.assertIn(1, aggregated_states)
-        
-        state = aggregated_states[1]
-        self.assertEqual(state.monitor_id, 1)
-        self.assertEqual(state.current_state, EntityStateValue.IDLE)
-        self.assertEqual(state.effective_timestamp, closed_events[0].end_datetime)
-        self.assertEqual(state.canonical_event, closed_events[0])
-        self.assertEqual(state.all_events, closed_events)
-        self.assertTrue(state.is_idle)
-        self.assertFalse(state.is_active)
-    
-    def test_no_open_multiple_closed_events(self):
-        """Scenario: Multiple closed events - monitor should be IDLE with latest end time."""
-        open_events = []
-        closed_events = [
-            self._create_zm_event(self.mock_closed_event_1),  # ends at 11:55
-            self._create_zm_event(self.mock_closed_event_2),  # ends at 11:45
-        ]
-        
-        aggregated_states = self.monitor._aggregate_monitor_states(open_events, closed_events)
-        
-        # Behavior: IDLE state with latest closed event's end time
-        self.assertEqual(len(aggregated_states), 1)
-        state = aggregated_states[1]
-        
-        self.assertEqual(state.current_state, EntityStateValue.IDLE)
-        # Should use latest end time (11:55, not 11:45)
-        latest_end_time = max(event.end_datetime for event in closed_events)
-        self.assertEqual(state.effective_timestamp, latest_end_time)
-        # Canonical event should be the one with latest end time  
-        latest_event = max(closed_events, key=lambda e: e.end_datetime)
-        self.assertEqual(state.canonical_event, latest_event)
-        self.assertEqual(len(state.all_events), 2)
-    
-    def test_one_open_no_closed_events(self):
-        """Scenario: One open event - monitor should be ACTIVE."""
-        open_events = [self._create_zm_event(self.mock_open_event_1)]
-        closed_events = []
-        
-        aggregated_states = self.monitor._aggregate_monitor_states(open_events, closed_events)
-        
-        # Behavior: Single ACTIVE state with open event start timestamp
-        self.assertEqual(len(aggregated_states), 1)
-        state = aggregated_states[1]
-        
-        self.assertEqual(state.current_state, EntityStateValue.ACTIVE)
-        self.assertEqual(state.effective_timestamp, open_events[0].start_datetime)
-        self.assertEqual(state.canonical_event, open_events[0])
-        self.assertEqual(state.all_events, open_events)
-        self.assertTrue(state.is_active)
-        self.assertFalse(state.is_idle)
-    
-    def test_one_open_one_closed_event(self):
-        """Scenario: One open + one closed event - monitor should be ACTIVE (open takes precedence)."""
-        open_events = [self._create_zm_event(self.mock_open_event_1)]
-        closed_events = [self._create_zm_event(self.mock_closed_event_1)]
-        
-        aggregated_states = self.monitor._aggregate_monitor_states(open_events, closed_events)
-        
-        # Behavior: ACTIVE state because any open event means active
-        self.assertEqual(len(aggregated_states), 1)  
-        state = aggregated_states[1]
-        
-        self.assertEqual(state.current_state, EntityStateValue.ACTIVE)
-        self.assertEqual(state.effective_timestamp, open_events[0].start_datetime)
-        self.assertEqual(state.canonical_event, open_events[0])
-        # All events should be included
-        self.assertEqual(len(state.all_events), 2)
-        self.assertIn(open_events[0], state.all_events)
-        self.assertIn(closed_events[0], state.all_events)
-    
-    def test_one_open_multiple_closed_events(self):
-        """Scenario: One open + multiple closed events - monitor should be ACTIVE."""
-        open_events = [self._create_zm_event(self.mock_open_event_1)]
-        closed_events = [
-            self._create_zm_event(self.mock_closed_event_1),
-            self._create_zm_event(self.mock_closed_event_2),
-        ]
-        
-        aggregated_states = self.monitor._aggregate_monitor_states(open_events, closed_events)
-        
-        # Behavior: ACTIVE state with open event timestamp
-        state = aggregated_states[1]
-        self.assertEqual(state.current_state, EntityStateValue.ACTIVE)
-        self.assertEqual(state.effective_timestamp, open_events[0].start_datetime)
-        self.assertEqual(state.canonical_event, open_events[0])
-        self.assertEqual(len(state.all_events), 3)  # 1 open + 2 closed
-    
-    def test_multiple_open_no_closed_events(self):
-        """Scenario: Multiple open events - monitor should be ACTIVE with earliest start time."""
-        open_events = [
-            self._create_zm_event(self.mock_open_event_1),  # starts at 12:00
-            self._create_zm_event(self.mock_open_event_2),  # starts at 12:05
-        ]
-        closed_events = []
-        
-        aggregated_states = self.monitor._aggregate_monitor_states(open_events, closed_events)
-        
-        # Behavior: ACTIVE state with earliest open event start time
-        state = aggregated_states[1]
-        self.assertEqual(state.current_state, EntityStateValue.ACTIVE)
-        # Should use earliest start time (12:00, not 12:05)
-        earliest_start_time = min(event.start_datetime for event in open_events)
-        self.assertEqual(state.effective_timestamp, earliest_start_time)
-        # Canonical event should be the earliest one
-        earliest_event = min(open_events, key=lambda e: e.start_datetime)
-        self.assertEqual(state.canonical_event, earliest_event)
-        self.assertEqual(len(state.all_events), 2)
-    
-    def test_multiple_open_one_closed_event(self):
-        """Scenario: Multiple open + one closed event - monitor should be ACTIVE."""
-        open_events = [
-            self._create_zm_event(self.mock_open_event_1),
-            self._create_zm_event(self.mock_open_event_2),
-        ]
-        closed_events = [self._create_zm_event(self.mock_closed_event_1)]
-        
-        aggregated_states = self.monitor._aggregate_monitor_states(open_events, closed_events)
-        
-        # Behavior: ACTIVE state with earliest open event timestamp
-        state = aggregated_states[1]
-        self.assertEqual(state.current_state, EntityStateValue.ACTIVE)
-        earliest_open_time = min(event.start_datetime for event in open_events)
-        self.assertEqual(state.effective_timestamp, earliest_open_time)
-        self.assertEqual(len(state.all_events), 3)  # 2 open + 1 closed
-    
-    def test_multiple_open_multiple_closed_events(self):
-        """Scenario: Multiple open + multiple closed events - monitor should be ACTIVE."""
-        open_events = [
-            self._create_zm_event(self.mock_open_event_1),
-            self._create_zm_event(self.mock_open_event_2),
-        ]
-        closed_events = [
-            self._create_zm_event(self.mock_closed_event_1),
-            self._create_zm_event(self.mock_closed_event_2),
-        ]
-        
-        aggregated_states = self.monitor._aggregate_monitor_states(open_events, closed_events)
-        
-        # Behavior: ACTIVE state with earliest open event timestamp
-        state = aggregated_states[1]
-        self.assertEqual(state.current_state, EntityStateValue.ACTIVE)
-        earliest_open_time = min(event.start_datetime for event in open_events)
-        self.assertEqual(state.effective_timestamp, earliest_open_time)
-        self.assertEqual(len(state.all_events), 4)  # 2 open + 2 closed
+        # Mock the ZM manager. ``zm_manager()`` (the SensorResponseMixin
+        # getter) returns ``self._zm_manager``; we assign directly to
+        # bypass async initialization.
+        self.mock_manager = Mock()
+        self.monitor._zm_manager = self.mock_manager
 
-    def test_multiple_monitors_with_different_states(self):
-        """Scenario: Multiple monitors with different event combinations."""
-        # Monitor 1: ACTIVE (has open event)
-        monitor_1_open = [self._create_zm_event(self.mock_open_event_1)]
-        monitor_1_closed = [self._create_zm_event(self.mock_closed_event_1)]
-        
-        # Monitor 2: IDLE (only closed event)  
-        monitor_2_open = []
-        monitor_2_closed = [self._create_zm_event(self.mock_monitor_2_closed)]
-        
-        all_open_events = monitor_1_open + monitor_2_open
-        all_closed_events = monitor_1_closed + monitor_2_closed
-        
-        aggregated_states = self.monitor._aggregate_monitor_states(all_open_events, all_closed_events)
-        
-        # Behavior: Two separate monitor states
-        self.assertEqual(len(aggregated_states), 2)
-        self.assertIn(1, aggregated_states)
-        self.assertIn(2, aggregated_states)
-        
-        # Monitor 1 should be ACTIVE
-        monitor_1_state = aggregated_states[1]
-        self.assertEqual(monitor_1_state.current_state, EntityStateValue.ACTIVE)
-        self.assertTrue(monitor_1_state.is_active)
-        
-        # Monitor 2 should be IDLE
-        monitor_2_state = aggregated_states[2]
-        self.assertEqual(monitor_2_state.current_state, EntityStateValue.IDLE)
-        self.assertTrue(monitor_2_state.is_idle)
+        async def empty_events( options = None ):
+            return []
 
-    def test_events_are_sorted_chronologically(self):
-        """Test that all_events are sorted chronologically within each monitor."""
-        # Create events with mixed timestamps
-        open_events = [self._create_zm_event(self.mock_open_event_2)]  # 12:05
-        closed_events = [
-            self._create_zm_event(self.mock_closed_event_2),  # 11:40-11:45 (earlier)
-            self._create_zm_event(self.mock_closed_event_1),  # 11:50-11:55 (later)  
-        ]
-        
-        aggregated_states = self.monitor._aggregate_monitor_states(open_events, closed_events)
-        
-        # Behavior: all_events should be sorted by start_datetime
-        state = aggregated_states[1]
-        all_events = state.all_events
-        
-        # Expected chronological order: 202 (11:40), 201 (11:50), 102 (12:05)
-        expected_event_ids = ['202', '201', '102']
-        
-        self.assertEqual(len(all_events), 3)
-        for i, expected_id in enumerate(expected_event_ids):
-            self.assertEqual(all_events[i].event_id, expected_id,
-                             f"Event at position {i} should be {expected_id}, got {all_events[i].event_id}")
+        async def empty_monitors( force_load = False ):
+            return []
 
+        self.mock_manager.get_zm_events_async = Mock( side_effect = empty_events )
+        self.mock_manager.get_zm_monitors_async = Mock( side_effect = empty_monitors )
 
-class TestZoneMinderMonitorSensorResponseGeneration(TestCase):
-    """
-    Test sensor response generation from aggregated monitor states.
-    This tests the integration between aggregation and sensor response creation.
-    """
-    
-    def setUp(self):
-        self.monitor = ZoneMinderMonitor()
-        
-        # Mock the ZM manager and sensor response creation methods
-        self.mock_zm_manager = Mock()
-        self.monitor._zm_manager = self.mock_zm_manager
-        
-        # Mock the _create_movement_*_sensor_response methods
-        self.mock_active_response = Mock()
-        self.mock_active_response.integration_key = 'test.monitor.1.movement'
-        self.mock_active_response.timestamp = datetime(2023, 1, 1, 12, 0, 0, tzinfo=pytz.UTC)
-        
-        self.mock_idle_response = Mock() 
-        self.mock_idle_response.integration_key = 'test.monitor.2.movement'
-        self.mock_idle_response.timestamp = datetime(2023, 1, 1, 12, 5, 0, tzinfo=pytz.UTC)
-        
-        self.monitor._create_movement_active_sensor_response = Mock(return_value=self.mock_active_response)
-        self.monitor._create_movement_idle_sensor_response = Mock(return_value=self.mock_idle_response)
-        
-        # Create test aggregated states
-        self.test_event = Mock()
-        self.test_event.event_id = '123'
-        self.test_event.is_open = True
-        
-        self.active_state = AggregatedMonitorState(
-            monitor_id=1,
-            current_state=EntityStateValue.ACTIVE,
-            effective_timestamp=datetime(2023, 1, 1, 12, 0, 0, tzinfo=pytz.UTC),
-            canonical_event=self.test_event,
-            all_events=[self.test_event]
-        )
-        
-        self.idle_state = AggregatedMonitorState(
-            monitor_id=2,
-            current_state=EntityStateValue.IDLE,
-            effective_timestamp=datetime(2023, 1, 1, 12, 5, 0, tzinfo=pytz.UTC),
-            canonical_event=self.test_event,
-            all_events=[self.test_event]
-        )
-    
-    def test_active_state_generates_active_sensor_response(self):
-        """Test that ACTIVE monitor state generates active sensor response."""
-        aggregated_states = {1: self.active_state}
-        
-        sensor_responses = self.monitor._generate_sensor_responses_from_states(aggregated_states)
-        
-        # Behavior: Should create active sensor response
-        self.monitor._create_movement_active_sensor_response.assert_called_once_with(self.test_event)
-        self.monitor._create_movement_idle_sensor_response.assert_not_called()
-        
-        # Should have one sensor response with overridden timestamp
-        self.assertEqual(len(sensor_responses), 1)
-        response = sensor_responses['test.monitor.1.movement']
-        self.assertEqual(response.timestamp, self.active_state.effective_timestamp)
-    
-    def test_idle_state_generates_idle_sensor_response(self):
-        """Test that IDLE monitor state generates idle sensor response.""" 
-        aggregated_states = {2: self.idle_state}
-        
-        sensor_responses = self.monitor._generate_sensor_responses_from_states(aggregated_states)
-        
-        # Behavior: Should create idle sensor response
-        self.monitor._create_movement_idle_sensor_response.assert_called_once_with(self.test_event)
-        self.monitor._create_movement_active_sensor_response.assert_not_called()
-        
-        # Should have one sensor response with overridden timestamp
-        self.assertEqual(len(sensor_responses), 1)
-        response = sensor_responses['test.monitor.2.movement']
-        self.assertEqual(response.timestamp, self.idle_state.effective_timestamp)
-    
-    def test_multiple_states_generate_multiple_responses(self):
-        """Test that multiple monitor states generate separate sensor responses."""
-        aggregated_states = {
-            1: self.active_state,
-            2: self.idle_state
-        }
-        
-        sensor_responses = self.monitor._generate_sensor_responses_from_states(aggregated_states)
-        
-        # Behavior: Should create both types of responses
-        self.monitor._create_movement_active_sensor_response.assert_called_once()
-        self.monitor._create_movement_idle_sensor_response.assert_called_once()
-        
-        # Should have two sensor responses (one per monitor)
-        self.assertEqual(len(sensor_responses), 2)
-    
-    def test_event_cache_updates_for_all_events(self):
-        """Test that event processing caches are updated for all events in aggregated state."""
-        # Create state with multiple events (open and closed)
-        open_event = Mock()
-        open_event.event_id = '101'
-        open_event.is_open = True
-        
-        closed_event = Mock()
-        closed_event.event_id = '201'  
-        closed_event.is_open = False
-        
-        state_with_multiple_events = AggregatedMonitorState(
-            monitor_id=1,
-            current_state=EntityStateValue.ACTIVE,
-            effective_timestamp=datetime(2023, 1, 1, 12, 0, 0, tzinfo=pytz.UTC),
-            canonical_event=open_event,
-            all_events=[open_event, closed_event]
-        )
-        
-        aggregated_states = {1: state_with_multiple_events}
-        
-        # Initialize empty caches
-        self.monitor._start_processed_event_ids = {}
-        self.monitor._fully_processed_event_ids = {}
-        
-        self.monitor._generate_sensor_responses_from_states(aggregated_states)
-        
-        # Behavior: Verify cache updates
-        # Open event should be in start_processed only
-        self.assertIn('101', self.monitor._start_processed_event_ids)
-        self.assertNotIn('101', self.monitor._fully_processed_event_ids)
-        
-        # Closed event should be in both caches
-        self.assertIn('201', self.monitor._start_processed_event_ids)
-        self.assertIn('201', self.monitor._fully_processed_event_ids)
+        # The ZmEvent construction path requires a real pyzm-shaped
+        # api dict. Bypass it by stubbing the construction to take
+        # our duck-typed mock events directly. Tests pass already-
+        # built mock events via ``_set_events`` below.
+        self._next_events_returns_directly = []
 
+        async def fake_events( options = None ):
+            return self._next_events_returns_directly
 
-class TestZoneMinderMonitorIntegrationScenarios(TestCase):
-    """
-    Test complete integration scenarios that simulate the real bug conditions.
-    These test the fix for the original issue where multiple events per monitor
-    would create chronological disorders and stuck ACTIVE states.
-    """
-    
-    def setUp(self):
-        self.monitor = ZoneMinderMonitor()
-        self.monitor._start_processed_event_ids = {}
-        self.monitor._fully_processed_event_ids = {}
-        
-        # Mock external dependencies
-        with patch.object(self.monitor, 'zm_manager') as mock_zm_manager:
-            mock_zm_manager.return_value._to_integration_key.side_effect = lambda prefix, monitor_id: f'{prefix}.{monitor_id}'
-            
-            self.monitor._create_movement_active_sensor_response = Mock(
-                side_effect=self._create_mock_active_response
+        self.mock_manager.get_zm_events_async = Mock( side_effect = fake_events )
+
+        # Real ``IntegrationKey`` (frozen-equality dataclass) so all
+        # responses for the same monitor share an identical hashable
+        # key — required for the per-key dict grouping in
+        # ``_process_events`` to collapse correctly. Mock instances
+        # would be unique-by-identity and split each emission into
+        # its own dict slot.
+        def _key_for( monitor_id ):
+            return IntegrationKey(
+                integration_id = 'zm',
+                integration_name = f'movement.{monitor_id}',
             )
-            self.monitor._create_movement_idle_sensor_response = Mock(
-                side_effect=self._create_mock_idle_response
-            )
-    
-    def _create_mock_active_response(self, zm_event):
-        response = Mock()
-        response.integration_key = f'movement.{zm_event.monitor_id}'
-        response.timestamp = zm_event.start_datetime
-        return response
-    
-    def _create_mock_idle_response(self, zm_event):
-        response = Mock()
-        response.integration_key = f'movement.{zm_event.monitor_id}'
-        response.timestamp = zm_event.end_datetime
-        return response
-    
-    def _create_test_zm_event(self, event_id, monitor_id, start_time, end_time=None):
-        """Helper to create ZmEvent with minimal mocking."""
-        event = Mock()
-        event.event_id = event_id
-        event.monitor_id = monitor_id
-        event.start_datetime = start_time
-        event.end_datetime = end_time
-        event.is_open = end_time is None
-        return event
-    
-    def test_original_bug_scenario_multiple_events_same_monitor(self):
-        """
-        Test the original bug scenario: multiple events for same monitor in one poll.
-        This should now produce single sensor response instead of overwrites.
-        """
-        base_time = datetime(2023, 1, 1, 12, 0, 0, tzinfo=pytz.UTC)
-        
-        # Scenario: Monitor 1 has Event A (closed) and Event B (open) in same poll  
-        event_a_closed = self._create_test_zm_event(
-            'A', 1, base_time, base_time + timedelta(minutes=5)
+
+        def fake_active( zm_event ):
+            response = Mock()
+            response.integration_key = _key_for( zm_event.monitor_id )
+            response.value = str( EntityStateValue.ACTIVE )
+            response.correlation_role = CorrelationRole.START
+            response.correlation_id = zm_event.event_id
+            response.timestamp = zm_event.start_datetime
+            return response
+
+        def fake_idle( zm_event ):
+            response = Mock()
+            response.integration_key = _key_for( zm_event.monitor_id )
+            response.value = str( EntityStateValue.IDLE )
+            response.correlation_role = CorrelationRole.END
+            response.correlation_id = zm_event.event_id
+            response.timestamp = zm_event.end_datetime
+            return response
+
+        def fake_heartbeat_idle( zm_monitor, timestamp ):
+            response = Mock()
+            response.integration_key = _key_for( zm_monitor.id() )
+            response.value = str( EntityStateValue.IDLE )
+            response.correlation_role = None
+            response.correlation_id = None
+            response.timestamp = timestamp
+            return response
+
+        self.monitor._create_movement_active_sensor_response = Mock(
+            side_effect = fake_active,
         )
-        event_b_open = self._create_test_zm_event(
-            'B', 1, base_time + timedelta(minutes=10), None
+        self.monitor._create_movement_idle_sensor_response = Mock(
+            side_effect = fake_idle,
         )
-        
-        open_events = [event_b_open]
-        closed_events = [event_a_closed]
-        
-        # Use the new two-phase processing
-        aggregated_states = self.monitor._aggregate_monitor_states(open_events, closed_events)
-        sensor_responses = self.monitor._generate_sensor_responses_from_states(aggregated_states)
-        
-        # Behavior: Should produce exactly ONE sensor response for monitor 1
-        self.assertEqual(len(sensor_responses), 1)
-        response = sensor_responses['movement.1']
-        
-        # Should be ACTIVE (because event B is open) with correct timestamp
-        self.assertEqual(response.timestamp, event_b_open.start_datetime)
-        
-        # Verify both events are processed in caches
-        self.assertIn('A', self.monitor._start_processed_event_ids)
-        self.assertIn('A', self.monitor._fully_processed_event_ids)
-        self.assertIn('B', self.monitor._start_processed_event_ids)
-        self.assertNotIn('B', self.monitor._fully_processed_event_ids)  # Open event not fully processed
-    
-    def test_chronological_ordering_preserved(self):
-        """
-        Test that the new implementation preserves chronological ordering.
-        Previously, processing open events first then closed events could create
-        backwards timestamps.
-        """
-        base_time = datetime(2023, 1, 1, 12, 0, 0, tzinfo=pytz.UTC)
-        
-        # Event A: 12:00 - 12:05 (closed, earlier)
-        # Event B: 12:10 - still open (open, later)
-        event_a_closed = self._create_test_zm_event(
-            'A', 1, base_time, base_time + timedelta(minutes=5)
+        self.monitor._create_idle_sensor_response = Mock(
+            side_effect = fake_heartbeat_idle,
         )
-        event_b_open = self._create_test_zm_event(
-            'B', 1, base_time + timedelta(minutes=10), None
+
+        # The collation step at the top of ``_process_events`` runs
+        # ``ZmEvent(zm_api_event=..., zm_tzname=...)`` on each item
+        # returned from ``get_zm_events_async``. Stubbing
+        # ``get_zm_events_async`` to return our duck-typed mocks
+        # isn't enough — the ZmEvent constructor would still run.
+        # Patch the constructor in the monitor module so it returns
+        # the duck-typed mock unchanged.
+        import hi.services.zoneminder.monitors as monitors_mod
+        self._original_zm_event = monitors_mod.ZmEvent
+        monitors_mod.ZmEvent = lambda zm_api_event, zm_tzname : zm_api_event
+        self.addCleanup(
+            lambda: setattr( monitors_mod, 'ZmEvent', self._original_zm_event ),
         )
-        
-        open_events = [event_b_open]
-        closed_events = [event_a_closed]
-        
-        aggregated_states = self.monitor._aggregate_monitor_states(open_events, closed_events)
-        
-        # Behavior: Chronological ordering should be preserved in all_events
-        state = aggregated_states[1]
-        all_events = state.all_events
-        
-        # Events should be ordered by start time: A (12:00), then B (12:10)
-        self.assertEqual(len(all_events), 2)
-        self.assertEqual(all_events[0].event_id, 'A')  # Earlier event first
-        self.assertEqual(all_events[1].event_id, 'B')  # Later event second
-        
-        # Since monitor is ACTIVE, timestamp should be from earliest OPEN event (B)
-        self.assertEqual(state.effective_timestamp, event_b_open.start_datetime)
-    
-    def test_no_stuck_active_states(self):
-        """
-        Test that the fix prevents stuck ACTIVE states.
-        Original bug: if closed event overwrote open event response,
-        monitor would appear IDLE when it should be ACTIVE.
-        """
-        base_time = datetime(2023, 1, 1, 12, 0, 0, tzinfo=pytz.UTC)
-        
-        # Scenario: Monitor has both open and closed events
-        # Previously: closed event would overwrite open event → stuck IDLE
-        # Now: aggregation should correctly show ACTIVE
-        open_event = self._create_test_zm_event(
-            'open_123', 1, base_time, None
+        return
+
+    def _set_events(self, zm_events):
+        self._next_events_returns_directly = zm_events
+
+    def _set_monitors(self, monitor_ids):
+        async def fake_monitors( force_load = False ):
+            return [ _mock_zm_monitor( mid ) for mid in monitor_ids ]
+        self.mock_manager.get_zm_monitors_async = Mock(
+            side_effect = fake_monitors,
         )
-        closed_event = self._create_test_zm_event(
-            'closed_456', 1, base_time - timedelta(minutes=10),
-            base_time - timedelta(minutes=5)
+
+    def _responses_for(self, response_map, monitor_id):
+        target = f'movement.{monitor_id}'
+        for integration_key, response_list in response_map.items():
+            if integration_key.integration_name == target:
+                return response_list
+            continue
+        raise AssertionError(
+            f'No responses for monitor {monitor_id!r}'
         )
-        
-        open_events = [open_event]
-        closed_events = [closed_event]
-        
-        aggregated_states = self.monitor._aggregate_monitor_states(open_events, closed_events)
-        sensor_responses = self.monitor._generate_sensor_responses_from_states(aggregated_states)
-        
-        # Behavior: Monitor should be ACTIVE, not stuck in IDLE
-        self.assertEqual(len(aggregated_states), 1)
-        state = aggregated_states[1]
-        self.assertEqual(state.current_state, EntityStateValue.ACTIVE)
-        self.assertTrue(state.is_active)
-        
-        # Sensor response should reflect ACTIVE state
-        response = sensor_responses['movement.1']
-        # Mock active response uses start_datetime
-        self.assertEqual(response.timestamp, open_event.start_datetime)
-    
-    def test_edge_case_simultaneous_events(self):
-        """
-        Test edge case where events have same timestamps.
-        Should handle gracefully without errors.
-        """
-        same_time = datetime(2023, 1, 1, 12, 0, 0, tzinfo=pytz.UTC)
-        
-        # Two events with identical start times
-        event_1 = self._create_test_zm_event('1', 1, same_time, None)
-        event_2 = self._create_test_zm_event('2', 1, same_time, None)
-        
-        open_events = [event_1, event_2]
-        closed_events = []
-        
-        aggregated_states = self.monitor._aggregate_monitor_states(open_events, closed_events)
-        
-        # Behavior: Should handle gracefully, produce ACTIVE state
-        self.assertEqual(len(aggregated_states), 1)
-        state = aggregated_states[1]
-        self.assertEqual(state.current_state, EntityStateValue.ACTIVE)
-        self.assertEqual(len(state.all_events), 2)
-        # Should use one of the simultaneous events as canonical
-        self.assertIn(state.canonical_event, [event_1, event_2])
+
+    async def _run(self):
+        return await self.monitor._process_events()
+
+
+class TestZoneMinderMonitorEventEmission( _ZmMonitorPipelineBase ):
+    """Per-transition emit: each real motion event start and stop
+    produces its own response. The old single-response-per-monitor
+    collapse is gone; multi-event-per-monitor cycles propagate
+    fully."""
+
+    def test_single_open_event_emits_start_and_caches_start(self):
+        event = _mock_zm_event( 'A', 1, self.start + timedelta( seconds = 1 ))
+        self._set_events([ event ])
+        result = self.run_async( self._run() )
+
+        responses = self._responses_for( result, 1 )
+        self.assertEqual( len( responses ), 1 )
+        self.assertEqual( responses[ 0 ].correlation_role, CorrelationRole.START )
+        self.assertEqual( responses[ 0 ].correlation_id, 'A' )
+        self.assertIn( 'A', self.monitor._start_processed_event_ids )
+        self.assertNotIn( 'A', self.monitor._fully_processed_event_ids )
+
+    def test_still_open_event_across_two_polls_emits_start_only_once(self):
+        # The cursor-hold model re-fetches an open event on each poll
+        # until it closes. The start_processed cache must gate START
+        # re-emission so the downstream stream sees a single START.
+        event = _mock_zm_event( 'A', 1, self.start + timedelta( seconds = 1 ))
+
+        self._set_events([ event ])
+        first = self.run_async( self._run() )
+        self.assertEqual( len( self._responses_for( first, 1 )), 1 )
+
+        self._set_events([ event ])
+        second = self.run_async( self._run() )
+        # No new response on the second poll for the same open event.
+        with self.assertRaises( AssertionError ):
+            self._responses_for( second, 1 )
+
+    def test_open_then_closed_across_polls_emits_paired_start_then_end(self):
+        # Cycle 1: event A is open. START emitted, cached.
+        # Cycle 2: same event is now closed. END emitted; START not
+        # re-emitted.
+        s = self.start + timedelta( seconds = 1 )
+        e = s + timedelta( seconds = 30 )
+
+        self._set_events([ _mock_zm_event( 'A', 1, s, None ) ])
+        cycle1 = self.run_async( self._run() )
+        c1 = self._responses_for( cycle1, 1 )
+        self.assertEqual( len( c1 ), 1 )
+        self.assertEqual( c1[ 0 ].correlation_role, CorrelationRole.START )
+
+        self._set_events([ _mock_zm_event( 'A', 1, s, e ) ])
+        cycle2 = self.run_async( self._run() )
+        c2 = self._responses_for( cycle2, 1 )
+        self.assertEqual( len( c2 ), 1 )
+        self.assertEqual( c2[ 0 ].correlation_role, CorrelationRole.END )
+        self.assertIn( 'A', self.monitor._fully_processed_event_ids )
+
+    def test_event_observed_already_closed_emits_both_start_and_end(self):
+        # Event opened and closed entirely within one poll window —
+        # the monitor never saw it open, so both START and END must
+        # be emitted in this single cycle so the active interval is
+        # recorded.
+        s = self.start + timedelta( seconds = 1 )
+        e = s + timedelta( seconds = 30 )
+        self._set_events([ _mock_zm_event( 'A', 1, s, e ) ])
+        result = self.run_async( self._run() )
+
+        responses = self._responses_for( result, 1 )
+        roles = [ r.correlation_role for r in responses ]
+        self.assertEqual(
+            roles, [ CorrelationRole.START, CorrelationRole.END ],
+        )
+        self.assertTrue(
+            all( r.correlation_id == 'A' for r in responses ),
+        )
+        self.assertIn( 'A', self.monitor._fully_processed_event_ids )
+
+    def test_scenario_a_closed_plus_open_same_monitor_emits_both(self):
+        # Issue #351 Scenario A. Monitor M sees:
+        #   - Event A (closed, ended T1)
+        #   - Event B (open, started T2 > T1)
+        # Under the old aggregation, A's END was silently dropped.
+        # The new emit path produces BOTH transitions for monitor M.
+        a_start = self.start + timedelta( seconds = 1 )
+        a_end = a_start + timedelta( seconds = 30 )
+        b_start = a_end + timedelta( seconds = 10 )
+        self._set_events([
+            _mock_zm_event( 'A', 1, a_start, a_end ),
+            _mock_zm_event( 'B', 1, b_start, None ),
+        ])
+        result = self.run_async( self._run() )
+
+        responses = self._responses_for( result, 1 )
+        roles_and_ids = [
+            ( r.correlation_role, r.correlation_id ) for r in responses
+        ]
+        # A was observed only-closed in this cycle, so both START A
+        # and END A emit. B was observed open, so START B emits.
+        # Total: 3 responses on monitor 1.
+        self.assertEqual( len( responses ), 3 )
+        self.assertIn( ( CorrelationRole.START, 'A' ), roles_and_ids )
+        self.assertIn( ( CorrelationRole.END, 'A' ), roles_and_ids )
+        self.assertIn( ( CorrelationRole.START, 'B' ), roles_and_ids )
+        self.assertIn( 'A', self.monitor._fully_processed_event_ids )
+        self.assertIn( 'B', self.monitor._start_processed_event_ids )
+        self.assertNotIn( 'B', self.monitor._fully_processed_event_ids )
+
+    def test_scenario_b_two_closed_same_monitor_emits_full_sequence(self):
+        # Issue #351 Scenario B. Monitor M sees:
+        #   - Event A (closed, ended T1)
+        #   - Event B (closed, ended T2 > T1)
+        # Old aggregation dropped A's transitions entirely AND
+        # dropped B's START. New emit produces all four transitions.
+        a_start = self.start + timedelta( seconds = 1 )
+        a_end = a_start + timedelta( seconds = 30 )
+        b_start = a_end + timedelta( seconds = 10 )
+        b_end = b_start + timedelta( seconds = 30 )
+        self._set_events([
+            _mock_zm_event( 'A', 1, a_start, a_end ),
+            _mock_zm_event( 'B', 1, b_start, b_end ),
+        ])
+        result = self.run_async( self._run() )
+
+        responses = self._responses_for( result, 1 )
+        roles_and_ids = [
+            ( r.correlation_role, r.correlation_id ) for r in responses
+        ]
+        self.assertEqual( len( responses ), 4 )
+        for expected in [
+                ( CorrelationRole.START, 'A' ),
+                ( CorrelationRole.END, 'A' ),
+                ( CorrelationRole.START, 'B' ),
+                ( CorrelationRole.END, 'B' ),
+        ]:
+            self.assertIn( expected, roles_and_ids )
+        self.assertIn( 'A', self.monitor._fully_processed_event_ids )
+        self.assertIn( 'B', self.monitor._fully_processed_event_ids )
+
+    def test_multiple_monitors_independent(self):
+        a = _mock_zm_event( 'A', 1, self.start + timedelta( seconds = 1 ))
+        b = _mock_zm_event( 'B', 2, self.start + timedelta( seconds = 2 ))
+        self._set_events([ a, b ])
+        result = self.run_async( self._run() )
+
+        m1 = self._responses_for( result, 1 )
+        m2 = self._responses_for( result, 2 )
+        self.assertEqual( len( m1 ), 1 )
+        self.assertEqual( m1[ 0 ].correlation_id, 'A' )
+        self.assertEqual( len( m2 ), 1 )
+        self.assertEqual( m2[ 0 ].correlation_id, 'B' )
+
+    def test_fully_processed_event_is_skipped_on_next_poll(self):
+        # Once an event is fully processed (closed and emitted), the
+        # cursor-hold model may still return it on subsequent polls
+        # (start_time >= cursor); the cache filter at the top of
+        # ``_process_events`` ensures it's not re-emitted.
+        s = self.start + timedelta( seconds = 1 )
+        e = s + timedelta( seconds = 30 )
+        self._set_events([ _mock_zm_event( 'A', 1, s, e ) ])
+        self.run_async( self._run() )
+        self.assertIn( 'A', self.monitor._fully_processed_event_ids )
+
+        # Subsequent poll: ZM returns the same closed event again.
+        self._set_events([ _mock_zm_event( 'A', 1, s, e ) ])
+        result = self.run_async( self._run() )
+        # No new responses; the cache short-circuited.
+        with self.assertRaises( AssertionError ):
+            self._responses_for( result, 1 )
+
+
+class TestZoneMinderMonitorIdleHeartbeat( _ZmMonitorPipelineBase ):
+    """Monitors with no events this cycle still emit an IDLE
+    heartbeat so their state stays fresh."""
+
+    def test_idle_for_unseen_monitor_emits_heartbeat(self):
+        self._set_monitors([ 1, 2 ])
+        self._set_events([])  # no events
+        result = self.run_async( self._run() )
+
+        for monitor_id in ( 1, 2 ):
+            with self.subTest( monitor_id = monitor_id ):
+                responses = self._responses_for( result, monitor_id )
+                self.assertEqual( len( responses ), 1 )
+                self.assertEqual(
+                    responses[ 0 ].value, str( EntityStateValue.IDLE ),
+                )
+                self.assertIsNone( responses[ 0 ].correlation_role )
+
+    def test_monitor_with_active_event_does_not_get_heartbeat(self):
+        # Monitor 1 has an active event; monitor 2 is idle. The
+        # heartbeat must fire ONLY on monitor 2.
+        self._set_monitors([ 1, 2 ])
+        self._set_events([
+            _mock_zm_event( 'A', 1, self.start + timedelta( seconds = 1 )),
+        ])
+        result = self.run_async( self._run() )
+
+        m1 = self._responses_for( result, 1 )
+        self.assertEqual( len( m1 ), 1 )
+        self.assertEqual( m1[ 0 ].correlation_role, CorrelationRole.START )
+
+        m2 = self._responses_for( result, 2 )
+        self.assertEqual( len( m2 ), 1 )
+        self.assertIsNone( m2[ 0 ].correlation_role )
+
+
+class TestZoneMinderMonitorCursorAdvance( _ZmMonitorPipelineBase ):
+    """The cursor advance logic is the most-debugged part of the
+    monitor and is explicitly preserved across the #351 refactor.
+    Re-pin every rule so any future change has to confront these
+    invariants."""
+
+    def test_cursor_unchanged_when_no_events(self):
+        original = self.monitor._poll_from_datetime
+        self._set_events([])
+        self.run_async( self._run() )
+        self.assertEqual( self.monitor._poll_from_datetime, original )
+
+    def test_cursor_advances_to_latest_end_when_all_closed(self):
+        s1 = self.start + timedelta( seconds = 1 )
+        e1 = s1 + timedelta( seconds = 10 )
+        s2 = self.start + timedelta( seconds = 20 )
+        e2 = s2 + timedelta( seconds = 30 )
+        self._set_events([
+            _mock_zm_event( 'A', 1, s1, e1 ),
+            _mock_zm_event( 'B', 1, s2, e2 ),
+        ])
+        self.run_async( self._run() )
+        self.assertEqual( self.monitor._poll_from_datetime, e2 )
+
+    def test_cursor_holds_back_to_earliest_open_when_any_open(self):
+        # Holding the cursor at the earliest open event's start
+        # ensures the cursor-hold model re-fetches all currently-
+        # open events on the next poll. ZM's filter is inclusive
+        # (start_time >= cursor), so this works without epsilon
+        # arithmetic — see issue #351 for the full filter-semantics
+        # context.
+        a_open_start = self.start + timedelta( seconds = 5 )
+        b_closed_start = self.start + timedelta( seconds = 1 )
+        b_closed_end = b_closed_start + timedelta( seconds = 30 )
+        self._set_events([
+            _mock_zm_event( 'A', 1, a_open_start, None ),
+            _mock_zm_event( 'B', 1, b_closed_start, b_closed_end ),
+        ])
+        self.run_async( self._run() )
+        self.assertEqual( self.monitor._poll_from_datetime, a_open_start )
