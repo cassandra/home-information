@@ -113,24 +113,24 @@ class HbConverter:
                 'updatedAt': location.get( 'updatedAt' ),
             }
 
-        labels = hb_item.labels
-        if labels is None:
-            logger.warning( f'HomeBox item {hb_item.id} missing labels list' )
-            payload['labels'] = []
+        tags = hb_item.tags
+        if tags is None:
+            logger.warning( f'HomeBox item {hb_item.id} missing tags list' )
+            payload['tags'] = []
         else:
-            normalized_labels: List[Dict] = []
-            for label in labels:
-                if not isinstance( label, dict ):
+            normalized_tags: List[Dict] = []
+            for tag in tags:
+                if not isinstance( tag, dict ):
                     continue
-                normalized_labels.append({
-                    'id': label.get( 'id' ),
-                    'name': label.get( 'name' ),
-                    'description': label.get( 'description' ),
-                    'color': label.get( 'color' ),
-                    'created_at': label.get( 'createdAt' ),
-                    'updated_at': label.get( 'updatedAt' ),
+                normalized_tags.append({
+                    'id': tag.get( 'id' ),
+                    'name': tag.get( 'name' ),
+                    'description': tag.get( 'description' ),
+                    'color': tag.get( 'color' ),
+                    'created_at': tag.get( 'createdAt' ),
+                    'updated_at': tag.get( 'updatedAt' ),
                 })
-            payload['labels'] = normalized_labels
+            payload['tags'] = normalized_tags
 
         return payload
 

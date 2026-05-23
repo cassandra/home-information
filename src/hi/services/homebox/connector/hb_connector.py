@@ -76,14 +76,14 @@ class HomeBoxConnector:
                 continue
             rows.append(NameValuePair(name=name, value=value))
 
-        labels = hb_item.labels or []
-        label_names = [
-            str(label.get('name', '')).strip()
-            for label in labels
-            if isinstance(label, dict) and str(label.get('name', '')).strip()
+        tags = hb_item.tags or []
+        tag_names = [
+            str(tag.get('name', '')).strip()
+            for tag in tags
+            if isinstance(tag, dict) and str(tag.get('name', '')).strip()
         ]
-        if label_names:
-            rows.append(NameValuePair(name='Tags', value=', '.join(label_names)))
+        if tag_names:
+            rows.append(NameValuePair(name='Tags', value=', '.join(tag_names)))
 
         return rows
 

@@ -23,7 +23,7 @@ class TestHbImporter(TestCase):
             'description': description,
             'quantity': quantity,
             'location': {'id': 'loc-1', 'name': 'Garage'},
-            'labels': [{'id': 'lab-1', 'name': 'Tools'}],
+            'tags': [{'id': 'lab-1', 'name': 'Tools'}],
             'fields': [],
             'attachments': [],
         }
@@ -46,7 +46,7 @@ class TestHbImporter(TestCase):
         self.assertFalse(entity.allow_internal_attributes)
         self.assertNotIn('description', entity.integration_payload)
         self.assertEqual(entity.integration_payload.get('location', {}).get('name'), 'Garage')
-        self.assertEqual(entity.integration_payload.get('labels')[0].get('name'), 'Tools')
+        self.assertEqual(entity.integration_payload.get('tags')[0].get('name'), 'Tools')
 
     def test_create_models_with_existing_entity_does_not_create_new_and_preserves_name(self):
         """Issue #281 reconnect contract: when an existing Entity is

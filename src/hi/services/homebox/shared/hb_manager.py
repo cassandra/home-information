@@ -39,7 +39,7 @@ class HomeBoxManager( SingletonManager, AggregateHealthProvider, ApiHealthStatus
         self._client_factory = HbClientFactory()
 
         self._hb_items_list = list()
-        self._hb_labels_list = list()
+        self._hb_tags_list = list()
         self._hb_locations_list = list()
         self._hb_maintenances_list = list()
 
@@ -118,7 +118,7 @@ class HomeBoxManager( SingletonManager, AggregateHealthProvider, ApiHealthStatus
 
     def clear_caches(self):
         self._hb_items_list = list()
-        self._hb_labels_list = list()
+        self._hb_tags_list = list()
         self._hb_locations_list = list()
         self._hb_maintenances_list = list()
         return

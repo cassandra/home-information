@@ -20,7 +20,7 @@ class TestHbConverter(TestCase):
             'description': description,
             'quantity': quantity,
             'location': {'id': 'loc-1', 'name': 'Garage'},
-            'labels': [{'id': 'lab-1', 'name': 'Tools'}],
+            'tags': [{'id': 'lab-1', 'name': 'Tools'}],
             'fields': [],
             'attachments': [],
         }
@@ -103,7 +103,7 @@ class TestHbConverterPayloadTimestampOmission(TestCase):
             'createdAt': '2026-01-01T00:00:00+00:00',
             'updatedAt': '2026-01-01T00:00:00+00:00',
             'location': {'id': 'loc-1', 'name': 'Garage'},
-            'labels': [{'id': 'lab-1', 'name': 'Tools'}],
+            'tags': [{'id': 'lab-1', 'name': 'Tools'}],
             'fields': [],
             'attachments': [],
         }

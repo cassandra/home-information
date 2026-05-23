@@ -33,7 +33,7 @@ class HbApi:
     SOLD_NOTES_FIELD = 'soldNotes'
     NOTES_FIELD = 'notes'
     LOCATION_FIELD = 'location'
-    LABELS_FIELD = 'labels'
+    TAGS_FIELD = 'tags'
     ATTACHMENTS_FIELD = 'attachments'
     FIELDS_FIELD = 'fields'
 
@@ -160,8 +160,8 @@ class HbItem:
         return value if isinstance(value, dict) else None
 
     @property
-    def labels(self) -> Optional[List[Dict[str, Any]]]:
-        value = self.api_dict.get(HbApi.LABELS_FIELD)
+    def tags(self) -> Optional[List[Dict[str, Any]]]:
+        value = self.api_dict.get(HbApi.TAGS_FIELD)
         return value if isinstance(value, list) else None
 
     @property

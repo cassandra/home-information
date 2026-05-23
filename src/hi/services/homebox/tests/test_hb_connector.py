@@ -114,7 +114,7 @@ class HomeBoxConnectorTests(TestCase):
                 {'name': 'Empty', 'textValue': ''},
                 'not-a-dict',
             ],
-            'labels': [
+            'tags': [
                 {'name': 'tools'},
                 {'name': 'garage'},
                 {'name': ''},

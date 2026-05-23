@@ -36,7 +36,7 @@ class TestHbItem(SimpleTestCase):
             'soldNotes': 'Used',
             'notes': 'Shelf A',
             'location': {'id': 'loc-1'},
-            'labels': [{'id': 'lab-1'}],
+            'tags': [{'id': 'lab-1'}],
             'attachments': [{'id': 'att-1'}],
             'fields': [{'id': 'f-1'}],
         }
@@ -71,7 +71,7 @@ class TestHbItem(SimpleTestCase):
         self.assertEqual(item.sold_notes, 'Used')
         self.assertEqual(item.notes, 'Shelf A')
         self.assertEqual(item.location, {'id': 'loc-1'})
-        self.assertEqual(item.labels, [{'id': 'lab-1'}])
+        self.assertEqual(item.tags, [{'id': 'lab-1'}])
         self.assertEqual(item.attachments, [{'id': 'att-1'}])
         self.assertEqual(item.fields, [{'id': 'f-1'}])
 
@@ -91,7 +91,7 @@ class TestHbItem(SimpleTestCase):
             soldTime='',
             soldPrice='80',
             location='garage',
-            labels='tools',
+            tags='tools',
         )
 
         self.assertIsNone(item.quantity)
@@ -108,7 +108,7 @@ class TestHbItem(SimpleTestCase):
         self.assertIsNone(item.sold_time)
         self.assertIsNone(item.sold_price)
         self.assertIsNone(item.location)
-        self.assertIsNone(item.labels)
+        self.assertIsNone(item.tags)
 
     def test_returns_empty_collections_or_strings_when_missing(self):
         item = HbItem(api_dict={'id': 'item-2'})
