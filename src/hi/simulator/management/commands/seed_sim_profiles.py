@@ -451,20 +451,129 @@ class Command(BaseCommand):
         return profile.db_sim_entities.count()
 
     def _build_homebox_volume(self, profile: SimProfile) -> int:
-        # 25 items, varied metadata richness. Stresses HB list rendering
-        # and the inventory pagination/scroll behavior. Variety axes
-        # are spread across the 25 indices via deterministic modular
-        # rules so the profile is reproducible across reseeds:
-        #   - every 5th item: fully documented (all top-level fields
-        #     populated + notes) — exercises the dense Section 2
-        #     layout in the entity-detail modal.
-        #   - every 3rd item: partial documentation (manufacturer +
-        #     serial only).
-        #   - every 4th item: 2-3 custom fields (different content
-        #     per item so modal output looks distinct).
-        #   - every 3rd item: tags (mix of single-tag and multi-tag).
-        #   - attachments distributed by index bucket: ~5 each with
-        #     0 / 1 / 2 / 3+ attachments, varied templates.
+        # 25 items. Items 001-006 are explicitly configured to specific
+        # shapes for targeted UI coverage (empty, partial, attachments-
+        # only, mixed, fully rich, truncation-toggle). Items 007-025
+        # use modular per-index rules to keep variety reproducible.
+        self._add_homebox_item(
+            profile,
+            'Volume Item 001',
+            item_id = 'volume-item-001',
+            quantity = 1,
+        )
+
+        self._add_homebox_item(
+            profile,
+            'Volume Item 002',
+            item_id = 'volume-item-002',
+            quantity = 1,
+            description = 'Compact cordless screwdriver, kept in the kitchen drawer.',
+            manufacturer = 'Acme',
+            model_number = 'AC-002',
+            serial_number = 'SN-00002',
+            custom_fields = 'Color=Red',
+            tags = 'tools,power',
+        )
+
+        self._add_homebox_item(
+            profile,
+            'Volume Item 003',
+            item_id = 'volume-item-003',
+            quantity = 1,
+            attachment_keys = ','.join([
+                AttachmentTemplate.MANUAL.key,
+                AttachmentTemplate.PHOTO.key,
+            ]),
+        )
+
+        self._add_homebox_item(
+            profile,
+            'Volume Item 004',
+            item_id = 'volume-item-004',
+            quantity = 1,
+            manufacturer = 'Generic',
+            model_number = 'GN-004',
+            serial_number = 'GEN-00004',
+            custom_fields = 'Storage Location=Garage Shelf B',
+            tags = 'garage,workshop',
+            attachment_keys = ','.join([
+                AttachmentTemplate.RECEIPT.key,
+                AttachmentTemplate.PHOTO.key,
+            ]),
+        )
+
+        self._add_homebox_item(
+            profile,
+            'Volume Item 005',
+            item_id = 'volume-item-005',
+            quantity = 2,
+            description = 'Fully documented stress-test item exercising every field.',
+            manufacturer = 'Acme',
+            model_number = 'AC-005',
+            serial_number = 'SN-00005',
+            asset_id = 'AST-0005',
+            purchase_from = 'Big Box Store',
+            purchase_time = '2024-06-15',
+            warranty_details = '2 year limited warranty covering parts and labor.',
+            warranty_expires = '2026-06-15',
+            notes = 'Demonstration item with all documented fields populated.',
+            custom_fields = (
+                'Color=Black, Storage Location=Basement, '
+                'Material=Steel, Battery=Li-ion'
+            ),
+            tags = 'tools,power,electronics',
+            attachment_keys = ','.join([
+                AttachmentTemplate.MANUAL.key,
+                AttachmentTemplate.RECEIPT.key,
+                AttachmentTemplate.PHOTO.key,
+                AttachmentTemplate.WARRANTY.key,
+            ]),
+        )
+
+        # Item 006: varied-length values to exercise the JS Show
+        # more / Show less truncation toggle on documented and
+        # custom fields.
+        long_warranty = (
+            'Covers manufacturing defects for 5 years from the date of purchase.\n'
+            'Excludes damage from misuse, accidents, unauthorized repairs, or normal wear.\n'
+            'Requires original proof of purchase for any claim submission.\n'
+            'Replacement parts are warranted for the remainder of the original term.\n'
+            'Shipping costs for warranty service are the responsibility of the owner.\n'
+            'Contact support@example.com to initiate a warranty claim.\n'
+            'See enclosed booklet for full terms and conditions.'
+        )
+        medium_notes = (
+            'Stored in the upstairs closet on the second shelf.\n'
+            'Original box and packing materials retained.\n'
+            'Last serviced in March; runs quietly.'
+        )
+        long_custom_value = (
+            'This unit was installed by the previous owner and has been in '
+            'continuous service for several years. It has had two minor '
+            'repairs documented in the maintenance log. The unit has been '
+            'observed to operate slightly above its rated current draw under '
+            'heavy load. A replacement filter cartridge is stored alongside '
+            'the unit. The manufacturer has issued a service bulletin for '
+            'this model number recommending an annual inspection. Operator '
+            'should consult the bulletin before performing any repairs.'
+        )
+        self._add_homebox_item(
+            profile,
+            'Volume Item 006',
+            item_id = 'volume-item-006',
+            quantity = 1,
+            description = 'Truncation toggle test item.',
+            manufacturer = 'Acme',
+            model_number = 'AC-006',
+            serial_number = 'SN-00006',
+            notes = medium_notes,
+            warranty_details = long_warranty,
+            custom_fields = (
+                f'Color=Blue, History={long_custom_value}, '
+                'Storage Location=Attic Bin 4'
+            ),
+        )
+
         custom_field_palette = [
             'Color=Red, Storage Location=Garage Shelf B',
             'Color=Blue, Storage Location=Basement, Condition=New',
@@ -520,7 +629,7 @@ class Command(BaseCommand):
                       AttachmentTemplate.RECEIPT.key, AttachmentTemplate.WARRANTY.key]),
         ]
 
-        for index in range(25):
+        for index in range(6, 25):
             item_number = index + 1
             kwargs = {
                 'item_id': f'volume-item-{item_number:03}',

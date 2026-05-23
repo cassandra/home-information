@@ -1,0 +1,21 @@
+{% extends "simulator/pages/base.html" %}
+
+{% block head_title %}HomeBox Simulator{% endblock %}
+
+{% block content %}
+  <div class="container mt-3">
+    <h1>HomeBox Simulator Items</h1>
+    {% if items %}
+      <ul>
+        {% for item in items %}
+          <li>
+            <a href="{% url 'homebox_item' item_id=item.id %}">{{ item.name }}</a>
+            <small class="text-muted">({{ item.id }})</small>
+          </li>
+        {% endfor %}
+      </ul>
+    {% else %}
+      <p>No items in the active profile.</p>
+    {% endif %}
+  </div>
+{% endblock %}

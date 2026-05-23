@@ -1,0 +1,99 @@
+{% extends "simulator/pages/base.html" %}
+
+{% block head_title %}{{ item.name }} - HomeBox Simulator{% endblock %}
+
+{% block content %}
+  <div class="container mt-3">
+    <p><a href="{% url 'homebox_home' %}">&larr; Back to HomeBox items</a></p>
+
+    <h1>{{ item.name }}</h1>
+    <p class="text-muted">ID: {{ item.id }}</p>
+
+    <h2>Fields</h2>
+    <dl class="row">
+      {% if item.description %}
+        <dt class="col-sm-3">Description</dt>
+        <dd class="col-sm-9">{{ item.description|linebreaksbr }}</dd>
+      {% endif %}
+      {% if item.manufacturer %}
+        <dt class="col-sm-3">Manufacturer</dt>
+        <dd class="col-sm-9">{{ item.manufacturer }}</dd>
+      {% endif %}
+      {% if item.modelNumber %}
+        <dt class="col-sm-3">Model Number</dt>
+        <dd class="col-sm-9">{{ item.modelNumber }}</dd>
+      {% endif %}
+      {% if item.serialNumber %}
+        <dt class="col-sm-3">Serial Number</dt>
+        <dd class="col-sm-9">{{ item.serialNumber }}</dd>
+      {% endif %}
+      {% if item.assetId %}
+        <dt class="col-sm-3">Asset ID</dt>
+        <dd class="col-sm-9">{{ item.assetId }}</dd>
+      {% endif %}
+      {% if item.purchaseFrom %}
+        <dt class="col-sm-3">Purchased From</dt>
+        <dd class="col-sm-9">{{ item.purchaseFrom }}</dd>
+      {% endif %}
+      {% if item.purchaseTime %}
+        <dt class="col-sm-3">Purchase Time</dt>
+        <dd class="col-sm-9">{{ item.purchaseTime }}</dd>
+      {% endif %}
+      {% if item.warrantyDetails %}
+        <dt class="col-sm-3">Warranty Details</dt>
+        <dd class="col-sm-9">{{ item.warrantyDetails|linebreaksbr }}</dd>
+      {% endif %}
+      {% if item.warrantyExpires %}
+        <dt class="col-sm-3">Warranty Expires</dt>
+        <dd class="col-sm-9">{{ item.warrantyExpires }}</dd>
+      {% endif %}
+      {% if item.notes %}
+        <dt class="col-sm-3">Notes</dt>
+        <dd class="col-sm-9">{{ item.notes|linebreaksbr }}</dd>
+      {% endif %}
+      <dt class="col-sm-3">Quantity</dt>
+      <dd class="col-sm-9">{{ item.quantity }}</dd>
+      <dt class="col-sm-3">Archived</dt>
+      <dd class="col-sm-9">{{ item.archived|yesno:"Yes,No" }}</dd>
+    </dl>
+
+    <h2>Tags</h2>
+    {% if item.tags %}
+      <ul>
+        {% for tag in item.tags %}
+          <li>{{ tag.name }}</li>
+        {% endfor %}
+      </ul>
+    {% else %}
+      <p class="text-muted">No tags.</p>
+    {% endif %}
+
+    <h2>Custom Fields</h2>
+    {% if item.fields %}
+      <dl class="row">
+        {% for custom in item.fields %}
+          <dt class="col-sm-3">{{ custom.name }}</dt>
+          <dd class="col-sm-9">{{ custom.textValue|linebreaksbr }}</dd>
+        {% endfor %}
+      </dl>
+    {% else %}
+      <p class="text-muted">No custom fields.</p>
+    {% endif %}
+
+    <h2>Attachments</h2>
+    {% if item.attachments %}
+      <ul>
+        {% for attachment in item.attachments %}
+          <li>
+            <a href="{% url 'homebox_api_attachment_download' item_id=item.id attachment_id=attachment.id %}">
+              {{ attachment.title }}
+            </a>
+            <small class="text-muted">({{ attachment.mimeType }})</small>
+          </li>
+        {% endfor %}
+      </ul>
+    {% else %}
+      <p class="text-muted">No attachments.</p>
+    {% endif %}
+  </div>
+{% endblock %}
