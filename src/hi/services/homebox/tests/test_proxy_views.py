@@ -3,7 +3,7 @@ Tests for the HomeBox attachment proxy view.
 
 Covers the bearer-token proxy that streams HomeBox attachments and
 thumbnails back to the browser: 404s for unknown / non-HomeBox
-entities, 503 when the integration's client is unavailable, 404 on
+entities, 503 when the integration's client is unavailable, 502 on
 upstream download failure, and a clean 200 with passthrough bytes
 and content-type on success.
 """
@@ -106,7 +106,10 @@ class HomeBoxAttachmentProxyViewTests(TestCase):
 
         self.assertEqual(response.status_code, 404)
 
-    def test_download_raises_results_in_404(self):
+    def test_download_raises_results_in_502(self):
+        """Upstream connectivity / auth failure surfaces as 502 (bad
+        gateway) so the browser and ops can distinguish upstream
+        trouble from a genuinely-missing attachment."""
         entity = self._make_hb_entity('1')
 
         manager = Mock()
@@ -121,7 +124,7 @@ class HomeBoxAttachmentProxyViewTests(TestCase):
         ):
             response = self.client.get(self._url(entity.id))
 
-        self.assertEqual(response.status_code, 404)
+        self.assertEqual(response.status_code, 502)
 
     def test_missing_content_returns_404(self):
         entity = self._make_hb_entity('1')

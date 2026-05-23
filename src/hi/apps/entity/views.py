@@ -184,6 +184,10 @@ class EntityEditView( HiModalView, EntityViewMixin, AttributeEditViewMixin ):
         try:
             gateway = IntegrationManager().get_integration_gateway( entity.integration_id )
         except KeyError:
+            logger.warning(
+                'No integration gateway registered for entity '
+                f'{entity.id} (integration_id={entity.integration_id!r}).'
+            )
             return None
         return gateway.get_external_view_data( entity )
 

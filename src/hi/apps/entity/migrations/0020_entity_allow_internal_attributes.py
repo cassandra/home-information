@@ -1,6 +1,6 @@
 import logging
 
-from django.db import migrations, models, transaction
+from django.db import migrations, models
 
 
 def delete_homebox_orphan_attributes(apps, schema_editor):
@@ -15,25 +15,22 @@ def delete_homebox_orphan_attributes(apps, schema_editor):
     Entity = apps.get_model('entity', 'Entity')
     EntityAttribute = apps.get_model('entity', 'EntityAttribute')
 
-    deleted_per_entity = []
-    for entity in Entity.objects.filter(integration_id='hb').iterator():
-        with transaction.atomic():
-            qs = EntityAttribute.objects.filter(entity=entity)
-            count = qs.count()
-            if count == 0:
-                continue
-            qs.delete()
-            deleted_per_entity.append((entity.id, count))
+    affected_entities = list(
+        Entity.objects.filter(integration_id='hb').values_list('id', flat=True)
+    )
+    if not affected_entities:
+        logger.info('HomeBox Connect migration: no HomeBox entities present.')
+        return
 
-    if deleted_per_entity:
-        total = sum(count for _id, count in deleted_per_entity)
-        logger.info(
-            f'HomeBox Connect migration: deleted {total} EntityAttribute '
-            f'row(s) across {len(deleted_per_entity)} entit(y/ies). '
-            f'Details: {deleted_per_entity}'
-        )
-    else:
-        logger.info('HomeBox Connect migration: no EntityAttribute rows to delete.')
+    deleted_count, _ = EntityAttribute.objects.filter(
+        entity_id__in=affected_entities,
+    ).delete()
+
+    logger.info(
+        f'HomeBox Connect migration: deleted {deleted_count} EntityAttribute '
+        f'row(s) across {len(affected_entities)} entit(y/ies). '
+        f'Entity ids: {affected_entities}'
+    )
 
 
 class Migration(migrations.Migration):

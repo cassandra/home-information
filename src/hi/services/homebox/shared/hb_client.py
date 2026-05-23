@@ -16,10 +16,10 @@ class HbClient:
     API_VERSION = 'v1'
 
     def __init__(self, api_options: Dict[str, str], timeout_secs: Optional[float] = None):
-        self._api_url = api_options.get(self.API_URL)
-        assert self._api_url is not None
-        if self._api_url.endswith('/'):
-            self._api_url = self._api_url[:-1]
+        self.api_url = api_options.get(self.API_URL)
+        assert self.api_url is not None
+        if self.api_url.endswith('/'):
+            self.api_url = self.api_url[:-1]
 
         self._user = api_options.get(self.API_USER)
         assert self._user is not None
@@ -43,7 +43,7 @@ class HbClient:
         self._authenticated = False
 
     def _login(self):
-        url = f"{self._api_url}/{self.API_VERSION}/users/login"
+        url = f"{self.api_url}/{self.API_VERSION}/users/login"
         data = {
             'username': self._user,
             'password': self._password,
@@ -53,7 +53,7 @@ class HbClient:
             response = self._session.post(url, json=data, timeout=self._timeout_secs)
         except Exception as e:
             raise ConnectionError(
-                f'Cannot connect to HomeBox at {self._api_url}. '
+                f'Cannot connect to HomeBox at {self.api_url}. '
                 f'Verify the API URL is correct and the server is running.'
             ) from e
 
@@ -114,7 +114,7 @@ class HbClient:
         as a clear ValueError instead of letting downstream callers
         iterate the response as bytes.
         """
-        url_list = f"{self._api_url}/{self.API_VERSION}/items"
+        url_list = f"{self.api_url}/{self.API_VERSION}/items"
         data = self._make_request('GET', url_list)
         if not isinstance(data, dict):
             raise ValueError(
@@ -132,7 +132,7 @@ class HbClient:
         Errors propagate to the caller (auth/network/HTTP errors). The
         Connect resolver wraps this call and degrades to a deep-link-only
         placeholder on failure rather than crashing the modal render."""
-        url = f"{self._api_url}/{self.API_VERSION}/items/{item_id}"
+        url = f"{self.api_url}/{self.API_VERSION}/items/{item_id}"
         item_detail = self._make_request('GET', url)
         if not isinstance(item_detail, dict):
             raise ValueError(
@@ -165,7 +165,7 @@ class HbClient:
 
     def download_attachment(self, item_id: str, attachment_id: str) -> Optional[Dict[str, Any]]:
         """Downloads an attachment """
-        url = f"{self._api_url}/{self.API_VERSION}/items/{item_id}/attachments/{attachment_id}"
+        url = f"{self.api_url}/{self.API_VERSION}/items/{item_id}/attachments/{attachment_id}"
         response = self._make_request('GET', url)
 
         if not isinstance(response, Response):

@@ -18,6 +18,7 @@ from hi.integrations.external_view_data import (
     StructuredViewData,
 )
 
+from hi.services.homebox.shared.hb_converter import HB_ITEM_FIELD_PAIRS
 from hi.services.homebox.shared.hb_manager import HomeBoxManager
 from hi.services.homebox.shared.hb_models import HbItem
 
@@ -26,20 +27,6 @@ logger = logging.getLogger(__name__)
 
 class HomeBoxConnector:
     """Stateless resolver for the entity-detail external-data view hook."""
-
-    # (HbItem property, display label).
-    ITEM_FIELD_PAIRS = [
-        ('description', 'Description'),
-        ('manufacturer', 'Manufacturer'),
-        ('model_number', 'Model Number'),
-        ('serial_number', 'Serial Number'),
-        ('asset_id', 'Asset ID'),
-        ('purchase_from', 'Purchased From'),
-        ('purchase_time', 'Purchase Date'),
-        ('warranty_details', 'Warranty Details'),
-        ('warranty_expires', 'Warranty Expires'),
-        ('notes', 'Notes'),
-    ]
 
     def get_external_view_data(self, entity: Entity) -> Optional[ExternalViewData]:
         item_id = entity.integration_name
@@ -71,7 +58,7 @@ class HomeBoxConnector:
     def _build_attributes(self, hb_item: HbItem) -> List[NameValuePair]:
         rows: List[NameValuePair] = []
 
-        for prop_name, label in self.ITEM_FIELD_PAIRS:
+        for prop_name, label in HB_ITEM_FIELD_PAIRS:
             value = getattr(hb_item, prop_name, None)
             if value is None:
                 continue
@@ -141,11 +128,10 @@ class HomeBoxConnector:
         """Best-effort: strip a trailing ``/api`` from the configured
         URL and append ``/item/<id>``. Returns None if no API URL is
         configured."""
-        try:
-            hb_manager = HomeBoxManager()
-            api_url = hb_manager.hb_client._api_url if hb_manager.hb_client else None
-        except Exception:
+        hb_manager = HomeBoxManager()
+        if not hb_manager.hb_client:
             return None
+        api_url = hb_manager.hb_client.api_url
         if not api_url:
             return None
         if api_url.endswith('/api'):

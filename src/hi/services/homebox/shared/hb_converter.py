@@ -15,14 +15,26 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-class HbConverter:
+# Canonical mapping of HbItem properties to user-visible labels. Shared
+# by the Connect-mode resolver (live read-only display) and the
+# importer's synthetic-field generation so both surfaces expose the
+# same set of HomeBox item metadata.
+# (HbItem property, display label)
+HB_ITEM_FIELD_PAIRS = [
+    ( 'description', 'Description' ),
+    ( 'manufacturer', 'Manufacturer' ),
+    ( 'model_number', 'Model Number' ),
+    ( 'serial_number', 'Serial Number' ),
+    ( 'asset_id', 'Asset ID' ),
+    ( 'purchase_from', 'Purchased From' ),
+    ( 'purchase_time', 'Purchase Date' ),
+    ( 'warranty_details', 'Warranty Details' ),
+    ( 'warranty_expires', 'Warranty Expires' ),
+    ( 'notes', 'Notes' ),
+]
 
-    HB_ITEM_ATTRIBUTE_FIELD_MAP = [
-        ( 'description', 'Description' ),
-        ( 'serial_number', 'Serial Number' ),
-        ( 'model_number', 'Model Number' ),
-        ( 'manufacturer', 'Manufacturer' ),
-    ]
+
+class HbConverter:
 
     @classmethod
     def hb_item_to_integration_key( cls, hb_item: HbItem ) -> IntegrationKey:
@@ -130,7 +142,7 @@ class HbConverter:
     def _hb_item_to_field_list( cls, hb_item: HbItem ) -> List[Dict]:
         hb_field_list = list( hb_item.fields )
 
-        for key, name in cls.HB_ITEM_ATTRIBUTE_FIELD_MAP:
+        for key, name in HB_ITEM_FIELD_PAIRS:
             value = str( getattr( hb_item, key, '' ) or '' ).strip()
             if not value:
                 continue

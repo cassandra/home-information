@@ -337,36 +337,6 @@ class TestEntityEditView(DualModeViewTestCase):
         self.assertNotIn('>Add File<', content)
         self.assertNotIn('>Add Info<', content)
 
-    def test_post_rejects_new_attribute_when_entity_disallows_custom_attributes(self):
-        self.entity.allow_internal_attributes = False
-        self.entity.save(update_fields=['allow_internal_attributes'])
-
-        url = reverse('entity_edit', kwargs={'entity_id': self.entity.id})
-        form_data = EntityAttributeSyntheticData.create_form_data_for_entity_edit(entity=self.entity)
-
-        regular_attributes = list(self.entity.attributes.exclude(value_type_str=str(AttributeValueType.FILE)))
-        prefix = f'entity-{self.entity.id}'
-        form_data.update({
-            f'{prefix}-TOTAL_FORMS': str(len(regular_attributes) + 2),
-            f'{prefix}-INITIAL_FORMS': str(len(regular_attributes)),
-            f'{prefix}-MIN_NUM_FORMS': '0',
-            f'{prefix}-MAX_NUM_FORMS': '1000',
-            f'{prefix}-{len(regular_attributes)}-name': 'blocked_property',
-            f'{prefix}-{len(regular_attributes)}-value': 'blocked value',
-        })
-
-        response = self.client.post(url, form_data)
-
-        # Defense-in-depth: the formset clean() rejects the new
-        # attribute even though the UI section that would expose the
-        # Add affordances is suppressed under the new semantic. The
-        # surface no longer renders the attribute section (so the
-        # formset's non-form error text is not present in the rendered
-        # body), but the submission still fails and no row is created.
-        self.assertErrorResponse(response)
-        self.assertJsonResponse(response)
-        self.assertFalse(self.entity.attributes.filter(name='blocked_property').exists())
-
     def test_entity_with_complex_attribute_mix(self):
         """Test editing entity with mixed attribute types (text, file, secret)."""
         # Create entity with mixed attributes

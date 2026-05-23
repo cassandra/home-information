@@ -66,6 +66,12 @@ class CustomTemplateViewData(ExternalViewData):
     template_name: str = ''
     context: Dict = field(default_factory=dict)
 
+    def __post_init__(self):
+        if not self.template_name or not self.template_name.strip():
+            raise ValueError(
+                'CustomTemplateViewData requires a non-empty template_name.'
+            )
+
 
 @dataclass
 class MinimalViewData(ExternalViewData):

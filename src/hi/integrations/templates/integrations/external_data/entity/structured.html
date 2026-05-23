@@ -19,11 +19,11 @@ StructuredViewData partial: name/value rows + attachment grid.
     {% for attachment in view_data.attachments %}
     <div class="attr-v2-external-structured-attachment" data-mime-type="{{ attachment.mime_type }}">
       {% if attachment.thumbnail_url %}
-      <a href="{{ attachment.open_url|default:attachment.thumbnail_url }}" target="_blank">
+      <a href="{{ attachment.open_url|default:attachment.thumbnail_url }}" target="_blank" rel="noopener noreferrer">
         <img src="{{ attachment.thumbnail_url }}" alt="{{ attachment.title }}" />
       </a>
       {% else %}
-      <a href="{{ attachment.open_url }}" target="_blank">{{ attachment.title }}</a>
+      <a href="{{ attachment.open_url }}" target="_blank" rel="noopener noreferrer">{{ attachment.title }}</a>
       {% endif %}
       <div class="attr-v2-external-structured-attachment-title">{{ attachment.title }}</div>
     </div>
@@ -33,7 +33,7 @@ StructuredViewData partial: name/value rows + attachment grid.
 
   {% if view_data.deep_link_url %}
   <div class="attr-v2-external-structured-deep-link">
-    <a href="{{ view_data.deep_link_url }}" target="_blank">Open in upstream</a>
+    <a href="{{ view_data.deep_link_url }}" target="_blank" rel="noopener noreferrer">Open in upstream</a>
   </div>
   {% endif %}
 </div>

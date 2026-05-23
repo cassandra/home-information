@@ -69,3 +69,14 @@ class ExternalViewDataDefaultTemplateNameTests(TestCase):
         )
         self.assertEqual(len(instance.attachments), 1)
         self.assertEqual(instance.attributes, [])
+
+    def test_custom_template_view_data_requires_template_name(self):
+        """CustomTemplateViewData has no usable default template_name —
+        the empty default would silently misroute the include. Empty
+        and whitespace-only values must fail loudly at construction."""
+        with self.assertRaises(ValueError):
+            CustomTemplateViewData()
+        with self.assertRaises(ValueError):
+            CustomTemplateViewData(template_name='')
+        with self.assertRaises(ValueError):
+            CustomTemplateViewData(template_name='   ')

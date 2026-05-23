@@ -133,8 +133,8 @@ class TestHomeBoxSynchronizer(SimpleTestCase):
         )
 
         # Connect-mode contract: sync no longer creates/updates/
-        # removes EntityAttribute rows. The helper stays in place
-        # for #355 but is not called by the sync flow.
+        # removes EntityAttribute rows. The attribute-sync helper is
+        # not invoked by the Connect-mode sync flow.
         self.assertEqual(sync_attrs_mock.call_count, 0)
 
         self.assertIn('Found 2 existing HomeBox items.', result.info_list)

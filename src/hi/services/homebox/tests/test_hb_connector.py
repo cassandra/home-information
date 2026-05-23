@@ -53,7 +53,7 @@ class HomeBoxConnectorTests(TestCase):
 
         manager = Mock()
         manager.hb_client = Mock()
-        manager.hb_client._api_url = 'http://homebox.example.com/api'
+        manager.hb_client.api_url = 'http://homebox.example.com/api'
         manager.fetch_hb_item_from_api.side_effect = RuntimeError('unreachable')
         manager.ensure_initialized = Mock()
 
@@ -124,7 +124,7 @@ class HomeBoxConnectorTests(TestCase):
 
         manager = Mock()
         manager.hb_client = Mock()
-        manager.hb_client._api_url = 'http://homebox.example.com/api'
+        manager.hb_client.api_url = 'http://homebox.example.com/api'
         manager.fetch_hb_item_from_api.return_value = hb_item
         manager.ensure_initialized = Mock()
 
@@ -180,7 +180,7 @@ class HomeBoxConnectorTests(TestCase):
 
         manager = Mock()
         manager.hb_client = Mock()
-        manager.hb_client._api_url = 'http://homebox.example.com/api'
+        manager.hb_client.api_url = 'http://homebox.example.com/api'
         manager.fetch_hb_item_from_api.return_value = hb_item
         manager.ensure_initialized = Mock()
 
@@ -213,7 +213,7 @@ class HomeBoxConnectorTests(TestCase):
 
         manager = Mock()
         manager.hb_client = Mock()
-        manager.hb_client._api_url = 'http://homebox.example.com/api'
+        manager.hb_client.api_url = 'http://homebox.example.com/api'
         manager.fetch_hb_item_from_api.side_effect = RuntimeError('upstream down')
         manager.ensure_initialized = Mock()
 
@@ -230,7 +230,7 @@ class HomeBoxConnectorTests(TestCase):
 
         manager = Mock()
         manager.hb_client = Mock()
-        manager.hb_client._api_url = 'http://homebox.example.com'
+        manager.hb_client.api_url = 'http://homebox.example.com'
         manager.fetch_hb_item_from_api.side_effect = RuntimeError('upstream down')
         manager.ensure_initialized = Mock()
 

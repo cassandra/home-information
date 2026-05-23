@@ -44,7 +44,7 @@ class TestHbClient(SimpleTestCase):
                 HbClient.API_PASSWORD: 'pass',
             })
 
-        self.assertEqual(client._api_url, 'https://homebox.local')
+        self.assertEqual(client.api_url, 'https://homebox.local')
         mock_login.assert_not_called()
         self.assertFalse(client._authenticated)
 

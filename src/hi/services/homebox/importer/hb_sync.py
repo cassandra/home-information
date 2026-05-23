@@ -183,7 +183,6 @@ class HomeBoxSynchronizer( IntegrationSynchronizer, HomeBoxMixin ):
                     created_entities.append( entity )
 
                 # Attributes are fetched live by the connector.
-                # Helpers below preserved for #355's Import mode.
                 continue
 
             for integration_key, entity in integration_key_to_entity.items():
@@ -196,10 +195,9 @@ class HomeBoxSynchronizer( IntegrationSynchronizer, HomeBoxMixin ):
                                          entity   : Entity,
                                          upstream : HbItem,
                                          result   : IntegrationSyncResult ):
-        """Issue #281: dispatch to the HomeBox converter with the
-        existing-entity parameter set, so the converter repopulates
-        integration-owned components on the previously-disconnected
-        entity rather than creating a fresh one."""
+        """Reconnect hook: dispatch to ``HbImporter`` with the existing
+        entity so integration-owned components are repopulated on the
+        previously-disconnected entity rather than creating a new one."""
         HbImporter.create_models_for_hb_item(
             hb_item = upstream,
             entity = entity,

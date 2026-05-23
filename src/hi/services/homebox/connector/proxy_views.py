@@ -41,11 +41,15 @@ class HomeBoxAttachmentProxyView(View):
                 attachment_id=attachment_id,
             )
         except Exception as e:
+            # Upstream connectivity / auth / HTTP failure during the
+            # download itself. Surface as a 502 (bad gateway) rather
+            # than 404 so the browser and ops can tell upstream
+            # trouble apart from a genuinely-missing attachment.
             logger.warning(
                 f'HomeBox attachment proxy: download failed for entity '
                 f'{entity_id} attachment {attachment_id}: {e}'
             )
-            raise Http404('Attachment unavailable.')
+            return HttpResponse(status=502, content='HomeBox upstream error.')
 
         if not downloaded:
             raise Http404('Attachment not returned by HomeBox.')

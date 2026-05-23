@@ -9,7 +9,7 @@ MinimalViewData partial: optional error message + deep link.
   </div>
   {% endif %}
   {% if view_data.deep_link_url %}
-  <a href="{{ view_data.deep_link_url }}" target="_blank">Open in upstream</a>
+  <a href="{{ view_data.deep_link_url }}" target="_blank" rel="noopener noreferrer">Open in upstream</a>
   {% elif not view_data.error_message %}
   <span class="text-muted">External data unavailable.</span>
   {% endif %}

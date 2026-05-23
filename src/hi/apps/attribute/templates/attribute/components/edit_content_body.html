@@ -32,7 +32,7 @@ by using the AttributeItemEditContext pattern.
     </div>
     {% endif %}
   
-    <div class="attr-v2-owner-fields }}">
+    <div class="attr-v2-owner-fields">
       {% block owner_fields %}
       <!-- Subclasses should override this block to provide owner-specific fields -->
       {% endblock %}
@@ -90,8 +90,7 @@ by using the AttributeItemEditContext pattern.
       <div class="{{ DIVID.ATTR_V2_ACTION_BUTTONS_CLASS }}">
         {% block additional_actions %}
         {% endblock %}
-        {% if attr_page_context.allow_internal_attributes %}
-        {% if attr_page_context.can_add_custom_attributes %}
+        {% if attr_page_context.allow_internal_attributes and attr_page_context.can_add_custom_attributes %}
         {% block file_upload_button %}
         <button type="button"
                 class="btn btn-sm btn-outline-primary mb-0"
@@ -107,7 +106,6 @@ by using the AttributeItemEditContext pattern.
           {% icon "plus" size="sm" css_class="hi-icon-left" %}Add Info
         </button>
         {% endblock %}
-        {% endif %}
         {% endif %}
       </div>
     </div>
