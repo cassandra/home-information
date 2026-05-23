@@ -1,0 +1,18 @@
+{% load static integration_tags %}
+{% integration_logo_path entity as integration_logo %}
+{% integration_display_name entity as integration_name %}
+
+<div class="attr-ext-header d-flex align-items-center">
+  <div class="attr-ext-header__brand d-flex align-items-center">
+    {% if integration_logo %}
+    <img class="attr-ext-header__logo" src="{% static integration_logo %}" alt="{{ integration_name }} logo">
+    {% endif %}
+    <span class="text-muted small">From {{ integration_name }}</span>
+  </div>
+  {% if view_data.deep_link_url %}
+  <a class="btn btn-sm btn-outline-primary ml-auto"
+     href="{{ view_data.deep_link_url }}"
+     target="_blank"
+     rel="noopener noreferrer">Open in {{ integration_name }} &rarr;</a>
+  {% endif %}
+</div>

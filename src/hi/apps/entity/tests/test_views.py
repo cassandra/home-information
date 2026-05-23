@@ -568,7 +568,7 @@ class TestEntityEditViewExternalViewData(DualModeViewTestCase):
 
         self.assertSuccessResponse(response)
         content = response.content.decode('utf-8')
-        self.assertIn('attr-v2-external-minimal-error', content)
+        self.assertIn('attr-ext-minimal-error', content)
         self.assertIn('HomeBox upstream unavailable: Connection refused', content)
         # Deep link is still offered alongside the error.
         self.assertIn('https://upstream.example/items/99', content)
