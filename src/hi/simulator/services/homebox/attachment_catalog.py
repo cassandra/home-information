@@ -32,36 +32,48 @@ from hi.simulator.media import (
 logger = logging.getLogger(__name__)
 
 
-# Smaller image size used when rendering the thumbnail variant of an
-# image attachment. Real HomeBox derives thumbnails server-side; here
-# we just render at a different size so the operator can verify the
-# thumbnail proxy path end-to-end.
-_THUMBNAIL_SIZE = ( 120, 60 )
+# Thumbnail rendering scale: real HomeBox thumbnails are scaled-down
+# originals at the source aspect, not reformatted. The simulator
+# follows the same shape.
+_THUMBNAIL_SCALE = 0.75
 
 
 class AttachmentTemplate( LabeledEnum ):
     """Catalog of pre-canned attachment templates.
 
-    Each member carries the user-facing label, MIME type, and
-    rendering kind. The wire key (used in URLs, CSV fields, and the
-    API ``attachment.id`` value) is ``member.name.lower()`` per the
-    ``LabeledEnum`` convention. ``description`` is left empty —
-    operator-facing label is sufficient for the picker UI.
+    Each member carries the user-facing label, MIME type, rendering
+    kind, and source pixel dimensions. The wire key (used in URLs,
+    CSV fields, and the API ``attachment.id`` value) is
+    ``member.name.lower()`` per the ``LabeledEnum`` convention.
+    ``description`` is left empty — operator-facing label is
+    sufficient for the picker UI.
+
+    Photo variants (``PHOTO_SQUARE`` / ``PHOTO_WIDE`` /
+    ``PHOTO_WIDE_X`` / ``PHOTO_TALL`` / ``PHOTO_TALL_X``) exist so
+    the operator can exercise the HI app's thumbnail grid across
+    different image aspect ratios without uploading real files.
     """
 
-    RECEIPT  = ( 'Receipt'  , '' , 'image/png'        , 'image' )
-    MANUAL   = ( 'Manual'   , '' , 'application/pdf'  , 'pdf'   )
-    PHOTO    = ( 'Photo'    , '' , 'image/jpeg'       , 'image' )
-    WARRANTY = ( 'Warranty' , '' , 'application/pdf'  , 'pdf'   )
+    RECEIPT = ('Receipt', '', 'image/png', 'image', (320, 240))
+    MANUAL = ('Manual', '', 'application/pdf', 'pdf', (320, 240))
+    PHOTO = ('Photo', '', 'image/jpeg', 'image', (320, 240))
+    WARRANTY = ('Warranty', '', 'application/pdf', 'pdf', (320, 240))
+    PHOTO_SQUARE = ('Photo (Square)', '', 'image/jpeg', 'image', (320, 320))
+    PHOTO_WIDE = ('Photo (Wide)', '', 'image/jpeg', 'image', (320, 180))
+    PHOTO_WIDE_X = ('Photo (Ultra Wide)', '', 'image/jpeg', 'image', (640, 180))
+    PHOTO_TALL = ('Photo (Tall)', '', 'image/jpeg', 'image', (180, 320))
+    PHOTO_TALL_X = ('Photo (Ultra Tall)', '', 'image/jpeg', 'image', (180, 640))
 
     def __init__( self,
                   label       : str,
                   description : str,
                   mime_type   : str,
-                  kind        : str ):
+                  kind        : str,
+                  source_size : Tuple[ int, int ] ):
         super().__init__( label, description )
         self.mime_type = mime_type
         self.kind = kind
+        self.source_size = source_size
         return
 
     @property
@@ -70,6 +82,11 @@ class AttachmentTemplate( LabeledEnum ):
         ``attachment.id`` value. Stable across renames as long as
         the enum member name is preserved."""
         return self.name.lower()
+
+    @property
+    def thumbnail_size( self ) -> Tuple[ int, int ]:
+        width, height = self.source_size
+        return ( int( width * _THUMBNAIL_SCALE ), int( height * _THUMBNAIL_SCALE ) )
 
 
 def attachment_choices() -> List[ Tuple[ str, str ] ]:
@@ -128,13 +145,14 @@ def render_attachment_content( template  : AttachmentTemplate,
     with ``item_name`` baked into the content so the operator can
     distinguish artifacts in the HI UI. When ``thumbnail`` is True
     and the template is image-kind, the image is rendered at a
-    smaller size; ``thumbnail=True`` with a non-image template
-    returns None. Returns a dict with ``content`` (bytes) and
-    ``mime_type`` (str), or None if the template's ``kind`` is
-    unrecognized or unsupported for the requested variant."""
+    smaller size at the same source aspect; ``thumbnail=True`` with
+    a non-image template returns None. Returns a dict with
+    ``content`` (bytes) and ``mime_type`` (str), or None if the
+    template's ``kind`` is unrecognized or unsupported for the
+    requested variant."""
     if template.kind == 'image':
         image_format = 'PNG' if template.mime_type == 'image/png' else 'JPEG'
-        size = _THUMBNAIL_SIZE if thumbnail else ( 320, 160 )
+        size = template.thumbnail_size if thumbnail else template.source_size
         content = render_placeholder_image(
             text_lines = [ template.label, item_name, '(simulator)' ],
             image_format = image_format,

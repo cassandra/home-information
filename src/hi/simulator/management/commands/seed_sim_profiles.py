@@ -572,6 +572,14 @@ class Command(BaseCommand):
                 f'Color=Blue, History={long_custom_value}, '
                 'Storage Location=Attic Bin 4'
             ),
+            attachment_keys = ','.join([
+                AttachmentTemplate.PHOTO.key,
+                AttachmentTemplate.PHOTO_SQUARE.key,
+                AttachmentTemplate.PHOTO_WIDE.key,
+                AttachmentTemplate.PHOTO_WIDE_X.key,
+                AttachmentTemplate.PHOTO_TALL.key,
+                AttachmentTemplate.PHOTO_TALL_X.key,
+            ]),
         )
 
         custom_field_palette = [
