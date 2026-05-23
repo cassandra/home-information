@@ -112,6 +112,17 @@ class AttachmentDownloadView( View ):
         item_id = kwargs.get('item_id')
         attachment_id = kwargs.get('attachment_id')
 
+        # Thumbnail variants share the underlying catalog template
+        # with the main attachment but render at a smaller size.
+        # The wire convention is ``<template.key>-thumb`` (see
+        # ``build_attachment_metadata``).
+        thumbnail_suffix = '-thumb'
+        is_thumbnail = attachment_id.endswith( thumbnail_suffix )
+        lookup_key = (
+            attachment_id[:-len(thumbnail_suffix)]
+            if is_thumbnail else attachment_id
+        )
+
         simulator = HomeBoxSimulator()
         for ( sim_entity_id, fields, _archived_state,
               _created_at, _updated_at ) in simulator.get_sim_entity_pairs():
@@ -121,14 +132,21 @@ class AttachmentDownloadView( View ):
                 template.key: template
                 for template in parse_attachment_keys( fields.attachment_keys )
             }
-            template = templates_by_key.get( attachment_id )
+            template = templates_by_key.get( lookup_key )
             if template is None:
                 return JsonResponse(
                     { 'message': f'Attachment {attachment_id} not found' },
                     status = 404,
                 )
+            if is_thumbnail and template.kind != 'image':
+                return JsonResponse(
+                    { 'message': f'Attachment {attachment_id} not found' },
+                    status = 404,
+                )
             rendered = render_attachment_content(
-                template = template, item_name = fields.name,
+                template = template,
+                item_name = fields.name,
+                thumbnail = is_thumbnail,
             )
             if not rendered:
                 return JsonResponse(

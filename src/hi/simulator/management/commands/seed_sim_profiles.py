@@ -452,18 +452,115 @@ class Command(BaseCommand):
 
     def _build_homebox_volume(self, profile: SimProfile) -> int:
         # 25 items, varied metadata richness. Stresses HB list rendering
-        # and the inventory pagination/scroll behavior.
+        # and the inventory pagination/scroll behavior. Variety axes
+        # are spread across the 25 indices via deterministic modular
+        # rules so the profile is reproducible across reseeds:
+        #   - every 5th item: fully documented (all top-level fields
+        #     populated + notes) — exercises the dense Section 2
+        #     layout in the entity-detail modal.
+        #   - every 3rd item: partial documentation (manufacturer +
+        #     serial only).
+        #   - every 4th item: 2-3 custom fields (different content
+        #     per item so modal output looks distinct).
+        #   - every 3rd item: tags (mix of single-tag and multi-tag).
+        #   - attachments distributed by index bucket: ~5 each with
+        #     0 / 1 / 2 / 3+ attachments, varied templates.
+        custom_field_palette = [
+            'Color=Red, Storage Location=Garage Shelf B',
+            'Color=Blue, Storage Location=Basement, Condition=New',
+            'Material=Steel, Weight=2.5kg',
+            'Color=Black, Battery=Li-ion, Voltage=20V',
+            'Material=Plastic, Length=12in, Diameter=1in',
+            'Color=Green, Storage Location=Attic Bin 4',
+            'Material=Wood, Finish=Oak, Width=18in',
+        ]
+        tag_palette = [
+            'tools',
+            'tools,power',
+            'electronics',
+            'electronics,delicate',
+            'kitchen',
+            'garage,workshop',
+            'consumables',
+        ]
+        # Attachment template buckets indexed modulo 25 — first ~5
+        # empty, next ~10 single, next ~5 paired, last ~5 with
+        # three+ templates. Different choices keep the mime mix
+        # visible to the operator.
+        attachment_buckets = [
+            # 0 attachments (indices 0..4)
+            '', '', '', '', '',
+            # 1 attachment (indices 5..14)
+            AttachmentTemplate.MANUAL.key,
+            AttachmentTemplate.RECEIPT.key,
+            AttachmentTemplate.PHOTO.key,
+            AttachmentTemplate.WARRANTY.key,
+            AttachmentTemplate.MANUAL.key,
+            AttachmentTemplate.RECEIPT.key,
+            AttachmentTemplate.PHOTO.key,
+            AttachmentTemplate.WARRANTY.key,
+            AttachmentTemplate.MANUAL.key,
+            AttachmentTemplate.RECEIPT.key,
+            # 2 attachments (indices 15..19)
+            ','.join([AttachmentTemplate.MANUAL.key, AttachmentTemplate.RECEIPT.key]),
+            ','.join([AttachmentTemplate.PHOTO.key, AttachmentTemplate.WARRANTY.key]),
+            ','.join([AttachmentTemplate.RECEIPT.key, AttachmentTemplate.PHOTO.key]),
+            ','.join([AttachmentTemplate.MANUAL.key, AttachmentTemplate.WARRANTY.key]),
+            ','.join([AttachmentTemplate.PHOTO.key, AttachmentTemplate.RECEIPT.key]),
+            # 3+ attachments (indices 20..24)
+            ','.join([AttachmentTemplate.MANUAL.key, AttachmentTemplate.RECEIPT.key,
+                      AttachmentTemplate.PHOTO.key]),
+            ','.join([AttachmentTemplate.MANUAL.key, AttachmentTemplate.RECEIPT.key,
+                      AttachmentTemplate.PHOTO.key, AttachmentTemplate.WARRANTY.key]),
+            ','.join([AttachmentTemplate.PHOTO.key, AttachmentTemplate.WARRANTY.key,
+                      AttachmentTemplate.MANUAL.key]),
+            ','.join([AttachmentTemplate.RECEIPT.key, AttachmentTemplate.PHOTO.key,
+                      AttachmentTemplate.WARRANTY.key]),
+            ','.join([AttachmentTemplate.MANUAL.key, AttachmentTemplate.PHOTO.key,
+                      AttachmentTemplate.RECEIPT.key, AttachmentTemplate.WARRANTY.key]),
+        ]
+
         for index in range(25):
+            item_number = index + 1
+            kwargs = {
+                'item_id': f'volume-item-{item_number:03}',
+                'quantity': (index % 4) + 1,
+                'attachment_keys': attachment_buckets[index],
+            }
+
+            if index % 5 == 0:
+                # Fully documented item: every top-level field populated.
+                kwargs.update({
+                    'description': f'Stress-test inventory item #{item_number}',
+                    'manufacturer': 'Acme',
+                    'model_number': f'AC-{item_number:03}',
+                    'serial_number': f'SN-{item_number:05}',
+                    'asset_id': f'AST-{item_number:04}',
+                    'purchase_from': 'Big Box Store',
+                    'purchase_time': '2024-06-15',
+                    'warranty_details': '2 year limited warranty',
+                    'warranty_expires': '2026-06-15',
+                    'notes': f'Documented stress-test item #{item_number}',
+                })
+            elif index % 3 == 0:
+                # Partial documentation.
+                kwargs.update({
+                    'manufacturer': 'Generic',
+                    'serial_number': f'GEN-{item_number:05}',
+                })
+
+            if index % 4 == 0:
+                kwargs['custom_fields'] = custom_field_palette[
+                    index % len( custom_field_palette )
+                ]
+
+            if index % 3 == 0:
+                kwargs['tags'] = tag_palette[ index % len( tag_palette ) ]
+
             self._add_homebox_item(
                 profile,
-                f'Volume Item {index + 1:03}',
-                item_id = f'volume-item-{index + 1:03}',
-                description = (
-                    f'Stress-test inventory item #{index + 1}'
-                    if index % 3 == 0 else ''
-                ),
-                manufacturer = 'Acme' if index % 5 == 0 else '',
-                quantity = (index % 4) + 1,
+                f'Volume Item {item_number:03}',
+                **kwargs,
             )
         return profile.db_sim_entities.count()
 
