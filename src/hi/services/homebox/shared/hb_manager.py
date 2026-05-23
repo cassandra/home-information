@@ -23,6 +23,7 @@ from hi.integrations.models import Integration, IntegrationAttribute
 from hi.services.homebox.enums import HbAttributeType
 from .hb_client import HbClient
 from .hb_client_factory import HbClientFactory
+from .hb_models import HbItem
 from hi.services.homebox.hb_metadata import HbMetaData
 
 logger = logging.getLogger(__name__)
@@ -161,6 +162,20 @@ class HomeBoxManager( SingletonManager, AggregateHealthProvider, ApiHealthStatus
             self.fetch_hb_items_from_api,
             thread_sensitive = True,
         )(verbose=verbose)
+
+    def fetch_hb_item_from_api( self, item_id : str, verbose : bool = True ) -> HbItem:
+        if verbose:
+            logger.debug( f'Getting HomeBox item {item_id}.' )
+
+        if not self.hb_client:
+            raise IntegrationError(
+                'HomeBox client is not available. The most recent reload '
+                'failed to construct a client (typically a connection or '
+                'configuration problem with the upstream HomeBox API).'
+            )
+
+        with self.api_call_context( 'hb_item' ):
+            return self.hb_client.get_item( item_id )
 
     def fetch_hb_items_summary_from_api( self ) -> list:
         """

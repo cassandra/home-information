@@ -113,8 +113,8 @@ class IntegrationGateway:
 
     def get_external_view_data(self, entity: Entity) -> Optional[ExternalViewData]:
         """Return the external-data view payload for the entity-detail
-        modal's Section 2. Return ``None`` if this integration has no
-        external view for ``entity`` — the section is suppressed.
+        modal. Return ``None`` if this integration has no external view
+        for ``entity`` — the external-data region is then suppressed.
 
         Defaults to ``None``; integrations whose data lives upstream
         override this hook to return a populated ``ExternalViewData``

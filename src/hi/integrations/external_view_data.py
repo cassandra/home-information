@@ -1,12 +1,13 @@
 """
-External-data view models for the entity-detail modal's Section 2.
+External-data view models for the entity-detail modal.
 
 An integration's gateway returns an ``ExternalViewData`` subclass
-instance from ``get_external_view_data(entity)`` to render Section 2;
-returning ``None`` suppresses the section entirely. ``template_name``
-is a class-level attribute on each subclass pointing at the partial
-that renders it; integrations can provide their own subclass with a
-custom ``template_name`` for fully bespoke layouts.
+instance from ``get_external_view_data(entity)`` to render the
+external-data view region of the modal; returning ``None`` suppresses
+that region entirely. ``template_name`` is a class-level attribute on
+each subclass pointing at the partial that renders it; integrations
+can provide their own subclass with a custom ``template_name`` for
+fully bespoke layouts.
 
 Default partials live under
 ``hi/integrations/templates/integrations/external_data/entity/``.
@@ -39,7 +40,7 @@ class AttachmentRef:
 
 @dataclass
 class ExternalViewData:
-    """Base for Section 2 view payloads. Subclasses set
+    """Base for external-data view payloads. Subclasses set
     ``template_name`` to the partial that renders them."""
 
     template_name: str = ''
@@ -68,8 +69,8 @@ class CustomTemplateViewData(ExternalViewData):
 
 @dataclass
 class MinimalViewData(ExternalViewData):
-    """Placeholder for upstream-unavailable situations: shows only the
-    deep link so the operator still has a path to the upstream
-    system."""
+    """Placeholder when a full view payload is unavailable. Renders the
+    deep link and the optional ``error_message``."""
 
     template_name: str = 'integrations/external_data/entity/minimal.html'
+    error_message: Optional[str] = None

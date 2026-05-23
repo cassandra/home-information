@@ -170,6 +170,34 @@ class TestHbClient(SimpleTestCase):
             client.get_items()
         self.assertIn('detail request failed', str(context.exception))
 
+    def test_get_item_returns_hb_item_from_detail_endpoint(self):
+        with patch.object(HbClient, '_login'):
+            client = HbClient(api_options=self._api_options())
+        client._make_request = Mock(return_value={'id': 'item-5', 'name': 'Five'})
+
+        item = client.get_item('item-5')
+
+        self.assertEqual(item.id, 'item-5')
+        self.assertEqual(item.name, 'Five')
+        client._make_request.assert_called_once_with(
+            'GET',
+            'https://homebox.local/v1/items/item-5',
+        )
+
+    def test_get_item_raises_when_response_is_not_dict(self):
+        with patch.object(HbClient, '_login'):
+            client = HbClient(api_options=self._api_options())
+        client._make_request = Mock(return_value=self._response(
+            status_code=200,
+            json_data=None,
+            content_type='text/html',
+            content=b'<html>not the api</html>',
+        ))
+
+        with self.assertRaises(ValueError) as context:
+            client.get_item('item-5')
+        self.assertIn('non-JSON', str(context.exception))
+
     def test_download_attachment_returns_none_when_request_is_not_response(self):
         with patch.object(HbClient, '_login'):
             client = HbClient(api_options=self._api_options())

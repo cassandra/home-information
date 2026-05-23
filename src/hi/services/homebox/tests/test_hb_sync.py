@@ -99,6 +99,10 @@ class TestHomeBoxSynchronizer(SimpleTestCase):
             remove_entity_mock = stack.enter_context(
                 patch.object(synchronizer, '_remove_entity')
             )
+            # Connect-mode: _sync_helper_entity_attributes is no
+            # longer called during sync (HomeBox attributes are
+            # fetched live by the connector). Patch it anyway and
+            # assert it is NOT called, to pin the new contract.
             sync_attrs_mock = stack.enter_context(
                 patch.object(synchronizer, '_sync_helper_entity_attributes')
             )
@@ -128,23 +132,10 @@ class TestHomeBoxSynchronizer(SimpleTestCase):
             result=result,
         )
 
-        self.assertEqual(sync_attrs_mock.call_count, 2)
-        self.assertEqual(
-            sync_attrs_mock.call_args_list[0].kwargs['entity'],
-            created_entity,
-        )
-        self.assertEqual(
-            sync_attrs_mock.call_args_list[0].kwargs['hb_item'],
-            item_new,
-        )
-        self.assertEqual(
-            sync_attrs_mock.call_args_list[1].kwargs['entity'],
-            existing_entity,
-        )
-        self.assertEqual(
-            sync_attrs_mock.call_args_list[1].kwargs['hb_item'],
-            item_existing,
-        )
+        # Connect-mode contract: sync no longer creates/updates/
+        # removes EntityAttribute rows. The helper stays in place
+        # for #355 but is not called by the sync flow.
+        self.assertEqual(sync_attrs_mock.call_count, 0)
 
         self.assertIn('Found 2 existing HomeBox items.', result.info_list)
         self.assertTrue(any('Ignoring HomeBox item due to missing/invalid id' in message

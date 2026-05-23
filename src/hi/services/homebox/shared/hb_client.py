@@ -124,6 +124,22 @@ class HbClient:
             )
         return data.get('items', [])
 
+    def get_item(self, item_id: str) -> HbItem:
+        """Fetches a single item's full detail. Used by the Connect-mode
+        on-demand resolver (each entity-detail modal open triggers one
+        call). Returns the populated HbItem.
+
+        Errors propagate to the caller (auth/network/HTTP errors). The
+        Connect resolver wraps this call and degrades to a deep-link-only
+        placeholder on failure rather than crashing the modal render."""
+        url = f"{self._api_url}/{self.API_VERSION}/items/{item_id}"
+        item_detail = self._make_request('GET', url)
+        if not isinstance(item_detail, dict):
+            raise ValueError(
+                f'HomeBox returned non-JSON response for item {item_id}.'
+            )
+        return HbItem(api_dict=item_detail, client=self)
+
     def get_items(self) -> List[HbItem]:
         """
         Fetches the list of items and, for each one, fetches the full details.
@@ -143,9 +159,7 @@ class HbClient:
         for summary in items_summary:
             item_id = summary.get('id')
             if item_id:
-                url_detail = f"{self._api_url}/{self.API_VERSION}/items/{item_id}"
-                item_detail = self._make_request('GET', url_detail)
-                full_items.append(HbItem(api_dict=item_detail, client=self))
+                full_items.append(self.get_item(item_id))
 
         return full_items
 

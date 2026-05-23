@@ -4,8 +4,8 @@ ExternalViewData dataclass hierarchy.
 
 The gateway hook defaults to None so integrations without an
 external-view override automatically suppress the entity-detail
-modal's Section 2. Pinning this default catches accidental override
-drift on the base class.
+modal's external-data view region. Pinning this default catches
+accidental override drift on the base class.
 """
 import logging
 
@@ -32,8 +32,8 @@ class IntegrationGatewayExternalViewDataDefaultTests(TestCase):
 
 class ExternalViewDataDefaultTemplateNameTests(TestCase):
     """Each subclass has a load-bearing default template_name that
-    drives the Section 2 include. Direct assertions guard against
-    silent renames of the framework partials."""
+    drives the external-data view include. Direct assertions guard
+    against silent renames of the framework partials."""
 
     def test_structured_view_data_default_template_name(self):
         instance = StructuredViewData(

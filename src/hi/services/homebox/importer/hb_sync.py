@@ -182,11 +182,8 @@ class HomeBoxSynchronizer( IntegrationSynchronizer, HomeBoxMixin ):
                     entity = self._create_entity( item = hb_item, result = result )
                     created_entities.append( entity )
 
-                self._sync_helper_entity_attributes(
-                    entity = entity,
-                    hb_item = hb_item,
-                    result = result,
-                )
+                # Attributes are fetched live by the connector.
+                # Helpers below preserved for #355's Import mode.
                 continue
 
             for integration_key, entity in integration_key_to_entity.items():

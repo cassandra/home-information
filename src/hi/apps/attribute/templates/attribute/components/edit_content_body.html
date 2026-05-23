@@ -113,18 +113,11 @@ by using the AttributeItemEditContext pattern.
     </div>
   </div>
 </div>
-{% if attr_page_context.allow_internal_attributes %}
 <!-- Scrollable Content Area (below sticky panel) -->
 <div id="{{ attr_page_context.scrollable_content_html_id }}"
      class="{{ DIVID.ATTR_V2_SCROLLABLE_CONTENT_CLASS }}">
 
-  {% block external_view_data %}
-  {% if external_view_data %}
-  <div class="attr-v2-external-view-data">
-    {% include external_view_data.template_name with view_data=external_view_data %}
-  </div>
-  {% endif %}
-  {% endblock %}
+  {% if attr_page_context.allow_internal_attributes %}
 
   <!-- Files Section -->
   {% block files_section %}
@@ -141,8 +134,17 @@ by using the AttributeItemEditContext pattern.
   {% include "attribute/components/deleted_attribute_list.html" with deleted_attributes=deleted_attributes %}
   {% endblock %}
 
+  {% endif %}
+
+  {% block external_view_data %}
+  {% if external_view_data %}
+  <div class="attr-v2-external-view-data">
+    {% include external_view_data.template_name with view_data=external_view_data %}
+  </div>
+  {% endif %}
+  {% endblock %}
+
 </div>
-{% endif %}
 
 
 

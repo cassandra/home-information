@@ -1,12 +1,16 @@
 {% comment %}
-MinimalViewData partial — placeholder used when the integration's
-upstream is unavailable but a deep link is still meaningful.
+MinimalViewData partial: optional error message + deep link.
 {% endcomment %}
 
 <div class="attr-v2-external-minimal">
+  {% if view_data.error_message %}
+  <div class="alert alert-warning attr-v2-external-minimal-error" role="alert">
+    {{ view_data.error_message }}
+  </div>
+  {% endif %}
   {% if view_data.deep_link_url %}
   <a href="{{ view_data.deep_link_url }}" target="_blank">Open in upstream</a>
-  {% else %}
+  {% elif not view_data.error_message %}
   <span class="text-muted">External data unavailable.</span>
   {% endif %}
 </div>

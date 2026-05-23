@@ -1,9 +1,11 @@
 import logging
 from typing import List, Optional
 
+from hi.apps.entity.models import Entity
 from hi.apps.system.enums import HealthStatusType
 from hi.apps.system.health_status_provider import HealthStatusProvider
 
+from hi.integrations.external_view_data import ExternalViewData
 from hi.integrations.integration_controller import IntegrationController
 from hi.integrations.integration_gateway import IntegrationGateway
 from hi.integrations.integration_manage_view_pane import IntegrationManageViewPane
@@ -87,3 +89,7 @@ class HomeBoxGateway(IntegrationGateway):
         except Exception as e:
             logger.exception(f'Error in HomeBox connection test: {e}')
             return ConnectionTestResult.failure(f'Connection test error: {e}')
+
+    def get_external_view_data(self, entity: Entity) -> Optional[ExternalViewData]:
+        from .connector.hb_connector import HomeBoxConnector
+        return HomeBoxConnector().get_external_view_data(entity)
