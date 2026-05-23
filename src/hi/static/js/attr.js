@@ -538,7 +538,7 @@
             $btn.text('Show less');
         } else {
             $value.addClass('attr-ext-value--clamped');
-            $btn.text('Show more');
+            $btn.text('Show more...');
         }
     });
     
@@ -1141,7 +1141,7 @@
             const $value = $(this);
             if ($value.next('.attr-ext-more').length > 0) return;
             if (this.scrollHeight > this.clientHeight + 1) {
-                const $btn = $('<button type="button" class="attr-ext-more">Show more</button>');
+                const $btn = $('<button type="button" class="attr-ext-more btn btn-sm btn-link">Show more...</button>');
                 $value.after($btn);
             } else {
                 $value.removeClass('attr-ext-value--clamped');
