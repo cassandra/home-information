@@ -529,6 +529,18 @@
         _initializeAllContainers();
         e.stopPropagation(); // Prevent bubbling to other handlers
     });
+
+    $(document).on('click', '.attr-ext-more', function() {
+        const $btn = $(this);
+        const $value = $btn.prev('.attr-ext-value');
+        if ($value.hasClass('attr-ext-value--clamped')) {
+            $value.removeClass('attr-ext-value--clamped');
+            $btn.text('Show less');
+        } else {
+            $value.addClass('attr-ext-value--clamped');
+            $btn.text('Show more');
+        }
+    });
     
     // Container-aware utility function for updating form actions and browser history
     // This is a generic helper that can be called from template onclick handlers
@@ -593,6 +605,7 @@
         _setupBasicEventListeners($container);
         _initializeExpandableTextareas($container); // Must come BEFORE autosize
         _initializeAutosizeTextareas($container); // Now only applies to non-truncated
+        _initializeExpandableExternalValues();
         // Note: Form submission handler removed - textarea sync now handled in Ajax submission
         _setupCustomAjaxHandlers($container); // NEW: Custom Ajax form handling
         
@@ -1034,8 +1047,10 @@
         if (editableTextareas.length > 0) {
             autosize.update(editableTextareas);
         }
+
+        _initializeExpandableExternalValues();
     }
-    
+
     // Update overflow state based on current content
     function _updateOverflowState(textarea) {
         const content = textarea.val() || '';
@@ -1121,6 +1136,19 @@
         expandControls.show();
     }
     
+    function _initializeExpandableExternalValues() {
+        $('.attr-ext-value.attr-ext-value--clamped').each(function() {
+            const $value = $(this);
+            if ($value.next('.attr-ext-more').length > 0) return;
+            if (this.scrollHeight > this.clientHeight + 1) {
+                const $btn = $('<button type="button" class="attr-ext-more">Show more</button>');
+                $value.after($btn);
+            } else {
+                $value.removeClass('attr-ext-value--clamped');
+            }
+        });
+    }
+
     function _initializeExpandableTextareas() {
         // Initialize based on server-rendered overflow state using hidden field pattern
         const displayTextareas = $(Hi.ATTR_V2_DISPLAY_FIELD_SELECTOR);

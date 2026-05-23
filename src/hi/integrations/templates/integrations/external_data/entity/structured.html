@@ -1,39 +1,77 @@
-{% comment %}
-StructuredViewData partial: name/value rows + attachment grid.
-{% endcomment %}
+{% load icons integration_tags %}
+{% integration_logo_path entity as integration_logo %}
+{% integration_display_name entity as integration_name %}
 
 <div class="attr-v2-external-structured">
-  {% if view_data.attributes %}
-  <div class="attr-v2-external-structured-attrs">
-    {% for pair in view_data.attributes %}
-    <div class="attr-v2-external-structured-row">
-      <div class="attr-v2-external-structured-name">{{ pair.name }}</div>
-      <div class="attr-v2-external-structured-value">{{ pair.value }}</div>
+
+  <div class="attr-ext-header d-flex align-items-center">
+    <div class="attr-ext-header__brand d-flex align-items-center">
+      {% if integration_logo %}
+      <img class="attr-ext-header__logo" src="{{ integration_logo }}" alt="{{ integration_name }} logo">
+      {% endif %}
+      <span class="text-muted small">From {{ integration_name }}</span>
     </div>
-    {% endfor %}
+    {% if view_data.deep_link_url %}
+    <a class="btn btn-sm btn-outline-secondary ml-auto"
+       href="{{ view_data.deep_link_url }}"
+       target="_blank"
+       rel="noopener noreferrer">Open in {{ integration_name }} &rarr;</a>
+    {% endif %}
   </div>
-  {% endif %}
 
   {% if view_data.attachments %}
-  <div class="attr-v2-external-structured-attachments">
-    {% for attachment in view_data.attachments %}
-    <div class="attr-v2-external-structured-attachment" data-mime-type="{{ attachment.mime_type }}">
-      {% if attachment.thumbnail_url %}
-      <a href="{{ attachment.open_url|default:attachment.thumbnail_url }}" target="_blank" rel="noopener noreferrer">
-        <img src="{{ attachment.thumbnail_url }}" alt="{{ attachment.title }}" />
-      </a>
-      {% else %}
-      <a href="{{ attachment.open_url }}" target="_blank" rel="noopener noreferrer">{{ attachment.title }}</a>
-      {% endif %}
-      <div class="attr-v2-external-structured-attachment-title">{{ attachment.title }}</div>
+  <div class="attr-v2-file-section attr-ext-attachments">
+    <div class="attr-v2-file-grid">
+      {% for attachment in view_data.attachments %}
+      <div class="attr-v2-file-card attr-ext-attachment"
+           data-mime-type="{{ attachment.mime_type }}">
+        <a class="attr-ext-attachment__link"
+           href="{{ attachment.open_url }}"
+           target="_blank"
+           rel="noopener noreferrer"
+           title="{{ attachment.title }}">
+          <div class="attr-v2-file-thumbnail{% if attachment.thumbnail_url %} has-thumbnail{% endif %}">
+            {% if attachment.thumbnail_url %}
+            <img src="{{ attachment.thumbnail_url }}"
+                 alt="{{ attachment.title }}"
+                 class="attr-v2-file-thumbnail-image"
+                 loading="lazy"
+                 decoding="async">
+            {% else %}
+            {% if attachment.mime_type|slice:":5" == "image" %}
+              {% icon "camera" size="lg" %}
+              <div class="attr-v2-file-type-label">IMAGE</div>
+            {% elif attachment.mime_type == "application/pdf" %}
+              {% icon "upload" size="lg" %}
+              <div class="attr-v2-file-type-label">PDF</div>
+            {% elif attachment.mime_type|slice:":5" == "video" %}
+              {% icon "video" size="lg" %}
+              <div class="attr-v2-file-type-label">VIDEO</div>
+            {% else %}
+              {% icon "upload" size="lg" %}
+              <div class="attr-v2-file-type-label">FILE</div>
+            {% endif %}
+            {% endif %}
+          </div>
+          <div class="attr-v2-file-info">
+            <div class="attr-v2-file-name">{{ attachment.title }}</div>
+          </div>
+        </a>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+
+  {% if view_data.attributes %}
+  <div class="attr-ext-rows">
+    {% for pair in view_data.attributes %}
+    <div class="attr-ext-row">
+      <div class="attr-ext-row__name text-muted small">{{ pair.name }}</div>
+      <div class="attr-ext-value attr-ext-value--clamped">{{ pair.value }}</div>
     </div>
     {% endfor %}
   </div>
   {% endif %}
 
-  {% if view_data.deep_link_url %}
-  <div class="attr-v2-external-structured-deep-link">
-    <a href="{{ view_data.deep_link_url }}" target="_blank" rel="noopener noreferrer">Open in upstream</a>
-  </div>
-  {% endif %}
 </div>
