@@ -4,7 +4,7 @@ from django.urls import re_path, include
 
 from hi.apps.common.module_utils import import_module_safe
 
-from . import views
+from .connect import views
 
 
 urlpatterns = [

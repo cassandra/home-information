@@ -17,9 +17,9 @@ from hi.apps.entity.entity_placement import (
     EntityPlacementGroup,
 )
 
-from hi.integrations.integration_synchronizer import IntegrationSynchronizer
-from hi.integrations.sync_check import IntegrationSyncCheck, SyncDelta
-from hi.integrations.sync_result import IntegrationSyncResult
+from hi.integrations.connect.integration_synchronizer import IntegrationSynchronizer
+from hi.integrations.connect.sync_check import IntegrationSyncCheck, SyncDelta
+from hi.integrations.connect.sync_result import IntegrationSyncResult
 from hi.integrations.transient_models import IntegrationKey
 
 from .zm_metadata import ZmMetaData

@@ -433,7 +433,7 @@ class TestEntityEditViewExternalViewData(DualModeViewTestCase):
         )
 
     def _make_structured_view_data(self):
-        from hi.integrations.external_view_data import (
+        from hi.integrations.connect.external_view_data import (
             NameValuePair, AttachmentRef, StructuredViewData,
         )
         return StructuredViewData(
@@ -454,7 +454,7 @@ class TestEntityEditViewExternalViewData(DualModeViewTestCase):
         )
 
     def _make_minimal_view_data(self):
-        from hi.integrations.external_view_data import MinimalViewData
+        from hi.integrations.connect.external_view_data import MinimalViewData
         return MinimalViewData(deep_link_url='https://upstream.example/items/99')
 
     def test_native_entity_omits_section_and_skips_lookup(self):
@@ -549,7 +549,7 @@ class TestEntityEditViewExternalViewData(DualModeViewTestCase):
         """``MinimalViewData.error_message`` renders in the modal so
         the operator sees the failure reason inline rather than only
         in server logs."""
-        from hi.integrations.external_view_data import MinimalViewData
+        from hi.integrations.connect.external_view_data import MinimalViewData
 
         url = reverse('entity_edit', kwargs={'entity_id': self.integration_entity.id})
 
@@ -659,7 +659,7 @@ class TestEntityEditViewExternalViewData(DualModeViewTestCase):
         verify the include call site honors the instance attribute by
         pointing at a template that emits a distinctive marker, then
         asserting the marker appears in the rendered output."""
-        from hi.integrations.external_view_data import CustomTemplateViewData
+        from hi.integrations.connect.external_view_data import CustomTemplateViewData
 
         custom = CustomTemplateViewData(
             template_name='integrations/external_data/entity/minimal.html',

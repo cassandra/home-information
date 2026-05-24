@@ -5,7 +5,7 @@ from django.test import TestCase
 from hi.apps.attribute.enums import AttributeValueType
 from hi.integrations.enums import IntegrationAttributeType
 from hi.integrations.initializers import IntegrationInitializer
-from hi.integrations.integration_gateway import IntegrationGateway
+from hi.integrations.connect.integration_gateway import IntegrationGateway
 from hi.integrations.integration_manager import IntegrationManager
 from hi.integrations.models import Integration, IntegrationAttribute
 from hi.integrations.transient_models import IntegrationMetaData

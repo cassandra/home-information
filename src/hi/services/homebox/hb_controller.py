@@ -1,6 +1,6 @@
 import logging
 
-from hi.integrations.integration_controller import IntegrationController
+from hi.integrations.connect.integration_controller import IntegrationController
 from hi.integrations.transient_models import IntegrationDetails
 from hi.integrations.transient_models import IntegrationControlResult
 

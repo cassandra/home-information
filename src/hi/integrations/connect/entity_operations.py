@@ -24,9 +24,10 @@ from hi.apps.entity.models import Entity, EntityState, EntityStateDelegation
 from hi.apps.sense.models import Sensor
 from hi.apps.control.models import Controller
 
-from .event_definition_operations import EventDefinitionOperations
+from hi.integrations.event_definition_operations import EventDefinitionOperations
+from hi.integrations.transient_models import IntegrationKey, IntegrationRemovalSummary
+
 from .sync_result import IntegrationSyncResult
-from .transient_models import IntegrationKey, IntegrationRemovalSummary
 from .user_data_detector import EntityUserDataDetector
 
 logger = logging.getLogger(__name__)

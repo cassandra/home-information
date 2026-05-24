@@ -8,7 +8,8 @@ from hi.apps.entity.models import EntityView
 from hi.apps.location.location_manager import LocationManager
 from hi.apps.location.models import Location, LocationView
 
-from .integration_manager import IntegrationManager
+from hi.integrations.integration_manager import IntegrationManager
+
 from .placement_request import PlacementUrlParams
 
 

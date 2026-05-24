@@ -14,9 +14,10 @@ from hi.apps.attribute.forms import AttributeUploadForm
 from hi.apps.attribute.models import AttributeModel
 from hi.apps.system.health_status import HealthStatus
 
-from .forms import IntegrationAttributeRegularFormSet
+from hi.integrations.forms import IntegrationAttributeRegularFormSet
+from hi.integrations.models import Integration, IntegrationAttribute
+
 from .integration_data import IntegrationData
-from .models import Integration, IntegrationAttribute
 
 
 class IntegrationAttributeItemEditContext(AttributeItemEditContext):

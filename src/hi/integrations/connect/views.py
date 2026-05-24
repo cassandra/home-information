@@ -21,15 +21,17 @@ from hi.apps.entity.models import Entity
 from hi.apps.location.models import LocationView
 from hi.apps.sense.sensor_response_manager import SensorResponseManager
 
-from .placement_request import PlacementFormParser, PlacementUrlParams
+from hi.integrations.enums import IntegrationDisableMode
+from hi.integrations.exceptions import IntegrationConnectionError
+from hi.integrations.integration_manager import IntegrationManager
+from hi.integrations.integration_metadata_cache import IntegrationMetadataCache
+from hi.integrations.models import IntegrationAttribute
+
 from .entity_operations import EntityIntegrationOperations
-from .enums import IntegrationDisableMode
-from .exceptions import IntegrationConnectionError
 from .integration_attribute_edit_context import IntegrationAttributeItemEditContext
-from .integration_manager import IntegrationManager
-from .integration_metadata_cache import IntegrationMetadataCache
-from .models import IntegrationAttribute
+from .placement_request import PlacementFormParser, PlacementUrlParams
 from .sync_check import IntegrationSyncCheck
+from .sync_result import IntegrationSyncResult
 from .view_mixins import IntegrationPlacementViewMixin, IntegrationViewMixin
 
 logger = logging.getLogger(__name__)
@@ -375,7 +377,6 @@ class IntegrationPlacementView( HiModalView, IntegrationViewMixin,
         modal with the integration's icon + a brief 'no items'
         info note rather than an empty placement. Counts stay
         zero so the modal lead reads 'Nothing new.'"""
-        from hi.integrations.sync_result import IntegrationSyncResult
         sync_result = IntegrationSyncResult(
             title = synchronizer.get_result_title(
                 is_initial_connect = is_initial_connect,

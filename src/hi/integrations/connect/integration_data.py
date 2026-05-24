@@ -1,8 +1,9 @@
 from dataclasses import dataclass
 
+from hi.integrations.models import Integration
+from hi.integrations.transient_models import IntegrationMetaData
+
 from .integration_gateway import IntegrationGateway
-from .models import Integration
-from .transient_models import IntegrationMetaData
 
 
 @dataclass

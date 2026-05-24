@@ -15,13 +15,13 @@ from unittest.mock import Mock, patch
 from django.core.cache import cache
 from django.test import TestCase
 
-from hi.integrations.sync_check import (
+from hi.integrations.connect.sync_check import (
     IntegrationSyncCheck,
     SyncCheckOutcome,
     SyncCheckResult,
     SyncDelta,
 )
-from hi.integrations.monitors import IntegrationSyncCheckMonitor
+from hi.integrations.connect.monitors import IntegrationSyncCheckMonitor
 from hi.integrations.transient_models import IntegrationKey
 
 
@@ -644,7 +644,7 @@ class IntegrationSynchronizerPostSyncHookTests(TestCase):
         returns the given result. We test sync() (the public entry
         point) so the post-hook fires the same way it does in
         production."""
-        from hi.integrations.integration_synchronizer import IntegrationSynchronizer
+        from hi.integrations.connect.integration_synchronizer import IntegrationSynchronizer
         from hi.integrations.transient_models import IntegrationMetaData
 
         class _TestSynchronizer(IntegrationSynchronizer):
@@ -664,7 +664,7 @@ class IntegrationSynchronizerPostSyncHookTests(TestCase):
         return _TestSynchronizer()
 
     def test_successful_sync_records_zero_delta_completion(self):
-        from hi.integrations.sync_result import IntegrationSyncResult
+        from hi.integrations.connect.sync_result import IntegrationSyncResult
 
         # Pre-populate a stale "needs sync" state.
         IntegrationSyncCheck.set_state(
@@ -685,7 +685,7 @@ class IntegrationSynchronizerPostSyncHookTests(TestCase):
         self.assertFalse(loaded.needs_sync)
 
     def test_failed_sync_leaves_cache_alone(self):
-        from hi.integrations.sync_result import IntegrationSyncResult
+        from hi.integrations.connect.sync_result import IntegrationSyncResult
 
         # Pre-populate a stale needs-sync state.
         stale = IntegrationSyncCheck.build_result(

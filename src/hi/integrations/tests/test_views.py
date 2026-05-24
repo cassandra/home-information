@@ -9,8 +9,8 @@ from django.urls import reverse
 
 from hi.apps.attribute.enums import AttributeValueType
 from hi.integrations.enums import IntegrationAttributeType, IntegrationDisableMode
-from hi.integrations.integration_data import IntegrationData
-from hi.integrations.integration_gateway import IntegrationGateway
+from hi.integrations.connect.integration_data import IntegrationData
+from hi.integrations.connect.integration_gateway import IntegrationGateway
 from hi.integrations.integration_manager import IntegrationManager
 from hi.integrations.models import Integration
 from hi.integrations.transient_models import IntegrationMetaData
@@ -211,7 +211,7 @@ class _SyncTestSynchronizer:
         return 'Test Sync Result'
 
     def sync(self, is_initial_connect=False, preserve_user_data=True):
-        from hi.integrations.sync_result import IntegrationSyncResult
+        from hi.integrations.connect.sync_result import IntegrationSyncResult
         self.sync_called = True
         self.last_preserve_user_data = preserve_user_data
         return IntegrationSyncResult(
@@ -643,7 +643,7 @@ class PlacementFlowTests(SyncViewTestCase):
         from hi.apps.entity.enums import EntityType
         from hi.apps.entity.models import Entity
         from hi.apps.location.models import Location, LocationView
-        from hi.integrations.sync_result import IntegrationSyncResult
+        from hi.integrations.connect.sync_result import IntegrationSyncResult
 
         self.integration = Integration.objects.create(
             integration_id=self.INTEGRATION_ID,
@@ -767,7 +767,7 @@ class PlacementFlowTests(SyncViewTestCase):
         no 'Place items' CTA. Single centered OK is the only footer
         action (matches the project's 'acknowledge info, dismiss'
         single-button convention)."""
-        from hi.integrations.sync_result import IntegrationSyncResult
+        from hi.integrations.connect.sync_result import IntegrationSyncResult
         self.synchronizer._sync_result = IntegrationSyncResult(title='Empty')
         response = self.client.post(self._sync_url())
         self.assertSuccessResponse(response)
@@ -781,7 +781,7 @@ class PlacementFlowTests(SyncViewTestCase):
         placement when there are also creates — every change kind
         is enumerated in the result modal even though the modal
         ultimately routes the operator to placement."""
-        from hi.integrations.sync_result import IntegrationSyncResult
+        from hi.integrations.connect.sync_result import IntegrationSyncResult
         self.synchronizer._sync_result = IntegrationSyncResult(
             title='Mixed Result',
             created_list=['Brand New Light'],
@@ -967,7 +967,7 @@ class PlacementDismissAndShowTests(SyncViewTestCase):
         from hi.apps.entity.enums import EntityType
         from hi.apps.entity.models import Entity
         from hi.apps.location.models import Location, LocationView
-        from hi.integrations.sync_result import IntegrationSyncResult
+        from hi.integrations.connect.sync_result import IntegrationSyncResult
 
         self.integration = Integration.objects.create(
             integration_id=self.INTEGRATION_ID,
@@ -1300,7 +1300,7 @@ class IntegrationManageViewSyncCheckContextTests(SyncViewTestCase):
         )
 
     def test_banner_renders_when_sync_check_reports_drift(self):
-        from hi.integrations.sync_check import (
+        from hi.integrations.connect.sync_check import (
             IntegrationSyncCheck,
             SyncDelta,
         )
@@ -1349,7 +1349,7 @@ class IntegrationManageViewSyncCheckContextTests(SyncViewTestCase):
     def test_no_banner_when_in_sync(self):
         # Probe has run and confirmed in-sync (zero-delta); the
         # banner is gated on needs_sync, so it must not appear.
-        from hi.integrations.sync_check import IntegrationSyncCheck
+        from hi.integrations.connect.sync_check import IntegrationSyncCheck
         IntegrationSyncCheck.record_sync_complete(
             integration_id=self.INTEGRATION_ID,
             integration_label='Sync View Test Integration',

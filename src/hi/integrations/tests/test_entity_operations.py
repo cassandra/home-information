@@ -15,7 +15,7 @@ from hi.apps.attribute.enums import AttributeType, AttributeValueType
 from hi.apps.entity.models import Entity, EntityAttribute, EntityState, EntityStateDelegation
 from hi.apps.event.models import EventClause, EventDefinition
 from hi.apps.sense.models import Sensor
-from hi.integrations.entity_operations import EntityIntegrationOperations
+from hi.integrations.connect.entity_operations import EntityIntegrationOperations
 
 logging.disable(logging.CRITICAL)
 
@@ -388,7 +388,7 @@ class FindReconnectCandidatesTests(TestCase):
         )
         upstream_key = self._make_upstream_key('light.kitchen')
 
-        from hi.integrations.sync_result import IntegrationSyncResult
+        from hi.integrations.connect.sync_result import IntegrationSyncResult
         result = IntegrationSyncResult(title='Test')
 
         candidates = EntityIntegrationOperations.find_reconnect_candidates(
@@ -424,7 +424,7 @@ class FindReconnectCandidatesTests(TestCase):
         ambiguous_key = self._make_upstream_key('light.ambiguous')
         unmatched_key = self._make_upstream_key('light.never_existed')
 
-        from hi.integrations.sync_result import IntegrationSyncResult
+        from hi.integrations.connect.sync_result import IntegrationSyncResult
         result = IntegrationSyncResult(title='Mixed')
 
         candidates = EntityIntegrationOperations.find_reconnect_candidates(

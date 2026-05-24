@@ -13,7 +13,7 @@ from unittest.mock import Mock, patch
 from django.test import TestCase
 
 from hi.apps.entity.models import Entity
-from hi.integrations.external_view_data import (
+from hi.integrations.connect.external_view_data import (
     MinimalViewData,
     NameValuePair,
     StructuredViewData,

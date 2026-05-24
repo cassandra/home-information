@@ -1,5 +1,5 @@
-from .transient_models import IntegrationDetails
-from .transient_models import IntegrationControlResult
+from hi.integrations.transient_models import IntegrationDetails
+from hi.integrations.transient_models import IntegrationControlResult
 
 
 class IntegrationController:

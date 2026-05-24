@@ -27,7 +27,7 @@ from hi.apps.entity.models import Entity
 from .entity_operations import EntityIntegrationOperations
 from .sync_check import IntegrationSyncCheck, SyncDelta
 from .sync_result import IntegrationSyncResult
-from .transient_models import IntegrationKey, IntegrationMetaData
+from hi.integrations.transient_models import IntegrationKey, IntegrationMetaData
 
 logger = logging.getLogger(__name__)
 

@@ -70,7 +70,7 @@ class IntegrationSyncCheckMonitor( PeriodicMonitor ):
     async def do_work(self):
         # Imported here to avoid an import cycle: IntegrationManager
         # imports this module to start the monitor on init.
-        from .integration_manager import IntegrationManager
+        from hi.integrations.integration_manager import IntegrationManager
 
         manager = IntegrationManager()
         integration_data_list = manager.get_integration_data_list( enabled_only = True )

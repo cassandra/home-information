@@ -32,7 +32,7 @@ from django.core.cache import cache
 import hi.apps.common.datetimeproxy as datetimeproxy
 from hi.apps.common.enums import LabeledEnum
 
-from .transient_models import IntegrationKey
+from hi.integrations.transient_models import IntegrationKey
 
 logger = logging.getLogger(__name__)
 
@@ -231,7 +231,7 @@ class IntegrationSyncCheck:
         from hi.apps.security.enums import SecurityLevel
         from hi.apps.sense.transient_models import SensorResponse
 
-        from .transient_models import IntegrationKey
+        from hi.integrations.transient_models import IntegrationKey
 
         alarm_integration_key = IntegrationKey(
             integration_id = 'integrations',

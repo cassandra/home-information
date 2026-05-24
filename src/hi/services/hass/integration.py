@@ -6,10 +6,10 @@ from hi.apps.entity.transient_models import VideoSnapshot
 from hi.apps.system.enums import HealthStatusType
 from hi.apps.system.health_status_provider import HealthStatusProvider
 
-from hi.integrations.integration_controller import IntegrationController
-from hi.integrations.integration_gateway import IntegrationGateway
-from hi.integrations.integration_manage_view_pane import IntegrationManageViewPane
-from hi.integrations.integration_synchronizer import IntegrationSynchronizer
+from hi.integrations.connect.integration_controller import IntegrationController
+from hi.integrations.connect.integration_gateway import IntegrationGateway
+from hi.integrations.connect.integration_manage_view_pane import IntegrationManageViewPane
+from hi.integrations.connect.integration_synchronizer import IntegrationSynchronizer
 from hi.integrations.models import IntegrationAttribute
 from hi.integrations.transient_models import (
     ConnectionTestResult,

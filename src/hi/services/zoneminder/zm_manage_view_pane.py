@@ -1,7 +1,7 @@
 from typing import Dict
 
-from hi.integrations.integration_data import IntegrationData
-from hi.integrations.integration_manage_view_pane import IntegrationManageViewPane
+from hi.integrations.connect.integration_data import IntegrationData
+from hi.integrations.connect.integration_manage_view_pane import IntegrationManageViewPane
 
 
 class ZmManageViewPane( IntegrationManageViewPane ):

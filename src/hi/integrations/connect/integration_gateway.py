@@ -10,8 +10,8 @@ from .external_view_data import ExternalViewData
 from .integration_controller import IntegrationController
 from .integration_manage_view_pane import IntegrationManageViewPane
 from .integration_synchronizer import IntegrationSynchronizer
-from .models import IntegrationAttribute
-from .transient_models import (
+from hi.integrations.models import IntegrationAttribute
+from hi.integrations.transient_models import (
     ConnectionTestResult,
     IntegrationMetaData,
     IntegrationValidationResult,
