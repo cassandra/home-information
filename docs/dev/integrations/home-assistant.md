@@ -27,7 +27,7 @@ User-facing setup and troubleshooting live in
   integration-specific complexity lives here. Aggregates multi-state
   HA devices into a single HI item where it can.
 - `src/hi/services/hass/hass_sync.py` — `HassSynchronizer`. Drives
-  the Import / Refresh flow; delegates to the converter for the
+  the sync flow; delegates to the converter for the
   per-item shape.
 - `src/hi/services/hass/monitors.py` — `HassMonitor`. Periodic poll
   against `/api/states`; produces `SensorResponse` events for state

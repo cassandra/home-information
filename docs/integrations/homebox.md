@@ -41,14 +41,13 @@ HomeBox web interface — there is no separate API token to obtain.
    [Enabling an integration](../Integrations.md#enabling-an-integration))
    and choose **HomeBox**.
 2. Fill in the three fields above and save.
-3. HI walks you through a series of modals to confirm the **Import**
-   action, pull each HomeBox item as an HI item, and place the
-   imported items into a location view or collection. Custom fields
-   become read-only attributes; attached files are downloaded to
-   HI's media storage.
+3. Click **CONNECT** to pull each HomeBox item as an HI item and
+   place the imported items into a location view or collection.
+   Custom fields become read-only attributes; attached files are
+   downloaded to HI's media storage.
 
 To pick up changes from HomeBox later (new items, renames,
-removals), click **REFRESH** on the integration's manage page.
+removals), click **UPDATE** on the integration's manage page.
 
 ## Troubleshooting
 
@@ -78,8 +77,8 @@ the same credentials.
   controllers, or alarm events for HomeBox items — they exist
   primarily for placement and reference.
 - Custom attributes added in HI on a HomeBox-imported item are
-  preserved across Refresh, but HomeBox-sourced fields cannot be
-  edited from within HI; edit them in HomeBox and Refresh.
-- Attached files are downloaded at import / Refresh time. Updates to
-  a file in HomeBox (replacing a manual PDF, for instance) require a
-  Refresh to propagate.
+  preserved across updates, but HomeBox-sourced fields cannot be
+  edited from within HI; edit them in HomeBox and click **UPDATE**.
+- Attached files are downloaded at Connect and on each Update.
+  Replacing a file in HomeBox (a manual PDF, for instance) requires
+  an Update to propagate.

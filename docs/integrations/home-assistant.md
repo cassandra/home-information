@@ -56,14 +56,13 @@ See HA's official guide for screenshots and updates if the UI changes:
    [Enabling an integration](../Integrations.md#enabling-an-integration))
    and choose **Home Assistant**.
 2. Fill in the four fields above and save.
-3. HI walks you through a series of modals to confirm the **Import**
-   action, pull HA entities that match the allowlist, and place the
-   imported items into a location view or collection. Capability
-   detection uses heuristics over HA's domain and device class
-   metadata.
+3. Click **CONNECT** to pull HA entities matching the allowlist and
+   place the imported items into a location view or collection.
+   Capability detection uses heuristics over HA's domain and device
+   class metadata.
 
 To pick up changes from HA later (new entities, renames, removals),
-click **REFRESH** on the integration's manage page.
+click **UPDATE** on the integration's manage page.
 
 ## Troubleshooting
 

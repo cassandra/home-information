@@ -48,12 +48,12 @@ separate API token mechanism in ZoneMinder.
    [Enabling an integration](../Integrations.md#enabling-an-integration))
    and choose **ZoneMinder**.
 2. Fill in the six fields above and save.
-3. HI walks you through a series of modals to confirm the **Import**
-   action, pull each ZM monitor as an HI camera item, and place the
-   imported cameras into a location view or collection.
+3. Click **CONNECT** to pull each ZM monitor as an HI camera item
+   and place the imported cameras into a location view or
+   collection.
 
 To pick up changes from ZoneMinder later (new monitors, renames,
-removals), click **REFRESH** on the integration's manage page.
+removals), click **UPDATE** on the integration's manage page.
 
 ## Troubleshooting
 
@@ -103,7 +103,7 @@ the ZM portal directly with the same credentials, then check
 - HI does not run any image analysis or motion detection — all motion
   events originate from ZM. Configure detection sensitivity and
   zones in ZM itself.
-- ZM monitor renames in the upstream are propagated on Refresh; ZM
+- ZM monitor renames in the upstream are propagated on Update; ZM
   monitor deletes remove the corresponding HI camera unless the user
   has added custom data to it (in which case it is preserved as
   detached, with a "Detached from ZoneMinder" indicator).

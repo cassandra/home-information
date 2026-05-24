@@ -74,8 +74,8 @@ back to [Enabling an integration](../Integrations.md#enabling-an-integration)
 for the conditional UI flow rather than restating it here, so a UI
 change only needs to be reflected in one place.
 
-Use the user-facing terms: **Import** for the first run and
-**Refresh** for subsequent runs (matching the modal labels). Avoid
+Use the user-facing terms: **Connect** for the first run and
+**Update** for subsequent runs (matching the button labels). Avoid
 "sync" in user-facing copy.
 
 ## Troubleshooting

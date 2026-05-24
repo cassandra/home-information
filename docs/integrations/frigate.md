@@ -50,13 +50,12 @@ page.
    [Enabling an integration](../Integrations.md#enabling-an-integration))
    and choose **Frigate**.
 2. Fill in the fields above and save.
-3. **HI** walks you through a series of modals to confirm the
-   **Import** action, pull each Frigate camera as an **HI** camera
-   item, and place the imported cameras into a location view or
+3. Click **CONNECT** to pull each Frigate camera as an **HI** camera
+   item and place the imported cameras into a location view or
    collection.
 
 To pick up upstream changes later (new cameras, renames, removals),
-click **Refresh** on the integration's manage page.
+click **UPDATE** on the integration's manage page.
 
 ## Troubleshooting
 
@@ -100,7 +99,7 @@ The **Base URL** is wrong, or Frigate is not reachable from the **HI**
 host. Verify by opening the URL in a browser from the **HI** host
 and confirming Frigate's web UI loads.
 
-### Refresh imports zero cameras
+### Update imports zero cameras
 
 Frigate's `/api/config` returned an empty `cameras` map. Confirm
 your `config.yml` defines at least one camera and that Frigate is

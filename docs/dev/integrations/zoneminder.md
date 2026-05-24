@@ -30,9 +30,9 @@ User-facing setup, CORS, and SSL troubleshooting live in
 - `src/hi/services/zoneminder/pyzm_client/` — vendored Python client
   for ZM's REST API and `cgi-bin/nph-zms` streaming endpoints.
 - `src/hi/services/zoneminder/zm_sync.py` — `ZoneMinderSynchronizer`.
-  Drives Import / Refresh; per-monitor entity creation in
+  Drives sync; per-monitor entity creation in
   `_create_monitor_entity` (this is also the entry point used by the
-  auto-reconnect path on Refresh).
+  auto-reconnect path on sync).
 - `src/hi/services/zoneminder/monitors.py` — `ZoneMinderMonitor`.
   Periodic poll for monitor state, function changes, and events;
   emits `SensorResponse` updates for movement sensor state changes.

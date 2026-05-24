@@ -9,6 +9,13 @@ Each integration is a Django app in `hi/services/` directory. The `hi.integratio
 - **integration_key**: Associates entities/sensors with external systems
 - **detail_attrs**: Opaque data blob - only the integration uses this data
 
+### Capability model
+Each integration declares its `IntegrationCapability` set on `IntegrationMetaData.capabilities` (`hi/integrations/enums.py`). Today only `CONNECT` is used — live mirror of an upstream system. `IMPORT` (one-shot copy of upstream items into HI) is reserved; its abstract protocol and workflow land with the first concrete consumer (issue #358).
+
+Per-attribute `IntegrationAttributeType` declarations may carry an optional `capabilities` set to restrict which capability's UI surfaces the attribute. Default is `ALL_CAPABILITIES`; existing declarations remain unaffected.
+
+`Entity.data_source` (an `EntityDataSource` value: `INTERNAL` or `EXTERNAL`, see `hi/apps/entity/enums.py`) records per-entity provenance. Today only HomeBox-Connect entities are `EXTERNAL` (HomeBox refuses HI-side edits); native and HA/ZM/Frigate entities are `INTERNAL`. The field is the hook for the cross-capability transition flows that arrive with `IMPORT`.
+
 ### One-to-many state composition
 A single upstream state may decompose into multiple HI EntityStates when the upstream protocol packs several independently-controllable values into one entity (e.g., a color light's brightness + hue + saturation + color temperature). The framework supports this via:
 
@@ -135,7 +142,7 @@ the user-facing landing page at [`docs/Integrations.md`](../../Integrations.md).
 ## Gateway Implementation Patterns
 
 ### Gateway Methods
-**activate()**: Validate config, test connection, initialize resources
+**activate()**: Validate config, validate access, initialize resources
 **deactivate()**: Clean up entities, close connections, update status
 **manage()**: Handle POST actions (sync, test, config), render management UI
 

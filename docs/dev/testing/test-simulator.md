@@ -29,7 +29,7 @@ integrations talk to. It mounts service-shaped HTTP endpoints under
 `http://127.0.0.1:7411/services/<service>/...` that respond with the
 same shapes the real services would, sourced from a curated
 **SimProfile**. Switching profiles changes what the integrations see
-on their next Import or Refresh, which is the lever for exercising
+on their next sync, which is the lever for exercising
 sync behavior end-to-end.
 
 The simulator is a separate Django app with its own database (see the
@@ -114,7 +114,7 @@ table below is a short orientation.
 The `baseline ↔ baseline-changed` pair is the canonical workflow for
 exercising every sync-result category. The command's docstring
 spells out the exact step-by-step (which entities to add custom
-attributes to, what each Refresh shows in the result modal); read
+attributes to, what each sync shows in the result modal); read
 it directly when running the workflow rather than trying to keep a
 copy of the steps here in sync.
 

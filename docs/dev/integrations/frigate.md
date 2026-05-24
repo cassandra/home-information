@@ -28,7 +28,7 @@ User-facing setup lives in
 - `src/hi/services/frigate/frigate_client.py` — `FrigateClient`.
   Encapsulated HTTP client wrapping the Frigate REST API.
 - `src/hi/services/frigate/frigate_sync.py` —
-  `FrigateSynchronizer`. Drives Import / Refresh; per-camera entity
+  `FrigateSynchronizer`. Drives sync; per-camera entity
   creation in `_create_camera_entity`.
 - `src/hi/services/frigate/frigate_converter.py` —
   `FrigateConverter`. Wire-format ↔ HI model translation. Owns the

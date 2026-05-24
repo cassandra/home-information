@@ -8,7 +8,7 @@ than HA or ZM: there are no per-item sensors or controllers and no
 real-time state changes to track. Items imported from HomeBox are
 read-only by design — they exist for placement and reference. As a
 result, `HomeBoxMonitor` does only a periodic reachability probe;
-all entity churn happens via user-initiated Import / Refresh.
+all entity churn happens via user-initiated sync.
 
 User-facing setup and troubleshooting live in
 [`docs/integrations/homebox.md`](../../integrations/homebox.md).
@@ -26,7 +26,7 @@ User-facing setup and troubleshooting live in
   HomeBox items into HI items, including custom field expansion as
   read-only attributes.
 - `src/hi/services/homebox/hb_sync.py` — `HomeBoxSynchronizer`.
-  Drives Import / Refresh.
+  Drives sync.
 - `src/hi/services/homebox/monitors.py` — `HomeBoxMonitor`. Periodic
   reachability probe only; no state polling.
 - `src/hi/services/homebox/hb_controller.py` — `HomeBoxController`.
@@ -54,11 +54,11 @@ error message in `HbClient` when responses are not JSON.
   in HI; their HomeBox-sourced fields appear as read-only attributes.
   The integration metadata sets `can_add_custom_attributes = False`
   on the metadata to prevent users from adding HI-side attributes
-  that would not survive a Refresh; see `hb_metadata.py`.
+  that would not survive a sync; see `hb_metadata.py`.
 - **Attachment downloads.** Files attached to a HomeBox item
   (manuals, receipts, photos) are downloaded into HI's media storage
-  at Import / Refresh time. Updates to the file in HomeBox propagate
-  only on the next Refresh.
+  at sync time. Updates to the file in HomeBox propagate only on
+  the next sync.
 
 ## Testing approach
 
