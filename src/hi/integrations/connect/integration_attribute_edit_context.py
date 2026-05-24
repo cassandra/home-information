@@ -14,8 +14,10 @@ from hi.apps.attribute.forms import AttributeUploadForm
 from hi.apps.attribute.models import AttributeModel
 from hi.apps.system.health_status import HealthStatus
 
+from hi.integrations.enums import IntegrationCapability
 from hi.integrations.forms import IntegrationAttributeRegularFormSet
 from hi.integrations.models import Integration, IntegrationAttribute
+from hi.integrations.transient_models import IntegrationKey
 
 from .integration_data import IntegrationData
 
@@ -30,6 +32,7 @@ class IntegrationAttributeItemEditContext(AttributeItemEditContext):
     
     def __init__( self,
                   integration_data     : IntegrationData,
+                  capability           : IntegrationCapability,
                   health_status        : HealthStatus      = None,
                   update_button_label  : str               = 'UPDATE',
                   suppress_history     : bool              = False,
@@ -37,17 +40,9 @@ class IntegrationAttributeItemEditContext(AttributeItemEditContext):
                   is_review_mode       : bool              = False,
                   pre_sync_url         : Optional[str]     = None,
                   ) -> None:
-        """
-        Initialize context for Integration attribute editing.
-
-        Review-mode flags (`is_review_mode` + `pre_sync_url`) drive the
-        Review Config back-from-pre-sync flow: when set, the modal's
-        cancel slot becomes a CONTINUE action that returns to the
-        pre-sync modal instead of dismissing. First-time Configure
-        leaves them unset and keeps the CANCEL/dismiss behavior.
-        """
         super().__init__( owner_type = 'integration', owner = integration_data.integration )
         self.integration_data = integration_data
+        self._capability = capability
         self._health_status = health_status
         self._update_button_label = update_button_label
         self._suppress_history = suppress_history
@@ -90,13 +85,28 @@ class IntegrationAttributeItemEditContext(AttributeItemEditContext):
         return IntegrationAttributeRegularFormSet(
             form_data,
             instance = self.integration,
+            queryset = self._capability_filtered_attribute_queryset(),
             prefix = self.formset_prefix,
             form_kwargs={
                 'show_as_editable': True,
-                'allow_reordering': False,  # Disable reordering for system-defined attributes
-                'suppress_history': self._suppress_history,  # While enabling, no history
-                'show_secrets': self._show_secrets,  # While enable, plain password view
+                'allow_reordering': False,
+                'suppress_history': self._suppress_history,
+                'show_secrets': self._show_secrets,
             }
+        )
+
+    def _capability_filtered_attribute_queryset(self):
+        AttributeType = self.integration_data.integration_metadata.attribute_type
+        key_strs = [
+            IntegrationKey(
+                integration_id = self.integration.integration_id,
+                integration_name = str( member ),
+            ).integration_key_str
+            for member in AttributeType
+            if self._capability in member.capabilities
+        ]
+        return self.integration.attributes.filter(
+            integration_key_str__in = key_strs,
         )
 
     @property

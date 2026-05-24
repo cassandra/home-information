@@ -22,7 +22,11 @@ from hi.integrations.transient_models import (
     IntegrationMetaData,
     IntegrationKey,
 )
-from hi.integrations.enums import IntegrationAttributeType, IntegrationDisableMode
+from hi.integrations.enums import (
+    IntegrationAttributeType,
+    IntegrationCapability,
+    IntegrationDisableMode,
+)
 
 logging.disable(logging.CRITICAL)
 
@@ -37,7 +41,7 @@ class MockIntegrationGateway(IntegrationGateway):
     """Mock integration gateway for testing."""
 
     def __init__(self, integration_id='test_integration', label='Test Integration',
-                 connection_test_result=None):
+                 connection_test_result=None, capabilities=None):
         self.integration_id = integration_id
         self.label = label
         # Default to a passing probe so existing resume/pause tests don't
@@ -46,13 +50,18 @@ class MockIntegrationGateway(IntegrationGateway):
             connection_test_result if connection_test_result is not None
             else ConnectionTestResult.success()
         )
+        self.capabilities = (
+            capabilities if capabilities is not None
+            else frozenset({ IntegrationCapability.CONNECT })
+        )
 
     def get_metadata(self):
         return IntegrationMetaData(
             integration_id=self.integration_id,
             label=self.label,
             attribute_type=MockIntegrationAttributeType,
-            allow_entity_deletion=True
+            allow_entity_deletion=True,
+            capabilities=self.capabilities,
         )
 
     def get_manage_view_pane(self):
@@ -172,6 +181,62 @@ class IntegrationManagerTestCase(TestCase):
         self.assertEqual(len(enabled_integrations), 2)
         self.assertEqual([data.integration_id for data in enabled_integrations],
                          ['beta_integration', 'zebra_integration'])
+
+    def test_integration_data_list_capability_filter(self):
+        manager = IntegrationManager()
+
+        connect_int = Integration.objects.create(
+            integration_id='connect_int', is_enabled=True,
+        )
+        import_int = Integration.objects.create(
+            integration_id='import_int', is_enabled=True,
+        )
+        both_int = Integration.objects.create(
+            integration_id='both_int', is_enabled=True,
+        )
+
+        manager._integration_data_map = {
+            'connect_int': IntegrationData(
+                integration_gateway=MockIntegrationGateway(
+                    'connect_int', 'Connect Service',
+                    capabilities=frozenset({ IntegrationCapability.CONNECT }),
+                ),
+                integration=connect_int,
+            ),
+            'import_int': IntegrationData(
+                integration_gateway=MockIntegrationGateway(
+                    'import_int', 'Import Service',
+                    capabilities=frozenset({ IntegrationCapability.IMPORT }),
+                ),
+                integration=import_int,
+            ),
+            'both_int': IntegrationData(
+                integration_gateway=MockIntegrationGateway(
+                    'both_int', 'Both Service',
+                    capabilities=frozenset({
+                        IntegrationCapability.CONNECT,
+                        IntegrationCapability.IMPORT,
+                    }),
+                ),
+                integration=both_int,
+            ),
+        }
+
+        connect_filtered = manager.get_integration_data_list(
+            capabilities=frozenset({ IntegrationCapability.CONNECT }),
+        )
+        self.assertEqual(
+            sorted([d.integration_id for d in connect_filtered]),
+            ['both_int', 'connect_int'],
+        )
+
+        import_filtered = manager.get_integration_data_list(
+            capabilities=frozenset({ IntegrationCapability.IMPORT }),
+        )
+        self.assertEqual(
+            sorted([d.integration_id for d in import_filtered]),
+            ['both_int', 'import_int'],
+        )
 
     def test_get_default_integration_data(self):
         """Test default integration selection logic."""

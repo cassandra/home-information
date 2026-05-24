@@ -1,3 +1,5 @@
+from typing import FrozenSet, Optional
+
 from django.db.models import Count
 from django.http import Http404
 from django.urls import reverse
@@ -8,6 +10,7 @@ from hi.apps.entity.models import EntityView
 from hi.apps.location.location_manager import LocationManager
 from hi.apps.location.models import Location, LocationView
 
+from hi.integrations.enums import IntegrationCapability
 from hi.integrations.integration_manager import IntegrationManager
 
 from .placement_request import PlacementUrlParams
@@ -23,10 +26,15 @@ class IntegrationViewMixin:
         except KeyError:
             raise Http404()
         return
-    
-    def get_integration_data_list( self, enabled_only = False ):
+
+    def get_integration_data_list(
+            self,
+            enabled_only : bool                                            = False,
+            capabilities : Optional[ FrozenSet[ IntegrationCapability ] ]  = None,
+    ):
         return IntegrationManager().get_integration_data_list(
             enabled_only = enabled_only,
+            capabilities = capabilities,
         )
     
     def validate_attributes_extra_helper( self,

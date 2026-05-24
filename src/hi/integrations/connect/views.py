@@ -21,7 +21,7 @@ from hi.apps.entity.models import Entity
 from hi.apps.location.models import LocationView
 from hi.apps.sense.sensor_response_manager import SensorResponseManager
 
-from hi.integrations.enums import IntegrationDisableMode
+from hi.integrations.enums import IntegrationCapability, IntegrationDisableMode
 from hi.integrations.exceptions import IntegrationConnectionError
 from hi.integrations.integration_manager import IntegrationManager
 from hi.integrations.integration_metadata_cache import IntegrationMetadataCache
@@ -47,7 +47,9 @@ class IntegrationHomeView( ConfigPageView, IntegrationViewMixin ):
 
     def get_main_template_context( self, request, *args, **kwargs ):
 
-        integration_data = IntegrationManager().get_default_integration_data()
+        integration_data = IntegrationManager().get_default_integration_data(
+            capabilities = frozenset({ IntegrationCapability.CONNECT }),
+        )
         if not integration_data:
             return dict()
 
@@ -63,7 +65,9 @@ class IntegrationSelectView( HiModalView, IntegrationViewMixin ):
 
     def get( self, request, *args, **kwargs ):
         context = {
-            'integration_data_list': self.get_integration_data_list(),
+            'integration_data_list': self.get_integration_data_list(
+                capabilities = frozenset({ IntegrationCapability.CONNECT }),
+            ),
         }
         return self.modal_response( request, context )
 
@@ -454,6 +458,7 @@ class IntegrationEnableView( HiModalView, IntegrationViewMixin, AttributeEditVie
         )
         attr_item_context = IntegrationAttributeItemEditContext(
             integration_data = integration_data,
+            capability = IntegrationCapability.CONNECT,
             update_button_label = 'UPDATE' if is_review_mode else 'CONFIGURE',
             suppress_history = True,
             show_secrets = True,
@@ -487,6 +492,7 @@ class IntegrationEnableView( HiModalView, IntegrationViewMixin, AttributeEditVie
 
         attr_item_context = IntegrationAttributeItemEditContext(
             integration_data = integration_data,
+            capability = IntegrationCapability.CONNECT,
             update_button_label = 'UPDATE' if is_review_mode else 'CONFIGURE',
             suppress_history = True,
             show_secrets = True,
@@ -667,19 +673,25 @@ class IntegrationManageView( ConfigPageView, IntegrationViewMixin, AttributeEdit
                 integration_id = integration_id,
             )
         else:
-            integration_data = integration_manager.get_default_integration_data()
-        
+            integration_data = integration_manager.get_default_integration_data(
+                capabilities = frozenset({ IntegrationCapability.CONNECT }),
+            )
+
         if not integration_data.integration.is_enabled:
             raise BadRequest( f'{integration_data.label} integration is not configured' )
-            
+
         # Get health status from the integration gateway
         health_status_provider = integration_data.integration_gateway.get_health_status_provider()
-        
+
         attr_item_context = IntegrationAttributeItemEditContext(
             integration_data = integration_data,
+            capability = IntegrationCapability.CONNECT,
             health_status = health_status_provider.health_status,
         )
-        integration_data_list = self.get_integration_data_list( enabled_only = True )
+        integration_data_list = self.get_integration_data_list(
+            enabled_only = True,
+            capabilities = frozenset({ IntegrationCapability.CONNECT }),
+        )
 
         manage_view_pane = integration_data.integration_gateway.get_manage_view_pane()
         manage_template_name = manage_view_pane.get_template_name()
@@ -742,7 +754,9 @@ class IntegrationManageView( ConfigPageView, IntegrationViewMixin, AttributeEdit
                 integration_id = integration_id,
             )
         else:
-            integration_data = integration_manager.get_default_integration_data()
+            integration_data = integration_manager.get_default_integration_data(
+                capabilities = frozenset({ IntegrationCapability.CONNECT }),
+            )
 
         if not integration_data.integration.is_enabled:
             raise BadRequest( f'{integration_data.label} integration is not configured' )
@@ -752,6 +766,7 @@ class IntegrationManageView( ConfigPageView, IntegrationViewMixin, AttributeEdit
                 
         attr_item_context = IntegrationAttributeItemEditContext(
             integration_data = integration_data,
+            capability = IntegrationCapability.CONNECT,
             health_status = health_status_provider.health_status,
         )
         
@@ -789,6 +804,7 @@ class IntegrationAttributeHistoryInlineView( View,
         )
         attr_item_context = IntegrationAttributeItemEditContext(
             integration_data = integration_data,
+            capability = IntegrationCapability.CONNECT,
         )
         return self.get_history(
             request = request,
@@ -817,6 +833,7 @@ class IntegrationAttributeRestoreInlineView( View,
             
         attr_item_context = IntegrationAttributeItemEditContext(
             integration_data = integration_data,
+            capability = IntegrationCapability.CONNECT,
         )
         return self.post_restore(
             request = request,

@@ -3,7 +3,7 @@ import asyncio
 import json
 import logging
 import threading
-from typing import Dict, List
+from typing import Dict, FrozenSet, List, Optional
 
 from django.apps import apps
 from django.conf import settings
@@ -19,7 +19,7 @@ from hi.apps.entity.models import Entity
 from hi.apps.system.health_status_provider import HealthStatusProvider
 
 from .connect.entity_operations import EntityIntegrationOperations
-from .enums import IntegrationAttributeType, IntegrationDisableMode
+from .enums import IntegrationAttributeType, IntegrationCapability, IntegrationDisableMode
 from .exceptions import IntegrationConnectionError
 from .connect.integration_data import IntegrationData
 from .connect.integration_gateway import IntegrationGateway
@@ -68,18 +68,34 @@ class IntegrationManager( Singleton ):
             sync_check_monitor.stop()
         return
 
-    def get_integration_data_list( self, enabled_only = False ) -> List[ IntegrationData ]:
+    def get_integration_data_list(
+            self,
+            enabled_only : bool                                            = False,
+            capabilities : Optional[ FrozenSet[ IntegrationCapability ] ]  = None,
+    ) -> List[ IntegrationData ]:
         if enabled_only:
             integration_data_list = [ x for x in self._integration_data_map.values() if x.is_enabled ]
         else:
             integration_data_list = list( self._integration_data_map.values() )
-
+        if capabilities is not None:
+            integration_data_list = [
+                x for x in integration_data_list
+                if x.integration_metadata.capabilities & capabilities
+            ]
         integration_data_list.sort( key = lambda data : data.integration_metadata.label )
         return integration_data_list
-    
-    def get_default_integration_data( self ) -> IntegrationData:
+
+    def get_default_integration_data(
+            self,
+            capabilities : Optional[ FrozenSet[ IntegrationCapability ] ]  = None,
+    ) -> IntegrationData:
         enabled_integration_data_list = [ x for x in self._integration_data_map.values()
                                           if x.is_enabled ]
+        if capabilities is not None:
+            enabled_integration_data_list = [
+                x for x in enabled_integration_data_list
+                if x.integration_metadata.capabilities & capabilities
+            ]
         if not enabled_integration_data_list:
             return None
         enabled_integration_data_list.sort( key = lambda data : data.integration_metadata.label )
