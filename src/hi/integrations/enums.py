@@ -4,6 +4,15 @@ from hi.apps.attribute.enums import AttributeValueType
 from hi.apps.common.enums import LabeledEnum
 
 
+class IntegrationCapability( LabeledEnum ):
+
+    CONNECT = ( 'Connect', 'Live mirror of an upstream system.' )
+    IMPORT = ( 'Import', 'One-shot pull of upstream items into HI.' )
+
+
+ALL_CAPABILITIES = frozenset( IntegrationCapability )
+
+
 class IntegrationDisableMode( LabeledEnum ):
     """
     Mode used when removing (disabling) an integration. Controls how the

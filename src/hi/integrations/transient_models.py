@@ -1,9 +1,9 @@
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Dict, List, Optional
+from typing import Dict, FrozenSet, List, Optional
 
 from hi.apps.system.enums import HealthStatusType
-from .enums import IntegrationAttributeType
+from .enums import IntegrationAttributeType, IntegrationCapability
 
 
 @dataclass
@@ -15,6 +15,16 @@ class IntegrationMetaData:
     allow_entity_deletion     : bool
     allow_internal_attributes : bool = True
     logo_static_path          : str  = 'img/integrations/default.svg'
+    capabilities              : FrozenSet[IntegrationCapability] = frozenset({
+        IntegrationCapability.CONNECT,
+    })
+
+    def __post_init__(self):
+        if not self.capabilities:
+            raise ValueError(
+                f"Integration '{self.integration_id}' must declare at "
+                f"least one IntegrationCapability."
+            )
 
     
 @dataclass

@@ -494,3 +494,13 @@ class IntegrationMetaDataTestCase(TestCase):
         # Test that attribute_type is a class (IntegrationAttributeType subclass)
         self.assertTrue(hasattr(metadata.attribute_type, '__bases__'))
         self.assertIn(IntegrationAttributeType, metadata.attribute_type.__bases__)
+
+    def test_capabilities_empty_set_raises(self):
+        with self.assertRaises(ValueError):
+            IntegrationMetaData(
+                integration_id='cap_empty',
+                label='Cap Empty',
+                attribute_type=MockIntegrationAttributeType,
+                allow_entity_deletion=True,
+                capabilities=frozenset(),
+            )
