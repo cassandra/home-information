@@ -37,8 +37,6 @@ class IntegrationAttributeItemEditContext(AttributeItemEditContext):
                   update_button_label  : str               = 'UPDATE',
                   suppress_history     : bool              = False,
                   show_secrets         : bool              = False,
-                  is_review_mode       : bool              = False,
-                  pre_sync_url         : Optional[str]     = None,
                   ) -> None:
         super().__init__( owner_type = 'integration', owner = integration_data.integration )
         self.integration_data = integration_data
@@ -47,8 +45,6 @@ class IntegrationAttributeItemEditContext(AttributeItemEditContext):
         self._update_button_label = update_button_label
         self._suppress_history = suppress_history
         self._show_secrets = show_secrets
-        self._is_review_mode = is_review_mode
-        self._pre_sync_url = pre_sync_url
 
         return
     
@@ -124,7 +120,5 @@ class IntegrationAttributeItemEditContext(AttributeItemEditContext):
         template_context.update({
             'integration_data': self.integration_data,
             'health_status': self._health_status,
-            'is_review_mode': self._is_review_mode,
-            'pre_sync_url': self._pre_sync_url,
         })
         return template_context

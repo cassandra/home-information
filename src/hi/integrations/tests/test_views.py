@@ -339,32 +339,12 @@ class PreSyncViewTests(SyncViewTestCase):
         response = self.client.get(self._url())
         self.assertEqual(response.status_code, 404)
 
-    def test_review_config_action_present_on_initial_connect(self):
-        """REVIEW CONFIG button is shown only on the first-time path.
-
-        With no entities for this integration, is_initial_connect=True
-        and the REVIEW CONFIG affordance must appear so the user can
-        return to the configure step.
-        """
-        response = self.client.get(self._url())
-        self.assertSuccessResponse(response)
-        self.assertIn('REVIEW CONFIG', response.content.decode())
-
-    def test_review_config_action_absent_after_initial_connect(self):
-        """REVIEW CONFIG is omitted on the manage-page entry path.
-
-        With at least one entity already imported, is_initial_connect
-        is False; the user came from the manage page and CANCEL takes
-        them back, so REVIEW CONFIG is unnecessary.
-        """
-        from hi.apps.entity.enums import EntityType
-        from hi.apps.entity.models import Entity
-        Entity.objects.create(
-            integration_id=self.INTEGRATION_ID,
-            integration_name='already_imported',
-            name='Already Imported',
-            entity_type_str=EntityType.default_value(),
-        )
+    def test_review_config_action_never_rendered(self):
+        """The first-time CONNECT path is collapsed into
+        IntegrationEnableView (Phase 7); pre-sync is now only the
+        update-check path. REVIEW CONFIG was an artifact of the
+        first-time round-trip and must no longer render anywhere
+        in this template."""
         response = self.client.get(self._url())
         self.assertSuccessResponse(response)
         self.assertNotIn('REVIEW CONFIG', response.content.decode())
@@ -491,21 +471,22 @@ class SyncViewTests(SyncViewTestCase):
 # --------------------------------------------------------------------------
 
 
-class EnableViewReviewConfigTests(SyncViewTestCase):
+class EnableViewTests(SyncViewTestCase):
     """
-    IntegrationEnableView accepts both first-time Configure and Review
-    Config (post-enable). The button label switches with state, and
-    the post-enable GET no longer 400s.
+    IntegrationEnableView: Phase 7 collapse. The view renders the
+    config form with a CONNECT action button regardless of the
+    integration's is_enabled state; the legacy review-mode round
+    trip (UPDATE label + CONTINUE-to-pre-sync) is gone.
     """
 
-    INTEGRATION_ID = 'enable_review_view_test'
+    INTEGRATION_ID = 'enable_view_test'
 
     def setUp(self):
         super().setUp()
         IntegrationManager().reset_for_testing()
         self.integration = Integration.objects.create(
             integration_id=self.INTEGRATION_ID,
-            is_enabled=True,
+            is_enabled=False,
             is_paused=False,
         )
         self.gateway = _SyncCapableGateway(integration_id=self.INTEGRATION_ID)
@@ -520,50 +501,26 @@ class EnableViewReviewConfigTests(SyncViewTestCase):
             kwargs={'integration_id': self.INTEGRATION_ID},
         )
 
-    def test_get_post_enable_does_not_400(self):
-        """Removed is_enabled BadRequest: GET on an enabled integration
-        must return 200 so Review Config can re-render the form."""
-        response = self.client.get(self._url())
-        self.assertSuccessResponse(response)
-
-    def test_get_post_enable_renders_update_button_label(self):
-        """Review-mode GET uses 'UPDATE' as the action label, not 'CONFIGURE'."""
+    def test_get_renders_connect_action_label(self):
+        # Asserts the visible action label is CONNECT. Internal CSS / HTML
+        # comment text in shared attribute-form components may include
+        # the substrings 'update'/'UPDATE'; this test pins the visible
+        # button text without false positives on framework boilerplate.
         response = self.client.get(self._url())
         self.assertSuccessResponse(response)
         body = response.content.decode()
-        self.assertIn('UPDATE', body)
+        self.assertIn('>\n          CONNECT\n        </button>', body)
         self.assertNotIn('CONFIGURE', body)
+        self.assertNotIn('CONTINUE', body)
 
-    def test_get_post_enable_renders_continue_action(self):
-        """Review-mode GET replaces the dismiss CANCEL with a CONTINUE
-        action that returns to the pre-sync modal. Without this swap a
-        user reviewing config with no changes has only SAVE (which
-        re-saves) or CANCEL (which aborts the whole sync flow) — both
-        wrong for the read-only review path."""
-        response = self.client.get(self._url())
-        self.assertSuccessResponse(response)
-        body = response.content.decode()
-        self.assertIn('CONTINUE', body)
-        # Cancel button has id="hi-modal-cancel"; its absence in review
-        # mode is what we're pinning here.
-        self.assertNotIn('hi-modal-cancel', body)
-        # The CONTINUE action must point at the pre-sync URL.
-        self.assertIn(
-            reverse('integrations_pre_sync', kwargs={'integration_id': self.INTEGRATION_ID}),
-            body,
-        )
-
-    def test_get_first_time_renders_configure_button_label(self):
-        """First-time GET (is_enabled=False) keeps the original
-        'CONFIGURE' label and the dismiss CANCEL."""
-        self.integration.is_enabled = False
+    def test_get_works_when_already_enabled(self):
+        self.integration.is_enabled = True
         self.integration.save()
         response = self.client.get(self._url())
         self.assertSuccessResponse(response)
         body = response.content.decode()
-        self.assertIn('CONFIGURE', body)
+        self.assertIn('CONNECT', body)
         self.assertIn('hi-modal-cancel', body)
-        self.assertNotIn('CONTINUE', body)
 
 
 # --------------------------------------------------------------------------
