@@ -65,9 +65,9 @@ get wrong (scheme, port, path suffix, trailing slash).
 ## Setup walkthrough
 
 What the user does in HI to enable the integration once they have
-their credentials, and what to expect on the first **Import**. Keep
+their credentials, and what to expect on the first **Connect**. Keep
 this brief — it is mostly continuity from the previous section into
-the post-import state.
+the post-connect state.
 
 The standard first step is opening HI's integration picker — link
 back to [Enabling an integration](../Integrations.md#enabling-an-integration)

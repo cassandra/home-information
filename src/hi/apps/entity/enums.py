@@ -200,8 +200,8 @@ class EntityType(LabeledEnum):
 
 class EntityDataSource(LabeledEnum):
 
-    INTERNAL = ('Internal', 'HI is the source of truth.')
-    EXTERNAL = ('External', 'An upstream system is the source of truth.')
+    INTERNAL = ('Internal', 'HI owns the editable representation.')
+    EXTERNAL = ('External', 'Upstream constrains HI-side edits.')
 
 
 class EntityStateValue(LabeledEnum):

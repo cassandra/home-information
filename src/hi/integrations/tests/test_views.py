@@ -522,6 +522,45 @@ class EnableViewTests(SyncViewTestCase):
         self.assertIn('CONNECT', body)
         self.assertIn('hi-modal-cancel', body)
 
+    def test_post_enables_and_runs_sync_when_synchronizer_exists(self):
+        # Phase 7 collapse: a successful CONNECT POST enables the
+        # integration and immediately invokes the synchronizer. The
+        # attribute-form processing is short-circuited via patch since
+        # the formset plumbing has its own coverage; the new wiring
+        # under test is the enable → sync chain plus the sync-result
+        # modal render.
+        from django.http import HttpResponse
+        from hi.integrations.connect.views import IntegrationEnableView
+        with patch.object(
+                IntegrationEnableView, 'post_attribute_form',
+                return_value=HttpResponse(status=200),
+        ):
+            response = self.client.post(self._url(), {})
+        self.assertSuccessResponse(response)
+        self.integration.refresh_from_db()
+        self.assertTrue(self.integration.is_enabled)
+        self.assertTrue(self.gateway._synchronizer.sync_called)
+        self.assertIn('sync-result', response.content.decode().lower())
+
+    def test_post_skips_sync_when_synchronizer_absent(self):
+        # Synchronizer-less integrations enable and return the legacy
+        # redirect path instead of routing through sync.
+        IntegrationManager()._integration_data_map[self.INTEGRATION_ID] = IntegrationData(
+            integration_gateway=_SyncIncapableGateway(self.INTEGRATION_ID),
+            integration=self.integration,
+        )
+        from django.http import HttpResponse
+        from hi.integrations.connect.views import IntegrationEnableView
+        with patch.object(
+                IntegrationEnableView, 'post_attribute_form',
+                return_value=HttpResponse(status=200),
+        ):
+            response = self.client.post(self._url(), {})
+        self.integration.refresh_from_db()
+        self.assertTrue(self.integration.is_enabled)
+        # No synchronizer → no sync_result modal in the response body.
+        self.assertNotIn('sync-result', response.content.decode().lower())
+
 
 # --------------------------------------------------------------------------
 # Placement + post-placement + refine (Phase 3) tests

@@ -99,7 +99,7 @@ The **Base URL** is wrong, or Frigate is not reachable from the **HI**
 host. Verify by opening the URL in a browser from the **HI** host
 and confirming Frigate's web UI loads.
 
-### Update imports zero cameras
+### Update finds zero cameras
 
 Frigate's `/api/config` returned an empty `cameras` map. Confirm
 your `config.yml` defines at least one camera and that Frigate is
