@@ -25,7 +25,7 @@ class HomeBoxSynchronizer( IntegrationSynchronizer, HomeBoxMixin ):
     def get_integration_metadata(self):
         return HbMetaData
 
-    def get_description(self, is_initial_import: bool) -> Optional[str]:
+    def get_description(self, is_initial_connect: bool) -> Optional[str]:
         return (
             'HomeBox Labels and Locations are kept as metadata on '
             'each item, not as separate organizational concepts in HI.'
@@ -82,10 +82,10 @@ class HomeBoxSynchronizer( IntegrationSynchronizer, HomeBoxMixin ):
             ).values_list( 'integration_id', 'integration_name' )
         }
 
-    def _sync_impl( self, is_initial_import: bool ) -> IntegrationSyncResult:
+    def _sync_impl( self, is_initial_connect: bool ) -> IntegrationSyncResult:
         hb_manager = self.hb_manager()
         result = IntegrationSyncResult(
-            title = self.get_result_title( is_initial_import = is_initial_import ),
+            title = self.get_result_title( is_initial_connect = is_initial_connect ),
         )
 
         if not hb_manager.hb_client:

@@ -1,6 +1,6 @@
 {% load icons %}
 {% comment %}
-  Shared IMPORT / REFRESH framework action.
+  Shared CONNECT / UPDATE framework action.
 
   Sync is a framework concern; integrations participate by providing an
   IntegrationSynchronizer from their gateway's get_synchronizer().
@@ -8,14 +8,14 @@
   (b) the gateway returning a synchronizer. Integrations whose gateway
   returns None (sync is opt-in) get no button.
 
-  Label flips on `core.has_entities`: IMPORT for the first-time path,
-  REFRESH for subsequent re-syncs. The framework manage view computes
-  has_entities into the `core` context.
+  Label flips on `core.has_entities`: CONNECT for the first-time path,
+  UPDATE for subsequent re-syncs. The framework manage
+  view computes has_entities into the `core` context.
 
   When the Issue #283 sync-check probe has detected upstream drift
-  (`core.sync_check_result.needs_sync`), the REFRESH variant
+  (`core.sync_check_result.needs_sync`), the update-check variant
   promotes from outline-secondary to solid btn-primary so it pulls
-  the eye. The IMPORT variant is always primary since there is
+  the eye. The CONNECT variant is always primary since there is
   nothing to compare against on a first run.
 {% endcomment %}
 {% if core.integration_data.is_enabled and core.integration_data.integration_gateway.get_synchronizer %}
@@ -24,9 +24,9 @@
    role="button"
    data-async="modal">
   {% if core.has_entities %}
-  {% icon "sync" size="lg" css_class="hi-icon-left" %}REFRESH
+  {% icon "sync" size="lg" css_class="hi-icon-left" %}UPDATE
   {% else %}
-  {% icon "upload" size="lg" css_class="hi-icon-left" %}IMPORT
+  {% icon "upload" size="lg" css_class="hi-icon-left" %}CONNECT
   {% endif %}
 </a>
 {% endif %}

@@ -42,8 +42,8 @@ class FrigateSynchronizer( IntegrationSynchronizer, FrigateMixin ):
     def get_integration_metadata(self):
         return FrigateMetaData
 
-    def get_description(self, is_initial_import : bool) -> Optional[ str ]:
-        if is_initial_import:
+    def get_description(self, is_initial_connect : bool) -> Optional[ str ]:
+        if is_initial_connect:
             return (
                 'Each Frigate camera becomes a HI camera entity with'
                 ' motion and object-presence sensors.'
@@ -95,9 +95,9 @@ class FrigateSynchronizer( IntegrationSynchronizer, FrigateMixin ):
             ).values_list( 'integration_id', 'integration_name' )
         }
 
-    def _sync_impl( self, is_initial_import : bool ) -> IntegrationSyncResult:
+    def _sync_impl( self, is_initial_connect : bool ) -> IntegrationSyncResult:
         result = IntegrationSyncResult(
-            title = self.get_result_title( is_initial_import = is_initial_import ),
+            title = self.get_result_title( is_initial_connect = is_initial_connect ),
         )
         frigate_manager = self.frigate_manager()
         if frigate_manager.frigate_client is None:

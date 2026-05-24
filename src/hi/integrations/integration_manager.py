@@ -35,7 +35,7 @@ class IntegrationManager( Singleton ):
     START_DELAY_INTERVAL_SECS = 2
 
     # Bounded timeout (in seconds) used when an integration's gateway
-    # test_connection() probe is invoked synchronously during attribute-save
+    # validate_access() probe is invoked synchronously during attribute-save
     # validation or before relaunching monitors. Kept short for interactive
     # save-time UX; can be promoted to a user-tunable setting later if
     # demand emerges.
@@ -584,7 +584,7 @@ class IntegrationManager( Singleton ):
         _launch_integration_monitor_task is idempotent when the monitor is
         already running.
 
-        Probes upstream connectivity via the gateway's test_connection
+        Probes upstream connectivity via the gateway's validate_access
         before relaunching, so we fail fast (with a meaningful error to
         the caller) rather than spinning up monitors that will immediately
         error against an unreachable service. Raises
@@ -605,13 +605,13 @@ class IntegrationManager( Singleton ):
         integration_attributes = list(
             integration_data.integration.attributes.all()
         )
-        test_result = integration_data.integration_gateway.test_connection(
+        test_result = integration_data.integration_gateway.validate_access(
             integration_attributes = integration_attributes,
             timeout_secs = self.HEALTH_CHECK_TIMEOUT_SECS,
         )
         if not test_result.is_success:
             raise IntegrationConnectionError(
-                test_result.message or 'Connection test failed during resume.'
+                test_result.message or 'Access validation failed during resume.'
             )
 
         with self._data_lock:

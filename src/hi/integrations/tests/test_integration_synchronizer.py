@@ -51,12 +51,12 @@ class TestSynchronizer(IntegrationSynchronizer):
     def get_integration_metadata(self):
         return _stub_integration_metadata()
 
-    def get_result_title(self, is_initial_import=False):
+    def get_result_title(self, is_initial_connect=False):
         return 'Test Sync Result'
 
-    def _sync_impl(self, is_initial_import=False):
+    def _sync_impl(self, is_initial_connect=False):
         return IntegrationSyncResult(
-            title=self.get_result_title(is_initial_import=is_initial_import),
+            title=self.get_result_title(is_initial_connect=is_initial_connect),
         )
 
 

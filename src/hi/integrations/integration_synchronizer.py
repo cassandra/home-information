@@ -54,13 +54,13 @@ class IntegrationSynchronizer:
     # docstring above for the rationale.
     SYNCHRONIZATION_LOCK_NAME = 'integrations_sync'
 
-    def get_description(self, is_initial_import: bool) -> Optional[str]:
+    def get_description(self, is_initial_connect: bool) -> Optional[str]:
         """
         Optional copy describing what this integration's sync will do,
         surfaced to the operator in the framework's pre-sync
         confirmation modal alongside a generic lead message.
 
-        `is_initial_import` distinguishes the first-time IMPORT (no
+        `is_initial_connect` distinguishes the first-time IMPORT (no
         entities have been imported yet) from subsequent REFRESH
         operations. The two contexts mean different things to the
         operator and integrations are encouraged to provide tailored
@@ -69,21 +69,22 @@ class IntegrationSynchronizer:
         """
         return None
 
-    def get_result_title(self, is_initial_import: bool) -> str:
+    def get_result_title(self, is_initial_connect: bool) -> str:
         """
-        Short, generic header for the sync result modal: 'Import
-        Result' for the first-time path, 'Refresh Result' otherwise.
-        The integration's identity is surfaced in the modal body
-        (logo + label) rather than the title bar — keeps the title
-        bar contrast predictable regardless of integration. Override
-        only if a specific integration genuinely needs custom copy.
+        Short, generic header for the sync result modal: 'Connect
+        Result' for the first-time path, 'Update Check Result'
+        otherwise. The integration's identity is surfaced in the
+        modal body (logo + label) rather than the title bar — keeps
+        the title bar contrast predictable regardless of integration.
+        Override only if a specific integration genuinely needs custom
+        copy.
         """
-        if is_initial_import:
-            return 'Import Result'
-        return 'Refresh Result'
+        if is_initial_connect:
+            return 'Connect Result'
+        return 'Update Check Result'
 
     def sync(self,
-             is_initial_import   : bool,
+             is_initial_connect   : bool,
              preserve_user_data  : bool = True,
              ) -> IntegrationSyncResult:
         """
@@ -91,7 +92,7 @@ class IntegrationSynchronizer:
         with the sync lock and standard error handling. Subclasses
         override `_sync_impl` rather than this method.
 
-        ``is_initial_import`` is the operator-intent flag from the
+        ``is_initial_connect`` is the operator-intent flag from the
         sync flow (Import for first-time, Refresh otherwise);
         threaded down so each subclass can title its result
         consistently.
@@ -111,11 +112,11 @@ class IntegrationSynchronizer:
         try:
             with ExclusionLockContext(name=self.SYNCHRONIZATION_LOCK_NAME):
                 logger.debug(f'{self.__class__.__name__} sync started.')
-                result = self._sync_impl(is_initial_import=is_initial_import)
+                result = self._sync_impl(is_initial_connect=is_initial_connect)
         except RuntimeError as e:
             logger.exception(e)
             result = IntegrationSyncResult(
-                title=self.get_result_title(is_initial_import=is_initial_import),
+                title=self.get_result_title(is_initial_connect=is_initial_connect),
                 error_list=[str(e)],
             )
         finally:
@@ -169,7 +170,7 @@ class IntegrationSynchronizer:
         committed enough changes to invalidate process-level state."""
         return
 
-    def _sync_impl(self, is_initial_import: bool) -> IntegrationSyncResult:
+    def _sync_impl(self, is_initial_connect: bool) -> IntegrationSyncResult:
         """
         Integration-specific sync work. Subclasses must override.
         Called with the synchronization lock held.

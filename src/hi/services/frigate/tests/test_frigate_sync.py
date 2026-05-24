@@ -48,8 +48,8 @@ class TestFrigateSyncImpl( _FrigateSyncTestBase ):
 
     def test_sync_returns_error_when_client_missing(self):
         self.mock_manager.frigate_client = None
-        result = self.synchronizer._sync_impl( is_initial_import = True )
-        self.assertEqual( result.title, 'Import Result' )
+        result = self.synchronizer._sync_impl( is_initial_connect = True )
+        self.assertEqual( result.title, 'Connect Result' )
         self.assertEqual( len( result.error_list ), 1 )
         self.assertIn( 'integration disabled', result.error_list[0].lower() )
         self.assertEqual( Entity.objects.count(), 0 )
@@ -61,7 +61,7 @@ class TestFrigateSyncImpl( _FrigateSyncTestBase ):
         API), so OBJECT_PRESENCE subsumes the "is motion happening"
         signal and a separate MOVEMENT sensor would always mirror it."""
         self._set_upstream_cameras( [ 'front_yard' ] )
-        result = self.synchronizer._sync_impl( is_initial_import = True )
+        result = self.synchronizer._sync_impl( is_initial_connect = True )
 
         entities = list( Entity.objects.filter(
             integration_id = FrigateMetaData.integration_id,
@@ -105,12 +105,12 @@ class TestFrigateSyncImpl( _FrigateSyncTestBase ):
 
     def test_sync_is_idempotent_for_existing_cameras(self):
         self._set_upstream_cameras( [ 'front_yard' ] )
-        first = self.synchronizer._sync_impl( is_initial_import = True )
+        first = self.synchronizer._sync_impl( is_initial_connect = True )
         self.assertEqual( len( first.created_list ), 1 )
 
         # Second sync against the same upstream — no new entities,
         # no new sensors, and no error rows.
-        second = self.synchronizer._sync_impl( is_initial_import = False )
+        second = self.synchronizer._sync_impl( is_initial_connect = False )
         self.assertEqual( second.created_list, [] )
         self.assertEqual( second.error_list, [] )
         self.assertEqual(
@@ -127,7 +127,7 @@ class TestFrigateSyncImpl( _FrigateSyncTestBase ):
 
     def test_sync_removes_entities_for_cameras_no_longer_present(self):
         self._set_upstream_cameras( [ 'front_yard', 'back_door' ] )
-        self.synchronizer._sync_impl( is_initial_import = True )
+        self.synchronizer._sync_impl( is_initial_connect = True )
         self.assertEqual(
             Entity.objects.filter(
                 integration_id = FrigateMetaData.integration_id,
@@ -137,7 +137,7 @@ class TestFrigateSyncImpl( _FrigateSyncTestBase ):
 
         # Drop 'back_door' upstream. Refresh sync should remove it.
         self._set_upstream_cameras( [ 'front_yard' ] )
-        result = self.synchronizer._sync_impl( is_initial_import = False )
+        result = self.synchronizer._sync_impl( is_initial_connect = False )
 
         remaining_names = list( Entity.objects.filter(
             integration_id = FrigateMetaData.integration_id,
@@ -147,7 +147,7 @@ class TestFrigateSyncImpl( _FrigateSyncTestBase ):
 
     def test_sync_preserves_user_edited_name_on_update(self):
         self._set_upstream_cameras( [ 'front_yard' ] )
-        self.synchronizer._sync_impl( is_initial_import = True )
+        self.synchronizer._sync_impl( is_initial_connect = True )
 
         entity = Entity.objects.get(
             integration_id = FrigateMetaData.integration_id,
@@ -159,7 +159,7 @@ class TestFrigateSyncImpl( _FrigateSyncTestBase ):
         entity.video_snapshot_stream_fps = None
         entity.save()
 
-        result = self.synchronizer._sync_impl( is_initial_import = False )
+        result = self.synchronizer._sync_impl( is_initial_connect = False )
 
         entity.refresh_from_db()
         self.assertEqual( entity.name, 'Front Porch' )
@@ -177,7 +177,7 @@ class TestFrigateSyncImpl( _FrigateSyncTestBase ):
         Live View pane routes to the snapshot-as-stream branch
         instead of the (broken) native-stream branch."""
         self._set_upstream_cameras( [ 'front_yard' ] )
-        self.synchronizer._sync_impl( is_initial_import = True )
+        self.synchronizer._sync_impl( is_initial_connect = True )
 
         entity = Entity.objects.get(
             integration_id = FrigateMetaData.integration_id,
@@ -185,7 +185,7 @@ class TestFrigateSyncImpl( _FrigateSyncTestBase ):
         entity.has_video_stream = True  # simulate the stale shape
         entity.save( update_fields = [ 'has_video_stream' ] )
 
-        self.synchronizer._sync_impl( is_initial_import = False )
+        self.synchronizer._sync_impl( is_initial_connect = False )
         entity.refresh_from_db()
         self.assertFalse( entity.has_video_stream )
 
@@ -197,7 +197,7 @@ class TestFrigateSyncImpl( _FrigateSyncTestBase ):
             ( 'front_yard', { 'enabled': True, 'friendly_name': 'Front Yard' } ),
             ( 'back_door', { 'enabled': True } ),  # no friendly_name
         ])
-        self.synchronizer._sync_impl( is_initial_import = True )
+        self.synchronizer._sync_impl( is_initial_connect = True )
 
         names_by_key = dict( Entity.objects.filter(
             integration_id = FrigateMetaData.integration_id,
@@ -208,7 +208,7 @@ class TestFrigateSyncImpl( _FrigateSyncTestBase ):
 
     def test_sync_creates_multiple_camera_entities(self):
         self._set_upstream_cameras( [ 'front_yard', 'back_door', 'driveway' ] )
-        result = self.synchronizer._sync_impl( is_initial_import = True )
+        result = self.synchronizer._sync_impl( is_initial_connect = True )
 
         names = set( Entity.objects.filter(
             integration_id = FrigateMetaData.integration_id,
@@ -225,7 +225,7 @@ class TestFrigateSyncImpl( _FrigateSyncTestBase ):
     def test_sync_skips_event_definition_when_alarm_events_disabled(self):
         # Default in setUp is should_add_alarm_events=False.
         self._set_upstream_cameras( [ 'front_yard' ] )
-        self.synchronizer._sync_impl( is_initial_import = True )
+        self.synchronizer._sync_impl( is_initial_connect = True )
         self.assertEqual(
             EventDefinition.objects.filter(
                 integration_id = FrigateMetaData.integration_id,
@@ -236,7 +236,7 @@ class TestFrigateSyncImpl( _FrigateSyncTestBase ):
     def test_sync_creates_event_definition_when_alarm_events_enabled(self):
         self.mock_manager.should_add_alarm_events = True
         self._set_upstream_cameras( [ 'front_yard' ] )
-        self.synchronizer._sync_impl( is_initial_import = True )
+        self.synchronizer._sync_impl( is_initial_connect = True )
 
         event_definitions = list( EventDefinition.objects.filter(
             integration_id = FrigateMetaData.integration_id,
@@ -262,8 +262,8 @@ class TestFrigateSyncImpl( _FrigateSyncTestBase ):
     def test_sync_is_idempotent_for_event_definitions(self):
         self.mock_manager.should_add_alarm_events = True
         self._set_upstream_cameras( [ 'front_yard' ] )
-        self.synchronizer._sync_impl( is_initial_import = True )
-        self.synchronizer._sync_impl( is_initial_import = False )
+        self.synchronizer._sync_impl( is_initial_connect = True )
+        self.synchronizer._sync_impl( is_initial_connect = False )
         # Second sync against the same upstream — no new event
         # definitions; existing entity's update path doesn't
         # re-create the definition.

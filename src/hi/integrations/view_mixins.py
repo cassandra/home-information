@@ -36,8 +36,8 @@ class IntegrationViewMixin:
         Validate the proposed integration configuration in two stages:
           1. Schema-level check via gateway.validate_configuration (offline,
              fast). Catches structural problems with the attribute set.
-          2. Live connection probe via gateway.test_connection bounded by
-             IntegrationManager.HEALTH_CHECK_TIMEOUT_SECS. Catches
+          2. Live access validation via gateway.validate_access bounded
+             by IntegrationManager.HEALTH_CHECK_TIMEOUT_SECS. Catches
              unreachable upstream / bad credentials so the user sees the
              specific reason inline rather than experiencing a silent
              save followed by a delayed background error.
@@ -76,13 +76,13 @@ class IntegrationViewMixin:
             )
             return
 
-        # Stage 2: live connection probe with bounded timeout.
-        test_result = gateway.test_connection(
+        # Stage 2: live access validation with bounded timeout.
+        test_result = gateway.validate_access(
             integration_attributes = integration_attributes,
             timeout_secs = IntegrationManager.HEALTH_CHECK_TIMEOUT_SECS,
         )
         if not test_result.is_success:
-            error_message = test_result.message or 'Connection test failed'
+            error_message = test_result.message or 'Access validation failed'
             regular_attributes_formset._non_form_errors.append(
                 f'{error_title}: {error_message}'
             )
@@ -103,7 +103,7 @@ class IntegrationPlacementViewMixin:
                           request,
                           integration_data,
                           placement_input,
-                          is_initial_import : bool,
+                          is_initial_connect : bool,
                           entity_id_filter = None ):
         """Render the placement modal seeded with an
         ``EntityPlacementInput``. Dropdowns offer both LocationView
@@ -124,7 +124,7 @@ class IntegrationPlacementViewMixin:
         )
         top_default_value = self._compute_top_default_value(
             integration_id = integration_data.integration_id,
-            is_initial_import = is_initial_import,
+            is_initial_connect = is_initial_connect,
         )
         # Decompose the tagged value into per-kind ids so the
         # template can do direct integer comparisons in the
@@ -158,7 +158,7 @@ class IntegrationPlacementViewMixin:
                 'new_collection_name': new_collection_name,
                 'inventory_preview': inventory_preview,
                 'placement_url': placement_url,
-                'is_initial_import': is_initial_import,
+                'is_initial_connect': is_initial_connect,
             },
             template_name = 'integrations/modals/placement.html',
         )
@@ -166,15 +166,15 @@ class IntegrationPlacementViewMixin:
     def render_dismiss_confirm( self,
                                 request,
                                 integration_data,
-                                is_initial_import : bool,
+                                is_initial_connect : bool,
                                 entity_ids = None ):
         """Render the NOT NOW confirmation modal. GO BACK targets
-        the placement GET endpoint, with is_initial_import and
+        the placement GET endpoint, with is_initial_connect and
         (when present) the entity-id scope threaded through as
         query parameters so the operator returns to the same set
         they were viewing."""
         placement_url = PlacementUrlParams(
-            is_initial_import = is_initial_import,
+            is_initial_connect = is_initial_connect,
             entity_ids = list( entity_ids ) if entity_ids else [],
         ).append_to_url( reverse(
             'integrations_placement',
@@ -193,7 +193,7 @@ class IntegrationPlacementViewMixin:
                                request,
                                integration_data,
                                outcome,
-                               is_initial_import : bool ):
+                               is_initial_connect : bool ):
         """Render the post-dispatch summary modal from a
         ``PlacementOutcome``.
 
@@ -219,7 +219,7 @@ class IntegrationPlacementViewMixin:
             context = {
                 'integration_data': integration_data,
                 'outcome': outcome,
-                'is_initial_import': is_initial_import,
+                'is_initial_connect': is_initial_connect,
                 'primary_action': primary_action,
                 'secondary_action_list': secondary_action_list,
             },
@@ -266,20 +266,20 @@ class IntegrationPlacementViewMixin:
 
     def _compute_top_default_value( self,
                                     integration_id    : str,
-                                    is_initial_import : bool ) -> str:
+                                    is_initial_connect : bool ) -> str:
         """Smart default for the placement's top dropdown.
 
-        On Initial Import the operator has no existing target — pre-
+        On Initial Connect the operator has no existing target — pre-
         select '+ New view' so they can click APPLY without further
         input.
 
-        On Refresh, prefer whichever existing target (LocationView
+        On update check, prefer whichever existing target (LocationView
         OR Collection) currently holds the most entities for this
         integration. Ties broken by id ascending (deterministic).
         Falls back to '' (Don't place) when no existing target holds
         any of this integration's entities — operator picks.
         """
-        if is_initial_import:
+        if is_initial_connect:
             return '__new_view__'
 
         view_counts = list(

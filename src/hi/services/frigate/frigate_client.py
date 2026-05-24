@@ -54,7 +54,7 @@ class FrigateClient:
     def base_url(self) -> str:
         return self._base_url
 
-    # ---- Reachability probe (used by test_connection) ------------------
+    # ---- Reachability probe (used by validate_access) ------------------
 
     def ping(self) -> None:
         """Lightweight reachability probe against ``/api/config``.
@@ -62,7 +62,7 @@ class FrigateClient:
         Confirms the base URL points at a Frigate instance (or whatever
         is fronting it) and that the response is JSON-shaped — a 200
         with HTML usually means the URL is fronting the Frigate web UI
-        rather than the API, and we want ``test_connection`` to fail
+        rather than the API, and we want ``validate_access`` to fail
         at save time instead of letting the polling path JSONDecode
         later. Returns ``None`` on success; raises ``ValueError`` with
         a diagnostic message on failure. Network errors propagate."""
@@ -146,7 +146,7 @@ class FrigateClient:
         """GET ``path`` against the configured base URL and return
         parsed JSON. Status code, content-type, and JSON-parse errors
         all raise ``ValueError`` with diagnostic messages that include
-        the path so monitor / test_connection paths can record what
+        the path so monitor / validate_access paths can record what
         failed."""
         url = f'{self._base_url}{path}'
         response = get(

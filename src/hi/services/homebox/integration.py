@@ -74,21 +74,21 @@ class HomeBoxGateway(IntegrationGateway):
                 error_message=f'Configuration validation failed: {e}'
             )
 
-    def test_connection(
+    def validate_access(
             self,
             integration_attributes: List[IntegrationAttribute],
             timeout_secs: Optional[float],
     ) -> ConnectionTestResult:
-        """Live connection probe; delegates to HomeBoxManager."""
+        """Live access validation probe; delegates to HomeBoxManager."""
         try:
             hb_manager = HomeBoxManager()
-            return hb_manager.test_connection(
+            return hb_manager.validate_access(
                 integration_attributes = integration_attributes,
                 timeout_secs = timeout_secs,
             )
         except Exception as e:
-            logger.exception(f'Error in HomeBox connection test: {e}')
-            return ConnectionTestResult.failure(f'Connection test error: {e}')
+            logger.exception(f'Error in HomeBox access validation: {e}')
+            return ConnectionTestResult.failure(f'Access validation error: {e}')
 
     def get_external_view_data(self, entity: Entity) -> Optional[ExternalViewData]:
         from .connector.hb_connector import HomeBoxConnector

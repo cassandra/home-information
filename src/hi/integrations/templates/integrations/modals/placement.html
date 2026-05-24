@@ -50,7 +50,7 @@ Context:
                           this modal; the form POSTs back to it
                           and the view branches on the submitted
                           ``action`` value.
-  is_initial_import     : bool (required)
+  is_initial_connect     : bool (required)
 {% endcomment %}
 
 {% block title_text %}
@@ -65,8 +65,8 @@ Place new items
     Pre-sync intent threaded forward so the post-dispatch modal
     titles itself consistently with what the operator clicked.
   {% endcomment %}
-  <input type="hidden" name="is_initial_import"
-         value="{{ is_initial_import|yesno:'1,0' }}">
+  <input type="hidden" name="is_initial_connect"
+         value="{{ is_initial_connect|yesno:'1,0' }}">
 {% endblock %}
 
 {% block body %}

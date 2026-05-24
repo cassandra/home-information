@@ -3,7 +3,7 @@ Tests for IntegrationViewMixin.validate_attributes_extra_helper, the
 two-stage save-time validation entry point.
 
 Stage 1: gateway.validate_configuration (schema-only, fast, offline)
-Stage 2: gateway.test_connection      (live probe, bounded timeout)
+Stage 2: gateway.validate_access      (live probe, bounded timeout)
 
 Both stages must surface their failure inline as a non-form error so the
 user sees the cause without a silent save followed by a delayed background
@@ -63,7 +63,7 @@ class ValidateAttributesExtraHelperTest(SimpleTestCase):
         gateway.validate_configuration.return_value = (
             IntegrationValidationResult.success()
         )
-        gateway.test_connection.return_value = ConnectionTestResult.success()
+        gateway.validate_access.return_value = ConnectionTestResult.success()
 
         formset = _build_formset([{'value': 'token'}])
         ctx = _build_attr_item_context(gateway)
@@ -76,8 +76,8 @@ class ValidateAttributesExtraHelperTest(SimpleTestCase):
 
         self.assertEqual(formset._non_form_errors, [])
         gateway.validate_configuration.assert_called_once()
-        gateway.test_connection.assert_called_once()
-        kwargs = gateway.test_connection.call_args.kwargs
+        gateway.validate_access.assert_called_once()
+        kwargs = gateway.validate_access.call_args.kwargs
         self.assertEqual(kwargs['timeout_secs'],
                          IntegrationManager.HEALTH_CHECK_TIMEOUT_SECS)
 
@@ -100,7 +100,7 @@ class ValidateAttributesExtraHelperTest(SimpleTestCase):
             error_title='Test',
         )
 
-        gateway.test_connection.assert_not_called()
+        gateway.validate_access.assert_not_called()
         self.assertEqual(len(formset._non_form_errors), 1)
         self.assertIn('Missing API URL', formset._non_form_errors[0])
 
@@ -110,7 +110,7 @@ class ValidateAttributesExtraHelperTest(SimpleTestCase):
         gateway.validate_configuration.return_value = (
             IntegrationValidationResult.success()
         )
-        gateway.test_connection.return_value = ConnectionTestResult.failure(
+        gateway.validate_access.return_value = ConnectionTestResult.failure(
             'Cannot connect to upstream'
         )
 
@@ -123,13 +123,13 @@ class ValidateAttributesExtraHelperTest(SimpleTestCase):
             error_title='Test',
         )
 
-        gateway.test_connection.assert_called_once()
+        gateway.validate_access.assert_called_once()
         self.assertEqual(len(formset._non_form_errors), 1)
         self.assertIn('Cannot connect to upstream', formset._non_form_errors[0])
 
     def test_unexpected_gateway_exception_propagates(self):
         """
-        validate_configuration / test_connection are required by their
+        validate_configuration / validate_access are required by their
         contracts to convert internal exceptions into result objects
         (IntegrationValidationResult.error / ConnectionTestResult.failure).
         If a gateway impl is buggy and throws anyway, the helper does NOT

@@ -45,7 +45,7 @@ class ServiceFaultMode(LabeledEnum):
     Fault-injection state for a simulated service. Set per-simulator from
     the simulator UI; consumed by ServiceFaultInjectionMiddleware to
     short-circuit API responses so the main app's integration
-    test_connection probe paths can be exercised without standing up real
+    validate_access probe paths can be exercised without standing up real
     misbehaving servers.
     """
 

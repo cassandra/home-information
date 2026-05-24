@@ -39,7 +39,7 @@ class FrigateManager( SingletonManager, AggregateHealthProvider, ApiHealthStatus
     registered listeners. Mirrors ``ZoneMinderManager`` in role.
 
     Scaffolding stub: ``_reload_implementation`` is a no-op,
-    ``test_connection`` returns a "not yet implemented" failure, and
+    ``validate_access`` returns a "not yet implemented" failure, and
     ``validate_configuration`` does the minimum schema check (BASE_URL
     must be present). Filled out incrementally during feature work.
     """
@@ -289,12 +289,12 @@ class FrigateManager( SingletonManager, AggregateHealthProvider, ApiHealthStatus
             )
         return IntegrationValidationResult.success()
 
-    def test_connection(
+    def validate_access(
             self,
             integration_attributes : List[ IntegrationAttribute ],
             timeout_secs           : Optional[ float ],
     ) -> ConnectionTestResult:
-        """Live probe against the configured base URL.
+        """Live access validation against the configured base URL.
 
         Builds a temporary ``FrigateClient`` from the proposed
         attributes and calls ``ping()``. Bounded by ``timeout_secs``
@@ -308,7 +308,7 @@ class FrigateManager( SingletonManager, AggregateHealthProvider, ApiHealthStatus
         except ValueError as e:
             return ConnectionTestResult.failure( str( e ) )
         except Exception as e:
-            logger.exception( f'Error building Frigate client for test_connection: {e}' )
+            logger.exception( f'Error building Frigate client for validate_access: {e}' )
             return ConnectionTestResult.failure( f'Configuration error: {e}' )
 
         try:

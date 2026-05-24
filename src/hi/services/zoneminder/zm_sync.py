@@ -42,8 +42,8 @@ class ZoneMinderSynchronizer( IntegrationSynchronizer, ZoneMinderMixin ):
         'Nodect': 'Nodect',
     }
 
-    def get_description(self, is_initial_import: bool) -> Optional[str]:
-        if is_initial_import:
+    def get_description(self, is_initial_connect: bool) -> Optional[str]:
+        if is_initial_connect:
             return (
                 'Each monitor becomes a camera with motion and'
                 ' run-state sensors.'
@@ -95,9 +95,9 @@ class ZoneMinderSynchronizer( IntegrationSynchronizer, ZoneMinderMixin ):
             ).values_list( 'integration_id', 'integration_name' )
         }
 
-    def _sync_impl( self, is_initial_import: bool ) -> IntegrationSyncResult:
+    def _sync_impl( self, is_initial_connect: bool ) -> IntegrationSyncResult:
         result = IntegrationSyncResult(
-            title = self.get_result_title( is_initial_import = is_initial_import ),
+            title = self.get_result_title( is_initial_connect = is_initial_connect ),
         )
 
         if not self.zm_manager().zm_client:

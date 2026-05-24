@@ -22,14 +22,14 @@ Context:
   outcome                : PlacementOutcome (required)
   primary_action         : (PlacementSummary, url) | None
   secondary_action_list  : List[(PlacementSummary, url)]
-  is_initial_import      : bool (required)
+  is_initial_connect      : bool (required)
 {% endcomment %}
 
 {% block title_text %}
-{% if is_initial_import %}
-Import complete
+{% if is_initial_connect %}
+Connect completed
 {% else %}
-Refresh complete
+Update check complete
 {% endif %}
 {% endblock %}
 
@@ -53,7 +53,7 @@ Refresh complete
 {% endif %}
 {% if primary_action and primary_action.0.is_view %}
 <p>
-  Imported items start at a default position in each view;
+  Connected items start at a default position in each view;
   use <strong>Refine</strong> to drag them into place.
 </p>
 {% endif %}

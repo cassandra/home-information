@@ -131,10 +131,11 @@ class BuildResultAndSummaryTests(TestCase):
             integration_label='Home Assistant',
         )
         self.assertIn('3 new items upstream', result.summary_message)
-        # The Refresh call-to-action is intentionally NOT in the
-        # summary string — it is rendered as a real link by the
+        # The update-check call-to-action is intentionally NOT in
+        # the summary string — it is rendered as a real link by the
         # manage-page banner template.
-        self.assertNotIn('REFRESH', result.summary_message)
+        self.assertNotIn('UPDATE', result.summary_message)
+        self.assertNotIn('Update', result.summary_message)
 
     def test_singular_pluralization(self):
         result = IntegrationSyncCheck.build_result(
@@ -657,7 +658,7 @@ class IntegrationSynchronizerPostSyncHookTests(TestCase):
                     allow_entity_deletion=True,
                 )
 
-            def _sync_impl(self, is_initial_import):
+            def _sync_impl(self, is_initial_connect):
                 return sync_impl_result
 
         return _TestSynchronizer()
@@ -674,10 +675,10 @@ class IntegrationSynchronizerPostSyncHookTests(TestCase):
             ),
         )
         synchronizer = self._make_synchronizer(
-            sync_impl_result=IntegrationSyncResult(title='Refresh Result'),
+            sync_impl_result=IntegrationSyncResult(title='Update Check Result'),
         )
 
-        synchronizer.sync(is_initial_import=False)
+        synchronizer.sync(is_initial_connect=False)
 
         loaded = IntegrationSyncCheck.get_state(self.INTEGRATION_ID)
         self.assertIsNotNone(loaded)
@@ -697,12 +698,12 @@ class IntegrationSynchronizerPostSyncHookTests(TestCase):
         )
         synchronizer = self._make_synchronizer(
             sync_impl_result=IntegrationSyncResult(
-                title='Refresh Result',
+                title='Update Check Result',
                 error_list=['something went wrong'],
             ),
         )
 
-        synchronizer.sync(is_initial_import=False)
+        synchronizer.sync(is_initial_connect=False)
 
         loaded = IntegrationSyncCheck.get_state(self.INTEGRATION_ID)
         self.assertIsNotNone(loaded)

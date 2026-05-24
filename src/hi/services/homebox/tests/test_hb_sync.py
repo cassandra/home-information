@@ -31,7 +31,7 @@ class TestHomeBoxSynchronizer(SimpleTestCase):
 
         with patch.object(synchronizer, 'hb_manager', return_value=manager), \
                 patch.object(synchronizer, '_sync_helper_entities', return_value=[]) as sync_entities_mock:
-            result = synchronizer._sync_impl(is_initial_import=True)
+            result = synchronizer._sync_impl(is_initial_connect=True)
 
         self.assertIsInstance(result, IntegrationSyncResult)
         self.assertIn('Found 3 current HomeBox items.', result.info_list)
@@ -327,7 +327,7 @@ class TestHomeBoxSynchronizerSyncResultGrouping(SimpleTestCase):
         with patch.object(synchronizer, 'hb_manager', return_value=manager), \
              patch.object(synchronizer, '_sync_helper_entities',
                           return_value=[entity_a, entity_b]):
-            result = synchronizer._sync_impl(is_initial_import=True)
+            result = synchronizer._sync_impl(is_initial_connect=True)
 
         self.assertIsNotNone(result.placement_input)
         self.assertEqual(result.placement_input.groups, [])
@@ -351,7 +351,7 @@ class TestHomeBoxSynchronizerSyncResultGrouping(SimpleTestCase):
 
         with patch.object(synchronizer, 'hb_manager', return_value=manager), \
                 patch.object(synchronizer, '_sync_helper_entities', return_value=[]):
-            result = synchronizer._sync_impl(is_initial_import=True)
+            result = synchronizer._sync_impl(is_initial_connect=True)
 
         # No newly-created entities → placement_input is None.
         self.assertIsNone(result.placement_input)

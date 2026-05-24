@@ -80,21 +80,21 @@ class ZoneMinderGateway( IntegrationGateway, ZoneMinderMixin ):
                 error_message=f'Configuration validation failed: {e}'
             )
 
-    def test_connection(
+    def validate_access(
             self,
             integration_attributes: List[IntegrationAttribute],
             timeout_secs: Optional[float],
     ) -> ConnectionTestResult:
-        """Live connection probe; delegates to ZoneMinderManager."""
+        """Live access validation probe; delegates to ZoneMinderManager."""
         try:
             zm_manager = ZoneMinderManager()
-            return zm_manager.test_connection(
+            return zm_manager.validate_access(
                 integration_attributes=integration_attributes,
                 timeout_secs=timeout_secs,
             )
         except Exception as e:
-            logger.exception(f'Error in ZoneMinder connection test: {e}')
-            return ConnectionTestResult.failure(f'Connection test error: {e}')
+            logger.exception(f'Error in ZoneMinder access validation: {e}')
+            return ConnectionTestResult.failure(f'Access validation error: {e}')
     
     def get_entity_video_snapshot(self, entity: Entity) -> Optional[VideoSnapshot]:
         """Return a fresh still frame for the ZoneMinder monitor backing

@@ -425,7 +425,7 @@ class ZoneMinderManager( SingletonManager, AggregateHealthProvider, ApiHealthSta
         """
         Schema-only validation. Confirms required attributes are present
         and structurally usable. Does NOT touch the network — for live
-        connection probing, see test_connection().
+        access validation, see validate_access().
         """
         try:
             self._build_zm_attr_type_to_attribute_map(
@@ -446,12 +446,12 @@ class ZoneMinderManager( SingletonManager, AggregateHealthProvider, ApiHealthSta
                 error_message=f'Configuration validation failed: {e}'
             )
 
-    def test_connection(
+    def validate_access(
             self,
             integration_attributes: List[IntegrationAttribute],
             timeout_secs: Optional[float]) -> ConnectionTestResult:
         """
-        Live connection probe with bounded timeout. Builds a temporary
+        Live access validation with bounded timeout. Builds a temporary
         ZMApi client against the proposed attributes; the client's own
         login flow exercises auth and reachability synchronously.
         """
@@ -468,7 +468,7 @@ class ZoneMinderManager( SingletonManager, AggregateHealthProvider, ApiHealthSta
             if validation_result.is_valid:
                 return ConnectionTestResult.success()
             return ConnectionTestResult.failure(
-                validation_result.error_message or 'Connection test failed'
+                validation_result.error_message or 'Access validation failed'
             )
 
         except IntegrationAttributeError as e:
@@ -476,8 +476,8 @@ class ZoneMinderManager( SingletonManager, AggregateHealthProvider, ApiHealthSta
         except IntegrationError as e:
             return ConnectionTestResult.failure(str(e))
         except Exception as e:
-            logger.exception(f'Error in ZoneMinder connection test: {e}')
-            return ConnectionTestResult.failure(f'Connection test error: {e}')
+            logger.exception(f'Error in ZoneMinder access validation: {e}')
+            return ConnectionTestResult.failure(f'Access validation error: {e}')
     
     def _build_zm_attr_type_to_attribute_map(
             self, 

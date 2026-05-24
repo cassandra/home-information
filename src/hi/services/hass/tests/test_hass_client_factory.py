@@ -124,7 +124,7 @@ class TestHassClientFactory(TestCase):
 
         Guards against the 'wrong base URL / misconfigured proxy' case
         where an upstream returns a friendly 200 HTML page. We want
-        test_connection to surface this at save time rather than letting
+        validate_access to surface this at save time rather than letting
         the runtime sync path JSONDecodeError later.
         """
         mock_response = Mock()

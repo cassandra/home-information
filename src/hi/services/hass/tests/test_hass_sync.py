@@ -55,7 +55,7 @@ class TestHassSynchronizerSyncMethod(TestCase):
         mock_context.__exit__ = Mock(return_value=False)
         mock_lock_context.return_value = mock_context
         
-        result = self.synchronizer.sync(is_initial_import=True)
+        result = self.synchronizer.sync(is_initial_connect=True)
         
         # Verify error handling
         self.assertIn('Database connection failed', result.error_list[0])
@@ -73,7 +73,7 @@ class TestHassSynchronizerSyncMethod(TestCase):
         mock_context.__exit__ = Mock(return_value=False)
         mock_lock_context.return_value = mock_context
         
-        result = self.synchronizer.sync(is_initial_import=True)
+        result = self.synchronizer.sync(is_initial_connect=True)
         
         # Verify actual error result structure and content
         self.assertEqual(len(result.error_list), 1)
@@ -167,7 +167,7 @@ class TestHassSynchronizerTransactionBehavior(TestCase):
                 mock_atomic.return_value.__enter__ = Mock()
                 mock_atomic.return_value.__exit__ = Mock()
                 
-                result = self.synchronizer._sync_impl(is_initial_import=True)
+                result = self.synchronizer._sync_impl(is_initial_connect=True)
                 
                 # Verify atomic transaction was used exactly once
                 mock_atomic.assert_called_once()
@@ -201,7 +201,7 @@ class TestHassSynchronizerTransactionBehavior(TestCase):
                 
                 # Transaction should propagate the exception (allowing rollback)
                 with self.assertRaises(Exception) as context:
-                    self.synchronizer._sync_impl(is_initial_import=True)
+                    self.synchronizer._sync_impl(is_initial_connect=True)
                 
                 self.assertEqual(str(context.exception), "Entity creation failed")
     
@@ -237,7 +237,7 @@ class TestHassSynchronizerErrorScenarios(TestCase):
         mock_hass_manager.return_value = mock_manager
         
         with self.assertRaises(Exception) as context:
-            self.synchronizer._sync_impl(is_initial_import=True)
+            self.synchronizer._sync_impl(is_initial_connect=True)
         
         self.assertEqual(str(context.exception), "API connection failed")
     
@@ -261,7 +261,7 @@ class TestHassSynchronizerErrorScenarios(TestCase):
         mock_states_to_devices.side_effect = ValueError("Invalid state data format")
         
         with self.assertRaises(ValueError) as context:
-            self.synchronizer._sync_impl(is_initial_import=True)
+            self.synchronizer._sync_impl(is_initial_connect=True)
         
         self.assertEqual(str(context.exception), "Invalid state data format")
     

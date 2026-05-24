@@ -70,20 +70,20 @@ class IntegrationGateway:
         Schema-only validation of the proposed configuration. Must NOT
         perform network operations. Returns success if the attribute set
         is structurally usable; returns an error otherwise. For live
-        connection probing, see test_connection().
+        access validation, see validate_access().
         """
         raise NotImplementedError('Subclasses must override this method')
 
-    def test_connection(
+    def validate_access(
             self,
             integration_attributes: List[IntegrationAttribute],
             timeout_secs: Optional[float],
     ) -> ConnectionTestResult:
         """
-        Live connection probe against the proposed configuration. Must
-        respect the bounded timeout. Used at attribute-save time
-        (Configure / Reconfigure) and before relaunching monitors
-        (Resume).
+        Live probe to validate access to the upstream system using the
+        proposed configuration. Must respect the bounded timeout. Used
+        at attribute-save time (Configure / Reconfigure) and before
+        relaunching monitors (Resume).
         """
         raise NotImplementedError('Subclasses must override this method')
     

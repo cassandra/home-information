@@ -87,8 +87,9 @@ class IntegrationPreSyncView( HiModalView, IntegrationViewMixin ):
     """
     Pre-sync confirmation modal. Surfaces the synchronizer's
     description and offers Sync / Not now actions. Used as the last
-    step of the Configure flow (first-time sync) and from the IMPORT /
-    REFRESH button on the integration manage page (subsequent syncs).
+    step of the Configure flow (first-time sync) and from the CONNECT
+    / UPDATE button on the integration manage page
+    (subsequent syncs).
 
     The modal does not display integration health: an unhealthy
     integration's sync attempt will surface its failure inline with a
@@ -115,7 +116,7 @@ class IntegrationPreSyncView( HiModalView, IntegrationViewMixin ):
         if synchronizer is None:
             return page_not_found_response( request )
 
-        is_initial_import = not Entity.objects.filter(
+        is_initial_connect = not Entity.objects.filter(
             integration_id = integration_data.integration_id,
         ).exists()
         sync_url = reverse(
@@ -136,16 +137,16 @@ class IntegrationPreSyncView( HiModalView, IntegrationViewMixin ):
         # disable modal asks. Skipped on the first-time import path
         # since no entities exist yet.
         removal_summary = None
-        if not is_initial_import:
+        if not is_initial_connect:
             removal_summary = EntityIntegrationOperations.summarize_for_removal(
                 integration_id = integration_data.integration_id,
             )
 
         context = {
             'integration_data': integration_data,
-            'is_initial_import': is_initial_import,
+            'is_initial_connect': is_initial_connect,
             'sync_description': synchronizer.get_description(
-                is_initial_import = is_initial_import,
+                is_initial_connect = is_initial_connect,
             ),
             'sync_url': sync_url,
             'review_config_url': review_config_url,
@@ -186,11 +187,11 @@ class IntegrationSyncView( HiModalView, IntegrationViewMixin ):
 
         # Compute the operator-flow flag BEFORE running sync so the
         # entities the sync is about to create don't change the
-        # answer. is_initial_import = "no entities for this
+        # answer. is_initial_connect = "no entities for this
         # integration before this sync ran"; threaded through to the
         # placement GET URL so a downstream Place-items click
         # carries the same operator intent.
-        is_initial_import = not Entity.objects.filter(
+        is_initial_connect = not Entity.objects.filter(
             integration_id = integration_data.integration_id,
         ).exists()
 
@@ -206,7 +207,7 @@ class IntegrationSyncView( HiModalView, IntegrationViewMixin ):
 
         try:
             sync_result = synchronizer.sync(
-                is_initial_import = is_initial_import,
+                is_initial_connect = is_initial_connect,
                 preserve_user_data = preserve_user_data,
             )
         finally:
@@ -236,7 +237,7 @@ class IntegrationSyncView( HiModalView, IntegrationViewMixin ):
             if sync_result.placement_input is not None else []
         )
         placement_url = PlacementUrlParams(
-            is_initial_import = is_initial_import,
+            is_initial_connect = is_initial_connect,
             entity_ids = new_entity_ids,
         ).append_to_url( reverse(
             'integrations_placement',
@@ -248,7 +249,7 @@ class IntegrationSyncView( HiModalView, IntegrationViewMixin ):
             context = {
                 'sync_result': sync_result,
                 'integration_data': integration_data,
-                'is_initial_import': is_initial_import,
+                'is_initial_connect': is_initial_connect,
                 'placement_url': placement_url,
             },
             template_name = 'integrations/modals/sync_result.html',
@@ -289,7 +290,7 @@ class IntegrationPlacementView( HiModalView, IntegrationViewMixin,
             return page_not_found_response( request )
 
         url_params = PlacementUrlParams.from_data( request.GET )
-        is_initial_import = url_params.is_initial_import
+        is_initial_connect = url_params.is_initial_connect
         entity_id_filter = set( url_params.entity_ids ) if url_params.entity_ids else None
 
         entities = EntityPlacementService.query_unplaced_entities(
@@ -310,13 +311,13 @@ class IntegrationPlacementView( HiModalView, IntegrationViewMixin,
                 request = request,
                 integration_data = integration_data,
                 synchronizer = synchronizer,
-                is_initial_import = is_initial_import,
+                is_initial_connect = is_initial_connect,
             )
         return self.render_placement(
             request = request,
             integration_data = integration_data,
             placement_input = placement_input,
-            is_initial_import = is_initial_import,
+            is_initial_connect = is_initial_connect,
             entity_id_filter = entity_id_filter,
         )
 
@@ -326,7 +327,7 @@ class IntegrationPlacementView( HiModalView, IntegrationViewMixin,
             integration_id = integration_id,
         )
         url_params = PlacementUrlParams.from_data( request.POST )
-        is_initial_import = url_params.is_initial_import
+        is_initial_connect = url_params.is_initial_connect
 
         if request.POST.get('action') == self.DISMISS_ACTION_VALUE:
             entity_ids = self._extract_placement_entity_ids( request )
@@ -334,7 +335,7 @@ class IntegrationPlacementView( HiModalView, IntegrationViewMixin,
                 request = request,
                 integration_data = integration_data,
                 entity_ids = entity_ids,
-                is_initial_import = is_initial_import,
+                is_initial_connect = is_initial_connect,
             )
 
         decisions = PlacementFormParser.parse(
@@ -345,7 +346,7 @@ class IntegrationPlacementView( HiModalView, IntegrationViewMixin,
             request = request,
             integration_data = integration_data,
             outcome = outcome,
-            is_initial_import = is_initial_import,
+            is_initial_connect = is_initial_connect,
         )
 
     @staticmethod
@@ -369,7 +370,7 @@ class IntegrationPlacementView( HiModalView, IntegrationViewMixin,
         return ids
 
     def _render_empty( self, request, integration_data,
-                       synchronizer, is_initial_import : bool ):
+                       synchronizer, is_initial_connect : bool ):
         """No-unplaced-items acknowledgement: render the result
         modal with the integration's icon + a brief 'no items'
         info note rather than an empty placement. Counts stay
@@ -377,7 +378,7 @@ class IntegrationPlacementView( HiModalView, IntegrationViewMixin,
         from hi.integrations.sync_result import IntegrationSyncResult
         sync_result = IntegrationSyncResult(
             title = synchronizer.get_result_title(
-                is_initial_import = is_initial_import,
+                is_initial_connect = is_initial_connect,
             ),
             info_list = [ 'No items left to place.' ],
         )
@@ -386,7 +387,7 @@ class IntegrationPlacementView( HiModalView, IntegrationViewMixin,
             context = {
                 'sync_result': sync_result,
                 'integration_data': integration_data,
-                'is_initial_import': is_initial_import,
+                'is_initial_connect': is_initial_connect,
             },
             template_name = 'integrations/modals/sync_result.html',
         )
@@ -513,7 +514,7 @@ class IntegrationEnableView( HiModalView, IntegrationViewMixin, AttributeEditVie
         # modal-to-modal transitions.
         synchronizer = integration_data.integration_gateway.get_synchronizer()
         if synchronizer is not None:
-            is_initial_import = not Entity.objects.filter(
+            is_initial_connect = not Entity.objects.filter(
                 integration_id = integration_data.integration_id,
             ).exists()
             sync_url = reverse(
@@ -528,9 +529,9 @@ class IntegrationEnableView( HiModalView, IntegrationViewMixin, AttributeEditVie
                 request,
                 context = {
                     'integration_data': integration_data,
-                    'is_initial_import': is_initial_import,
+                    'is_initial_connect': is_initial_connect,
                     'sync_description': synchronizer.get_description(
-                        is_initial_import = is_initial_import,
+                        is_initial_connect = is_initial_connect,
                     ),
                     'sync_url': sync_url,
                     'review_config_url': review_config_url,

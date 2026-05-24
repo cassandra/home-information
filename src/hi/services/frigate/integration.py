@@ -84,19 +84,19 @@ class FrigateGateway( IntegrationGateway, FrigateMixin ):
                 error_message = f'Configuration validation failed: {e}',
             )
 
-    def test_connection(
+    def validate_access(
             self,
             integration_attributes : List[ IntegrationAttribute ],
             timeout_secs           : Optional[ float ],
     ) -> ConnectionTestResult:
         try:
-            return FrigateManager().test_connection(
+            return FrigateManager().validate_access(
                 integration_attributes = integration_attributes,
                 timeout_secs = timeout_secs,
             )
         except Exception as e:
-            logger.exception( f'Error in Frigate connection test: {e}' )
-            return ConnectionTestResult.failure( f'Connection test error: {e}' )
+            logger.exception( f'Error in Frigate access validation: {e}' )
+            return ConnectionTestResult.failure( f'Access validation error: {e}' )
 
     def get_entity_video_snapshot(self, entity : Entity) -> Optional[ VideoSnapshot ]:
         """Live still-frame for the Frigate camera backing this entity

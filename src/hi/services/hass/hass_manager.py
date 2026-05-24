@@ -273,7 +273,7 @@ class HassManager( SingletonManager, AggregateHealthProvider, ApiHealthStatusPro
         """
         Schema-only validation. Confirms required attributes are present
         and structurally usable. Does NOT touch the network — for live
-        connection probing, see test_connection().
+        access validation, see validate_access().
         """
         try:
             self._build_hass_attr_type_to_attribute_map(
@@ -294,12 +294,12 @@ class HassManager( SingletonManager, AggregateHealthProvider, ApiHealthStatusPro
                 error_message=f'Configuration validation failed: {e}'
             )
 
-    def test_connection(
+    def validate_access(
             self,
             integration_attributes: List[IntegrationAttribute],
             timeout_secs: Optional[float]) -> ConnectionTestResult:
         """
-        Live connection probe with bounded timeout. Builds a temporary
+        Live access validation with bounded timeout. Builds a temporary
         HassClient against the proposed attributes and exercises the
         lightweight `/api/` ping endpoint.
         """
@@ -316,7 +316,7 @@ class HassManager( SingletonManager, AggregateHealthProvider, ApiHealthStatusPro
             if validation_result.is_valid:
                 return ConnectionTestResult.success()
             return ConnectionTestResult.failure(
-                validation_result.error_message or 'Connection test failed'
+                validation_result.error_message or 'Access validation failed'
             )
 
         except IntegrationAttributeError as e:
@@ -324,8 +324,8 @@ class HassManager( SingletonManager, AggregateHealthProvider, ApiHealthStatusPro
         except IntegrationError as e:
             return ConnectionTestResult.failure(str(e))
         except Exception as e:
-            logger.exception(f'Error in HASS connection test: {e}')
-            return ConnectionTestResult.failure(f'Connection test error: {e}')
+            logger.exception(f'Error in HASS access validation: {e}')
+            return ConnectionTestResult.failure(f'Access validation error: {e}')
     
     def _build_hass_attr_type_to_attribute_map(
             self, 

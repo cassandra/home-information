@@ -15,7 +15,7 @@ class ServiceFaultInjectionMiddleware:
     """
     Intercepts requests under /services/<short_name>/<...> and applies the
     target simulator's current fault mode. Lets manual end-to-end testing
-    of the main app's integration test_connection probe failure paths
+    of the main app's integration validate_access probe failure paths
     proceed without standing up real misbehaving servers.
 
     Each service can define its own URL layout, so this matcher does NOT

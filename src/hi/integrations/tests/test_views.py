@@ -203,14 +203,14 @@ class _SyncTestSynchronizer:
         self._description = description
         self.sync_called = False
 
-    def get_description(self, is_initial_import):
-        self.last_is_initial_import = is_initial_import
+    def get_description(self, is_initial_connect):
+        self.last_is_initial_connect = is_initial_connect
         return self._description
 
-    def get_result_title(self, is_initial_import):
+    def get_result_title(self, is_initial_connect):
         return 'Test Sync Result'
 
-    def sync(self, is_initial_import=False, preserve_user_data=True):
+    def sync(self, is_initial_connect=False, preserve_user_data=True):
         from hi.integrations.sync_result import IntegrationSyncResult
         self.sync_called = True
         self.last_preserve_user_data = preserve_user_data
@@ -289,9 +289,9 @@ class _SyncIncapableGateway(IntegrationGateway):
 class PreSyncViewTests(SyncViewTestCase):
     """
     Framework pre-sync confirmation modal. Renders the synchronizer
-    description plus IMPORT/REFRESH and (first-time only) REVIEW
-    CONFIG actions; 404s when the integration does not provide a
-    synchronizer.
+    description plus CONNECT/Check-for-updates and (first-time only)
+    REVIEW CONFIG actions; 404s when the integration does not provide
+    a synchronizer.
     """
 
     INTEGRATION_ID = 'sync_view_test'
@@ -339,10 +339,10 @@ class PreSyncViewTests(SyncViewTestCase):
         response = self.client.get(self._url())
         self.assertEqual(response.status_code, 404)
 
-    def test_review_config_action_present_on_initial_import(self):
+    def test_review_config_action_present_on_initial_connect(self):
         """REVIEW CONFIG button is shown only on the first-time path.
 
-        With no entities for this integration, is_initial_import=True
+        With no entities for this integration, is_initial_connect=True
         and the REVIEW CONFIG affordance must appear so the user can
         return to the configure step.
         """
@@ -350,10 +350,10 @@ class PreSyncViewTests(SyncViewTestCase):
         self.assertSuccessResponse(response)
         self.assertIn('REVIEW CONFIG', response.content.decode())
 
-    def test_review_config_action_absent_after_initial_import(self):
+    def test_review_config_action_absent_after_initial_connect(self):
         """REVIEW CONFIG is omitted on the manage-page entry path.
 
-        With at least one entity already imported, is_initial_import
+        With at least one entity already imported, is_initial_connect
         is False; the user came from the manage page and CANCEL takes
         them back, so REVIEW CONFIG is unnecessary.
         """
@@ -386,7 +386,7 @@ class PreSyncViewTests(SyncViewTestCase):
         response = self.client.get(self._url())
         self.assertSuccessResponse(response)
         body = response.content.decode()
-        self.assertIn('>REFRESH<', body.replace('\n', ''))
+        self.assertIn('>UPDATE', body)
         self.assertNotIn('RETAIN MISSING', body)
         self.assertNotIn('REMOVE MISSING', body)
 
@@ -582,13 +582,13 @@ class _PlacementTestSynchronizer:
         self._sync_result = sync_result
         self.sync_called = False
 
-    def get_description(self, is_initial_import):
+    def get_description(self, is_initial_connect):
         return None
 
-    def get_result_title(self, is_initial_import):
+    def get_result_title(self, is_initial_connect):
         return 'Placement Test'
 
-    def sync(self, is_initial_import=False, preserve_user_data=True):
+    def sync(self, is_initial_connect=False, preserve_user_data=True):
         self.sync_called = True
         self.last_preserve_user_data = preserve_user_data
         return self._sync_result
@@ -751,10 +751,10 @@ class PlacementFlowTests(SyncViewTestCase):
         self.assertSuccessResponse(response)
         body = response.content.decode()
         # Result-modal markers (NOT placement markers).
-        # Hero copy is is_initial_import-aware. Test setup leaves
+        # Hero copy is is_initial_connect-aware. Test setup leaves
         # Entity rows in the DB so the sync view sees this as a
-        # Refresh, not an Initial Import.
-        self.assertIn('Refresh complete', body)
+        # update check, not an Initial Connect.
+        self.assertIn('Update check complete', body)
         self.assertIn('Place Later', body)
         self.assertIn('Place 4 new items', body)
         self.assertIn(self._placement_url(), body)
@@ -1041,11 +1041,11 @@ class PlacementDismissAndShowTests(SyncViewTestCase):
         """The placement form's NOT NOW button (action=dismiss)
         routes back to the same placement URL where the view's
         POST handler renders the confirmation modal. GO BACK links
-        to the placement GET with is_initial_import threaded
+        to the placement GET with is_initial_connect threaded
         through."""
         response = self.client.post(self._placement_url(), {
             'action': 'dismiss',
-            'is_initial_import': '1',
+            'is_initial_connect': '1',
         })
         self.assertSuccessResponse(response)
         body = response.content.decode()
@@ -1053,8 +1053,8 @@ class PlacementDismissAndShowTests(SyncViewTestCase):
         self.assertIn('Items left unplaced', body)
         self.assertIn('GO BACK', body)
         self.assertIn('OK, PLACE LATER', body)
-        # GO BACK targets the placement GET with is_initial_import=1.
-        self.assertIn(self._placement_url() + '?is_initial_import=1', body)
+        # GO BACK targets the placement GET with is_initial_connect=1.
+        self.assertIn(self._placement_url() + '?is_initial_connect=1', body)
 
     def test_placement_get_renders_from_unplaced_entities(self):
         """The GET placement queries entities for the integration
@@ -1320,15 +1320,15 @@ class IntegrationManageViewSyncCheckContextTests(SyncViewTestCase):
         self.assertSuccessResponse(response)
         body = response.content.decode()
         self.assertIn('1 new item upstream', body)
-        # The "REFRESH" call-to-action is rendered as an inline
-        # anchor that links to the pre-sync modal, so the rendered
-        # HTML carries both the link text and the URL.
+        # The "Update" call-to-action is rendered as an
+        # inline anchor that links to the pre-sync modal, so the
+        # rendered HTML carries both the link text and the URL.
         self.assertIn(
             reverse('integrations_pre_sync',
                     kwargs={'integration_id': self.INTEGRATION_ID}),
             body,
         )
-        self.assertIn('>REFRESH</a>', body)
+        self.assertIn('>Update</a>', body)
 
     def _refresh_link_url(self):
         return reverse(

@@ -30,8 +30,8 @@ class HassSynchronizer( IntegrationSynchronizer, HassMixin ):
     def get_integration_metadata(self):
         return HassMetaData
 
-    def get_description(self, is_initial_import: bool) -> Optional[str]:
-        if is_initial_import:
+    def get_description(self, is_initial_connect: bool) -> Optional[str]:
+        if is_initial_connect:
             return 'Only items matching your Allowed Item Types setting will be imported.'
         return 'Only items matching your Allowed Item Types setting are compared.'
 
@@ -92,10 +92,10 @@ class HassSynchronizer( IntegrationSynchronizer, HassMixin ):
         hass_manager.reload()
         return
 
-    def _sync_impl( self, is_initial_import: bool ) -> IntegrationSyncResult:
+    def _sync_impl( self, is_initial_connect: bool ) -> IntegrationSyncResult:
         hass_manager = self.hass_manager()
         result = IntegrationSyncResult(
-            title = self.get_result_title( is_initial_import = is_initial_import ),
+            title = self.get_result_title( is_initial_connect = is_initial_connect ),
         )
 
         hass_client = hass_manager.hass_client

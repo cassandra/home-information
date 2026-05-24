@@ -317,8 +317,8 @@ class IntegrationSyncCheck:
     def _summary_message( delta             : SyncDelta,
                           integration_label : str ) -> str:
         """Pure-information summary of the most recent check. The
-        Refresh call-to-action is rendered as a real link by the
-        manage-page banner template (so clicking it opens the
+        update-check call-to-action is rendered as a real link by
+        the manage-page banner template (so clicking it opens the
         pre-sync modal); it is intentionally not embedded in this
         string. The same string flows into the sidebar tooltip,
         where a "click here" suffix would be misleading."""

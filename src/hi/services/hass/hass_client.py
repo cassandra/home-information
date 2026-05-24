@@ -79,7 +79,7 @@ class HassClient:
         Also validates that the response body is JSON-shaped. A 200 with
         an HTML body means we are talking to something that is not the
         HASS API (misconfigured proxy, captive portal, wrong base URL),
-        and we want test_connection to fail at save time rather than
+        and we want validate_access to fail at save time rather than
         letting the runtime sync path JSONDecodeError later.
         """
         url = f'{self._api_base_url}/api/'

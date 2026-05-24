@@ -24,15 +24,15 @@ class PlacementUrlParamsToQueryDictTests(SimpleTestCase):
     def test_defaults_produce_empty_dict(self):
         """Sparse encoding: a default-constructed params object
         contributes no query keys. Keeps URLs free of redundant
-        ``?is_initial_import=0`` cruft."""
+        ``?is_initial_connect=0`` cruft."""
         params = PlacementUrlParams()
         self.assertEqual(params.to_query_dict(), {})
 
-    def test_is_initial_import_only_emits_its_key(self):
-        params = PlacementUrlParams(is_initial_import=True)
+    def test_is_initial_connect_only_emits_its_key(self):
+        params = PlacementUrlParams(is_initial_connect=True)
         self.assertEqual(
             params.to_query_dict(),
-            {PlacementUrlParams.KEY_IS_INITIAL_IMPORT: PlacementUrlParams.TRUE_VALUE},
+            {PlacementUrlParams.KEY_IS_INITIAL_CONNECT: PlacementUrlParams.TRUE_VALUE},
         )
 
     def test_entity_ids_only_emits_its_key(self):
@@ -43,11 +43,11 @@ class PlacementUrlParamsToQueryDictTests(SimpleTestCase):
         )
 
     def test_both_fields_populated(self):
-        params = PlacementUrlParams(is_initial_import=True, entity_ids=[7, 8])
+        params = PlacementUrlParams(is_initial_connect=True, entity_ids=[7, 8])
         self.assertEqual(
             params.to_query_dict(),
             {
-                PlacementUrlParams.KEY_IS_INITIAL_IMPORT: PlacementUrlParams.TRUE_VALUE,
+                PlacementUrlParams.KEY_IS_INITIAL_CONNECT: PlacementUrlParams.TRUE_VALUE,
                 PlacementUrlParams.KEY_ENTITY_IDS: '7,8',
             },
         )
@@ -66,10 +66,10 @@ class PlacementUrlParamsAppendToUrlTests(SimpleTestCase):
         """Goes through ``django.utils.http.urlencode`` so the
         comma in ``entity_ids`` is encoded to %2C — protects against
         any future field whose value contains URL-reserved chars."""
-        params = PlacementUrlParams(is_initial_import=True, entity_ids=[1, 2])
+        params = PlacementUrlParams(is_initial_connect=True, entity_ids=[1, 2])
         url = params.append_to_url('/placement/test')
         self.assertTrue(url.startswith('/placement/test?'))
-        self.assertIn('is_initial_import=1', url)
+        self.assertIn('is_initial_connect=1', url)
         # Comma is URL-encoded by urlencode.
         self.assertIn('entity_ids=1%2C2', url)
 
@@ -84,29 +84,29 @@ class PlacementUrlParamsFromDataTests(SimpleTestCase):
         """The contract guarantee: ``to_query_dict`` →
         ``QueryDict`` → ``from_data`` reconstructs an equivalent
         params object. Any encoder/decoder asymmetry breaks this."""
-        original = PlacementUrlParams(is_initial_import=True, entity_ids=[3, 1, 4])
+        original = PlacementUrlParams(is_initial_connect=True, entity_ids=[3, 1, 4])
         qd = QueryDict(mutable=True)
         for k, v in original.to_query_dict().items():
             qd[k] = v
         roundtripped = PlacementUrlParams.from_data(qd)
         self.assertEqual(original, roundtripped)
 
-    def test_is_initial_import_accepts_robust_truthy_spellings(self):
+    def test_is_initial_connect_accepts_robust_truthy_spellings(self):
         """``str_to_bool`` accepts '1', 'true', 'yes', etc. so a
         hand-crafted URL or a future encoding change on the producer
         side doesn't silently parse as False."""
         for truthy in ('1', 'true', 'TRUE', 'yes', 'on'):
             with self.subTest(value=truthy):
-                qd = QueryDict(f'is_initial_import={truthy}')
-                self.assertTrue(PlacementUrlParams.from_data(qd).is_initial_import)
+                qd = QueryDict(f'is_initial_connect={truthy}')
+                self.assertTrue(PlacementUrlParams.from_data(qd).is_initial_connect)
 
-    def test_is_initial_import_falsy_values(self):
+    def test_is_initial_connect_falsy_values(self):
         """Anything not-truthy parses as False, including the
         canonical FALSE_VALUE encoding and absence."""
         for falsy in ('0', 'false', 'no', '', 'garbage'):
             with self.subTest(value=falsy):
-                qd = QueryDict(f'is_initial_import={falsy}')
-                self.assertFalse(PlacementUrlParams.from_data(qd).is_initial_import)
+                qd = QueryDict(f'is_initial_connect={falsy}')
+                self.assertFalse(PlacementUrlParams.from_data(qd).is_initial_connect)
 
     def test_entity_ids_parses_comma_separated_integers(self):
         qd = QueryDict('entity_ids=10,20,30')
@@ -130,23 +130,23 @@ class PlacementUrlParamsFromDataTests(SimpleTestCase):
             PlacementUrlParams.from_data(qd)
 
     def test_entity_ids_absent_returns_empty_list(self):
-        qd = QueryDict('is_initial_import=1')
+        qd = QueryDict('is_initial_connect=1')
         result = PlacementUrlParams.from_data(qd)
         self.assertEqual(result.entity_ids, [])
 
 
 class PlacementUrlParamsFormValueTests(SimpleTestCase):
 
-    def test_is_initial_import_form_value_true_returns_true_value(self):
-        params = PlacementUrlParams(is_initial_import=True)
+    def test_is_initial_connect_form_value_true_returns_true_value(self):
+        params = PlacementUrlParams(is_initial_connect=True)
         self.assertEqual(
-            params.is_initial_import_form_value(),
+            params.is_initial_connect_form_value(),
             PlacementUrlParams.TRUE_VALUE,
         )
 
-    def test_is_initial_import_form_value_false_returns_false_value(self):
-        params = PlacementUrlParams(is_initial_import=False)
+    def test_is_initial_connect_form_value_false_returns_false_value(self):
+        params = PlacementUrlParams(is_initial_connect=False)
         self.assertEqual(
-            params.is_initial_import_form_value(),
+            params.is_initial_connect_form_value(),
             PlacementUrlParams.FALSE_VALUE,
         )

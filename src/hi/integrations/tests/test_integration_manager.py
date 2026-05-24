@@ -41,7 +41,7 @@ class MockIntegrationGateway(IntegrationGateway):
         self.integration_id = integration_id
         self.label = label
         # Default to a passing probe so existing resume/pause tests don't
-        # need to know about the new test_connection step.
+        # need to know about the new validate_access step.
         self.connection_test_result = (
             connection_test_result if connection_test_result is not None
             else ConnectionTestResult.success()
@@ -64,7 +64,7 @@ class MockIntegrationGateway(IntegrationGateway):
     def get_controller(self):
         return Mock()
 
-    def test_connection(self, integration_attributes, timeout_secs):
+    def validate_access(self, integration_attributes, timeout_secs):
         return self.connection_test_result
 
 
@@ -975,7 +975,7 @@ class IntegrationManagerTestCase(TestCase):
             self.assertTrue(integration.is_paused)
 
     def test_resume_integration_passes_bounded_timeout_to_gateway(self):
-        """Resume must invoke test_connection with the configured bounded timeout."""
+        """Resume must invoke validate_access with the configured bounded timeout."""
         manager = IntegrationManager()
         manager.reset_for_testing()
 
@@ -987,7 +987,7 @@ class IntegrationManagerTestCase(TestCase):
         gateway = MockIntegrationGateway('resume_timeout_test')
         data = IntegrationData(integration_gateway=gateway, integration=integration)
 
-        with patch.object(gateway, 'test_connection',
+        with patch.object(gateway, 'validate_access',
                           return_value=ConnectionTestResult.success()) as mock_probe:
             with patch.object(manager, '_launch_integration_monitor_task'):
                 manager.resume_integration(data)
@@ -1016,7 +1016,7 @@ class IntegrationManagerTestCase(TestCase):
         data = IntegrationData(integration_gateway=gateway, integration=integration)
 
         # Simulate a concurrent disable that lands BETWEEN the lock-free
-        # probe and the lock-acquired state mutation. test_connection's
+        # probe and the lock-acquired state mutation. validate_access's
         # side_effect mutates the DB row to is_enabled=False right before
         # returning success, then resume_integration's inside-lock
         # refresh_from_db() picks that up.
@@ -1025,7 +1025,7 @@ class IntegrationManagerTestCase(TestCase):
             integration.save()
             return ConnectionTestResult.success()
 
-        with patch.object(gateway, 'test_connection',
+        with patch.object(gateway, 'validate_access',
                           side_effect=disable_during_probe):
             with patch.object(manager, '_launch_integration_monitor_task') as mock_launch:
                 with self.assertRaises(IntegrationConnectionError) as context:

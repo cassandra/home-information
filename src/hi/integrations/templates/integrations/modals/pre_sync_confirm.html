@@ -4,18 +4,18 @@
 {% comment %}
 Pre-sync confirmation modal for integrations.
 
-Shown as the last step of the Configure flow (first-time import) and
-when the operator clicks the IMPORT / REFRESH button on the
-integration manage page (subsequent refreshes). The modal confirms
-intent and explains what the operation will do; it does NOT surface
-integration health. Health is surfaced on the manage page itself, and
-an unhealthy integration's attempt will surface its failure inline
-with a useful error message.
+Shown as the last step of the Configure flow (first-time connect) and
+when the operator clicks the CONNECT / UPDATE button on
+the integration manage page (subsequent update checks). The modal
+confirms intent and explains what the operation will do; it does NOT
+surface integration health. Health is surfaced on the manage page
+itself, and an unhealthy integration's attempt will surface its
+failure inline with a useful error message.
 
-The first-time IMPORT and subsequent REFRESH paths are both rendered
-by this template. They differ in title, lead text, and primary action
-label, controlled by `is_initial_import`. The synchronizer's
-description copy is also import/refresh-aware.
+The first-time CONNECT and subsequent update-check paths are both
+rendered by this template. They differ in title, lead text, and
+primary action label, controlled by `is_initial_connect`. The
+synchronizer's description copy is also connect/update-aware.
 
 The REVIEW CONFIG action is rendered only on the first-time path: in
 that path the user just came from the Configure modal and may have
@@ -26,10 +26,10 @@ saving from there returns to this modal. On the manage-page entry
 path, the user came from the manage page and the inherited CANCEL
 already takes them "back" to it.
 
-When `removal_summary.has_mixed_state` (Refresh path with at least
-one user-data entity present), the modal symmetrically mirrors the
-disable modal's policy choice: REFRESH AND RETAIN preserves dropped
-user-data items by detaching, REFRESH AND REMOVE hard-deletes them.
+When `removal_summary.has_mixed_state` (update-check path with at
+least one user-data entity present), the modal symmetrically mirrors
+the disable modal's policy choice: RETAIN MISSING preserves dropped
+user-data items by detaching, REMOVE MISSING hard-deletes them.
 The summary is the integration's full footprint (not a per-sync
 prediction); the operator's choice expresses policy that applies at
 sync execution if any drops carry user data.
@@ -42,10 +42,10 @@ form harmlessly — it navigates rather than submitting.
 
 Context:
   integration_data        : IntegrationData (required) — for label, id.
-  is_initial_import       : bool (required) — True when no entities for
+  is_initial_connect       : bool (required) — True when no entities for
                             this integration have been imported yet
-                            (initial IMPORT); False for subsequent
-                            REFRESH operations.
+                            (initial CONNECT); False for subsequent
+                            update-check operations.
   sync_description        : Optional[str] — per-integration text from
                             IntegrationSynchronizer.get_description.
   sync_url                : str (required) — URL the form posts to.
@@ -54,10 +54,10 @@ Context:
                             modal).
   removal_summary         : Optional[IntegrationRemovalSummary] —
                             integration's user-data classification.
-                            None on the first-time import path; a
+                            None on the first-time connect path; a
                             zero-count summary when no entities are
                             attached. Drives the Retain / Remove
-                            choice on the Refresh path.
+                            choice on the update-check path.
 {% endcomment %}
 
 {% block preamble %}
@@ -66,30 +66,31 @@ Context:
 {% endblock %}
 
 {% block title_text %}
-{% if is_initial_import %}
-Import from {{ integration_data.label }}?
+{% if is_initial_connect %}
+Connect to {{ integration_data.label }}?
 {% else %}
-Refresh from {{ integration_data.label }}?
+Check {{ integration_data.label }} for updates?
 {% endif %}
 {% endblock %}
 
 {% block body %}
-{% if is_initial_import %}
+{% if is_initial_connect %}
 <p>
-  Import will pull items from <strong>{{ integration_data.label }}</strong>
-  into Home Information for the first time. Imported items can be
+  Connect will pull items from <strong>{{ integration_data.label }}</strong>
+  into Home Information for the first time. Connected items can be
   placed into your views in the next step.
 </p>
 {% else %}
 <p>
-  Refresh adds new items from <strong>{{ integration_data.label }}</strong>,
-  updates ones that have changed, and removes ones no longer present.
+  Checking for updates adds new items from
+  <strong>{{ integration_data.label }}</strong>, updates ones that
+  have changed, and removes ones no longer present.
 </p>
 {% if removal_summary.has_mixed_state %}
 <p>
   This integration has <strong>{{ removal_summary.user_data_count }}</strong>
   {% if removal_summary.user_data_count == 1 %}item{% else %}items{% endif %}
-  with custom data you've added. If a Refresh would drop
+  with custom data you've added. If an update would drop
   {% if removal_summary.user_data_count == 1 %}that item{% else %}any of them{% endif %}:
 </p>
 <ul>
@@ -113,7 +114,7 @@ Refresh from {{ integration_data.label }}?
 {% endblock %}
 
 {% block action_center %}
-{% if is_initial_import %}
+{% if is_initial_connect %}
 <a href="{{ review_config_url }}"
    role="button"
    class="btn btn-outline-primary"
@@ -129,9 +130,9 @@ Refresh from {{ integration_data.label }}?
 {% endblock %}
 
 {% block action_right %}
-{% if is_initial_import %}
+{% if is_initial_connect %}
 <button type="submit" class="btn btn-primary">
-  {% icon "upload" size="lg" css_class="hi-icon-left" %}IMPORT
+  {% icon "upload" size="lg" css_class="hi-icon-left" %}CONNECT
 </button>
 {% elif removal_summary.has_mixed_state %}
 <button type="submit" class="btn btn-primary"
@@ -140,7 +141,7 @@ Refresh from {{ integration_data.label }}?
 </button>
 {% else %}
 <button type="submit" class="btn btn-primary">
-  {% icon "sync" size="lg" css_class="hi-icon-left" %}REFRESH
+  {% icon "sync" size="lg" css_class="hi-icon-left" %}UPDATE
 </button>
 {% endif %}
 {% endblock %}

@@ -74,21 +74,21 @@ class HassGateway( IntegrationGateway ):
                 error_message=f'Configuration validation failed: {e}'
             )
 
-    def test_connection(
+    def validate_access(
             self,
             integration_attributes: List[IntegrationAttribute],
             timeout_secs: Optional[float],
     ) -> ConnectionTestResult:
-        """Live connection probe; delegates to HassManager."""
+        """Live access validation probe; delegates to HassManager."""
         try:
             hass_manager = HassManager()
-            return hass_manager.test_connection(
+            return hass_manager.validate_access(
                 integration_attributes=integration_attributes,
                 timeout_secs=timeout_secs,
             )
         except Exception as e:
-            logger.exception(f'Error in HASS connection test: {e}')
-            return ConnectionTestResult.failure(f'Connection test error: {e}')
+            logger.exception(f'Error in HASS access validation: {e}')
+            return ConnectionTestResult.failure(f'Access validation error: {e}')
 
     def get_entity_video_snapshot(self, entity: Entity) -> Optional[VideoSnapshot]:
         if not entity.has_video_snapshot:

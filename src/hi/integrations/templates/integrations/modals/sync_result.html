@@ -18,7 +18,7 @@
   the footer is a single dismissal button.
 
   The modal title bar keeps the generic HI logo + short generic
-  title ('Import Result' / 'Refresh Result'); the integration's
+  title ('Connect Result' / 'Update Check Result'); the integration's
   identity is surfaced as a body subtitle row (logo + label) where
   the white background gives the transparent integration logos
   predictable contrast.
@@ -59,7 +59,7 @@
   <div class="text-center mb-4">
     <div class="text-danger mb-1 hi-sync-result-hero-icon">&#x26A0;</div>
     <h3 class="text-danger mb-1">
-      {% if is_initial_import %}Import failed{% else %}Refresh failed{% endif %}
+      {% if is_initial_connect %}Connect failed{% else %}Update check failed{% endif %}
     </h3>
     <div class="text-muted small">
       {{ sync_result.error_list|length }} error{{ sync_result.error_list|length|pluralize }} — see details below.
@@ -69,7 +69,7 @@
   <div class="text-center mb-4">
     <div class="text-warning mb-1 hi-sync-result-hero-icon">&#x26A0;</div>
     <h3 class="text-warning mb-1">
-      {% if is_initial_import %}Import completed with errors{% else %}Refresh completed with errors{% endif %}
+      {% if is_initial_connect %}Connect completed with errors{% else %}Update check completed with errors{% endif %}
     </h3>
     <div class="text-muted small">
       {{ sync_result.error_list|length }} error{{ sync_result.error_list|length|pluralize }} — see details below.
@@ -79,13 +79,13 @@
   <div class="text-center mb-4">
     <div class="text-muted mb-1 hi-sync-result-hero-icon">&#x2014;</div>
     <h3 class="text-muted mb-1">
-      {% if is_initial_import %}Nothing to import{% else %}Nothing new{% endif %}
+      {% if is_initial_connect %}No items found.{% else %}Nothing new{% endif %}
     </h3>
     <div class="text-muted small">
-      {% if is_initial_import %}
-      No items found upstream.
+      {% if is_initial_connect %}
+      The connection succeeded but the upstream source returned no items.
       {% else %}
-      No changes since the last refresh.
+      No changes since the last update check.
       {% endif %}
     </div>
   </div>
@@ -93,7 +93,7 @@
   <div class="text-center mb-3">
     <div class="text-success mb-1 hi-sync-result-hero-icon">&#x2713;</div>
     <h3 class="text-success mb-1">
-      {% if is_initial_import %}Import complete{% else %}Refresh complete{% endif %}
+      {% if is_initial_connect %}Connect complete{% else %}Update check complete{% endif %}
     </h3>
   </div>
 
