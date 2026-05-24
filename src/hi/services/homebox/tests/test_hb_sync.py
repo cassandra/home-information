@@ -1,6 +1,6 @@
 import logging
 from contextlib import ExitStack, nullcontext
-from unittest.mock import ANY, Mock, patch
+from unittest.mock import Mock, patch
 
 from django.test import SimpleTestCase
 
@@ -8,7 +8,7 @@ from hi.apps.entity.models import Entity
 from hi.integrations.sync_result import IntegrationSyncResult
 from hi.integrations.transient_models import IntegrationKey
 from hi.services.homebox.hb_metadata import HbMetaData
-from hi.services.homebox.importer.hb_sync import HomeBoxSynchronizer
+from hi.services.homebox.connector.hb_sync import HomeBoxSynchronizer
 from hi.testing.async_task_utils import AsyncTaskTestCase
 
 
@@ -66,13 +66,13 @@ class TestHomeBoxSynchronizer(SimpleTestCase):
         with ExitStack() as stack:
             stack.enter_context(
                 patch(
-                    'hi.services.homebox.importer.hb_sync.transaction.atomic',
+                    'hi.services.homebox.connector.hb_sync.transaction.atomic',
                     return_value=nullcontext(),
                 )
             )
             stack.enter_context(
                 patch(
-                    'hi.services.homebox.importer.hb_sync.HbConverter.hb_item_to_integration_key',
+                    'hi.services.homebox.connector.hb_sync.HbConverter.hb_item_to_integration_key',
                     side_effect=key_from_item,
                 )
             )
@@ -98,13 +98,6 @@ class TestHomeBoxSynchronizer(SimpleTestCase):
             )
             remove_entity_mock = stack.enter_context(
                 patch.object(synchronizer, '_remove_entity')
-            )
-            # Connect-mode: _sync_helper_entity_attributes is no
-            # longer called during sync (HomeBox attributes are
-            # fetched live by the connector). Patch it anyway and
-            # assert it is NOT called, to pin the new contract.
-            sync_attrs_mock = stack.enter_context(
-                patch.object(synchronizer, '_sync_helper_entity_attributes')
             )
             # Reconnect pre-pass (Issue #281) is framework-level on
             # IntegrationSynchronizer.reconnect_disconnected_items and
@@ -132,169 +125,9 @@ class TestHomeBoxSynchronizer(SimpleTestCase):
             result=result,
         )
 
-        # Connect-mode contract: sync no longer creates/updates/
-        # removes EntityAttribute rows. The attribute-sync helper is
-        # not invoked by the Connect-mode sync flow.
-        self.assertEqual(sync_attrs_mock.call_count, 0)
-
         self.assertIn('Found 2 existing HomeBox items.', result.info_list)
         self.assertTrue(any('Ignoring HomeBox item due to missing/invalid id' in message
                             for message in result.error_list))
-
-    def test_sync_helper_entity_attributes_create_update_remove_fields_and_attachments(self):
-        synchronizer = HomeBoxSynchronizer()
-        result = IntegrationSyncResult(title='HomeBox Import Result')
-
-        entity = Mock(name='entity')
-        entity.id = 10
-
-        field_existing = {'id': 'field-existing', 'name': 'Field Existing'}
-        field_new = {'id': 'field-new', 'name': 'Field New'}
-        attachment_existing = {'id': 'attachment-existing', 'name': 'Attachment Existing'}
-        attachment_new = {'id': 'attachment-new', 'name': 'Attachment New'}
-
-        field_existing_key = self._key('field:field-existing')
-        field_new_key = self._key('field:field-new')
-        attachment_existing_key = self._key('field:attachment-existing')
-        attachment_new_key = self._key('field:attachment-new')
-        stale_key = self._key('field:stale-field')
-        foreign_key = self._key('field:foreign-field')
-
-        existing_field_attr = Mock(name='existing_field_attr')
-        existing_field_attr.entity_id = entity.id
-        existing_attachment_attr = Mock(name='existing_attachment_attr')
-        existing_attachment_attr.entity_id = entity.id
-        stale_attr = Mock(name='stale_attr')
-        stale_attr.entity_id = entity.id
-        stale_attr.name = 'Stale Field'
-        foreign_attr = Mock(name='foreign_attr')
-        foreign_attr.entity_id = entity.id + 1
-
-        created_field_attr = Mock(name='created_field_attr')
-        created_field_attr.name = 'Field New'
-        created_attachment_attr = Mock(name='created_attachment_attr')
-        created_attachment_attr.name = 'Attachment New'
-
-        field_key_by_id = {
-            'field-existing': field_existing_key,
-            'field-new': field_new_key,
-        }
-        attachment_key_by_id = {
-            'attachment-existing': attachment_existing_key,
-            'attachment-new': attachment_new_key,
-        }
-
-        def field_key_from_field(hb_field):
-            return field_key_by_id.get(hb_field.get('id'))
-
-        def attachment_key_from_attachment(hb_attachment):
-            return attachment_key_by_id.get(hb_attachment.get('id'))
-
-        with ExitStack() as stack:
-            stack.enter_context(
-                patch(
-                    'hi.services.homebox.importer.hb_sync.transaction.atomic',
-                    return_value=nullcontext(),
-                )
-            )
-            stack.enter_context(
-                patch(
-                    'hi.services.homebox.importer.hb_sync.HbConverter.hb_item_to_attribute_field_list',
-                    return_value=[field_existing, field_new],
-                )
-            )
-            stack.enter_context(
-                patch(
-                    'hi.services.homebox.importer.hb_sync.HbConverter.hb_field_to_integration_key',
-                    side_effect=field_key_from_field,
-                )
-            )
-            stack.enter_context(
-                patch(
-                    'hi.services.homebox.importer.hb_sync.HbConverter.hb_item_to_attachment_field_list',
-                    return_value=[attachment_existing, attachment_new],
-                )
-            )
-            stack.enter_context(
-                patch(
-                    'hi.services.homebox.importer.hb_sync.HbConverter.hb_attachment_to_integration_key',
-                    side_effect=attachment_key_from_attachment,
-                )
-            )
-            stack.enter_context(
-                patch.object(
-                    synchronizer,
-                    '_get_existing_hb_attributes',
-                    return_value={
-                        field_existing_key: existing_field_attr,
-                        attachment_existing_key: existing_attachment_attr,
-                        stale_key: stale_attr,
-                        foreign_key: foreign_attr,
-                    },
-                )
-            )
-            update_attr_mock = stack.enter_context(
-                patch.object(synchronizer, '_update_attribute')
-            )
-            create_attr_mock = stack.enter_context(
-                patch.object(
-                    synchronizer,
-                    '_create_attribute',
-                    return_value=created_field_attr,
-                )
-            )
-            update_attachment_mock = stack.enter_context(
-                patch.object(synchronizer, '_update_attachment_attribute')
-            )
-            create_attachment_mock = stack.enter_context(
-                patch.object(
-                    synchronizer,
-                    '_create_attachment_attribute',
-                    return_value=created_attachment_attr,
-                )
-            )
-
-            synchronizer._sync_helper_entity_attributes(
-                entity=entity,
-                hb_item=Mock(),
-                result=result,
-            )
-
-        update_attr_mock.assert_called_once_with(
-            attribute=existing_field_attr,
-            hb_field=field_existing,
-            order_id=0,
-            message_list=ANY,
-            updated_prefix='Field attribute updated',
-        )
-        create_attr_mock.assert_called_once_with(
-            entity=entity,
-            hb_field=field_new,
-            order_id=1,
-        )
-
-        update_attachment_mock.assert_called_once_with(
-            attribute=existing_attachment_attr,
-            hb_attachment=attachment_existing,
-            order_id=2,
-            message_list=ANY,
-            updated_prefix='Attachment attribute updated',
-        )
-        create_attachment_mock.assert_called_once_with(
-            entity=entity,
-            hb_attachment=attachment_new,
-            order_id=3,
-        )
-
-        stale_attr.delete.assert_called_once()
-        foreign_attr.delete.assert_not_called()
-
-        # Per-attribute change detail is no longer surfaced in the
-        # sync result (counts at the entity level capture the
-        # operator-relevant signal). The persistence behavior above
-        # — created/updated/deleted attribute records — remains the
-        # contract this test pins.
-        self.assertEqual(result.info_list, [])
 
 
 class TestHomeBoxSynchronizerSyncResultGrouping(SimpleTestCase):
@@ -362,7 +195,7 @@ class TestHomeBoxSynchronizerRebuildIntegrationComponents(SimpleTestCase):
     Issue #281: the per-integration ``_rebuild_integration_components``
     override is the only piece each synchronizer contributes to the
     framework-level reconnect path. This test verifies that
-    HomeBoxSynchronizer's override dispatches to ``HbConverter`` with
+    HomeBoxSynchronizer's override dispatches to ``HbEntityFactory`` with
     the existing-entity argument set. Framework-level behavior
     (find candidates, strip prefix, clear previous identity, update
     entity map, info_list note) is covered by tests of
@@ -377,7 +210,7 @@ class TestHomeBoxSynchronizerRebuildIntegrationComponents(SimpleTestCase):
         upstream = Mock(name='hb_item')
 
         with patch(
-                'hi.services.homebox.importer.hb_sync.HbImporter.create_models_for_hb_item'
+                'hi.services.homebox.connector.hb_sync.HbEntityFactory.create_models_for_hb_item'
         ) as mock_converter:
             synchronizer._rebuild_integration_components(
                 entity=existing_entity,

@@ -4,10 +4,8 @@ from unittest.mock import Mock
 from django.test import TestCase
 
 from hi.apps.attribute.enums import AttributeValueType
-from hi.apps.entity.enums import EntityType
-from hi.apps.entity.models import Entity
+from hi.services.homebox.connector.hb_entity_factory import HbEntityFactory
 from hi.services.homebox.importer.hb_importer import HbImporter
-from hi.services.homebox.hb_metadata import HbMetaData
 from hi.services.homebox.shared.hb_models import HbItem
 
 
@@ -33,77 +31,9 @@ class TestHbImporter(TestCase):
 
         return HbItem(api_dict=api_dict, client=client)
 
-    def test_create_models_for_hb_item_creates_entity(self):
-        item = self._mock_item(item_id='item-create', name='Drill')
-
-        entity = HbImporter.create_models_for_hb_item(hb_item=item)
-
-        self.assertIsInstance(entity, Entity)
-        self.assertEqual(entity.integration_id, HbMetaData.integration_id)
-        self.assertEqual(entity.integration_name, 'item-create')
-        self.assertEqual(entity.name, 'Drill')
-        self.assertEqual(entity.entity_type, EntityType.OTHER)
-        self.assertFalse(entity.allow_internal_attributes)
-        self.assertNotIn('description', entity.integration_payload)
-        self.assertEqual(entity.integration_payload.get('location', {}).get('name'), 'Garage')
-        self.assertEqual(entity.integration_payload.get('tags')[0].get('name'), 'Tools')
-
-    def test_create_models_with_existing_entity_does_not_create_new_and_preserves_name(self):
-        """Issue #281 reconnect contract: when an existing Entity is
-        passed in, repopulate its integration-owned fields without
-        creating a new row and without overwriting the (possibly
-        user-edited) name."""
-        existing = Entity.objects.create(
-            name='User Renamed Item',
-            entity_type_str=str(EntityType.SERVICE),
-        )
-        baseline_count = Entity.objects.count()
-        item = self._mock_item(item_id='item-reconnect', name='Upstream Drill Name')
-
-        returned = HbImporter.create_models_for_hb_item(
-            hb_item=item,
-            entity=existing,
-        )
-
-        self.assertEqual(Entity.objects.count(), baseline_count)
-        self.assertEqual(returned.id, existing.id)
-        existing.refresh_from_db()
-        # Name preserved (NOT 'Upstream Drill Name').
-        self.assertEqual(existing.name, 'User Renamed Item')
-        # Integration-owned fields repopulated from upstream.
-        self.assertEqual(existing.integration_id, HbMetaData.integration_id)
-        self.assertEqual(existing.integration_name, 'item-reconnect')
-        self.assertEqual(
-            existing.integration_payload.get('location', {}).get('name'),
-            'Garage',
-        )
-
-    def test_update_models_for_hb_item_updates_name_type_and_payload(self):
-        entity = Entity.objects.create(
-            name='Old Name',
-            entity_type_str=str(EntityType.SERVICE),
-            can_user_delete=False,
-            allow_internal_attributes=True,
-            integration_id=HbMetaData.integration_id,
-            integration_name='item-update',
-            integration_payload={'quantity': 1},
-        )
-
-        item = self._mock_item(item_id='item-update', name='New Name', description='new', quantity=3)
-
-        messages = HbImporter.update_models_for_hb_item(entity=entity, hb_item=item)
-
-        self.assertTrue(messages)
-        entity.refresh_from_db()
-        self.assertEqual(entity.name, 'New Name')
-        self.assertEqual(entity.entity_type, EntityType.OTHER)
-        self.assertFalse(entity.allow_internal_attributes)
-        self.assertNotIn('description', entity.integration_payload)
-        self.assertEqual(entity.integration_payload.get('quantity'), 3)
-
     def test_create_and_update_file_attribute_from_attachment(self):
         item = self._mock_item(item_id='item-file-sync')
-        entity = HbImporter.create_models_for_hb_item(hb_item=item)
+        entity = HbEntityFactory.create_models_for_hb_item(hb_item=item)
 
         attachment = {
             'id': 'att-2',

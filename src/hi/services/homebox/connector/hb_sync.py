@@ -4,7 +4,7 @@ from typing import Dict, List, Optional
 from asgiref.sync import sync_to_async
 from django.db import transaction
 
-from hi.apps.entity.models import Entity, EntityAttribute
+from hi.apps.entity.models import Entity
 
 from hi.integrations.integration_synchronizer import IntegrationSynchronizer
 from hi.integrations.sync_check import IntegrationSyncCheck, SyncDelta
@@ -15,7 +15,7 @@ from hi.services.homebox.shared.hb_converter import HbConverter
 from hi.services.homebox.hb_metadata import HbMetaData
 from hi.services.homebox.hb_mixins import HomeBoxMixin
 from hi.services.homebox.shared.hb_models import HbItem
-from .hb_importer import HbImporter
+from .hb_entity_factory import HbEntityFactory
 
 logger = logging.getLogger(__name__)
 
@@ -195,10 +195,10 @@ class HomeBoxSynchronizer( IntegrationSynchronizer, HomeBoxMixin ):
                                          entity   : Entity,
                                          upstream : HbItem,
                                          result   : IntegrationSyncResult ):
-        """Reconnect hook: dispatch to ``HbImporter`` with the existing
+        """Reconnect hook: dispatch to ``HbEntityFactory`` with the existing
         entity so integration-owned components are repopulated on the
         previously-disconnected entity rather than creating a new one."""
-        HbImporter.create_models_for_hb_item(
+        HbEntityFactory.create_models_for_hb_item(
             hb_item = upstream,
             entity = entity,
         )
@@ -227,7 +227,7 @@ class HomeBoxSynchronizer( IntegrationSynchronizer, HomeBoxMixin ):
     def _create_entity( self,
                         item : HbItem,
                         result : IntegrationSyncResult ) -> Entity:
-        entity = HbImporter.create_models_for_hb_item( hb_item = item )
+        entity = HbEntityFactory.create_models_for_hb_item( hb_item = item )
         result.created_list.append( entity.name )
         return entity
 
@@ -238,7 +238,7 @@ class HomeBoxSynchronizer( IntegrationSynchronizer, HomeBoxMixin ):
         # update_models_for_hb_item returns a list of change
         # description strings — non-empty means at least one
         # operator-visible change was made.
-        change_messages = HbImporter.update_models_for_hb_item(
+        change_messages = HbEntityFactory.update_models_for_hb_item(
             entity = entity, hb_item = item,
         )
         if change_messages and entity.name not in result.updated_list:
@@ -249,207 +249,4 @@ class HomeBoxSynchronizer( IntegrationSynchronizer, HomeBoxMixin ):
                         entity : Entity,
                         result : IntegrationSyncResult ):
         self._remove_entity_intelligently( entity, result )
-        return
-
-    def _sync_helper_entity_attributes( self,
-                                        entity: Entity,
-                                        hb_item: HbItem,
-                                        result: IntegrationSyncResult ):
-        attribute_message_list = list()
-
-        integration_key_to_regular_field = dict()
-        hb_field_list = HbConverter.hb_item_to_attribute_field_list( hb_item = hb_item )
-        for order_id, hb_field in enumerate( hb_field_list ):
-            if not isinstance( hb_field, dict ):
-                continue
-
-            integration_key = HbConverter.hb_field_to_integration_key( hb_field = hb_field )
-            if integration_key:
-                integration_key_to_regular_field[integration_key] = (hb_field, order_id)
-
-        integration_key_to_attachment = dict()
-        attachment_list = HbConverter.hb_item_to_attachment_field_list( hb_item = hb_item )
-        field_count = len( hb_field_list )
-        for order_id, hb_attachment in enumerate( attachment_list, start = field_count ):
-            if not isinstance( hb_attachment, dict ):
-                continue
-
-            integration_key = HbConverter.hb_attachment_to_integration_key( hb_attachment = hb_attachment )
-            if integration_key:
-                integration_key_to_attachment[integration_key] = ( hb_attachment, order_id )
-
-        active_integration_keys = set(integration_key_to_regular_field.keys())
-        active_integration_keys.update(integration_key_to_attachment.keys())
-
-        integration_key_to_attr = self._get_existing_hb_attributes(entity = entity)
-
-        with transaction.atomic():
-
-            for integration_key, field_data in integration_key_to_regular_field.items():
-                hb_field, order_id = field_data
-                attribute = integration_key_to_attr.get( integration_key )
-
-                if attribute:
-                    self._update_attribute(
-                        attribute = attribute,
-                        hb_field = hb_field,
-                        order_id = order_id,
-                        message_list = attribute_message_list,
-                        updated_prefix = 'Field attribute updated',
-                    )
-                else:
-                    created_attribute = self._create_attribute(
-                        entity = entity,
-                        hb_field = hb_field,
-                        order_id = order_id,
-                    )
-                    if created_attribute:
-                        integration_key_to_attr[integration_key] = created_attribute
-                        attribute_message_list.append(
-                            f'Field attribute added: {created_attribute.name}'
-                        )
-                continue
-
-            for integration_key, hb_attachment_tuple in integration_key_to_attachment.items():
-                hb_attachment, order_id = hb_attachment_tuple
-                attribute = integration_key_to_attr.get( integration_key )
-
-                if attribute:
-                    self._update_attachment_attribute(
-                        attribute = attribute,
-                        hb_attachment = hb_attachment,
-                        order_id = order_id,
-                        message_list = attribute_message_list,
-                        updated_prefix = 'Attachment attribute updated',
-                    )
-                else:
-                    created_attribute = self._create_attachment_attribute(
-                        entity = entity,
-                        hb_attachment = hb_attachment,
-                        order_id = order_id,
-                    )
-                    if created_attribute:
-                        integration_key_to_attr[integration_key] = created_attribute
-                        attribute_message_list.append(
-                            f'Attachment attribute added: {created_attribute.name}'
-                        )
-                continue
-
-            for field_key, attribute in list( integration_key_to_attr.items() ):
-                if attribute.entity_id != entity.id:
-                    continue
-
-                if field_key not in active_integration_keys:
-                    self._remove_attribute( attribute = attribute, message_list = attribute_message_list )
-                    del integration_key_to_attr[field_key]
-                continue
-
-        # An attribute-level change still means this entity was
-        # modified by the sync. Mark it in updated_list (with dedup
-        # against the entity-level path above) so the operator
-        # sees the entity name. Skip the mark when this entity was
-        # just created — its attributes are new because the entity
-        # is new, not because of a refresh-time update. Per-attribute
-        # detail itself stays internal — entity-name granularity is
-        # the contract.
-        if (
-            attribute_message_list
-            and entity.name not in result.created_list
-            and entity.name not in result.updated_list
-        ):
-            result.updated_list.append( entity.name )
-        return
-    
-    def _get_existing_hb_attributes( self, entity: Entity ) -> Dict[ IntegrationKey, EntityAttribute ]:
-        integration_key_to_attribute = dict()
-
-        queryset = entity.attributes.filter(
-            integration_key_str__isnull = False
-        ).exclude( integration_key_str = '' )
-
-        for attribute in queryset:
-            try:
-                integration_key = IntegrationKey.from_string( attribute.integration_key_str )
-            except Exception:
-                logger.debug(
-                    'Ignoring entity attribute with invalid integration key: '
-                    f'{attribute.integration_key_str}'
-                )
-                continue
-
-            integration_key_to_attribute[integration_key] = attribute
-
-        return integration_key_to_attribute
-
-    def _create_attribute( self,
-                           entity: Entity,
-                           hb_field: dict,
-                           order_id: int ) -> EntityAttribute:
-        return HbImporter.create_attribute_from_hb_field(
-            entity = entity,
-            hb_field = hb_field,
-            order_id = order_id,
-        )
-
-    def _update_attribute( self,
-                           attribute: EntityAttribute,
-                           hb_field: dict,
-                           order_id: int,
-                           message_list: List[str],
-                           updated_prefix: str ):
-        was_changed = HbImporter.update_attribute_from_hb_field(
-            attribute = attribute,
-            hb_field = hb_field,
-            order_id = order_id,
-        )
-        if was_changed:
-            message = (
-                f'{updated_prefix}: '
-                f'{HbConverter.hb_field_to_attribute_name( hb_field = hb_field )}'
-            )
-            message_list.append( message )
-        return
-
-    def _remove_attribute( self,
-                           attribute: EntityAttribute,
-                           message_list: List[str] ):
-        # Hard-delete: these are integration-owned attributes (not
-        # editable by the user), so the SoftDeleteAttributeModel's
-        # default soft-delete + restore affordance doesn't apply.
-        # Soft-deleting would surface the row under "Deleted
-        # Attributes" with a restore button, and a restore creates
-        # an inconsistency between HI and the integration's source
-        # of truth.
-        old_name = attribute.name
-        attribute.delete( hard_delete = True )
-        message_list.append( f'Field attribute removed: {old_name}' )
-        return
-
-    def _create_attachment_attribute( self,
-                                      entity: Entity,
-                                      hb_attachment: dict,
-                                      order_id: int ) -> EntityAttribute:
-        return HbImporter.create_attribute_from_hb_attachment(
-            entity = entity,
-            hb_attachment = hb_attachment,
-            order_id = order_id,
-        )
-
-    def _update_attachment_attribute( self,
-                                      attribute: EntityAttribute,
-                                      hb_attachment: dict,
-                                      order_id: int,
-                                      message_list: List[str],
-                                      updated_prefix: str ):
-        was_changed = HbImporter.update_attribute_from_hb_attachment(
-            attribute = attribute,
-            hb_attachment = hb_attachment,
-            order_id = order_id,
-        )
-        if was_changed:
-            message = (
-                f'{updated_prefix}: '
-                f'{HbConverter.hb_attachment_to_attribute_name( hb_attachment = hb_attachment )}'
-            )
-            message_list.append( message )
         return

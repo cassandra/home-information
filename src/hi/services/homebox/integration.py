@@ -22,7 +22,7 @@ from .hb_controller import HomeBoxController
 from .hb_manage_view_pane import HbManageViewPane
 from .shared.hb_manager import HomeBoxManager
 from .hb_metadata import HbMetaData
-from .importer.hb_sync import HomeBoxSynchronizer
+from .connector.hb_sync import HomeBoxSynchronizer
 from .monitors import HomeBoxMonitor
 
 logger = logging.getLogger(__name__)
