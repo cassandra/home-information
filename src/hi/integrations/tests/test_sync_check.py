@@ -233,6 +233,20 @@ class CacheHelperTests(TestCase):
         IntegrationSyncCheck.clear_state('')
         # No exceptions; nothing to assert beyond reaching here.
 
+    def test_unreadable_cache_entry_is_evicted_and_returns_none(self):
+        # A pickled entry written before a class rename / module move
+        # will fail to deserialize on read. The defensive guard in
+        # get_state must catch, evict the bad key, and degrade to a
+        # cache miss rather than propagate the exception.
+        cache_key = IntegrationSyncCheck._cache_key(self.INTEGRATION_A)
+        with patch.object(cache, 'get', side_effect=ModuleNotFoundError(
+                "No module named 'hi.integrations.old_path'")):
+            with patch.object(cache, 'delete') as mock_delete:
+                self.assertIsNone(
+                    IntegrationSyncCheck.get_state(self.INTEGRATION_A),
+                )
+                mock_delete.assert_called_once_with(cache_key)
+
     def test_record_sync_complete_writes_zero_delta_with_timestamp(self):
         # Pre-populate a stale "needs sync" state.
         IntegrationSyncCheck.set_state(
