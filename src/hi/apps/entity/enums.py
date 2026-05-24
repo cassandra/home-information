@@ -198,6 +198,12 @@ class EntityType(LabeledEnum):
         return f'entity/modals/entity_status_{self.name.lower()}.html'
 
 
+class EntityDataSource(LabeledEnum):
+
+    INTERNAL = ('Internal', 'HI is the source of truth.')
+    EXTERNAL = ('External', 'An upstream system is the source of truth.')
+
+
 class EntityStateValue(LabeledEnum):
     # Alarm-style values (e.g., ACTIVE, OPEN, SMOKE_DETECTED) are
     # rendered as the ``status`` attribute on both the SVG icon

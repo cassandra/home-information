@@ -16,6 +16,7 @@ from hi.integrations.models import IntegrationDetailsModel
 from hi.enums import ItemType
 
 from .enums import (
+    EntityDataSource,
     EntityType,
     EntityStateRole,
     EntityStateType,
@@ -56,6 +57,12 @@ class Entity( IntegrationDetailsModel, LocationItemModelMixin ):
     allow_internal_attributes = models.BooleanField(
         'Allow Internal Attributes?',
         default = True,
+    )
+    data_source_str = models.CharField(
+        'Data Source',
+        max_length = 16,
+        null = False, blank = False,
+        default = str(EntityDataSource.INTERNAL),
     )
     has_video_stream = models.BooleanField(
         'Has Video Stream',
@@ -125,6 +132,15 @@ class Entity( IntegrationDetailsModel, LocationItemModelMixin ):
     @entity_type.setter
     def entity_type( self, entity_type : EntityType ):
         self.entity_type_str = str(entity_type)
+        return
+
+    @property
+    def data_source(self) -> EntityDataSource:
+        return EntityDataSource.from_name_safe( self.data_source_str )
+
+    @data_source.setter
+    def data_source( self, data_source : EntityDataSource ):
+        self.data_source_str = str(data_source)
         return
 
     @property

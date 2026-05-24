@@ -1,9 +1,12 @@
+import importlib
 import json
 import logging
+
+from django.apps import apps as django_apps
 from django.db import IntegrityError
 
 from hi.apps.entity.models import Entity, EntityAttribute, EntityState
-from hi.apps.entity.enums import EntityStateRole, EntityType, EntityStateType
+from hi.apps.entity.enums import EntityDataSource, EntityStateRole, EntityType, EntityStateType
 from hi.apps.attribute.enums import AttributeValueType
 from hi.testing.base_test_case import BaseTestCase
 
@@ -76,14 +79,77 @@ class TestEntity(BaseTestCase):
             integration_id='test_device_001',
             integration_name='test_integration',
         )
-        
+
         # Test getter converts string to enum
         self.assertEqual(entity.entity_type, EntityType.LIGHT)
-        
+
         # Test setter converts enum to string (lowercase)
         entity.entity_type = EntityType.CAMERA
         self.assertEqual(entity.entity_type_str, str(EntityType.CAMERA).lower())
         self.assertEqual(entity.entity_type, EntityType.CAMERA)
+        return
+
+    def test_data_source_defaults_to_internal(self):
+        entity = Entity.objects.create(
+            name='Default Source Entity',
+            entity_type_str=str(EntityType.OTHER),
+            integration_id='ds_default_001',
+            integration_name='test_integration',
+        )
+        self.assertEqual(entity.data_source, EntityDataSource.INTERNAL)
+        self.assertEqual(entity.data_source_str, str(EntityDataSource.INTERNAL))
+        return
+
+    def test_data_source_property_conversion(self):
+        entity = Entity.objects.create(
+            name='Source Entity',
+            entity_type_str=str(EntityType.OTHER),
+            integration_id='ds_conv_001',
+            integration_name='test_integration',
+        )
+        entity.data_source = EntityDataSource.EXTERNAL
+        self.assertEqual(entity.data_source_str, str(EntityDataSource.EXTERNAL))
+        self.assertEqual(entity.data_source, EntityDataSource.EXTERNAL)
+        entity.data_source = EntityDataSource.INTERNAL
+        self.assertEqual(entity.data_source, EntityDataSource.INTERNAL)
+        return
+
+    def test_migration_0021_backfill_marks_external_only_when_integration_disallows_internal_attrs(self):
+        # Migration 0021's backfill rule: integration-attached entities
+        # whose integration disallows internal attributes get marked
+        # EXTERNAL. Everything else stays at the column default (INTERNAL).
+        # Today this picks out HomeBox-Connect entities and leaves
+        # native + HA/ZM/Frigate alone.
+        native = Entity.objects.create(
+            name='Native',
+            entity_type_str=str(EntityType.OTHER),
+        )
+        hass_like = Entity.objects.create(
+            name='HASS-like',
+            entity_type_str=str(EntityType.OTHER),
+            integration_id='hass',
+            integration_name='hass_thing',
+            allow_internal_attributes=True,
+        )
+        hb_like = Entity.objects.create(
+            name='HB-like',
+            entity_type_str=str(EntityType.OTHER),
+            integration_id='hb',
+            integration_name='hb_item_1',
+            allow_internal_attributes=False,
+        )
+
+        mig = importlib.import_module(
+            'hi.apps.entity.migrations.0021_entity_data_source',
+        )
+        mig.backfill_data_source(django_apps, schema_editor=None)
+
+        native.refresh_from_db()
+        hass_like.refresh_from_db()
+        hb_like.refresh_from_db()
+        self.assertEqual(native.data_source, EntityDataSource.INTERNAL)
+        self.assertEqual(hass_like.data_source, EntityDataSource.INTERNAL)
+        self.assertEqual(hb_like.data_source, EntityDataSource.EXTERNAL)
         return
 
     def test_entity_type_property_handles_unknown_types_gracefully(self):
