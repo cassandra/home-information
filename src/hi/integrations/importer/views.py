@@ -29,7 +29,10 @@ from hi.integrations.integration_attribute_edit_context import (
 from hi.integrations.integration_manager import IntegrationManager
 from hi.integrations.integration_metadata_cache import IntegrationMetadataCache
 from hi.integrations.placement_request import PlacementUrlParams
-from hi.integrations.view_mixins import IntegrationViewMixin
+from hi.integrations.view_mixins import (
+    CapabilityBlockViewMixin,
+    IntegrationViewMixin,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -81,7 +84,10 @@ class DataImportPageView( ConfigPageView, IntegrationViewMixin ):
         }
 
 
-class ImporterConfigureView( HiModalView, IntegrationViewMixin, AttributeEditViewMixin ):
+class ImporterConfigureView( HiModalView,
+                             IntegrationViewMixin,
+                             CapabilityBlockViewMixin,
+                             AttributeEditViewMixin ):
     """Credentials form for IMPORT. The form's submit (IMPORT) runs
     validate_configuration + validate_access, fetches candidates, and
     renders the preview modal with new/skipped counts. No DB writes
@@ -96,6 +102,24 @@ class ImporterConfigureView( HiModalView, IntegrationViewMixin, AttributeEditVie
         integration_data = self.get_integration_data(
             integration_id = integration_id,
         )
+
+        # Mode-switch guard fires only on the initial-Import path
+        # (no Import entities yet). Re-import of an integration that
+        # already has imported entities does NOT block — that's the
+        # standard incremental-import flow.
+        has_imported = Entity.objects.filter(
+            integration_id = integration_data.integration_id,
+            data_source_str = str(EntityDataSource.INTERNAL),
+        ).exists()
+        if not has_imported:
+            block_response = self.render_capability_block_if_conflict(
+                request = request,
+                integration_data = integration_data,
+                capability_being_initiated = IntegrationCapability.IMPORT,
+            )
+            if block_response is not None:
+                return block_response
+
         integration_manager.ensure_all_attributes_exist(
             integration_metadata = integration_data.integration_metadata,
             integration = integration_data.integration,

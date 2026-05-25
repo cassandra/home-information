@@ -32,7 +32,11 @@ from hi.integrations.integration_attribute_edit_context import IntegrationAttrib
 from hi.integrations.placement_request import PlacementFormParser, PlacementUrlParams
 from .sync_check import IntegrationSyncCheck
 from .sync_result import IntegrationSyncResult
-from hi.integrations.view_mixins import IntegrationPlacementViewMixin, IntegrationViewMixin
+from hi.integrations.view_mixins import (
+    CapabilityBlockViewMixin,
+    IntegrationPlacementViewMixin,
+    IntegrationViewMixin,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -351,7 +355,10 @@ class IntegrationRefineView( View ):
         ) )
 
 
-class IntegrationEnableView( HiModalView, IntegrationViewMixin, AttributeEditViewMixin ):
+class IntegrationEnableView( HiModalView,
+                             IntegrationViewMixin,
+                             CapabilityBlockViewMixin,
+                             AttributeEditViewMixin ):
 
     def get_template_name( self ) -> str:
         return 'integrations/modals/integration_enable.html'
@@ -362,6 +369,19 @@ class IntegrationEnableView( HiModalView, IntegrationViewMixin, AttributeEditVie
         integration_data = self.get_integration_data(
             integration_id = integration_id,
         )
+
+        # Mode-switch guard fires only on the initial-Connect path
+        # (is_enabled=False). Re-Configure of an already-enabled
+        # integration always proceeds.
+        if not integration_data.integration.is_enabled:
+            block_response = self.render_capability_block_if_conflict(
+                request = request,
+                integration_data = integration_data,
+                capability_being_initiated = IntegrationCapability.CONNECT,
+            )
+            if block_response is not None:
+                return block_response
+
         integration_manager.ensure_all_attributes_exist(
             integration_metadata = integration_data.integration_metadata,
             integration = integration_data.integration,

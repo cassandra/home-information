@@ -1,0 +1,24 @@
+{% extends "modals/action_2_with_cancel.html" %}
+{% load icons %}
+
+{% block header_class %}bg-secondary{% endblock %}
+
+{% block title_text %}
+{{ title }}
+{% endblock %}
+
+{% block body %}
+<p>
+  {{ integration_data.label }} {{ existing_mode_clause }}
+  <strong>{{ existing_count }}</strong>
+  {% if existing_count == 1 %}item{% else %}items{% endif %}.
+  To {{ desired_action_clause }}, first {{ remediation_clause }}.
+</p>
+{% endblock %}
+
+{% block action_right %}
+<a class="btn btn-primary" role="button"
+   href="{{ link_url }}" data-async="page">
+  {% icon "chevron-right" size="sm" css_class="hi-icon-left" %}{{ link_label }}
+</a>
+{% endblock %}

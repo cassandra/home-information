@@ -8,7 +8,11 @@ from unittest.mock import Mock, patch
 from django.urls import reverse
 
 from hi.apps.attribute.enums import AttributeValueType
-from hi.integrations.enums import IntegrationAttributeType, IntegrationDisableMode
+from hi.integrations.enums import (
+    IntegrationAttributeType,
+    IntegrationCapability,
+    IntegrationDisableMode,
+)
 from hi.integrations.integration_data import IntegrationData
 from hi.integrations.integration_gateway import IntegrationGateway
 from hi.integrations.integration_manager import IntegrationManager
@@ -232,10 +236,15 @@ class _SyncTestHealthStatusProvider:
 class _SyncCapableGateway(IntegrationGateway):
     """Gateway that provides a synchronizer + health provider."""
 
-    def __init__(self, integration_id='sync_view_test', synchronizer=None):
+    def __init__(self, integration_id='sync_view_test', synchronizer=None,
+                 capabilities=None):
         self.integration_id = integration_id
         self._synchronizer = (
             synchronizer if synchronizer is not None else _SyncTestSynchronizer()
+        )
+        self._capabilities = (
+            capabilities if capabilities is not None
+            else frozenset({ IntegrationCapability.CONNECT })
         )
 
     def get_metadata(self):
@@ -244,6 +253,7 @@ class _SyncCapableGateway(IntegrationGateway):
             label='Sync View Test Integration',
             attribute_type=_PauseResumeTestAttributeType,
             allow_entity_deletion=True,
+            capabilities=self._capabilities,
         )
 
     def get_manage_view_pane(self):
@@ -520,6 +530,81 @@ class EnableViewTests(SyncViewTestCase):
         self.assertSuccessResponse(response)
         body = response.content.decode()
         self.assertIn('CONNECT', body)
+
+    def test_initial_connect_blocked_by_existing_import_data(self):
+        # Dual-capability integration with existing Import-mode
+        # (INTERNAL) entities: initial-Connect CONFIGURE returns the
+        # block modal pointing at the Data Import page.
+        from hi.apps.entity.enums import EntityDataSource, EntityType
+        from hi.apps.entity.models import Entity
+        dual_gateway = _SyncCapableGateway(
+            integration_id=self.INTEGRATION_ID,
+            capabilities=frozenset({
+                IntegrationCapability.CONNECT,
+                IntegrationCapability.IMPORT,
+            }),
+        )
+        IntegrationManager()._integration_data_map[self.INTEGRATION_ID] = IntegrationData(
+            integration_gateway=dual_gateway,
+            integration=self.integration,
+        )
+        Entity.objects.create(
+            integration_id=self.INTEGRATION_ID,
+            integration_name='imported-1',
+            name='Imported',
+            entity_type_str=str(EntityType.OTHER),
+            data_source_str=str(EntityDataSource.INTERNAL),
+        )
+        response = self.client.get(self._url())
+        body = response.content.decode()
+        self.assertIn('Cannot configure', body)
+        self.assertIn('GO TO DATA IMPORT', body)
+        self.assertIn(reverse('integrations_import_home'), body)
+
+    def test_already_enabled_does_not_trigger_block(self):
+        # Re-Configure on an already-enabled integration must always
+        # proceed — no block check, no matter the entity state.
+        from hi.apps.entity.enums import EntityDataSource, EntityType
+        from hi.apps.entity.models import Entity
+        self.integration.is_enabled = True
+        self.integration.save()
+        dual_gateway = _SyncCapableGateway(
+            integration_id=self.INTEGRATION_ID,
+            capabilities=frozenset({
+                IntegrationCapability.CONNECT,
+                IntegrationCapability.IMPORT,
+            }),
+        )
+        IntegrationManager()._integration_data_map[self.INTEGRATION_ID] = IntegrationData(
+            integration_gateway=dual_gateway,
+            integration=self.integration,
+        )
+        Entity.objects.create(
+            integration_id=self.INTEGRATION_ID,
+            integration_name='imported-1',
+            name='Imported',
+            entity_type_str=str(EntityType.OTHER),
+            data_source_str=str(EntityDataSource.INTERNAL),
+        )
+        response = self.client.get(self._url())
+        body = response.content.decode()
+        self.assertNotIn('Cannot configure', body)
+        self.assertIn('CONNECT', body)
+
+    def test_initial_connect_not_blocked_for_single_capability(self):
+        # Default _SyncCapableGateway is Connect-only; no block fires.
+        from hi.apps.entity.enums import EntityDataSource, EntityType
+        from hi.apps.entity.models import Entity
+        Entity.objects.create(
+            integration_id=self.INTEGRATION_ID,
+            integration_name='stray-internal',
+            name='Stray',
+            entity_type_str=str(EntityType.OTHER),
+            data_source_str=str(EntityDataSource.INTERNAL),
+        )
+        response = self.client.get(self._url())
+        body = response.content.decode()
+        self.assertNotIn('Cannot configure', body)
         self.assertIn('hi-modal-cancel', body)
 
     def test_post_enables_and_runs_sync_when_synchronizer_exists(self):

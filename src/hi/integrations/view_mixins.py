@@ -6,6 +6,7 @@ from django.urls import reverse
 
 from hi.apps.collection.collection_manager import CollectionManager
 from hi.apps.collection.models import Collection, CollectionEntity
+from hi.apps.entity.enums import EntityDataSource
 from hi.apps.entity.models import Entity, EntityView
 from hi.apps.location.location_manager import LocationManager
 from hi.apps.location.models import Location, LocationView
@@ -17,6 +18,102 @@ from hi.integrations.integration_manager import IntegrationManager
 from hi.integrations.integration_metadata_cache import IntegrationMetadataCache
 
 from hi.integrations.placement_request import PlacementUrlParams
+
+
+# Per-capability config consumed by CapabilityBlockViewMixin to keep
+# block-modal copy uniform across all integrations and both
+# directions. Broader callers can also import _CAPABILITY_DATA_SOURCE
+# if they need the capability-to-data_source pairing.
+_CAPABILITY_DATA_SOURCE = {
+    IntegrationCapability.CONNECT: EntityDataSource.EXTERNAL,
+    IntegrationCapability.IMPORT: EntityDataSource.INTERNAL,
+}
+_CAPABILITY_UI_LABEL = {
+    IntegrationCapability.CONNECT: 'Integration',
+    IntegrationCapability.IMPORT: 'Import',
+}
+_CAPABILITY_REMEDIATION_URL_NAME = {
+    IntegrationCapability.CONNECT: 'integrations_home',
+    IntegrationCapability.IMPORT: 'integrations_import_home',
+}
+_CAPABILITY_REMEDIATION_LINK_LABEL = {
+    IntegrationCapability.CONNECT: 'GO TO INTEGRATIONS',
+    IntegrationCapability.IMPORT: 'GO TO DATA IMPORT',
+}
+_CAPABILITY_REMEDIATION_VERB = {
+    # Verb applied when telling the user to clear that capability's
+    # data from its home page.
+    IntegrationCapability.CONNECT: 'disable',
+    IntegrationCapability.IMPORT: 'discard',
+}
+
+
+class CapabilityBlockViewMixin:
+    """Detect cross-capability conflicts at the start of a capability's
+    initial-Configure flow, returning a block modal that routes the
+    user to remediate before continuing.
+
+    Mixed into the views that handle each capability's initial-
+    Configure path. Each view calls
+    ``render_capability_block_if_conflict`` early in its GET handler
+    with just the integration_data and the capability being initiated.
+    All user-facing copy (title, body, link) is composed by the mixin
+    from the capability pairing so all block modals read uniformly.
+
+    Only fires for integrations that declare both capabilities;
+    single-capability integrations always get None.
+    """
+
+    def render_capability_block_if_conflict(
+            self,
+            request,
+            integration_data,
+            capability_being_initiated : IntegrationCapability,
+    ):
+        other_capability = (
+            IntegrationCapability.IMPORT
+            if capability_being_initiated == IntegrationCapability.CONNECT
+            else IntegrationCapability.CONNECT
+        )
+        capabilities = integration_data.integration_metadata.capabilities
+        if other_capability not in capabilities:
+            return None
+
+        existing_count = Entity.objects.filter(
+            integration_id = integration_data.integration_id,
+            data_source_str = str( _CAPABILITY_DATA_SOURCE[other_capability] ),
+        ).count()
+        if existing_count == 0:
+            return None
+
+        my_label = _CAPABILITY_UI_LABEL[capability_being_initiated]
+        other_label = _CAPABILITY_UI_LABEL[other_capability]
+        remediation_verb = _CAPABILITY_REMEDIATION_VERB[other_capability]
+        return self.modal_response(
+            request,
+            context = {
+                'title': (
+                    f'Cannot configure {integration_data.label} as {my_label}'
+                ),
+                'integration_data': integration_data,
+                'existing_count': existing_count,
+                'existing_mode_clause': (
+                    f'has data configured as {other_label} with'
+                ),
+                'desired_action_clause': (
+                    f'use {integration_data.label} as {my_label}'
+                ),
+                'remediation_clause': (
+                    f'{remediation_verb} the {integration_data.label} '
+                    f'{other_label} data'
+                ),
+                'link_url': reverse(
+                    _CAPABILITY_REMEDIATION_URL_NAME[other_capability]
+                ),
+                'link_label': _CAPABILITY_REMEDIATION_LINK_LABEL[other_capability],
+            },
+            template_name = 'integrations/modals/capability_blocked.html',
+        )
 
 
 class IntegrationViewMixin:

@@ -255,6 +255,83 @@ class ImporterConfigureViewTests(TestCase):
         self.assertIn('Place 1 new item', body)
         self.assertIn('placement', body)
 
+    _DUAL_CAPS = frozenset({
+        IntegrationCapability.CONNECT,
+        IntegrationCapability.IMPORT,
+    })
+
+    def test_get_import_blocked_by_existing_connect_data(self):
+        # Dual-capability integration with existing Connect-mode
+        # (EXTERNAL) entities and no Import-mode entities: opening
+        # Import-side CONFIGURE returns the block modal pointing at
+        # the Integrations tab.
+        _populate_manager([
+            (self.INTEGRATION_ID, _ImportCapableGateway(
+                self.INTEGRATION_ID,
+                capabilities=self._DUAL_CAPS,
+            )),
+        ])
+        Entity.objects.create(
+            integration_id=self.INTEGRATION_ID,
+            integration_name='connected-1',
+            name='Connected',
+            entity_type_str=str(EntityType.OTHER),
+            data_source_str=str(EntityDataSource.EXTERNAL),
+        )
+        response = self.client.get(self._url())
+        body = response.content.decode()
+        self.assertIn('Cannot configure', body)
+        self.assertIn('GO TO INTEGRATIONS', body)
+        self.assertIn(reverse('integrations_home'), body)
+
+    def test_get_import_not_blocked_when_already_imported(self):
+        # Existing Import entities → user is in "re-import" territory;
+        # block does NOT fire even with coexisting EXTERNAL entities.
+        _populate_manager([
+            (self.INTEGRATION_ID, _ImportCapableGateway(
+                self.INTEGRATION_ID,
+                capabilities=self._DUAL_CAPS,
+            )),
+        ])
+        Entity.objects.create(
+            integration_id=self.INTEGRATION_ID,
+            integration_name='imported-1',
+            name='Imported',
+            entity_type_str=str(EntityType.OTHER),
+            data_source_str=str(EntityDataSource.INTERNAL),
+        )
+        Entity.objects.create(
+            integration_id=self.INTEGRATION_ID,
+            integration_name='connected-1',
+            name='Connected',
+            entity_type_str=str(EntityType.OTHER),
+            data_source_str=str(EntityDataSource.EXTERNAL),
+        )
+        response = self.client.get(self._url())
+        body = response.content.decode()
+        self.assertNotIn('Cannot configure', body)
+        self.assertIn('>\n          IMPORT\n        </button>', body)
+
+    def test_get_import_not_blocked_for_single_capability_integration(self):
+        # Hypothetical Import-only integration (no CONNECT): block
+        # never fires even with EXTERNAL entities laying around.
+        _populate_manager([
+            (self.INTEGRATION_ID, _ImportCapableGateway(
+                self.INTEGRATION_ID,
+                capabilities=frozenset({ IntegrationCapability.IMPORT }),
+            )),
+        ])
+        Entity.objects.create(
+            integration_id=self.INTEGRATION_ID,
+            integration_name='stale-external',
+            name='Stale',
+            entity_type_str=str(EntityType.OTHER),
+            data_source_str=str(EntityDataSource.EXTERNAL),
+        )
+        response = self.client.get(self._url())
+        body = response.content.decode()
+        self.assertNotIn('Cannot configure', body)
+
     def _discard_url(self):
         return reverse(
             'integrations_import_discard',
