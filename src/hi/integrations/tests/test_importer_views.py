@@ -6,11 +6,19 @@ from django.test import TestCase
 from django.urls import reverse
 
 from hi.apps.attribute.enums import AttributeValueType
-from hi.apps.entity.enums import EntityDataSource, EntityType
+from hi.apps.entity.enums import EntityType
 from hi.apps.entity.models import Entity
 from hi.integrations.enums import IntegrationAttributeType, IntegrationCapability
 from hi.integrations.importer.integration_importer import IntegrationImporter
-from hi.integrations.importer.transient_models import CandidateItem
+from hi.integrations.importer.transient_models import (
+    CandidateItem,
+    IntegrationDiscardResult,
+    IntegrationImportResult,
+)
+from hi.apps.entity.entity_placement import (
+    EntityPlacementInput,
+    EntityPlacementItem,
+)
 from hi.integrations.integration_data import IntegrationData
 from hi.integrations.integration_gateway import IntegrationGateway
 from hi.integrations.integration_manager import IntegrationManager
@@ -61,17 +69,11 @@ class _ImportCapableGateway(IntegrationGateway):
         importer = IntegrationImporter()
         importer.get_candidate_items = lambda: list(self._candidates)
 
-        # Real DISCARD semantics: delete data_source=INTERNAL rows for
-        # this integration_id. Mirrors HomeBoxImporter for test
-        # purposes.
+        # Real DISCARD semantics: delete imported (provenance-carrying)
+        # rows for this integration_id. Mirrors HomeBoxImporter for
+        # test purposes.
         def _stub_discard(integration_id):
-            from hi.integrations.importer.transient_models import (
-                IntegrationDiscardResult,
-            )
-            qs = Entity.objects.filter(
-                integration_id=integration_id,
-                data_source_str=str(EntityDataSource.INTERNAL),
-            )
+            qs = Entity.objects.imported_for(integration_id=integration_id)
             count = qs.count()
             qs.delete()
             return IntegrationDiscardResult(count=count)
@@ -189,20 +191,13 @@ class ImporterConfigureViewTests(TestCase):
         self.assertIn('>\n          IMPORT\n        </button>', body)
 
     def test_post_run_renders_result_modal_with_placement_cta(self):
-        from hi.integrations.importer.transient_models import IntegrationImportResult
-        from hi.apps.entity.entity_placement import (
-            EntityPlacementInput,
-            EntityPlacementItem,
-        )
-
         # Stub importer that returns a result with a placement_input
         # pointing at a freshly-created entity.
         entity = Entity.objects.create(
-            integration_id=self.INTEGRATION_ID,
-            integration_name='item-fresh',
+            previous_integration_id=self.INTEGRATION_ID,
+            previous_integration_name='item-fresh',
             name='Fresh Item',
             entity_type_str=str(EntityType.OTHER),
-            data_source_str=str(EntityDataSource.INTERNAL),
         )
         gateway = _ImportCapableGateway(self.INTEGRATION_ID)
         stub_importer = IntegrationImporter()
@@ -233,7 +228,7 @@ class ImporterConfigureViewTests(TestCase):
         self.assertIn('Import complete', body)
         self.assertIn('Fresh Item', body)
         # Placement CTA renders the placement URL.
-        self.assertIn('Place 1 new item', body)
+        self.assertIn('Place new items', body)
         self.assertIn('placement', body)
 
     _DUAL_CAPS = frozenset({
@@ -257,7 +252,6 @@ class ImporterConfigureViewTests(TestCase):
             integration_name='connected-1',
             name='Connected',
             entity_type_str=str(EntityType.OTHER),
-            data_source_str=str(EntityDataSource.EXTERNAL),
         )
         response = self.client.get(self._url())
         body = response.content.decode()
@@ -279,7 +273,6 @@ class ImporterConfigureViewTests(TestCase):
             integration_name='stale-external',
             name='Stale',
             entity_type_str=str(EntityType.OTHER),
-            data_source_str=str(EntityDataSource.EXTERNAL),
         )
         response = self.client.get(self._url())
         body = response.content.decode()
@@ -324,32 +317,29 @@ class ImporterConfigureViewTests(TestCase):
             (self.INTEGRATION_ID, _ImportCapableGateway(self.INTEGRATION_ID)),
         ])
         Entity.objects.create(
-            integration_id=self.INTEGRATION_ID,
-            integration_name='imported-1',
+            previous_integration_id=self.INTEGRATION_ID,
+            previous_integration_name='imported-1',
             name='Imported',
             entity_type_str=str(EntityType.OTHER),
-            data_source_str=str(EntityDataSource.INTERNAL),
         )
         Entity.objects.create(
             integration_id=self.INTEGRATION_ID,
             integration_name='connected-1',
             name='Connected',
             entity_type_str=str(EntityType.OTHER),
-            data_source_str=str(EntityDataSource.EXTERNAL),
         )
 
         response = self.client.post(self._discard_url(), {})
 
         self.assertTrue(200 <= response.status_code < 400)
         self.assertFalse(
-            Entity.objects.filter(integration_name='imported-1').exists()
+            Entity.objects.filter(previous_integration_name='imported-1').exists()
         )
         self.assertTrue(
             Entity.objects.filter(integration_name='connected-1').exists()
         )
 
     def test_post_run_renders_nothing_imported_when_all_skipped(self):
-        from hi.integrations.importer.transient_models import IntegrationImportResult
         gateway = _ImportCapableGateway(self.INTEGRATION_ID)
         stub_importer = IntegrationImporter()
         stub_importer.run_import = lambda: IntegrationImportResult(
@@ -381,11 +371,10 @@ class ImporterConfigureViewTests(TestCase):
         ])
         # Pre-existing entity for item-2 so the preview counts skip=1, new=1.
         Entity.objects.create(
-            integration_id=self.INTEGRATION_ID,
-            integration_name='item-2',
+            previous_integration_id=self.INTEGRATION_ID,
+            previous_integration_name='item-2',
             name='Already',
             entity_type_str=str(EntityType.OTHER),
-            data_source_str=str(EntityDataSource.INTERNAL),
         )
 
         from hi.integrations.importer.views import ImporterConfigureView

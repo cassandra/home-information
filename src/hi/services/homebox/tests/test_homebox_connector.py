@@ -4,7 +4,6 @@ from unittest.mock import Mock, patch
 
 from django.test import SimpleTestCase
 
-from hi.apps.entity.enums import EntityDataSource
 from hi.apps.entity.models import Entity
 from hi.integrations.connector.sync_result import IntegrationSyncResult
 from hi.integrations.enums import IntegrationCapability
@@ -257,7 +256,6 @@ class TestHomeBoxConnectorCheckNeedsSync(AsyncTaskTestCase):
                 entity_type_str='LIGHT',
                 integration_id=HbMetaData.integration_id,
                 integration_name=name,
-                data_source_str=str(EntityDataSource.EXTERNAL),
             )
 
     def _run_check(self, summary_list):

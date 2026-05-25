@@ -4,7 +4,7 @@ from typing import Dict, List, Optional
 from asgiref.sync import sync_to_async
 from django.db import transaction
 
-from hi.apps.entity.enums import EntityDataSource, EntityType, VideoStreamType
+from hi.apps.entity.enums import EntityType, VideoStreamType
 from hi.apps.entity.entity_placement import (
     EntityPlacementGroup,
     EntityPlacementInput,
@@ -317,6 +317,7 @@ class FrigateConnector( IntegrationConnector, FrigateMixin ):
         (Issue #281), where integration-owned fields get refilled but
         the user-editable ``name`` is preserved across the
         intervening disconnect."""
+        is_fresh_create = entity is None
         camera_name = camera[ 'name' ]
         # Frigate's camera key (snake_case) is the technical identifier;
         # the ``friendly_name`` on the per-camera config is the operator's
@@ -342,7 +343,6 @@ class FrigateConnector( IntegrationConnector, FrigateMixin ):
             entity.has_video_stream = False
             entity.has_video_snapshot = True
             entity.video_snapshot_stream_fps = self.CAMERA_SNAPSHOT_STREAM_FPS
-            entity.data_source = EntityDataSource.EXTERNAL
             entity.save()
 
             # Single sensor per camera — OBJECT_PRESENCE subsumes the
@@ -371,7 +371,12 @@ class FrigateConnector( IntegrationConnector, FrigateMixin ):
                     ),
                 )
 
-        result.created_list.append( entity.name )
+        # Only fresh creates contribute to created_list. The
+        # reconnect path (entity supplied by caller) is surfaced via
+        # reconnected_list in reconnect_disconnected_items — appending
+        # here would double-count.
+        if is_fresh_create:
+            result.created_list.append( entity.name )
         return entity
 
     def _update_entity( self,

@@ -48,9 +48,10 @@ def integration_logo_path( model : IntegrationDetailsModel ) -> str:
 @register.simple_tag
 def previous_integration_display_name( model : IntegrationDetailsModel ) -> str:
     """The label of the integration this entity was previously
-    attached to (i.e., the source of the "Detached from ..." badge).
-    Returns None when the entity is not detached, or when the prior
-    integration has since been removed from the system."""
+    attached to (i.e., the source of the "From ..." badge).
+    Returns None when the entity carries no integration provenance,
+    or when the prior integration has since been removed from the
+    system."""
     metadata = _get_previous_integration_metadata( model )
     return metadata.label if metadata else None
 
@@ -58,8 +59,8 @@ def previous_integration_display_name( model : IntegrationDetailsModel ) -> str:
 @register.simple_tag
 def previous_integration_logo_path( model : IntegrationDetailsModel ) -> str:
     """Logo for the integration the entity was previously attached
-    to. Used in the entity-detail UI to show the "Detached from ..."
-    badge alongside the same logo the integration uses when active."""
+    to. Used in the entity-detail UI to show the "From ..." badge
+    alongside the same logo the integration uses when active."""
     metadata = _get_previous_integration_metadata( model )
     return metadata.logo_static_path if metadata else ''
 

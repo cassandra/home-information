@@ -154,7 +154,7 @@ class IntegrationDetailsModel( models.Model ):
         # against future call sites that set integration_key
         # without going through reconnect_disconnected_items: a
         # stale previous_integration_* pair on an active entity
-        # would mis-trigger the "Detached from" UI badge and
+        # would mis-trigger the "From X" UI badge and
         # confuse any future query that filters disconnected
         # entities by previous_integration_id alone.
         self.previous_integration_id = None

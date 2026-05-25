@@ -506,14 +506,13 @@ class EnableViewTests(SyncViewTestCase):
 
     def test_initial_connect_not_blocked_for_single_capability(self):
         # Default _SyncCapableGateway is Connect-only; no block fires.
-        from hi.apps.entity.enums import EntityDataSource, EntityType
+        from hi.apps.entity.enums import EntityType
         from hi.apps.entity.models import Entity
         Entity.objects.create(
-            integration_id=self.INTEGRATION_ID,
-            integration_name='stray-internal',
+            previous_integration_id=self.INTEGRATION_ID,
+            previous_integration_name='stray-internal',
             name='Stray',
             entity_type_str=str(EntityType.OTHER),
-            data_source_str=str(EntityDataSource.INTERNAL),
         )
         response = self.client.get(self._url())
         body = response.content.decode()
@@ -741,7 +740,7 @@ class PlacementFlowTests(SyncViewTestCase):
         # update check, not an Initial Connect.
         self.assertIn('Update check complete', body)
         self.assertIn('Place Later', body)
-        self.assertIn('Place 4 new items', body)
+        self.assertIn('Place new items', body)
         self.assertIn(self._placement_url(), body)
         # No placement artifacts in the response — operator must
         # click the CTA to reach the placement.
@@ -782,7 +781,7 @@ class PlacementFlowTests(SyncViewTestCase):
         self.assertIn('Old Name → New Name', body)
         self.assertIn('Stale Sensor', body)
         # And the CTA still routes to the placement.
-        self.assertIn('Place 1 new item', body)
+        self.assertIn('Place new items', body)
 
     def test_placement_top_inherits_to_groups_and_entities(self):
         """Top view chosen, groups + entities at default → every

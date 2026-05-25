@@ -46,11 +46,15 @@ composed through shared helpers (`HbEntityFactory`, `HbConverter`,
 - **Shared `integrations_sync` exclusion lock.** Connect-side sync
   and Import-side run serialize against each other to prevent
   upstream double-fetch races on a single integration.
-- **`Entity.data_source` is the single capability-state signal.** All
-  Connect-mode entities are `EXTERNAL`; all Import-mode entities are
-  `INTERNAL`. The block-modal detection and discard scoping both
-  consult this field — never `allow_internal_attributes` or
-  `integration_id` alone.
+- **State is encoded by the integration columns alone.** An entity
+  is `is_external` when `integration_id` is set (live Connect),
+  `has_integration_provenance` when `previous_integration_id` is
+  set (imported or detached), and neither when native. The
+  `EntityModelManager` exposes named helpers (`external_for`,
+  `imported_for`, `detached_for`, `with_integration_provenance`)
+  for query sites; the matching `Entity` properties are
+  `is_external`, `is_imported`, `is_detached`, and
+  `has_integration_provenance`.
 
 ## Reference
 

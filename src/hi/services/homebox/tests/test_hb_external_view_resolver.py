@@ -12,7 +12,6 @@ from unittest.mock import Mock, patch
 
 from django.test import TestCase
 
-from hi.apps.entity.enums import EntityDataSource
 from hi.apps.entity.models import Entity
 from hi.integrations.connector.external_view_data import (
     MinimalViewData,
@@ -30,15 +29,14 @@ logging.disable(logging.CRITICAL)
 class HomeBoxExternalViewResolverTests(TestCase):
 
     def _make_hb_entity(self, item_id: str = '42') -> Entity:
-        # Connect-mode HomeBox entity: data_source=EXTERNAL. The
-        # resolver gates on this so Import-mode entities (INTERNAL)
-        # don't surface live HomeBox view data.
+        # Connect-mode HomeBox entity: integration_id set marks it
+        # external. The resolver gates on this so Import-mode
+        # entities don't surface live HomeBox view data.
         return Entity.objects.create(
             name=f'HomeBox Item {item_id}',
             entity_type_str='LIGHT',
             integration_id=HbMetaData.integration_id,
             integration_name=item_id,
-            data_source_str=str(EntityDataSource.EXTERNAL),
         )
 
     def _make_native_entity(self) -> Entity:

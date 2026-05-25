@@ -24,7 +24,7 @@
     {% elif entity.previous_integration_id %}
       {% previous_integration_logo_path entity as prev_logo_path %}
       {% if prev_logo_path %}<img src="{% static prev_logo_path %}" alt="" class="hi-integration-logo--detached mr-1">{% endif %}
-      <small class="font-italic">Detached from {% previous_integration_display_name entity %}</small>
+      <small class="font-italic">From {% previous_integration_display_name entity %}</small>
     {% endif %}
   </div>
   <div class="hi-entity-status-subheader__right">

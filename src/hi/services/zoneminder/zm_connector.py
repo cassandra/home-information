@@ -5,7 +5,7 @@ from typing import Dict, Optional
 from asgiref.sync import sync_to_async
 from django.db import transaction
 
-from hi.apps.entity.enums import EntityDataSource, EntityType, VideoStreamType, VideoStreamMode
+from hi.apps.entity.enums import EntityType, VideoStreamType, VideoStreamMode
 from hi.apps.entity.constants import VideoStreamMetadataKeys
 from hi.apps.entity.models import Entity
 from hi.apps.entity.transient_models import VideoSnapshot, VideoStream
@@ -428,7 +428,6 @@ class ZmConnector( IntegrationConnector, ZoneMinderMixin ):
                 can_user_delete = ZmMetaData.allow_entity_deletion,
             )
             zm_entity.integration_key = zm_manager._zm_integration_key()
-            zm_entity.data_source = EntityDataSource.EXTERNAL
             zm_entity.save()
 
             HiModelHelper.create_discrete_controller(
@@ -438,11 +437,13 @@ class ZmConnector( IntegrationConnector, ZoneMinderMixin ):
                 name_label_dict = run_state_name_label_dict,
             )
 
-        # The singleton ZM service entity isn't a placement candidate
-        # (already attached to the integration root) — surface as an
-        # info note rather than as a created_list entry so it doesn't
-        # inflate the count of placeable monitors.
-        result.info_list.append( f'Created ZM service item: {zm_entity}' )
+        # Service entity is surfaced in the result-modal Created
+        # list so the user-facing count matches what got persisted.
+        # It is intentionally absent from placement_input — that's
+        # built separately from the monitor-entity list in
+        # _sync_impl, so created_list and placement_input can
+        # disagree where appropriate.
+        result.created_list.append( zm_entity.name )
         return zm_entity
             
     def _create_monitor_entity( self,
@@ -458,6 +459,7 @@ class ZmConnector( IntegrationConnector, ZoneMinderMixin ):
         entity's ``name`` is deliberately preserved because the user
         may have edited it before/after the intervening disconnect.
         """
+        is_fresh_create = entity is None
         zm_manager = self.zm_manager()
 
         with transaction.atomic():
@@ -478,7 +480,6 @@ class ZmConnector( IntegrationConnector, ZoneMinderMixin ):
             entity.can_user_delete = ZmMetaData.allow_entity_deletion
             entity.has_video_stream = True
             entity.has_video_snapshot = True
-            entity.data_source = EntityDataSource.EXTERNAL
             entity.save()
 
             movement_sensor = HiModelHelper.create_movement_sensor(
@@ -508,8 +509,14 @@ class ZmConnector( IntegrationConnector, ZoneMinderMixin ):
                         zm_monitor_id = zm_monitor.id(),
                     ),
                 )
-                
-        result.created_list.append( entity.name )
+
+        # Only fresh creates contribute to created_list. The
+        # reconnect path (entity supplied by caller) already gets
+        # surfaced via reconnected_list in
+        # reconnect_disconnected_items — appending here too would
+        # double-count the row.
+        if is_fresh_create:
+            result.created_list.append( entity.name )
         return entity
 
     def _update_entity( self,

@@ -299,6 +299,6 @@
 {% block action_right %}
 {% if sync_result.created_list and placement_url %}
 <a class="btn btn-primary" role="button"
-   href="{{ placement_url }}" data-async="modal">Place {{ sync_result.created_list|length }} new item{{ sync_result.created_list|length|pluralize }} {% icon "chevron-right" size="sm" css_class="hi-icon-right" %}</a>
+   href="{{ placement_url }}" data-async="modal">Place new items {% icon "chevron-right" size="sm" css_class="hi-icon-right" %}</a>
 {% endif %}
 {% endblock %}

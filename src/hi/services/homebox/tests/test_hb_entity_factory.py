@@ -3,7 +3,7 @@ from unittest.mock import Mock
 
 from django.test import TestCase
 
-from hi.apps.entity.enums import EntityDataSource, EntityType
+from hi.apps.entity.enums import EntityType
 from hi.apps.entity.models import Entity
 from hi.integrations.enums import IntegrationCapability
 from hi.services.homebox.hb_entity_factory import HbEntityFactory
@@ -47,7 +47,7 @@ class TestHbEntityFactory(TestCase):
         self.assertEqual(entity.name, 'Drill')
         self.assertEqual(entity.entity_type, EntityType.OTHER)
         self.assertFalse(entity.allow_internal_attributes)
-        self.assertEqual(entity.data_source, EntityDataSource.EXTERNAL)
+        self.assertTrue(entity.is_external)
         self.assertNotIn('description', entity.integration_payload)
         self.assertEqual(entity.integration_payload.get('location', {}).get('name'), 'Garage')
         self.assertEqual(entity.integration_payload.get('tags')[0].get('name'), 'Tools')
@@ -62,7 +62,7 @@ class TestHbEntityFactory(TestCase):
 
         self.assertTrue(entity.allow_internal_attributes)
         self.assertTrue(entity.can_user_delete)
-        self.assertEqual(entity.data_source, EntityDataSource.INTERNAL)
+        self.assertTrue(entity.is_imported)
 
     def test_create_models_with_existing_entity_does_not_create_new_and_preserves_name(self):
         """Issue #281 reconnect contract: when an existing Entity is

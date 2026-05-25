@@ -114,6 +114,6 @@
 {% block action_right %}
 {% if result.has_imports and placement_url %}
 <a class="btn btn-primary" role="button"
-   href="{{ placement_url }}" data-async="modal">Place {{ result.items_imported_count }} new item{{ result.items_imported_count|pluralize }} {% icon "chevron-right" size="sm" css_class="hi-icon-right" %}</a>
+   href="{{ placement_url }}" data-async="modal">Place new items {% icon "chevron-right" size="sm" css_class="hi-icon-right" %}</a>
 {% endif %}
 {% endblock %}

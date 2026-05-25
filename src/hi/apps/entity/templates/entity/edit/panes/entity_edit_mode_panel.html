@@ -23,7 +23,7 @@
   <div class="text-muted font-italic">
     {% previous_integration_logo_path entity as prev_logo_path %}
     {% if prev_logo_path %}<img src="{% static prev_logo_path %}" alt="" class="hi-integration-logo--detached mr-1">{% endif %}
-    Detached from: <strong>{% previous_integration_display_name entity %}</strong>
+    From: <strong>{% previous_integration_display_name entity %}</strong>
   </div>
 </div>
 {% endif %}

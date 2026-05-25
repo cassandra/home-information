@@ -198,12 +198,6 @@ class EntityType(LabeledEnum):
         return f'entity/modals/entity_status_{self.name.lower()}.html'
 
 
-class EntityDataSource(LabeledEnum):
-
-    INTERNAL = ('Internal', 'HI owns the editable representation.')
-    EXTERNAL = ('External', 'Upstream constrains HI-side edits.')
-
-
 class EntityStateValue(LabeledEnum):
     # Alarm-style values (e.g., ACTIVE, OPEN, SMOKE_DETECTED) are
     # rendered as the ``status`` attribute on both the SVG icon

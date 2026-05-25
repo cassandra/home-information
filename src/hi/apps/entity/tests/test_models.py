@@ -1,12 +1,10 @@
-import importlib
 import json
 import logging
 
-from django.apps import apps as django_apps
 from django.db import IntegrityError
 
 from hi.apps.entity.models import Entity, EntityAttribute, EntityState
-from hi.apps.entity.enums import EntityDataSource, EntityStateRole, EntityType, EntityStateType
+from hi.apps.entity.enums import EntityStateRole, EntityType, EntityStateType
 from hi.apps.attribute.enums import AttributeValueType
 from hi.testing.base_test_case import BaseTestCase
 
@@ -89,67 +87,38 @@ class TestEntity(BaseTestCase):
         self.assertEqual(entity.entity_type, EntityType.CAMERA)
         return
 
-    def test_data_source_defaults_to_internal(self):
-        entity = Entity.objects.create(
-            name='Default Source Entity',
-            entity_type_str=str(EntityType.OTHER),
-            integration_id='ds_default_001',
-            integration_name='test_integration',
-        )
-        self.assertEqual(entity.data_source, EntityDataSource.INTERNAL)
-        self.assertEqual(entity.data_source_str, str(EntityDataSource.INTERNAL))
-        return
-
-    def test_data_source_property_conversion(self):
-        entity = Entity.objects.create(
-            name='Source Entity',
-            entity_type_str=str(EntityType.OTHER),
-            integration_id='ds_conv_001',
-            integration_name='test_integration',
-        )
-        entity.data_source = EntityDataSource.EXTERNAL
-        self.assertEqual(entity.data_source_str, str(EntityDataSource.EXTERNAL))
-        self.assertEqual(entity.data_source, EntityDataSource.EXTERNAL)
-        entity.data_source = EntityDataSource.INTERNAL
-        self.assertEqual(entity.data_source, EntityDataSource.INTERNAL)
-        return
-
-    def test_migration_0021_backfill_marks_all_integration_attached_entities_external(self):
-        # Migration 0021's backfill rule: every integration-attached
-        # entity is marked EXTERNAL (every integration at the moment of
-        # migration is Connect-mode — Import arrives in #358). Native
-        # entities (no integration_id) keep the column default
-        # (INTERNAL).
+    def test_data_source_properties_reflect_integration_columns(self):
+        # Native: no integration columns populated.
         native = Entity.objects.create(
             name='Native',
             entity_type_str=str(EntityType.OTHER),
         )
-        hass_like = Entity.objects.create(
-            name='HASS-like',
+        self.assertFalse(native.is_external)
+        self.assertFalse(native.has_integration_provenance)
+        self.assertFalse(native.is_imported)
+        self.assertFalse(native.is_detached)
+
+        # Live Connect: integration_id set.
+        attached = Entity.objects.create(
+            name='Attached',
             entity_type_str=str(EntityType.OTHER),
             integration_id='hass',
             integration_name='hass_thing',
-            allow_internal_attributes=True,
         )
-        hb_like = Entity.objects.create(
-            name='HB-like',
+        self.assertTrue(attached.is_external)
+        self.assertFalse(attached.has_integration_provenance)
+
+        # Imported / detached: previous_integration_* set, integration_id NULL.
+        provenance = Entity.objects.create(
+            name='Provenance',
             entity_type_str=str(EntityType.OTHER),
-            integration_id='hb',
-            integration_name='hb_item_1',
-            allow_internal_attributes=False,
+            previous_integration_id='hb',
+            previous_integration_name='item-1',
         )
-
-        mig = importlib.import_module(
-            'hi.apps.entity.migrations.0021_entity_data_source',
-        )
-        mig.backfill_data_source(django_apps, schema_editor=None)
-
-        native.refresh_from_db()
-        hass_like.refresh_from_db()
-        hb_like.refresh_from_db()
-        self.assertEqual(native.data_source, EntityDataSource.INTERNAL)
-        self.assertEqual(hass_like.data_source, EntityDataSource.EXTERNAL)
-        self.assertEqual(hb_like.data_source, EntityDataSource.EXTERNAL)
+        self.assertFalse(provenance.is_external)
+        self.assertTrue(provenance.has_integration_provenance)
+        self.assertTrue(provenance.is_imported)
+        self.assertTrue(provenance.is_detached)
         return
 
     def test_entity_type_property_handles_unknown_types_gracefully(self):

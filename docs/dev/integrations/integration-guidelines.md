@@ -19,7 +19,13 @@ The two abstractions don't share a base class — commonality is composed throug
 
 Per-attribute `IntegrationAttributeType` declarations may carry an optional `capabilities` set to restrict which capability's UI surfaces the attribute. Default is `ALL_CAPABILITIES`.
 
-`Entity.data_source` (an `EntityDataSource` value: `INTERNAL` or `EXTERNAL`, see `hi/apps/entity/enums.py`) records per-entity provenance. Every Connect-mode entity is `EXTERNAL` (data sourced from upstream); native entities and Import-mode entities are `INTERNAL`. The field is consumed by the cross-capability block-modal detection in `hi/integrations/view_mixins.py` (`CapabilityBlockViewMixin`) and by `IntegrationImporter.discard_imported_data` to scope deletion safely.
+Per-entity capability state is derived from the integration columns on `Entity`, not stored as a separate field:
+
+- **Live Connect** (`is_external`): `integration_id` is set.
+- **Imported or detached** (`is_imported` / `is_detached` — operational synonyms today, with `has_integration_provenance` as the umbrella predicate): `previous_integration_id` is set, `integration_id` is `NULL`.
+- **Native**: both columns `NULL`.
+
+Query sites use the matching `EntityModelManager` helpers (`external_for`, `imported_for`, `detached_for`, `with_integration_provenance`) so the call site reads as semantic intent. The IMPORT-initiation block check in `CapabilityBlockViewMixin` uses `Entity.objects.external_for(...)`; `IntegrationImporter.discard_imported_data` uses `Entity.objects.imported_for(...)`.
 
 ### One-to-many state composition
 A single upstream state may decompose into multiple HI EntityStates when the upstream protocol packs several independently-controllable values into one entity (e.g., a color light's brightness + hue + saturation + color temperature). The framework supports this via:

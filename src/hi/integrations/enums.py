@@ -21,8 +21,8 @@ class IntegrationDisableMode( LabeledEnum ):
     SAFE — delete entities without user-created data; preserve entities with
     user-created data by detaching them from the integration (strips
     integration association, removes integration-only components, records
-    the previous integration identity to drive the "Detached from ..."
-    UI badge and the auto-reconnect path). This mirrors the sync-time
+    the previous integration identity to drive the "From ..." UI
+    badge and the auto-reconnect path). This mirrors the sync-time
     preservation behavior.
 
     ALL  — hard-delete all entities attached to the integration regardless of

@@ -20,7 +20,6 @@ from typing import Dict, Iterable, List, Optional, Set
 from django.db import transaction
 
 from hi.apps.attribute.enums import AttributeType
-from hi.apps.entity.enums import EntityDataSource
 from hi.apps.entity.models import Entity, EntityState, EntityStateDelegation
 from hi.apps.sense.models import Sensor
 from hi.apps.control.models import Controller
@@ -309,7 +308,7 @@ class EntityIntegrationOperations:
         recognize it if the same upstream key reappears later. The
         detached state is signaled structurally — ``integration_id``
         becomes NULL and ``previous_integration_id`` carries the prior
-        identity — and surfaced to the operator via a "Detached from
+        identity — and surfaced to the operator via a "From
         <integration>" badge in the entity-detail UI.
 
         Issue #288: integration-owned EventDefinitions are removed
@@ -386,7 +385,7 @@ class EntityIntegrationOperations:
             # so the auto-reconnect path can recognize this entity if
             # the same upstream key reappears later. The presence of
             # previous_integration_id is also what drives the
-            # "Detached from <integration>" UI badge.
+            # "From <integration>" UI badge.
             entity.previous_integration_key = entity.integration_key
             entity.integration_key = None
 
@@ -398,12 +397,11 @@ class EntityIntegrationOperations:
             entity.can_user_delete = True
             entity.allow_internal_attributes = True
 
-            # Flip data_source to INTERNAL. A detached entity is no
-            # longer constrained by an upstream system — HI owns the
-            # editable representation. The reconnect path restores
-            # EXTERNAL via the converter dispatch in
-            # _rebuild_integration_components.
-            entity.data_source = EntityDataSource.INTERNAL
+            # The data-source state (now DETACHED) is derived from
+            # the integration_id / previous_integration_id columns:
+            # integration_key.setter on line above set integration_id
+            # to NULL and the previous-pair carries the provenance,
+            # so the entity now reads as is_detached.
 
             # Suppress integration-backed capabilities. The intrinsic
             # video-stream capability is genuinely lost (the backing sensor

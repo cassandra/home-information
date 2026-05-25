@@ -348,7 +348,7 @@ class IntegrationConnector:
         match, this method:
 
           * clears the previous-identity columns (which removes the
-            "Detached from <integration>" badge in the UI),
+            "From <integration>" badge in the UI),
           * dispatches to ``_rebuild_integration_components()`` so the
             integration's converter repopulates the integration-owned
             components on the existing entity,

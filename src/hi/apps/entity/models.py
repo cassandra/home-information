@@ -16,7 +16,6 @@ from hi.integrations.models import IntegrationDetailsModel
 from hi.enums import ItemType
 
 from .enums import (
-    EntityDataSource,
     EntityType,
     EntityStateRole,
     EntityStateType,
@@ -57,12 +56,6 @@ class Entity( IntegrationDetailsModel, LocationItemModelMixin ):
     allow_internal_attributes = models.BooleanField(
         'Allow Internal Attributes?',
         default = True,
-    )
-    data_source_str = models.CharField(
-        'Data Source',
-        max_length = 16,
-        null = False, blank = False,
-        default = str(EntityDataSource.INTERNAL),
     )
     has_video_stream = models.BooleanField(
         'Has Video Stream',
@@ -135,13 +128,31 @@ class Entity( IntegrationDetailsModel, LocationItemModelMixin ):
         return
 
     @property
-    def data_source(self) -> EntityDataSource:
-        return EntityDataSource.from_name_safe( self.data_source_str )
+    def is_external(self) -> bool:
+        """Live-attached to an integration. Upstream constrains
+        HI-side edits while this is True."""
+        return self.integration_id is not None
 
-    @data_source.setter
-    def data_source( self, data_source : EntityDataSource ):
-        self.data_source_str = str(data_source)
-        return
+    @property
+    def has_integration_provenance(self) -> bool:
+        """Carries a record of which integration this entity came
+        from. True for both imported and detached rows; drives the
+        'From X' UI badge and the auto-reconnect lookup."""
+        return self.previous_integration_id is not None
+
+    # Synonyms today — imported and detached are operationally
+    # indistinguishable (same column shape). Separate names let
+    # each call site read intentionally, parallel to the manager
+    # methods. A future provenance discriminator (if needed) can
+    # split them without changing readers.
+
+    @property
+    def is_imported(self) -> bool:
+        return self.has_integration_provenance
+
+    @property
+    def is_detached(self) -> bool:
+        return self.has_integration_provenance
 
     @property
     def has_native_video_stream(self) -> bool:

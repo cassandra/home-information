@@ -4,7 +4,7 @@ from unittest.mock import Mock, patch
 
 from django.test import TestCase
 
-from hi.apps.entity.enums import EntityDataSource, EntityType
+from hi.apps.entity.enums import EntityType
 from hi.apps.entity.models import Entity
 from hi.integrations.importer.transient_models import IntegrationDiscardResult
 from hi.services.homebox.hb_metadata import HbMetaData
@@ -81,7 +81,7 @@ class TestHomeBoxImporterRunImport(TestCase):
         self.assertEqual(result.items_skipped_count, 1)
         self.assertEqual(result.error_list, [])
         new_entity = Entity.objects.get(previous_integration_name='item-2')
-        self.assertEqual(new_entity.data_source, EntityDataSource.INTERNAL)
+        self.assertTrue(new_entity.is_imported)
         self.assertTrue(new_entity.allow_internal_attributes)
         self.assertIsNone(new_entity.integration_id)
         self.assertEqual(new_entity.previous_integration_id, HbMetaData.integration_id)
@@ -125,7 +125,6 @@ class TestHomeBoxImporterDiscard(TestCase):
             name='Connected',
             entity_type_str=str(EntityType.OTHER),
             allow_internal_attributes=False,
-            data_source_str=str(EntityDataSource.EXTERNAL),
         )
 
         importer = HomeBoxImporter()

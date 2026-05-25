@@ -11,7 +11,6 @@ from hi.apps.attribute.enums import (
     AttributeValueType,
 )
 from hi.apps.entity.enums import (
-    EntityDataSource,
     EntityStateRole,
     EntityStateType,
     EntityType,
@@ -565,7 +564,6 @@ class HassConverter:
             entity.can_user_delete = HassMetaData.allow_entity_deletion
             entity.has_video_snapshot = is_camera
             entity.video_snapshot_stream_fps = 1.0 if is_camera else None
-            entity.data_source = EntityDataSource.EXTERNAL
             entity.save()
             
             insteon_address = cls.hass_device_to_insteon_address( hass_device )

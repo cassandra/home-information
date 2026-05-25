@@ -106,7 +106,7 @@ the ZM portal directly with the same credentials, then check
 - ZM monitor renames in the upstream are propagated on Update; ZM
   monitor deletes remove the corresponding HI camera unless the user
   has added custom data to it (in which case it is preserved as
-  detached, with a "Detached from ZoneMinder" indicator).
+  detached, with a "From ZoneMinder" indicator).
 - Live stream playback depends on ZM's `cgi-bin/nph-zms` endpoint
   being reachable from the user's browser, not just from the HI
   server. The CORS and SSL issues above are common consequences.

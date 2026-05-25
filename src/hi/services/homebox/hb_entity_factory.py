@@ -3,7 +3,6 @@ import logging
 
 from django.db import transaction
 
-from hi.apps.entity.enums import EntityDataSource
 from hi.apps.entity.models import Entity
 from hi.integrations.enums import IntegrationCapability
 
@@ -60,7 +59,6 @@ class HbEntityFactory:
                 entity.previous_integration_key = entity_integration_key
                 entity.can_user_delete = True
                 entity.allow_internal_attributes = True
-                entity.data_source = EntityDataSource.INTERNAL
             else:
                 # CONNECT-mode (and any other capability): HomeBox
                 # remains the source of truth. Setting integration_key
@@ -70,7 +68,6 @@ class HbEntityFactory:
                 entity.integration_key = entity_integration_key
                 entity.can_user_delete = HbMetaData.allow_entity_deletion
                 entity.allow_internal_attributes = HbMetaData.allow_internal_attributes
-                entity.data_source = EntityDataSource.EXTERNAL
             entity.save()
 
         return entity
