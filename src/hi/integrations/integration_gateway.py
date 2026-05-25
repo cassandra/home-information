@@ -10,6 +10,7 @@ from hi.integrations.connector.external_view_data import ExternalViewData
 from hi.integrations.connector.integration_controller import IntegrationController
 from hi.integrations.connector.integration_manage_view_pane import IntegrationManageViewPane
 from hi.integrations.connector.integration_synchronizer import IntegrationSynchronizer
+from hi.integrations.importer.importer import Importer
 from hi.integrations.models import IntegrationAttribute
 from hi.integrations.transient_models import (
     ConnectionTestResult,
@@ -59,6 +60,17 @@ class IntegrationGateway:
         (see ``IntegrationSynchronizer.check_needs_sync``): integrations
         without a synchronizer naturally opt out of both full sync and
         the periodic drift check.
+        """
+        return None
+
+    def get_importer(self) -> Optional[Importer]:
+        """
+        Return the integration's importer when it supports the IMPORT
+        capability; None otherwise. Parallel to get_synchronizer() for
+        the CONNECT capability. The framework owns the import workflow
+        (Data Import page, preview, confirm, result modal, placement);
+        the importer supplies the integration-specific candidate
+        listing, item ingest, and discard operations.
         """
         return None
 
