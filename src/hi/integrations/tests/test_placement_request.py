@@ -14,7 +14,7 @@ from django.core.exceptions import BadRequest
 from django.http import QueryDict
 from django.test import SimpleTestCase
 
-from hi.integrations.connect.placement_request import PlacementUrlParams
+from hi.integrations.placement_request import PlacementUrlParams
 
 logging.disable(logging.CRITICAL)
 

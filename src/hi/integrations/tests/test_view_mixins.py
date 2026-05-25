@@ -21,7 +21,7 @@ from hi.integrations.transient_models import (
     ConnectionTestResult,
     IntegrationValidationResult,
 )
-from hi.integrations.connect.view_mixins import IntegrationViewMixin
+from hi.integrations.connector.view_mixins import IntegrationViewMixin
 
 logging.disable(logging.CRITICAL)
 

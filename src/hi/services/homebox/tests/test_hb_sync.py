@@ -5,7 +5,7 @@ from unittest.mock import Mock, patch
 from django.test import SimpleTestCase
 
 from hi.apps.entity.models import Entity
-from hi.integrations.connect.sync_result import IntegrationSyncResult
+from hi.integrations.connector.sync_result import IntegrationSyncResult
 from hi.integrations.transient_models import IntegrationKey
 from hi.services.homebox.hb_metadata import HbMetaData
 from hi.services.homebox.connector.hb_sync import HomeBoxSynchronizer

@@ -10,7 +10,7 @@ from urllib.parse import urljoin
 from django.urls import reverse
 
 from hi.apps.entity.models import Entity
-from hi.integrations.connect.external_view_data import (
+from hi.integrations.connector.external_view_data import (
     AttachmentRef,
     ExternalViewData,
     MinimalViewData,

@@ -13,7 +13,7 @@ from django.test import TestCase
 from hi.apps.entity.enums import EntityType
 from hi.apps.entity.models import Entity
 from hi.apps.location.models import Location, LocationView
-from hi.integrations.connect.placement_request import PlacementFormParser
+from hi.integrations.placement_request import PlacementFormParser
 
 logging.disable(logging.CRITICAL)
 
@@ -252,7 +252,7 @@ class PlacementFormParserTests(TestCase):
         # state. The patched return is the test's existing Location;
         # the parser then creates a real LocationView attached to it.
         with patch(
-            'hi.integrations.connect.placement_request.LocationManager',
+            'hi.integrations.placement_request.LocationManager',
         ) as mock_manager_cls:
             instance = mock_manager_cls.return_value
             instance.get_default_location.return_value = self.location

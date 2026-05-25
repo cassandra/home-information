@@ -11,7 +11,7 @@ from hi.apps.attribute.enums import AttributeType
 from hi.apps.entity.models import Entity, EntityAttribute, EntityState
 from hi.apps.sense.models import Sensor
 from hi.apps.control.models import Controller
-from hi.integrations.connect.user_data_detector import EntityUserDataDetector
+from hi.integrations.connector.user_data_detector import EntityUserDataDetector
 
 logging.disable(logging.CRITICAL)
 

@@ -14,8 +14,8 @@ from hi.apps.entity.models import Entity, EntityAttribute, EntityState
 from hi.apps.event.models import EventClause, EventDefinition
 from hi.integrations.exceptions import IntegrationConnectionError
 from hi.integrations.integration_manager import IntegrationManager
-from hi.integrations.connect.integration_data import IntegrationData
-from hi.integrations.connect.integration_gateway import IntegrationGateway
+from hi.integrations.integration_data import IntegrationData
+from hi.integrations.integration_gateway import IntegrationGateway
 from hi.integrations.models import Integration, IntegrationAttribute
 from hi.integrations.transient_models import (
     ConnectionTestResult,

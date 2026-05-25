@@ -7,11 +7,11 @@ import logging
 from django.test import TestCase
 
 from hi.apps.attribute.enums import AttributeValueType
-from hi.integrations.connect.integration_attribute_edit_context import (
+from hi.integrations.integration_attribute_edit_context import (
     IntegrationAttributeItemEditContext,
 )
-from hi.integrations.connect.integration_data import IntegrationData
-from hi.integrations.connect.integration_gateway import IntegrationGateway
+from hi.integrations.integration_data import IntegrationData
+from hi.integrations.integration_gateway import IntegrationGateway
 from hi.integrations.enums import (
     ALL_CAPABILITIES,
     IntegrationAttributeType,

@@ -18,11 +18,11 @@ from hi.apps.common.module_utils import import_module_safe
 from hi.apps.entity.models import Entity
 from hi.apps.system.health_status_provider import HealthStatusProvider
 
-from .connect.entity_operations import EntityIntegrationOperations
+from .entity_operations import EntityIntegrationOperations
 from .enums import IntegrationAttributeType, IntegrationCapability, IntegrationDisableMode
 from .exceptions import IntegrationConnectionError
-from .connect.integration_data import IntegrationData
-from .connect.integration_gateway import IntegrationGateway
+from .integration_data import IntegrationData
+from .integration_gateway import IntegrationGateway
 from .transient_models import IntegrationKey
 from .models import Integration, IntegrationAttribute
 from .transient_models import IntegrationMetaData
@@ -267,7 +267,7 @@ class IntegrationManager( Singleton ):
         # monitor module imports IntegrationManager lazily inside its
         # do_work, but the manager only needs the class here for
         # construction.
-        from .connect.monitors import IntegrationSyncCheckMonitor
+        from .connector.monitors import IntegrationSyncCheckMonitor
 
         if settings.DEBUG and settings.SUPPRESS_MONITORS:
             logger.debug( 'Skipping sync-check monitor. See SUPPRESS_MONITORS = True' )

@@ -27,8 +27,8 @@ from hi.apps.control.models import Controller
 from hi.integrations.event_definition_operations import EventDefinitionOperations
 from hi.integrations.transient_models import IntegrationKey, IntegrationRemovalSummary
 
-from .sync_result import IntegrationSyncResult
-from .user_data_detector import EntityUserDataDetector
+from hi.integrations.connector.sync_result import IntegrationSyncResult
+from hi.integrations.connector.user_data_detector import EntityUserDataDetector
 
 logger = logging.getLogger(__name__)
 

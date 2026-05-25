@@ -27,9 +27,9 @@ from hi.integrations.integration_manager import IntegrationManager
 from hi.integrations.integration_metadata_cache import IntegrationMetadataCache
 from hi.integrations.models import IntegrationAttribute
 
-from .entity_operations import EntityIntegrationOperations
-from .integration_attribute_edit_context import IntegrationAttributeItemEditContext
-from .placement_request import PlacementFormParser, PlacementUrlParams
+from hi.integrations.entity_operations import EntityIntegrationOperations
+from hi.integrations.integration_attribute_edit_context import IntegrationAttributeItemEditContext
+from hi.integrations.placement_request import PlacementFormParser, PlacementUrlParams
 from .sync_check import IntegrationSyncCheck
 from .sync_result import IntegrationSyncResult
 from .view_mixins import IntegrationPlacementViewMixin, IntegrationViewMixin

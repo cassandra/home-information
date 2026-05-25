@@ -16,7 +16,7 @@ from hi.integrations.enums import IntegrationCapability
 from hi.integrations.integration_manager import IntegrationManager
 from hi.integrations.integration_metadata_cache import IntegrationMetadataCache
 
-from .placement_request import PlacementUrlParams
+from hi.integrations.placement_request import PlacementUrlParams
 
 
 class IntegrationViewMixin:

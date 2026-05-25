@@ -27,8 +27,8 @@ from hi.apps.entity.models import Entity, EntityAttribute, EntityState
 from hi.apps.event.models import EventClause, EventDefinition
 from hi.apps.sense.models import Sensor
 from hi.apps.control.models import Controller
-from hi.integrations.connect.integration_synchronizer import IntegrationSynchronizer
-from hi.integrations.connect.sync_result import IntegrationSyncResult
+from hi.integrations.connector.integration_synchronizer import IntegrationSynchronizer
+from hi.integrations.connector.sync_result import IntegrationSyncResult
 from hi.testing.base_test_case import BaseTestCase
 
 logging.disable(logging.CRITICAL)
@@ -1410,7 +1410,7 @@ class IntegrationSynchronizerReconnectCycleTests(TestCase):
         ``_rebuild_integration_components`` override mirrors what a
         real integration converter does: set integration_key on the
         existing entity and save."""
-        from hi.integrations.connect.entity_operations import EntityIntegrationOperations
+        from hi.integrations.entity_operations import EntityIntegrationOperations
         from hi.integrations.transient_models import IntegrationKey
 
         integration_id = self.INTEGRATION_ID
@@ -1531,7 +1531,7 @@ class IntegrationSynchronizerReconnectCycleTests(TestCase):
         with user data via the same code path as sync-time
         preservation, so reconnect must work for those too. Pinned
         in the corrected #281 issue's edge-cases section."""
-        from hi.integrations.connect.entity_operations import EntityIntegrationOperations
+        from hi.integrations.entity_operations import EntityIntegrationOperations
 
         synchronizer = self._build_synchronizer()
         result = IntegrationSyncResult(title='Disable Cycle')

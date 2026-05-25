@@ -31,7 +31,7 @@ from hi.apps.alert.enums import AlarmLevel
 from hi.apps.monitor.periodic_monitor import PeriodicMonitor
 from hi.apps.system.provider_info import ProviderInfo
 
-from .integration_data import IntegrationData
+from hi.integrations.integration_data import IntegrationData
 from .sync_check import IntegrationSyncCheck, SyncCheckOutcome
 
 logger = logging.getLogger(__name__)

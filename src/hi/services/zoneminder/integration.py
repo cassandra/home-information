@@ -9,10 +9,10 @@ from hi.apps.sense.transient_models import SensorResponse
 from hi.apps.system.enums import HealthStatusType
 from hi.apps.system.health_status_provider import HealthStatusProvider
 
-from hi.integrations.connect.integration_controller import IntegrationController
-from hi.integrations.connect.integration_gateway import IntegrationGateway
-from hi.integrations.connect.integration_manage_view_pane import IntegrationManageViewPane
-from hi.integrations.connect.integration_synchronizer import IntegrationSynchronizer
+from hi.integrations.connector.integration_controller import IntegrationController
+from hi.integrations.integration_gateway import IntegrationGateway
+from hi.integrations.connector.integration_manage_view_pane import IntegrationManageViewPane
+from hi.integrations.connector.integration_synchronizer import IntegrationSynchronizer
 from hi.integrations.models import IntegrationAttribute
 from hi.integrations.transient_models import (
     ConnectionTestResult,

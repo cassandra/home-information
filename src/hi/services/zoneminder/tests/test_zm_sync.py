@@ -9,9 +9,9 @@ from hi.apps.entity.models import Entity, EntityAttribute
 from hi.apps.event.models import EventDefinition
 from hi.apps.sense.models import Sensor
 
-from hi.integrations.connect.entity_operations import EntityIntegrationOperations
+from hi.integrations.entity_operations import EntityIntegrationOperations
 from hi.integrations.integration_manager import IntegrationManager
-from hi.integrations.connect.sync_result import IntegrationSyncResult
+from hi.integrations.connector.sync_result import IntegrationSyncResult
 from hi.integrations.transient_models import IntegrationKey
 
 from hi.services.zoneminder.zm_sync import ZoneMinderSynchronizer
@@ -26,7 +26,7 @@ class TestZoneMinderSynchronizerLockBehavior(TestCase):
     def setUp(self):
         self.synchronizer = ZoneMinderSynchronizer()
     
-    @patch('hi.integrations.connect.integration_synchronizer.ExclusionLockContext')
+    @patch('hi.integrations.connector.integration_synchronizer.ExclusionLockContext')
     def test_sync_uses_exclusion_lock(self, mock_lock_context):
         """Test sync method uses exclusion lock and returns sync results"""
         # Mock a successful lock context
@@ -48,7 +48,7 @@ class TestZoneMinderSynchronizerLockBehavior(TestCase):
         self.assertGreater(len(result.error_list), 0)
         self.assertIn('Sync problem. ZM integration disabled?', result.error_list[0])
     
-    @patch('hi.integrations.connect.integration_synchronizer.ExclusionLockContext')
+    @patch('hi.integrations.connector.integration_synchronizer.ExclusionLockContext')
     def test_sync_handles_lock_runtime_error(self, mock_lock_context):
         """Test sync method handles RuntimeError from lock context and returns proper error result"""
         lock_error_msg = "Lock acquisition failed"

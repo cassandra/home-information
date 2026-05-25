@@ -11,14 +11,14 @@ import logging
 
 from django.test import TestCase
 
-from hi.integrations.connect.external_view_data import (
+from hi.integrations.connector.external_view_data import (
     AttachmentRef,
     CustomTemplateViewData,
     MinimalViewData,
     NameValuePair,
     StructuredViewData,
 )
-from hi.integrations.connect.integration_gateway import IntegrationGateway
+from hi.integrations.integration_gateway import IntegrationGateway
 
 logging.disable(logging.CRITICAL)
 

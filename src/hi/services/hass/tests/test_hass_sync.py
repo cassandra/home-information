@@ -5,7 +5,7 @@ from unittest.mock import Mock, patch
 from django.test import TestCase
 
 from hi.apps.entity.models import Entity
-from hi.integrations.connect.sync_result import IntegrationSyncResult
+from hi.integrations.connector.sync_result import IntegrationSyncResult
 from hi.integrations.transient_models import IntegrationKey
 
 from hi.services.hass.hass_sync import HassSynchronizer
@@ -42,7 +42,7 @@ class TestHassSynchronizerSyncMethod(TestCase):
     def setUp(self):
         self.synchronizer = HassSynchronizer()
     
-    @patch('hi.integrations.connect.integration_synchronizer.ExclusionLockContext')
+    @patch('hi.integrations.connector.integration_synchronizer.ExclusionLockContext')
     @patch.object(HassSynchronizer, '_sync_impl')
     def test_sync_handles_runtime_error(self, mock_sync_impl, mock_lock_context):
         """Test sync method handles RuntimeError exceptions"""
@@ -60,7 +60,7 @@ class TestHassSynchronizerSyncMethod(TestCase):
         # Verify error handling
         self.assertIn('Database connection failed', result.error_list[0])
     
-    @patch('hi.integrations.connect.integration_synchronizer.ExclusionLockContext')
+    @patch('hi.integrations.connector.integration_synchronizer.ExclusionLockContext')
     @patch.object(HassSynchronizer, '_sync_impl')
     def test_sync_returns_error_result_on_exception(self, mock_sync_impl, mock_lock_context):
         """Test sync method returns proper error result when _sync_impl raises exception"""

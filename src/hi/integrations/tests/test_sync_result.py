@@ -20,7 +20,7 @@ from hi.apps.entity.entity_placement import (
     EntityPlacementInput,
     EntityPlacementItem,
 )
-from hi.integrations.connect.sync_result import IntegrationSyncResult
+from hi.integrations.connector.sync_result import IntegrationSyncResult
 
 logging.disable(logging.CRITICAL)
 

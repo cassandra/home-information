@@ -19,7 +19,7 @@ from hi.apps.attribute.enums import AttributeType, AttributeValueType
 from hi.apps.entity.enums import EntityStateType
 from hi.apps.entity.models import Entity, EntityAttribute, EntityState
 from hi.apps.event.models import EventDefinition
-from hi.integrations.connect.entity_operations import EntityIntegrationOperations
+from hi.integrations.entity_operations import EntityIntegrationOperations
 from hi.services.hass.hass_converter import HassConverter
 from hi.services.hass.hass_metadata import HassMetaData
 from hi.services.hass.hass_models import HassDevice

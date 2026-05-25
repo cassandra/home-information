@@ -13,9 +13,9 @@ from hi.apps.entity.entity_placement import (
 from hi.apps.entity.models import Entity
 from hi.apps.model_helper import HiModelHelper
 
-from hi.integrations.connect.integration_synchronizer import IntegrationSynchronizer
-from hi.integrations.connect.sync_check import IntegrationSyncCheck, SyncDelta
-from hi.integrations.connect.sync_result import IntegrationSyncResult
+from hi.integrations.connector.integration_synchronizer import IntegrationSynchronizer
+from hi.integrations.connector.sync_check import IntegrationSyncCheck, SyncDelta
+from hi.integrations.connector.sync_result import IntegrationSyncResult
 from hi.integrations.transient_models import IntegrationKey
 
 from .frigate_manager import FrigateManager

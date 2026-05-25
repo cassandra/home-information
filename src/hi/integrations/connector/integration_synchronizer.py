@@ -24,7 +24,7 @@ from hi.apps.entity.entity_placement import (
 )
 from hi.apps.entity.models import Entity
 
-from .entity_operations import EntityIntegrationOperations
+from hi.integrations.entity_operations import EntityIntegrationOperations
 from .sync_check import IntegrationSyncCheck, SyncDelta
 from .sync_result import IntegrationSyncResult
 from hi.integrations.transient_models import IntegrationKey, IntegrationMetaData

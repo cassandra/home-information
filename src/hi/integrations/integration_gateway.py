@@ -6,10 +6,10 @@ from hi.apps.monitor.periodic_monitor import PeriodicMonitor
 from hi.apps.sense.transient_models import SensorResponse
 from hi.apps.system.health_status_provider import HealthStatusProvider
 
-from .external_view_data import ExternalViewData
-from .integration_controller import IntegrationController
-from .integration_manage_view_pane import IntegrationManageViewPane
-from .integration_synchronizer import IntegrationSynchronizer
+from hi.integrations.connector.external_view_data import ExternalViewData
+from hi.integrations.connector.integration_controller import IntegrationController
+from hi.integrations.connector.integration_manage_view_pane import IntegrationManageViewPane
+from hi.integrations.connector.integration_synchronizer import IntegrationSynchronizer
 from hi.integrations.models import IntegrationAttribute
 from hi.integrations.transient_models import (
     ConnectionTestResult,
