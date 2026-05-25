@@ -5,12 +5,29 @@ from django.urls import re_path, include
 from hi.apps.common.module_utils import import_module_safe
 
 from .connector import views
+from .importer import views as importer_views
 
 
 urlpatterns = [
-    path( '', 
-          views.IntegrationHomeView.as_view(), 
+    path( '',
+          views.IntegrationHomeView.as_view(),
           name='integrations_home' ),
+
+    path( 'import/',
+          importer_views.DataImportPageView.as_view(),
+          name='integrations_import_home' ),
+
+    re_path( r'^import/configure/(?P<integration_id>[\w\-]+)$',
+             importer_views.ImporterConfigureView.as_view(),
+             name='integrations_import_configure' ),
+
+    re_path( r'^import/run/(?P<integration_id>[\w\-]+)$',
+             importer_views.ImporterRunView.as_view(),
+             name='integrations_import_run' ),
+
+    re_path( r'^import/discard/(?P<integration_id>[\w\-]+)$',
+             importer_views.ImporterDiscardView.as_view(),
+             name='integrations_import_discard' ),
 
     path( 'select', 
           views.IntegrationSelectView.as_view(), 

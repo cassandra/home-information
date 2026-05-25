@@ -29,7 +29,7 @@ from .enums import LocationViewType
 from .location_attribute_edit_context import LocationAttributeItemEditContext
 from .location_manager import LocationManager
 from .models import LocationView, LocationAttribute
-from .view_mixins import LocationViewMixin
+from hi.apps.location.view_mixins import LocationViewMixin
 
 logger = logging.getLogger(__name__)
 

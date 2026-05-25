@@ -1,0 +1,39 @@
+{% extends "modals/action_2_with_cancel.html" %}
+{% load icons %}
+
+{% block modal_dialog_class %}hi-modal-dialog-600{% endblock %}
+
+{% block title_text %}
+Import from {{ integration_data.label }}?
+{% endblock %}
+
+{% block body %}
+{% if error_message %}
+<div class="alert alert-warning">{{ error_message }}</div>
+{% else %}
+<p>
+  Would import <strong>{{ new_count }}</strong>
+  {% if new_count == 1 %}new item{% else %}new items{% endif %}.
+  {% if skipped_count > 0 %}
+  <strong>{{ skipped_count }}</strong>
+  {% if skipped_count == 1 %}existing item{% else %}existing items{% endif %}
+  would be skipped.
+  {% endif %}
+</p>
+<p class="text-muted small">
+  Imported items become HI-owned and editable. The upstream source is
+  no longer consulted after import.
+</p>
+{% endif %}
+{% endblock %}
+
+{% block action_right %}
+{% if not error_message and new_count > 0 %}
+<form action="{{ run_url }}" method="post" class="d-inline">
+  {% csrf_token %}
+  <button type="submit" class="btn btn-primary">
+    {% icon "upload" size="lg" css_class="hi-icon-left" %}CONFIRM IMPORT
+  </button>
+</form>
+{% endif %}
+{% endblock %}

@@ -7,7 +7,7 @@ from hi.apps.monitor.status_display_manager import StatusDisplayManager
 
 from .control_mixins import ControllerMixin
 from .models import Controller
-from .view_mixins import ControlViewMixin
+from hi.apps.control.view_mixins import ControlViewMixin
 
 logger = logging.getLogger(__name__)
 

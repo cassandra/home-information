@@ -3,7 +3,7 @@ import logging
 from hi.hi_async_view import HiModalView
 
 from .transient_models import SensorResponse
-from .view_mixins import SenseViewMixin
+from hi.apps.sense.view_mixins import SenseViewMixin
 
 logger = logging.getLogger(__name__)
 

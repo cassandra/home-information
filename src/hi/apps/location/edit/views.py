@@ -33,7 +33,7 @@ from hi.enums import ItemType, ViewType
 from hi.hi_async_view import HiModalView, HiSideView
 
 from . import forms
-from .view_mixins import LocationEditViewMixin
+from hi.apps.location.edit.view_mixins import LocationEditViewMixin
 
 logger = logging.getLogger(__name__)
 

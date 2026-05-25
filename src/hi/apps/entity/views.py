@@ -23,7 +23,7 @@ from .entity_state_history import get_entity_state_history_page
 from .entity_state_role_order import ENTITY_STATUS_VIEW_ORDERING
 from .models import Entity, EntityAttribute
 from .transient_models import EntityHistoryData
-from .view_mixins import EntityStateViewMixin, EntityViewMixin
+from hi.apps.entity.view_mixins import EntityStateViewMixin, EntityViewMixin
 from .entity_attribute_edit_context import EntityAttributeItemEditContext
 
 

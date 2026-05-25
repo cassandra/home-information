@@ -15,7 +15,7 @@ from .exceptions import SimEntityValidationError
 from . import forms
 from .service_simulator_manager import ServiceSimulatorManager
 from .sim_entity import SimEntity
-from .view_mixins import ServiceSimulatorViewMixin
+from hi.simulator.services.view_mixins import ServiceSimulatorViewMixin
 
 
 def _build_service_tab_specs( active_simulator_id : str ):

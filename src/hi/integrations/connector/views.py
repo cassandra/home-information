@@ -32,7 +32,7 @@ from hi.integrations.integration_attribute_edit_context import IntegrationAttrib
 from hi.integrations.placement_request import PlacementFormParser, PlacementUrlParams
 from .sync_check import IntegrationSyncCheck
 from .sync_result import IntegrationSyncResult
-from .view_mixins import IntegrationPlacementViewMixin, IntegrationViewMixin
+from hi.integrations.view_mixins import IntegrationPlacementViewMixin, IntegrationViewMixin
 
 logger = logging.getLogger(__name__)
 

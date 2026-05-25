@@ -1,0 +1,42 @@
+{% extends "modals/base.html" %}
+{% load icons %}
+
+{% block modal_dialog_class %}hi-modal-dialog-600{% endblock %}
+{% block title_text %}Import from {{ integration_data.label }}{% endblock %}
+
+{% block body %}
+<div id="{{ attr_page_context.container_html_id }}"
+     class="{{ DIVID.ATTR_V2_CONTAINER_CLASS }}">
+
+  <div class="{{ DIVID.ATTR_V2_FORM_CLASS }}">
+    <form id="{{ attr_page_context.form_html_id }}"
+          action="{% url 'integrations_import_configure' integration_id=integration_data.integration_id %}"
+          method="post"
+          class="{{ DIVID.ATTR_V2_FORM_CLASS }} form"
+          enctype="multipart/form-data">
+      {% csrf_token %}
+
+      <div id="{{ attr_page_context.content_html_id }}"
+           class="{{ DIVID.ATTR_V2_CONTENT_CLASS }}">
+        {% include "integrations/panes/integration_edit_content_body.html" with show_modal_cancel=True %}
+      </div>
+    </form>
+  </div>
+
+  {% if messages %}
+    <div class="{{ DIVID.ATTR_V2_MESSAGES }}" id="{{ DIVID.ATTR_V2_MESSAGES }}">
+      {% for message in messages %}
+        <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+          {{ message }}
+          <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+            <span aria-hidden="true">&times;</span>
+          </button>
+        </div>
+      {% endfor %}
+    </div>
+  {% endif %}
+</div>
+{% endblock %}
+
+{% block footer %}
+{% endblock %}
