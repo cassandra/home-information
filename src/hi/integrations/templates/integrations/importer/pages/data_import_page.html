@@ -6,59 +6,46 @@
 
   <h2 class="mb-3">Data Import</h2>
 
-  {% for row in rows %}
-  <div class="d-flex justify-content-between {% if not forloop.first %}border-top{% endif %} py-2 my-1">
-    <div class="col-6 d-flex align-items-center">
-      <img src="{% static row.integration_data.integration_metadata.logo_static_path %}"
-           alt="{{ row.integration_data.integration_metadata.label }}"
-           class="img-fluid mr-2 hi-integration-logo">
-      <div>
-        <div>{{ row.integration_data.integration_metadata.label }}</div>
-        {% if row.is_dual_capability %}
-        <div class="text-muted small">
-          Also available as an <a href="#data-import-vs-integration">Integration</a>.
+  <div class="row">
+    {% for row in rows %}
+    <div class="col-12 col-sm-6 col-md-4 col-lg-3 mb-3">
+      <div class="card h-100 text-center">
+        <div class="card-body d-flex flex-column">
+          <img src="{% static row.integration_data.integration_metadata.logo_static_path %}"
+               alt="{{ row.integration_data.integration_metadata.label }}"
+               class="img-fluid hi-integration-logo--card mx-auto mb-3">
+          <h5 class="card-title mb-1">{{ row.integration_data.integration_metadata.label }}</h5>
+          {% if row.is_dual_capability %}
+          <a href="{% url 'integrations_import_info' %}"
+             data-async="modal"
+             title="What's the difference?"
+             class="d-block text-muted small text-decoration-none mb-3">
+            Also available as an Integration.
+            {% icon "info-circle" size="sm" %}
+          </a>
+          {% endif %}
+          <div class="mt-auto pt-2">
+            <a href="{% url 'integrations_import_configure' integration_id=row.integration_data.integration_id %}"
+               class="btn btn-primary btn-block" role="button" data-async="modal">
+              {% icon "settings" size="sm" css_class="hi-icon-left" %}CONFIGURE
+            </a>
+            {% if row.has_imported %}
+            <a href="{% url 'integrations_import_discard' integration_id=row.integration_data.integration_id %}"
+               role="button" class="btn btn-outline-danger btn-block mt-2" data-async="modal">
+              {% icon "delete" size="sm" css_class="hi-icon-left" %}DISCARD
+            </a>
+            {% endif %}
+          </div>
         </div>
-        {% endif %}
       </div>
     </div>
-
-    <div class="col-6 text-right d-flex align-items-center justify-content-end">
-      {% if row.has_imported %}
-      <a href="{% url 'integrations_import_discard' integration_id=row.integration_data.integration_id %}"
-         role="button" class="btn btn-outline-danger btn-control mr-2" data-async="modal">
-        {% icon "delete" size="sm" css_class="hi-icon-left" %}DISCARD
-      </a>
-      {% endif %}
-      <a href="{% url 'integrations_import_configure' integration_id=row.integration_data.integration_id %}"
-         class="btn btn-primary btn-control" role="button" data-async="modal">
-        {% icon "settings" size="sm" css_class="hi-icon-left" %}CONFIGURE
-      </a>
+    {% empty %}
+    <div class="col-12">
+      <div class="alert alert-info">
+        No integrations support Data Import.
+      </div>
     </div>
-  </div>
-  {% empty %}
-  <div class="alert alert-info">
-    No integrations support Data Import.
-  </div>
-  {% endfor %}
-
-  <hr class="mt-5">
-  <div id="data-import-vs-integration" class="text-muted small">
-    <h5>Data Import vs. Integration</h5>
-    <p>
-      <strong>Data Import</strong> is a one-time copy of items from an
-      upstream system into Home Information. Once imported, the items
-      are HI-owned: you can edit them freely, and they no longer depend
-      on the upstream source.
-    </p>
-    <p>
-      An <a href="{% url 'integrations_connect_home' %}">Integration</a>, in
-      contrast, mirrors the upstream system live — the upstream
-      remains the source of truth, and changes flow in via Update.
-    </p>
-    <p>
-      An integration may offer both modes (HomeBox today), but only
-      one mode's data should be active at a time for a given upstream.
-    </p>
+    {% endfor %}
   </div>
 
 </div>

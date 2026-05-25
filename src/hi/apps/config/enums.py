@@ -18,8 +18,8 @@ class ConfigPageType(LabeledEnum):
 
     SETTINGS      = ('Settings'     , ''   , 'config_settings' )
     INTEGRATIONS_CONNECT  = ('Integrations' , ''   , 'integrations_connect_home' )
-    INTEGRATIONS_IMPORT   = ('Data Import'  , ''   , 'integrations_import_home' )
     EVENTS        = ('Triggers'     , ''   , 'event_definitions' )
+    INTEGRATIONS_IMPORT   = ('Data Import'  , ''   , 'integrations_import_home' )
     SYSTEM_INFO   = ('System Info'  , ''   , 'system_info' )
 
     @classmethod

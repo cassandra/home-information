@@ -1,0 +1,25 @@
+{% extends "modals/action_done.html" %}
+
+{% block modal_dialog_class %}hi-modal-dialog-600{% endblock %}
+
+{% block title_text %}
+Data Import vs. Integration
+{% endblock %}
+
+{% block body %}
+<p>
+  <strong>Data Import</strong> is a one-time copy of items from an
+  upstream system into Home Information. Once imported, the items
+  are HI-owned: you can edit them freely, and they no longer depend
+  on the upstream source.
+</p>
+<p>
+  An <a href="{% url 'integrations_connect_home' %}">Integration</a>, in
+  contrast, mirrors the upstream system live — the upstream
+  remains the source of truth, and changes flow in via Update.
+</p>
+<p>
+  An integration may offer both modes (HomeBox today), but only
+  one mode's data should be active at a time for a given upstream.
+</p>
+{% endblock %}

@@ -17,6 +17,10 @@ urlpatterns = [
           importer_views.DataImportPageView.as_view(),
           name='integrations_import_home' ),
 
+    path( 'import/info',
+          importer_views.DataImportInfoView.as_view(),
+          name='integrations_import_info' ),
+
     re_path( r'^import/configure/(?P<integration_id>[\w\-]+)$',
              importer_views.ImporterConfigureView.as_view(),
              name='integrations_import_configure' ),

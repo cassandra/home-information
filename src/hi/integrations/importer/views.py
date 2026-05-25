@@ -119,6 +119,7 @@ class ImporterConfigureView( CapabilityConfigureView ):
         existing_names = set(
             Entity.objects.filter(
                 integration_id = integration_data.integration_id,
+                data_source_str = str(EntityDataSource.INTERNAL),
             ).values_list('integration_name', flat=True)
         )
         new_count = sum(
@@ -136,10 +137,18 @@ class ImporterConfigureView( CapabilityConfigureView ):
                 'integration_data': integration_data,
                 'new_count': new_count,
                 'skipped_count': skipped_count,
+                'existing_imported_count': len(existing_names),
                 'run_url': run_url,
             },
             template_name = 'integrations/importer/modals/import_preview.html',
         )
+
+
+class DataImportInfoView( HiModalView ):
+    """Static info modal explaining Data Import vs. Integration."""
+
+    def get_template_name(self) -> str:
+        return 'integrations/importer/modals/data_import_info.html'
 
 
 class ImporterRunView( HiModalView, IntegrationViewMixin ):

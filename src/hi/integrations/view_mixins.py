@@ -93,10 +93,8 @@ class CapabilityBlockViewMixin:
         return self.modal_response(
             request,
             context = {
-                'title': (
-                    f'Cannot configure {integration_data.label} as {my_label}'
-                ),
                 'integration_data': integration_data,
+                'my_label': my_label,
                 'existing_count': existing_count,
                 'existing_mode_clause': (
                     f'has data configured as {other_label} with'

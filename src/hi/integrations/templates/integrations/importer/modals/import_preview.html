@@ -4,12 +4,30 @@
 {% block modal_dialog_class %}hi-modal-dialog-600{% endblock %}
 
 {% block title_text %}
+{% if not error_message and new_count > 0 %}
 Import from {{ integration_data.label }}?
+{% else %}
+{{ integration_data.label }} Import
+{% endif %}
 {% endblock %}
 
 {% block body %}
 {% if error_message %}
 <div class="alert alert-warning">{{ error_message }}</div>
+{% elif new_count == 0 %}
+{% if skipped_count > 0 %}
+<p>
+  No new items to import. All
+  {% if skipped_count == 1 %}
+  <strong>1</strong> upstream item has
+  {% else %}
+  <strong>{{ skipped_count }}</strong> upstream items have
+  {% endif %}
+  already been imported.
+</p>
+{% else %}
+<p>No items found to import.</p>
+{% endif %}
 {% else %}
 <p>
   Would import <strong>{{ new_count }}</strong>
@@ -25,11 +43,30 @@ Import from {{ integration_data.label }}?
   no longer consulted after import.
 </p>
 {% endif %}
+
+{% if existing_imported_count > 0 and not error_message %}
+<p class="text-muted small">
+  Currently <strong>{{ existing_imported_count }}</strong>
+  {% if existing_imported_count == 1 %}item{% else %}items{% endif %}
+  imported from {{ integration_data.label }}.
+</p>
+{% endif %}
+{% endblock %}
+
+{% block action_left %}
+{% if error_message or new_count > 0 %}{{ block.super }}{% endif %}
+{% endblock %}
+
+{% block action_center %}
+{% if not error_message and new_count == 0 %}
+<a role="button" autofocus="autofocus" class="btn btn-primary"
+   href="#" data-dismiss="modal">DONE</a>
+{% endif %}
 {% endblock %}
 
 {% block action_right %}
 {% if not error_message and new_count > 0 %}
-<form action="{{ run_url }}" method="post" class="d-inline">
+<form action="{{ run_url }}" method="post" class="d-inline" data-async="modal">
   {% csrf_token %}
   <button type="submit" class="btn btn-primary">
     {% icon "upload" size="lg" css_class="hi-icon-left" %}CONFIRM IMPORT

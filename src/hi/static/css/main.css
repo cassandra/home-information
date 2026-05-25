@@ -2085,6 +2085,16 @@ g[hover] {
     height: auto;
 }
 
+/* Card variant for grid layouts (e.g., Data Import page) where the
+   logo carries primary recognition weight rather than acting as an
+   indicator next to a label. */
+.hi-integration-logo--card {
+    max-height: 72px;
+    max-width: 72px;
+    width: auto;
+    height: auto;
+}
+
 /* Smaller variant for inline contexts (entity detail badges,
    list-row item indicators) where 24px is too dominant. */
 .hi-integration-logo--inline {
