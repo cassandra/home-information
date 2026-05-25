@@ -492,6 +492,15 @@ class IntegrationManager( Singleton ):
         un-pauses) cannot race with another caller. Callers can invoke
         this unconditionally without first checking is_enabled, which
         avoids a TOCTOU window between caller check and manager write.
+
+        Callers that just saved credentials must invoke
+        ``gateway.notify_settings_changed()`` themselves before calling
+        this method (or before any immediate downstream sync). The
+        post_save signal eventually delivers the same nudge via
+        DelayedSignalProcessor, but that 0.1s delay races synchronous
+        calls — and this method's monitor launch only fires on the
+        disabled→enabled transition, so it cannot be relied on for the
+        re-Configure path.
         """
         with self._data_lock:
             with transaction.atomic():
@@ -505,19 +514,6 @@ class IntegrationManager( Singleton ):
                 integration_data.integration.is_paused = False
                 integration_data.integration.save()
             self.refresh_integrations_from_db()
-            # Synchronously notify the integration's gateway so its
-            # singleton manager picks up the freshly-saved credentials
-            # before downstream code (sync, monitors) consults the
-            # cached client. The post_save signal would eventually
-            # deliver the same nudge via DelayedSignalProcessor, but
-            # the 0.1s delay races synchronous sync calls.
-            try:
-                integration_data.integration_gateway.notify_settings_changed()
-            except Exception as e:
-                logger.warning(
-                    f'Synchronous notify_settings_changed failed for '
-                    f'{integration_data.integration_id}: {e}'
-                )
             self._launch_integration_monitor_task(
                 integration_data = integration_data,
             )

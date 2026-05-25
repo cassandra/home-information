@@ -266,34 +266,6 @@ class ImporterConfigureViewTests(TestCase):
         self.assertIn('GO TO INTEGRATIONS', body)
         self.assertIn(reverse('integrations_connect_home'), body)
 
-    def test_get_import_not_blocked_when_already_imported(self):
-        # Existing Import entities → user is in "re-import" territory;
-        # block does NOT fire even with coexisting EXTERNAL entities.
-        _populate_manager([
-            (self.INTEGRATION_ID, _ImportCapableGateway(
-                self.INTEGRATION_ID,
-                capabilities=self._DUAL_CAPS,
-            )),
-        ])
-        Entity.objects.create(
-            integration_id=self.INTEGRATION_ID,
-            integration_name='imported-1',
-            name='Imported',
-            entity_type_str=str(EntityType.OTHER),
-            data_source_str=str(EntityDataSource.INTERNAL),
-        )
-        Entity.objects.create(
-            integration_id=self.INTEGRATION_ID,
-            integration_name='connected-1',
-            name='Connected',
-            entity_type_str=str(EntityType.OTHER),
-            data_source_str=str(EntityDataSource.EXTERNAL),
-        )
-        response = self.client.get(self._url())
-        body = response.content.decode()
-        self.assertNotIn('Cannot configure', body)
-        self.assertIn('>\n          IMPORT\n        </button>', body)
-
     def test_get_import_not_blocked_for_single_capability_integration(self):
         # Hypothetical Import-only integration (no CONNECT): block
         # never fires even with EXTERNAL entities laying around.

@@ -352,17 +352,13 @@ class ConnectorConfigureView( HiModalView,
         integration_manager = IntegrationManager()
         integration_data = self.get_integration_data( request, *args, **kwargs )
 
-        # Mode-switch guard fires only on the initial-Connect path
-        # (is_enabled=False). Re-Configure of an already-enabled
-        # integration always proceeds.
-        if not integration_data.integration.is_enabled:
-            block_response = self.render_capability_block_if_conflict(
-                request = request,
-                integration_data = integration_data,
-                capability_being_initiated = IntegrationCapability.CONNECT,
-            )
-            if block_response is not None:
-                return block_response
+        block_response = self.render_capability_block_if_conflict(
+            request = request,
+            integration_data = integration_data,
+            capability_being_initiated = IntegrationCapability.CONNECT,
+        )
+        if block_response is not None:
+            return block_response
 
         integration_manager.ensure_all_attributes_exist(
             integration_metadata = integration_data.integration_metadata,
@@ -398,6 +394,20 @@ class ConnectorConfigureView( HiModalView,
         # Errors just dynamically populate modal content with form errors.
         if response.status_code > 299:
             return response
+
+        # Synchronously refresh the integration's singleton manager so
+        # the freshly-saved credentials are visible before downstream
+        # sync runs. The post_save signal eventually delivers this via
+        # DelayedSignalProcessor, but the 0.1s delay races the
+        # immediate sync call (and enable_integration's own nudge fires
+        # only on the disabled->enabled transition, missing re-Configure).
+        try:
+            integration_data.integration_gateway.notify_settings_changed()
+        except Exception as e:
+            logger.warning(
+                f'Synchronous notify_settings_changed failed for '
+                f'{integration_data.integration_id}: {e}'
+            )
 
         integration_manager.enable_integration(
             integration_data = integration_data,

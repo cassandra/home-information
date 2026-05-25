@@ -100,22 +100,13 @@ class ImporterConfigureView( HiModalView,
         integration_manager = IntegrationManager()
         integration_data = self.get_integration_data( request, *args, **kwargs )
 
-        # Mode-switch guard fires only on the initial-Import path
-        # (no Import entities yet). Re-import of an integration that
-        # already has imported entities does NOT block — that's the
-        # standard incremental-import flow.
-        has_imported = Entity.objects.filter(
-            integration_id = integration_data.integration_id,
-            data_source_str = str(EntityDataSource.INTERNAL),
-        ).exists()
-        if not has_imported:
-            block_response = self.render_capability_block_if_conflict(
-                request = request,
-                integration_data = integration_data,
-                capability_being_initiated = IntegrationCapability.IMPORT,
-            )
-            if block_response is not None:
-                return block_response
+        block_response = self.render_capability_block_if_conflict(
+            request = request,
+            integration_data = integration_data,
+            capability_being_initiated = IntegrationCapability.IMPORT,
+        )
+        if block_response is not None:
+            return block_response
 
         integration_manager.ensure_all_attributes_exist(
             integration_metadata = integration_data.integration_metadata,
