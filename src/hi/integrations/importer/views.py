@@ -9,11 +9,10 @@ new-vs-skipped split against existing HI entities, and renders the
 preview modal. Phase 5 wires CONFIRM IMPORT → run.
 """
 import logging
-from typing import Any, Dict, Optional
+from typing import Any, Dict
 
 from django.urls import reverse
 
-from hi.apps.attribute.view_mixins import AttributeEditViewMixin
 from hi.apps.config.enums import ConfigPageType
 from hi.apps.config.views import ConfigPageView
 from hi.apps.entity.enums import EntityDataSource
@@ -23,16 +22,10 @@ from hi.hi_async_view import HiModalView
 from hi.views import page_not_found_response
 
 from hi.integrations.enums import IntegrationCapability
-from hi.integrations.integration_attribute_edit_context import (
-    IntegrationAttributeItemEditContext,
-)
-from hi.integrations.integration_manager import IntegrationManager
 from hi.integrations.integration_metadata_cache import IntegrationMetadataCache
 from hi.integrations.placement_request import PlacementUrlParams
-from hi.integrations.view_mixins import (
-    CapabilityBlockViewMixin,
-    IntegrationViewMixin,
-)
+from hi.integrations.view_mixins import IntegrationViewMixin
+from hi.integrations.views import CapabilityConfigureView
 
 logger = logging.getLogger(__name__)
 
@@ -84,68 +77,23 @@ class DataImportPageView( ConfigPageView, IntegrationViewMixin ):
         }
 
 
-class ImporterConfigureView( HiModalView,
-                             IntegrationViewMixin,
-                             CapabilityBlockViewMixin,
-                             AttributeEditViewMixin ):
+class ImporterConfigureView( CapabilityConfigureView ):
     """Credentials form for IMPORT. The form's submit (IMPORT) runs
     validate_configuration + validate_access, fetches candidates, and
     renders the preview modal with new/skipped counts. No DB writes
-    to entities yet — that happens in Phase 5's confirm step."""
+    to entities yet — that happens in the confirm step."""
 
-    def get_template_name(self) -> str:
-        return 'integrations/importer/modals/importer_configure.html'
+    capability    = IntegrationCapability.IMPORT
+    button_label  = 'IMPORT'
+    template_name = 'integrations/importer/modals/importer_configure.html'
+    error_title   = 'Cannot configure import.'
 
-    def get(self, request, *args, **kwargs):
-        integration_manager = IntegrationManager()
-        integration_data = self.get_integration_data( request, *args, **kwargs )
-
-        block_response = self.render_capability_block_if_conflict(
-            request = request,
-            integration_data = integration_data,
-            capability_being_initiated = IntegrationCapability.IMPORT,
-        )
-        if block_response is not None:
-            return block_response
-
-        integration_manager.ensure_all_attributes_exist(
-            integration_metadata = integration_data.integration_metadata,
-            integration = integration_data.integration,
-        )
-        attr_item_context = IntegrationAttributeItemEditContext(
-            integration_data = integration_data,
-            capability = IntegrationCapability.IMPORT,
-            update_button_label = 'IMPORT',
-            suppress_history = True,
-            show_secrets = True,
-        )
-        template_context = self.create_initial_template_context(
-            attr_item_context = attr_item_context,
-        )
-        return self.modal_response(request, template_context)
-
-    def post(self, request, *args, **kwargs):
-        integration_data = self.get_integration_data( request, *args, **kwargs )
-        attr_item_context = IntegrationAttributeItemEditContext(
-            integration_data = integration_data,
-            capability = IntegrationCapability.IMPORT,
-            update_button_label = 'IMPORT',
-            suppress_history = True,
-            show_secrets = True,
-        )
-        response = self.post_attribute_form(
-            request = request,
-            attr_item_context = attr_item_context,
-        )
-        # Errors re-render the form with messages.
-        if response.status_code > 299:
-            return response
-
+    def handle_post_success(self, request, integration_data):
         # Synchronously refresh the integration's singleton manager so
         # the freshly-saved credentials are visible before the importer
         # reads them. The post_save signal eventually delivers this via
-        # DelayedSignalProcessor, but the 0.1s delay races the immediate
-        # importer call.
+        # DelayedSignalProcessor, but the 0.1s delay races the
+        # immediate get_candidate_items() call.
         try:
             integration_data.integration_gateway.notify_settings_changed()
         except Exception as e:
@@ -154,7 +102,6 @@ class ImporterConfigureView( HiModalView,
                 f'{integration_data.integration_id}: {e}'
             )
 
-        # Validation passed. Fetch candidates and compute counts.
         importer = integration_data.integration_gateway.get_importer()
         if importer is None:
             return self.modal_response(
@@ -193,17 +140,6 @@ class ImporterConfigureView( HiModalView,
             },
             template_name = 'integrations/importer/modals/import_preview.html',
         )
-
-    def validate_attributes_extra(
-            self, attr_item_context, regular_attributes_formset, request,
-    ) -> Optional[Any]:
-        """AttributeEditViewMixin hook: schema + access validation."""
-        self.validate_attributes_extra_helper(
-            attr_item_context,
-            regular_attributes_formset,
-            error_title = 'Cannot configure import.',
-        )
-        return
 
 
 class ImporterRunView( HiModalView, IntegrationViewMixin ):

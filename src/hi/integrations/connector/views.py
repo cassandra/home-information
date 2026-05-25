@@ -33,10 +33,10 @@ from hi.integrations.placement_request import PlacementFormParser, PlacementUrlP
 from .sync_check import IntegrationSyncCheck
 from .sync_result import IntegrationSyncResult
 from hi.integrations.view_mixins import (
-    CapabilityBlockViewMixin,
     IntegrationPlacementViewMixin,
     IntegrationViewMixin,
 )
+from hi.integrations.views import CapabilityConfigureView
 
 logger = logging.getLogger(__name__)
 
@@ -340,67 +340,25 @@ class IntegrationRefineView( View ):
         ) )
 
 
-class ConnectorConfigureView( HiModalView,
-                              IntegrationViewMixin,
-                              CapabilityBlockViewMixin,
-                              AttributeEditViewMixin ):
+class ConnectorConfigureView( CapabilityConfigureView ):
 
-    def get_template_name( self ) -> str:
-        return 'integrations/connector/modals/integration_enable.html'
+    capability    = IntegrationCapability.CONNECT
+    button_label  = 'CONNECT'
+    template_name = 'integrations/connector/modals/integration_enable.html'
+    error_title   = 'Cannot configure integration.'
 
-    def get(self, request, *args, **kwargs):
-        integration_manager = IntegrationManager()
-        integration_data = self.get_integration_data( request, *args, **kwargs )
-
-        block_response = self.render_capability_block_if_conflict(
-            request = request,
+    def handle_post_success(self, request, integration_data):
+        IntegrationManager().enable_integration(
             integration_data = integration_data,
-            capability_being_initiated = IntegrationCapability.CONNECT,
-        )
-        if block_response is not None:
-            return block_response
-
-        integration_manager.ensure_all_attributes_exist(
-            integration_metadata = integration_data.integration_metadata,
-            integration = integration_data.integration,
-        )
-        attr_item_context = IntegrationAttributeItemEditContext(
-            integration_data = integration_data,
-            capability = IntegrationCapability.CONNECT,
-            update_button_label = 'CONNECT',
-            suppress_history = True,
-            show_secrets = True,
-        )
-        template_context = self.create_initial_template_context(
-            attr_item_context= attr_item_context,
-        )
-        return self.modal_response( request, template_context )
-
-    def post(self, request, *args, **kwargs):
-        integration_manager = IntegrationManager()
-        integration_data = self.get_integration_data( request, *args, **kwargs )
-        attr_item_context = IntegrationAttributeItemEditContext(
-            integration_data = integration_data,
-            capability = IntegrationCapability.CONNECT,
-            update_button_label = 'CONNECT',
-            suppress_history = True,
-            show_secrets = True,
-        )
-        response = self.post_attribute_form(
-            request = request,
-            attr_item_context = attr_item_context,
         )
 
-        # Errors just dynamically populate modal content with form errors.
-        if response.status_code > 299:
-            return response
-
-        # Synchronously refresh the integration's singleton manager so
-        # the freshly-saved credentials are visible before downstream
-        # sync runs. The post_save signal eventually delivers this via
-        # DelayedSignalProcessor, but the 0.1s delay races the
-        # immediate sync call (and enable_integration's own nudge fires
-        # only on the disabled->enabled transition, missing re-Configure).
+        # Connect-side managers (Frigate/Hass/ZM) gate client (re)build
+        # on integration.is_enabled, so the notify MUST fire after
+        # enable_integration — otherwise the manager reloads with
+        # is_enabled=False, nulls its client, and the immediately-
+        # following sync sees no client. Calling unconditionally also
+        # covers the re-Configure path (already enabled), where
+        # enable_integration early-returns without nudging.
         try:
             integration_data.integration_gateway.notify_settings_changed()
         except Exception as e:
@@ -408,10 +366,6 @@ class ConnectorConfigureView( HiModalView,
                 f'Synchronous notify_settings_changed failed for '
                 f'{integration_data.integration_id}: {e}'
             )
-
-        integration_manager.enable_integration(
-            integration_data = integration_data,
-        )
 
         # Phase 7 collapse: when the integration supports sync, run it
         # right here and render the sync-result modal directly. The
@@ -430,17 +384,6 @@ class ConnectorConfigureView( HiModalView,
             kwargs = { 'integration_id': integration_data.integration_id },
         )
         return AttributeRedirectResponse( url = redirect_url )
-
-    def validate_attributes_extra( self,
-                                   attr_item_context,
-                                   regular_attributes_formset,
-                                   request ):
-        """ Override for AttributeEditViewMixin """
-        self.validate_attributes_extra_helper(
-            attr_item_context,
-            regular_attributes_formset,
-            error_title = 'Cannot configure integration.' )
-        return
 
     
 class IntegrationDisableView( HiModalView, IntegrationViewMixin ):
