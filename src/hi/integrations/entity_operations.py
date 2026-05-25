@@ -20,6 +20,7 @@ from typing import Dict, Iterable, List, Optional, Set
 from django.db import transaction
 
 from hi.apps.attribute.enums import AttributeType
+from hi.apps.entity.enums import EntityDataSource
 from hi.apps.entity.models import Entity, EntityState, EntityStateDelegation
 from hi.apps.sense.models import Sensor
 from hi.apps.control.models import Controller
@@ -391,6 +392,13 @@ class EntityIntegrationOperations:
             # rights are restored.
             entity.can_user_delete = True
             entity.allow_internal_attributes = True
+
+            # Flip data_source to INTERNAL. A detached entity is no
+            # longer constrained by an upstream system — HI owns the
+            # editable representation. The reconnect path restores
+            # EXTERNAL via the converter dispatch in
+            # _rebuild_integration_components.
+            entity.data_source = EntityDataSource.INTERNAL
 
             # Suppress integration-backed capabilities. The intrinsic
             # video-stream capability is genuinely lost (the backing sensor

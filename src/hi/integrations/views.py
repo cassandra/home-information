@@ -77,6 +77,18 @@ class CapabilityConfigureView( HiModalView,
 
     def post(self, request, *args, **kwargs):
         integration_data = self.get_integration_data( request, *args, **kwargs )
+
+        # Re-check the mode-switch invariant on POST. The GET path
+        # already runs this, but a direct POST (cached form, replayed
+        # request) would otherwise bypass it.
+        block_response = self.render_capability_block_if_conflict(
+            request = request,
+            integration_data = integration_data,
+            capability_being_initiated = self.capability,
+        )
+        if block_response is not None:
+            return block_response
+
         attr_item_context = self._build_attr_item_context( integration_data )
         response = self.post_attribute_form(
             request = request,

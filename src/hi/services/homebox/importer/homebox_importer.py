@@ -104,9 +104,14 @@ class HomeBoxImporter( IntegrationImporter, HomeBoxMixin ):
             result.error_list.append( f'Cannot import from HomeBox: {e}' )
             return
 
+        # Match the preview's predicate: scope skip-detection to
+        # already-imported (INTERNAL) rows so a stale EXTERNAL row
+        # (invariant-broken state) cannot silently turn an advertised
+        # new candidate into a skip at run time.
         existing_integration_names = set(
             Entity.objects.filter(
                 integration_id = HbMetaData.integration_id,
+                data_source_str = str( EntityDataSource.INTERNAL ),
             ).values_list( 'integration_name', flat = True )
         )
 

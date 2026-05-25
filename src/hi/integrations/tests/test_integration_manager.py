@@ -10,6 +10,7 @@ from unittest.mock import Mock, AsyncMock, patch
 from django.test import TestCase
 
 from hi.apps.attribute.enums import AttributeType, AttributeValueType
+from hi.apps.entity.enums import EntityDataSource
 from hi.apps.entity.models import Entity, EntityAttribute, EntityState
 from hi.apps.event.models import EventClause, EventDefinition
 from hi.integrations.exceptions import IntegrationConnectionError
@@ -693,6 +694,7 @@ class IntegrationManagerTestCase(TestCase):
             entity_type_str='LIGHT',
             integration_id=integration_id,
             integration_name='device_no_user_data',
+            data_source_str=str(EntityDataSource.EXTERNAL),
         )
         EntityAttribute.objects.create(
             entity=integration_only_entity,
@@ -710,6 +712,7 @@ class IntegrationManagerTestCase(TestCase):
                 entity_type_str='LIGHT',
                 integration_id=integration_id,
                 integration_name='device_with_user_data',
+                data_source_str=str(EntityDataSource.EXTERNAL),
             )
             EntityAttribute.objects.create(
                 entity=user_data_entity,

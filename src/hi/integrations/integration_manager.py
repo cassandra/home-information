@@ -15,6 +15,7 @@ from hi.apps.attribute.enums import AttributeType
 from hi.apps.common.delayed_signal_processor import DelayedSignalProcessor
 from hi.apps.common.singleton import Singleton
 from hi.apps.common.module_utils import import_module_safe
+from hi.apps.entity.enums import EntityDataSource
 from hi.apps.entity.models import Entity
 from hi.apps.system.health_status_provider import HealthStatusProvider
 
@@ -558,14 +559,21 @@ class IntegrationManager( Singleton ):
         # calls on every integration for the duration of a wide
         # removal.
         with transaction.atomic():
-            # Seed: every entity attached to this integration. The
-            # closure walk inside the helper picks up delegate
-            # entities (e.g., Area entities auto-created when a
-            # motion sensor was placed in a view) that would be
+            # Seed: every Connect-mode (EXTERNAL) entity attached to
+            # this integration. Filtering by data_source=EXTERNAL is
+            # defense-in-depth against the mode-switch invariant: if
+            # INTERNAL (imported) entities ever coexist with a Connect
+            # session, disable must not silently delete user-owned
+            # imported data. The closure walk inside the helper picks
+            # up delegate entities (e.g., Area entities auto-created
+            # when a motion sensor was placed in a view) that would be
             # orphaned by the removal.
             seed_entity_ids = list(
                 Entity.objects
-                .filter( integration_id = integration_id )
+                .filter(
+                    integration_id = integration_id,
+                    data_source_str = str( EntityDataSource.EXTERNAL ),
+                )
                 .values_list( 'id', flat = True )
             )
             EntityIntegrationOperations.remove_entities_with_closure(
