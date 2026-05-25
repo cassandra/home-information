@@ -1,0 +1,46 @@
+{% extends "modals/action_2_with_cancel.html" %}
+{% load icons %}
+
+{% block header_class %}bg-secondary{% endblock %}
+
+{% block preamble %}
+<form action="{% url 'integrations_import_discard' integration_id=integration_data.integration_id %}"
+      method="post"
+      class="form" data-async="modal">
+  {% csrf_token %}
+{% endblock %}
+
+{% block title_text %}
+{{ integration_data.label }}
+{% endblock %}
+
+{% block body %}
+<h4>Discard imported {{ integration_data.label }} items?</h4>
+
+{% if imported_count == 0 %}
+<p>No imported items to discard.</p>
+{% else %}
+<p>
+  This will delete <strong>{{ imported_count }}</strong>
+  {% if imported_count == 1 %}item{% else %}items{% endif %}
+  previously imported from {{ integration_data.label }},
+  along with their custom data and attached files.
+</p>
+<p class="text-muted small">
+  This cannot be undone. To bring these items back, you'd need to
+  re-import from {{ integration_data.label }}.
+</p>
+{% endif %}
+{% endblock %}
+
+{% block action_right %}
+{% if imported_count > 0 %}
+<button type="submit" class="btn btn-danger">
+  {% icon "delete" size="sm" css_class="hi-icon-left" %}DISCARD
+</button>
+{% endif %}
+{% endblock %}
+
+{% block postamble %}
+</form>
+{% endblock %}

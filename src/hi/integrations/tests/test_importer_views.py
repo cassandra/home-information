@@ -69,6 +69,22 @@ class _ImportCapableGateway(IntegrationGateway):
     def get_importer(self) -> Importer:
         importer = Importer()
         importer.get_candidate_items = lambda: list(self._candidates)
+
+        # Real DISCARD semantics: delete data_source=INTERNAL rows for
+        # this integration_id. Mirrors HomeBoxImporter for test
+        # purposes.
+        def _stub_discard(integration_id):
+            from hi.integrations.importer.transient_models import (
+                IntegrationDiscardResult,
+            )
+            qs = Entity.objects.filter(
+                integration_id=integration_id,
+                data_source_str=str(EntityDataSource.INTERNAL),
+            )
+            count = qs.count()
+            qs.delete()
+            return IntegrationDiscardResult(count=count)
+        importer.discard_imported_data = _stub_discard
         return importer
 
 
@@ -238,6 +254,70 @@ class ImporterConfigureViewTests(TestCase):
         # Placement CTA renders the placement URL.
         self.assertIn('Place 1 new item', body)
         self.assertIn('placement', body)
+
+    def _discard_url(self):
+        return reverse(
+            'integrations_import_discard',
+            kwargs={'integration_id': self.INTEGRATION_ID},
+        )
+
+    def test_get_discard_renders_confirm_with_count(self):
+        _populate_manager([
+            (self.INTEGRATION_ID, _ImportCapableGateway(self.INTEGRATION_ID)),
+        ])
+        for i in range(3):
+            Entity.objects.create(
+                integration_id=self.INTEGRATION_ID,
+                integration_name=f'item-{i}',
+                name=f'Item {i}',
+                entity_type_str=str(EntityType.OTHER),
+                data_source_str=str(EntityDataSource.INTERNAL),
+            )
+
+        response = self.client.get(self._discard_url())
+        self.assertEqual(response.status_code, 200)
+        body = response.content.decode()
+        self.assertIn('Discard imported', body)
+        # Count appears in the body.
+        self.assertIn('3', body)
+        self.assertIn('DISCARD', body)
+
+    def test_get_discard_with_zero_imported_hides_action(self):
+        _populate_manager([
+            (self.INTEGRATION_ID, _ImportCapableGateway(self.INTEGRATION_ID)),
+        ])
+        response = self.client.get(self._discard_url())
+        body = response.content.decode()
+        self.assertIn('No imported items to discard', body)
+
+    def test_post_discard_deletes_imported_and_leaves_connect_alone(self):
+        _populate_manager([
+            (self.INTEGRATION_ID, _ImportCapableGateway(self.INTEGRATION_ID)),
+        ])
+        Entity.objects.create(
+            integration_id=self.INTEGRATION_ID,
+            integration_name='imported-1',
+            name='Imported',
+            entity_type_str=str(EntityType.OTHER),
+            data_source_str=str(EntityDataSource.INTERNAL),
+        )
+        Entity.objects.create(
+            integration_id=self.INTEGRATION_ID,
+            integration_name='connected-1',
+            name='Connected',
+            entity_type_str=str(EntityType.OTHER),
+            data_source_str=str(EntityDataSource.EXTERNAL),
+        )
+
+        response = self.client.post(self._discard_url(), {})
+
+        self.assertTrue(200 <= response.status_code < 400)
+        self.assertFalse(
+            Entity.objects.filter(integration_name='imported-1').exists()
+        )
+        self.assertTrue(
+            Entity.objects.filter(integration_name='connected-1').exists()
+        )
 
     def test_post_run_renders_nothing_imported_when_all_skipped(self):
         from hi.integrations.importer.import_result import IntegrationImportResult

@@ -244,18 +244,51 @@ class ImporterRunView( HiModalView, IntegrationViewMixin ):
 
 
 class ImporterDiscardView( HiModalView, IntegrationViewMixin ):
-    """DISCARD handler — wired in Phase 6."""
+    """DISCARD handler. GET renders the confirmation modal with the
+    count of imported entities; POST runs discard_imported_data and
+    redirects back to the Data Import page. Single-action confirm —
+    imported items ARE the user data, so the Connect-side SAFE/ALL
+    split doesn't apply."""
+
+    def get_template_name(self) -> str:
+        return 'integrations/import/import_discard_confirm.html'
 
     def get(self, request, *args, **kwargs):
-        from django.http import HttpResponse
-        return HttpResponse(
-            'Discard is not yet implemented (Phase 6).',
-            status = 501,
+        integration_id = kwargs.get('integration_id')
+        integration_data = self.get_integration_data(
+            integration_id = integration_id,
+        )
+        imported_count = Entity.objects.filter(
+            integration_id = integration_data.integration_id,
+            data_source_str = str(EntityDataSource.INTERNAL),
+        ).count()
+        return self.modal_response(
+            request,
+            context = {
+                'integration_data': integration_data,
+                'imported_count': imported_count,
+            },
         )
 
     def post(self, request, *args, **kwargs):
-        from django.http import HttpResponse
-        return HttpResponse(
-            'Discard is not yet implemented (Phase 6).',
-            status = 501,
+        integration_id = kwargs.get('integration_id')
+        integration_data = self.get_integration_data(
+            integration_id = integration_id,
         )
+        importer = integration_data.integration_gateway.get_importer()
+        if importer is None:
+            return page_not_found_response(request)
+
+        try:
+            importer.discard_imported_data(
+                integration_id = integration_data.integration_id,
+            )
+        finally:
+            # Mirror the Connect-side Disable cleanup: any cached
+            # metadata / sensor-response state for the just-deleted
+            # entities must drop too.
+            IntegrationMetadataCache().invalidate()
+            SensorResponseManager().invalidate_local_sensor_cache()
+
+        redirect_url = reverse('integrations_import_home')
+        return self.redirect_response(request, redirect_url)
