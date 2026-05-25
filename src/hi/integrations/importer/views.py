@@ -18,13 +18,17 @@ from hi.apps.config.enums import ConfigPageType
 from hi.apps.config.views import ConfigPageView
 from hi.apps.entity.enums import EntityDataSource
 from hi.apps.entity.models import Entity
+from hi.apps.sense.sensor_response_manager import SensorResponseManager
 from hi.hi_async_view import HiModalView
+from hi.views import page_not_found_response
 
 from hi.integrations.enums import IntegrationCapability
 from hi.integrations.integration_attribute_edit_context import (
     IntegrationAttributeItemEditContext,
 )
 from hi.integrations.integration_manager import IntegrationManager
+from hi.integrations.integration_metadata_cache import IntegrationMetadataCache
+from hi.integrations.placement_request import PlacementUrlParams
 from hi.integrations.view_mixins import IntegrationViewMixin
 
 logger = logging.getLogger(__name__)
@@ -181,13 +185,48 @@ class ImporterConfigureView( HiModalView, IntegrationViewMixin, AttributeEditVie
 
 
 class ImporterRunView( HiModalView, IntegrationViewMixin ):
-    """CONFIRM IMPORT handler — wired in Phase 5."""
+    """CONFIRM IMPORT handler. Runs the importer, invalidates the
+    metadata + sensor-response caches, renders the result modal with
+    a placement CTA when new entities were created."""
 
     def post(self, request, *args, **kwargs):
-        from django.http import HttpResponse
-        return HttpResponse(
-            'Import run is not yet implemented (Phase 5).',
-            status = 501,
+        integration_id = kwargs.get('integration_id')
+        integration_data = self.get_integration_data(
+            integration_id = integration_id,
+        )
+        importer = integration_data.integration_gateway.get_importer()
+        if importer is None:
+            return page_not_found_response(request)
+
+        try:
+            result = importer.run_import()
+        finally:
+            # Mirror the post-sync invalidations so any cached
+            # metadata or sensor-response state pinned by polls that
+            # raced the import gets dropped.
+            IntegrationMetadataCache().invalidate()
+            SensorResponseManager().invalidate_local_sensor_cache()
+
+        new_entity_ids = (
+            result.placement_input.all_entity_ids()
+            if result.placement_input is not None else []
+        )
+        placement_url = PlacementUrlParams(
+            is_initial_connect = True,
+            entity_ids = new_entity_ids,
+        ).append_to_url( reverse(
+            'integrations_placement',
+            kwargs = { 'integration_id': integration_data.integration_id },
+        ) )
+
+        return self.modal_response(
+            request,
+            context = {
+                'result': result,
+                'integration_data': integration_data,
+                'placement_url': placement_url,
+            },
+            template_name = 'integrations/import/import_result.html',
         )
 
 

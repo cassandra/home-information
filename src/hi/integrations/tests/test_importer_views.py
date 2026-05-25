@@ -191,6 +191,74 @@ class ImporterConfigureViewTests(TestCase):
         # The form's submit button label is IMPORT.
         self.assertIn('>\n          IMPORT\n        </button>', body)
 
+    def test_post_run_renders_result_modal_with_placement_cta(self):
+        from hi.integrations.importer.import_result import IntegrationImportResult
+        from hi.apps.entity.entity_placement import (
+            EntityPlacementInput,
+            EntityPlacementItem,
+        )
+
+        # Stub importer that returns a result with a placement_input
+        # pointing at a freshly-created entity.
+        entity = Entity.objects.create(
+            integration_id=self.INTEGRATION_ID,
+            integration_name='item-fresh',
+            name='Fresh Item',
+            entity_type_str=str(EntityType.OTHER),
+            data_source_str=str(EntityDataSource.INTERNAL),
+        )
+        gateway = _ImportCapableGateway(self.INTEGRATION_ID)
+        stub_importer = Importer()
+        stub_importer.run_import = lambda: IntegrationImportResult(
+            title='Import Result',
+            items_imported_count=1,
+            imported_list=['Fresh Item'],
+            placement_input=EntityPlacementInput(
+                ungrouped_items=[
+                    EntityPlacementItem(
+                        key=f'entity:{entity.id}',
+                        label=entity.name,
+                        entity=entity,
+                    ),
+                ],
+            ),
+        )
+        gateway.get_importer = lambda: stub_importer
+        _populate_manager([(self.INTEGRATION_ID, gateway)])
+
+        response = self.client.post(reverse(
+            'integrations_import_run',
+            kwargs={'integration_id': self.INTEGRATION_ID},
+        ))
+
+        self.assertEqual(response.status_code, 200)
+        body = response.content.decode()
+        self.assertIn('Import complete', body)
+        self.assertIn('Fresh Item', body)
+        # Placement CTA renders the placement URL.
+        self.assertIn('Place 1 new item', body)
+        self.assertIn('placement', body)
+
+    def test_post_run_renders_nothing_imported_when_all_skipped(self):
+        from hi.integrations.importer.import_result import IntegrationImportResult
+        gateway = _ImportCapableGateway(self.INTEGRATION_ID)
+        stub_importer = Importer()
+        stub_importer.run_import = lambda: IntegrationImportResult(
+            title='Import Result',
+            items_imported_count=0,
+            items_skipped_count=3,
+        )
+        gateway.get_importer = lambda: stub_importer
+        _populate_manager([(self.INTEGRATION_ID, gateway)])
+
+        response = self.client.post(reverse(
+            'integrations_import_run',
+            kwargs={'integration_id': self.INTEGRATION_ID},
+        ))
+        body = response.content.decode()
+        self.assertIn('Nothing imported', body)
+        self.assertNotIn('Place ', body)
+
     def test_post_with_valid_attrs_renders_preview_with_counts(self):
         candidates = [
             CandidateItem(name='Item One', integration_name='item-1'),

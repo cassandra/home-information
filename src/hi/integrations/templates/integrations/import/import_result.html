@@ -1,0 +1,119 @@
+{% extends "modals/action_3.html" %}
+{% load icons static %}
+
+{% block modal_dialog_class %}hi-modal-dialog-600{% endblock %}
+
+{% block title_text %}
+{{ result.title }}
+{% endblock %}
+
+{% block body %}
+<div class="d-flex align-items-center mb-3 pb-2 border-bottom">
+  <img class="mr-2 hi-integration-logo"
+       src="{% static integration_data.integration_metadata.logo_static_path %}"
+       alt="{{ integration_data.label }} Logo">
+  <div class="text-muted small text-uppercase hi-uppercase-label">
+    {{ integration_data.label }}
+  </div>
+</div>
+
+{% if result.error_list and not result.has_imports %}
+  <div class="text-center mb-4">
+    <div class="text-danger mb-1 hi-sync-result-hero-icon">&#x26A0;</div>
+    <h3 class="text-danger mb-1">Import failed</h3>
+    <div class="text-muted small">
+      {{ result.error_list|length }} error{{ result.error_list|length|pluralize }} — see details below.
+    </div>
+  </div>
+{% elif not result.has_imports %}
+  <div class="text-center mb-4">
+    <div class="text-muted mb-1 hi-sync-result-hero-icon">&#x2014;</div>
+    <h3 class="text-muted mb-1">Nothing imported</h3>
+    <div class="text-muted small">
+      {% if result.items_skipped_count > 0 %}
+      All {{ result.items_skipped_count }} upstream item{{ result.items_skipped_count|pluralize }}
+      already exist in HI.
+      {% else %}
+      The upstream source returned no items to import.
+      {% endif %}
+    </div>
+  </div>
+{% else %}
+  <div class="text-center mb-3">
+    <div class="text-success mb-1 hi-sync-result-hero-icon">&#x2713;</div>
+    <h3 class="text-success mb-1">Import complete</h3>
+  </div>
+
+  <div class="d-flex justify-content-around flex-wrap text-center mb-4 pb-3 border-bottom">
+    <div class="px-3">
+      <div class="text-success font-weight-bold hi-sync-result-stat-number">
+        {{ result.items_imported_count }}
+      </div>
+      <div class="text-muted small text-uppercase hi-uppercase-label">Imported</div>
+    </div>
+    {% if result.items_skipped_count > 0 %}
+    <div class="px-3">
+      <div class="text-muted font-weight-bold hi-sync-result-stat-number">
+        {{ result.items_skipped_count }}
+      </div>
+      <div class="text-muted small text-uppercase hi-uppercase-label">Skipped</div>
+    </div>
+    {% endif %}
+  </div>
+
+  {% if result.imported_list %}
+  <div class="mb-3 pl-3 hi-category-section hi-category-section--success">
+    <div class="small text-success text-uppercase mb-1 hi-uppercase-label">
+      Imported ({{ result.imported_list|length }})
+    </div>
+    <ul class="list-unstyled small mb-0 hi-sync-result-item-list">
+      {% for name in result.imported_list %}
+      <li>{{ name }}</li>
+      {% endfor %}
+    </ul>
+  </div>
+  {% endif %}
+{% endif %}
+
+{% if result.error_list %}
+<div class="mb-2 pl-3 hi-category-section hi-category-section--danger">
+  <a class="small text-danger text-uppercase hi-uppercase-label" data-toggle="collapse"
+     href="#hi-import-result-errors" role="button"
+     aria-expanded="true" aria-controls="hi-import-result-errors">
+    Errors ({{ result.error_list|length }})
+  </a>
+  <div class="collapse show" id="hi-import-result-errors">
+    <ul class="list-unstyled small mt-1 mb-0">
+      {% for error_message in result.error_list %}
+      <li class="text-danger">{{ error_message }}</li>
+      {% endfor %}
+    </ul>
+  </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block action_left %}
+{% if result.has_imports and placement_url %}
+<a id="hi-modal-cancel" role="button"
+   class="btn btn-outline-tertiary"
+   href="#"
+   onclick="location.reload(); return false;">{% icon "close" size="sm" css_class="hi-icon-left" %}Place Later</a>
+{% endif %}
+{% endblock %}
+
+{% block action_center %}
+{% if not result.has_imports or not placement_url %}
+<a id="hi-modal-ok" role="button"
+   class="btn btn-primary"
+   href="#"
+   onclick="location.reload(); return false;">OK</a>
+{% endif %}
+{% endblock %}
+
+{% block action_right %}
+{% if result.has_imports and placement_url %}
+<a class="btn btn-primary" role="button"
+   href="{{ placement_url }}" data-async="modal">Place {{ result.items_imported_count }} new item{{ result.items_imported_count|pluralize }} {% icon "chevron-right" size="sm" css_class="hi-icon-right" %}</a>
+{% endif %}
+{% endblock %}

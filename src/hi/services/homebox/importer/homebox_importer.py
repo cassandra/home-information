@@ -110,6 +110,7 @@ class HomeBoxImporter( Importer, HomeBoxMixin ):
             ).values_list( 'integration_name', flat = True )
         )
 
+        created_entities = []
         for hb_item in item_list:
             if hb_item.archived is True:
                 continue
@@ -137,6 +138,12 @@ class HomeBoxImporter( Importer, HomeBoxMixin ):
                 continue
             result.items_imported_count += 1
             result.imported_list.append( entity.name )
+            created_entities.append( entity )
+
+        if created_entities:
+            result.placement_input = self.group_entities_for_placement(
+                entities = created_entities,
+            )
 
     def discard_imported_data( self, integration_id: str ) -> IntegrationDiscardResult:
         """Remove all entities previously imported under this
