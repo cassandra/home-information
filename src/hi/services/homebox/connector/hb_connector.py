@@ -9,6 +9,7 @@ from urllib.parse import urljoin
 
 from django.urls import reverse
 
+from hi.apps.entity.enums import EntityDataSource
 from hi.apps.entity.models import Entity
 from hi.integrations.connector.external_view_data import (
     AttachmentRef,
@@ -29,6 +30,12 @@ class HomeBoxConnector:
     """Stateless resolver for the entity-detail external-data view hook."""
 
     def get_external_view_data(self, entity: Entity) -> Optional[ExternalViewData]:
+        # Connect-mode only: imported (data_source=INTERNAL) HomeBox
+        # entities are HI-owned after import; the live HomeBox view
+        # isn't authoritative for them and would mislead the operator.
+        if entity.data_source != EntityDataSource.EXTERNAL:
+            return None
+
         item_id = entity.integration_name
         if not item_id:
             return None

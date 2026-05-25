@@ -4,7 +4,7 @@ from typing import Dict, List, Optional
 from asgiref.sync import sync_to_async
 from django.db import transaction
 
-from hi.apps.entity.enums import EntityType
+from hi.apps.entity.enums import EntityDataSource, EntityType
 from hi.apps.entity.entity_placement import (
     EntityPlacementGroup,
     EntityPlacementInput,
@@ -261,6 +261,7 @@ class FrigateSynchronizer( IntegrationSynchronizer, FrigateMixin ):
             entity.has_video_stream = False
             entity.has_video_snapshot = True
             entity.video_snapshot_stream_fps = self.CAMERA_SNAPSHOT_STREAM_FPS
+            entity.data_source = EntityDataSource.EXTERNAL
             entity.save()
 
             # Single sensor per camera — OBJECT_PRESENCE subsumes the

@@ -5,7 +5,7 @@ from typing import Dict, Optional
 from asgiref.sync import sync_to_async
 from django.db import transaction
 
-from hi.apps.entity.enums import EntityType
+from hi.apps.entity.enums import EntityDataSource, EntityType
 from hi.apps.entity.models import Entity
 from hi.apps.sense.models import Sensor
 
@@ -284,6 +284,7 @@ class ZoneMinderSynchronizer( IntegrationSynchronizer, ZoneMinderMixin ):
                 can_user_delete = ZmMetaData.allow_entity_deletion,
             )
             zm_entity.integration_key = zm_manager._zm_integration_key()
+            zm_entity.data_source = EntityDataSource.EXTERNAL
             zm_entity.save()
 
             HiModelHelper.create_discrete_controller(
@@ -333,6 +334,7 @@ class ZoneMinderSynchronizer( IntegrationSynchronizer, ZoneMinderMixin ):
             entity.can_user_delete = ZmMetaData.allow_entity_deletion
             entity.has_video_stream = True
             entity.has_video_snapshot = True
+            entity.data_source = EntityDataSource.EXTERNAL
             entity.save()
 
             movement_sensor = HiModelHelper.create_movement_sensor(

@@ -114,12 +114,12 @@ class TestEntity(BaseTestCase):
         self.assertEqual(entity.data_source, EntityDataSource.INTERNAL)
         return
 
-    def test_migration_0021_backfill_marks_external_only_when_integration_disallows_internal_attrs(self):
-        # Migration 0021's backfill rule: integration-attached entities
-        # whose integration disallows internal attributes get marked
-        # EXTERNAL. Everything else stays at the column default (INTERNAL).
-        # Today this picks out HomeBox-Connect entities and leaves
-        # native + HA/ZM/Frigate alone.
+    def test_migration_0021_backfill_marks_all_integration_attached_entities_external(self):
+        # Migration 0021's backfill rule: every integration-attached
+        # entity is marked EXTERNAL (every integration at the moment of
+        # migration is Connect-mode — Import arrives in #358). Native
+        # entities (no integration_id) keep the column default
+        # (INTERNAL).
         native = Entity.objects.create(
             name='Native',
             entity_type_str=str(EntityType.OTHER),
@@ -148,7 +148,7 @@ class TestEntity(BaseTestCase):
         hass_like.refresh_from_db()
         hb_like.refresh_from_db()
         self.assertEqual(native.data_source, EntityDataSource.INTERNAL)
-        self.assertEqual(hass_like.data_source, EntityDataSource.INTERNAL)
+        self.assertEqual(hass_like.data_source, EntityDataSource.EXTERNAL)
         self.assertEqual(hb_like.data_source, EntityDataSource.EXTERNAL)
         return
 
