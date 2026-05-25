@@ -69,9 +69,9 @@ urlpatterns = [
           views.IntegrationRefineView.as_view(),
           name='integrations_refine' ),
 
-    re_path( r'^manage/(?P<integration_id>[\w\-]*)$', 
-             views.IntegrationManageView.as_view(), 
-             name='integrations_manage' ),
+    re_path( r'^manage/(?P<integration_id>[\w\-]*)$',
+             views.ConnectorManageView.as_view(),
+             name='integrations_connect_manage' ),
     
     path( 'attribute/history/<int:integration_id>/<int:attribute_id>/', 
           views.IntegrationAttributeHistoryInlineView.as_view(), 

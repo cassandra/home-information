@@ -40,9 +40,6 @@ class _PauseResumeTestGateway(IntegrationGateway):
             allow_entity_deletion=True,
         )
 
-    def get_manage_view_pane(self):
-        return Mock()
-
     def get_monitor(self):
         return Mock()
 
@@ -256,9 +253,6 @@ class _SyncCapableGateway(IntegrationGateway):
             capabilities=self._capabilities,
         )
 
-    def get_manage_view_pane(self):
-        return Mock()
-
     def get_monitor(self):
         return Mock()
 
@@ -285,9 +279,6 @@ class _SyncIncapableGateway(IntegrationGateway):
             attribute_type=_PauseResumeTestAttributeType,
             allow_entity_deletion=True,
         )
-
-    def get_manage_view_pane(self):
-        return Mock()
 
     def get_monitor(self):
         return Mock()
@@ -689,9 +680,6 @@ class _PlacementTestGateway(IntegrationGateway):
             attribute_type=_PauseResumeTestAttributeType,
             allow_entity_deletion=True,
         )
-
-    def get_manage_view_pane(self):
-        return Mock()
 
     def get_monitor(self):
         return Mock()
@@ -1318,30 +1306,7 @@ class RefineViewTests(SyncViewTestCase):
         self.assertEqual(response.status_code, 404)
 
 
-class _RenderableManageViewPane:
-    """Minimal stand-in for an IntegrationManageViewPane that points
-    at an existing empty per-integration template so the manage view
-    can render in tests without a real per-integration pane wired
-    in. Reuses ``homebox/panes/hb_manage.html`` (a documented empty
-    extension-point template) rather than introducing a test-only
-    template file."""
-
-    def get_template_name(self):
-        return 'homebox/panes/hb_manage.html'
-
-    def get_template_context(self, integration_data):
-        return {}
-
-
-class _RenderableGateway(_SyncCapableGateway):
-    """``_SyncCapableGateway`` plus a real ManageViewPane so the
-    full IntegrationManageView render path works."""
-
-    def get_manage_view_pane(self):
-        return _RenderableManageViewPane()
-
-
-class IntegrationManageViewSyncCheckContextTests(SyncViewTestCase):
+class ConnectorManageViewSyncCheckContextTests(SyncViewTestCase):
     """Issue #283 — wire-up tests for the sync-check state on the
     integration manage page. Pins:
       * banner renders when the active integration's cached
@@ -1363,7 +1328,7 @@ class IntegrationManageViewSyncCheckContextTests(SyncViewTestCase):
             is_enabled=True,
             is_paused=False,
         )
-        self.gateway = _RenderableGateway(integration_id=self.INTEGRATION_ID)
+        self.gateway = _SyncCapableGateway(integration_id=self.INTEGRATION_ID)
         IntegrationManager()._integration_data_map[self.INTEGRATION_ID] = IntegrationData(
             integration_gateway=self.gateway,
             integration=self.integration,
@@ -1376,7 +1341,7 @@ class IntegrationManageViewSyncCheckContextTests(SyncViewTestCase):
 
     def _url(self):
         return reverse(
-            'integrations_manage',
+            'integrations_connect_manage',
             kwargs={'integration_id': self.INTEGRATION_ID},
         )
 

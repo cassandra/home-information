@@ -51,9 +51,6 @@ class _ImportCapableGateway(IntegrationGateway):
             capabilities=self._capabilities,
         )
 
-    def get_manage_view_pane(self):
-        return Mock()
-
     def get_monitor(self):
         return Mock()
 
@@ -103,9 +100,6 @@ class _ConnectOnlyGateway(IntegrationGateway):
             allow_entity_deletion=True,
             capabilities=frozenset({ IntegrationCapability.CONNECT }),
         )
-
-    def get_manage_view_pane(self):
-        return Mock()
 
     def get_monitor(self):
         return Mock()

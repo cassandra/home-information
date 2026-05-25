@@ -11,7 +11,6 @@ from hi.apps.system.health_status_provider import HealthStatusProvider
 
 from hi.integrations.connector.integration_controller import IntegrationController
 from hi.integrations.integration_gateway import IntegrationGateway
-from hi.integrations.connector.integration_manage_view_pane import IntegrationManageViewPane
 from hi.integrations.connector.integration_connector import IntegrationConnector
 from hi.integrations.models import IntegrationAttribute
 from hi.integrations.transient_models import (
@@ -23,7 +22,6 @@ from hi.apps.monitor.periodic_monitor import PeriodicMonitor
 
 from .constants import ZmDetailKeys
 from .zm_controller import ZoneMinderController
-from .zm_manage_view_pane import ZmManageViewPane
 from .zm_manager import ZoneMinderManager
 from .zm_metadata import ZmMetaData
 from .zm_sync import ZmConnector
@@ -38,9 +36,6 @@ class ZoneMinderGateway( IntegrationGateway, ZoneMinderMixin ):
     def get_metadata(self) -> IntegrationMetaData:
         return ZmMetaData
 
-    def get_manage_view_pane(self) -> IntegrationManageViewPane:
-        return ZmManageViewPane()
-    
     def get_monitor(self) -> PeriodicMonitor:
         return ZoneMinderMonitor()
     

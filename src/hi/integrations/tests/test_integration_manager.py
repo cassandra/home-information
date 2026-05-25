@@ -64,9 +64,6 @@ class MockIntegrationGateway(IntegrationGateway):
             capabilities=self.capabilities,
         )
 
-    def get_manage_view_pane(self):
-        return Mock()
-
     def get_monitor(self):
         return Mock()
 

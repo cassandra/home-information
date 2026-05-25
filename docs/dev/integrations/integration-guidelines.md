@@ -70,7 +70,6 @@ Each integration is a self-contained Django app under `hi/services/<integration_
 - `<prefix>_sync.py` — `IntegrationConnector` subclass driving entity sync
 - `<prefix>_controller.py` — HI control commands → integration service calls
 - `<prefix>_mixins.py` — manager-accessor mixin for views/handlers
-- `<prefix>_manage_view_pane.py` — management UI pane
 - `monitors.py` — `PeriodicMonitor` subclass(es) for polling and health probes
 - `apps.py`, `urls.py`, `views.py` — standard Django wiring
 

@@ -8,7 +8,6 @@ from hi.apps.system.health_status_provider import HealthStatusProvider
 from hi.integrations.connector.external_view_data import ExternalViewData
 from hi.integrations.connector.integration_controller import IntegrationController
 from hi.integrations.integration_gateway import IntegrationGateway
-from hi.integrations.connector.integration_manage_view_pane import IntegrationManageViewPane
 from hi.integrations.connector.integration_connector import IntegrationConnector
 from hi.integrations.importer.integration_importer import IntegrationImporter
 from hi.integrations.models import IntegrationAttribute
@@ -20,7 +19,6 @@ from hi.integrations.transient_models import (
 from hi.apps.monitor.periodic_monitor import PeriodicMonitor
 
 from .hb_controller import HomeBoxController
-from .hb_manage_view_pane import HbManageViewPane
 from .shared.hb_manager import HomeBoxManager
 from .hb_metadata import HbMetaData
 from .connector.hb_external_view_resolver import HomeBoxExternalViewResolver
@@ -34,9 +32,6 @@ logger = logging.getLogger(__name__)
 class HomeBoxGateway(IntegrationGateway):
     def get_metadata(self) -> IntegrationMetaData:
         return HbMetaData
-
-    def get_manage_view_pane(self) -> IntegrationManageViewPane:
-        return HbManageViewPane()
 
     def get_monitor(self) -> PeriodicMonitor:
         return HomeBoxMonitor()

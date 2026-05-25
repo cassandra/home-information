@@ -8,7 +8,6 @@ from hi.apps.system.health_status_provider import HealthStatusProvider
 
 from hi.integrations.connector.external_view_data import ExternalViewData
 from hi.integrations.connector.integration_controller import IntegrationController
-from hi.integrations.connector.integration_manage_view_pane import IntegrationManageViewPane
 from hi.integrations.connector.integration_connector import IntegrationConnector
 from hi.integrations.importer.integration_importer import IntegrationImporter
 from hi.integrations.models import IntegrationAttribute
@@ -25,9 +24,6 @@ class IntegrationGateway:
     """
 
     def get_metadata(self) -> IntegrationMetaData:
-        raise NotImplementedError('Subclasses must override this method')
-
-    def get_manage_view_pane(self) -> IntegrationManageViewPane:
         raise NotImplementedError('Subclasses must override this method')
 
     def get_monitor(self) -> PeriodicMonitor:

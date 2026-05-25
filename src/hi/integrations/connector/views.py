@@ -57,7 +57,7 @@ class IntegrationHomeView( ConfigPageView, IntegrationViewMixin ):
         if not integration_data:
             return dict()
 
-        redirect_url = reverse( 'integrations_manage',
+        redirect_url = reverse( 'integrations_connect_manage',
                                 kwargs = { 'integration_id': integration_data.integration_id })
         raise ForceRedirectException( redirect_url )
 
@@ -416,7 +416,7 @@ class ConnectorConfigureView( HiModalView,
             )
 
         redirect_url = reverse(
-            'integrations_manage',
+            'integrations_connect_manage',
             kwargs = { 'integration_id': integration_data.integration_id },
         )
         return AttributeRedirectResponse( url = redirect_url )
@@ -495,7 +495,7 @@ class IntegrationPauseView( View, IntegrationViewMixin ):
         IntegrationManager().pause_integration( integration_data = integration_data )
 
         redirect_url = reverse(
-            'integrations_manage',
+            'integrations_connect_manage',
             kwargs = { 'integration_id': integration_data.integration_id },
         )
         return antinode.redirect_response( redirect_url )
@@ -516,13 +516,13 @@ class IntegrationResumeView( View, IntegrationViewMixin ):
             )
 
         redirect_url = reverse(
-            'integrations_manage',
+            'integrations_connect_manage',
             kwargs = { 'integration_id': integration_data.integration_id },
         )
         return antinode.redirect_response( redirect_url )
 
 
-class IntegrationManageView( ConfigPageView, IntegrationViewMixin, AttributeEditViewMixin ):
+class ConnectorManageView( ConfigPageView, IntegrationViewMixin, AttributeEditViewMixin ):
 
     def config_page_type(self) -> ConfigPageType:
         return ConfigPageType.INTEGRATIONS_CONNECT
@@ -557,14 +557,8 @@ class IntegrationManageView( ConfigPageView, IntegrationViewMixin, AttributeEdit
             capabilities = frozenset({ IntegrationCapability.CONNECT }),
         )
 
-        manage_view_pane = integration_data.integration_gateway.get_manage_view_pane()
-        manage_template_name = manage_view_pane.get_template_name()
-        template_context = manage_view_pane.get_template_context( integration_data = integration_data )
-
-        template_context.update(
-            self.create_initial_template_context(
-                attr_item_context= attr_item_context,
-            )
+        template_context = self.create_initial_template_context(
+            attr_item_context = attr_item_context,
         )
         has_entities = Entity.objects.filter(
             integration_id = integration_data.integration_id,
@@ -600,7 +594,6 @@ class IntegrationManageView( ConfigPageView, IntegrationViewMixin, AttributeEdit
             'core': {
                 'integration_data_list': integration_data_list,
                 'integration_data': integration_data,
-                'manage_view_template_name': manage_template_name,
                 'health_status': health_status_provider.health_status,
                 'has_entities': has_entities,
                 'sync_check_result': sync_check_result,

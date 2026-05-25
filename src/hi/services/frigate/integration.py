@@ -11,7 +11,6 @@ from hi.apps.system.health_status_provider import HealthStatusProvider
 
 from hi.integrations.connector.integration_controller import IntegrationController
 from hi.integrations.integration_gateway import IntegrationGateway
-from hi.integrations.connector.integration_manage_view_pane import IntegrationManageViewPane
 from hi.integrations.connector.integration_connector import IntegrationConnector
 from hi.integrations.models import IntegrationAttribute
 from hi.integrations.transient_models import (
@@ -21,7 +20,6 @@ from hi.integrations.transient_models import (
 )
 
 from .frigate_controller import FrigateController
-from .frigate_manage_view_pane import FrigateManageViewPane
 from .frigate_manager import FrigateManager
 from .frigate_metadata import FrigateMetaData
 from .frigate_mixins import FrigateMixin
@@ -44,9 +42,6 @@ class FrigateGateway( IntegrationGateway, FrigateMixin ):
 
     def get_metadata(self) -> IntegrationMetaData:
         return FrigateMetaData
-
-    def get_manage_view_pane(self) -> IntegrationManageViewPane:
-        return FrigateManageViewPane()
 
     def get_monitor(self) -> PeriodicMonitor:
         return FrigateMonitor()

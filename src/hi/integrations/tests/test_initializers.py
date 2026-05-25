@@ -28,9 +28,6 @@ class MockIntegrationGateway(IntegrationGateway):
             allow_entity_deletion=True,
         )
 
-    def get_manage_view_pane(self):
-        return Mock()
-
     def get_monitor(self):
         return Mock()
 

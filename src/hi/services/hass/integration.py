@@ -8,7 +8,6 @@ from hi.apps.system.health_status_provider import HealthStatusProvider
 
 from hi.integrations.connector.integration_controller import IntegrationController
 from hi.integrations.integration_gateway import IntegrationGateway
-from hi.integrations.connector.integration_manage_view_pane import IntegrationManageViewPane
 from hi.integrations.connector.integration_connector import IntegrationConnector
 from hi.integrations.models import IntegrationAttribute
 from hi.integrations.transient_models import (
@@ -19,7 +18,6 @@ from hi.integrations.transient_models import (
 from hi.apps.monitor.periodic_monitor import PeriodicMonitor
 
 from .hass_controller import HassController
-from .hass_manage_view_pane import HassManageViewPane
 from .hass_manager import HassManager
 from .hass_metadata import HassMetaData
 from .hass_sync import HassConnector
@@ -32,9 +30,6 @@ class HassGateway( IntegrationGateway ):
 
     def get_metadata(self) -> IntegrationMetaData:
         return HassMetaData
-
-    def get_manage_view_pane(self) -> IntegrationManageViewPane:
-        return HassManageViewPane()
 
     def get_monitor(self) -> PeriodicMonitor:
         return HassMonitor()
