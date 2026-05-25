@@ -26,7 +26,7 @@ User-facing setup and troubleshooting live in
   Heuristic mapping of upstream HA states to HI items. The bulk of
   integration-specific complexity lives here. Aggregates multi-state
   HA devices into a single HI item where it can.
-- `src/hi/services/hass/hass_sync.py` — `HassConnector`. Drives
+- `src/hi/services/hass/hass_connector.py` — `HassConnector`. Drives
   the sync flow; delegates to the converter for the
   per-item shape.
 - `src/hi/services/hass/monitors.py` — `HassMonitor`. Periodic poll
@@ -92,7 +92,7 @@ Tests live in `src/hi/services/hass/tests/`. The converter's mapping
 behavior is the largest test surface
 (`test_hass_converter_create.py`, `test_hass_converter_mapping.py`,
 `test_import_allowlist.py`); sync flow is exercised in
-`test_hass_sync.py`.
+`test_hass_connector.py`.
 
 Manual end-to-end testing uses the simulator; HA simulator support
 lives at `src/hi/simulator/services/hass/`. For the operator

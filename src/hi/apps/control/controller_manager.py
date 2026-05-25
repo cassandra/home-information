@@ -36,7 +36,18 @@ class ControllerManager( Singleton ):
         integration_gateway = IntegrationManager().get_integration_gateway(
             integration_id = controller.integration_id,
         )
-        integration_controller = integration_gateway.get_controller()
+        connector = integration_gateway.get_connector()
+        if connector is None:
+            raise RuntimeError(
+                f'No connector for integration {controller.integration_id}; '
+                f'cannot route control action.'
+            )
+        integration_controller = connector.get_controller()
+        if integration_controller is None:
+            raise RuntimeError(
+                f'Integration {controller.integration_id} has no controller; '
+                f'cannot route control action.'
+            )
 
         integration_details = controller.get_integration_details()
         if settings.DEBUG and settings.DEBUG_TRACE_STATE:

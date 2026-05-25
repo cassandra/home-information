@@ -71,7 +71,7 @@ class TestControllerManager(BaseTestCase):
         mock_integration_controller.do_control.return_value = mock_control_result
         
         mock_integration_gateway = Mock()
-        mock_integration_gateway.get_controller.return_value = mock_integration_controller
+        mock_integration_gateway.get_connector.return_value.get_controller.return_value = mock_integration_controller
         
         mock_integration_manager = Mock()
         mock_integration_manager.get_integration_gateway.return_value = mock_integration_gateway
@@ -125,7 +125,7 @@ class TestControllerManager(BaseTestCase):
         mock_integration_controller.do_control.return_value = mock_control_result
         
         mock_integration_gateway = Mock()
-        mock_integration_gateway.get_controller.return_value = mock_integration_controller
+        mock_integration_gateway.get_connector.return_value.get_controller.return_value = mock_integration_controller
         
         mock_integration_manager = Mock()
         mock_integration_manager.get_integration_gateway.return_value = mock_integration_gateway
@@ -182,7 +182,7 @@ class TestControllerManager(BaseTestCase):
         mock_integration_controller.do_control.return_value = mock_control_result
         
         mock_integration_gateway = Mock()
-        mock_integration_gateway.get_controller.return_value = mock_integration_controller
+        mock_integration_gateway.get_connector.return_value.get_controller.return_value = mock_integration_controller
         
         mock_integration_manager = Mock()
         mock_integration_manager.get_integration_gateway.return_value = mock_integration_gateway

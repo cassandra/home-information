@@ -10,7 +10,7 @@ from hi.apps.sense.models import Sensor
 
 from hi.services.hass.hass_manager import HassManager
 from hi.services.hass.hass_metadata import HassMetaData
-from hi.services.hass.integration import HassGateway
+from hi.services.hass.hass_connector import HassConnector
 
 logging.disable(logging.CRITICAL)
 
@@ -26,7 +26,7 @@ class GetEntityVideoSnapshotTests(TestCase):
         HassManager._instance = None
         HassManager._lock = threading.Lock()
         self.manager = HassManager()
-        self.gateway = HassGateway()
+        self.gateway = HassConnector()
 
         mock_client = Mock()
         # HassClient strips the trailing slash on construction, so

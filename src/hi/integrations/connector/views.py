@@ -83,7 +83,7 @@ class IntegrationHealthStatusView( HiModalView, IntegrationViewMixin ):
 
     def get( self, request, *args, **kwargs ):
         integration_data = self.get_integration_data( request, *args, **kwargs )
-        health_status_provider = integration_data.integration_gateway.get_health_status_provider()
+        health_status_provider = integration_data.integration_gateway.get_connector().get_health_status_provider()
         context = {
             'health_status_provider': health_status_provider,
         }
@@ -545,7 +545,7 @@ class ConnectorManageView( ConfigPageView, IntegrationViewMixin, AttributeEditVi
             raise BadRequest( f'{integration_data.label} integration is not configured' )
 
         # Get health status from the integration gateway
-        health_status_provider = integration_data.integration_gateway.get_health_status_provider()
+        health_status_provider = integration_data.integration_gateway.get_connector().get_health_status_provider()
 
         attr_item_context = IntegrationAttributeItemEditContext(
             integration_data = integration_data,
@@ -617,7 +617,7 @@ class ConnectorManageView( ConfigPageView, IntegrationViewMixin, AttributeEditVi
             raise BadRequest( f'{integration_data.label} integration is not configured' )
 
         # Get health status from the integration gateway
-        health_status_provider = integration_data.integration_gateway.get_health_status_provider()
+        health_status_provider = integration_data.integration_gateway.get_connector().get_health_status_provider()
                 
         attr_item_context = IntegrationAttributeItemEditContext(
             integration_data = integration_data,

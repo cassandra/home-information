@@ -81,7 +81,10 @@ def integration_health_banner( integration_id : str, context_message : str = Non
         return { 'health_status': None }
     try:
         gateway = IntegrationManager().get_integration_gateway( integration_id )
-        provider = gateway.get_health_status_provider()
+        connector = gateway.get_connector()
+        if connector is None:
+            return { 'health_status': None }
+        provider = connector.get_health_status_provider()
         health_status = provider.health_status
         metadata = gateway.get_metadata()
     except Exception:

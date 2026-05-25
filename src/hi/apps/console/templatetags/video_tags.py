@@ -38,8 +38,12 @@ def sensor_response_video_stream(sensor_response):
             logger.warning(f"No integration gateway found for {entity.integration_id}")
             return None
 
+        connector = gateway.get_connector()
+        if connector is None:
+            return None
+
         # Get recorded video stream from sensor response
-        video_stream = gateway.get_sensor_response_video_stream(sensor_response)
+        video_stream = connector.get_sensor_response_video_stream(sensor_response)
 
         if video_stream:
             return video_stream
@@ -72,7 +76,10 @@ def sensor_response_event_snapshot_url(sensor_response):
         if not gateway:
             logger.warning(f"No integration gateway found for {entity.integration_id}")
             return None
-        return gateway.get_sensor_response_event_snapshot_url(sensor_response)
+        connector = gateway.get_connector()
+        if connector is None:
+            return None
+        return connector.get_sensor_response_event_snapshot_url(sensor_response)
     except Exception as e:
         logger.error(f"Error getting event snapshot URL for sensor response: {e}")
         return None
@@ -99,7 +106,11 @@ def entity_video_stream(entity):
             logger.warning(f"No integration gateway found for {entity.integration_id}")
             return None
 
-        video_stream = gateway.get_entity_video_stream(entity)
+        connector = gateway.get_connector()
+        if connector is None:
+            return None
+
+        video_stream = connector.get_entity_video_stream(entity)
 
         if video_stream:
             return video_stream
@@ -140,7 +151,10 @@ def entity_video_snapshot(entity):
         if not gateway:
             logger.warning(f"No integration gateway found for {entity.integration_id}")
             return None
-        return gateway.get_entity_video_snapshot(entity)
+        connector = gateway.get_connector()
+        if connector is None:
+            return None
+        return connector.get_entity_video_snapshot(entity)
     except Exception as e:
         logger.error(f"Error getting video snapshot for entity {entity.id}: {e}")
         return None

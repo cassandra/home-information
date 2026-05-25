@@ -11,7 +11,7 @@ from hi.apps.sense.models import Sensor
 
 from hi.services.frigate.frigate_manager import FrigateManager
 from hi.services.frigate.frigate_metadata import FrigateMetaData
-from hi.services.frigate.frigate_sync import FrigateConnector
+from hi.services.frigate.frigate_connector import FrigateConnector
 
 logging.disable( logging.CRITICAL )
 

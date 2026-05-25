@@ -189,7 +189,10 @@ class EntityEditView( HiModalView, EntityViewMixin, AttributeEditViewMixin ):
                 f'{entity.id} (integration_id={entity.integration_id!r}).'
             )
             return None
-        return gateway.get_external_view_data( entity )
+        connector = gateway.get_connector()
+        if connector is None:
+            return None
+        return connector.get_external_view_data( entity )
 
     def post( self, request,*args, **kwargs ):
         entity = self.get_entity(request, *args, **kwargs)

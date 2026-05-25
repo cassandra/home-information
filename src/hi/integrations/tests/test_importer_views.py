@@ -1,6 +1,6 @@
 """View tests for the Data Import page and the Configure form."""
 import logging
-from unittest.mock import Mock, patch
+from unittest.mock import patch
 
 from django.test import TestCase
 from django.urls import reverse
@@ -51,12 +51,6 @@ class _ImportCapableGateway(IntegrationGateway):
             capabilities=self._capabilities,
         )
 
-    def get_monitor(self):
-        return Mock()
-
-    def get_controller(self):
-        return Mock()
-
     def validate_configuration(self, integration_attributes):
         return IntegrationValidationResult.success()
 
@@ -100,12 +94,6 @@ class _ConnectOnlyGateway(IntegrationGateway):
             allow_entity_deletion=True,
             capabilities=frozenset({ IntegrationCapability.CONNECT }),
         )
-
-    def get_monitor(self):
-        return Mock()
-
-    def get_controller(self):
-        return Mock()
 
 
 def _populate_manager(integration_ids_and_gateways):

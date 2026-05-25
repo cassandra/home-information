@@ -1,5 +1,3 @@
-from unittest.mock import Mock
-
 from django.test import TestCase
 
 from hi.apps.attribute.enums import AttributeValueType
@@ -27,12 +25,6 @@ class MockIntegrationGateway(IntegrationGateway):
             attribute_type=MockIntegrationAttributeType,
             allow_entity_deletion=True,
         )
-
-    def get_monitor(self):
-        return Mock()
-
-    def get_controller(self):
-        return Mock()
 
 
 class IntegrationInitializerTestCase(TestCase):

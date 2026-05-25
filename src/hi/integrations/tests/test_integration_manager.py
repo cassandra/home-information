@@ -64,12 +64,6 @@ class MockIntegrationGateway(IntegrationGateway):
             capabilities=self.capabilities,
         )
 
-    def get_monitor(self):
-        return Mock()
-
-    def get_controller(self):
-        return Mock()
-
     def validate_access(self, integration_attributes, timeout_secs):
         return self.connection_test_result
 

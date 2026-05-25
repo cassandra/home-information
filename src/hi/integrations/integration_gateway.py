@@ -1,13 +1,5 @@
 from typing import List, Optional
 
-from hi.apps.entity.models import Entity
-from hi.apps.entity.transient_models import VideoSnapshot, VideoStream
-from hi.apps.monitor.periodic_monitor import PeriodicMonitor
-from hi.apps.sense.transient_models import SensorResponse
-from hi.apps.system.health_status_provider import HealthStatusProvider
-
-from hi.integrations.connector.external_view_data import ExternalViewData
-from hi.integrations.connector.integration_controller import IntegrationController
 from hi.integrations.connector.integration_connector import IntegrationConnector
 from hi.integrations.importer.integration_importer import IntegrationImporter
 from hi.integrations.models import IntegrationAttribute
@@ -26,21 +18,12 @@ class IntegrationGateway:
     def get_metadata(self) -> IntegrationMetaData:
         raise NotImplementedError('Subclasses must override this method')
 
-    def get_monitor(self) -> PeriodicMonitor:
-        raise NotImplementedError('Subclasses must override this method')
-
-    def get_controller(self) -> IntegrationController:
-        raise NotImplementedError('Subclasses must override this method')
-
     def notify_settings_changed(self):
         """
         This method is called when Integration or IntegrationAttribute models
         are modified. Each integration should implement this to reload its
         configuration and notify any dependent components.
         """
-        raise NotImplementedError('Subclasses must override this method')
-
-    def get_health_status_provider(self) -> HealthStatusProvider:
         raise NotImplementedError('Subclasses must override this method')
 
     def get_connector(self) -> Optional[IntegrationConnector]:
@@ -94,37 +77,3 @@ class IntegrationGateway:
         relaunching monitors (Resume).
         """
         raise NotImplementedError('Subclasses must override this method')
-    
-    def get_entity_video_stream(self, entity: Entity) -> Optional[VideoStream]:
-        return None
-
-    def get_entity_video_snapshot(self, entity: Entity) -> Optional[VideoSnapshot]:
-        return None
-
-    def get_sensor_response_video_stream(
-            self,
-            sensor_response: SensorResponse) -> Optional[VideoStream]:
-        return None
-
-    def get_sensor_response_event_snapshot_url(
-            self,
-            sensor_response: SensorResponse) -> Optional[str]:
-        """Return the URL to the per-event captured snapshot frame for
-        a SensorResponse, or ``None`` when the integration cannot
-        produce one. Generated at render time from the event id so the
-        URL always reflects current integration configuration (e.g.,
-        an operator who moves the upstream host doesn't get stale
-        URLs on historical rows). Pair with
-        ``SensorResponse.has_event_video_snapshot`` — only call when
-        the flag is True."""
-        return None
-
-    def get_external_view_data(self, entity: Entity) -> Optional[ExternalViewData]:
-        """Return the external-data view payload for the entity-detail
-        modal. Return ``None`` if this integration has no external view
-        for ``entity`` — the external-data region is then suppressed.
-
-        Defaults to ``None``; integrations whose data lives upstream
-        override this hook to return a populated ``ExternalViewData``
-        subclass (typically ``StructuredViewData``)."""
-        return None

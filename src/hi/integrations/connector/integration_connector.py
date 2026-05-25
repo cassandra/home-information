@@ -23,8 +23,14 @@ from hi.apps.entity.entity_placement import (
     EntityPlacementItem,
 )
 from hi.apps.entity.models import Entity
+from hi.apps.entity.transient_models import VideoSnapshot, VideoStream
+from hi.apps.monitor.periodic_monitor import PeriodicMonitor
+from hi.apps.sense.transient_models import SensorResponse
+from hi.apps.system.health_status_provider import HealthStatusProvider
 
 from hi.integrations.entity_operations import EntityIntegrationOperations
+from .external_view_data import ExternalViewData
+from .integration_controller import IntegrationController
 from .sync_check import IntegrationSyncCheck, SyncDelta
 from .sync_result import IntegrationSyncResult
 from hi.integrations.transient_models import IntegrationKey, IntegrationMetaData
@@ -82,6 +88,70 @@ class IntegrationConnector:
         if is_initial_connect:
             return 'Connect Result'
         return 'Update Check Result'
+
+    def get_monitor(self) -> Optional[PeriodicMonitor]:
+        """Return the integration's periodic monitor when it has one;
+        None otherwise. The monitor polls upstream state for live
+        sensor responses and surfaces health status. Connect-only
+        by nature — Import has no ongoing connection to monitor."""
+        return None
+
+    def get_controller(self) -> Optional[IntegrationController]:
+        """Return the integration's controller when it accepts control
+        actions; None otherwise. The controller routes a control value
+        from HI to the upstream system. Connect-only — Import-mode
+        entities are HI-owned and their controllers are HI-native."""
+        return None
+
+    def get_health_status_provider(self) -> HealthStatusProvider:
+        """Return the integration's health status provider. Every
+        Connect-capable integration must surface one so the framework's
+        health banners and System Info page can report upstream
+        availability."""
+        raise NotImplementedError('Subclasses must override this method')
+
+    def get_entity_video_stream(self, entity: Entity) -> Optional[VideoStream]:
+        """Return the live video stream for ``entity``, or ``None`` when
+        the integration cannot produce one. Opt-in capability — most
+        integrations leave this as the default."""
+        return None
+
+    def get_entity_video_snapshot(self, entity: Entity) -> Optional[VideoSnapshot]:
+        """Return a fresh still-image snapshot for ``entity``, or
+        ``None`` when the integration cannot produce one. Opt-in
+        capability — most integrations leave this as the default."""
+        return None
+
+    def get_sensor_response_video_stream(
+            self,
+            sensor_response: SensorResponse) -> Optional[VideoStream]:
+        """Return the recorded video stream for a SensorResponse
+        carrying an event clip, or ``None`` when the integration
+        cannot produce one. Opt-in capability."""
+        return None
+
+    def get_sensor_response_event_snapshot_url(
+            self,
+            sensor_response: SensorResponse) -> Optional[str]:
+        """Return the URL to the per-event captured snapshot frame for
+        a SensorResponse, or ``None`` when the integration cannot
+        produce one. Generated at render time from the event id so the
+        URL always reflects current integration configuration (e.g.,
+        an operator who moves the upstream host doesn't get stale
+        URLs on historical rows). Pair with
+        ``SensorResponse.has_event_video_snapshot`` — only call when
+        the flag is True."""
+        return None
+
+    def get_external_view_data(self, entity: Entity) -> Optional[ExternalViewData]:
+        """Return the external-data view payload for the entity-detail
+        modal. Return ``None`` if this integration has no external view
+        for ``entity`` — the external-data region is then suppressed.
+
+        Defaults to ``None``; integrations whose data lives upstream
+        override this hook to return a populated ``ExternalViewData``
+        subclass (typically ``StructuredViewData``)."""
+        return None
 
     def sync(self,
              is_initial_connect   : bool,

@@ -8,7 +8,7 @@ from hi.apps.entity.models import Entity
 from hi.integrations.connector.sync_result import IntegrationSyncResult
 from hi.integrations.transient_models import IntegrationKey
 
-from hi.services.hass.hass_sync import HassConnector
+from hi.services.hass.hass_connector import HassConnector
 from hi.services.hass.hass_models import HassState
 
 logging.disable(logging.CRITICAL)
@@ -163,7 +163,7 @@ class TestHassConnectorTransactionBehavior(TestCase):
             mock_get_entities.return_value = {old_key: old_entity}
             
             # Track transaction usage
-            with patch('hi.services.hass.hass_sync.transaction.atomic') as mock_atomic:
+            with patch('hi.services.hass.hass_connector.transaction.atomic') as mock_atomic:
                 mock_atomic.return_value.__enter__ = Mock()
                 mock_atomic.return_value.__exit__ = Mock()
                 
@@ -241,7 +241,7 @@ class TestHassConnectorErrorScenarios(TestCase):
         
         self.assertEqual(str(context.exception), "API connection failed")
     
-    @patch('hi.services.hass.hass_sync.HassConverter.hass_states_to_hass_devices')
+    @patch('hi.services.hass.hass_connector.HassConverter.hass_states_to_hass_devices')
     @patch.object(HassConnector, '_get_existing_hass_entities')
     @patch.object(HassConnector, 'hass_manager')
     def test_sync_impl_handles_converter_failure(
@@ -265,7 +265,7 @@ class TestHassConnectorErrorScenarios(TestCase):
         
         self.assertEqual(str(context.exception), "Invalid state data format")
     
-    @patch('hi.services.hass.hass_sync.Entity.objects')
+    @patch('hi.services.hass.hass_connector.Entity.objects')
     def test_get_existing_entities_handles_database_error(self, mock_entity_objects):
         """Test _get_existing_hass_entities handles database errors"""
         # Mock database query failure

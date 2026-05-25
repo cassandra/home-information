@@ -29,7 +29,7 @@ User-facing setup, CORS, and SSL troubleshooting live in
   validates the `ZMApi` from the integration attributes.
 - `src/hi/services/zoneminder/pyzm_client/` — vendored Python client
   for ZM's REST API and `cgi-bin/nph-zms` streaming endpoints.
-- `src/hi/services/zoneminder/zm_sync.py` — `ZmConnector`.
+- `src/hi/services/zoneminder/zm_connector.py` — `ZmConnector`.
   Drives sync; per-monitor entity creation in
   `_create_monitor_entity` (this is also the entry point used by the
   auto-reconnect path on sync).
@@ -83,7 +83,7 @@ The monitor poll cadence and per-request timeouts are defined in
 
 Tests live in `src/hi/services/zoneminder/tests/`. Sync flow,
 controller behavior, and monitor state correlation each have their
-own modules; `test_zm_sync.py` is the largest. Synthetic monitor
+own modules; `test_zm_connector.py` is the largest. Synthetic monitor
 data lives in `tests/synthetic_data.py` and `tests/data/`.
 
 Manual end-to-end testing uses the simulator; ZM simulator support

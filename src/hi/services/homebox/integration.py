@@ -1,12 +1,8 @@
 import logging
 from typing import List, Optional
 
-from hi.apps.entity.models import Entity
 from hi.apps.system.enums import HealthStatusType
-from hi.apps.system.health_status_provider import HealthStatusProvider
 
-from hi.integrations.connector.external_view_data import ExternalViewData
-from hi.integrations.connector.integration_controller import IntegrationController
 from hi.integrations.integration_gateway import IntegrationGateway
 from hi.integrations.connector.integration_connector import IntegrationConnector
 from hi.integrations.importer.integration_importer import IntegrationImporter
@@ -16,15 +12,11 @@ from hi.integrations.transient_models import (
     IntegrationMetaData,
     IntegrationValidationResult,
 )
-from hi.apps.monitor.periodic_monitor import PeriodicMonitor
 
-from .hb_controller import HomeBoxController
 from .shared.hb_manager import HomeBoxManager
 from .hb_metadata import HbMetaData
-from .connector.hb_external_view_resolver import HomeBoxExternalViewResolver
 from .connector.homebox_connector import HomeBoxConnector
 from .importer.homebox_importer import HomeBoxImporter
-from .monitors import HomeBoxMonitor
 
 logger = logging.getLogger(__name__)
 
@@ -33,15 +25,9 @@ class HomeBoxGateway(IntegrationGateway):
     def get_metadata(self) -> IntegrationMetaData:
         return HbMetaData
 
-    def get_monitor(self) -> PeriodicMonitor:
-        return HomeBoxMonitor()
-
-    def get_controller(self) -> IntegrationController:
-        return HomeBoxController()
-
     def notify_settings_changed(self):
         """Notify HomeBox integration that settings have changed.
-        
+
         Delegates to HomeBoxManager to reload configuration and notify monitors.
         """
         try:
@@ -50,9 +36,6 @@ class HomeBoxGateway(IntegrationGateway):
             logger.debug('HomeBox integration notified of settings change')
         except Exception as e:
             logger.exception(f'Error notifying HomeBox integration of settings change: {e}')
-
-    def get_health_status_provider(self) -> HealthStatusProvider:
-        return HomeBoxManager()
 
     def get_connector(self) -> IntegrationConnector:
         return HomeBoxConnector()
@@ -90,6 +73,3 @@ class HomeBoxGateway(IntegrationGateway):
         except Exception as e:
             logger.exception(f'Error in HomeBox access validation: {e}')
             return ConnectionTestResult.failure(f'Access validation error: {e}')
-
-    def get_external_view_data(self, entity: Entity) -> Optional[ExternalViewData]:
-        return HomeBoxExternalViewResolver().get_external_view_data(entity)

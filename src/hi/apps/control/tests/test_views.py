@@ -54,7 +54,7 @@ class TestControllerView(SyncViewTestCase):
         mock_integration_manager.return_value = mock_manager
         mock_gateway = Mock()
         mock_manager.get_integration_gateway.return_value = mock_gateway
-        mock_gateway.get_controller.return_value.do_control.return_value = IntegrationControlResult(
+        mock_gateway.get_connector.return_value.get_controller.return_value.do_control.return_value = IntegrationControlResult(
             new_value='ON',
             error_list=[]
         )

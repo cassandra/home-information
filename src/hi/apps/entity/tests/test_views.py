@@ -479,7 +479,7 @@ class TestEntityEditViewExternalViewData(DualModeViewTestCase):
         url = reverse('entity_edit', kwargs={'entity_id': self.integration_entity.id})
 
         mock_gateway = Mock()
-        mock_gateway.get_external_view_data.return_value = None
+        mock_gateway.get_connector.return_value.get_external_view_data.return_value = None
 
         with patch(
             'hi.integrations.integration_manager.IntegrationManager.get_integration_gateway',
@@ -495,7 +495,7 @@ class TestEntityEditViewExternalViewData(DualModeViewTestCase):
         # render (e.g., when the status modal falls back to the edit
         # view for an entity with no state data), so we don't pin the
         # exact call count.
-        mock_gateway.get_external_view_data.assert_called_with(self.integration_entity)
+        mock_gateway.get_connector.return_value.get_external_view_data.assert_called_with(self.integration_entity)
         self.assertNotIn('attr-v2-external-view-data', response.content.decode('utf-8'))
 
     def test_integration_entity_structured_view_data_renders_section(self):
@@ -505,7 +505,7 @@ class TestEntityEditViewExternalViewData(DualModeViewTestCase):
 
         structured = self._make_structured_view_data()
         mock_gateway = Mock()
-        mock_gateway.get_external_view_data.return_value = structured
+        mock_gateway.get_connector.return_value.get_external_view_data.return_value = structured
 
         with patch(
             'hi.integrations.integration_manager.IntegrationManager.get_integration_gateway',
@@ -530,7 +530,7 @@ class TestEntityEditViewExternalViewData(DualModeViewTestCase):
 
         minimal = self._make_minimal_view_data()
         mock_gateway = Mock()
-        mock_gateway.get_external_view_data.return_value = minimal
+        mock_gateway.get_connector.return_value.get_external_view_data.return_value = minimal
 
         with patch(
             'hi.integrations.integration_manager.IntegrationManager.get_integration_gateway',
@@ -558,7 +558,7 @@ class TestEntityEditViewExternalViewData(DualModeViewTestCase):
             error_message='HomeBox upstream unavailable: Connection refused',
         )
         mock_gateway = Mock()
-        mock_gateway.get_external_view_data.return_value = minimal
+        mock_gateway.get_connector.return_value.get_external_view_data.return_value = minimal
 
         with patch(
             'hi.integrations.integration_manager.IntegrationManager.get_integration_gateway',
@@ -586,7 +586,7 @@ class TestEntityEditViewExternalViewData(DualModeViewTestCase):
 
         structured = self._make_structured_view_data()
         mock_gateway = Mock()
-        mock_gateway.get_external_view_data.return_value = structured
+        mock_gateway.get_connector.return_value.get_external_view_data.return_value = structured
 
         with patch(
             'hi.integrations.integration_manager.IntegrationManager.get_integration_gateway',
@@ -619,7 +619,7 @@ class TestEntityEditViewExternalViewData(DualModeViewTestCase):
 
         structured = self._make_structured_view_data()
         mock_gateway = Mock()
-        mock_gateway.get_external_view_data.return_value = structured
+        mock_gateway.get_connector.return_value.get_external_view_data.return_value = structured
 
         with patch(
             'hi.integrations.integration_manager.IntegrationManager.get_integration_gateway',
@@ -667,7 +667,7 @@ class TestEntityEditViewExternalViewData(DualModeViewTestCase):
             context={'unused': 'unused'},
         )
         mock_gateway = Mock()
-        mock_gateway.get_external_view_data.return_value = custom
+        mock_gateway.get_connector.return_value.get_external_view_data.return_value = custom
 
         url = reverse('entity_edit', kwargs={'entity_id': self.integration_entity.id})
         with patch(

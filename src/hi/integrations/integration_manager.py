@@ -121,7 +121,10 @@ class IntegrationManager( Singleton ):
                                           provider_id : str ) -> HealthStatusProvider:
         with self._data_lock:
             for integration in self._integration_data_map.values():
-                provider = integration.integration_gateway.get_health_status_provider()
+                connector = integration.integration_gateway.get_connector()
+                if connector is None:
+                    continue
+                provider = connector.get_health_status_provider()
                 if provider.get_provider_info().provider_id == provider_id:
                     return provider
                 continue
@@ -315,7 +318,11 @@ class IntegrationManager( Singleton ):
             logger.warning( f'Tried to start disabled integration monitor: {integration_id}' )
             return
 
-        monitor = integration_data.integration_gateway.get_monitor()
+        connector = integration_data.integration_gateway.get_connector()
+        if connector is None:
+            logger.debug( f'No connector for integration: {integration_id}' )
+            return
+        monitor = connector.get_monitor()
         if not monitor:
             logger.debug( f'No integration monitor defined: {integration_id}' )
             return

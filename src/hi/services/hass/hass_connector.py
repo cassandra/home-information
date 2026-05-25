@@ -5,22 +5,27 @@ from asgiref.sync import sync_to_async
 from django.db import transaction
 
 from hi.apps.entity.models import Entity
+from hi.apps.entity.transient_models import VideoSnapshot
 
 from hi.apps.entity.entity_placement import (
     EntityPlacementInput,
     EntityPlacementItem,
     EntityPlacementGroup,
 )
+from hi.apps.system.health_status_provider import HealthStatusProvider
 
 from hi.integrations.connector.integration_connector import IntegrationConnector
 from hi.integrations.connector.sync_check import IntegrationSyncCheck, SyncDelta
 from hi.integrations.connector.sync_result import IntegrationSyncResult
 from hi.integrations.transient_models import IntegrationKey
 
+from .hass_controller import HassController
 from .hass_converter import HassConverter
+from .hass_manager import HassManager
 from .hass_models import HassDevice
 from .hass_mixins import HassMixin
 from .hass_metadata import HassMetaData
+from .monitors import HassMonitor
 
 logger = logging.getLogger(__name__)
 
@@ -29,6 +34,50 @@ class HassConnector( IntegrationConnector, HassMixin ):
 
     def get_integration_metadata(self):
         return HassMetaData
+
+    def get_monitor(self) -> HassMonitor:
+        return HassMonitor()
+
+    def get_controller(self) -> HassController:
+        return HassController()
+
+    def get_health_status_provider(self) -> HealthStatusProvider:
+        return HassManager()
+
+    def get_entity_video_snapshot(self, entity: Entity) -> Optional[VideoSnapshot]:
+        if not entity.has_video_snapshot:
+            return None
+        if entity.integration_id != HassMetaData.integration_id:
+            return None
+
+        hass_manager = HassManager()
+        # ``Entity.integration_name`` is the HassDevice device_id (an HI
+        # grouping construct), not the HA state id the attrs cache is
+        # keyed by. The manager bridges the two via a sync-time-built
+        # map of HI Entity.id -> camera-domain HA state id.
+        ha_state_id = hass_manager.get_ha_state_id_for_entity( entity )
+        if not ha_state_id:
+            return None
+
+        attrs = hass_manager.get_latest_attrs( ha_state_id )
+        if not attrs:
+            return None
+
+        entity_picture = attrs.get( 'entity_picture' )
+        if not entity_picture:
+            return None
+
+        # Some HA integrations emit an absolute URL; pass those
+        # through unchanged. Relative paths get the HA base prefix.
+        if entity_picture.startswith( ('http://', 'https://') ):
+            source_url = entity_picture
+        else:
+            client = hass_manager.hass_client
+            if not client:
+                return None
+            source_url = f'{client.api_base_url}{entity_picture}'
+
+        return VideoSnapshot( source_url = source_url )
 
     def get_description(self, is_initial_connect: bool) -> Optional[str]:
         if is_initial_connect:

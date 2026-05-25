@@ -5,14 +5,20 @@ from asgiref.sync import sync_to_async
 from django.db import transaction
 
 from hi.apps.entity.models import Entity
+from hi.apps.system.health_status_provider import HealthStatusProvider
 
+from hi.integrations.connector.external_view_data import ExternalViewData
 from hi.integrations.connector.integration_connector import IntegrationConnector
 from hi.integrations.connector.sync_check import IntegrationSyncCheck, SyncDelta
 from hi.integrations.connector.sync_result import IntegrationSyncResult
 from hi.integrations.enums import IntegrationCapability
 from hi.integrations.transient_models import IntegrationKey
 
+from hi.services.homebox.connector.hb_external_view_resolver import HomeBoxExternalViewResolver
+from hi.services.homebox.hb_controller import HomeBoxController
+from hi.services.homebox.monitors import HomeBoxMonitor
 from hi.services.homebox.shared.hb_converter import HbConverter
+from hi.services.homebox.shared.hb_manager import HomeBoxManager
 from hi.services.homebox.hb_metadata import HbMetaData
 from hi.services.homebox.hb_mixins import HomeBoxMixin
 from hi.services.homebox.shared.hb_models import HbItem
@@ -25,6 +31,18 @@ class HomeBoxConnector( IntegrationConnector, HomeBoxMixin ):
 
     def get_integration_metadata(self):
         return HbMetaData
+
+    def get_monitor(self) -> HomeBoxMonitor:
+        return HomeBoxMonitor()
+
+    def get_controller(self) -> HomeBoxController:
+        return HomeBoxController()
+
+    def get_health_status_provider(self) -> HealthStatusProvider:
+        return HomeBoxManager()
+
+    def get_external_view_data(self, entity: Entity) -> Optional[ExternalViewData]:
+        return HomeBoxExternalViewResolver().get_external_view_data(entity)
 
     def get_description(self, is_initial_connect: bool) -> Optional[str]:
         return (

@@ -40,12 +40,6 @@ class _PauseResumeTestGateway(IntegrationGateway):
             allow_entity_deletion=True,
         )
 
-    def get_monitor(self):
-        return Mock()
-
-    def get_controller(self):
-        return Mock()
-
 
 class PauseResumeViewTests(SyncViewTestCase):
     """
@@ -211,6 +205,9 @@ class _SyncTestSynchronizer:
     def get_result_title(self, is_initial_connect):
         return 'Test Sync Result'
 
+    def get_health_status_provider(self):
+        return _SyncTestHealthStatusProvider()
+
     def sync(self, is_initial_connect=False, preserve_user_data=True):
         from hi.integrations.connector.sync_result import IntegrationSyncResult
         self.sync_called = True
@@ -253,17 +250,8 @@ class _SyncCapableGateway(IntegrationGateway):
             capabilities=self._capabilities,
         )
 
-    def get_monitor(self):
-        return Mock()
-
-    def get_controller(self):
-        return Mock()
-
     def get_connector(self):
         return self._synchronizer
-
-    def get_health_status_provider(self):
-        return _SyncTestHealthStatusProvider()
 
 
 class _SyncIncapableGateway(IntegrationGateway):
@@ -279,12 +267,6 @@ class _SyncIncapableGateway(IntegrationGateway):
             attribute_type=_PauseResumeTestAttributeType,
             allow_entity_deletion=True,
         )
-
-    def get_monitor(self):
-        return Mock()
-
-    def get_controller(self):
-        return Mock()
 
 
 class PreSyncViewTests(SyncViewTestCase):
@@ -660,6 +642,9 @@ class _PlacementTestSynchronizer:
     def get_result_title(self, is_initial_connect):
         return 'Placement Test'
 
+    def get_health_status_provider(self):
+        return Mock()
+
     def sync(self, is_initial_connect=False, preserve_user_data=True):
         self.sync_called = True
         self.last_preserve_user_data = preserve_user_data
@@ -681,17 +666,8 @@ class _PlacementTestGateway(IntegrationGateway):
             allow_entity_deletion=True,
         )
 
-    def get_monitor(self):
-        return Mock()
-
-    def get_controller(self):
-        return Mock()
-
     def get_connector(self):
         return self._synchronizer
-
-    def get_health_status_provider(self):
-        return Mock()
 
 
 class PlacementFlowTests(SyncViewTestCase):

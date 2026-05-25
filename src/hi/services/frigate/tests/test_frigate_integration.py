@@ -26,7 +26,7 @@ from hi.apps.sense.transient_models import SensorResponse
 from hi.services.frigate.enums import FrigateAttributeType
 from hi.services.frigate.frigate_manager import FrigateManager
 from hi.services.frigate.frigate_metadata import FrigateMetaData
-from hi.services.frigate.integration import FrigateGateway
+from hi.services.frigate.frigate_connector import FrigateConnector
 from hi.integrations.models import IntegrationAttribute
 from hi.integrations.transient_models import IntegrationKey
 
@@ -91,7 +91,7 @@ class TestFrigateGatewayVideoSnapshot( TestCase ):
     the live JPEG URL."""
 
     def setUp(self):
-        self.gateway = FrigateGateway()
+        self.gateway = FrigateConnector()
 
     def _make_camera_entity( self,
                              integration_name      : str  = 'camera.front_yard',
@@ -178,7 +178,7 @@ class TestFrigateGatewayEventSnapshotUrl( TestCase ):
     each call so the URL always reflects current manager state."""
 
     def setUp(self):
-        self.gateway = FrigateGateway()
+        self.gateway = FrigateConnector()
 
     def _make_response( self, has_snapshot = True, correlation_id = 'evt-1' ):
         from datetime import datetime
@@ -229,7 +229,7 @@ class TestFrigateGatewayVideoStream( TestCase ):
     otherwise (no clip flag, no event id, or no client)."""
 
     def setUp(self):
-        self.gateway = FrigateGateway()
+        self.gateway = FrigateConnector()
 
     def _make_response(
             self, has_clip = True, correlation_id = 'evt-1',
