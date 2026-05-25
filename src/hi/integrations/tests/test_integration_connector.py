@@ -1,5 +1,5 @@
 """
-Unit tests for IntegrationSynchronizer framework helpers.
+Unit tests for IntegrationConnector framework helpers.
 
 Covers the framework-owned policies that all per-integration
 synchronizers share:
@@ -13,7 +13,7 @@ synchronizers share:
     used by reconnect.
 
 End-to-end cycle coverage (sync → detach → reconnect across multiple
-sync passes) lives in ``IntegrationSynchronizerReconnectCycleTests``
+sync passes) lives in ``IntegrationConnectorReconnectCycleTests``
 at the bottom of this module; the per-integration converter
 contracts live in each ``services/<integration>/tests/`` directory.
 """
@@ -27,7 +27,7 @@ from hi.apps.entity.models import Entity, EntityAttribute, EntityState
 from hi.apps.event.models import EventClause, EventDefinition
 from hi.apps.sense.models import Sensor
 from hi.apps.control.models import Controller
-from hi.integrations.connector.integration_synchronizer import IntegrationSynchronizer
+from hi.integrations.connector.integration_connector import IntegrationConnector
 from hi.integrations.connector.sync_result import IntegrationSyncResult
 from hi.testing.base_test_case import BaseTestCase
 
@@ -42,8 +42,8 @@ def _stub_integration_metadata(integration_id='test_integration', label='TestInt
     return SimpleNamespace(integration_id=integration_id, label=label)
 
 
-class TestSynchronizer(IntegrationSynchronizer):
-    """Concrete IntegrationSynchronizer used to exercise the
+class TestSynchronizer(IntegrationConnector):
+    """Concrete IntegrationConnector used to exercise the
     intelligent-removal and reconnect framework helpers. Stubs the
     abstract hooks so the class can be instantiated; sync() itself
     is not exercised here."""
@@ -60,8 +60,8 @@ class TestSynchronizer(IntegrationSynchronizer):
         )
 
 
-class IntegrationSynchronizerRemovalTestCase(TestCase):
-    """Test cases for IntegrationSynchronizer's _remove_entity_intelligently."""
+class IntegrationConnectorRemovalTestCase(TestCase):
+    """Test cases for IntegrationConnector's _remove_entity_intelligently."""
 
     def setUp(self):
         """Set up test data."""
@@ -697,7 +697,7 @@ class IntegrationSynchronizerRemovalTestCase(TestCase):
         self.assertEqual(self.result.removed_list, [])
 
 
-class IntegrationSynchronizerPreservationIntegrationTests(BaseTestCase):
+class IntegrationConnectorPreservationIntegrationTests(BaseTestCase):
     """End-to-end ``_remove_entity_intelligently`` exercises with
     mixed integration/user components: data consistency under
     preservation, foreign-key integrity, user-data detection at
@@ -1076,7 +1076,7 @@ class IntegrationSynchronizerPreservationIntegrationTests(BaseTestCase):
 
 
 
-class IntegrationSynchronizerOrphanDelegateTestCase(TestCase):
+class IntegrationConnectorOrphanDelegateTestCase(TestCase):
     """Refresh-time entity removal must clean up delegate entities
     (e.g., the Area auto-created when a camera/motion-detector was
     placed in a view) that become orphaned by the removal — the same
@@ -1227,7 +1227,7 @@ class IntegrationSynchronizerOrphanDelegateTestCase(TestCase):
 class ReconnectDisconnectedItemsFrameworkTests(TestCase):
     """
     Issue #281: framework-level reconnect lives on the
-    IntegrationSynchronizer base class, symmetric to disconnect
+    IntegrationConnector base class, symmetric to disconnect
     (preserve_with_user_data) which lives on EntityIntegrationOperations.
     Each integration only contributes a thin
     ``_rebuild_integration_components`` override; all the boilerplate
@@ -1253,7 +1253,7 @@ class ReconnectDisconnectedItemsFrameworkTests(TestCase):
 
         integration_label = self.INTEGRATION_LABEL
 
-        class RecordingSynchronizer(IntegrationSynchronizer):
+        class RecordingSynchronizer(IntegrationConnector):
             def get_integration_metadata(self):
                 return _stub_integration_metadata(
                     integration_id=integration_id,
@@ -1356,7 +1356,7 @@ class ReconnectDisconnectedItemsFrameworkTests(TestCase):
         )
         upstream_key = self._make_upstream_key('foo')
 
-        class IncompleteSynchronizer(IntegrationSynchronizer):
+        class IncompleteSynchronizer(IntegrationConnector):
             # Metadata is provided so the framework reaches the
             # _rebuild_integration_components hook (the missing
             # override under test) rather than tripping on the
@@ -1379,7 +1379,7 @@ class ReconnectDisconnectedItemsFrameworkTests(TestCase):
         self.assertIn('_rebuild_integration_components', str(cm.exception))
 
 
-class IntegrationSynchronizerReconnectCycleTests(TestCase):
+class IntegrationConnectorReconnectCycleTests(TestCase):
     """
     Issue #281 end-to-end cycle tests. Exercise the full
     sync → disconnect → re-add upstream → sync → reconnect cycle
@@ -1416,7 +1416,7 @@ class IntegrationSynchronizerReconnectCycleTests(TestCase):
         integration_id = self.INTEGRATION_ID
         integration_label = self.INTEGRATION_LABEL
 
-        class TestE2ESynchronizer(IntegrationSynchronizer):
+        class TestE2ESynchronizer(IntegrationConnector):
             def get_integration_metadata(self):
                 return _stub_integration_metadata(
                     integration_id=integration_id,

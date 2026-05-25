@@ -1,6 +1,6 @@
 """
 Unit tests for the Issue #283 sync-check primitives, framework
-monitor, and post-sync cache hook in ``IntegrationSynchronizer``.
+monitor, and post-sync cache hook in ``IntegrationConnector``.
 
 The sync_check module is small and pure (set arithmetic + cache
 round-trip + dataclass building); most of the value here is in the
@@ -470,15 +470,15 @@ class _StubIntegrationData:
 
 
 def _stub_gateway_returning(delta_or_exception, has_synchronizer=True):
-    """Build a Mock gateway whose ``get_synchronizer()`` returns a
+    """Build a Mock gateway whose ``get_connector()`` returns a
     Mock synchronizer whose ``check_needs_sync`` coroutine returns
     the given SyncDelta (or None) — or raises if an Exception is
     supplied. Pass ``has_synchronizer=False`` to simulate an
     integration that does not support sync at all (gateway returns
-    None from get_synchronizer)."""
+    None from get_connector)."""
     gateway = Mock()
     if not has_synchronizer:
-        gateway.get_synchronizer = Mock(return_value=None)
+        gateway.get_connector = Mock(return_value=None)
         return gateway
 
     synchronizer = Mock()
@@ -489,7 +489,7 @@ def _stub_gateway_returning(delta_or_exception, has_synchronizer=True):
         return delta_or_exception
 
     synchronizer.check_needs_sync = check_needs_sync
-    gateway.get_synchronizer = Mock(return_value=synchronizer)
+    gateway.get_connector = Mock(return_value=synchronizer)
     return gateway
 
 
@@ -542,7 +542,7 @@ class IntegrationSyncCheckMonitorTests(TestCase):
 
     def test_no_cache_write_when_gateway_has_no_synchronizer(self):
         # Integration that does not support sync at all
-        # (get_synchronizer returns None) is naturally opted out of
+        # (get_connector returns None) is naturally opted out of
         # sync-check too — sync-check rides on the same
         # capability.
         gateway = _stub_gateway_returning(None, has_synchronizer=False)
@@ -639,7 +639,7 @@ class IntegrationSyncCheckMonitorTests(TestCase):
         )
 
 
-class IntegrationSynchronizerPostSyncHookTests(TestCase):
+class IntegrationConnectorPostSyncHookTests(TestCase):
     """The post-sync hook clears (writes a zero-delta SyncCheckResult
     with current timestamp) on a successful sync, and leaves the
     cache alone when the sync errored."""
@@ -654,20 +654,20 @@ class IntegrationSynchronizerPostSyncHookTests(TestCase):
         cache.clear()
 
     def _make_synchronizer(self, sync_impl_result):
-        """Build a concrete IntegrationSynchronizer whose _sync_impl
+        """Build a concrete IntegrationConnector whose _sync_impl
         returns the given result. We test sync() (the public entry
         point) so the post-hook fires the same way it does in
         production."""
-        from hi.integrations.connector.integration_synchronizer import IntegrationSynchronizer
+        from hi.integrations.connector.integration_connector import IntegrationConnector
         from hi.integrations.transient_models import IntegrationMetaData
 
-        class _TestSynchronizer(IntegrationSynchronizer):
+        class _TestSynchronizer(IntegrationConnector):
             SYNCHRONIZATION_LOCK_NAME = 'sync_check_test_lock'
 
             def get_integration_metadata(self):
                 return IntegrationMetaData(
-                    integration_id=IntegrationSynchronizerPostSyncHookTests.INTEGRATION_ID,
-                    label=IntegrationSynchronizerPostSyncHookTests.INTEGRATION_LABEL,
+                    integration_id=IntegrationConnectorPostSyncHookTests.INTEGRATION_ID,
+                    label=IntegrationConnectorPostSyncHookTests.INTEGRATION_LABEL,
                     attribute_type=Mock(),
                     allow_entity_deletion=True,
                 )

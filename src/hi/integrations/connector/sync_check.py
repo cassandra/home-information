@@ -6,7 +6,7 @@ Issue #283: a periodic background probe surfaces a "needs-sync"
 signal when an integration's HI representation has drifted from
 upstream. The probe never modifies entities — the user always
 chooses when to invoke Refresh. Per-integration probe logic lives in
-each ``IntegrationSynchronizer.check_needs_sync()`` override, which
+each ``IntegrationConnector.check_needs_sync()`` override, which
 returns a ``SyncDelta``; sync-check rides on the same opt-in surface
 as full sync (an integration without a synchronizer naturally opts
 out of the periodic drift check too). The framework monitor wraps

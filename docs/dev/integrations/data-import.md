@@ -11,13 +11,13 @@ authoritative API.
 
 ## Where the code lives
 
-- `src/hi/integrations/importer/` — abstract `Importer` base,
+- `src/hi/integrations/importer/` — abstract `IntegrationImporter` base,
   transient models (`CandidateItem`, `IntegrationImportResult`,
   `IntegrationDiscardResult`), framework-level views (Data Import
   page, configure, preview, run, discard), templates.
 - `src/hi/integrations/view_mixins.py` — `CapabilityBlockViewMixin`
   for the cross-capability block-modal detection. Mixed into both
-  `IntegrationEnableView` and `ImporterConfigureView`.
+  `ConnectorConfigureView` and `ImporterConfigureView`.
 - `src/hi/services/homebox/importer/` — `HomeBoxImporter`, the first
   concrete implementation. Reference example for new IMPORT-capable
   integrations.
@@ -26,9 +26,9 @@ authoritative API.
 
 1. Add `IntegrationCapability.IMPORT` to `IntegrationMetaData.capabilities`.
 2. Override `IntegrationGateway.get_importer()` to return a concrete
-   `Importer` subclass.
+   `IntegrationImporter` subclass.
 
-The `Importer` abstract sits parallel to `IntegrationSynchronizer`,
+The `IntegrationImporter` abstract sits parallel to `IntegrationConnector`,
 not inheriting from it. Commonality between Connect and Import is
 composed through shared helpers (`HbEntityFactory`, `HbConverter`,
 `EntityIntegrationOperations`, `PlacementUrlParams`, etc.).
@@ -41,7 +41,7 @@ composed through shared helpers (`HbEntityFactory`, `HbConverter`,
   the pattern.
 - **Skip-by-`integration_name`.** Imports are add-only. The framework
   view computes new-vs-skipped against existing HI entities by
-  matching `integration_name`; `Importer.get_candidate_items()`
+  matching `integration_name`; `IntegrationImporter.get_candidate_items()`
   itself returns the full upstream list.
 - **Shared `integrations_sync` exclusion lock.** Connect-side sync
   and Import-side run serialize against each other to prevent

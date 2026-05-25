@@ -11,7 +11,7 @@ from .importer import views as importer_views
 urlpatterns = [
     path( '',
           views.IntegrationHomeView.as_view(),
-          name='integrations_home' ),
+          name='integrations_connect_home' ),
 
     path( 'import/',
           importer_views.DataImportPageView.as_view(),
@@ -33,9 +33,9 @@ urlpatterns = [
           views.IntegrationSelectView.as_view(), 
           name='integrations_select' ),
 
-    re_path( r'^enable/(?P<integration_id>[\w\-]+)$', 
-             views.IntegrationEnableView.as_view(), 
-             name='integrations_enable' ),
+    re_path( r'^enable/(?P<integration_id>[\w\-]+)$',
+             views.ConnectorConfigureView.as_view(),
+             name='integrations_connect_configure' ),
 
     re_path( r'^disable/(?P<integration_id>[\w\-]+)$',
              views.IntegrationDisableView.as_view(),

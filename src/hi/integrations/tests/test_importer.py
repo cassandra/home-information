@@ -1,16 +1,16 @@
 """
-Unit tests for the Importer protocol scaffolding (Phase 2 of #358).
+Unit tests for the IntegrationImporter protocol scaffolding (Phase 2 of #358).
 """
 
 import logging
 
 from django.test import SimpleTestCase
 
-from hi.integrations.importer.importer import Importer
-from hi.integrations.importer.import_result import IntegrationImportResult
+from hi.integrations.importer.integration_importer import IntegrationImporter
 from hi.integrations.importer.transient_models import (
     CandidateItem,
     IntegrationDiscardResult,
+    IntegrationImportResult,
 )
 
 logging.disable(logging.CRITICAL)
@@ -19,7 +19,7 @@ logging.disable(logging.CRITICAL)
 class ImporterBaseClassTests(SimpleTestCase):
 
     def test_protocol_methods_raise_not_implemented(self):
-        importer = Importer()
+        importer = IntegrationImporter()
         with self.assertRaises(NotImplementedError):
             importer.get_metadata()
         with self.assertRaises(NotImplementedError):

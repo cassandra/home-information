@@ -64,7 +64,7 @@ def previous_integration_logo_path( model : IntegrationDetailsModel ) -> str:
     return metadata.logo_static_path if metadata else ''
 
 
-@register.inclusion_tag( 'integrations/panes/integration_health_banner.html' )
+@register.inclusion_tag( 'integrations/connector/panes/integration_health_banner.html' )
 def integration_health_banner( integration_id : str, context_message : str = None ):
     """Render a banner when the integration is in a non-healthy state.
 

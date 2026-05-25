@@ -6,7 +6,7 @@ from django.db import transaction
 
 from hi.apps.entity.models import Entity
 
-from hi.integrations.connector.integration_synchronizer import IntegrationSynchronizer
+from hi.integrations.connector.integration_connector import IntegrationConnector
 from hi.integrations.connector.sync_check import IntegrationSyncCheck, SyncDelta
 from hi.integrations.connector.sync_result import IntegrationSyncResult
 from hi.integrations.enums import IntegrationCapability
@@ -21,7 +21,7 @@ from hi.services.homebox.shared.hb_entity_factory import HbEntityFactory
 logger = logging.getLogger(__name__)
 
 
-class HomeBoxSynchronizer( IntegrationSynchronizer, HomeBoxMixin ):
+class HomeBoxConnector( IntegrationConnector, HomeBoxMixin ):
 
     def get_integration_metadata(self):
         return HbMetaData

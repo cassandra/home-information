@@ -111,7 +111,7 @@ class IntegrationDetailsModel( models.Model ):
     # The previous_integration_* fields record the integration identity
     # an instance had at the moment it was disconnected (e.g., via
     # sync-time preservation or Disable-SAFE). They drive the
-    # auto-reconnect path in IntegrationSynchronizer: when an upstream
+    # auto-reconnect path in IntegrationConnector: when an upstream
     # entity reappears whose key matches a disconnected entity's
     # previous identity, the entity is reconnected rather than a
     # duplicate being created. The previous_integration_id is indexed

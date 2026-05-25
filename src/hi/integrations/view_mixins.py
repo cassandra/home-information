@@ -1,5 +1,6 @@
 from typing import FrozenSet, Optional
 
+from django.core.exceptions import BadRequest
 from django.db.models import Count
 from django.http import Http404
 from django.urls import reverse
@@ -33,7 +34,7 @@ _CAPABILITY_UI_LABEL = {
     IntegrationCapability.IMPORT: 'Import',
 }
 _CAPABILITY_REMEDIATION_URL_NAME = {
-    IntegrationCapability.CONNECT: 'integrations_home',
+    IntegrationCapability.CONNECT: 'integrations_connect_home',
     IntegrationCapability.IMPORT: 'integrations_import_home',
 }
 _CAPABILITY_REMEDIATION_LINK_LABEL = {
@@ -118,14 +119,23 @@ class CapabilityBlockViewMixin:
 
 class IntegrationViewMixin:
 
-    def get_integration_data( self, integration_id : str ):
+    def get_integration_data( self, request, *args, **kwargs ):
+        """Resolve the URL-routed integration_id to its IntegrationData.
+
+        Assumes there is a required ``integration_id`` in kwargs;
+        raises BadRequest if missing and Http404 if not registered.
+        Mirrors EntityViewMixin.get_entity's signature so views can
+        chain helpers uniformly.
+        """
+        integration_id = kwargs.get('integration_id')
+        if not integration_id:
+            raise BadRequest('Missing integration id.')
         try:
             return IntegrationManager().get_integration_data(
                 integration_id = integration_id,
             )
         except KeyError:
-            raise Http404()
-        return
+            raise Http404(request)
 
     def get_integration_data_list(
             self,
@@ -141,17 +151,17 @@ class IntegrationViewMixin:
                             request,
                             integration_data,
                             preserve_user_data : bool = True ):
-        """Run the integration's synchronizer and render the
+        """Run the integration's connector and render the
         sync-result modal. Shared by the initial-connect flow
-        (IntegrationEnableView.post after enable) and the update-check
+        (ConnectorConfigureView.post after enable) and the update-check
         flow (IntegrationSyncView.post after pre-sync confirm).
 
         Returns the modal response directly, including the placement
         URL for the 'Place N new items' CTA when sync produced new
         entities. Cache invalidations run in a ``finally`` so a
         partial-commit failure during sync also flushes."""
-        synchronizer = integration_data.integration_gateway.get_synchronizer()
-        if synchronizer is None:
+        connector = integration_data.integration_gateway.get_connector()
+        if connector is None:
             return page_not_found_response( request )
 
         is_initial_connect = not Entity.objects.filter(
@@ -159,7 +169,7 @@ class IntegrationViewMixin:
         ).exists()
 
         try:
-            sync_result = synchronizer.sync(
+            sync_result = connector.sync(
                 is_initial_connect = is_initial_connect,
                 preserve_user_data = preserve_user_data,
             )
@@ -187,7 +197,7 @@ class IntegrationViewMixin:
                 'is_initial_connect': is_initial_connect,
                 'placement_url': placement_url,
             },
-            template_name = 'integrations/modals/sync_result.html',
+            template_name = 'integrations/connector/modals/sync_result.html',
         )
 
     def validate_attributes_extra_helper( self,

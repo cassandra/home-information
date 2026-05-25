@@ -3,7 +3,7 @@ Transient data shapes returned by integration sync operations.
 
 The framework owns the sync workflow (pre-sync modal, sync view,
 post-sync placement modal). Each integration's
-``IntegrationSynchronizer.sync()`` returns an
+``IntegrationConnector.sync()`` returns an
 ``IntegrationSyncResult`` describing what happened during sync —
 title, structured change counts, info/error notes — plus an
 optional ``EntityPlacementInput`` that drives the placement modal

@@ -8,42 +8,42 @@ from hi.apps.entity.models import Entity
 from hi.integrations.connector.sync_result import IntegrationSyncResult
 from hi.integrations.transient_models import IntegrationKey
 
-from hi.services.hass.hass_sync import HassSynchronizer
+from hi.services.hass.hass_sync import HassConnector
 from hi.services.hass.hass_models import HassState
 
 logging.disable(logging.CRITICAL)
 
 
-class TestHassSynchronizerInitialization(TestCase):
-    """Test HassSynchronizer initialization and basic setup"""
+class TestHassConnectorInitialization(TestCase):
+    """Test HassConnector initialization and basic setup"""
     
     def test_init_creates_instance_successfully(self):
-        """Test HassSynchronizer initialization"""
-        synchronizer = HassSynchronizer()
-        self.assertIsInstance(synchronizer, HassSynchronizer)
+        """Test HassConnector initialization"""
+        synchronizer = HassConnector()
+        self.assertIsInstance(synchronizer, HassConnector)
     
     def test_synchronization_lock_name_constant(self):
         """All integration synchronizers share a single process-wide
         sync lock name; the base class declares it and subclasses do
         not override."""
-        self.assertEqual(HassSynchronizer.SYNCHRONIZATION_LOCK_NAME, 'integrations_sync')
+        self.assertEqual(HassConnector.SYNCHRONIZATION_LOCK_NAME, 'integrations_sync')
     
     def test_inherits_from_mixins(self):
-        """Test that HassSynchronizer inherits from required mixins"""
-        synchronizer = HassSynchronizer()
+        """Test that HassConnector inherits from required mixins"""
+        synchronizer = HassConnector()
 
         # Should inherit from HassMixin
         self.assertTrue(hasattr(synchronizer, 'hass_manager'))
 
 
-class TestHassSynchronizerSyncMethod(TestCase):
+class TestHassConnectorSyncMethod(TestCase):
     """Test main sync() method with database transactions"""
     
     def setUp(self):
-        self.synchronizer = HassSynchronizer()
+        self.synchronizer = HassConnector()
     
-    @patch('hi.integrations.connector.integration_synchronizer.ExclusionLockContext')
-    @patch.object(HassSynchronizer, '_sync_impl')
+    @patch('hi.integrations.connector.integration_connector.ExclusionLockContext')
+    @patch.object(HassConnector, '_sync_impl')
     def test_sync_handles_runtime_error(self, mock_sync_impl, mock_lock_context):
         """Test sync method handles RuntimeError exceptions"""
         # Mock RuntimeError in sync helper
@@ -60,8 +60,8 @@ class TestHassSynchronizerSyncMethod(TestCase):
         # Verify error handling
         self.assertIn('Database connection failed', result.error_list[0])
     
-    @patch('hi.integrations.connector.integration_synchronizer.ExclusionLockContext')
-    @patch.object(HassSynchronizer, '_sync_impl')
+    @patch('hi.integrations.connector.integration_connector.ExclusionLockContext')
+    @patch.object(HassConnector, '_sync_impl')
     def test_sync_returns_error_result_on_exception(self, mock_sync_impl, mock_lock_context):
         """Test sync method returns proper error result when _sync_impl raises exception"""
         # Mock RuntimeError in sync helper
@@ -81,11 +81,11 @@ class TestHassSynchronizerSyncMethod(TestCase):
         self.assertEqual(len(result.info_list), 0)  # No success messages on error
 
 
-class TestHassSynchronizerSyncHelper(TestCase):
+class TestHassConnectorSyncHelper(TestCase):
     """Test _sync_impl method logic"""
     
     def setUp(self):
-        self.synchronizer = HassSynchronizer()
+        self.synchronizer = HassConnector()
         
         # Mock hass_manager and dependencies
         self.mock_manager = Mock()
@@ -94,8 +94,8 @@ class TestHassSynchronizerSyncHelper(TestCase):
         self.mock_manager.import_allowlist = None
 
 
-class TestHassSynchronizerStateConversion(TestCase):
-    """Test HassSynchronizer with real HASS API data"""
+class TestHassConnectorStateConversion(TestCase):
+    """Test HassConnector with real HASS API data"""
     
     @classmethod
     def setUpClass(cls):
@@ -109,7 +109,7 @@ class TestHassSynchronizerStateConversion(TestCase):
             cls.real_hass_states_data = []
     
     def setUp(self):
-        self.synchronizer = HassSynchronizer()
+        self.synchronizer = HassConnector()
     
     def test_real_data_entity_id_diversity(self):
         """Test that real HASS data contains diverse entity types for comprehensive testing"""
@@ -135,11 +135,11 @@ class TestHassSynchronizerStateConversion(TestCase):
         self.assertGreaterEqual(len(entity_ids), 10, "Should have substantial entities for sync testing")
 
 
-class TestHassSynchronizerTransactionBehavior(TestCase):
+class TestHassConnectorTransactionBehavior(TestCase):
     """Test transaction handling and atomicity in sync operations"""
     
     def setUp(self):
-        self.synchronizer = HassSynchronizer()
+        self.synchronizer = HassConnector()
     
     def test_sync_impl_executes_entity_operations_atomically(self):
         """Test that all entity operations in sync_helper execute within single transaction"""
@@ -220,13 +220,13 @@ class TestHassSynchronizerTransactionBehavior(TestCase):
         return hass_state
 
 
-class TestHassSynchronizerErrorScenarios(TestCase):
+class TestHassConnectorErrorScenarios(TestCase):
     """Test comprehensive error handling scenarios"""
     
     def setUp(self):
-        self.synchronizer = HassSynchronizer()
+        self.synchronizer = HassConnector()
     
-    @patch.object(HassSynchronizer, 'hass_manager')
+    @patch.object(HassConnector, 'hass_manager')
     def test_sync_impl_handles_api_fetch_failure(self, mock_hass_manager):
         """Test sync helper handles API fetch failures"""
         # Mock manager with client that fails API fetch
@@ -242,8 +242,8 @@ class TestHassSynchronizerErrorScenarios(TestCase):
         self.assertEqual(str(context.exception), "API connection failed")
     
     @patch('hi.services.hass.hass_sync.HassConverter.hass_states_to_hass_devices')
-    @patch.object(HassSynchronizer, '_get_existing_hass_entities')
-    @patch.object(HassSynchronizer, 'hass_manager')
+    @patch.object(HassConnector, '_get_existing_hass_entities')
+    @patch.object(HassConnector, 'hass_manager')
     def test_sync_impl_handles_converter_failure(
             self, mock_hass_manager, 
             mock_get_entities, mock_states_to_devices ):
@@ -279,11 +279,11 @@ class TestHassSynchronizerErrorScenarios(TestCase):
         self.assertEqual(str(context.exception), "Database connection lost")
 
 
-class TestHassSynchronizerMixinIntegration(TestCase):
+class TestHassConnectorMixinIntegration(TestCase):
     """Test integration with HassMixin"""
 
     def setUp(self):
-        self.synchronizer = HassSynchronizer()
+        self.synchronizer = HassConnector()
 
     @patch('hi.services.hass.hass_mixins.HassManager')
     def test_hass_mixin_integration(self, mock_manager_class):
@@ -297,14 +297,14 @@ class TestHassSynchronizerMixinIntegration(TestCase):
         self.assertEqual(result, mock_manager_instance)
 
 
-class TestHassSynchronizerSyncResultGrouping(TestCase):
+class TestHassConnectorSyncResultGrouping(TestCase):
     """Phase 2 grouping behavior: HASS-imported entities are grouped
     by Hi-side entity_type_str. The /api/states endpoint exposes no
     area metadata, so the synchronizer falls back to entity_type as
     the meaningful, available signal."""
 
     def setUp(self):
-        self.synchronizer = HassSynchronizer()
+        self.synchronizer = HassConnector()
 
     def _entity(self, name, entity_type_str, integration_name):
         entity = Mock()
@@ -367,7 +367,7 @@ class TestHassSynchronizerSyncResultGrouping(TestCase):
 from hi.testing.async_task_utils import AsyncTaskTestCase
 
 
-class TestHassSynchronizerCheckNeedsSync(AsyncTaskTestCase):
+class TestHassConnectorCheckNeedsSync(AsyncTaskTestCase):
     """Issue #283 — sync-check probe shape for Home Assistant.
 
     Pins the contract that the upstream key set is *post-allowlist*
@@ -399,7 +399,7 @@ class TestHassSynchronizerCheckNeedsSync(AsyncTaskTestCase):
             )
 
     def _run_check(self, hass_states_payload, allowlist=''):
-        synchronizer = HassSynchronizer()
+        synchronizer = HassConnector()
         manager = Mock()
         manager.import_allowlist = allowlist
 
@@ -481,7 +481,7 @@ class TestHassSynchronizerCheckNeedsSync(AsyncTaskTestCase):
         self.assertFalse(delta.needs_sync)
 
     def test_returns_none_when_manager_not_ready(self):
-        synchronizer = HassSynchronizer()
+        synchronizer = HassConnector()
 
         async def get_manager():
             return None

@@ -29,7 +29,7 @@ User-facing setup, CORS, and SSL troubleshooting live in
   validates the `ZMApi` from the integration attributes.
 - `src/hi/services/zoneminder/pyzm_client/` — vendored Python client
   for ZM's REST API and `cgi-bin/nph-zms` streaming endpoints.
-- `src/hi/services/zoneminder/zm_sync.py` — `ZoneMinderSynchronizer`.
+- `src/hi/services/zoneminder/zm_sync.py` — `ZmConnector`.
   Drives sync; per-monitor entity creation in
   `_create_monitor_entity` (this is also the entry point used by the
   auto-reconnect path on sync).

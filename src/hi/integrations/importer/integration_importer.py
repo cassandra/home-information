@@ -1,7 +1,7 @@
 """
 Per-integration importer base class.
 
-Parallel to IntegrationSynchronizer (Connect-capability). Each
+Parallel to IntegrationConnector (Connect-capability). Each
 IMPORT-capable integration provides a concrete subclass and returns
 an instance from IntegrationGateway.get_importer(). The framework
 owns the import workflow (Data Import page, configure modal,
@@ -22,11 +22,14 @@ from hi.integrations.transient_models import (
     IntegrationValidationResult,
 )
 
-from .import_result import IntegrationImportResult
-from .transient_models import CandidateItem, IntegrationDiscardResult
+from .transient_models import (
+    CandidateItem,
+    IntegrationDiscardResult,
+    IntegrationImportResult,
+)
 
 
-class Importer:
+class IntegrationImporter:
 
     def get_metadata(self) -> IntegrationMetaData:
         raise NotImplementedError('Subclasses must override this method')

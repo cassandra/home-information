@@ -12,13 +12,14 @@ from unittest.mock import Mock, patch
 
 from django.test import TestCase
 
+from hi.apps.entity.enums import EntityDataSource
 from hi.apps.entity.models import Entity
 from hi.integrations.connector.external_view_data import (
     MinimalViewData,
     NameValuePair,
     StructuredViewData,
 )
-from hi.services.homebox.connector.hb_connector import HomeBoxConnector
+from hi.services.homebox.connector.hb_external_view_resolver import HomeBoxExternalViewResolver
 from hi.services.homebox.hb_metadata import HbMetaData
 from hi.services.homebox.shared.hb_models import HbItem
 
@@ -26,13 +27,12 @@ from hi.services.homebox.shared.hb_models import HbItem
 logging.disable(logging.CRITICAL)
 
 
-class HomeBoxConnectorTests(TestCase):
+class HomeBoxExternalViewResolverTests(TestCase):
 
     def _make_hb_entity(self, item_id: str = '42') -> Entity:
         # Connect-mode HomeBox entity: data_source=EXTERNAL. The
-        # connector gates on this so Import-mode entities (INTERNAL)
+        # resolver gates on this so Import-mode entities (INTERNAL)
         # don't surface live HomeBox view data.
-        from hi.apps.entity.enums import EntityDataSource
         return Entity.objects.create(
             name=f'HomeBox Item {item_id}',
             entity_type_str='LIGHT',
@@ -49,8 +49,8 @@ class HomeBoxConnectorTests(TestCase):
 
     def test_returns_none_for_native_entity(self):
         entity = self._make_native_entity()
-        connector = HomeBoxConnector()
-        result = connector.get_external_view_data(entity)
+        resolver = HomeBoxExternalViewResolver()
+        result = resolver.get_external_view_data(entity)
         self.assertIsNone(result)
 
     def test_returns_minimal_when_upstream_fetch_raises(self):
@@ -63,10 +63,10 @@ class HomeBoxConnectorTests(TestCase):
         manager.ensure_initialized = Mock()
 
         with patch(
-            'hi.services.homebox.connector.hb_connector.HomeBoxManager',
+            'hi.services.homebox.connector.hb_external_view_resolver.HomeBoxManager',
             return_value=manager,
         ):
-            result = HomeBoxConnector().get_external_view_data(entity)
+            result = HomeBoxExternalViewResolver().get_external_view_data(entity)
 
         self.assertIsInstance(result, MinimalViewData)
         self.assertEqual(result.deep_link_url, 'http://homebox.example.com/item/42')
@@ -87,10 +87,10 @@ class HomeBoxConnectorTests(TestCase):
         manager.ensure_initialized = Mock()
 
         with patch(
-            'hi.services.homebox.connector.hb_connector.HomeBoxManager',
+            'hi.services.homebox.connector.hb_external_view_resolver.HomeBoxManager',
             return_value=manager,
         ):
-            result = HomeBoxConnector().get_external_view_data(entity)
+            result = HomeBoxExternalViewResolver().get_external_view_data(entity)
 
         self.assertIsInstance(result, MinimalViewData)
         self.assertIsNone(result.deep_link_url)
@@ -134,10 +134,10 @@ class HomeBoxConnectorTests(TestCase):
         manager.ensure_initialized = Mock()
 
         with patch(
-            'hi.services.homebox.connector.hb_connector.HomeBoxManager',
+            'hi.services.homebox.connector.hb_external_view_resolver.HomeBoxManager',
             return_value=manager,
         ):
-            result = HomeBoxConnector().get_external_view_data(entity)
+            result = HomeBoxExternalViewResolver().get_external_view_data(entity)
 
         self.assertIsInstance(result, StructuredViewData)
         self.assertEqual(result.deep_link_url, 'http://homebox.example.com/item/123')
@@ -190,10 +190,10 @@ class HomeBoxConnectorTests(TestCase):
         manager.ensure_initialized = Mock()
 
         with patch(
-            'hi.services.homebox.connector.hb_connector.HomeBoxManager',
+            'hi.services.homebox.connector.hb_external_view_resolver.HomeBoxManager',
             return_value=manager,
         ):
-            result = HomeBoxConnector().get_external_view_data(entity)
+            result = HomeBoxExternalViewResolver().get_external_view_data(entity)
 
         self.assertIsInstance(result, StructuredViewData)
         self.assertEqual(len(result.attachments), 2)
@@ -223,10 +223,10 @@ class HomeBoxConnectorTests(TestCase):
         manager.ensure_initialized = Mock()
 
         with patch(
-            'hi.services.homebox.connector.hb_connector.HomeBoxManager',
+            'hi.services.homebox.connector.hb_external_view_resolver.HomeBoxManager',
             return_value=manager,
         ):
-            result = HomeBoxConnector().get_external_view_data(entity)
+            result = HomeBoxExternalViewResolver().get_external_view_data(entity)
 
         self.assertEqual(result.deep_link_url, 'http://homebox.example.com/item/500')
 
@@ -240,9 +240,9 @@ class HomeBoxConnectorTests(TestCase):
         manager.ensure_initialized = Mock()
 
         with patch(
-            'hi.services.homebox.connector.hb_connector.HomeBoxManager',
+            'hi.services.homebox.connector.hb_external_view_resolver.HomeBoxManager',
             return_value=manager,
         ):
-            result = HomeBoxConnector().get_external_view_data(entity)
+            result = HomeBoxExternalViewResolver().get_external_view_data(entity)
 
         self.assertEqual(result.deep_link_url, 'http://homebox.example.com/item/600')

@@ -5,9 +5,9 @@ feature.
 A single ``IntegrationSyncCheckMonitor`` runs at a long cadence
 (``IntegrationSyncCheck.INTERVAL_SECS``, currently 4 hours), iterates
 the enabled and unpaused integrations, gets each integration's
-synchronizer via ``gateway.get_synchronizer()``, and dispatches to
+connector via ``gateway.get_connector()``, and dispatches to
 its ``check_needs_sync()``. Sync-check rides on the same opt-in
-surface as full sync — an integration without a synchronizer
+surface as full sync — an integration without a connector
 naturally opts out of the periodic drift check too. Per-integration
 calls are wrapped in try/except so one integration's transient
 failure does not abort the cycle for the others. Sequential (not
@@ -93,22 +93,22 @@ class IntegrationSyncCheckMonitor( PeriodicMonitor ):
         """
         Run the per-integration probe and write the result to the
         cache. Sync-check rides on the same opt-in surface as full
-        sync: an integration with no synchronizer
-        (``gateway.get_synchronizer() is None``) does not participate.
-        Any exception from the synchronizer's check is caught here so
+        sync: an integration with no connector
+        (``gateway.get_connector() is None``) does not participate.
+        Any exception from the connector's check is caught here so
         a single integration cannot abort the cycle.
         """
         integration_id = integration_data.integration_id
         gateway = integration_data.integration_gateway
 
-        synchronizer = gateway.get_synchronizer()
-        if synchronizer is None:
-            # No synchronizer means no sync support — and therefore
+        connector = gateway.get_connector()
+        if connector is None:
+            # No connector means no sync support — and therefore
             # no sync-check. Cache state is not touched.
             return SyncCheckOutcome.OPTED_OUT
 
         try:
-            delta = await synchronizer.check_needs_sync()
+            delta = await connector.check_needs_sync()
         except Exception as e:
             logger.warning(
                 f'Sync check failed for {integration_id}: {e}',

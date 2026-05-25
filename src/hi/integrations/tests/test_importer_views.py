@@ -9,7 +9,7 @@ from hi.apps.attribute.enums import AttributeValueType
 from hi.apps.entity.enums import EntityDataSource, EntityType
 from hi.apps.entity.models import Entity
 from hi.integrations.enums import IntegrationAttributeType, IntegrationCapability
-from hi.integrations.importer.importer import Importer
+from hi.integrations.importer.integration_importer import IntegrationImporter
 from hi.integrations.importer.transient_models import CandidateItem
 from hi.integrations.integration_data import IntegrationData
 from hi.integrations.integration_gateway import IntegrationGateway
@@ -66,8 +66,8 @@ class _ImportCapableGateway(IntegrationGateway):
     def validate_access(self, integration_attributes, timeout_secs):
         return ConnectionTestResult.success()
 
-    def get_importer(self) -> Importer:
-        importer = Importer()
+    def get_importer(self) -> IntegrationImporter:
+        importer = IntegrationImporter()
         importer.get_candidate_items = lambda: list(self._candidates)
 
         # Real DISCARD semantics: delete data_source=INTERNAL rows for
@@ -208,7 +208,7 @@ class ImporterConfigureViewTests(TestCase):
         self.assertIn('>\n          IMPORT\n        </button>', body)
 
     def test_post_run_renders_result_modal_with_placement_cta(self):
-        from hi.integrations.importer.import_result import IntegrationImportResult
+        from hi.integrations.importer.transient_models import IntegrationImportResult
         from hi.apps.entity.entity_placement import (
             EntityPlacementInput,
             EntityPlacementItem,
@@ -224,7 +224,7 @@ class ImporterConfigureViewTests(TestCase):
             data_source_str=str(EntityDataSource.INTERNAL),
         )
         gateway = _ImportCapableGateway(self.INTEGRATION_ID)
-        stub_importer = Importer()
+        stub_importer = IntegrationImporter()
         stub_importer.run_import = lambda: IntegrationImportResult(
             title='Import Result',
             items_imported_count=1,
@@ -282,7 +282,7 @@ class ImporterConfigureViewTests(TestCase):
         body = response.content.decode()
         self.assertIn('Cannot configure', body)
         self.assertIn('GO TO INTEGRATIONS', body)
-        self.assertIn(reverse('integrations_home'), body)
+        self.assertIn(reverse('integrations_connect_home'), body)
 
     def test_get_import_not_blocked_when_already_imported(self):
         # Existing Import entities → user is in "re-import" territory;
@@ -397,9 +397,9 @@ class ImporterConfigureViewTests(TestCase):
         )
 
     def test_post_run_renders_nothing_imported_when_all_skipped(self):
-        from hi.integrations.importer.import_result import IntegrationImportResult
+        from hi.integrations.importer.transient_models import IntegrationImportResult
         gateway = _ImportCapableGateway(self.INTEGRATION_ID)
-        stub_importer = Importer()
+        stub_importer = IntegrationImporter()
         stub_importer.run_import = lambda: IntegrationImportResult(
             title='Import Result',
             items_imported_count=0,

@@ -24,8 +24,8 @@ facilities in `shared/`:
 - `services/homebox/shared/` — `HbClient` (REST + login flow),
   `HbClientFactory`, `HbConverter`, `HomeBoxManager`,
   `HbEntityFactory`, `HbItem`. Reused by both capabilities.
-- `services/homebox/connector/` — `HomeBoxSynchronizer`,
-  `HomeBoxConnector` (live entity-detail view), attachment proxy.
+- `services/homebox/connector/` — `HomeBoxConnector`,
+  `HomeBoxExternalViewResolver` (live entity-detail view), attachment proxy.
 - `services/homebox/importer/` — `HomeBoxImporter` and attribute-
   population helpers.
 - `services/homebox/monitors.py`, `hb_controller.py` — periodic
@@ -44,10 +44,10 @@ suffix); the client appends the version internally. This is
 documented in the user-facing doc and reinforced by an explicit
 error message in `HbClient` when responses are not JSON.
 
-## Importer
+## IntegrationImporter
 
 `HomeBoxImporter` (`services/homebox/importer/`) is the Import-side
-parallel of `HomeBoxSynchronizer`. Both call into shared facilities
+parallel of `HomeBoxConnector`. Both call into shared facilities
 (`HbEntityFactory`, `HbConverter`) so only the orchestration differs.
 See [`data-import.md`](data-import.md) for the framework-level
 IMPORT capability documentation.

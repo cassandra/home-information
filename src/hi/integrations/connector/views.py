@@ -44,10 +44,10 @@ logger = logging.getLogger(__name__)
 class IntegrationHomeView( ConfigPageView, IntegrationViewMixin ):
 
     def config_page_type(self) -> ConfigPageType:
-        return ConfigPageType.INTEGRATIONS
+        return ConfigPageType.INTEGRATIONS_CONNECT
 
     def get_main_template_name( self ) -> str:
-        return 'integrations/pages/no_integrations.html'
+        return 'integrations/connector/pages/no_integrations.html'
 
     def get_main_template_context( self, request, *args, **kwargs ):
 
@@ -65,7 +65,7 @@ class IntegrationHomeView( ConfigPageView, IntegrationViewMixin ):
 class IntegrationSelectView( HiModalView, IntegrationViewMixin ):
 
     def get_template_name( self ) -> str:
-        return 'integrations/modals/integrations_select.html'
+        return 'integrations/connector/modals/integrations_select.html'
 
     def get( self, request, *args, **kwargs ):
         context = {
@@ -82,10 +82,7 @@ class IntegrationHealthStatusView( HiModalView, IntegrationViewMixin ):
         return 'system/modals/health_status.html'
 
     def get( self, request, *args, **kwargs ):
-        integration_id = kwargs.get('integration_id')
-        integration_data = self.get_integration_data(
-            integration_id = integration_id,
-        )
+        integration_data = self.get_integration_data( request, *args, **kwargs )
         health_status_provider = integration_data.integration_gateway.get_health_status_provider()
         context = {
             'health_status_provider': health_status_provider,
@@ -106,20 +103,17 @@ class IntegrationPreSyncView( HiModalView, IntegrationViewMixin ):
     expresses the policy applied at sync execution if any drops
     carry user data.
 
-    404s when the integration does not provide a synchronizer (sync
+    404s when the integration does not provide a connector (sync
     is opt-in capability — not every integration supports it).
     """
 
     def get_template_name( self ) -> str:
-        return 'integrations/modals/pre_sync_confirm.html'
+        return 'integrations/connector/modals/pre_sync_confirm.html'
 
     def get( self, request, *args, **kwargs ):
-        integration_id = kwargs.get('integration_id')
-        integration_data = self.get_integration_data(
-            integration_id = integration_id,
-        )
-        synchronizer = integration_data.integration_gateway.get_synchronizer()
-        if synchronizer is None:
+        integration_data = self.get_integration_data( request, *args, **kwargs )
+        connector = integration_data.integration_gateway.get_connector()
+        if connector is None:
             return page_not_found_response( request )
 
         is_initial_connect = not Entity.objects.filter(
@@ -139,7 +133,7 @@ class IntegrationPreSyncView( HiModalView, IntegrationViewMixin ):
         context = {
             'integration_data': integration_data,
             'is_initial_connect': is_initial_connect,
-            'sync_description': synchronizer.get_description(
+            'sync_description': connector.get_description(
                 is_initial_connect = is_initial_connect,
             ),
             'sync_url': sync_url,
@@ -151,7 +145,7 @@ class IntegrationPreSyncView( HiModalView, IntegrationViewMixin ):
 class IntegrationSyncView( HiModalView, IntegrationViewMixin ):
     """
     Framework sync execution view. Invokes the integration's
-    synchronizer and always renders the sync result modal — the
+    connector and always renders the sync result modal — the
     operator's single end-of-sync surface. When the sync produced
     new entities to place, the result modal exposes a primary
     'Place N new items' CTA that navigates (via antinode modal-to-
@@ -167,13 +161,10 @@ class IntegrationSyncView( HiModalView, IntegrationViewMixin ):
     """
 
     def get_template_name( self ) -> str:
-        return 'integrations/modals/sync_result.html'
+        return 'integrations/connector/modals/sync_result.html'
 
     def post( self, request, *args, **kwargs ):
-        integration_id = kwargs.get('integration_id')
-        integration_data = self.get_integration_data(
-            integration_id = integration_id,
-        )
+        integration_data = self.get_integration_data( request, *args, **kwargs )
         # Operator's per-Refresh policy for items that would be
         # dropped. True ("Refresh and Retain") preserves user-data
         # entities by detaching them; False ("Refresh and Remove")
@@ -197,7 +188,7 @@ class IntegrationPlacementView( HiModalView, IntegrationViewMixin,
 
     GET queries currently-unplaced entities for the integration
     (optionally scoped by ``entity_ids`` URL param), runs them
-    through the synchronizer's ``group_entities_for_placement``,
+    through the connector's ``group_entities_for_placement``,
     and renders the placement modal. Empty result falls back to
     a brief acknowledgement modal so the operator isn't dropped
     onto an empty placement.
@@ -215,12 +206,9 @@ class IntegrationPlacementView( HiModalView, IntegrationViewMixin,
         return 'integrations/modals/placement.html'
 
     def get( self, request, *args, **kwargs ):
-        integration_id = kwargs.get('integration_id')
-        integration_data = self.get_integration_data(
-            integration_id = integration_id,
-        )
-        synchronizer = integration_data.integration_gateway.get_synchronizer()
-        if synchronizer is None:
+        integration_data = self.get_integration_data( request, *args, **kwargs )
+        connector = integration_data.integration_gateway.get_connector()
+        if connector is None:
             return page_not_found_response( request )
 
         url_params = PlacementUrlParams.from_data( request.GET )
@@ -237,14 +225,14 @@ class IntegrationPlacementView( HiModalView, IntegrationViewMixin,
         if entity_id_filter is not None:
             entities = [ e for e in entities if e.id in entity_id_filter ]
 
-        placement_input = synchronizer.group_entities_for_placement(
+        placement_input = connector.group_entities_for_placement(
             entities = entities,
         )
         if placement_input.is_empty():
             return self._render_empty(
                 request = request,
                 integration_data = integration_data,
-                synchronizer = synchronizer,
+                connector = connector,
                 is_initial_connect = is_initial_connect,
             )
         return self.render_placement(
@@ -256,10 +244,7 @@ class IntegrationPlacementView( HiModalView, IntegrationViewMixin,
         )
 
     def post( self, request, *args, **kwargs ):
-        integration_id = kwargs.get('integration_id')
-        integration_data = self.get_integration_data(
-            integration_id = integration_id,
-        )
+        integration_data = self.get_integration_data( request, *args, **kwargs )
         url_params = PlacementUrlParams.from_data( request.POST )
         is_initial_connect = url_params.is_initial_connect
 
@@ -304,13 +289,13 @@ class IntegrationPlacementView( HiModalView, IntegrationViewMixin,
         return ids
 
     def _render_empty( self, request, integration_data,
-                       synchronizer, is_initial_connect : bool ):
+                       connector, is_initial_connect : bool ):
         """No-unplaced-items acknowledgement: render the result
         modal with the integration's icon + a brief 'no items'
         info note rather than an empty placement. Counts stay
         zero so the modal lead reads 'Nothing new.'"""
         sync_result = IntegrationSyncResult(
-            title = synchronizer.get_result_title(
+            title = connector.get_result_title(
                 is_initial_connect = is_initial_connect,
             ),
             info_list = [ 'No items left to place.' ],
@@ -322,7 +307,7 @@ class IntegrationPlacementView( HiModalView, IntegrationViewMixin,
                 'integration_data': integration_data,
                 'is_initial_connect': is_initial_connect,
             },
-            template_name = 'integrations/modals/sync_result.html',
+            template_name = 'integrations/connector/modals/sync_result.html',
         )
 
 
@@ -355,20 +340,17 @@ class IntegrationRefineView( View ):
         ) )
 
 
-class IntegrationEnableView( HiModalView,
-                             IntegrationViewMixin,
-                             CapabilityBlockViewMixin,
-                             AttributeEditViewMixin ):
+class ConnectorConfigureView( HiModalView,
+                              IntegrationViewMixin,
+                              CapabilityBlockViewMixin,
+                              AttributeEditViewMixin ):
 
     def get_template_name( self ) -> str:
-        return 'integrations/modals/integration_enable.html'
+        return 'integrations/connector/modals/integration_enable.html'
 
     def get(self, request, *args, **kwargs):
         integration_manager = IntegrationManager()
-        integration_id = kwargs.get('integration_id')
-        integration_data = self.get_integration_data(
-            integration_id = integration_id,
-        )
+        integration_data = self.get_integration_data( request, *args, **kwargs )
 
         # Mode-switch guard fires only on the initial-Connect path
         # (is_enabled=False). Re-Configure of an already-enabled
@@ -400,10 +382,7 @@ class IntegrationEnableView( HiModalView,
 
     def post(self, request, *args, **kwargs):
         integration_manager = IntegrationManager()
-        integration_id = kwargs.get('integration_id')
-        integration_data = self.get_integration_data(
-            integration_id = integration_id,
-        )
+        integration_data = self.get_integration_data( request, *args, **kwargs )
         attr_item_context = IntegrationAttributeItemEditContext(
             integration_data = integration_data,
             capability = IntegrationCapability.CONNECT,
@@ -427,17 +406,19 @@ class IntegrationEnableView( HiModalView,
         # Phase 7 collapse: when the integration supports sync, run it
         # right here and render the sync-result modal directly. The
         # previous Configure → Pre-Sync → Sync handshake is now one
-        # CONNECT click. Synchronizer-less integrations keep the
+        # CONNECT click. Connector-less integrations keep the
         # original redirect-to-manage behavior.
-        synchronizer = integration_data.integration_gateway.get_synchronizer()
-        if synchronizer is not None:
+        connector = integration_data.integration_gateway.get_connector()
+        if connector is not None:
             return self.render_sync_result(
                 request = request,
                 integration_data = integration_data,
             )
 
-        redirect_url = reverse( 'integrations_manage',
-                                kwargs = { 'integration_id': integration_id } )
+        redirect_url = reverse(
+            'integrations_manage',
+            kwargs = { 'integration_id': integration_data.integration_id },
+        )
         return AttributeRedirectResponse( url = redirect_url )
 
     def validate_attributes_extra( self,
@@ -461,15 +442,15 @@ class IntegrationDisableView( HiModalView, IntegrationViewMixin ):
     """
 
     def get_template_name( self ) -> str:
-        return 'integrations/modals/integration_disable.html'
+        return 'integrations/connector/modals/integration_disable.html'
 
     def get(self, request, *args, **kwargs):
-        integration_data = self._get_validated_integration_data( kwargs )
+        integration_data = self._get_validated_integration_data( request, *args, **kwargs )
         context = self._build_remove_context( integration_data )
         return self.modal_response( request, context )
 
     def post(self, request, *args, **kwargs):
-        integration_data = self._get_validated_integration_data( kwargs )
+        integration_data = self._get_validated_integration_data( request, *args, **kwargs )
         mode = IntegrationDisableMode.from_name_safe( request.POST.get('mode', '') )
         try:
             IntegrationManager().disable_integration(
@@ -483,12 +464,11 @@ class IntegrationDisableView( HiModalView, IntegrationViewMixin ):
             # rows. Symmetric with the post-sync invalidation.
             IntegrationMetadataCache().invalidate()
             SensorResponseManager().invalidate_local_sensor_cache()
-        redirect_url = reverse( 'integrations_home' )
+        redirect_url = reverse( 'integrations_connect_home' )
         return self.redirect_response( request, redirect_url )
 
-    def _get_validated_integration_data(self, kwargs):
-        integration_id = kwargs.get('integration_id')
-        integration_data = self.get_integration_data( integration_id = integration_id )
+    def _get_validated_integration_data(self, request, *args, **kwargs):
+        integration_data = self.get_integration_data( request, *args, **kwargs )
         if not integration_data.integration.is_enabled:
             raise BadRequest( f'{integration_data.label} is not configured' )
         return integration_data
@@ -508,27 +488,23 @@ class IntegrationDisableView( HiModalView, IntegrationViewMixin ):
 class IntegrationPauseView( View, IntegrationViewMixin ):
 
     def post(self, request, *args, **kwargs):
-        integration_id = kwargs.get('integration_id')
-        integration_data = self.get_integration_data(
-            integration_id = integration_id,
-        )
+        integration_data = self.get_integration_data( request, *args, **kwargs )
         if not integration_data.integration.is_enabled:
             raise BadRequest( f'{integration_data.label} integration is not configured' )
 
         IntegrationManager().pause_integration( integration_data = integration_data )
 
-        redirect_url = reverse( 'integrations_manage',
-                                kwargs = { 'integration_id': integration_id } )
+        redirect_url = reverse(
+            'integrations_manage',
+            kwargs = { 'integration_id': integration_data.integration_id },
+        )
         return antinode.redirect_response( redirect_url )
 
 
 class IntegrationResumeView( View, IntegrationViewMixin ):
 
     def post(self, request, *args, **kwargs):
-        integration_id = kwargs.get('integration_id')
-        integration_data = self.get_integration_data(
-            integration_id = integration_id,
-        )
+        integration_data = self.get_integration_data( request, *args, **kwargs )
         if not integration_data.integration.is_enabled:
             raise BadRequest( f'{integration_data.label} integration is not configured' )
 
@@ -539,27 +515,27 @@ class IntegrationResumeView( View, IntegrationViewMixin ):
                 f'{integration_data.label} could not resume: {e}'
             )
 
-        redirect_url = reverse( 'integrations_manage',
-                                kwargs = { 'integration_id': integration_id } )
+        redirect_url = reverse(
+            'integrations_manage',
+            kwargs = { 'integration_id': integration_data.integration_id },
+        )
         return antinode.redirect_response( redirect_url )
 
 
 class IntegrationManageView( ConfigPageView, IntegrationViewMixin, AttributeEditViewMixin ):
 
     def config_page_type(self) -> ConfigPageType:
-        return ConfigPageType.INTEGRATIONS
+        return ConfigPageType.INTEGRATIONS_CONNECT
     
     def get_main_template_name( self ) -> str:
-        return 'integrations/pages/integration_manage.html'
+        return 'integrations/connector/pages/integration_manage.html'
 
     def get_main_template_context( self, request, *args, **kwargs ):
         integration_manager = IntegrationManager()
-        
+
         integration_id = kwargs.get('integration_id')
         if integration_id:
-            integration_data = self.get_integration_data(
-                integration_id = integration_id,
-            )
+            integration_data = self.get_integration_data( request, *args, **kwargs )
         else:
             integration_data = integration_manager.get_default_integration_data(
                 capabilities = frozenset({ IntegrationCapability.CONNECT }),
@@ -635,12 +611,10 @@ class IntegrationManageView( ConfigPageView, IntegrationViewMixin, AttributeEdit
 
     def post( self, request,*args, **kwargs ):
         integration_manager = IntegrationManager()
-        
+
         integration_id = kwargs.get('integration_id')
         if integration_id:
-            integration_data = self.get_integration_data(
-                integration_id = integration_id,
-            )
+            integration_data = self.get_integration_data( request, *args, **kwargs )
         else:
             integration_data = integration_manager.get_default_integration_data(
                 capabilities = frozenset({ IntegrationCapability.CONNECT }),
@@ -687,7 +661,7 @@ class IntegrationAttributeHistoryInlineView( View,
         except IntegrationAttribute.DoesNotExist:
             return page_not_found_response(request, "Attribute not found.")
 
-        integration_data = self.get_integration_data(
+        integration_data = IntegrationManager().get_integration_data(
             integration_id = attribute.integration.integration_id,
         )
         attr_item_context = IntegrationAttributeItemEditContext(
@@ -715,10 +689,10 @@ class IntegrationAttributeRestoreInlineView( View,
         except IntegrationAttribute.DoesNotExist:
             return page_not_found_response(request, "Attribute not found.")
 
-        integration_data = self.get_integration_data(
+        integration_data = IntegrationManager().get_integration_data(
             integration_id = attribute.integration.integration_id,
         )
-            
+
         attr_item_context = IntegrationAttributeItemEditContext(
             integration_data = integration_data,
             capability = IntegrationCapability.CONNECT,

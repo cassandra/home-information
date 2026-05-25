@@ -1,14 +1,14 @@
 """
-Per-integration synchronizer base class.
+Per-integration connector base class.
 
 The general integration framework owns the sync workflow (pre-sync
 confirmation modal, sync execution view, post-sync placement modal).
-The synchronizer is the per-integration participant that the framework
+The connector is the per-integration participant that the framework
 hands off to for the integration-specific work plus a small amount of
 peripheral metadata the framework surfaces alongside.
 
 Each integration that supports sync provides a concrete subclass and
-returns an instance of it from `IntegrationGateway.get_synchronizer()`.
+returns an instance of it from `IntegrationGateway.get_connector()`.
 Sync is opt-in: a gateway whose integration does not support sync
 returns None.
 """
@@ -32,9 +32,9 @@ from hi.integrations.transient_models import IntegrationKey, IntegrationMetaData
 logger = logging.getLogger(__name__)
 
 
-class IntegrationSynchronizer:
+class IntegrationConnector:
     """
-    Base class for per-integration synchronizers.
+    Base class for per-integration connectors.
 
     The framework calls `sync()`. The base implementation acquires a
     process-wide synchronization lock, delegates to the subclass's

@@ -4,7 +4,7 @@ Data Import page + Configure form views.
 CONFIGURE on the page row opens the credentials form modal (reuses
 ``IntegrationAttributeItemEditContext`` with ``capability=IMPORT``).
 The form's IMPORT submit validates credentials, fetches upstream
-candidates via ``Importer.get_candidate_items()``, computes a
+candidates via ``IntegrationImporter.get_candidate_items()``, computes a
 new-vs-skipped split against existing HI entities, and renders the
 preview modal. Phase 5 wires CONFIRM IMPORT → run.
 """
@@ -44,10 +44,10 @@ class DataImportPageView( ConfigPageView, IntegrationViewMixin ):
     with per-row CONFIGURE / DISCARD affordances."""
 
     def config_page_type(self) -> ConfigPageType:
-        return ConfigPageType.DATA_IMPORT
+        return ConfigPageType.INTEGRATIONS_IMPORT
 
     def get_main_template_name(self) -> str:
-        return 'integrations/import/pages/data_import_page.html'
+        return 'integrations/importer/pages/data_import_page.html'
 
     def get_main_template_context(self, request, *args, **kwargs) -> Dict[str, Any]:
         integration_data_list = self.get_integration_data_list(
@@ -94,14 +94,11 @@ class ImporterConfigureView( HiModalView,
     to entities yet — that happens in Phase 5's confirm step."""
 
     def get_template_name(self) -> str:
-        return 'integrations/import/importer_configure.html'
+        return 'integrations/importer/modals/importer_configure.html'
 
     def get(self, request, *args, **kwargs):
         integration_manager = IntegrationManager()
-        integration_id = kwargs.get('integration_id')
-        integration_data = self.get_integration_data(
-            integration_id = integration_id,
-        )
+        integration_data = self.get_integration_data( request, *args, **kwargs )
 
         # Mode-switch guard fires only on the initial-Import path
         # (no Import entities yet). Re-import of an integration that
@@ -137,10 +134,7 @@ class ImporterConfigureView( HiModalView,
         return self.modal_response(request, template_context)
 
     def post(self, request, *args, **kwargs):
-        integration_id = kwargs.get('integration_id')
-        integration_data = self.get_integration_data(
-            integration_id = integration_id,
-        )
+        integration_data = self.get_integration_data( request, *args, **kwargs )
         attr_item_context = IntegrationAttributeItemEditContext(
             integration_data = integration_data,
             capability = IntegrationCapability.IMPORT,
@@ -180,7 +174,7 @@ class ImporterConfigureView( HiModalView,
                         f'{integration_data.label} does not support import.'
                     ),
                 },
-                template_name = 'integrations/import/import_preview.html',
+                template_name = 'integrations/importer/modals/import_preview.html',
             )
 
         candidates = importer.get_candidate_items()
@@ -206,7 +200,7 @@ class ImporterConfigureView( HiModalView,
                 'skipped_count': skipped_count,
                 'run_url': run_url,
             },
-            template_name = 'integrations/import/import_preview.html',
+            template_name = 'integrations/importer/modals/import_preview.html',
         )
 
     def validate_attributes_extra(
@@ -227,10 +221,7 @@ class ImporterRunView( HiModalView, IntegrationViewMixin ):
     a placement CTA when new entities were created."""
 
     def post(self, request, *args, **kwargs):
-        integration_id = kwargs.get('integration_id')
-        integration_data = self.get_integration_data(
-            integration_id = integration_id,
-        )
+        integration_data = self.get_integration_data( request, *args, **kwargs )
         importer = integration_data.integration_gateway.get_importer()
         if importer is None:
             return page_not_found_response(request)
@@ -263,7 +254,7 @@ class ImporterRunView( HiModalView, IntegrationViewMixin ):
                 'integration_data': integration_data,
                 'placement_url': placement_url,
             },
-            template_name = 'integrations/import/import_result.html',
+            template_name = 'integrations/importer/modals/import_result.html',
         )
 
 
@@ -275,13 +266,10 @@ class ImporterDiscardView( HiModalView, IntegrationViewMixin ):
     split doesn't apply."""
 
     def get_template_name(self) -> str:
-        return 'integrations/import/import_discard_confirm.html'
+        return 'integrations/importer/modals/import_discard_confirm.html'
 
     def get(self, request, *args, **kwargs):
-        integration_id = kwargs.get('integration_id')
-        integration_data = self.get_integration_data(
-            integration_id = integration_id,
-        )
+        integration_data = self.get_integration_data( request, *args, **kwargs )
         imported_count = Entity.objects.filter(
             integration_id = integration_data.integration_id,
             data_source_str = str(EntityDataSource.INTERNAL),
@@ -295,10 +283,7 @@ class ImporterDiscardView( HiModalView, IntegrationViewMixin ):
         )
 
     def post(self, request, *args, **kwargs):
-        integration_id = kwargs.get('integration_id')
-        integration_data = self.get_integration_data(
-            integration_id = integration_id,
-        )
+        integration_data = self.get_integration_data( request, *args, **kwargs )
         importer = integration_data.integration_gateway.get_importer()
         if importer is None:
             return page_not_found_response(request)

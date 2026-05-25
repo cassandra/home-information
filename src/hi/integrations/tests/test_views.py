@@ -198,7 +198,7 @@ class RemoveViewTests(SyncViewTestCase):
 class _SyncTestSynchronizer:
     """
     Stand-in synchronizer for pre-sync / sync view tests. Stays
-    intentionally minimal (does NOT extend IntegrationSynchronizer) to
+    intentionally minimal (does NOT extend IntegrationConnector) to
     avoid acquiring the real lock or running framework retry logic in
     unit tests; the views only need methods the framework actually
     calls on it.
@@ -265,7 +265,7 @@ class _SyncCapableGateway(IntegrationGateway):
     def get_controller(self):
         return Mock()
 
-    def get_synchronizer(self):
+    def get_connector(self):
         return self._synchronizer
 
     def get_health_status_provider(self):
@@ -341,7 +341,7 @@ class PreSyncViewTests(SyncViewTestCase):
 
     def test_get_404s_when_integration_has_no_synchronizer(self):
         # Replace the integration_data with one whose gateway returns
-        # None from get_synchronizer.
+        # None from get_connector.
         IntegrationManager()._integration_data_map[self.INTEGRATION_ID] = IntegrationData(
             integration_gateway=_SyncIncapableGateway(self.INTEGRATION_ID),
             integration=self.integration,
@@ -351,7 +351,7 @@ class PreSyncViewTests(SyncViewTestCase):
 
     def test_review_config_action_never_rendered(self):
         """The first-time CONNECT path is collapsed into
-        IntegrationEnableView (Phase 7); pre-sync is now only the
+        ConnectorConfigureView (Phase 7); pre-sync is now only the
         update-check path. REVIEW CONFIG was an artifact of the
         first-time round-trip and must no longer render anywhere
         in this template."""
@@ -477,13 +477,13 @@ class SyncViewTests(SyncViewTestCase):
 
 
 # --------------------------------------------------------------------------
-# IntegrationEnableView tests for the Review Config (post-enable) path
+# ConnectorConfigureView tests for the Review Config (post-enable) path
 # --------------------------------------------------------------------------
 
 
 class EnableViewTests(SyncViewTestCase):
     """
-    IntegrationEnableView: Phase 7 collapse. The view renders the
+    ConnectorConfigureView: Phase 7 collapse. The view renders the
     config form with a CONNECT action button regardless of the
     integration's is_enabled state; the legacy review-mode round
     trip (UPDATE label + CONTINUE-to-pre-sync) is gone.
@@ -507,7 +507,7 @@ class EnableViewTests(SyncViewTestCase):
 
     def _url(self):
         return reverse(
-            'integrations_enable',
+            'integrations_connect_configure',
             kwargs={'integration_id': self.INTEGRATION_ID},
         )
 
@@ -615,9 +615,9 @@ class EnableViewTests(SyncViewTestCase):
         # under test is the enable → sync chain plus the sync-result
         # modal render.
         from django.http import HttpResponse
-        from hi.integrations.connector.views import IntegrationEnableView
+        from hi.integrations.connector.views import ConnectorConfigureView
         with patch.object(
-                IntegrationEnableView, 'post_attribute_form',
+                ConnectorConfigureView, 'post_attribute_form',
                 return_value=HttpResponse(status=200),
         ):
             response = self.client.post(self._url(), {})
@@ -635,9 +635,9 @@ class EnableViewTests(SyncViewTestCase):
             integration=self.integration,
         )
         from django.http import HttpResponse
-        from hi.integrations.connector.views import IntegrationEnableView
+        from hi.integrations.connector.views import ConnectorConfigureView
         with patch.object(
-                IntegrationEnableView, 'post_attribute_form',
+                ConnectorConfigureView, 'post_attribute_form',
                 return_value=HttpResponse(status=200),
         ):
             response = self.client.post(self._url(), {})
@@ -699,7 +699,7 @@ class _PlacementTestGateway(IntegrationGateway):
     def get_controller(self):
         return Mock()
 
-    def get_synchronizer(self):
+    def get_connector(self):
         return self._synchronizer
 
     def get_health_status_provider(self):

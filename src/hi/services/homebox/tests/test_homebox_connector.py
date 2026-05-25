@@ -9,14 +9,14 @@ from hi.integrations.connector.sync_result import IntegrationSyncResult
 from hi.integrations.enums import IntegrationCapability
 from hi.integrations.transient_models import IntegrationKey
 from hi.services.homebox.hb_metadata import HbMetaData
-from hi.services.homebox.connector.hb_sync import HomeBoxSynchronizer
+from hi.services.homebox.connector.homebox_connector import HomeBoxConnector
 from hi.testing.async_task_utils import AsyncTaskTestCase
 
 
 logging.disable(logging.CRITICAL)
 
 
-class TestHomeBoxSynchronizer(SimpleTestCase):
+class TestHomeBoxConnector(SimpleTestCase):
 
     def _key(self, name: str) -> IntegrationKey:
         return IntegrationKey(
@@ -25,7 +25,7 @@ class TestHomeBoxSynchronizer(SimpleTestCase):
         )
 
     def test_sync_helper_uses_mocked_api_response_and_delegates_entity_sync(self):
-        synchronizer = HomeBoxSynchronizer()
+        synchronizer = HomeBoxConnector()
         manager = Mock()
         manager.hb_client = object()
         manager.fetch_hb_items_from_api.return_value = [Mock(), Mock(), Mock()]
@@ -42,7 +42,7 @@ class TestHomeBoxSynchronizer(SimpleTestCase):
         )
 
     def test_sync_helper_entities_create_update_remove_entities(self):
-        synchronizer = HomeBoxSynchronizer()
+        synchronizer = HomeBoxConnector()
         result = IntegrationSyncResult(title='HomeBox Import Result')
 
         item_new = Mock(name='item_new')
@@ -67,13 +67,13 @@ class TestHomeBoxSynchronizer(SimpleTestCase):
         with ExitStack() as stack:
             stack.enter_context(
                 patch(
-                    'hi.services.homebox.connector.hb_sync.transaction.atomic',
+                    'hi.services.homebox.connector.homebox_connector.transaction.atomic',
                     return_value=nullcontext(),
                 )
             )
             stack.enter_context(
                 patch(
-                    'hi.services.homebox.connector.hb_sync.HbConverter.hb_item_to_integration_key',
+                    'hi.services.homebox.connector.homebox_connector.HbConverter.hb_item_to_integration_key',
                     side_effect=key_from_item,
                 )
             )
@@ -101,7 +101,7 @@ class TestHomeBoxSynchronizer(SimpleTestCase):
                 patch.object(synchronizer, '_remove_entity')
             )
             # Reconnect pre-pass (Issue #281) is framework-level on
-            # IntegrationSynchronizer.reconnect_disconnected_items and
+            # IntegrationConnector.reconnect_disconnected_items and
             # does its own DB query; this SimpleTestCase doesn't allow
             # DB access, so stub it out. The reconnect logic itself
             # is covered by FindReconnectCandidatesTests in
@@ -131,14 +131,14 @@ class TestHomeBoxSynchronizer(SimpleTestCase):
                             for message in result.error_list))
 
 
-class TestHomeBoxSynchronizerSyncResultGrouping(SimpleTestCase):
+class TestHomeBoxConnectorSyncResultGrouping(SimpleTestCase):
     """Phase 2 grouping behavior: HomeBox has no domain notion of
     grouping, so every imported item lands in `ungrouped_items`.
     `groups` stays empty. The framework's placement modal decides
     how to surface ungrouped items at render time."""
 
     def test_sync_impl_populates_ungrouped_items_only(self):
-        synchronizer = HomeBoxSynchronizer()
+        synchronizer = HomeBoxConnector()
         manager = Mock()
         manager.hb_client = object()
         manager.fetch_hb_items_from_api.return_value = [Mock(), Mock()]
@@ -178,7 +178,7 @@ class TestHomeBoxSynchronizerSyncResultGrouping(SimpleTestCase):
         )
 
     def test_sync_impl_emits_empty_when_no_items_imported(self):
-        synchronizer = HomeBoxSynchronizer()
+        synchronizer = HomeBoxConnector()
         manager = Mock()
         manager.hb_client = object()
         manager.fetch_hb_items_from_api.return_value = []
@@ -191,27 +191,27 @@ class TestHomeBoxSynchronizerSyncResultGrouping(SimpleTestCase):
         self.assertIsNone(result.placement_input)
 
 
-class TestHomeBoxSynchronizerRebuildIntegrationComponents(SimpleTestCase):
+class TestHomeBoxConnectorRebuildIntegrationComponents(SimpleTestCase):
     """
     Issue #281: the per-integration ``_rebuild_integration_components``
     override is the only piece each synchronizer contributes to the
     framework-level reconnect path. This test verifies that
-    HomeBoxSynchronizer's override dispatches to ``HbEntityFactory`` with
+    HomeBoxConnector's override dispatches to ``HbEntityFactory`` with
     the existing-entity argument set. Framework-level behavior
     (find candidates, strip prefix, clear previous identity, update
     entity map, info_list note) is covered by tests of
-    IntegrationSynchronizer.reconnect_disconnected_items. End-to-end
+    IntegrationConnector.reconnect_disconnected_items. End-to-end
     DB cycle is exercised in Phase 6.
     """
 
     def test_dispatches_to_converter_with_existing_entity(self):
-        synchronizer = HomeBoxSynchronizer()
+        synchronizer = HomeBoxConnector()
         result = IntegrationSyncResult(title='HomeBox Test')
         existing_entity = Mock(name='existing_entity')
         upstream = Mock(name='hb_item')
 
         with patch(
-                'hi.services.homebox.connector.hb_sync.HbEntityFactory.create_models_for_hb_item'
+                'hi.services.homebox.connector.homebox_connector.HbEntityFactory.create_models_for_hb_item'
         ) as mock_converter:
             synchronizer._rebuild_integration_components(
                 entity=existing_entity,
@@ -226,7 +226,7 @@ class TestHomeBoxSynchronizerRebuildIntegrationComponents(SimpleTestCase):
         )
 
 
-class TestHomeBoxSynchronizerCheckNeedsSync(AsyncTaskTestCase):
+class TestHomeBoxConnectorCheckNeedsSync(AsyncTaskTestCase):
     """Issue #283 — sync-check probe shape for HomeBox.
 
     Uses a real DB so the probe's ``Entity.objects.filter(...)``
@@ -259,7 +259,7 @@ class TestHomeBoxSynchronizerCheckNeedsSync(AsyncTaskTestCase):
             )
 
     def _run_check(self, summary_list):
-        synchronizer = HomeBoxSynchronizer()
+        synchronizer = HomeBoxConnector()
         manager = Mock()
 
         async def fetch_summary():
@@ -301,7 +301,7 @@ class TestHomeBoxSynchronizerCheckNeedsSync(AsyncTaskTestCase):
         self.assertFalse(delta.needs_sync)
 
     def test_returns_none_when_manager_not_ready(self):
-        synchronizer = HomeBoxSynchronizer()
+        synchronizer = HomeBoxConnector()
 
         async def get_manager():
             return None

@@ -9,7 +9,7 @@ from hi.apps.system.health_status_provider import HealthStatusProvider
 from hi.integrations.connector.integration_controller import IntegrationController
 from hi.integrations.integration_gateway import IntegrationGateway
 from hi.integrations.connector.integration_manage_view_pane import IntegrationManageViewPane
-from hi.integrations.connector.integration_synchronizer import IntegrationSynchronizer
+from hi.integrations.connector.integration_connector import IntegrationConnector
 from hi.integrations.models import IntegrationAttribute
 from hi.integrations.transient_models import (
     ConnectionTestResult,
@@ -22,7 +22,7 @@ from .hass_controller import HassController
 from .hass_manage_view_pane import HassManageViewPane
 from .hass_manager import HassManager
 from .hass_metadata import HassMetaData
-from .hass_sync import HassSynchronizer
+from .hass_sync import HassConnector
 from .monitors import HassMonitor
 
 logger = logging.getLogger(__name__)
@@ -57,8 +57,8 @@ class HassGateway( IntegrationGateway ):
     def get_health_status_provider(self) -> HealthStatusProvider:
         return HassManager()
 
-    def get_synchronizer(self) -> IntegrationSynchronizer:
-        return HassSynchronizer()
+    def get_connector(self) -> IntegrationConnector:
+        return HassConnector()
 
     def validate_configuration(
             self, integration_attributes: List[IntegrationAttribute]

@@ -11,7 +11,7 @@
   
   <div class="{{ DIVID.ATTR_V2_FORM_CLASS }}">
     <form id="{{ attr_page_context.form_html_id }}" 
-          action="{% url 'integrations_enable' integration_id=integration_data.integration_id %}" 
+          action="{% url 'integrations_connect_configure' integration_id=integration_data.integration_id %}" 
           method="post" 
           class="{{ DIVID.ATTR_V2_FORM_CLASS }} form" 
           enctype="multipart/form-data">

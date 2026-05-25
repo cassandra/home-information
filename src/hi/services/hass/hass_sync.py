@@ -12,7 +12,7 @@ from hi.apps.entity.entity_placement import (
     EntityPlacementGroup,
 )
 
-from hi.integrations.connector.integration_synchronizer import IntegrationSynchronizer
+from hi.integrations.connector.integration_connector import IntegrationConnector
 from hi.integrations.connector.sync_check import IntegrationSyncCheck, SyncDelta
 from hi.integrations.connector.sync_result import IntegrationSyncResult
 from hi.integrations.transient_models import IntegrationKey
@@ -25,7 +25,7 @@ from .hass_metadata import HassMetaData
 logger = logging.getLogger(__name__)
 
 
-class HassSynchronizer( IntegrationSynchronizer, HassMixin ):
+class HassConnector( IntegrationConnector, HassMixin ):
 
     def get_integration_metadata(self):
         return HassMetaData

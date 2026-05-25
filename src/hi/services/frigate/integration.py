@@ -12,7 +12,7 @@ from hi.apps.system.health_status_provider import HealthStatusProvider
 from hi.integrations.connector.integration_controller import IntegrationController
 from hi.integrations.integration_gateway import IntegrationGateway
 from hi.integrations.connector.integration_manage_view_pane import IntegrationManageViewPane
-from hi.integrations.connector.integration_synchronizer import IntegrationSynchronizer
+from hi.integrations.connector.integration_connector import IntegrationConnector
 from hi.integrations.models import IntegrationAttribute
 from hi.integrations.transient_models import (
     ConnectionTestResult,
@@ -25,7 +25,7 @@ from .frigate_manage_view_pane import FrigateManageViewPane
 from .frigate_manager import FrigateManager
 from .frigate_metadata import FrigateMetaData
 from .frigate_mixins import FrigateMixin
-from .frigate_sync import FrigateSynchronizer
+from .frigate_sync import FrigateConnector
 from .monitors import FrigateMonitor
 
 logger = logging.getLogger(__name__)
@@ -66,8 +66,8 @@ class FrigateGateway( IntegrationGateway, FrigateMixin ):
     def get_health_status_provider(self) -> HealthStatusProvider:
         return FrigateManager()
 
-    def get_synchronizer(self) -> IntegrationSynchronizer:
-        return FrigateSynchronizer()
+    def get_connector(self) -> IntegrationConnector:
+        return FrigateConnector()
 
     def validate_configuration(
             self,

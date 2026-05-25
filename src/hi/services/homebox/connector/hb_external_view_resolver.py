@@ -26,7 +26,7 @@ from hi.services.homebox.shared.hb_models import HbItem
 logger = logging.getLogger(__name__)
 
 
-class HomeBoxConnector:
+class HomeBoxExternalViewResolver:
     """Stateless resolver for the entity-detail external-data view hook."""
 
     def get_external_view_data(self, entity: Entity) -> Optional[ExternalViewData]:

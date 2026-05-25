@@ -17,7 +17,7 @@ from hi.apps.entity.entity_placement import (
     EntityPlacementGroup,
 )
 
-from hi.integrations.connector.integration_synchronizer import IntegrationSynchronizer
+from hi.integrations.connector.integration_connector import IntegrationConnector
 from hi.integrations.connector.sync_check import IntegrationSyncCheck, SyncDelta
 from hi.integrations.connector.sync_result import IntegrationSyncResult
 from hi.integrations.transient_models import IntegrationKey
@@ -28,7 +28,7 @@ from .zm_mixins import ZoneMinderMixin
 logger = logging.getLogger(__name__)
 
 
-class ZoneMinderSynchronizer( IntegrationSynchronizer, ZoneMinderMixin ):
+class ZmConnector( IntegrationConnector, ZoneMinderMixin ):
 
     def get_integration_metadata(self):
         return ZmMetaData

@@ -13,7 +13,7 @@ from hi.apps.entity.entity_placement import (
 from hi.apps.entity.models import Entity
 from hi.apps.model_helper import HiModelHelper
 
-from hi.integrations.connector.integration_synchronizer import IntegrationSynchronizer
+from hi.integrations.connector.integration_connector import IntegrationConnector
 from hi.integrations.connector.sync_check import IntegrationSyncCheck, SyncDelta
 from hi.integrations.connector.sync_result import IntegrationSyncResult
 from hi.integrations.transient_models import IntegrationKey
@@ -25,10 +25,10 @@ from .frigate_mixins import FrigateMixin
 logger = logging.getLogger(__name__)
 
 
-class FrigateSynchronizer( IntegrationSynchronizer, FrigateMixin ):
+class FrigateConnector( IntegrationConnector, FrigateMixin ):
     """Drives the Frigate Import / Refresh workflow.
 
-    Mirrors ``ZoneMinderSynchronizer`` in role: pulls the upstream
+    Mirrors ``ZmConnector`` in role: pulls the upstream
     camera list from Frigate (via ``/api/config`` since Frigate has
     no dedicated cameras endpoint), reconciles it against existing
     HI entities by integration_key, creates / updates / removes as

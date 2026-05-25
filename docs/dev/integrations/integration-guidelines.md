@@ -12,14 +12,14 @@ Each integration is a Django app in `hi/services/` directory. The `hi.integratio
 ### Capability model
 Each integration declares its `IntegrationCapability` set on `IntegrationMetaData.capabilities` (`hi/integrations/enums.py`). Two capabilities exist today:
 
-- **`CONNECT`** — live mirror of an upstream system. Realized by an `IntegrationSynchronizer` subclass returned from `IntegrationGateway.get_synchronizer()`. All four production integrations (HA, ZM, Frigate, HomeBox) declare CONNECT.
-- **`IMPORT`** — one-shot copy of upstream items into HI as locally-owned entities. Realized by an `Importer` subclass returned from `IntegrationGateway.get_importer()`. HomeBox is the first integration to declare IMPORT alongside CONNECT (see [`docs/dev/integrations/data-import.md`](data-import.md) for the developer surface).
+- **`CONNECT`** — live mirror of an upstream system. Realized by an `IntegrationConnector` subclass returned from `IntegrationGateway.get_connector()`. All four production integrations (HA, ZM, Frigate, HomeBox) declare CONNECT.
+- **`IMPORT`** — one-shot copy of upstream items into HI as locally-owned entities. Realized by an `IntegrationImporter` subclass returned from `IntegrationGateway.get_importer()`. HomeBox is the first integration to declare IMPORT alongside CONNECT (see [`docs/dev/integrations/data-import.md`](data-import.md) for the developer surface).
 
 The two abstractions don't share a base class — commonality is composed through shared helpers (`hi/integrations/entity_operations.py`, `hi/integrations/placement_request.py`, etc.). The `connector/` and `importer/` sub-packages live as peers under `hi/integrations/`.
 
 Per-attribute `IntegrationAttributeType` declarations may carry an optional `capabilities` set to restrict which capability's UI surfaces the attribute. Default is `ALL_CAPABILITIES`.
 
-`Entity.data_source` (an `EntityDataSource` value: `INTERNAL` or `EXTERNAL`, see `hi/apps/entity/enums.py`) records per-entity provenance. Every Connect-mode entity is `EXTERNAL` (data sourced from upstream); native entities and Import-mode entities are `INTERNAL`. The field is consumed by the cross-capability block-modal detection in `hi/integrations/view_mixins.py` (`CapabilityBlockViewMixin`) and by `Importer.discard_imported_data` to scope deletion safely.
+`Entity.data_source` (an `EntityDataSource` value: `INTERNAL` or `EXTERNAL`, see `hi/apps/entity/enums.py`) records per-entity provenance. Every Connect-mode entity is `EXTERNAL` (data sourced from upstream); native entities and Import-mode entities are `INTERNAL`. The field is consumed by the cross-capability block-modal detection in `hi/integrations/view_mixins.py` (`CapabilityBlockViewMixin`) and by `IntegrationImporter.discard_imported_data` to scope deletion safely.
 
 ### One-to-many state composition
 A single upstream state may decompose into multiple HI EntityStates when the upstream protocol packs several independently-controllable values into one entity (e.g., a color light's brightness + hue + saturation + color temperature). The framework supports this via:
@@ -67,7 +67,7 @@ Each integration is a self-contained Django app under `hi/services/<integration_
 - `<prefix>_client.py` (and/or `<prefix>_client_factory.py`) — outbound API client + credential validation
 - `<prefix>_manager.py` — singleton coordinator (attribute cache, change listeners, health status)
 - `<prefix>_converter.py` — wire-format ↔ HI model translation (the bulk of integration logic)
-- `<prefix>_sync.py` — `IntegrationSynchronizer` subclass driving entity sync
+- `<prefix>_sync.py` — `IntegrationConnector` subclass driving entity sync
 - `<prefix>_controller.py` — HI control commands → integration service calls
 - `<prefix>_mixins.py` — manager-accessor mixin for views/handlers
 - `<prefix>_manage_view_pane.py` — management UI pane

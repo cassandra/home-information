@@ -14,19 +14,19 @@ from hi.integrations.integration_manager import IntegrationManager
 from hi.integrations.connector.sync_result import IntegrationSyncResult
 from hi.integrations.transient_models import IntegrationKey
 
-from hi.services.zoneminder.zm_sync import ZoneMinderSynchronizer
+from hi.services.zoneminder.zm_sync import ZmConnector
 from hi.services.zoneminder.zm_metadata import ZmMetaData
 
 logging.disable(logging.CRITICAL)
 
 
-class TestZoneMinderSynchronizerLockBehavior(TestCase):
+class TestZmConnectorLockBehavior(TestCase):
     """Test database lock coordination with exception handling"""
     
     def setUp(self):
-        self.synchronizer = ZoneMinderSynchronizer()
+        self.synchronizer = ZmConnector()
     
-    @patch('hi.integrations.connector.integration_synchronizer.ExclusionLockContext')
+    @patch('hi.integrations.connector.integration_connector.ExclusionLockContext')
     def test_sync_uses_exclusion_lock(self, mock_lock_context):
         """Test sync method uses exclusion lock and returns sync results"""
         # Mock a successful lock context
@@ -48,7 +48,7 @@ class TestZoneMinderSynchronizerLockBehavior(TestCase):
         self.assertGreater(len(result.error_list), 0)
         self.assertIn('Sync problem. ZM integration disabled?', result.error_list[0])
     
-    @patch('hi.integrations.connector.integration_synchronizer.ExclusionLockContext')
+    @patch('hi.integrations.connector.integration_connector.ExclusionLockContext')
     def test_sync_handles_lock_runtime_error(self, mock_lock_context):
         """Test sync method handles RuntimeError from lock context and returns proper error result"""
         lock_error_msg = "Lock acquisition failed"
@@ -69,11 +69,11 @@ class TestZoneMinderSynchronizerLockBehavior(TestCase):
         self.assertIsInstance(result.error_list, list)
 
 
-class TestZoneMinderSynchronizerSyncHelper(TestCase):
+class TestZmConnectorSyncHelper(TestCase):
     """Test main sync helper logic and flow control"""
     
     def setUp(self):
-        self.synchronizer = ZoneMinderSynchronizer()
+        self.synchronizer = ZmConnector()
         
         # Mock the zm_manager
         self.mock_manager = Mock()
@@ -123,11 +123,11 @@ class TestZoneMinderSynchronizerSyncHelper(TestCase):
             self.assertEqual(mock_sync_monitors.call_args[1]['result'], result)
 
 
-class TestZoneMinderSynchronizerStateSync(TestCase):
+class TestZmConnectorStateSync(TestCase):
     """Test state synchronization and value range updates"""
     
     def setUp(self):
-        self.synchronizer = ZoneMinderSynchronizer()
+        self.synchronizer = ZmConnector()
         
         # Mock the zm_manager
         self.mock_manager = Mock()
@@ -143,7 +143,7 @@ class TestZoneMinderSynchronizerStateSync(TestCase):
     
     @patch('hi.services.zoneminder.zm_sync.Entity.objects.filter_by_integration_key')
     @patch('hi.services.zoneminder.zm_sync.Sensor.objects.filter_by_integration_key')
-    @patch.object(ZoneMinderSynchronizer, '_create_zm_entity')
+    @patch.object(ZmConnector, '_create_zm_entity')
     def test_sync_states_creates_zm_entity_when_missing(self, mock_create_entity, mock_sensor_filter, mock_entity_filter):
         """Test _sync_states creates ZM entity when it doesn't exist and verifies entity creation parameters"""
         # Mock ZM states
@@ -307,11 +307,11 @@ class TestZoneMinderSynchronizerStateSync(TestCase):
         self.assertEqual(len(update_messages), 0)
 
 
-class TestZoneMinderSynchronizerMonitorSync(TestCase):
+class TestZmConnectorMonitorSync(TestCase):
     """Test monitor synchronization and entity lifecycle management"""
     
     def setUp(self):
-        self.synchronizer = ZoneMinderSynchronizer()
+        self.synchronizer = ZmConnector()
         
         # Mock the zm_manager
         self.mock_manager = Mock()
@@ -362,11 +362,11 @@ class TestZoneMinderSynchronizerMonitorSync(TestCase):
             # Test no errors in successful creation scenario
             self.assertEqual(len(result.error_list), 0)
     
-    @patch.object(ZoneMinderSynchronizer, '_fetch_zm_monitors')
-    @patch.object(ZoneMinderSynchronizer, '_get_existing_zm_monitor_entities')
-    @patch.object(ZoneMinderSynchronizer, '_create_monitor_entity')
-    @patch.object(ZoneMinderSynchronizer, '_update_entity')
-    @patch.object(ZoneMinderSynchronizer, '_remove_entity')
+    @patch.object(ZmConnector, '_fetch_zm_monitors')
+    @patch.object(ZmConnector, '_get_existing_zm_monitor_entities')
+    @patch.object(ZmConnector, '_create_monitor_entity')
+    @patch.object(ZmConnector, '_update_entity')
+    @patch.object(ZmConnector, '_remove_entity')
     def test_sync_monitors_updates_existing_entities(self, mock_remove, mock_update, mock_create, mock_get_existing, mock_fetch):
         """Test _sync_monitors updates existing entities"""
         # Mock monitors and entities with same key
@@ -426,11 +426,11 @@ class TestZoneMinderSynchronizerMonitorSync(TestCase):
             self.assertEqual(len(result.error_list), 0)
 
 
-class TestZoneMinderSynchronizerFetchMonitors(TestCase):
+class TestZmConnectorFetchMonitors(TestCase):
     """Test ZM monitor fetching and integration key generation"""
     
     def setUp(self):
-        self.synchronizer = ZoneMinderSynchronizer()
+        self.synchronizer = ZmConnector()
         
         # Mock the zm_manager
         self.mock_manager = Mock()
@@ -477,11 +477,11 @@ class TestZoneMinderSynchronizerFetchMonitors(TestCase):
         self.mock_manager.get_zm_monitors.assert_called_once_with(force_load=True)
 
 
-class TestZoneMinderSynchronizerExistingEntities(TestCase):
+class TestZmConnectorExistingEntities(TestCase):
     """Test existing entity retrieval and error handling"""
     
     def setUp(self):
-        self.synchronizer = ZoneMinderSynchronizer()
+        self.synchronizer = ZmConnector()
         
         # Mock the zm_manager
         self.mock_manager = Mock()
@@ -539,11 +539,11 @@ class TestZoneMinderSynchronizerExistingEntities(TestCase):
         self.assertNotIn(other_key, result_dict)
 
 
-class TestZoneMinderSynchronizerEntityUpdate(TestCase):
+class TestZmConnectorEntityUpdate(TestCase):
     """Test entity update logic"""
     
     def setUp(self):
-        self.synchronizer = ZoneMinderSynchronizer()
+        self.synchronizer = ZmConnector()
     
     def test_update_entity_preserves_user_edited_name(self):
         """Operator-edited names are user-owned after creation; an
@@ -621,13 +621,13 @@ class TestZoneMinderSynchronizerEntityUpdate(TestCase):
         self.assertTrue(entity.has_video_snapshot)
 
 
-class TestZoneMinderSynchronizerEntityRemoval(TestCase):
+class TestZmConnectorEntityRemoval(TestCase):
     """Test intelligent entity deletion"""
     
     def setUp(self):
-        self.synchronizer = ZoneMinderSynchronizer()
+        self.synchronizer = ZmConnector()
     
-    @patch.object(ZoneMinderSynchronizer, '_remove_entity_intelligently')
+    @patch.object(ZmConnector, '_remove_entity_intelligently')
     def test_remove_entity_calls_intelligent_deletion(self, mock_intelligent_removal):
         """Test _remove_entity calls intelligent deletion with correct parameters"""
         mock_entity = Mock()
@@ -638,7 +638,7 @@ class TestZoneMinderSynchronizerEntityRemoval(TestCase):
         mock_intelligent_removal.assert_called_once_with(mock_entity, result)
 
 
-class TestZoneMinderSynchronizerFunctionConstants(TestCase):
+class TestZmConnectorFunctionConstants(TestCase):
     """Test monitor function name constants"""
     
     def test_monitor_function_name_label_dict_completeness(self):
@@ -646,15 +646,15 @@ class TestZoneMinderSynchronizerFunctionConstants(TestCase):
         expected_functions = ['None', 'Monitor', 'Modect', 'Record', 'Mocord', 'Nodect']
         
         for function in expected_functions:
-            self.assertIn(function, ZoneMinderSynchronizer.MONITOR_FUNCTION_NAME_LABEL_DICT)
+            self.assertIn(function, ZmConnector.MONITOR_FUNCTION_NAME_LABEL_DICT)
             # Labels should match function names
             self.assertEqual(
-                ZoneMinderSynchronizer.MONITOR_FUNCTION_NAME_LABEL_DICT[function],
+                ZmConnector.MONITOR_FUNCTION_NAME_LABEL_DICT[function],
                 function
             )
 
 
-class TestZoneMinderSynchronizerWithRealData(TestCase):
+class TestZmConnectorWithRealData(TestCase):
     """Test synchronizer with real ZoneMinder API response data"""
     
     @classmethod
@@ -670,7 +670,7 @@ class TestZoneMinderSynchronizerWithRealData(TestCase):
             cls.real_monitors_data = json.load(f)
     
     def setUp(self):
-        self.synchronizer = ZoneMinderSynchronizer()
+        self.synchronizer = ZmConnector()
         
         # Mock the zm_manager
         self.mock_manager = Mock()
@@ -738,9 +738,9 @@ class TestZoneMinderSynchronizerWithRealData(TestCase):
         mock_entity_state.save.assert_called_once()
         self.assertIn('Updated ZM state values to:', result.info_list[0])
     
-    @patch.object(ZoneMinderSynchronizer, '_fetch_zm_monitors')
-    @patch.object(ZoneMinderSynchronizer, '_get_existing_zm_monitor_entities')
-    @patch.object(ZoneMinderSynchronizer, '_create_monitor_entity')
+    @patch.object(ZmConnector, '_fetch_zm_monitors')
+    @patch.object(ZmConnector, '_get_existing_zm_monitor_entities')
+    @patch.object(ZmConnector, '_create_monitor_entity')
     def test_sync_monitors_with_real_monitor_configurations(self, mock_create, mock_get_existing, mock_fetch):
         """Test monitor sync with real monitor configurations and diverse setups"""
         # Use real monitor data to create integration keys and monitors
@@ -927,7 +927,7 @@ class TestZoneMinderSynchronizerWithRealData(TestCase):
                 self.assertEqual(len(result.created_list), 1)
 
 
-class TestZoneMinderSynchronizerSyncResultGrouping(TestCase):
+class TestZmConnectorSyncResultGrouping(TestCase):
     """Phase 2 grouping behavior: every imported monitor entity goes
     into a single 'Monitors' group on the IntegrationSyncResult.
 
@@ -936,7 +936,7 @@ class TestZoneMinderSynchronizerSyncResultGrouping(TestCase):
     modal's drill-down still allows per-monitor placement when needed."""
 
     def setUp(self):
-        self.synchronizer = ZoneMinderSynchronizer()
+        self.synchronizer = ZmConnector()
         self.mock_manager = Mock()
         self.mock_manager.zm_client = Mock()
         self.synchronizer._zm_manager = self.mock_manager
@@ -981,7 +981,7 @@ class TestZoneMinderSynchronizerSyncResultGrouping(TestCase):
 
 class CreateMonitorEntityCreateNewContractTests(TestCase):
     """
-    Pre-refactor safety net for ``ZoneMinderSynchronizer._create_monitor_entity``.
+    Pre-refactor safety net for ``ZmConnector._create_monitor_entity``.
 
     Phase 3 of Issue #281 will refactor this method to accept an
     optional existing Entity (for the auto-reconnect path). These
@@ -997,7 +997,7 @@ class CreateMonitorEntityCreateNewContractTests(TestCase):
         # ours (and ours cannot pollute theirs).
         IntegrationManager().reset_for_testing()
 
-        self.synchronizer = ZoneMinderSynchronizer()
+        self.synchronizer = ZmConnector()
 
         self.mock_manager = Mock()
         self.mock_manager.ZM_MONITOR_INTEGRATION_NAME_PREFIX = 'monitor'
@@ -1064,7 +1064,7 @@ class CreateMonitorEntityReconnectContractTests(TestCase):
 
     def setUp(self):
         IntegrationManager().reset_for_testing()
-        self.synchronizer = ZoneMinderSynchronizer()
+        self.synchronizer = ZmConnector()
         self.mock_manager = Mock()
         self.mock_manager.ZM_MONITOR_INTEGRATION_NAME_PREFIX = 'monitor'
         self.mock_manager.MOVEMENT_SENSOR_PREFIX = 'monitor.motion'
@@ -1153,7 +1153,7 @@ class EventDefinitionLifecycleCycleTests(TestCase):
         # ours (and ours cannot pollute theirs).
         IntegrationManager().reset_for_testing()
 
-        self.synchronizer = ZoneMinderSynchronizer()
+        self.synchronizer = ZmConnector()
 
         self.mock_manager = Mock()
         self.mock_manager.ZM_MONITOR_INTEGRATION_NAME_PREFIX = 'monitor'
@@ -1260,7 +1260,7 @@ class EventDefinitionLifecycleCycleTests(TestCase):
 from hi.testing.async_task_utils import AsyncTaskTestCase
 
 
-class TestZoneMinderSynchronizerCheckNeedsSync(AsyncTaskTestCase):
+class TestZmConnectorCheckNeedsSync(AsyncTaskTestCase):
     """Issue #283 — sync-check probe shape for ZoneMinder.
 
     Pins that upstream keys are built using the same prefix scheme
@@ -1299,7 +1299,7 @@ class TestZoneMinderSynchronizerCheckNeedsSync(AsyncTaskTestCase):
         )
 
     def _run_check(self, monitor_ids):
-        synchronizer = ZoneMinderSynchronizer()
+        synchronizer = ZmConnector()
         manager = Mock()
         manager.ZM_MONITOR_INTEGRATION_NAME_PREFIX = 'monitor'
 
@@ -1355,7 +1355,7 @@ class TestZoneMinderSynchronizerCheckNeedsSync(AsyncTaskTestCase):
         self.assertFalse(delta.needs_sync)
 
     def test_returns_none_when_manager_not_ready(self):
-        synchronizer = ZoneMinderSynchronizer()
+        synchronizer = ZmConnector()
 
         async def get_manager():
             return None

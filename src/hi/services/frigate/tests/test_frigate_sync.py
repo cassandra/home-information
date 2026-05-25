@@ -11,7 +11,7 @@ from hi.apps.sense.models import Sensor
 
 from hi.services.frigate.frigate_manager import FrigateManager
 from hi.services.frigate.frigate_metadata import FrigateMetaData
-from hi.services.frigate.frigate_sync import FrigateSynchronizer
+from hi.services.frigate.frigate_sync import FrigateConnector
 
 logging.disable( logging.CRITICAL )
 
@@ -19,7 +19,7 @@ logging.disable( logging.CRITICAL )
 class _FrigateSyncTestBase( TestCase ):
 
     def setUp(self):
-        self.synchronizer = FrigateSynchronizer()
+        self.synchronizer = FrigateConnector()
         self.mock_manager = Mock( spec = FrigateManager )
         # Default: alarm-event auto-creation off so tests that don't
         # care about it don't silently exercise the event-creation

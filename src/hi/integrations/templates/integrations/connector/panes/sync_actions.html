@@ -3,9 +3,9 @@
   Shared CONNECT / UPDATE framework action.
 
   Sync is a framework concern; integrations participate by providing an
-  IntegrationSynchronizer from their gateway's get_synchronizer().
+  IntegrationConnector from their gateway's get_connector().
   Rendering is conditional on (a) the integration being enabled and
-  (b) the gateway returning a synchronizer. Integrations whose gateway
+  (b) the gateway returning a connector. Integrations whose gateway
   returns None (sync is opt-in) get no button.
 
   Label flips on `core.has_entities`: CONNECT for the first-time path,
@@ -18,7 +18,7 @@
   the eye. The CONNECT variant is always primary since there is
   nothing to compare against on a first run.
 {% endcomment %}
-{% if core.integration_data.is_enabled and core.integration_data.integration_gateway.get_synchronizer %}
+{% if core.integration_data.is_enabled and core.integration_data.integration_gateway.get_connector %}
 <a href="{% url 'integrations_pre_sync' integration_id=core.integration_data.integration_id %}"
    class="btn {% if core.has_entities %}{% if core.sync_check_result.needs_sync %}btn-primary{% else %}btn-outline-secondary{% endif %}{% else %}btn-outline-primary{% endif %}"
    role="button"

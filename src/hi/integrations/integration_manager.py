@@ -255,10 +255,10 @@ class IntegrationManager( Singleton ):
         """
         Start the framework-level sync-check monitor (Issue #283). Singular
         across all integrations: iterates enabled+unpaused integrations,
-        gets each integration's synchronizer via gateway.get_synchronizer(),
+        gets each integration's connector via gateway.get_connector(),
         and dispatches to its check_needs_sync. Sync-check rides on the
         same opt-in surface as full sync — integrations without a
-        synchronizer naturally opt out. Started after the per-integration
+        connector naturally opt out. Started after the per-integration
         health monitors so the integration data map is already populated;
         per-integration probe failures inside the cycle are caught
         individually so a not-yet-ready integration cannot abort the cycle.

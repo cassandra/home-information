@@ -1,7 +1,7 @@
-"""HomeBox concrete Importer.
+"""HomeBox concrete IntegrationImporter.
 
-Implements the Importer protocol for HomeBox. The Connect-mode
-synchronizer lives at ``services/homebox/connector/hb_sync.py``;
+Implements the IntegrationImporter protocol for HomeBox. The Connect-mode
+connector lives at ``services/homebox/connector/homebox_connector.py``;
 this is the parallel for the IMPORT capability.
 
 Import is add-only: items not already present in HI (by
@@ -18,14 +18,14 @@ from hi.apps.common.database_lock import ExclusionLockContext
 from hi.apps.entity.enums import EntityDataSource
 from hi.apps.entity.models import Entity
 
-from hi.integrations.connector.integration_synchronizer import IntegrationSynchronizer
+from hi.integrations.connector.integration_connector import IntegrationConnector
 from hi.integrations.enums import IntegrationCapability
 from hi.integrations.entity_operations import EntityIntegrationOperations
-from hi.integrations.importer.importer import Importer
-from hi.integrations.importer.import_result import IntegrationImportResult
+from hi.integrations.importer.integration_importer import IntegrationImporter
 from hi.integrations.importer.transient_models import (
     CandidateItem,
     IntegrationDiscardResult,
+    IntegrationImportResult,
 )
 from hi.integrations.models import IntegrationAttribute
 from hi.integrations.transient_models import IntegrationMetaData, IntegrationValidationResult
@@ -39,7 +39,7 @@ from .hb_importer import populate_attributes_for_imported_entity
 logger = logging.getLogger(__name__)
 
 
-class HomeBoxImporter( Importer, HomeBoxMixin ):
+class HomeBoxImporter( IntegrationImporter, HomeBoxMixin ):
 
     def get_metadata(self) -> IntegrationMetaData:
         return HbMetaData
@@ -83,7 +83,7 @@ class HomeBoxImporter( Importer, HomeBoxMixin ):
         ``integrations_sync`` exclusion lock with Connect-side sync
         so Import and Connect serialize against each other."""
         result = IntegrationImportResult( title = 'Import Result' )
-        with ExclusionLockContext( name = IntegrationSynchronizer.SYNCHRONIZATION_LOCK_NAME ):
+        with ExclusionLockContext( name = IntegrationConnector.SYNCHRONIZATION_LOCK_NAME ):
             self._run_import_locked( result = result )
         return result
 

@@ -3,7 +3,7 @@ Unit tests for EntityIntegrationOperations.
 
 Only covers behavior that encodes real classification / transformation /
 graph-traversal logic. The preserve_with_user_data path is already tested
-indirectly via test_integration_synchronizer (which exercises
+indirectly via test_integration_connector (which exercises
 _remove_entity_intelligently).
 """
 

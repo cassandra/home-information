@@ -9,8 +9,8 @@ from hi.apps.system.health_status_provider import HealthStatusProvider
 from hi.integrations.connector.external_view_data import ExternalViewData
 from hi.integrations.connector.integration_controller import IntegrationController
 from hi.integrations.connector.integration_manage_view_pane import IntegrationManageViewPane
-from hi.integrations.connector.integration_synchronizer import IntegrationSynchronizer
-from hi.integrations.importer.importer import Importer
+from hi.integrations.connector.integration_connector import IntegrationConnector
+from hi.integrations.importer.integration_importer import IntegrationImporter
 from hi.integrations.models import IntegrationAttribute
 from hi.integrations.transient_models import (
     ConnectionTestResult,
@@ -47,26 +47,26 @@ class IntegrationGateway:
     def get_health_status_provider(self) -> HealthStatusProvider:
         raise NotImplementedError('Subclasses must override this method')
 
-    def get_synchronizer(self) -> Optional[IntegrationSynchronizer]:
+    def get_connector(self) -> Optional[IntegrationConnector]:
         """
-        Return the integration's synchronizer when it supports sync;
+        Return the integration's connector when it supports sync;
         None otherwise. Sync is an opt-in capability — not every
         integration requires one. The framework owns the sync workflow
         (pre-sync confirmation, sync execution, post-sync placement);
-        the synchronizer participates by providing the integration-
+        the connector participates by providing the integration-
         specific work plus a small amount of peripheral metadata.
 
-        The Issue #283 sync-check probe also rides on the synchronizer
-        (see ``IntegrationSynchronizer.check_needs_sync``): integrations
-        without a synchronizer naturally opt out of both full sync and
+        The Issue #283 sync-check probe also rides on the connector
+        (see ``IntegrationConnector.check_needs_sync``): integrations
+        without a connector naturally opt out of both full sync and
         the periodic drift check.
         """
         return None
 
-    def get_importer(self) -> Optional[Importer]:
+    def get_importer(self) -> Optional[IntegrationImporter]:
         """
         Return the integration's importer when it supports the IMPORT
-        capability; None otherwise. Parallel to get_synchronizer() for
+        capability; None otherwise. Parallel to get_connector() for
         the CONNECT capability. The framework owns the import workflow
         (Data Import page, preview, confirm, result modal, placement);
         the importer supplies the integration-specific candidate

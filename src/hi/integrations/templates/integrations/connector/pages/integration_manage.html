@@ -23,7 +23,7 @@
           {{ item.integration_data.label }}
         </span>
         {% with health_status=item.integration_data.integration_gateway.get_health_status_provider.health_status %}
-        {% include "integrations/panes/integration_status_indicator.html" with health_status=health_status is_paused=item.integration_data.integration.is_paused sync_check_result=item.sync_check_result %}
+        {% include "integrations/connector/panes/integration_status_indicator.html" with health_status=health_status is_paused=item.integration_data.integration.is_paused sync_check_result=item.sync_check_result %}
         {% endwith %}
       </div>
     </a>
@@ -54,8 +54,8 @@
               {{ core.integration_data.integration_metadata.label }}
             </div>
             <div class="d-flex align-items-center">
-              {% include "integrations/panes/lifecycle_actions.html" %}
-              {% include "integrations/panes/sync_actions.html" %}
+              {% include "integrations/connector/panes/lifecycle_actions.html" %}
+              {% include "integrations/connector/panes/sync_actions.html" %}
             </div>
           </div>
           {% if core.sync_check_result and core.sync_check_result.needs_sync %}
