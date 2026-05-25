@@ -43,3 +43,12 @@ enter it.
 More integrations will be added as demand arises. The per-integration
 pages each carry their own troubleshooting section that accretes
 real-world fixes over time — start there if something is not working.
+
+## Integrations vs. Data Import
+
+Integrations on this page are live: HI mirrors the upstream system
+continuously and changes flow in via the update action.
+
+A separate feature, [Data Import](DataImport.md), is a one-time
+copy with no ongoing upstream link. Some integrations (HomeBox
+today) offer both options.

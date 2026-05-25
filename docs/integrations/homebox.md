@@ -71,6 +71,23 @@ The username or password is wrong, or the HomeBox account is
 disabled. Verify by logging into the HomeBox web UI directly with
 the same credentials.
 
+## Data Import
+
+HomeBox also offers a one-time [Data Import](../DataImport.md)
+alongside the live Integration described above. Data Import copies
+your HomeBox items into HI as locally-owned entities — after import,
+edits stay in HI and HomeBox is no longer consulted. Custom fields
+and attached files are preserved, but maintained independently in HI
+from then on.
+
+Use Data Import when you are migrating off HomeBox, or want to
+manage inventory locally without an upstream dependency. Use the
+regular HomeBox Integration when you want HI to track HomeBox as the
+ongoing source of truth.
+
+See the [Data Import](../DataImport.md#importing-data) page for the
+import walkthrough.
+
 ## Known limitations
 
 - HomeBox items are imported read-only. There are no sensors,

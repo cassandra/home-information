@@ -15,22 +15,22 @@ User-facing setup and troubleshooting live in
 
 ## Key modules
 
-- `src/hi/services/homebox/integration.py` — `HomeBoxGateway`.
-  Framework entry point.
-- `src/hi/services/homebox/hb_manager.py` — `HomeBoxManager`.
-  Singleton holding the active `HbClient` and integration attributes.
-- `src/hi/services/homebox/hb_client.py` — `HbClient`. REST wrapper
-  around HomeBox's `/api/v1/...` endpoints, plus the
-  username/password → session-token login flow.
-- `src/hi/services/homebox/hb_converter.py` — `HbConverter`. Maps
-  HomeBox items into HI items, including custom field expansion as
-  read-only attributes.
-- `src/hi/services/homebox/hb_sync.py` — `HomeBoxSynchronizer`.
-  Drives sync.
-- `src/hi/services/homebox/monitors.py` — `HomeBoxMonitor`. Periodic
-  reachability probe only; no state polling.
-- `src/hi/services/homebox/hb_controller.py` — `HomeBoxController`.
-  No-op controller; HomeBox items are not controllable.
+HomeBox declares both CONNECT and IMPORT capabilities, so its code
+is split across three peer sub-packages with capability-agnostic
+facilities in `shared/`:
+
+- `services/homebox/integration.py` — `HomeBoxGateway`, framework
+  entry point; returns both a synchronizer and an importer.
+- `services/homebox/shared/` — `HbClient` (REST + login flow),
+  `HbClientFactory`, `HbConverter`, `HomeBoxManager`,
+  `HbEntityFactory`, `HbItem`. Reused by both capabilities.
+- `services/homebox/connector/` — `HomeBoxSynchronizer`,
+  `HomeBoxConnector` (live entity-detail view), attachment proxy.
+- `services/homebox/importer/` — `HomeBoxImporter` and attribute-
+  population helpers.
+- `services/homebox/monitors.py`, `hb_controller.py` — periodic
+  reachability probe and no-op controller (no state polling, no
+  controllable items).
 
 ## API patterns
 
@@ -43,6 +43,14 @@ The user supplies the API root URL up to `/api` (without the version
 suffix); the client appends the version internally. This is
 documented in the user-facing doc and reinforced by an explicit
 error message in `HbClient` when responses are not JSON.
+
+## Importer
+
+`HomeBoxImporter` (`services/homebox/importer/`) is the Import-side
+parallel of `HomeBoxSynchronizer`. Both call into shared facilities
+(`HbEntityFactory`, `HbConverter`) so only the orchestration differs.
+See [`data-import.md`](data-import.md) for the framework-level
+IMPORT capability documentation.
 
 ## Implementation notes
 
