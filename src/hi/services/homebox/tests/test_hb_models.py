@@ -1,7 +1,7 @@
 import logging
 from django.test import SimpleTestCase
 
-from hi.services.homebox.shared.hb_models import HbItem
+from hi.services.homebox.hb_models import HbItem
 
 
 logging.disable(logging.CRITICAL)

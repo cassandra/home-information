@@ -9,7 +9,7 @@ import logging
 
 from hi.apps.entity.models import Entity, EntityAttribute
 
-from hi.services.homebox.shared.hb_converter import HbConverter
+from hi.services.homebox.hb_converter import HbConverter
 
 logger = logging.getLogger(__name__)
 

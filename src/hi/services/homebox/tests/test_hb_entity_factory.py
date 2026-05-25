@@ -6,9 +6,9 @@ from django.test import TestCase
 from hi.apps.entity.enums import EntityDataSource, EntityType
 from hi.apps.entity.models import Entity
 from hi.integrations.enums import IntegrationCapability
-from hi.services.homebox.shared.hb_entity_factory import HbEntityFactory
+from hi.services.homebox.hb_entity_factory import HbEntityFactory
 from hi.services.homebox.hb_metadata import HbMetaData
-from hi.services.homebox.shared.hb_models import HbItem
+from hi.services.homebox.hb_models import HbItem
 
 
 logging.disable(logging.CRITICAL)

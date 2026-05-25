@@ -32,7 +32,7 @@ from hi.integrations.transient_models import IntegrationMetaData, IntegrationVal
 
 from hi.services.homebox.hb_metadata import HbMetaData
 from hi.services.homebox.hb_mixins import HomeBoxMixin
-from hi.services.homebox.shared.hb_entity_factory import HbEntityFactory
+from hi.services.homebox.hb_entity_factory import HbEntityFactory
 
 from .hb_importer import populate_attributes_for_imported_entity
 

@@ -10,7 +10,7 @@ from django.views import View
 
 from hi.apps.entity.models import Entity
 from hi.services.homebox.hb_metadata import HbMetaData
-from hi.services.homebox.shared.hb_manager import HomeBoxManager
+from hi.services.homebox.hb_manager import HomeBoxManager
 
 logger = logging.getLogger(__name__)
 

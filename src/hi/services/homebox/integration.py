@@ -13,10 +13,10 @@ from hi.integrations.transient_models import (
     IntegrationValidationResult,
 )
 
-from .shared.hb_manager import HomeBoxManager
-from .hb_metadata import HbMetaData
-from .connector.homebox_connector import HomeBoxConnector
-from .importer.homebox_importer import HomeBoxImporter
+from hi.services.homebox.hb_manager import HomeBoxManager
+from hi.services.homebox.hb_metadata import HbMetaData
+from hi.services.homebox.connector.homebox_connector import HomeBoxConnector
+from hi.services.homebox.importer.homebox_importer import HomeBoxImporter
 
 logger = logging.getLogger(__name__)
 

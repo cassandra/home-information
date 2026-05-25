@@ -5,7 +5,7 @@ from unittest.mock import Mock, patch
 from django.test import SimpleTestCase
 from requests import Response
 
-from hi.services.homebox.shared.hb_client import HbClient
+from hi.services.homebox.hb_client import HbClient
 
 
 logging.disable(logging.CRITICAL)

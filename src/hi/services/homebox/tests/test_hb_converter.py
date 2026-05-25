@@ -4,8 +4,8 @@ from unittest.mock import Mock
 from django.test import TestCase
 
 from hi.apps.attribute.enums import AttributeValueType
-from hi.services.homebox.shared.hb_converter import HbConverter
-from hi.services.homebox.shared.hb_models import HbItem
+from hi.services.homebox.hb_converter import HbConverter
+from hi.services.homebox.hb_models import HbItem
 
 
 logging.disable(logging.CRITICAL)

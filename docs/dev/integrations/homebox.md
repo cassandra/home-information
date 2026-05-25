@@ -16,12 +16,12 @@ User-facing setup and troubleshooting live in
 ## Key modules
 
 HomeBox declares both CONNECT and IMPORT capabilities, so its code
-is split across three peer sub-packages with capability-agnostic
-facilities in `shared/`:
+is split across two peer sub-packages with capability-agnostic
+facilities at the integration top level:
 
 - `services/homebox/integration.py` — `HomeBoxGateway`, framework
   entry point; returns both a synchronizer and an importer.
-- `services/homebox/shared/` — `HbClient` (REST + login flow),
+- `services/homebox/hb_*.py` — `HbClient` (REST + login flow),
   `HbClientFactory`, `HbConverter`, `HomeBoxManager`,
   `HbEntityFactory`, `HbItem`. Reused by both capabilities.
 - `services/homebox/connector/` — `HomeBoxConnector`,

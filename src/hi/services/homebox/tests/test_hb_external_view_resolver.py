@@ -21,7 +21,7 @@ from hi.integrations.connector.external_view_data import (
 )
 from hi.services.homebox.connector.hb_external_view_resolver import HomeBoxExternalViewResolver
 from hi.services.homebox.hb_metadata import HbMetaData
-from hi.services.homebox.shared.hb_models import HbItem
+from hi.services.homebox.hb_models import HbItem
 
 
 logging.disable(logging.CRITICAL)

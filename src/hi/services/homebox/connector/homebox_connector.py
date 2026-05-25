@@ -17,12 +17,12 @@ from hi.integrations.transient_models import IntegrationKey
 from hi.services.homebox.connector.hb_external_view_resolver import HomeBoxExternalViewResolver
 from hi.services.homebox.hb_controller import HomeBoxController
 from hi.services.homebox.monitors import HomeBoxMonitor
-from hi.services.homebox.shared.hb_converter import HbConverter
-from hi.services.homebox.shared.hb_manager import HomeBoxManager
+from hi.services.homebox.hb_converter import HbConverter
+from hi.services.homebox.hb_manager import HomeBoxManager
 from hi.services.homebox.hb_metadata import HbMetaData
 from hi.services.homebox.hb_mixins import HomeBoxMixin
-from hi.services.homebox.shared.hb_models import HbItem
-from hi.services.homebox.shared.hb_entity_factory import HbEntityFactory
+from hi.services.homebox.hb_models import HbItem
+from hi.services.homebox.hb_entity_factory import HbEntityFactory
 
 logger = logging.getLogger(__name__)
 

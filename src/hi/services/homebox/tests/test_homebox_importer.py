@@ -9,7 +9,7 @@ from hi.apps.entity.models import Entity
 from hi.integrations.importer.transient_models import IntegrationDiscardResult
 from hi.services.homebox.hb_metadata import HbMetaData
 from hi.services.homebox.importer.homebox_importer import HomeBoxImporter
-from hi.services.homebox.shared.hb_models import HbItem
+from hi.services.homebox.hb_models import HbItem
 
 logging.disable(logging.CRITICAL)
 

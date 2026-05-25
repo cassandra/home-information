@@ -8,8 +8,8 @@ from hi.apps.entity.models import Entity
 from hi.integrations.enums import IntegrationCapability
 
 from hi.services.homebox.hb_metadata import HbMetaData
-from hi.services.homebox.shared.hb_converter import HbConverter
-from hi.services.homebox.shared.hb_models import HbItem
+from hi.services.homebox.hb_converter import HbConverter
+from hi.services.homebox.hb_models import HbItem
 
 logger = logging.getLogger(__name__)
 

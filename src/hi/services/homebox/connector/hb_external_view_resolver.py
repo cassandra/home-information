@@ -19,9 +19,9 @@ from hi.integrations.connector.external_view_data import (
     StructuredViewData,
 )
 
-from hi.services.homebox.shared.hb_converter import HB_ITEM_FIELD_PAIRS
-from hi.services.homebox.shared.hb_manager import HomeBoxManager
-from hi.services.homebox.shared.hb_models import HbItem
+from hi.services.homebox.hb_converter import HB_ITEM_FIELD_PAIRS
+from hi.services.homebox.hb_manager import HomeBoxManager
+from hi.services.homebox.hb_models import HbItem
 
 logger = logging.getLogger(__name__)
 

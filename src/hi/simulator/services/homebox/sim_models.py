@@ -7,7 +7,7 @@ HomeBoxInventoryItemFields (persisted via DbSimEntity); the only mutable
 runtime state is the ``archived`` flag.
 
 The to_api_dict helper builds the JSON shape the integration's HbItem parser
-(src/hi/services/homebox/shared/hb_models.py) consumes.
+(src/hi/services/homebox/hb_models.py) consumes.
 """
 
 import logging
