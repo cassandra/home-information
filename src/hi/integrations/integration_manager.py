@@ -498,6 +498,19 @@ class IntegrationManager( Singleton ):
                 integration_data.integration.is_paused = False
                 integration_data.integration.save()
             self.refresh_integrations_from_db()
+            # Synchronously notify the integration's gateway so its
+            # singleton manager picks up the freshly-saved credentials
+            # before downstream code (sync, monitors) consults the
+            # cached client. The post_save signal would eventually
+            # deliver the same nudge via DelayedSignalProcessor, but
+            # the 0.1s delay races synchronous sync calls.
+            try:
+                integration_data.integration_gateway.notify_settings_changed()
+            except Exception as e:
+                logger.warning(
+                    f'Synchronous notify_settings_changed failed for '
+                    f'{integration_data.integration_id}: {e}'
+                )
             self._launch_integration_monitor_task(
                 integration_data = integration_data,
             )

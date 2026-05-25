@@ -11,7 +11,6 @@ from hi.apps.system.enums import HealthStatusType
 from hi.integrations.exceptions import (
     IntegrationAttributeError,
     IntegrationError,
-    IntegrationDisabledError,
 )
 from hi.integrations.transient_models import (
     ConnectionTestResult,
@@ -95,11 +94,6 @@ class HomeBoxManager( SingletonManager, AggregateHealthProvider, ApiHealthStatus
             self.clear_caches()
             self.record_healthy('Reloaded')
 
-        except IntegrationDisabledError:
-            msg = 'HomeBox integration disabled'
-            logger.info(msg)
-            self.record_disabled( msg )
-
         except IntegrationError as e:
             error_msg = f'HomeBox integration configuration error: {e}'
             logger.error(error_msg)
@@ -128,9 +122,6 @@ class HomeBoxManager( SingletonManager, AggregateHealthProvider, ApiHealthStatus
             hb_integration = Integration.objects.get( integration_id = HbMetaData.integration_id )
         except Integration.DoesNotExist:
             raise IntegrationError( 'HomeBox integration is not implemented.' )
-
-        if not hb_integration.is_enabled:
-            raise IntegrationDisabledError( 'HomeBox integration is not enabled.' )
 
         integration_attributes = list(hb_integration.attributes.all())
         return self._build_hb_attr_type_to_attribute_map(

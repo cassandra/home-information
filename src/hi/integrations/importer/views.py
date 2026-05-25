@@ -132,6 +132,19 @@ class ImporterConfigureView( HiModalView, IntegrationViewMixin, AttributeEditVie
         if response.status_code > 299:
             return response
 
+        # Synchronously refresh the integration's singleton manager so
+        # the freshly-saved credentials are visible before the importer
+        # reads them. The post_save signal eventually delivers this via
+        # DelayedSignalProcessor, but the 0.1s delay races the immediate
+        # importer call.
+        try:
+            integration_data.integration_gateway.notify_settings_changed()
+        except Exception as e:
+            logger.warning(
+                f'Synchronous notify_settings_changed failed for '
+                f'{integration_data.integration_id}: {e}'
+            )
+
         # Validation passed. Fetch candidates and compute counts.
         importer = integration_data.integration_gateway.get_importer()
         if importer is None:
