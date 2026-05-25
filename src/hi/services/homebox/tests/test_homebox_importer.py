@@ -60,10 +60,10 @@ class TestHomeBoxImporterGetCandidateItems(TestCase):
 class TestHomeBoxImporterRunImport(TestCase):
 
     def test_skips_already_imported_items(self):
-        # An existing entity blocks re-import of the same integration_name.
+        # An existing imported entity blocks re-import of the same id.
         Entity.objects.create(
-            integration_id=HbMetaData.integration_id,
-            integration_name='item-1',
+            previous_integration_id=HbMetaData.integration_id,
+            previous_integration_name='item-1',
             name='Already imported',
             entity_type_str=str(EntityType.OTHER),
         )
@@ -80,9 +80,11 @@ class TestHomeBoxImporterRunImport(TestCase):
         self.assertEqual(result.items_imported_count, 1)
         self.assertEqual(result.items_skipped_count, 1)
         self.assertEqual(result.error_list, [])
-        new_entity = Entity.objects.get(integration_name='item-2')
+        new_entity = Entity.objects.get(previous_integration_name='item-2')
         self.assertEqual(new_entity.data_source, EntityDataSource.INTERNAL)
         self.assertTrue(new_entity.allow_internal_attributes)
+        self.assertIsNone(new_entity.integration_id)
+        self.assertEqual(new_entity.previous_integration_id, HbMetaData.integration_id)
 
     def test_per_item_failure_does_not_abort_batch(self):
         importer = HomeBoxImporter()
@@ -107,17 +109,16 @@ class TestHomeBoxImporterRunImport(TestCase):
 
 class TestHomeBoxImporterDiscard(TestCase):
 
-    def test_discard_targets_only_internal_data_source(self):
-        # INTERNAL entity (imported) — should be removed.
+    def test_discard_targets_only_imported(self):
+        # Imported entity — should be removed.
         Entity.objects.create(
-            integration_id=HbMetaData.integration_id,
-            integration_name='import-1',
+            previous_integration_id=HbMetaData.integration_id,
+            previous_integration_name='import-1',
             name='Imported',
             entity_type_str=str(EntityType.OTHER),
             allow_internal_attributes=True,
-            data_source_str=str(EntityDataSource.INTERNAL),
         )
-        # EXTERNAL entity (connect-mode) — must be left alone.
+        # Connect-mode entity — must be left alone.
         Entity.objects.create(
             integration_id=HbMetaData.integration_id,
             integration_name='connect-1',
@@ -134,8 +135,12 @@ class TestHomeBoxImporterDiscard(TestCase):
 
         self.assertIsInstance(discard_result, IntegrationDiscardResult)
         self.assertEqual(discard_result.count, 1)
-        self.assertFalse(Entity.objects.filter(integration_name='import-1').exists())
-        self.assertTrue(Entity.objects.filter(integration_name='connect-1').exists())
+        self.assertFalse(
+            Entity.objects.filter(previous_integration_name='import-1').exists()
+        )
+        self.assertTrue(
+            Entity.objects.filter(integration_name='connect-1').exists()
+        )
 
     def test_discard_with_no_imported_returns_zero(self):
         importer = HomeBoxImporter()

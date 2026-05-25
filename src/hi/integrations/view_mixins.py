@@ -7,7 +7,6 @@ from django.urls import reverse
 
 from hi.apps.collection.collection_manager import CollectionManager
 from hi.apps.collection.models import Collection, CollectionEntity
-from hi.apps.entity.enums import EntityDataSource
 from hi.apps.entity.models import Entity, EntityView
 from hi.apps.location.location_manager import LocationManager
 from hi.apps.location.models import Location, LocationView
@@ -21,48 +20,21 @@ from hi.integrations.integration_metadata_cache import IntegrationMetadataCache
 from hi.integrations.placement_request import PlacementUrlParams
 
 
-# Per-capability config consumed by CapabilityBlockViewMixin to keep
-# block-modal copy uniform across all integrations and both
-# directions. Broader callers can also import _CAPABILITY_DATA_SOURCE
-# if they need the capability-to-data_source pairing.
-_CAPABILITY_DATA_SOURCE = {
-    IntegrationCapability.CONNECT: EntityDataSource.EXTERNAL,
-    IntegrationCapability.IMPORT: EntityDataSource.INTERNAL,
-}
-_CAPABILITY_UI_LABEL = {
-    IntegrationCapability.CONNECT: 'Integration',
-    IntegrationCapability.IMPORT: 'Import',
-}
-_CAPABILITY_REMEDIATION_URL_NAME = {
-    IntegrationCapability.CONNECT: 'integrations_connect_home',
-    IntegrationCapability.IMPORT: 'integrations_import_home',
-}
-_CAPABILITY_REMEDIATION_LINK_LABEL = {
-    IntegrationCapability.CONNECT: 'GO TO INTEGRATIONS',
-    IntegrationCapability.IMPORT: 'GO TO DATA IMPORT',
-}
-_CAPABILITY_REMEDIATION_VERB = {
-    # Verb applied when telling the user to clear that capability's
-    # data from its home page.
-    IntegrationCapability.CONNECT: 'disable',
-    IntegrationCapability.IMPORT: 'discard',
-}
-
-
 class CapabilityBlockViewMixin:
-    """Detect cross-capability conflicts at the start of a capability's
-    initial-Configure flow, returning a block modal that routes the
-    user to remediate before continuing.
+    """Block IMPORT initiation when the integration has active
+    Connect entities, directing the user to disable the integration
+    first.
 
-    Mixed into the views that handle each capability's initial-
-    Configure path. Each view calls
-    ``render_capability_block_if_conflict`` early in its GET handler
-    with just the integration_data and the capability being initiated.
-    All user-facing copy (title, body, link) is composed by the mixin
-    from the capability pairing so all block modals read uniformly.
+    The asymmetry is principled. CONNECT does not need a symmetric
+    block: sync's reconnect-then-create order will adopt any pre-
+    existing detached/imported rows for the same integration into
+    the live Connect session, so no collision is possible. IMPORT
+    creates new HI-owned rows, which would collide with active-
+    Connect rows unless we block this entry point.
 
-    Only fires for integrations that declare both capabilities;
-    single-capability integrations always get None.
+    Mixed into the IMPORT-side Configure view; CONNECT-side views
+    can either omit the mixin or call this method as a no-op for
+    capability=CONNECT.
     """
 
     def render_capability_block_if_conflict(
@@ -71,45 +43,39 @@ class CapabilityBlockViewMixin:
             integration_data,
             capability_being_initiated : IntegrationCapability,
     ):
-        other_capability = (
-            IntegrationCapability.IMPORT
-            if capability_being_initiated == IntegrationCapability.CONNECT
-            else IntegrationCapability.CONNECT
-        )
+        # CONNECT initiation cannot collide; the reconnect path
+        # adopts any existing provenance entities. Only IMPORT
+        # initiation needs blocking.
+        if capability_being_initiated != IntegrationCapability.IMPORT:
+            return None
         capabilities = integration_data.integration_metadata.capabilities
-        if other_capability not in capabilities:
+        if IntegrationCapability.CONNECT not in capabilities:
             return None
 
-        existing_count = Entity.objects.filter(
+        existing_count = Entity.objects.external_for(
             integration_id = integration_data.integration_id,
-            data_source_str = str( _CAPABILITY_DATA_SOURCE[other_capability] ),
         ).count()
         if existing_count == 0:
             return None
 
-        my_label = _CAPABILITY_UI_LABEL[capability_being_initiated]
-        other_label = _CAPABILITY_UI_LABEL[other_capability]
-        remediation_verb = _CAPABILITY_REMEDIATION_VERB[other_capability]
         return self.modal_response(
             request,
             context = {
                 'integration_data': integration_data,
-                'my_label': my_label,
+                'my_label': 'Import',
                 'existing_count': existing_count,
                 'existing_mode_clause': (
-                    f'has data configured as {other_label} with'
+                    'has data configured as Integration with'
                 ),
                 'desired_action_clause': (
-                    f'use {integration_data.label} as {my_label}'
+                    f'use {integration_data.label} as Import'
                 ),
                 'remediation_clause': (
-                    f'{remediation_verb} the {integration_data.label} '
-                    f'{other_label} data'
+                    f'disable the {integration_data.label} '
+                    f'Integration'
                 ),
-                'link_url': reverse(
-                    _CAPABILITY_REMEDIATION_URL_NAME[other_capability]
-                ),
-                'link_label': _CAPABILITY_REMEDIATION_LINK_LABEL[other_capability],
+                'link_url': reverse( 'integrations_connect_home' ),
+                'link_label': 'GO TO INTEGRATIONS',
             },
             template_name = 'integrations/modals/capability_blocked.html',
         )

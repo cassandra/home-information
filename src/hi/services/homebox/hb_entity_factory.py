@@ -47,23 +47,27 @@ class HbEntityFactory:
                     entity_type_str = str( HbConverter.hb_item_to_entity_type( hb_item = hb_item ) ),
                 )
 
-            # The fields below apply equally to fresh-create and
-            # reconnect: integration_key, integration_payload, and the
-            # capability-determined access flags are all integration-
-            # owned and must reflect the current upstream state. The
-            # entity name and entity_type are intentionally left alone
-            # on the reconnect path (set above only for fresh-create).
-            entity.integration_key = entity_integration_key
             entity.integration_payload = entity_payload
             if capability == IntegrationCapability.IMPORT:
-                # Import-mode: HI owns the entity; user can edit and
-                # delete freely after import.
+                # Import-mode: HI owns the entity from day one but
+                # carries upstream provenance for re-import skip-
+                # detection and for the auto-reconnect path if the
+                # user later enables CONNECT. The provenance is
+                # recorded on previous_integration_*; integration_id
+                # stays NULL because no live integration owns this
+                # row.
+                entity.integration_key = None
+                entity.previous_integration_key = entity_integration_key
                 entity.can_user_delete = True
                 entity.allow_internal_attributes = True
                 entity.data_source = EntityDataSource.INTERNAL
             else:
                 # CONNECT-mode (and any other capability): HomeBox
-                # remains the source of truth.
+                # remains the source of truth. Setting integration_key
+                # also clears previous_integration_* via the setter —
+                # safe whether this is a fresh-create or a reconnect
+                # of a previously-detached/imported row.
+                entity.integration_key = entity_integration_key
                 entity.can_user_delete = HbMetaData.allow_entity_deletion
                 entity.allow_internal_attributes = HbMetaData.allow_internal_attributes
                 entity.data_source = EntityDataSource.EXTERNAL

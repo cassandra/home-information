@@ -248,13 +248,22 @@ class EntityPlacementService:
         """Entities that have neither an EntityView nor a
         CollectionEntity row — fully unplaced in the app. Optionally
         filtered to a single integration. Used by the dispatcher
-        GET endpoint to seed the modal with what's left to place."""
-        queryset = Entity.objects.filter(
+        GET endpoint to seed the modal with what's left to place.
+
+        Integration scoping uses ``with_integration_provenance`` so
+        both active-Connect rows and imported / detached rows for
+        the same integration are eligible — post-import placement
+        and post-sync placement land on the same query."""
+        if integration_id is not None:
+            queryset = Entity.objects.with_integration_provenance(
+                integration_id = integration_id,
+            )
+        else:
+            queryset = Entity.objects.all()
+        queryset = queryset.filter(
             entity_views__isnull = True,
             collections__isnull = True,
         )
-        if integration_id is not None:
-            queryset = queryset.filter( integration_id = integration_id )
         return list( queryset.distinct() )
 
     @classmethod

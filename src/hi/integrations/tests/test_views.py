@@ -504,36 +504,6 @@ class EnableViewTests(SyncViewTestCase):
         body = response.content.decode()
         self.assertIn('CONNECT', body)
 
-    def test_initial_connect_blocked_by_existing_import_data(self):
-        # Dual-capability integration with existing Import-mode
-        # (INTERNAL) entities: initial-Connect CONFIGURE returns the
-        # block modal pointing at the Data Import page.
-        from hi.apps.entity.enums import EntityDataSource, EntityType
-        from hi.apps.entity.models import Entity
-        dual_gateway = _SyncCapableGateway(
-            integration_id=self.INTEGRATION_ID,
-            capabilities=frozenset({
-                IntegrationCapability.CONNECT,
-                IntegrationCapability.IMPORT,
-            }),
-        )
-        IntegrationManager()._integration_data_map[self.INTEGRATION_ID] = IntegrationData(
-            integration_gateway=dual_gateway,
-            integration=self.integration,
-        )
-        Entity.objects.create(
-            integration_id=self.INTEGRATION_ID,
-            integration_name='imported-1',
-            name='Imported',
-            entity_type_str=str(EntityType.OTHER),
-            data_source_str=str(EntityDataSource.INTERNAL),
-        )
-        response = self.client.get(self._url())
-        body = response.content.decode()
-        self.assertIn('Cannot configure', body)
-        self.assertIn('GO TO DATA IMPORT', body)
-        self.assertIn(reverse('integrations_import_home'), body)
-
     def test_initial_connect_not_blocked_for_single_capability(self):
         # Default _SyncCapableGateway is Connect-only; no block fires.
         from hi.apps.entity.enums import EntityDataSource, EntityType

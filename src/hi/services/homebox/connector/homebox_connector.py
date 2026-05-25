@@ -4,7 +4,6 @@ from typing import Dict, List, Optional
 from asgiref.sync import sync_to_async
 from django.db import transaction
 
-from hi.apps.entity.enums import EntityDataSource
 from hi.apps.entity.models import Entity
 from hi.apps.system.health_status_provider import HealthStatusProvider
 
@@ -92,19 +91,17 @@ class HomeBoxConnector( IntegrationConnector, HomeBoxMixin ):
 
     @staticmethod
     def _get_current_integration_keys() -> set:
-        # Scope to Connect-mode (EXTERNAL) entities. Import-mode
-        # (INTERNAL) rows under the same integration_id would
-        # otherwise be treated as Connect entities and either
-        # mass-removed as "no longer in upstream" or routed through
-        # auto-reconnect.
+        # Scope to actively-attached (EXTERNAL) entities. Detached
+        # entities for the same integration are picked up by the
+        # auto-reconnect path during sync, not by this primary-match
+        # probe.
         return {
             IntegrationKey(
                 integration_id = integration_id,
                 integration_name = integration_name,
             )
-            for integration_id, integration_name in Entity.objects.filter(
+            for integration_id, integration_name in Entity.objects.external_for(
                 integration_id = HbMetaData.integration_id,
-                data_source_str = str( EntityDataSource.EXTERNAL ),
             ).values_list( 'integration_id', 'integration_name' )
         }
 
@@ -235,12 +232,11 @@ class HomeBoxConnector( IntegrationConnector, HomeBoxMixin ):
         logger.debug( 'Getting existing HomeBox entities.' )
         integration_key_to_entity = dict()
 
-        # Scope to Connect-mode (EXTERNAL) entities. Defense-in-depth
-        # against the mode-switch invariant: if INTERNAL imports
-        # coexist, the sync logic must not adopt them as Connect rows.
-        entity_queryset = Entity.objects.filter(
+        # Scope to actively-attached (EXTERNAL) entities. Detached
+        # rows for the same integration are picked up by the
+        # auto-reconnect path, not the primary-match scan.
+        entity_queryset = Entity.objects.external_for(
             integration_id = HbMetaData.integration_id,
-            data_source_str = str( EntityDataSource.EXTERNAL ),
         )
         for entity in entity_queryset:
             integration_key = entity.integration_key

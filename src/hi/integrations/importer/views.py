@@ -15,7 +15,6 @@ from django.urls import reverse
 
 from hi.apps.config.enums import ConfigPageType
 from hi.apps.config.views import ConfigPageView
-from hi.apps.entity.enums import EntityDataSource
 from hi.apps.entity.models import Entity
 from hi.apps.sense.sensor_response_manager import SensorResponseManager
 from hi.hi_async_view import HiModalView
@@ -47,25 +46,13 @@ class DataImportPageView( ConfigPageView, IntegrationViewMixin ):
             capabilities = _IMPORT_CAPABILITY_FILTER,
         )
 
-        # Pre-query which integrations have existing imported entities
-        # so the row template can decide whether to render DISCARD.
-        # data_source=INTERNAL is the canonical predicate for imported
-        # data (Connect-mode HomeBox is EXTERNAL; HA/ZM/Frigate Connect
-        # is INTERNAL but they have no IMPORT capability so don't appear).
-        has_imported_set = set(
-            Entity.objects.filter(
-                integration_id__in = [
-                    d.integration_id for d in integration_data_list
-                ],
-                data_source_str = str(EntityDataSource.INTERNAL),
-            ).values_list('integration_id', flat=True).distinct()
-        )
-
         rows = []
         for data in integration_data_list:
             rows.append({
                 'integration_data': data,
-                'has_imported': data.integration_id in has_imported_set,
+                'has_imported': Entity.objects.imported_for(
+                    integration_id = data.integration_id,
+                ).exists(),
                 'is_dual_capability': (
                     IntegrationCapability.CONNECT in data.integration_metadata.capabilities
                     and IntegrationCapability.IMPORT in data.integration_metadata.capabilities
@@ -117,10 +104,9 @@ class ImporterConfigureView( CapabilityConfigureView ):
 
         candidates = importer.get_candidate_items()
         existing_names = set(
-            Entity.objects.filter(
+            Entity.objects.imported_for(
                 integration_id = integration_data.integration_id,
-                data_source_str = str(EntityDataSource.INTERNAL),
-            ).values_list('integration_name', flat=True)
+            ).values_list( 'previous_integration_name', flat = True )
         )
         new_count = sum(
             1 for c in candidates if c.integration_name not in existing_names
@@ -206,9 +192,8 @@ class ImporterDiscardView( HiModalView, IntegrationViewMixin ):
 
     def get(self, request, *args, **kwargs):
         integration_data = self.get_integration_data( request, *args, **kwargs )
-        imported_count = Entity.objects.filter(
+        imported_count = Entity.objects.imported_for(
             integration_id = integration_data.integration_id,
-            data_source_str = str(EntityDataSource.INTERNAL),
         ).count()
         return self.modal_response(
             request,

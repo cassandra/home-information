@@ -138,11 +138,10 @@ class DataImportPageViewTests(TestCase):
         )
 
         Entity.objects.create(
-            integration_id='hb',
-            integration_name='item-1',
+            previous_integration_id='hb',
+            previous_integration_name='item-1',
             name='Imported',
             entity_type_str=str(EntityType.OTHER),
-            data_source_str=str(EntityDataSource.INTERNAL),
         )
         response_with_imports = self.client.get(reverse('integrations_import_home'))
         self.assertIn(
@@ -298,11 +297,10 @@ class ImporterConfigureViewTests(TestCase):
         ])
         for i in range(3):
             Entity.objects.create(
-                integration_id=self.INTEGRATION_ID,
-                integration_name=f'item-{i}',
+                previous_integration_id=self.INTEGRATION_ID,
+                previous_integration_name=f'item-{i}',
                 name=f'Item {i}',
                 entity_type_str=str(EntityType.OTHER),
-                data_source_str=str(EntityDataSource.INTERNAL),
             )
 
         response = self.client.get(self._discard_url())

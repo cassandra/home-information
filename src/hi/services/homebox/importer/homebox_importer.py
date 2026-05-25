@@ -15,7 +15,6 @@ from typing import List
 from django.db import transaction
 
 from hi.apps.common.database_lock import ExclusionLockContext
-from hi.apps.entity.enums import EntityDataSource
 from hi.apps.entity.models import Entity
 
 from hi.integrations.connector.integration_connector import IntegrationConnector
@@ -104,15 +103,11 @@ class HomeBoxImporter( IntegrationImporter, HomeBoxMixin ):
             result.error_list.append( f'Cannot import from HomeBox: {e}' )
             return
 
-        # Match the preview's predicate: scope skip-detection to
-        # already-imported (INTERNAL) rows so a stale EXTERNAL row
-        # (invariant-broken state) cannot silently turn an advertised
-        # new candidate into a skip at run time.
+        # Skip-detection against already-imported rows.
         existing_integration_names = set(
-            Entity.objects.filter(
+            Entity.objects.imported_for(
                 integration_id = HbMetaData.integration_id,
-                data_source_str = str( EntityDataSource.INTERNAL ),
-            ).values_list( 'integration_name', flat = True )
+            ).values_list( 'previous_integration_name', flat = True )
         )
 
         created_entities = []
@@ -152,13 +147,11 @@ class HomeBoxImporter( IntegrationImporter, HomeBoxMixin ):
 
     def discard_imported_data( self, integration_id: str ) -> IntegrationDiscardResult:
         """Remove all entities previously imported under this
-        integration_id. Filters by ``data_source=INTERNAL`` so
-        any coexisting Connect-mode (EXTERNAL) entities are
-        untouched."""
+        integration_id. Any coexisting active-Connect entities for
+        the same integration are untouched."""
         seed_ids = set(
-            Entity.objects.filter(
+            Entity.objects.imported_for(
                 integration_id = integration_id,
-                data_source_str = str( EntityDataSource.INTERNAL ),
             ).values_list( 'id', flat = True )
         )
         if not seed_ids:

@@ -105,12 +105,16 @@ class EntityIntegrationOperations:
     def get_removal_entity_ids( integration_id : str ) -> Set[int]:
         """
         Return the full set of entity IDs that a Remove of the given
-        integration should target: every entity attached to the integration,
-        plus any delegate entities that would be orphaned by their removal.
+        integration should target: every actively-attached
+        (EXTERNAL) entity for the integration, plus any delegate
+        entities that would be orphaned by their removal. Imported /
+        detached rows for the same integration are HI-owned and
+        outside the removal scope.
         """
         seed = set(
-            Entity.objects.filter( integration_id = integration_id )
-                          .values_list( 'id', flat = True )
+            Entity.objects.external_for(
+                integration_id = integration_id,
+            ).values_list( 'id', flat = True )
         )
         return EntityIntegrationOperations.collect_removal_closure( seed )
 
@@ -255,8 +259,9 @@ class EntityIntegrationOperations:
             key.integration_name: key for key in upstream_keys
         }
 
-        candidate_entities = Entity.objects.filter(
-            previous_integration_id = integration_id,
+        candidate_entities = Entity.objects.detached_for(
+            integration_id = integration_id,
+        ).filter(
             previous_integration_name__in = list( upstream_keys_by_name.keys() ),
         )
 
