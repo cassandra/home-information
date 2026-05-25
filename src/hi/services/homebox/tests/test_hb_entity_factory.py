@@ -3,9 +3,10 @@ from unittest.mock import Mock
 
 from django.test import TestCase
 
-from hi.apps.entity.enums import EntityType
+from hi.apps.entity.enums import EntityDataSource, EntityType
 from hi.apps.entity.models import Entity
-from hi.services.homebox.connector.hb_entity_factory import HbEntityFactory
+from hi.integrations.enums import IntegrationCapability
+from hi.services.homebox.shared.hb_entity_factory import HbEntityFactory
 from hi.services.homebox.hb_metadata import HbMetaData
 from hi.services.homebox.shared.hb_models import HbItem
 
@@ -32,10 +33,13 @@ class TestHbEntityFactory(TestCase):
 
         return HbItem(api_dict=api_dict, client=client)
 
-    def test_create_models_for_hb_item_creates_entity(self):
+    def test_create_models_for_hb_item_creates_entity_connect_mode(self):
         item = self._mock_item(item_id='item-create', name='Drill')
 
-        entity = HbEntityFactory.create_models_for_hb_item(hb_item=item)
+        entity = HbEntityFactory.create_models_for_hb_item(
+            hb_item=item,
+            capability=IntegrationCapability.CONNECT,
+        )
 
         self.assertIsInstance(entity, Entity)
         self.assertEqual(entity.integration_id, HbMetaData.integration_id)
@@ -43,9 +47,22 @@ class TestHbEntityFactory(TestCase):
         self.assertEqual(entity.name, 'Drill')
         self.assertEqual(entity.entity_type, EntityType.OTHER)
         self.assertFalse(entity.allow_internal_attributes)
+        self.assertEqual(entity.data_source, EntityDataSource.EXTERNAL)
         self.assertNotIn('description', entity.integration_payload)
         self.assertEqual(entity.integration_payload.get('location', {}).get('name'), 'Garage')
         self.assertEqual(entity.integration_payload.get('tags')[0].get('name'), 'Tools')
+
+    def test_create_models_for_hb_item_creates_entity_import_mode(self):
+        item = self._mock_item(item_id='item-import', name='Drill')
+
+        entity = HbEntityFactory.create_models_for_hb_item(
+            hb_item=item,
+            capability=IntegrationCapability.IMPORT,
+        )
+
+        self.assertTrue(entity.allow_internal_attributes)
+        self.assertTrue(entity.can_user_delete)
+        self.assertEqual(entity.data_source, EntityDataSource.INTERNAL)
 
     def test_create_models_with_existing_entity_does_not_create_new_and_preserves_name(self):
         """Issue #281 reconnect contract: when an existing Entity is
@@ -61,6 +78,7 @@ class TestHbEntityFactory(TestCase):
 
         returned = HbEntityFactory.create_models_for_hb_item(
             hb_item=item,
+            capability=IntegrationCapability.CONNECT,
             entity=existing,
         )
 

@@ -10,6 +10,7 @@ from hi.integrations.connector.integration_controller import IntegrationControll
 from hi.integrations.integration_gateway import IntegrationGateway
 from hi.integrations.connector.integration_manage_view_pane import IntegrationManageViewPane
 from hi.integrations.connector.integration_synchronizer import IntegrationSynchronizer
+from hi.integrations.importer.importer import Importer
 from hi.integrations.models import IntegrationAttribute
 from hi.integrations.transient_models import (
     ConnectionTestResult,
@@ -23,6 +24,7 @@ from .hb_manage_view_pane import HbManageViewPane
 from .shared.hb_manager import HomeBoxManager
 from .hb_metadata import HbMetaData
 from .connector.hb_sync import HomeBoxSynchronizer
+from .importer.homebox_importer import HomeBoxImporter
 from .monitors import HomeBoxMonitor
 
 logger = logging.getLogger(__name__)
@@ -58,6 +60,9 @@ class HomeBoxGateway(IntegrationGateway):
 
     def get_synchronizer(self) -> IntegrationSynchronizer:
         return HomeBoxSynchronizer()
+
+    def get_importer(self) -> Importer:
+        return HomeBoxImporter()
 
     def validate_configuration(
             self,

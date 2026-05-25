@@ -6,6 +6,7 @@ from django.test import SimpleTestCase
 
 from hi.apps.entity.models import Entity
 from hi.integrations.connector.sync_result import IntegrationSyncResult
+from hi.integrations.enums import IntegrationCapability
 from hi.integrations.transient_models import IntegrationKey
 from hi.services.homebox.hb_metadata import HbMetaData
 from hi.services.homebox.connector.hb_sync import HomeBoxSynchronizer
@@ -220,6 +221,7 @@ class TestHomeBoxSynchronizerRebuildIntegrationComponents(SimpleTestCase):
 
         mock_converter.assert_called_once_with(
             hb_item=upstream,
+            capability=IntegrationCapability.CONNECT,
             entity=existing_entity,
         )
 

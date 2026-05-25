@@ -9,13 +9,14 @@ from hi.apps.entity.models import Entity
 from hi.integrations.connector.integration_synchronizer import IntegrationSynchronizer
 from hi.integrations.connector.sync_check import IntegrationSyncCheck, SyncDelta
 from hi.integrations.connector.sync_result import IntegrationSyncResult
+from hi.integrations.enums import IntegrationCapability
 from hi.integrations.transient_models import IntegrationKey
 
 from hi.services.homebox.shared.hb_converter import HbConverter
 from hi.services.homebox.hb_metadata import HbMetaData
 from hi.services.homebox.hb_mixins import HomeBoxMixin
 from hi.services.homebox.shared.hb_models import HbItem
-from .hb_entity_factory import HbEntityFactory
+from hi.services.homebox.shared.hb_entity_factory import HbEntityFactory
 
 logger = logging.getLogger(__name__)
 
@@ -200,6 +201,7 @@ class HomeBoxSynchronizer( IntegrationSynchronizer, HomeBoxMixin ):
         previously-disconnected entity rather than creating a new one."""
         HbEntityFactory.create_models_for_hb_item(
             hb_item = upstream,
+            capability = IntegrationCapability.CONNECT,
             entity = entity,
         )
         return
@@ -227,7 +229,10 @@ class HomeBoxSynchronizer( IntegrationSynchronizer, HomeBoxMixin ):
     def _create_entity( self,
                         item : HbItem,
                         result : IntegrationSyncResult ) -> Entity:
-        entity = HbEntityFactory.create_models_for_hb_item( hb_item = item )
+        entity = HbEntityFactory.create_models_for_hb_item(
+            hb_item = item,
+            capability = IntegrationCapability.CONNECT,
+        )
         result.created_list.append( entity.name )
         return entity
 

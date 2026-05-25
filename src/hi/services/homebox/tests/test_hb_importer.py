@@ -4,7 +4,8 @@ from unittest.mock import Mock
 from django.test import TestCase
 
 from hi.apps.attribute.enums import AttributeValueType
-from hi.services.homebox.connector.hb_entity_factory import HbEntityFactory
+from hi.integrations.enums import IntegrationCapability
+from hi.services.homebox.shared.hb_entity_factory import HbEntityFactory
 from hi.services.homebox.importer.hb_importer import HbImporter
 from hi.services.homebox.shared.hb_models import HbItem
 
@@ -33,7 +34,10 @@ class TestHbImporter(TestCase):
 
     def test_create_and_update_file_attribute_from_attachment(self):
         item = self._mock_item(item_id='item-file-sync')
-        entity = HbEntityFactory.create_models_for_hb_item(hb_item=item)
+        entity = HbEntityFactory.create_models_for_hb_item(
+            hb_item=item,
+            capability=IntegrationCapability.IMPORT,
+        )
 
         attachment = {
             'id': 'att-2',

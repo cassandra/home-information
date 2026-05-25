@@ -1,0 +1,144 @@
+"""HomeBoxImporter contract + behavior tests."""
+import logging
+from unittest.mock import Mock, patch
+
+from django.test import TestCase
+
+from hi.apps.entity.enums import EntityDataSource, EntityType
+from hi.apps.entity.models import Entity
+from hi.integrations.importer.transient_models import IntegrationDiscardResult
+from hi.services.homebox.hb_metadata import HbMetaData
+from hi.services.homebox.importer.homebox_importer import HomeBoxImporter
+from hi.services.homebox.shared.hb_models import HbItem
+
+logging.disable(logging.CRITICAL)
+
+
+def _hb_item(item_id, name='Item', archived=False):
+    return HbItem(
+        api_dict={
+            'id': item_id,
+            'name': name,
+            'archived': archived,
+            'location': {'id': 'loc-1', 'name': 'Garage'},
+            'tags': [],
+            'fields': [],
+            'attachments': [],
+        },
+        client=Mock(),
+    )
+
+
+class TestHomeBoxImporterGetCandidateItems(TestCase):
+
+    def test_returns_unarchived_items(self):
+        importer = HomeBoxImporter()
+        mock_manager = Mock()
+        mock_manager.hb_client = Mock()
+        mock_manager.fetch_hb_items_summary_from_api.return_value = [
+            {'id': 'item-1', 'name': 'Hammer', 'archived': False},
+            {'id': 'item-2', 'name': 'Saw', 'archived': True},
+            {'id': 'item-3', 'name': 'Screwdriver', 'archived': False},
+        ]
+        with patch.object(HomeBoxImporter, 'hb_manager', return_value=mock_manager):
+            candidates = importer.get_candidate_items()
+
+        self.assertEqual(len(candidates), 2)
+        self.assertEqual(
+            sorted(c.integration_name for c in candidates),
+            ['item-1', 'item-3'],
+        )
+
+    def test_returns_empty_when_no_client(self):
+        importer = HomeBoxImporter()
+        mock_manager = Mock()
+        mock_manager.hb_client = None
+        with patch.object(HomeBoxImporter, 'hb_manager', return_value=mock_manager):
+            self.assertEqual(importer.get_candidate_items(), [])
+
+
+class TestHomeBoxImporterRunImport(TestCase):
+
+    def test_skips_already_imported_items(self):
+        # An existing entity blocks re-import of the same integration_name.
+        Entity.objects.create(
+            integration_id=HbMetaData.integration_id,
+            integration_name='item-1',
+            name='Already imported',
+            entity_type_str=str(EntityType.OTHER),
+        )
+        importer = HomeBoxImporter()
+        mock_manager = Mock()
+        mock_manager.hb_client = Mock()
+        mock_manager.fetch_hb_items_from_api.return_value = [
+            _hb_item('item-1', 'Should skip'),
+            _hb_item('item-2', 'Should import'),
+        ]
+        with patch.object(HomeBoxImporter, 'hb_manager', return_value=mock_manager):
+            result = importer.run_import()
+
+        self.assertEqual(result.items_imported_count, 1)
+        self.assertEqual(result.items_skipped_count, 1)
+        self.assertEqual(result.error_list, [])
+        new_entity = Entity.objects.get(integration_name='item-2')
+        self.assertEqual(new_entity.data_source, EntityDataSource.INTERNAL)
+        self.assertTrue(new_entity.allow_internal_attributes)
+
+    def test_per_item_failure_does_not_abort_batch(self):
+        importer = HomeBoxImporter()
+        mock_manager = Mock()
+        mock_manager.hb_client = Mock()
+        mock_manager.fetch_hb_items_from_api.return_value = [
+            _hb_item('item-a', 'Item A'),
+            _hb_item('item-b', 'Item B'),
+        ]
+        # First item raises during entity creation; second proceeds.
+        with patch.object(HomeBoxImporter, 'hb_manager', return_value=mock_manager):
+            with patch(
+                'hi.services.homebox.importer.homebox_importer.HbEntityFactory.create_models_for_hb_item',
+                side_effect=[RuntimeError('upstream blew up'), Mock(name='entity-b')],
+            ):
+                result = importer.run_import()
+
+        self.assertEqual(result.items_imported_count, 1)
+        self.assertEqual(len(result.error_list), 1)
+        self.assertIn('item-a', result.error_list[0])
+
+
+class TestHomeBoxImporterDiscard(TestCase):
+
+    def test_discard_targets_only_internal_data_source(self):
+        # INTERNAL entity (imported) — should be removed.
+        Entity.objects.create(
+            integration_id=HbMetaData.integration_id,
+            integration_name='import-1',
+            name='Imported',
+            entity_type_str=str(EntityType.OTHER),
+            allow_internal_attributes=True,
+            data_source_str=str(EntityDataSource.INTERNAL),
+        )
+        # EXTERNAL entity (connect-mode) — must be left alone.
+        Entity.objects.create(
+            integration_id=HbMetaData.integration_id,
+            integration_name='connect-1',
+            name='Connected',
+            entity_type_str=str(EntityType.OTHER),
+            allow_internal_attributes=False,
+            data_source_str=str(EntityDataSource.EXTERNAL),
+        )
+
+        importer = HomeBoxImporter()
+        discard_result = importer.discard_imported_data(
+            integration_id=HbMetaData.integration_id,
+        )
+
+        self.assertIsInstance(discard_result, IntegrationDiscardResult)
+        self.assertEqual(discard_result.count, 1)
+        self.assertFalse(Entity.objects.filter(integration_name='import-1').exists())
+        self.assertTrue(Entity.objects.filter(integration_name='connect-1').exists())
+
+    def test_discard_with_no_imported_returns_zero(self):
+        importer = HomeBoxImporter()
+        result = importer.discard_imported_data(integration_id=HbMetaData.integration_id)
+        self.assertEqual(result.count, 0)
+        self.assertEqual(result.errors, [])

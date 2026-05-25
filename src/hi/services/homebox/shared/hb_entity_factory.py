@@ -3,7 +3,9 @@ import logging
 
 from django.db import transaction
 
+from hi.apps.entity.enums import EntityDataSource
 from hi.apps.entity.models import Entity
+from hi.integrations.enums import IntegrationCapability
 
 from hi.services.homebox.hb_metadata import HbMetaData
 from hi.services.homebox.shared.hb_converter import HbConverter
@@ -13,15 +15,21 @@ logger = logging.getLogger(__name__)
 
 
 class HbEntityFactory:
-    """Builds and updates HI Entity rows from HomeBox upstream items."""
+    """Builds and updates HI Entity rows from HomeBox upstream items.
+
+    Shared by HomeBox's CONNECT-mode synchronizer and IMPORT-mode
+    importer. The ``capability`` parameter selects the entity-mode
+    flags: CONNECT produces read-only mirror entities owned by
+    HomeBox; IMPORT produces HI-owned editable entities."""
 
     @classmethod
     def create_models_for_hb_item( cls,
-                                   hb_item : HbItem,
-                                   entity  : Optional[Entity] = None ) -> Entity:
+                                   hb_item    : HbItem,
+                                   capability : IntegrationCapability,
+                                   entity     : Optional[Entity] = None ) -> Entity:
         """
         Create or repopulate the integration-owned components for an
-        HbItem. When ``entity`` is None (the standard import path), a
+        HbItem. When ``entity`` is None (the standard create path), a
         fresh Entity is created from the upstream payload. When
         ``entity`` is provided (the auto-reconnect path from Issue
         #281), the integration-owned fields on that entity are
@@ -41,14 +49,24 @@ class HbEntityFactory:
 
             # The fields below apply equally to fresh-create and
             # reconnect: integration_key, integration_payload, and the
-            # integration-managed access flags are all integration-owned
-            # and must reflect the current upstream state. The entity
-            # name and entity_type are intentionally left alone on the
-            # reconnect path (set above only for fresh-create).
+            # capability-determined access flags are all integration-
+            # owned and must reflect the current upstream state. The
+            # entity name and entity_type are intentionally left alone
+            # on the reconnect path (set above only for fresh-create).
             entity.integration_key = entity_integration_key
             entity.integration_payload = entity_payload
-            entity.can_user_delete = HbMetaData.allow_entity_deletion
-            entity.allow_internal_attributes = HbMetaData.allow_internal_attributes
+            if capability == IntegrationCapability.IMPORT:
+                # Import-mode: HI owns the entity; user can edit and
+                # delete freely after import.
+                entity.can_user_delete = True
+                entity.allow_internal_attributes = True
+                entity.data_source = EntityDataSource.INTERNAL
+            else:
+                # CONNECT-mode (and any other capability): HomeBox
+                # remains the source of truth.
+                entity.can_user_delete = HbMetaData.allow_entity_deletion
+                entity.allow_internal_attributes = HbMetaData.allow_internal_attributes
+                entity.data_source = EntityDataSource.EXTERNAL
             entity.save()
 
         return entity

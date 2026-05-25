@@ -1,7 +1,9 @@
-"""HomeBox attribute-population classmethods. Dormant — these are
-called only from the preserved attribute-sync helpers in
-hb_attribute_sync.py. #358's Importer will exercise them via the
-Importer protocol."""
+"""HomeBox attribute-population for the IMPORT capability.
+
+Exercised by ``HomeBoxImporter.run_import`` via
+``populate_attributes_for_imported_entity``. Creates user-owned
+(CUSTOM) EntityAttribute rows so the operator can freely edit the
+imported data after it lands in HI."""
 from typing import Dict, Optional
 import logging
 
@@ -10,6 +12,27 @@ from hi.apps.entity.models import Entity, EntityAttribute
 from hi.services.homebox.shared.hb_converter import HbConverter
 
 logger = logging.getLogger(__name__)
+
+
+def populate_attributes_for_imported_entity( entity : Entity, hb_item ) -> None:
+    """Create user-owned EntityAttribute rows from HomeBox fields and
+    attachments. Called once per item at import time inside the
+    entity's transaction."""
+    hb_field_list = HbConverter.hb_item_to_attribute_field_list( hb_item = hb_item )
+    for order_id, hb_field in enumerate( hb_field_list ):
+        HbImporter.create_attribute_from_hb_field(
+            entity = entity,
+            hb_field = hb_field,
+            order_id = order_id,
+        )
+    attachment_list = HbConverter.hb_item_to_attachment_field_list( hb_item = hb_item )
+    start_order = len( hb_field_list )
+    for order_id, hb_attachment in enumerate( attachment_list, start = start_order ):
+        HbImporter.create_attribute_from_hb_attachment(
+            entity = entity,
+            hb_attachment = hb_attachment,
+            order_id = order_id,
+        )
 
 
 class HbImporter:
