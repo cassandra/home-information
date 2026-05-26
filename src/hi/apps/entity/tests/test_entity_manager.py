@@ -154,18 +154,18 @@ class TestEntityManager(BaseTestCase):
         sorted_labels = sorted(group_labels)
         self.assertEqual(group_labels, sorted_labels)
         
-        # Find the lights/switches group and verify light entity exists in view
-        lights_group = None
+        # Find the automation group (where LIGHT lives) and verify
+        # the light entity is marked as existing in the view.
+        automation_group = None
         for group in group_list:
-            if group.entity_group_type == EntityGroupType.LIGHTS_SWITCHES:
-                lights_group = group
+            if group.entity_group_type == EntityGroupType.AUTOMATION:
+                automation_group = group
                 break
-        
-        self.assertIsNotNone(lights_group)
-        
-        # Find light entity in the group and verify it's marked as existing
+
+        self.assertIsNotNone(automation_group)
+
         light_item = None
-        for item in lights_group.item_list:
+        for item in automation_group.item_list:
             if item.entity == light_entity:
                 light_item = item
                 break

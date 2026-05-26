@@ -19,156 +19,308 @@ class TestEntityStateTypeDefaultRole(BaseTestCase):
         # KeyError at runtime; this test surfaces that at test time.
         for entity_state_type in EntityStateType:
             role = entity_state_type.default_role()
-            self.assertEqual( role.name, entity_state_type.name )
+            self.assertEqual(role.name, entity_state_type.name)
         return
 
 
-class TestEntityGroupType(BaseTestCase):
+class TestEntityGroupTypeAssignments(BaseTestCase):
+    """Pin a sample of EntityType → EntityGroupType assignments that
+    the rebalance settled on. These are the load-bearing cases —
+    things a user would obviously expect to find in a given bucket.
+    The full assignment table lives in the enum itself; the
+    coverage test below ensures no leaf type slips through."""
 
-    def test_entity_type_to_group_mapping_supports_logical_ui_organization(self):
-        """Test entity type to group mapping - organizes entities logically for user interface."""
-        # Test that common entity types map to expected functional groups
-        
-        # Lighting and electrical controls should group together
-        self.assertEqual(EntityGroupType.from_entity_type(EntityType.LIGHT),
-                         EntityGroupType.LIGHTS_SWITCHES)
-        self.assertEqual(EntityGroupType.from_entity_type(EntityType.ON_OFF_SWITCH),
-                         EntityGroupType.LIGHTS_SWITCHES)
-        self.assertEqual(EntityGroupType.from_entity_type(EntityType.ELECTRICAL_OUTLET),
-                         EntityGroupType.LIGHTS_SWITCHES)
-        
-        # Security devices should group together
-        self.assertEqual(EntityGroupType.from_entity_type(EntityType.CAMERA),
-                         EntityGroupType.SECURITY)
-        self.assertEqual(EntityGroupType.from_entity_type(EntityType.MOTION_SENSOR),
-                         EntityGroupType.SECURITY)
-        self.assertEqual(EntityGroupType.from_entity_type(EntityType.DOOR_LOCK),
-                         EntityGroupType.SECURITY)
-        
-        # Appliances should group together
-        self.assertEqual(EntityGroupType.from_entity_type(EntityType.REFRIGERATOR),
-                         EntityGroupType.APPLIANCES)
-        self.assertEqual(EntityGroupType.from_entity_type(EntityType.DISHWASHER),
-                         EntityGroupType.APPLIANCES)
-        self.assertEqual(EntityGroupType.from_entity_type(EntityType.CLOTHES_WASHER),
-                         EntityGroupType.APPLIANCES)
-        
-        # Climate control devices should group together
-        self.assertEqual(EntityGroupType.from_entity_type(EntityType.THERMOSTAT),
-                         EntityGroupType.CLIMATE)
-        self.assertEqual(EntityGroupType.from_entity_type(EntityType.HVAC_FURNACE),
-                         EntityGroupType.CLIMATE)
-        self.assertEqual(EntityGroupType.from_entity_type(EntityType.HUMIDIFIER),
-                         EntityGroupType.CLIMATE)
-        
-        # Test fallback behavior for unmapped types
-        self.assertEqual(EntityGroupType.from_entity_type(EntityType.OTHER),
-                         EntityGroupType.OTHER)
-        
-        return
+    def test_automation_subsumes_lights_outlets_switches_and_actuators(self):
+        for et in (
+                EntityType.LIGHT,
+                EntityType.ELECTRICAL_OUTLET,
+                EntityType.ON_OFF_SWITCH,
+                EntityType.WALL_SWITCH,
+                EntityType.OPEN_CLOSE_ACTUATOR,
+                EntityType.GARAGE_DOOR_OPENER,
+                EntityType.DOOR_LOCK,
+                EntityType.CONTROLLER,
+                EntityType.IRRIGATION_CONTROLLER):
+            self.assertEqual(
+                EntityGroupType.from_entity_type(et),
+                EntityGroupType.AUTOMATION,
+                msg=f'{et.name} expected in AUTOMATION',
+            )
 
-    def test_entity_group_sets_provide_comprehensive_categorization(self):
-        """Test entity type set coverage - ensures all important device types are properly categorized."""
-        # Test that major appliance categories are well-represented
-        appliances = EntityGroupType.APPLIANCES
-        expected_appliances = [
-            EntityType.REFRIGERATOR,
-            EntityType.DISHWASHER, 
-            EntityType.CLOTHES_WASHER,
-            EntityType.CLOTHES_DRYER,
-            EntityType.MICROWAVE_OVEN,
-            EntityType.WATER_HEATER
-        ]
-        
-        for appliance_type in expected_appliances:
-            self.assertIn(appliance_type, appliances.entity_type_set,
-                          f"{appliance_type} should be in APPLIANCES group")
-        
-        # Test that security devices are comprehensively covered
-        security = EntityGroupType.SECURITY
-        expected_security = [
-            EntityType.CAMERA,
-            EntityType.MOTION_SENSOR,
-            EntityType.DOOR_LOCK,
-            EntityType.PRESENCE_SENSOR,
-            EntityType.OPEN_CLOSE_SENSOR
-        ]
-        
-        for security_type in expected_security:
-            self.assertIn(security_type, security.entity_type_set,
-                          f"{security_type} should be in SECURITY group")
-        
-        # Test that climate control devices are well-categorized
-        climate = EntityGroupType.CLIMATE
-        expected_climate = [
-            EntityType.THERMOSTAT,
-            EntityType.HVAC_FURNACE,
-            EntityType.HVAC_AIR_HANDLER,
-            EntityType.HUMIDIFIER,
-            EntityType.THERMOMETER
-        ]
-        
-        for climate_type in expected_climate:
-            self.assertIn(climate_type, climate.entity_type_set,
-                          f"{climate_type} should be in CLIMATE group")
-        
-        # Test that no entity type appears in multiple groups (mutual exclusivity)
-        all_groups = list(EntityGroupType)
-        all_entity_types_in_groups = set()
-        
-        for group in all_groups:
-            # Check for overlaps
-            overlap = all_entity_types_in_groups.intersection(group.entity_type_set)
-            self.assertEqual(len(overlap), 0,
-                             f"Group {group} has overlapping entity types: {overlap}")
-            all_entity_types_in_groups.update(group.entity_type_set)
-        
-        return
+    def test_security_carries_alarm_sensors(self):
+        for et in (
+                EntityType.CAMERA,
+                EntityType.MOTION_SENSOR,
+                EntityType.OPEN_CLOSE_SENSOR,
+                EntityType.SMOKE_DETECTOR,
+                EntityType.CARBON_MONOXIDE_DETECTOR,
+                EntityType.GAS_DETECTOR,
+                EntityType.LEAK_SENSOR,
+                EntityType.RADON_DETECTOR):
+            self.assertEqual(
+                EntityGroupType.from_entity_type(et),
+                EntityGroupType.SECURITY,
+                msg=f'{et.name} expected in SECURITY',
+            )
 
-    def test_entity_group_fallback_logic_handles_unmapped_types(self):
-        """Test entity group fallback behavior - provides sensible defaults for edge cases."""
-        # Test that unknown entity types fall back to OTHER group
-        other_group = EntityGroupType.from_entity_type(EntityType.OTHER)
-        self.assertEqual(other_group, EntityGroupType.OTHER)
-        
-        # Test that the OTHER group contains the OTHER entity type
-        self.assertIn(EntityType.OTHER, EntityGroupType.OTHER.entity_type_set)
-        
-        # Test that the default class method returns OTHER
-        default_group = EntityGroupType.default()
-        self.assertEqual(default_group, EntityGroupType.OTHER)
-        
-        # Test consistency between from_entity_type fallback and default
-        self.assertEqual(EntityGroupType.from_entity_type(EntityType.OTHER),
-                         EntityGroupType.default())
-        
-        return
+    def test_sensors_carries_measurement_devices(self):
+        # SENSORS is the new home for pure-measurement devices,
+        # distinct from SECURITY's "is something wrong?" sensors.
+        for et in (
+                EntityType.BAROMETER,
+                EntityType.THERMOMETER,
+                EntityType.HYGROMETER,
+                EntityType.LIGHT_SENSOR,
+                EntityType.TIME_SOURCE,
+                EntityType.WEATHER_STATION):
+            self.assertEqual(
+                EntityGroupType.from_entity_type(et),
+                EntityGroupType.SENSORS,
+                msg=f'{et.name} expected in SENSORS',
+            )
 
-    def test_entity_group_labels_support_user_friendly_display(self):
-        """Test entity group labels - provide meaningful names for UI display."""
-        # Test that all groups have meaningful labels
-        expected_labels = {
-            EntityGroupType.APPLIANCES: 'Appliances',
-            EntityGroupType.SECURITY: 'Security', 
-            EntityGroupType.CLIMATE: 'Climate',
-            EntityGroupType.LIGHTS_SWITCHES: 'Lights, Switches, Outlets',
-            EntityGroupType.COMPUTER_NETWORK: 'Computer/Network',
-            EntityGroupType.AUDIO_VISUAL: 'Audio/Visual'
-        }
-        
-        for group, expected_label in expected_labels.items():
-            self.assertEqual(group.label, expected_label,
-                             f"{group} should have label '{expected_label}'")
-        
-        # Test that all group labels are non-empty strings
+    def test_appliances_absorbs_hvac_and_water_treatment(self):
+        # HVAC and water-treatment appliances landed in APPLIANCES
+        # in the rebalance — the old CLIMATE bucket is gone.
+        for et in (
+                EntityType.REFRIGERATOR,
+                EntityType.FREEZER,
+                EntityType.DISHWASHER,
+                EntityType.WATER_HEATER,
+                EntityType.HVAC_FURNACE,
+                EntityType.HVAC_AIR_HANDLER,
+                EntityType.HVAC_CONDENSER,
+                EntityType.HVAC_MINI_SPLIT,
+                EntityType.THERMOSTAT,
+                EntityType.HUMIDIFIER,
+                EntityType.EXHAUST_FAN,
+                EntityType.WATER_FILTER,
+                EntityType.WATER_SOFTENER):
+            self.assertEqual(
+                EntityGroupType.from_entity_type(et),
+                EntityGroupType.APPLIANCES,
+                msg=f'{et.name} expected in APPLIANCES',
+            )
+
+    def test_pool_is_dedicated_bucket(self):
+        for et in (
+                EntityType.POOL_FILTER,
+                EntityType.POOL_HEATER,
+                EntityType.POOL_PUMP,
+                EntityType.POOL_SWG):
+            self.assertEqual(
+                EntityGroupType.from_entity_type(et),
+                EntityGroupType.POOL,
+                msg=f'{et.name} expected in POOL',
+            )
+
+    def test_electrical_carries_in_home_distribution(self):
+        # ELECTRICAL is the in-home electrical infrastructure;
+        # incoming-service meters live in UTILITIES.
+        for et in (
+                EntityType.ELECTRIC_PANEL,
+                EntityType.ELECTRIC_WIRE,
+                EntityType.CONTROL_WIRE,
+                EntityType.GENERATOR,
+                EntityType.UPS,
+                EntityType.INVERTER,
+                EntityType.BATTERY_STORAGE,
+                EntityType.SOLAR_PANEL,
+                EntityType.EV_CHARGER):
+            self.assertEqual(
+                EntityGroupType.from_entity_type(et),
+                EntityGroupType.ELECTRICAL,
+                msg=f'{et.name} expected in ELECTRICAL',
+            )
+
+    def test_utilities_carries_incoming_services(self):
+        # UTILITIES is the incoming-service side: meters, supply
+        # lines, telecom inflow. In-home electrical distribution
+        # lives in ELECTRICAL.
+        for et in (
+                EntityType.ELECTRICITY_METER,
+                EntityType.GAS_METER,
+                EntityType.WATER_METER,
+                EntityType.GAS_LINE,
+                EntityType.WATER_LINE,
+                EntityType.SEWER_LINE,
+                EntityType.WATER_SHUTOFF_VALVE,
+                EntityType.ANTENNA,
+                EntityType.SATELLITE_DISH):
+            self.assertEqual(
+                EntityGroupType.from_entity_type(et),
+                EntityGroupType.UTILITIES,
+                msg=f'{et.name} expected in UTILITIES',
+            )
+
+    def test_tools_carries_yard_and_hand_tools(self):
+        for et in (
+                EntityType.TOOL,
+                EntityType.HEDGE_TRIMMER,
+                EntityType.LAWN_MOWER,
+                EntityType.LEAF_BLOWER,
+                EntityType.POWER_WASHER,
+                EntityType.TRIMMER):
+            self.assertEqual(
+                EntityGroupType.from_entity_type(et),
+                EntityGroupType.TOOLS,
+                msg=f'{et.name} expected in TOOLS',
+            )
+
+    def test_outdoors_carries_vegetation_fencing_and_irrigation(self):
+        # OUTDOORS no longer holds outdoor power tools (they
+        # moved to TOOLS) or pool equipment (POOL). Vegetation +
+        # fencing + irrigation hardware remain.
+        for et in (
+                EntityType.PLANT,
+                EntityType.TREE,
+                EntityType.FENCE,
+                EntityType.GREENHOUSE,
+                EntityType.SPRINKLER_HEAD,
+                EntityType.SPRINKLER_VALVE,
+                EntityType.SPRINKLER_WIRE):
+            self.assertEqual(
+                EntityGroupType.from_entity_type(et),
+                EntityGroupType.OUTDOORS,
+                msg=f'{et.name} expected in OUTDOORS',
+            )
+
+    def test_structural_carries_doors_windows_and_walls(self):
+        # The garage split: GARAGE_DOOR is structural; the
+        # opener is in AUTOMATION.
+        for et in (
+                EntityType.DOOR,
+                EntityType.GARAGE_DOOR,
+                EntityType.WINDOW,
+                EntityType.SKYLIGHT,
+                EntityType.ATTIC_STAIRS,
+                EntityType.WALL,
+                EntityType.FIREPLACE):
+            self.assertEqual(
+                EntityGroupType.from_entity_type(et),
+                EntityGroupType.STRUCTURAL,
+                msg=f'{et.name} expected in STRUCTURAL',
+            )
+
+    def test_general_catches_singletons_and_orphan_machinery(self):
+        # GENERAL replaces the old AREAS / AUTO / CONSUMABLES
+        # singletons and absorbs generic pumps/motors that
+        # don't fit a domain bucket.
+        for et in (
+                EntityType.AREA,
+                EntityType.AUTOMOBILE,
+                EntityType.CONSUMABLE,
+                EntityType.PUMP,
+                EntityType.MOTOR,
+                EntityType.SUMP_PUMP):
+            self.assertEqual(
+                EntityGroupType.from_entity_type(et),
+                EntityGroupType.GENERAL,
+                msg=f'{et.name} expected in GENERAL',
+            )
+
+
+class TestEntityGroupTypeInvariants(BaseTestCase):
+    """Structural invariants that must hold across any future
+    bucket rebalance."""
+
+    def test_every_entity_type_is_assigned_to_exactly_one_bucket(self):
+        """Full-coverage contract: every ``EntityType`` other than
+        ``EntityType.OTHER`` lives in exactly one non-``OTHER``
+        ``EntityGroupType``.
+
+        This pins the no-silent-fallback contract. Adding a new
+        EntityType without assigning it to a bucket would silently
+        route it to OTHER under ``from_entity_type``; this test
+        forces the author to make an explicit assignment."""
+        mapped: dict = {}
+        for group in EntityGroupType:
+            for entity_type in group.entity_type_set:
+                self.assertNotIn(
+                    entity_type, mapped,
+                    msg=(
+                        f'{entity_type.name} is in both '
+                        f'{mapped.get(entity_type)} and {group.name} '
+                        f'— buckets must be mutually exclusive'
+                    ),
+                )
+                mapped[entity_type] = group.name
+
+        for entity_type in EntityType:
+            self.assertIn(
+                entity_type, mapped,
+                msg=(
+                    f'{entity_type.name} is not assigned to any '
+                    f'EntityGroupType — every leaf type must have '
+                    f'an explicit bucket (no silent OTHER fallback)'
+                ),
+            )
+
+            assigned_bucket = mapped[entity_type]
+            if entity_type is EntityType.OTHER:
+                self.assertEqual(
+                    assigned_bucket, EntityGroupType.OTHER.name,
+                    msg='EntityType.OTHER must live in EntityGroupType.OTHER',
+                )
+            else:
+                self.assertNotEqual(
+                    assigned_bucket, EntityGroupType.OTHER.name,
+                    msg=(
+                        f'{entity_type.name} was assigned to OTHER; the '
+                        f'OTHER bucket is reserved for EntityType.OTHER '
+                        f'only. Use GENERAL for known-but-uncategorizable '
+                        f'types.'
+                    ),
+                )
+
+    def test_from_entity_type_resolves_consistently_with_membership(self):
+        # The lookup function must agree with the entity_type_set
+        # data — they're two views of the same fact.
+        for group in EntityGroupType:
+            for entity_type in group.entity_type_set:
+                self.assertEqual(
+                    EntityGroupType.from_entity_type(entity_type),
+                    group,
+                )
+
+    def test_default_returns_other(self):
+        self.assertEqual(EntityGroupType.default(), EntityGroupType.OTHER)
+
+
+class TestEntityGroupTypeLabels(BaseTestCase):
+    """Pin the user-facing label contract."""
+
+    def test_all_labels_are_non_empty_strings(self):
         for group in EntityGroupType:
             self.assertIsInstance(group.label, str)
             self.assertGreater(len(group.label), 0)
-            
-        # Test that labels are unique (no duplicates)
-        all_labels = [group.label for group in EntityGroupType]
-        unique_labels = set(all_labels)
-        self.assertEqual(len(all_labels), len(unique_labels),
-                         "All group labels should be unique")
-        
-        return
+
+    def test_all_labels_are_unique(self):
+        labels = [group.label for group in EntityGroupType]
+        self.assertEqual(
+            len(labels), len(set(labels)),
+            msg='EntityGroupType labels must be unique for stable UI sort',
+        )
+
+    def test_specific_labels(self):
+        # Pin the new bucket names so a rename surfaces here
+        # rather than silently in the UI.
+        expected = {
+            EntityGroupType.APPLIANCES: 'Appliances',
+            EntityGroupType.AUDIO_VISUAL: 'Audio/Visual',
+            EntityGroupType.AUTOMATION: 'Automation',
+            EntityGroupType.COMPUTERS: 'Computers',
+            EntityGroupType.ELECTRICAL: 'Electrical',
+            EntityGroupType.FIXTURES: 'Fixtures',
+            EntityGroupType.GENERAL: 'General',
+            EntityGroupType.OTHER: 'Other',
+            EntityGroupType.OUTDOORS: 'Outdoors',
+            EntityGroupType.POOL: 'Pool',
+            EntityGroupType.SECURITY: 'Security',
+            EntityGroupType.SENSORS: 'Sensors',
+            EntityGroupType.STRUCTURAL: 'Structural',
+            EntityGroupType.TOOLS: 'Tools',
+            EntityGroupType.UTILITIES: 'Utilities',
+        }
+        for group, label in expected.items():
+            self.assertEqual(group.label, label)

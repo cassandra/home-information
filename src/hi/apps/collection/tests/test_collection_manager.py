@@ -71,18 +71,18 @@ class TestCollectionManagerIntegration(BaseTestCase):
         # Should have groups for each entity type present in system
         group_types = {group.entity_group_type for group in groups}
         self.assertIn(EntityGroupType.SECURITY, group_types)  # Contains cameras
-        self.assertIn(EntityGroupType.LIGHTS_SWITCHES, group_types)  # Contains lights
-        
+        self.assertIn(EntityGroupType.AUTOMATION, group_types)  # Contains lights
+
         # Find security group (contains cameras) and verify contents
         camera_group = next(g for g in groups if g.entity_group_type == EntityGroupType.SECURITY)
         camera_items = {item.entity.name: item.exists_in_collection for item in camera_group.item_list}
-        
+
         self.assertEqual(len(camera_items), 2)
         self.assertTrue(camera_items['Front Camera'])  # In collection
         self.assertFalse(camera_items['Back Camera'])  # Not in collection
-        
-        # Find light group and verify contents
-        light_group = next(g for g in groups if g.entity_group_type == EntityGroupType.LIGHTS_SWITCHES)
+
+        # Find automation group (light lives here post-rebalance) and verify contents
+        light_group = next(g for g in groups if g.entity_group_type == EntityGroupType.AUTOMATION)
         self.assertEqual(len(light_group.item_list), 1)
         self.assertTrue(light_group.item_list[0].exists_in_collection)
         
