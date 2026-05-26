@@ -58,7 +58,7 @@ For the existing palette of `StatusStyle` instances and the status-value vocabul
 
 ### 3. Assign the type to an `EntityGroupType` bucket
 
-Every new `EntityType` must be added to exactly one `EntityGroupType.entity_type_set` in [`src/hi/apps/entity/enums.py`](../../../src/hi/apps/entity/enums.py). The buckets organize the entity-editing and collection-editing UI group lists and serve as the default grouping dimension on the integration placement modal — a type with no explicit assignment is invisible in those surfaces (it falls into `OTHER`, which is reserved for `EntityType.OTHER`).
+Every new `EntityType` must be added to exactly one `EntityGroupType.entity_type_set` in [`src/hi/apps/entity/enums.py`](../../../src/hi/apps/entity/enums.py). The buckets organize the entity-editing and collection-editing UI group lists and serve as the default grouping dimension on the integration placement modal — a type with no explicit assignment silently falls into `GENERAL`. Pick the most natural domain bucket (`AUTOMATION`, `SECURITY`, `APPLIANCES`, etc.); reserve `GENERAL` for types that genuinely don't fit a domain.
 
 ## Visual asset guidelines
 

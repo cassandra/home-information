@@ -114,9 +114,11 @@ class TestEntityGroupTypeAssignments(BaseTestCase):
                 msg=f'{et.name} expected in POOL',
             )
 
-    def test_electrical_carries_in_home_distribution(self):
+    def test_electrical_carries_in_home_distribution_and_motors(self):
         # ELECTRICAL is the in-home electrical infrastructure;
-        # incoming-service meters live in UTILITIES.
+        # incoming-service meters live in UTILITIES. Pumps and
+        # motors live here because they're driven electrically and
+        # don't fit a domain-specific bucket like POOL.
         for et in (
                 EntityType.ELECTRIC_PANEL,
                 EntityType.ELECTRIC_WIRE,
@@ -126,7 +128,10 @@ class TestEntityGroupTypeAssignments(BaseTestCase):
                 EntityType.INVERTER,
                 EntityType.BATTERY_STORAGE,
                 EntityType.SOLAR_PANEL,
-                EntityType.EV_CHARGER):
+                EntityType.EV_CHARGER,
+                EntityType.MOTOR,
+                EntityType.PUMP,
+                EntityType.SUMP_PUMP):
             self.assertEqual(
                 EntityGroupType.from_entity_type(et),
                 EntityGroupType.ELECTRICAL,
@@ -185,10 +190,12 @@ class TestEntityGroupTypeAssignments(BaseTestCase):
                 msg=f'{et.name} expected in OUTDOORS',
             )
 
-    def test_structural_carries_doors_windows_and_walls(self):
-        # The garage split: GARAGE_DOOR is structural; the
-        # opener is in AUTOMATION.
+    def test_structural_carries_built_in_structure(self):
+        # The garage split: GARAGE_DOOR is structural; the opener
+        # is in AUTOMATION. AREA lives here because an "area" in
+        # HI is a spatial region of the home — structural by nature.
         for et in (
+                EntityType.AREA,
                 EntityType.DOOR,
                 EntityType.GARAGE_DOOR,
                 EntityType.WINDOW,
@@ -202,17 +209,14 @@ class TestEntityGroupTypeAssignments(BaseTestCase):
                 msg=f'{et.name} expected in STRUCTURAL',
             )
 
-    def test_general_catches_singletons_and_orphan_machinery(self):
-        # GENERAL replaces the old AREAS / AUTO / CONSUMABLES
-        # singletons and absorbs generic pumps/motors that
-        # don't fit a domain bucket.
+    def test_general_is_the_named_catchall(self):
+        # GENERAL is the named catchall — every EntityType is
+        # explicitly assigned, so there's no silent fallback
+        # bucket. EntityType.OTHER lives here too.
         for et in (
-                EntityType.AREA,
                 EntityType.AUTOMOBILE,
                 EntityType.CONSUMABLE,
-                EntityType.PUMP,
-                EntityType.MOTOR,
-                EntityType.SUMP_PUMP):
+                EntityType.OTHER):
             self.assertEqual(
                 EntityGroupType.from_entity_type(et),
                 EntityGroupType.GENERAL,
@@ -225,13 +229,12 @@ class TestEntityGroupTypeInvariants(BaseTestCase):
     bucket rebalance."""
 
     def test_every_entity_type_is_assigned_to_exactly_one_bucket(self):
-        """Full-coverage contract: every ``EntityType`` other than
-        ``EntityType.OTHER`` lives in exactly one non-``OTHER``
-        ``EntityGroupType``.
+        """Full-coverage contract: every ``EntityType`` is assigned
+        to exactly one ``EntityGroupType`` bucket.
 
-        This pins the no-silent-fallback contract. Adding a new
+        Pins the no-silent-fallback contract. Adding a new
         EntityType without assigning it to a bucket would silently
-        route it to OTHER under ``from_entity_type``; this test
+        route it to ``GENERAL`` via ``cls.default()``; this test
         forces the author to make an explicit assignment."""
         mapped: dict = {}
         for group in EntityGroupType:
@@ -252,26 +255,9 @@ class TestEntityGroupTypeInvariants(BaseTestCase):
                 msg=(
                     f'{entity_type.name} is not assigned to any '
                     f'EntityGroupType — every leaf type must have '
-                    f'an explicit bucket (no silent OTHER fallback)'
+                    f'an explicit bucket (no silent GENERAL fallback)'
                 ),
             )
-
-            assigned_bucket = mapped[entity_type]
-            if entity_type is EntityType.OTHER:
-                self.assertEqual(
-                    assigned_bucket, EntityGroupType.OTHER.name,
-                    msg='EntityType.OTHER must live in EntityGroupType.OTHER',
-                )
-            else:
-                self.assertNotEqual(
-                    assigned_bucket, EntityGroupType.OTHER.name,
-                    msg=(
-                        f'{entity_type.name} was assigned to OTHER; the '
-                        f'OTHER bucket is reserved for EntityType.OTHER '
-                        f'only. Use GENERAL for known-but-uncategorizable '
-                        f'types.'
-                    ),
-                )
 
     def test_from_entity_type_resolves_consistently_with_membership(self):
         # The lookup function must agree with the entity_type_set
@@ -283,8 +269,8 @@ class TestEntityGroupTypeInvariants(BaseTestCase):
                     group,
                 )
 
-    def test_default_returns_other(self):
-        self.assertEqual(EntityGroupType.default(), EntityGroupType.OTHER)
+    def test_default_returns_general(self):
+        self.assertEqual(EntityGroupType.default(), EntityGroupType.GENERAL)
 
 
 class TestEntityGroupTypeLabels(BaseTestCase):
@@ -313,7 +299,6 @@ class TestEntityGroupTypeLabels(BaseTestCase):
             EntityGroupType.ELECTRICAL: 'Electrical',
             EntityGroupType.FIXTURES: 'Fixtures',
             EntityGroupType.GENERAL: 'General',
-            EntityGroupType.OTHER: 'Other',
             EntityGroupType.OUTDOORS: 'Outdoors',
             EntityGroupType.POOL: 'Pool',
             EntityGroupType.SECURITY: 'Security',

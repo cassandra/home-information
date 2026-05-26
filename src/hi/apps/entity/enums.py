@@ -564,18 +564,17 @@ class VideoStreamType(LabeledEnum):
 
 
 class EntityGroupType(LabeledEnum):
-    """Rollup of leaf ``EntityType`` values into ~15 broader buckets
-    that match how a homeowner organizes their LocationView floor
-    plans and CollectionViews. Surfaced in the entity-editing and
+    """Rollup of leaf ``EntityType`` values into broader buckets that
+    match how a homeowner organizes their LocationView floor plans
+    and CollectionViews. Surfaced in the entity-editing and
     collection-editing group lists, and used as the default
     grouping dimension by integration placement modals.
 
     Bucket-assignment invariants pinned by ``test_enums.py``:
-      - Every ``EntityType`` other than ``EntityType.OTHER`` lives
-        in exactly one non-``OTHER`` bucket (no silent fallbacks).
-      - ``EntityGroupType.OTHER`` is reserved for ``EntityType.OTHER``.
-      - ``GENERAL`` is the named catchall for known-but-uncategorizable
-        types — distinct from the silent ``OTHER`` fallback."""
+      - Every ``EntityType`` is explicitly assigned to exactly one
+        bucket — no silent fallbacks.
+      - ``GENERAL`` is the catchall for types that don't fit a
+        domain bucket; ``EntityType.OTHER`` lives there too."""
 
     APPLIANCES = ( 'Appliances', '', {
         EntityType.APPLIANCE,
@@ -639,7 +638,10 @@ class EntityGroupType(LabeledEnum):
         EntityType.EV_CHARGER,
         EntityType.GENERATOR,
         EntityType.INVERTER,
+        EntityType.MOTOR,
+        EntityType.PUMP,
         EntityType.SOLAR_PANEL,
+        EntityType.SUMP_PUMP,
         EntityType.UPS,
     })
     FIXTURES = ( 'Fixtures', '', {
@@ -652,12 +654,9 @@ class EntityGroupType(LabeledEnum):
         EntityType.VANITY,
     })
     GENERAL = ( 'General', '', {
-        EntityType.AREA,
         EntityType.AUTOMOBILE,
         EntityType.CONSUMABLE,
-        EntityType.MOTOR,
-        EntityType.PUMP,
-        EntityType.SUMP_PUMP,
+        EntityType.OTHER,
     })
     OUTDOORS = ( 'Outdoors', '', {
         EntityType.FENCE,
@@ -696,6 +695,7 @@ class EntityGroupType(LabeledEnum):
         EntityType.WEATHER_STATION,
     })
     STRUCTURAL = ( 'Structural', '', {
+        EntityType.AREA,
         EntityType.ATTIC_STAIRS,
         EntityType.DOOR,
         EntityType.FIREPLACE,
@@ -727,9 +727,6 @@ class EntityGroupType(LabeledEnum):
         EntityType.WATER_METER,
         EntityType.WATER_SHUTOFF_VALVE,
     })
-    OTHER = ( 'Other', '', {
-        EntityType.OTHER,
-    })
     
     def __init__( self,
                   label             : str,
@@ -741,8 +738,8 @@ class EntityGroupType(LabeledEnum):
 
     @classmethod
     def default(cls):
-        return cls.OTHER
- 
+        return cls.GENERAL
+
     @classmethod
     def from_entity_type( cls, entity_type : EntityType ):
         for entity_group_type in cls:
