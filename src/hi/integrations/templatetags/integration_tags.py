@@ -1,6 +1,7 @@
 import logging
 from django import template
 
+from hi.integrations.enums import IntegrationCapability
 from hi.integrations.models import IntegrationDetailsModel
 from hi.integrations.integration_manager import IntegrationManager
 
@@ -63,6 +64,17 @@ def previous_integration_logo_path( model : IntegrationDetailsModel ) -> str:
     alongside the same logo the integration uses when active."""
     metadata = _get_previous_integration_metadata( model )
     return metadata.logo_static_path if metadata else ''
+
+
+@register.simple_tag
+def has_attribute_referencers() -> bool:
+    """True iff at least one currently-enabled integration advertises
+    the ATTRIBUTE_REFERENCE capability. Used by Entity/Location edit
+    surfaces to decide whether to show the "LINK" action-bar button."""
+    return bool( IntegrationManager().get_integration_data_list(
+        enabled_only = True,
+        capabilities = frozenset({ IntegrationCapability.ATTRIBUTE_REFERENCE }),
+    ) )
 
 
 @register.inclusion_tag( 'integrations/connector/panes/integration_health_banner.html' )

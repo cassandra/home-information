@@ -1,0 +1,47 @@
+{% extends "modals/action_with_cancel.html" %}
+{% load icons %}
+
+{% comment %}
+ATTRIBUTE_REFERENCE picker modal.
+
+Operator workflow:
+  - Search the integration's corpus from the search input.
+  - Tick result cards to add them to the running selection set;
+    selections persist across re-searches via ``selections_json``.
+  - Click an existing selection's × to remove it.
+  - Click "Add N References" to attach as TEXT attributes on the
+    host Entity / Location; the page refreshes on success.
+
+Antinode flow:
+  - Form posts to the same picker URL.
+  - ``data-async="#{body_html_id}"`` + ``data-mode="replace"`` swaps
+    just the body partial on search submits.
+  - ``data-stay-in-modal="true"`` keeps the modal open during the
+    swap.
+  - ``action=attach`` submissions return ``antinode.refresh_response()``
+    which reloads the parent page (modal naturally closes).
+
+Context:
+  integration_data    : IntegrationData
+  item_type_value     : str(ItemType.ENTITY) or str(ItemType.LOCATION)
+  item_id             : int (host record id)
+  query, limit, selections, results, selected_urls, body_html_id, ...
+  WireField           : form-field-name constants
+{% endcomment %}
+
+{% block title_text %}
+{% if integration_data_list|length > 1 %}Link References{% else %}Add from {{ integration_data.label }}{% endif %}
+{% endblock %}
+
+{% block body %}
+{% include "integrations/referencer/picker_body.html" %}
+{% endblock %}
+
+{% block action_right %}
+{% comment %}
+The single primary action lives inside the form (see picker_body.html)
+so it carries the form state on submit. Use the footer's cancel
+button alone here; the form's attach button substitutes for the
+usual modal-footer primary action.
+{% endcomment %}
+{% endblock %}

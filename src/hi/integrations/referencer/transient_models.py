@@ -30,23 +30,28 @@ class AttributeReferenceResult:
 
 
 class WireField:
-    """Request and response field names for the picker's REST
-    endpoints. Centralized so the wire-shape is grep-able from one
-    place and the search + attach views can't drift apart on
-    field names. Any rename here is a breaking change for the
-    picker JS."""
-    # Search request
-    QUERY            = 'query'
-    LIMIT            = 'limit'
-    # Attach request
+    """Form field names exchanged between the picker template and
+    the picker view. Centralized so template + view can't drift
+    on field names. Any rename here is a breaking change for the
+    picker template."""
+    # Routing fields (carried in GET query / POST body)
     ITEM_TYPE        = 'item_type'
     ITEM_ID          = 'item_id'
-    SELECTIONS       = 'selections'
+    # Which referencer integration drives the current search.
+    # Hidden input on POST; defaults to the first configured
+    # integration on initial GET.
+    INTEGRATION_ID   = 'integration_id'
+    # Search controls
+    QUERY            = 'query'
+    LIMIT            = 'limit'
+    # Action discriminator (submit-button ``name=action`` values)
+    ACTION           = 'action'
+    ACTION_ATTACH    = 'attach'
+    # Multi-select state
+    SELECTIONS_JSON  = 'selections_json'   # canonical list, hidden input
+    VISIBLE_URL      = 'visible_url'       # hidden input per visible result
+    RESULT_URL       = 'result_url'        # checkbox value per visible result
+    REMOVE_URL       = 'remove_url'        # chip-X button value
+    # Per-selection record keys (inside SELECTIONS_JSON)
     SELECTION_TITLE  = 'title'
     SELECTION_URL    = 'source_url'
-    # Search response
-    RESULTS          = 'results'
-    ERROR            = 'error'
-    # Attach response
-    CREATED_COUNT    = 'created_count'
-    CREATED_IDS      = 'created_attribute_ids'
