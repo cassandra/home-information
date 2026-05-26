@@ -1,0 +1,101 @@
+{% comment %}
+  Operator-tuned knobs for the paperless-ngx simulator's parametric
+  search response. Each control submits the form on change (no
+  submit button) so toggles take effect immediately, in the same
+  style as the HomeBox API-version pane.
+
+  Antinode: the form posts back to itself via data-async and the
+  view returns the same template fragment, so the pane swaps in
+  place with no page reload.
+
+  Context:
+    settings              : PaperlessSimSettings
+    result_count_choices  : tuple[int]
+    mime_mix_choices      : list[MimeMix]
+{% endcomment %}
+<form id="hi-paperless-settings-form"
+      method="post"
+      action="{% url 'paperless_settings_set' %}"
+      class="mb-3"
+      data-async data-mode="replace">
+  {% csrf_token %}
+
+  <div class="form-row align-items-end">
+
+    <div class="form-group col-auto">
+      <label for="hi-paperless-result-count" class="small text-muted mb-1">
+        Result count
+      </label>
+      <select id="hi-paperless-result-count"
+              name="result_count"
+              class="form-control form-control-sm"
+              onchange="this.form.requestSubmit ? this.form.requestSubmit() : this.form.submit()">
+        {% for choice in result_count_choices %}
+        <option value="{{ choice }}"
+                {% if choice == settings.result_count %}selected{% endif %}>
+          {{ choice }}
+        </option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <div class="form-group col-auto">
+      <label for="hi-paperless-mime-mix" class="small text-muted mb-1">
+        Mime mix
+      </label>
+      <select id="hi-paperless-mime-mix"
+              name="mime_mix"
+              class="form-control form-control-sm"
+              onchange="this.form.requestSubmit ? this.form.requestSubmit() : this.form.submit()">
+        {% for choice in mime_mix_choices %}
+        <option value="{{ choice.name }}"
+                {% if choice == settings.mime_mix %}selected{% endif %}>
+          {{ choice.label }}
+        </option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <div class="form-group col-auto">
+      <label for="hi-paperless-latency" class="small text-muted mb-1">
+        Latency (ms)
+      </label>
+      <input type="number"
+             id="hi-paperless-latency"
+             name="latency_ms"
+             value="{{ settings.latency_ms }}"
+             min="0" max="10000" step="50"
+             class="form-control form-control-sm"
+             style="width: 8em;"
+             onchange="this.form.requestSubmit ? this.form.requestSubmit() : this.form.submit()">
+    </div>
+
+    <div class="form-group col-auto mb-0">
+      <div class="form-check">
+        <input type="checkbox"
+               id="hi-paperless-thumbnails"
+               name="thumbnails"
+               value="on"
+               class="form-check-input"
+               {% if settings.thumbnails %}checked{% endif %}
+               onchange="this.form.requestSubmit ? this.form.requestSubmit() : this.form.submit()">
+        <label class="form-check-label small" for="hi-paperless-thumbnails">
+          Thumbnails
+        </label>
+      </div>
+      <div class="form-check">
+        <input type="checkbox"
+               id="hi-paperless-snippets"
+               name="snippets"
+               value="on"
+               class="form-check-input"
+               {% if settings.snippets %}checked{% endif %}
+               onchange="this.form.requestSubmit ? this.form.requestSubmit() : this.form.submit()">
+        <label class="form-check-label small" for="hi-paperless-snippets">
+          Snippets
+        </label>
+      </div>
+    </div>
+
+  </div>
+</form>

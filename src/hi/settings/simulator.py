@@ -21,6 +21,7 @@ INSTALLED_APPS = [
     'hi.simulator.services.frigate',
     'hi.simulator.services.hass',
     'hi.simulator.services.homebox',
+    'hi.simulator.services.paperless',
     'hi.simulator.services.zoneminder',
     'hi.simulator.weather_sources.nws',
 ]

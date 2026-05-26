@@ -3,7 +3,19 @@
 {% block main_attrs %} data-states-url="{% url 'simulator_api_states' %}"{% endblock %}
 
 {% block tab_body %}
+{% comment %}
+Simulators with no SimEntity definitions are ephemeral — they can't
+have entities, so profile CRUD (which only varies entity persistence),
+the ADD ENTITY menu (which would be empty), and the entity list (plus
+its "no entities defined" empty-state) are all gated on
+``sim_entity_definition_list``. Connect-shaped simulators with zero
+*current* entities still have definitions, so the {% empty %} alert
+still fires for them — empty is a valid Connect test scenario.
+
+Integration URLs and the fault-mode form remain unconditional.
+{% endcomment %}
 <div class="d-flex align-items-center justify-content-between mb-2">
+  {% if simulator.sim_entity_definition_list %}
   {% include "profile/panes/profile_selector.html" with module=module profile_list=profile_list current_profile=current_profile %}
 
   <div class="dropdown">
@@ -26,6 +38,7 @@
       {% endfor %}
     </div>
   </div>
+  {% endif %}
 
   {% if simulator.integration_urls %}
   <div class="text-muted small mx-3 flex-grow-1 text-center">
@@ -45,9 +58,11 @@
 {% include simulator.extras_template_name %}
 {% endif %}
 
+{% if simulator.sim_entity_definition_list %}
 {% for sim_entity in simulator.sim_entities %}
 {% include "services/panes/sim_entity.html" with simulator=simulator sim_entity=sim_entity %}
 {% empty %}
 <div class="alert alert-info">No {{ simulator.label }} simulator entities defined.</div>
 {% endfor %}
+{% endif %}
 {% endblock %}
