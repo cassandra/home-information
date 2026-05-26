@@ -3,6 +3,8 @@
 import logging
 from typing import Dict, Optional
 
+from requests import HTTPError
+
 from hi.apps.system.enums import HealthStatusType
 from hi.integrations.exceptions import IntegrationAttributeError
 from hi.integrations.models import IntegrationAttribute
@@ -10,6 +12,12 @@ from hi.integrations.transient_models import IntegrationKey, IntegrationValidati
 
 from hi.services.homebox.enums import HbAttributeType
 from .hb_client import HbClient
+from .hb_client_backends import (
+    API_VERSION,
+    _HbBackend,
+    _HbEntitiesBackend,
+    _HbLegacyBackend,
+)
 from hi.services.homebox.hb_metadata import HbMetaData
 
 logger = logging.getLogger(__name__)
@@ -66,6 +74,43 @@ class HbClientFactory:
             api_options[options_key] = hb_attr.value
 
         return HbClient(api_options=api_options, timeout_secs=timeout_secs)
+
+    @staticmethod
+    def resolve_backend(
+            api_options: Dict[str, str],
+            timeout_secs: Optional[float] = None,
+    ) -> _HbBackend:
+        """Probe the configured HomeBox install and return the
+        right backend. ``GET /v1/entities?pageSize=1`` is the
+        discriminator: 2xx means the entity-merge endpoints are
+        live (v0.26+), 404 means we're on the legacy items API
+        (v0.25 and earlier). Other errors propagate so the caller
+        can record an error state and retry on the next reload.
+
+        The probe runs against a temporary legacy backend; its
+        session (now authenticated) is handed to the chosen
+        backend so the picker doesn't double-login.
+        """
+        probe = _HbLegacyBackend(
+            api_options=api_options,
+            timeout_secs=timeout_secs,
+        )
+        probe_url = f'{probe.api_url}/{API_VERSION}/entities'
+        try:
+            probe._make_request( 'GET', probe_url, params={ 'pageSize': 1 } )
+        except HTTPError as e:
+            response = getattr( e, 'response', None )
+            if response is not None and response.status_code == 404:
+                logger.debug(
+                    'HomeBox /v1/entities probe returned 404 — '
+                    'using legacy /v1/items backend.'
+                )
+                return probe
+            raise
+        logger.debug(
+            'HomeBox /v1/entities probe succeeded — using entities backend.'
+        )
+        return _HbEntitiesBackend._share_transport( probe )
 
     def test_client(self, client: HbClient) -> IntegrationValidationResult:
         """

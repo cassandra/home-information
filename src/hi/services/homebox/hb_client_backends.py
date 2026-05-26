@@ -64,6 +64,21 @@ class _HbBackendBase:
     and response normalization are the subclass's concern.
     """
 
+    @classmethod
+    def _share_transport(cls, source: '_HbBackendBase') -> '_HbBackendBase':
+        """Construct an instance reusing another backend's
+        session, credentials, and auth state. Used by the factory
+        version probe so the chosen backend doesn't re-login after
+        the probe has already authenticated."""
+        instance = cls.__new__( cls )
+        instance.api_url = source.api_url
+        instance._user = source._user
+        instance._password = source._password
+        instance._timeout_secs = source._timeout_secs
+        instance._session = source._session
+        instance._authenticated = source._authenticated
+        return instance
+
     def __init__(
             self,
             api_options : Dict[str, str],
@@ -245,3 +260,109 @@ class _HbLegacyBackend( _HbBackendBase ):
             'content': response.content,
             'mime_type': response.headers.get( 'content-type' ),
         }
+
+
+# Page size we request from /v1/entities. Real HomeBox's default
+# pagination behavior when no params are passed isn't formally
+# specified; we always pass an explicit page size and loop on
+# ``total`` to be robust against either default.
+_ENTITIES_PAGE_SIZE = 200
+
+
+class _HbEntitiesBackend( _HbBackendBase ):
+    """HomeBox v0.26+ — ``/v1/entities/*`` endpoints.
+
+    Normalizes responses to the legacy ``HbItem`` shape on the
+    way out so downstream code stays version-agnostic: the v0.26
+    ``parent`` field is renamed to ``location``, the new
+    ``entityType`` discriminator is dropped, and the paginated
+    list response is collapsed to a flat items list."""
+
+    def get_items_summary(self) -> List[ Dict[str, Any] ]:
+        """Fetch the entities list. Pages explicitly and loops
+        on ``total`` until the accumulated items match — robust
+        against either pagination default."""
+        url = f"{self.api_url}/{API_VERSION}/entities"
+        all_items: List[ Dict[str, Any] ] = []
+        page = 1
+        while True:
+            params = { 'page': page, 'pageSize': _ENTITIES_PAGE_SIZE }
+            data = self._make_request( 'GET', url, params=params )
+            if not isinstance( data, dict ):
+                raise ValueError(
+                    f'HomeBox API URL may be incorrect. Expected JSON response '
+                    f'from {url} but did not receive one. Ensure the URL '
+                    f'points at the HomeBox API root (e.g., http://host:port/api).'
+                )
+            page_items = data.get( 'items', [] ) or []
+            for entity in page_items:
+                all_items.append( _normalize_entity( entity ) )
+            total = data.get( 'total' )
+            # ``-1`` is HomeBox's sentinel for "no pagination, all
+            # returned in one shot" (real installs and the simulator
+            # both use this). Treat it as a one-page reply.
+            if not isinstance( total, int ) or total < 0:
+                break
+            if len( all_items ) >= total:
+                break
+            if not page_items:
+                # Defensive: the server promised more items but
+                # gave us an empty page. Avoid an infinite loop.
+                break
+            page += 1
+        return all_items
+
+    def get_item(self, item_id: str) -> HbItem:
+        url = f"{self.api_url}/{API_VERSION}/entities/{item_id}"
+        entity = self._make_request( 'GET', url )
+        if not isinstance( entity, dict ):
+            raise ValueError(
+                f'HomeBox returned non-JSON response for entity {item_id}.'
+            )
+        return HbItem( api_dict=_normalize_entity( entity ), client=self )
+
+    def get_items(self) -> List[ HbItem ]:
+        items_summary = self.get_items_summary()
+        full_items = []
+        for summary in items_summary:
+            item_id = summary.get( 'id' )
+            if item_id:
+                full_items.append( self.get_item( item_id ) )
+        return full_items
+
+    def download_attachment(
+            self, item_id: str, attachment_id: str,
+    ) -> Optional[ Dict[str, Any] ]:
+        """Same response shape as the legacy backend; only the
+        URL path changed."""
+        url = (
+            f"{self.api_url}/{API_VERSION}/entities/{item_id}"
+            f"/attachments/{attachment_id}"
+        )
+        response = self._make_request( 'GET', url )
+
+        if not isinstance( response, Response ):
+            logger.warning(
+                f"Expected a Response object for attachment download, "
+                f"got {type(response)}"
+            )
+            return None
+
+        return {
+            'content': response.content,
+            'mime_type': response.headers.get( 'content-type' ),
+        }
+
+
+def _normalize_entity( entity: Dict[str, Any] ) -> Dict[str, Any]:
+    """Translate a v0.26 entity dict to the legacy item shape so
+    downstream code consumes a single internal vocabulary:
+    ``parent`` becomes ``location``; the new ``entityType``
+    discriminator is dropped (HI doesn't need it). The input dict
+    is not mutated."""
+    normalized = dict( entity )
+    if 'parent' in normalized:
+        normalized['location'] = normalized.pop( 'parent' )
+    normalized.pop( 'entityType', None )
+    return normalized
+

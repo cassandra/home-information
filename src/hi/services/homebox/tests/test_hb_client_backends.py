@@ -15,7 +15,11 @@ from django.test import SimpleTestCase
 from requests import Response
 
 from hi.services.homebox.hb_client import HbClient  # constants
-from hi.services.homebox.hb_client_backends import _HbLegacyBackend
+from hi.services.homebox.hb_client_backends import (
+    _HbEntitiesBackend,
+    _HbLegacyBackend,
+    _normalize_entity,
+)
 
 
 logging.disable(logging.CRITICAL)
@@ -253,14 +257,16 @@ class TestHbClientFacade(SimpleTestCase):
             HbClient.API_PASSWORD: 'pass',
         }
 
-    def test_facade_constructs_legacy_backend_today(self):
-        # Phase 3 of #373 replaces this with a version probe;
-        # today the facade always wires the legacy backend.
+    def test_facade_construction_defers_backend_resolution(self):
+        # Construction must not trigger network I/O. The version
+        # probe (which selects between legacy and entities
+        # backends) is performed lazily on the first method call.
         client = HbClient(api_options=self._api_options())
-        self.assertIsInstance(client._backend, _HbLegacyBackend)
+        self.assertIsNone(client._backend)
 
     def test_facade_delegates_read_methods_to_backend(self):
         client = HbClient(api_options=self._api_options())
+        # Pre-seed the backend so the lazy probe doesn't run.
         client._backend = Mock()
         client._backend.get_items_summary.return_value = [{'id': '1'}]
         client._backend.get_item.return_value = Mock()
@@ -276,3 +282,176 @@ class TestHbClientFacade(SimpleTestCase):
         client._backend.get_item.assert_called_once_with('xyz')
         client._backend.get_items.assert_called_once_with()
         client._backend.download_attachment.assert_called_once_with('xyz', 'a1')
+
+
+class TestNormalizeEntity(SimpleTestCase):
+    """The entities backend renames ``parent`` to ``location`` and
+    drops the ``entityType`` discriminator so downstream code
+    consumes a single internal vocabulary regardless of HB version."""
+
+    def test_parent_renamed_to_location(self):
+        normalized = _normalize_entity({
+            'id': 'e-1',
+            'name': 'Drill',
+            'parent': {'id': 'loc-garage', 'name': 'Garage'},
+        })
+        self.assertEqual(normalized['location'], {'id': 'loc-garage', 'name': 'Garage'})
+        self.assertNotIn('parent', normalized)
+
+    def test_entity_type_dropped(self):
+        normalized = _normalize_entity({
+            'id': 'e-1',
+            'entityType': {'id': 'et-1', 'name': 'Item', 'isLocation': False},
+        })
+        self.assertNotIn('entityType', normalized)
+
+    def test_other_fields_preserved(self):
+        normalized = _normalize_entity({
+            'id': 'e-1',
+            'name': 'Drill',
+            'description': 'Cordless drill',
+            'quantity': 1,
+            'tags': [{'id': 't-1', 'name': 'tools'}],
+            'archived': False,
+        })
+        self.assertEqual(normalized['name'], 'Drill')
+        self.assertEqual(normalized['description'], 'Cordless drill')
+        self.assertEqual(normalized['quantity'], 1)
+        self.assertEqual(normalized['tags'], [{'id': 't-1', 'name': 'tools'}])
+        self.assertEqual(normalized['archived'], False)
+
+    def test_source_dict_not_mutated(self):
+        # The backend hands the normalized copy to HbItem; the
+        # original response dict should remain untouched in case a
+        # future caller wants to inspect raw v0.26 fields.
+        source = {'id': 'e-1', 'parent': {'name': 'Garage'}, 'entityType': {}}
+        _normalize_entity(source)
+        self.assertIn('parent', source)
+        self.assertIn('entityType', source)
+
+
+class TestHbEntitiesBackend(SimpleTestCase):
+    """v0.26 backend: pagination loop, response normalization,
+    and the path-rename across the four read methods."""
+
+    def _api_options(self):
+        return {
+            HbClient.API_URL: 'https://homebox.local',
+            HbClient.API_USER: 'user',
+            HbClient.API_PASSWORD: 'pass',
+        }
+
+    def _entity_dict(self, entity_id, name='X', location_name='Garage'):
+        return {
+            'id': entity_id,
+            'name': name,
+            'parent': {'id': f'loc-{location_name.lower()}', 'name': location_name},
+            'entityType': {'id': 'et-item', 'name': 'Item', 'isLocation': False},
+        }
+
+    def test_get_items_summary_handles_sentinel_total(self):
+        """Real HB and the simulator return ``total=-1`` /
+        ``pageSize=-1`` when serving everything in one page; the
+        loop should terminate after the first page in that case."""
+        with patch.object(_HbEntitiesBackend, '_login'):
+            backend = _HbEntitiesBackend(api_options=self._api_options())
+        backend._make_request = Mock(return_value={
+            'page': -1,
+            'pageSize': -1,
+            'total': -1,
+            'items': [self._entity_dict('e-1'), self._entity_dict('e-2')],
+        })
+
+        items = backend.get_items_summary()
+
+        self.assertEqual(len(items), 2)
+        # Normalized in-place: parent → location, entityType dropped.
+        for item in items:
+            self.assertIn('location', item)
+            self.assertNotIn('parent', item)
+            self.assertNotIn('entityType', item)
+        self.assertEqual(backend._make_request.call_count, 1)
+
+    def test_get_items_summary_loops_until_total_reached(self):
+        """When the server gives a real ``total`` and pages, the
+        loop fetches additional pages until the count is met."""
+        with patch.object(_HbEntitiesBackend, '_login'):
+            backend = _HbEntitiesBackend(api_options=self._api_options())
+        page1 = {
+            'page': 1, 'pageSize': 2, 'total': 3,
+            'items': [self._entity_dict('e-1'), self._entity_dict('e-2')],
+        }
+        page2 = {
+            'page': 2, 'pageSize': 2, 'total': 3,
+            'items': [self._entity_dict('e-3')],
+        }
+        backend._make_request = Mock(side_effect=[page1, page2])
+
+        items = backend.get_items_summary()
+
+        self.assertEqual([i['id'] for i in items], ['e-1', 'e-2', 'e-3'])
+        self.assertEqual(backend._make_request.call_count, 2)
+
+    def test_get_items_summary_breaks_on_empty_page(self):
+        """Defensive: if the server promises more items than it
+        delivers (empty page), the loop must terminate rather than
+        spin forever."""
+        with patch.object(_HbEntitiesBackend, '_login'):
+            backend = _HbEntitiesBackend(api_options=self._api_options())
+        page1 = {
+            'page': 1, 'pageSize': 2, 'total': 10,
+            'items': [self._entity_dict('e-1')],
+        }
+        page2 = {
+            'page': 2, 'pageSize': 2, 'total': 10,
+            'items': [],
+        }
+        backend._make_request = Mock(side_effect=[page1, page2])
+
+        items = backend.get_items_summary()
+
+        self.assertEqual(len(items), 1)
+        self.assertEqual(backend._make_request.call_count, 2)
+
+    def test_get_item_hits_entities_path_and_normalizes(self):
+        with patch.object(_HbEntitiesBackend, '_login'):
+            backend = _HbEntitiesBackend(api_options=self._api_options())
+        backend._make_request = Mock(return_value=self._entity_dict('e-7', name='Drill'))
+
+        item = backend.get_item('e-7')
+
+        self.assertEqual(item.id, 'e-7')
+        self.assertEqual(item.name, 'Drill')
+        # Field rename: HbItem.location reads ``location`` from the
+        # api_dict — present because the backend renamed parent.
+        self.assertEqual(item.location['name'], 'Garage')
+        backend._make_request.assert_called_once_with(
+            'GET',
+            'https://homebox.local/v1/entities/e-7',
+        )
+
+    def test_get_item_raises_on_non_dict_response(self):
+        with patch.object(_HbEntitiesBackend, '_login'):
+            backend = _HbEntitiesBackend(api_options=self._api_options())
+        backend._make_request = Mock(return_value=Response())
+        with self.assertRaises(ValueError) as context:
+            backend.get_item('e-7')
+        self.assertIn('non-JSON', str(context.exception))
+
+    def test_download_attachment_uses_entities_path(self):
+        with patch.object(_HbEntitiesBackend, '_login'):
+            backend = _HbEntitiesBackend(api_options=self._api_options())
+        response = Response()
+        response.status_code = 200
+        response.headers['content-type'] = 'image/png'
+        response._content = b'PNGDATA'
+        backend._make_request = Mock(return_value=response)
+
+        payload = backend.download_attachment(item_id='e-1', attachment_id='att-1')
+
+        self.assertEqual(payload['mime_type'], 'image/png')
+        self.assertEqual(payload['content'], b'PNGDATA')
+        backend._make_request.assert_called_once_with(
+            'GET',
+            'https://homebox.local/v1/entities/e-1/attachments/att-1',
+        )

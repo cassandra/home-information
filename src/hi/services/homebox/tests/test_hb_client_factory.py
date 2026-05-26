@@ -161,3 +161,66 @@ class TestHbClientFactory(TestCase):
 
         kwargs = mock_client_class.call_args.kwargs
         self.assertEqual(kwargs.get('timeout_secs'), 2)
+
+
+class TestHbClientFactoryResolveBackend(TestCase):
+    """Version-probe selection: ``GET /v1/entities`` is the
+    discriminator. 2xx selects the entities backend, 404 falls
+    back to the legacy backend, other errors propagate so the
+    manager can record an error state and retry later."""
+
+    def _api_options(self):
+        from hi.services.homebox.hb_client import HbClient
+        return {
+            HbClient.API_URL: 'https://homebox.local',
+            HbClient.API_USER: 'user',
+            HbClient.API_PASSWORD: 'pass',
+        }
+
+    def test_entities_200_selects_entities_backend(self):
+        from hi.services.homebox.hb_client_backends import (
+            _HbEntitiesBackend, _HbLegacyBackend,
+        )
+        with patch.object(_HbLegacyBackend, '_login'):
+            with patch.object(
+                _HbLegacyBackend, '_make_request', return_value={'items': []}
+            ):
+                backend = HbClientFactory.resolve_backend(
+                    api_options=self._api_options(),
+                )
+        self.assertIsInstance(backend, _HbEntitiesBackend)
+
+    def test_entities_404_falls_back_to_legacy(self):
+        from requests import HTTPError, Response
+        from hi.services.homebox.hb_client_backends import _HbLegacyBackend
+        response = Mock(spec=Response)
+        response.status_code = 404
+        http_error = HTTPError('Not Found')
+        http_error.response = response
+
+        with patch.object(_HbLegacyBackend, '_login'):
+            with patch.object(
+                _HbLegacyBackend, '_make_request', side_effect=http_error
+            ):
+                backend = HbClientFactory.resolve_backend(
+                    api_options=self._api_options(),
+                )
+        self.assertIsInstance(backend, _HbLegacyBackend)
+
+    def test_non_404_http_error_propagates(self):
+        from requests import HTTPError, Response
+        from hi.services.homebox.hb_client_backends import _HbLegacyBackend
+        response = Mock(spec=Response)
+        response.status_code = 500
+        http_error = HTTPError('Server Error')
+        http_error.response = response
+
+        with patch.object(_HbLegacyBackend, '_login'):
+            with patch.object(
+                _HbLegacyBackend, '_make_request', side_effect=http_error
+            ):
+                with self.assertRaises(HTTPError):
+                    HbClientFactory.resolve_backend(
+                        api_options=self._api_options(),
+                    )
+
