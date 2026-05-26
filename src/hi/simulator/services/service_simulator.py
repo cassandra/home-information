@@ -111,11 +111,15 @@ class ServiceSimulator( Singleton ):
         the include; the default is no extras."""
         return None
 
+    @property
     def extras_context(self) -> Dict:
         """Extra context the ``extras_template_name`` template
         needs beyond the standard service-page variables. Default
         empty; override when the extras pane has dynamic choices
-        or other simulator-specific data to expose."""
+        or other simulator-specific data to expose. Implementations
+        should avoid keys that collide with the standard service-
+        page context (``simulator``, ``profile_list``, etc.) since
+        the caller merges this dict via ``dict.update``."""
         return {}
 
     @property

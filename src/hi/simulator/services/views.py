@@ -83,7 +83,7 @@ class ServiceView( View ):
             'temperature_unit_choices': list( SimTemperatureUnit ),
             'temperature_unit_override': runtime_settings.temperature_unit_override,
         }
-        context.update( simulator.extras_context() )
+        context.update( simulator.extras_context )
         return render( request, 'services/pages/service.html', context )
 
 

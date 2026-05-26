@@ -63,6 +63,38 @@ class TestHbLegacyBackend(SimpleTestCase):
         mock_login.assert_not_called()
         self.assertFalse(backend._authenticated)
 
+    def test_login_wraps_connection_error_with_operator_hint(self):
+        """A network failure at login surfaces as a
+        ``ConnectionError`` whose message points the operator at
+        the configured URL — this is the diagnostic that helps
+        the operator distinguish 'HomeBox is down' from 'wrong
+        URL configured'."""
+        backend = _HbLegacyBackend(api_options=self._api_options())
+        backend._session.post = Mock(side_effect=OSError('refused'))
+
+        with self.assertRaises(ConnectionError) as context:
+            backend._login()
+
+        self.assertIn('Cannot connect to HomeBox', str(context.exception))
+        self.assertIn(backend.api_url, str(context.exception))
+
+    def test_login_rejects_non_json_response(self):
+        """The login endpoint must reply with JSON; a non-JSON
+        response means the configured API URL is pointing at a
+        non-API surface (e.g., the HTML UI) and should surface
+        a clear ``ValueError`` with the API-path hint."""
+        backend = _HbLegacyBackend(api_options=self._api_options())
+        backend._session.post = Mock(return_value=self._response(
+            status_code=200,
+            json_data=None,
+            content_type='text/html',
+            content=b'<html>not the api</html>',
+        ))
+
+        with self.assertRaises(ValueError) as context:
+            backend._login()
+        self.assertIn('API path', str(context.exception))
+
     def test_make_request_lazy_logs_in_on_first_use(self):
         """First ``_make_request`` call performs the deferred login."""
         with patch.object(_HbLegacyBackend, '_login') as mock_login:
@@ -454,4 +486,49 @@ class TestHbEntitiesBackend(SimpleTestCase):
         backend._make_request.assert_called_once_with(
             'GET',
             'https://homebox.local/v1/entities/e-1/attachments/att-1',
+        )
+
+    def test_get_items_summary_raises_when_response_is_not_json(self):
+        """Mirror of the legacy backend's defensive check — a
+        non-JSON list response on /v1/entities signals a
+        misconfigured API URL; surface a clear ValueError instead
+        of letting the loop iterate over a raw Response."""
+        with patch.object(_HbEntitiesBackend, '_login'):
+            backend = _HbEntitiesBackend(api_options=self._api_options())
+        backend._make_request = Mock(return_value=Response())
+
+        with self.assertRaises(ValueError) as context:
+            backend.get_items_summary()
+        self.assertIn('URL may be incorrect', str(context.exception))
+
+    def test_get_items_fans_out_to_entities_detail_path(self):
+        """``get_items`` is now shared on the base class, but its
+        per-version contract is that the per-item detail fetches
+        go to the version-specific URL. Pin that the entities
+        backend routes detail fetches to /v1/entities/<id>."""
+        with patch.object(_HbEntitiesBackend, '_login'):
+            backend = _HbEntitiesBackend(api_options=self._api_options())
+        backend._make_request = Mock(side_effect=[
+            {
+                'page': -1, 'pageSize': -1, 'total': -1,
+                'items': [{'id': 'e-1'}, {'id': 'e-2'}],
+            },
+            {'id': 'e-1', 'name': 'One'},
+            {'id': 'e-2', 'name': 'Two'},
+        ])
+
+        items = backend.get_items()
+
+        self.assertEqual([i.id for i in items], ['e-1', 'e-2'])
+        # Per-item fetches hit the entities path, not items.
+        detail_calls = [c for c in backend._make_request.call_args_list
+                        if c.args[0] == 'GET' and 'entities/' in c.args[1]]
+        self.assertEqual(len(detail_calls), 2)
+        self.assertIn(
+            'https://homebox.local/v1/entities/e-1',
+            [c.args[1] for c in detail_calls],
+        )
+        self.assertIn(
+            'https://homebox.local/v1/entities/e-2',
+            [c.args[1] for c in detail_calls],
         )

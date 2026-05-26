@@ -67,6 +67,7 @@ class HomeBoxSimulator( ServiceSimulator ):
     def extras_template_name(self):
         return 'homebox/panes/api_version_form.html'
 
+    @property
     def extras_context(self):
         return {
             'api_version': self._api_version,

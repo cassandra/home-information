@@ -177,6 +177,63 @@ class _HbBackendBase:
             return response.json()
         return response
 
+    # ---- shared read methods -------------------------------------
+    #
+    # ``get_items_summary`` and ``get_item`` differ enough between
+    # versions to warrant version-specific implementations (paths,
+    # pagination, response normalization). ``get_items`` and
+    # ``download_attachment`` are version-agnostic apart from URL
+    # construction, so they live here with a small per-version URL
+    # hook below.
+
+    def get_items(self) -> List[ HbItem ]:
+        """Fetch the list of items and, for each one, fetch the
+        full details. Returns a list of fully populated ``HbItem``
+        objects.
+
+        A failed detail fetch propagates rather than being
+        swallowed per-item: a partial-success outcome here is more
+        dangerous than a clean failure (it silently drops items,
+        which the sync layer then misinterprets as upstream
+        removals or a clean 'nothing to import'). The sync flow's
+        outer try/except converts the propagated error into an
+        operator-visible ``error_list`` entry."""
+        items_summary = self.get_items_summary()
+        full_items = []
+        for summary in items_summary:
+            item_id = summary.get( 'id' )
+            if item_id:
+                full_items.append( self.get_item( item_id ) )
+        return full_items
+
+    def download_attachment(
+            self, item_id: str, attachment_id: str,
+    ) -> Optional[ Dict[str, Any] ]:
+        """Downloads an attachment. The URL path differs between
+        versions; subclasses supply it via ``_attachment_url``."""
+        url = self._attachment_url(
+            item_id=item_id, attachment_id=attachment_id,
+        )
+        response = self._make_request( 'GET', url )
+
+        if not isinstance( response, Response ):
+            logger.warning(
+                f"Expected a Response object for attachment download, "
+                f"got {type(response)}"
+            )
+            return None
+
+        return {
+            'content': response.content,
+            'mime_type': response.headers.get( 'content-type' ),
+        }
+
+    def _attachment_url(self, item_id: str, attachment_id: str) -> str:
+        raise NotImplementedError(
+            'Subclasses must override ``_attachment_url`` to build the '
+            'version-specific attachment-download URL.'
+        )
+
 
 class _HbLegacyBackend( _HbBackendBase ):
     """HomeBox v0.25 and earlier — ``/v1/items/*`` endpoints."""
@@ -219,47 +276,11 @@ class _HbLegacyBackend( _HbBackendBase ):
             )
         return HbItem( api_dict=item_detail, client=self )
 
-    def get_items(self) -> List[ HbItem ]:
-        """Fetch the list of items and, for each one, fetch the
-        full details. Returns a list of fully populated ``HbItem``
-        objects.
-
-        A failed detail fetch propagates rather than being
-        swallowed per-item: a partial-success outcome here is more
-        dangerous than a clean failure (it silently drops items,
-        which the sync layer then misinterprets as upstream
-        removals or a clean 'nothing to import'). The sync flow's
-        outer try/except converts the propagated error into an
-        operator-visible ``error_list`` entry."""
-        items_summary = self.get_items_summary()
-        full_items = []
-        for summary in items_summary:
-            item_id = summary.get( 'id' )
-            if item_id:
-                full_items.append( self.get_item( item_id ) )
-        return full_items
-
-    def download_attachment(
-            self, item_id: str, attachment_id: str,
-    ) -> Optional[ Dict[str, Any] ]:
-        """Downloads an attachment."""
-        url = (
+    def _attachment_url(self, item_id: str, attachment_id: str) -> str:
+        return (
             f"{self.api_url}/{API_VERSION}/items/{item_id}"
             f"/attachments/{attachment_id}"
         )
-        response = self._make_request( 'GET', url )
-
-        if not isinstance( response, Response ):
-            logger.warning(
-                f"Expected a Response object for attachment download, "
-                f"got {type(response)}"
-            )
-            return None
-
-        return {
-            'content': response.content,
-            'mime_type': response.headers.get( 'content-type' ),
-        }
 
 
 # Page size we request from /v1/entities. Real HomeBox's default
@@ -321,37 +342,11 @@ class _HbEntitiesBackend( _HbBackendBase ):
             )
         return HbItem( api_dict=_normalize_entity( entity ), client=self )
 
-    def get_items(self) -> List[ HbItem ]:
-        items_summary = self.get_items_summary()
-        full_items = []
-        for summary in items_summary:
-            item_id = summary.get( 'id' )
-            if item_id:
-                full_items.append( self.get_item( item_id ) )
-        return full_items
-
-    def download_attachment(
-            self, item_id: str, attachment_id: str,
-    ) -> Optional[ Dict[str, Any] ]:
-        """Same response shape as the legacy backend; only the
-        URL path changed."""
-        url = (
+    def _attachment_url(self, item_id: str, attachment_id: str) -> str:
+        return (
             f"{self.api_url}/{API_VERSION}/entities/{item_id}"
             f"/attachments/{attachment_id}"
         )
-        response = self._make_request( 'GET', url )
-
-        if not isinstance( response, Response ):
-            logger.warning(
-                f"Expected a Response object for attachment download, "
-                f"got {type(response)}"
-            )
-            return None
-
-        return {
-            'content': response.content,
-            'mime_type': response.headers.get( 'content-type' ),
-        }
 
 
 def _normalize_entity( entity: Dict[str, Any] ) -> Dict[str, Any]:
