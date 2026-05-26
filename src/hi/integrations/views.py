@@ -172,7 +172,7 @@ class IntegrationPlacementView( HiModalView, IntegrationViewMixin,
         if entity_id_filter is not None:
             entities = [ e for e in entities if e.id in entity_id_filter ]
 
-        placement_input = connector.group_entities_for_placement(
+        placement_input = integration_data.integration_gateway.group_entities_for_placement(
             entities = entities,
         )
         if placement_input.is_empty():

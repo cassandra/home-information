@@ -136,15 +136,12 @@ class HomeBoxConnector( IntegrationConnector, HomeBoxMixin ):
         # newly-created entities surface in the dispatcher.
         created_entities = self._sync_helper_entities(
             item_list = item_list, result = result )
-        if created_entities:
-            result.placement_input = self.group_entities_for_placement(
-                entities = created_entities,
-            )
+        result.created_entities = created_entities
         return result
 
     # group_entities_for_placement: HomeBox has no domain notion of
-    # grouping, so the base-class default (all-ungrouped) is exactly
-    # what we want. No override needed.
+    # grouping, so the gateway base default (all-ungrouped) is
+    # exactly what we want. No gateway override needed.
 
     def _sync_helper_entities( self,
                                item_list: List[HbItem],

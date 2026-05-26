@@ -26,6 +26,7 @@ from hi.integrations.entity_operations import EntityIntegrationOperations
 from hi.integrations.integration_attribute_edit_context import IntegrationAttributeItemEditContext
 from .sync_check import IntegrationSyncCheck
 from hi.integrations.view_mixins import IntegrationViewMixin
+from hi.integrations.connector.view_mixins import ConnectorViewMixin
 from hi.integrations.views import CapabilityConfigureView
 
 logger = logging.getLogger(__name__)
@@ -132,7 +133,7 @@ class IntegrationPreSyncView( HiModalView, IntegrationViewMixin ):
         return self.modal_response( request, context )
 
 
-class IntegrationSyncView( HiModalView, IntegrationViewMixin ):
+class IntegrationSyncView( HiModalView, IntegrationViewMixin, ConnectorViewMixin ):
     """
     Framework sync execution view. Invokes the integration's
     connector and always renders the sync result modal — the
@@ -171,7 +172,7 @@ class IntegrationSyncView( HiModalView, IntegrationViewMixin ):
         )
 
 
-class ConnectorConfigureView( CapabilityConfigureView ):
+class ConnectorConfigureView( CapabilityConfigureView, ConnectorViewMixin ):
 
     capability    = IntegrationCapability.CONNECT
     button_label  = 'CONNECT'

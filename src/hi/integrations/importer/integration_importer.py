@@ -11,11 +11,6 @@ candidate-listing, item ingest, and discard operations.
 """
 from typing import List
 
-from hi.apps.entity.entity_placement import (
-    EntityPlacementInput,
-    EntityPlacementItem,
-)
-from hi.apps.entity.models import Entity
 from hi.integrations.models import IntegrationAttribute
 from hi.integrations.transient_models import (
     IntegrationMetaData,
@@ -63,22 +58,3 @@ class IntegrationImporter:
         Connect-mode entities (if somehow coexisting) stay
         untouched."""
         raise NotImplementedError('Subclasses must override this method')
-
-    def group_entities_for_placement(
-            self, entities: List[Entity],
-    ) -> EntityPlacementInput:
-        """Partition just-imported entities into the
-        EntityPlacementInput shape consumed by the placement modal.
-
-        Default: every entity is ungrouped. Subclasses override to
-        provide a domain grouping where one exists."""
-        return EntityPlacementInput(
-            ungrouped_items = [
-                EntityPlacementItem(
-                    key = f'entity:{entity.id}',
-                    label = entity.name,
-                    entity = entity,
-                )
-                for entity in entities
-            ],
-        )

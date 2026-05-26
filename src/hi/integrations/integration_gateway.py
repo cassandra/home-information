@@ -1,4 +1,11 @@
-from typing import List, Optional
+from typing import Dict, List, Optional
+
+from hi.apps.entity.entity_placement import (
+    EntityPlacementGroup,
+    EntityPlacementInput,
+    EntityPlacementItem,
+)
+from hi.apps.entity.models import Entity
 
 from hi.integrations.connector.integration_connector import IntegrationConnector
 from hi.integrations.importer.integration_importer import IntegrationImporter
@@ -77,3 +84,47 @@ class IntegrationGateway:
         relaunching monitors (Resume).
         """
         raise NotImplementedError('Subclasses must override this method')
+
+    def group_entities_for_placement(
+            self, entities: List[Entity],
+    ) -> EntityPlacementInput:
+        """Partition the given entities into the EntityPlacementInput
+        shape consumed by the placement modal. Capability-neutral —
+        both Connect-sync and Import-run flows feed entities through
+        this same method, so a given integration groups its entities
+        the same way regardless of how they arrived.
+
+        Default: group by ``EntityType`` using the humanized type
+        label as the group name. Sorted alphabetically by label for
+        stable presentation. Subclasses override when a different
+        domain grouping makes sense (e.g., ZM/Frigate use a single
+        static named group for their single-type case)."""
+        type_label_to_items: Dict[str, List[EntityPlacementItem]] = {}
+        for entity in entities:
+            type_label = entity.entity_type.label
+            type_label_to_items.setdefault( type_label, [] ).append(
+                EntityPlacementItem(
+                    key = self._placement_item_key( entity = entity ),
+                    label = entity.name,
+                    entity = entity,
+                )
+            )
+            continue
+        groups = [
+            EntityPlacementGroup( label = label, items = type_label_to_items[label] )
+            for label in sorted( type_label_to_items.keys() )
+        ]
+        return EntityPlacementInput( groups = groups )
+
+    def _placement_item_key(self, entity: Entity) -> str:
+        """Stable per-entity placement key. Prefers the live
+        integration_key, falls back to previous_integration_key for
+        imported/detached entities, then to the row id as a final
+        fallback for entities with no integration provenance at all."""
+        if entity.integration_key:
+            ikey = entity.integration_key
+            return f'{ikey.integration_id}:{ikey.integration_name}'
+        if entity.previous_integration_key:
+            pkey = entity.previous_integration_key
+            return f'{pkey.integration_id}:{pkey.integration_name}'
+        return f'entity:{entity.id}'

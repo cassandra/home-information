@@ -990,8 +990,11 @@ class PlacementDismissAndShowTests(SyncViewTestCase):
             ),
         )
         self.synchronizer = _PlacementTestSynchronizer(sync_result=self.sync_result)
-        # Stub group_entities_for_placement so the GET placement can
-        # rebuild from unplaced entities.
+        self.gateway = _PlacementTestGateway(
+            integration_id=self.INTEGRATION_ID, synchronizer=self.synchronizer,
+        )
+        # Stub group_entities_for_placement on the gateway so the GET
+        # placement can rebuild from unplaced entities.
 
         def group_for_placement(entities):
             items = [
@@ -1006,11 +1009,7 @@ class PlacementDismissAndShowTests(SyncViewTestCase):
             return EntityPlacementInput(
                 groups=[EntityPlacementGroup(label='Cameras', items=items)],
             )
-        self.synchronizer.group_entities_for_placement = group_for_placement
-
-        self.gateway = _PlacementTestGateway(
-            integration_id=self.INTEGRATION_ID, synchronizer=self.synchronizer,
-        )
+        self.gateway.group_entities_for_placement = group_for_placement
         IntegrationManager()._integration_data_map[self.INTEGRATION_ID] = IntegrationData(
             integration_gateway=self.gateway, integration=self.integration,
         )

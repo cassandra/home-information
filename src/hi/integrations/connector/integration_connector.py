@@ -13,15 +13,11 @@ Sync is opt-in: a gateway whose integration does not support sync
 returns None.
 """
 import logging
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, Optional
 
 from django.db import transaction
 
 from hi.apps.common.database_lock import ExclusionLockContext
-from hi.apps.entity.entity_placement import (
-    EntityPlacementInput,
-    EntityPlacementItem,
-)
 from hi.apps.entity.models import Entity
 from hi.apps.entity.transient_models import VideoSnapshot, VideoStream
 from hi.apps.monitor.periodic_monitor import PeriodicMonitor
@@ -285,50 +281,6 @@ class IntegrationConnector:
         raise NotImplementedError(
             f'{self.__class__.__name__} must override get_integration_metadata()'
         )
-
-    def group_entities_for_placement(
-            self, entities : List[Entity],
-    ) -> EntityPlacementInput:
-        """Partition a set of entities into the
-        ``EntityPlacementInput`` shape consumed by the placement
-        modal.
-
-        Two callers:
-
-        * The sync flow passes in the entities just *created* during
-          this sync run (existing-entity updates do not need
-          re-placement).
-        * A future "place unplaced items" recovery feature will pass
-          in entities that already exist for the integration but have
-          no EntityView row.
-
-        Either caller receives the same shape; the per-integration
-        grouping logic lives in this method so both callers agree
-        on what "groups" means for this integration.
-
-        Default implementation: every entity is ungrouped. Subclasses
-        override to provide a meaningful domain grouping (e.g., HASS
-        by entity_type, ZM single "Monitors" group).
-        """
-        return EntityPlacementInput(
-            ungrouped_items = [
-                EntityPlacementItem(
-                    key = self._placement_item_key( entity = entity ),
-                    label = entity.name,
-                    entity = entity,
-                )
-                for entity in entities
-            ],
-        )
-
-    def _placement_item_key( self, entity : Entity ) -> str:
-        """Stable per-entity placement key. Subclasses may override
-        for custom keying; the default uses the entity's
-        integration_key when available, falling back to the row id."""
-        integration_key = entity.integration_key
-        if integration_key:
-            return f'{integration_key.integration_id}:{integration_key.integration_name}'
-        return f'entity:{entity.id}'
 
     def reconnect_disconnected_items(
             self,

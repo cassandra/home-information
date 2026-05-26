@@ -10,12 +10,9 @@ from hi.apps.collection.models import Collection, CollectionEntity
 from hi.apps.entity.models import Entity, EntityView
 from hi.apps.location.location_manager import LocationManager
 from hi.apps.location.models import Location, LocationView
-from hi.apps.sense.sensor_response_manager import SensorResponseManager
-from hi.views import page_not_found_response
 
 from hi.integrations.enums import IntegrationCapability
 from hi.integrations.integration_manager import IntegrationManager
-from hi.integrations.integration_metadata_cache import IntegrationMetadataCache
 
 from hi.integrations.placement_request import PlacementUrlParams
 
@@ -109,59 +106,6 @@ class IntegrationViewMixin:
         return IntegrationManager().get_integration_data_list(
             enabled_only = enabled_only,
             capabilities = capabilities,
-        )
-    
-    def render_sync_result( self,
-                            request,
-                            integration_data,
-                            preserve_user_data : bool = True ):
-        """Run the integration's connector and render the
-        sync-result modal. Shared by the initial-connect flow
-        (ConnectorConfigureView.post after enable) and the update-check
-        flow (IntegrationSyncView.post after pre-sync confirm).
-
-        Returns the modal response directly, including the placement
-        URL for the 'Place N new items' CTA when sync produced new
-        entities. Cache invalidations run in a ``finally`` so a
-        partial-commit failure during sync also flushes."""
-        connector = integration_data.integration_gateway.get_connector()
-        if connector is None:
-            return page_not_found_response( request )
-
-        is_initial_connect = not Entity.objects.filter(
-            integration_id = integration_data.integration_id,
-        ).exists()
-
-        try:
-            sync_result = connector.sync(
-                is_initial_connect = is_initial_connect,
-                preserve_user_data = preserve_user_data,
-            )
-        finally:
-            IntegrationMetadataCache().invalidate()
-            SensorResponseManager().invalidate_local_sensor_cache()
-
-        new_entity_ids = (
-            sync_result.placement_input.all_entity_ids()
-            if sync_result.placement_input is not None else []
-        )
-        placement_url = PlacementUrlParams(
-            is_initial_connect = is_initial_connect,
-            entity_ids = new_entity_ids,
-        ).append_to_url( reverse(
-            'integrations_placement',
-            kwargs = { 'integration_id': integration_data.integration_id },
-        ) )
-
-        return self.modal_response(
-            request,
-            context = {
-                'sync_result': sync_result,
-                'integration_data': integration_data,
-                'is_initial_connect': is_initial_connect,
-                'placement_url': placement_url,
-            },
-            template_name = 'integrations/connector/modals/sync_result.html',
         )
 
     def validate_attributes_extra_helper( self,

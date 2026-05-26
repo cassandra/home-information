@@ -2,6 +2,7 @@ from dataclasses import dataclass, field
 from typing import List, Optional
 
 from hi.apps.entity.entity_placement import EntityPlacementInput
+from hi.apps.entity.models import Entity
 
 
 @dataclass
@@ -28,9 +29,15 @@ class IntegrationImportResult:
     ``placement_input`` is None when the import produced no new
     entities to place; populated when the result modal should expose
     the post-import placement flow.
+
+    ``created_entities`` carries the just-created ``Entity``
+    instances back to the framework caller, which passes them
+    through ``gateway.group_entities_for_placement`` to build the
+    ``placement_input`` — same shape as the Connect-sync flow.
     """
     title: str
     placement_input: Optional[EntityPlacementInput] = None
+    created_entities: List[Entity] = field(default_factory=list)
     items_imported_count: int = 0
     items_skipped_count: int = 0
     imported_list: List[str] = field(default_factory=list)

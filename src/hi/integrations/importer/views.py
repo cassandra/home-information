@@ -157,6 +157,11 @@ class ImporterRunView( HiModalView, IntegrationViewMixin ):
             IntegrationMetadataCache().invalidate()
             SensorResponseManager().invalidate_local_sensor_cache()
 
+        if result.created_entities:
+            result.placement_input = integration_data.integration_gateway.group_entities_for_placement(
+                entities = result.created_entities,
+            )
+
         new_entity_ids = (
             result.placement_input.all_entity_ids()
             if result.placement_input is not None else []

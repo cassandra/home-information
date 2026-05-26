@@ -7,11 +7,6 @@ from django.db import transaction
 from hi.apps.entity.models import Entity
 from hi.apps.entity.transient_models import VideoSnapshot
 
-from hi.apps.entity.entity_placement import (
-    EntityPlacementInput,
-    EntityPlacementItem,
-    EntityPlacementGroup,
-)
 from hi.apps.system.health_status_provider import HealthStatusProvider
 
 from hi.integrations.connector.integration_connector import IntegrationConnector
@@ -227,10 +222,7 @@ class HassConnector( IntegrationConnector, HassMixin ):
                                          result = result )
                 continue
 
-        if created_entities:
-            result.placement_input = self.group_entities_for_placement(
-                entities = created_entities,
-            )
+        result.created_entities = created_entities
         return result
 
     def _rebuild_integration_components( self,
@@ -303,26 +295,3 @@ class HassConnector( IntegrationConnector, HassMixin ):
         self._remove_entity_intelligently(entity, result)
         return
 
-    def group_entities_for_placement( self, entities ) -> EntityPlacementInput:
-        """Group HASS entities by Hi-side entity_type_str.
-
-        HASS uses no ungrouped bucket — every entity has a type.
-        Groups are ordered by their label alphabetically for stable
-        presentation. Falls back to an 'Other' bucket for entities
-        without a recorded type."""
-        type_to_items: Dict[str, List[EntityPlacementItem]] = {}
-        for entity in entities:
-            type_label = str( entity.entity_type_str or 'Other' )
-            type_to_items.setdefault( type_label, [] ).append(
-                EntityPlacementItem(
-                    key = self._placement_item_key( entity = entity ),
-                    label = entity.name,
-                    entity = entity,
-                )
-            )
-            continue
-        groups = [
-            EntityPlacementGroup( label = label, items = type_to_items[label] )
-            for label in sorted( type_to_items.keys() )
-        ]
-        return EntityPlacementInput( groups = groups )

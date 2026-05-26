@@ -5,11 +5,6 @@ from asgiref.sync import sync_to_async
 from django.db import transaction
 
 from hi.apps.entity.enums import EntityType, VideoStreamType
-from hi.apps.entity.entity_placement import (
-    EntityPlacementGroup,
-    EntityPlacementInput,
-    EntityPlacementItem,
-)
 from hi.apps.entity.models import Entity
 from hi.apps.entity.transient_models import VideoSnapshot, VideoStream
 from hi.apps.model_helper import HiModelHelper
@@ -186,30 +181,8 @@ class FrigateConnector( IntegrationConnector, FrigateMixin ):
             return result
 
         created_camera_entities = self._sync_cameras( result = result )
-        if created_camera_entities:
-            result.placement_input = self.group_entities_for_placement(
-                entities = created_camera_entities,
-            )
+        result.created_entities = created_camera_entities
         return result
-
-    def group_entities_for_placement( self, entities ) -> EntityPlacementInput:
-        """Single 'Cameras' placement group: Frigate cameras usually
-        share a wall-of-views layout, so 'all cameras → same place'
-        is the right default. Operators can still drill into
-        per-camera placement from the dispatcher."""
-        if not entities:
-            return EntityPlacementInput()
-        items = [
-            EntityPlacementItem(
-                key = self._placement_item_key( entity = entity ),
-                label = entity.name,
-                entity = entity,
-            )
-            for entity in entities
-        ]
-        return EntityPlacementInput(
-            groups = [ EntityPlacementGroup( label = 'Cameras', items = items ) ],
-        )
 
     def _sync_cameras( self, result : IntegrationSyncResult ) -> List[ Entity ]:
         integration_key_to_camera = self._fetch_frigate_cameras( result = result )

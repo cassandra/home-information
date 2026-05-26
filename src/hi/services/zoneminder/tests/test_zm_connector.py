@@ -959,23 +959,18 @@ class TestZmConnectorSyncResultGrouping(TestCase):
                           return_value=[entity_a, entity_b]):
             result = self.synchronizer._sync_impl(is_initial_connect=True)
 
-        self.assertIsNotNone(result.placement_input)
-        self.assertEqual(result.placement_input.ungrouped_items, [])
-        self.assertEqual(len(result.placement_input.groups), 1)
-        group = result.placement_input.groups[0]
-        self.assertEqual(group.label, 'Monitors')
-        self.assertEqual([item.entity for item in group.items], [entity_a, entity_b])
-        # Stable per-item key built from the integration_key.
-        self.assertEqual(group.items[0].key, 'zm:monitor.1')
-        self.assertEqual(group.items[1].key, 'zm:monitor.2')
+        # Created entities flow through to the framework caller, which
+        # groups them via gateway.group_entities_for_placement.
+        self.assertEqual(result.created_entities, [entity_a, entity_b])
 
     def test_sync_impl_emits_no_placement_input_when_no_monitors_imported(self):
         with patch.object(self.synchronizer, '_sync_states'), \
              patch.object(self.synchronizer, '_sync_monitors', return_value=[]):
             result = self.synchronizer._sync_impl(is_initial_connect=True)
 
-        # No newly-created entities → no placement input → placement
-        # modal is not shown.
+        # No newly-created entities → empty created_entities → framework
+        # caller leaves placement_input as None.
+        self.assertEqual(result.created_entities, [])
         self.assertIsNone(result.placement_input)
 
 

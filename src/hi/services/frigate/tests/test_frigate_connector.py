@@ -216,11 +216,9 @@ class TestFrigateSyncImpl( _FrigateSyncTestBase ):
         self.assertEqual( names, { 'front_yard', 'back_door', 'driveway' } )
         self.assertEqual( set( result.created_list ), names )
 
-        # Placement input should carry one group with all three cameras.
-        self.assertIsNotNone( result.placement_input )
-        self.assertEqual( len( result.placement_input.groups ), 1 )
-        self.assertEqual( result.placement_input.groups[0].label, 'Cameras' )
-        self.assertEqual( len( result.placement_input.groups[0].items ), 3 )
+        # Created entities flow through to the framework caller, which
+        # builds placement_input via gateway.group_entities_for_placement.
+        self.assertEqual( len( result.created_entities ), 3 )
 
     def test_sync_skips_event_definition_when_alarm_events_disabled(self):
         # Default in setUp is should_add_alarm_events=False.

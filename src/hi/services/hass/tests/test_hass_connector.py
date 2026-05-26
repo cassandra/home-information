@@ -10,6 +10,7 @@ from hi.integrations.transient_models import IntegrationKey
 
 from hi.services.hass.hass_connector import HassConnector
 from hi.services.hass.hass_models import HassState
+from hi.services.hass.integration import HassGateway
 
 logging.disable(logging.CRITICAL)
 
@@ -298,38 +299,38 @@ class TestHassConnectorMixinIntegration(TestCase):
 
 
 class TestHassConnectorSyncResultGrouping(TestCase):
-    """Phase 2 grouping behavior: HASS-imported entities are grouped
-    by Hi-side entity_type_str. The /api/states endpoint exposes no
-    area metadata, so the synchronizer falls back to entity_type as
-    the meaningful, available signal."""
+    """Default-grouping behavior: entities are grouped by EntityType
+    using the humanized type label. Exercised here against
+    HassGateway (which uses the framework default) — the same
+    behavior applies to any integration that doesn't override
+    group_entities_for_placement."""
 
     def setUp(self):
-        self.synchronizer = HassConnector()
+        self.synchronizer = HassGateway()
 
-    def _entity(self, name, entity_type_str, integration_name):
-        entity = Mock()
-        entity.name = name
-        entity.entity_type_str = entity_type_str
-        entity.integration_key = IntegrationKey(
+    def _entity(self, name, entity_type, integration_name):
+        entity = Entity.objects.create(
+            name=name,
+            entity_type_str=str(entity_type),
             integration_id='hass',
             integration_name=integration_name,
         )
-        entity.id = 0
         return entity
 
     def test_groups_built_by_entity_type_alphabetical(self):
-        """Group ordering is alphabetical for stable presentation."""
+        """Group ordering is alphabetical by humanized type label."""
+        from hi.apps.entity.enums import EntityType
         entities = [
-            self._entity('Kitchen Light', 'LIGHT', 'light.kitchen'),
-            self._entity('Hall Sensor', 'SENSOR', 'binary_sensor.hall'),
-            self._entity('Bedroom Light', 'LIGHT', 'light.bedroom'),
+            self._entity('Kitchen Light', EntityType.LIGHT, 'light.kitchen'),
+            self._entity('Hall Sensor', EntityType.MOTION_SENSOR, 'binary_sensor.hall'),
+            self._entity('Bedroom Light', EntityType.LIGHT, 'light.bedroom'),
         ]
         placement_input = self.synchronizer.group_entities_for_placement(entities)
 
         self.assertEqual(placement_input.ungrouped_items, [])
         self.assertEqual(
             [group.label for group in placement_input.groups],
-            ['LIGHT', 'SENSOR'],
+            ['Light', 'Motion Sensor'],
         )
         self.assertEqual(
             [item.label for item in placement_input.groups[0].items],
@@ -340,11 +341,15 @@ class TestHassConnectorSyncResultGrouping(TestCase):
             ['Hall Sensor'],
         )
 
-    def test_falls_back_to_other_when_entity_type_missing(self):
-        """Entities missing entity_type_str land in an 'Other' bucket
-        rather than dropping out of the result entirely."""
-        entity = self._entity('Mystery', '', 'sensor.mystery')
-        entity.entity_type_str = None
+    def test_falls_back_to_other_when_entity_type_unknown(self):
+        """Entities with an unrecognized entity_type_str fall into
+        the 'Other' bucket (EntityType.default())."""
+        entity = Entity.objects.create(
+            name='Mystery',
+            entity_type_str='UNRECOGNIZED_FUTURE_TYPE',
+            integration_id='hass',
+            integration_name='sensor.mystery',
+        )
         placement_input = self.synchronizer.group_entities_for_placement([entity])
 
         self.assertEqual(placement_input.ungrouped_items, [])
@@ -359,7 +364,8 @@ class TestHassConnectorSyncResultGrouping(TestCase):
         self.assertTrue(placement_input.is_empty())
 
     def test_item_key_uses_integration_key(self):
-        entity = self._entity('Front Camera', 'CAMERA', 'camera.front')
+        from hi.apps.entity.enums import EntityType
+        entity = self._entity('Front Camera', EntityType.CAMERA, 'camera.front')
         placement_input = self.synchronizer.group_entities_for_placement([entity])
         self.assertEqual(placement_input.groups[0].items[0].key, 'hass:camera.front')
 

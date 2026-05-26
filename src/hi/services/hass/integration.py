@@ -68,3 +68,4 @@ class HassGateway( IntegrationGateway ):
         except Exception as e:
             logger.exception(f'Error in HASS access validation: {e}')
             return ConnectionTestResult.failure(f'Access validation error: {e}')
+

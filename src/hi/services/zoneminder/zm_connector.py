@@ -15,12 +15,6 @@ from hi.apps.system.health_status_provider import HealthStatusProvider
 
 from hi.apps.model_helper import HiModelHelper
 
-from hi.apps.entity.entity_placement import (
-    EntityPlacementInput,
-    EntityPlacementItem,
-    EntityPlacementGroup,
-)
-
 from hi.integrations.connector.integration_connector import IntegrationConnector
 from hi.integrations.connector.sync_check import IntegrationSyncCheck, SyncDelta
 from hi.integrations.connector.sync_result import IntegrationSyncResult
@@ -251,36 +245,8 @@ class ZmConnector( IntegrationConnector, ZoneMinderMixin ):
 
         self._sync_states( result = result )
         created_monitor_entities = self._sync_monitors( result = result )
-
-        # Existing-entity updates do not need re-placement; only
-        # newly-created monitor entities surface in the dispatcher.
-        if created_monitor_entities:
-            result.placement_input = self.group_entities_for_placement(
-                entities = created_monitor_entities,
-            )
+        result.created_entities = created_monitor_entities
         return result
-
-    def group_entities_for_placement( self, entities ) -> EntityPlacementInput:
-        """Single 'Monitors' group: ZM monitors typically share a
-        view, and the operator's first instinct is 'all cameras →
-        same place.' The dispatcher's drill-down still allows
-        per-monitor placement when needed.
-
-        Empty input → empty placement input (no dispatcher
-        rendering)."""
-        if not entities:
-            return EntityPlacementInput()
-        items = [
-            EntityPlacementItem(
-                key = self._placement_item_key( entity = entity ),
-                label = entity.name,
-                entity = entity,
-            )
-            for entity in entities
-        ]
-        return EntityPlacementInput(
-            groups = [ EntityPlacementGroup( label = 'Monitors', items = items ) ],
-        )
 
     def _sync_states( self, result : IntegrationSyncResult ) -> IntegrationSyncResult:
         zm_manager = self.zm_manager()

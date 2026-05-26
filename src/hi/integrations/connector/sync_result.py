@@ -28,6 +28,7 @@ from dataclasses import dataclass, field
 from typing import List, Optional
 
 from hi.apps.entity.entity_placement import EntityPlacementInput
+from hi.apps.entity.models import Entity
 
 
 @dataclass
@@ -71,9 +72,17 @@ class IntegrationSyncResult:
     breadcrumbs — that the per-item lists can't express. Rendered
     as a collapsible Details section in the result modal.
     ``error_list`` is the parallel for failures.
+
+    ``created_entities`` carries the just-created ``Entity``
+    instances back to the framework caller, which passes them
+    through ``gateway.group_entities_for_placement`` to build the
+    ``placement_input``. Keeping the grouping out of the connector
+    keeps Connect-sync and Import-run flows on a single grouping
+    method per integration.
     """
     title: str
     placement_input: Optional[EntityPlacementInput] = None
+    created_entities: List[Entity] = field(default_factory=list)
     created_list: List[str] = field(default_factory=list)
     updated_list: List[str] = field(default_factory=list)
     reconnected_list: List[str] = field(default_factory=list)

@@ -140,10 +140,7 @@ class HomeBoxImporter( IntegrationImporter, HomeBoxMixin ):
             result.imported_list.append( entity.name )
             created_entities.append( entity )
 
-        if created_entities:
-            result.placement_input = self.group_entities_for_placement(
-                entities = created_entities,
-            )
+        result.created_entities = created_entities
 
     def discard_imported_data( self, integration_id: str ) -> IntegrationDiscardResult:
         """Remove all entities previously imported under this
