@@ -44,6 +44,12 @@ class HbClient:
         self._api_options = api_options
         self._timeout_secs = timeout_secs
         self._backend : Optional[ _HbBackend ] = None
+        # Normalize the configured API URL once at construction so
+        # the (no-network) ``api_url`` accessor below matches what
+        # the backends use internally — the deep-link builder reads
+        # this without needing to trigger the lazy backend resolve.
+        raw_url = api_options.get( API_URL_OPTION ) or ''
+        self.api_url = raw_url.rstrip( '/' )
 
     def _get_backend(self) -> _HbBackend:
         if self._backend is None:
