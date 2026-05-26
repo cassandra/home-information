@@ -28,9 +28,12 @@ multi-Location deployments can disambiguate views with shared names
 
 Context:
   integration_data      : IntegrationData (required)
-  placement_input       : EntityPlacementInput (required) — including
-                          ``heading`` (str, defaults to "Items") shown
-                          above the group list when groups exist.
+  placement_input       : EntityPlacementInput (required)
+  grouping_heading      : Optional[str] — column-header text shown
+                          above the group list inside the override
+                          panel. None when the heading is the
+                          implicit default ("Item Type"); the
+                          column header is suppressed in that case.
   location_view_groups  : List[(Location, List[LocationView])] (required)
   collection_list       : List[Collection] (required)
   top_default_value     : str (required) — pre-selected value for
@@ -87,7 +90,7 @@ Place new items
 
   {% if inventory_preview %}
   <div class="text-muted small mb-3 hi-placement-preview">
-    {% for entry in inventory_preview %}{{ entry.count }} {{ entry.label|lower }}{% if not forloop.last %} · {% endif %}{% endfor %}
+    {% for entry in inventory_preview %}{{ entry.count }} {{ entry.label }}{% if not forloop.last %} · {% endif %}{% endfor %}
   </div>
   {% endif %}
 
@@ -101,77 +104,79 @@ Place new items
   </div>
 
   <div class="collapse" id="hi-placement-overrides">
-    <div class="text-muted small mb-2">
-      Override the top choice per group, or drill into a group
-      for per-item placement. Empty selections inherit from the
-      level above.
-    </div>
-
-    {% if placement_input.groups %}
-    <div class="text-muted text-uppercase small mb-1 hi-placement-heading">
-      {{ placement_input.heading }}
-    </div>
-    {% endif %}
-
-    {% for group in placement_input.groups %}
-    {% with forloop.counter0 as group_index %}
-    <div class="hi-placement-group border-bottom py-2">
-      <div class="d-flex align-items-center">
-        <div class="flex-grow-1">
-          <strong>{{ group.label }}</strong>
-          <span class="badge badge-light ml-1">{{ group.items|length }}</span>
-        </div>
-        <select name="group_view_{{ group_index }}" class="form-control form-control-sm w-auto">
-          <option value="">Use top choice</option>
-          <option value="__skip__">Don't place</option>
-          {% include "integrations/panes/placement_target_options.html" %}
-        </select>
-        <a class="btn btn-sm btn-link" data-toggle="collapse"
-           href="#hi-drill-{{ group_index }}" role="button"
-           aria-expanded="false" aria-controls="hi-drill-{{ group_index }}">
-          Per item ▸
-        </a>
+    <div class="hi-placement-overrides-panel">
+      <div class="text-muted small mb-3">
+        Override the top choice per group, or drill into a group
+        for per-item placement. Empty selections inherit from the
+        level above.
       </div>
-      <div class="collapse mt-2 pl-3" id="hi-drill-{{ group_index }}">
-        {% for item in group.items %}
-        <div class="d-flex align-items-center py-1">
-          <div class="flex-grow-1 small">{{ item.label }}</div>
-          <select name="group_{{ group_index }}_entity_{{ item.entity.id }}_view"
-                  class="form-control form-control-sm w-auto">
-            <option value="">Use group choice</option>
-            <option value="__skip__">Don't place</option>
-            {% include "integrations/panes/placement_target_options.html" %}
-          </select>
-        </div>
-        {% endfor %}
-      </div>
-    </div>
-    {% endwith %}
-    {% endfor %}
 
-    {% if placement_input.ungrouped_items %}
-    <div class="hi-placement-ungrouped py-2">
-      <div class="d-flex align-items-center mb-1">
-        <div class="flex-grow-1">
-          <strong>Other items</strong>
-          <span class="badge badge-light ml-1">{{ placement_input.ungrouped_items|length }}</span>
-        </div>
+      {% if grouping_heading and placement_input.groups %}
+      <div class="hi-placement-column-header text-muted text-uppercase small">
+        {{ grouping_heading }}
       </div>
-      <div class="pl-3">
-        {% for item in placement_input.ungrouped_items %}
-        <div class="d-flex align-items-center py-1">
-          <div class="flex-grow-1 small">{{ item.label }}</div>
-          <select name="ungrouped_entity_{{ item.entity.id }}_view"
-                  class="form-control form-control-sm w-auto">
+      {% endif %}
+
+      {% for group in placement_input.groups %}
+      {% with forloop.counter0 as group_index %}
+      <div class="hi-placement-group py-3">
+        <div class="d-flex align-items-center">
+          <div class="flex-grow-1">
+            <strong>{{ group.label }}</strong>
+            <span class="text-muted small ml-2">({{ group.items|length }})</span>
+          </div>
+          <select name="group_view_{{ group_index }}" class="form-control form-control-sm w-auto">
             <option value="">Use top choice</option>
             <option value="__skip__">Don't place</option>
             {% include "integrations/panes/placement_target_options.html" %}
           </select>
+          <a class="btn btn-sm btn-link" data-toggle="collapse"
+             href="#hi-drill-{{ group_index }}" role="button"
+             aria-expanded="false" aria-controls="hi-drill-{{ group_index }}">
+            Per item ▸
+          </a>
         </div>
-        {% endfor %}
+        <div class="collapse mt-2 hi-placement-drill" id="hi-drill-{{ group_index }}">
+          {% for item in group.items %}
+          <div class="d-flex align-items-center py-2">
+            <div class="flex-grow-1 small text-muted">{{ item.label }}</div>
+            <select name="group_{{ group_index }}_entity_{{ item.entity.id }}_view"
+                    class="form-control form-control-sm w-auto">
+              <option value="">Use group choice</option>
+              <option value="__skip__">Don't place</option>
+              {% include "integrations/panes/placement_target_options.html" %}
+            </select>
+          </div>
+          {% endfor %}
+        </div>
       </div>
+      {% endwith %}
+      {% endfor %}
+
+      {% if placement_input.ungrouped_items %}
+      <div class="hi-placement-group hi-placement-ungrouped py-3">
+        <div class="d-flex align-items-center mb-1">
+          <div class="flex-grow-1">
+            <strong>Other items</strong>
+            <span class="text-muted small ml-2">({{ placement_input.ungrouped_items|length }})</span>
+          </div>
+        </div>
+        <div class="hi-placement-drill">
+          {% for item in placement_input.ungrouped_items %}
+          <div class="d-flex align-items-center py-2">
+            <div class="flex-grow-1 small text-muted">{{ item.label }}</div>
+            <select name="ungrouped_entity_{{ item.entity.id }}_view"
+                    class="form-control form-control-sm w-auto">
+              <option value="">Use top choice</option>
+              <option value="__skip__">Don't place</option>
+              {% include "integrations/panes/placement_target_options.html" %}
+            </select>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+      {% endif %}
     </div>
-    {% endif %}
   </div>
   {% endif %}
 

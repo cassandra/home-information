@@ -2334,3 +2334,35 @@ g[hover] {
 .event-edit-add {
     margin: 0.5rem 0;
 }
+
+/* Placement modal — post-sync "Place new items" dispatcher. */
+
+.hi-placement-overrides-panel {
+    background-color: #f8f9fa;
+    border: 1px solid #e9ecef;
+    border-radius: 4px;
+    padding: 1rem;
+}
+
+.hi-placement-column-header {
+    border-bottom: 1px solid #dee2e6;
+    padding-bottom: 0.25rem;
+    margin-bottom: 0.25rem;
+    letter-spacing: 0.05em;
+}
+
+.hi-placement-group {
+    border-bottom: 1px solid #e9ecef;
+}
+
+.hi-placement-group:last-child {
+    border-bottom: none;
+}
+
+/* Per-item drill-down inside a group: left rule + indent so the
+   item rows read as children of the group above them. */
+.hi-placement-drill {
+    border-left: 2px solid #ced4da;
+    margin-left: 0.5rem;
+    padding-left: 0.75rem;
+}

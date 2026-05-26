@@ -7,6 +7,7 @@ from django.urls import reverse
 
 from hi.apps.collection.collection_manager import CollectionManager
 from hi.apps.collection.models import Collection, CollectionEntity
+from hi.apps.entity.entity_placement import PLACEMENT_DEFAULT_HEADING
 from hi.apps.entity.models import Entity, EntityView
 from hi.apps.location.location_manager import LocationManager
 from hi.apps.location.models import Location, LocationView
@@ -218,6 +219,15 @@ class IntegrationPlacementViewMixin:
         inventory_preview = self._build_inventory_preview(
             placement_input = placement_input,
         )
+        # Suppress the column-header heading when the grouping
+        # dimension is the implicit default ("Item Type") — it
+        # adds no information. The heading still renders when an
+        # integration override conveys context (e.g. "HomeBox Location").
+        grouping_heading = (
+            placement_input.heading
+            if placement_input.heading != PLACEMENT_DEFAULT_HEADING
+            else None
+        )
         # The form posts back to the same URL that rendered the
         # modal — single CBV, GET renders / POST processes.
         placement_url = reverse(
@@ -237,6 +247,7 @@ class IntegrationPlacementViewMixin:
                 'new_view_name': new_view_name,
                 'new_collection_name': new_collection_name,
                 'inventory_preview': inventory_preview,
+                'grouping_heading': grouping_heading,
                 'placement_url': placement_url,
                 'is_initial_connect': is_initial_connect,
             },

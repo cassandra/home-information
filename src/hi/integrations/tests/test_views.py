@@ -1173,9 +1173,9 @@ class PlacementDismissAndShowTests(SyncViewTestCase):
         self.assertSuccessResponse(response)
         body = response.content.decode()
         # The PlacementGetFlow fixture builds a single 'Cameras'
-        # group with 2 items; the preview line lower-cases the
-        # label and shows the count.
-        self.assertIn('2 cameras', body)
+        # group with 2 items; the preview line shows the count
+        # with the group label rendered verbatim.
+        self.assertIn('2 Cameras', body)
         # Group rows are behind the disclosure (collapsed by
         # default) — the disclosure affordance is rendered.
         self.assertIn('Place differently', body)
