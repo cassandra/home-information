@@ -243,23 +243,32 @@ class ZmConnector( IntegrationConnector, ZoneMinderMixin ):
             result.error_list.append( 'Sync problem. ZM integration disabled?' )
             return result
 
-        self._sync_states( result = result )
+        created_service_entity = self._sync_states( result = result )
         created_monitor_entities = self._sync_monitors( result = result )
-        result.created_entities = created_monitor_entities
+        result.created_entities = [
+            *( [ created_service_entity ] if created_service_entity else [] ),
+            *created_monitor_entities,
+        ]
         return result
 
-    def _sync_states( self, result : IntegrationSyncResult ) -> IntegrationSyncResult:
+    def _sync_states( self, result : IntegrationSyncResult ) -> Optional[Entity]:
+        """Returns the freshly-created ZM service entity when this
+        sync run had to create one; None otherwise. Caller appends
+        the return value (when non-None) to ``result.created_entities``
+        so the framework's placement step treats the service entity
+        symmetrically with everything else created this run."""
         zm_manager = self.zm_manager()
-        
+
         zm_run_state_list = zm_manager.get_zm_states( force_load = True )
         new_state_values_dict = { x.name(): x.name() for x in zm_run_state_list }
-        
+
         zm_entity = Entity.objects.filter_by_integration_key(
             integration_key = zm_manager._zm_integration_key(),
         ).first()
-        
+
+        created_service_entity = None
         if not zm_entity:
-            _ = self._create_zm_entity(
+            created_service_entity = self._create_zm_entity(
                 run_state_name_label_dict = new_state_values_dict,
                 result = result,
             )
@@ -270,7 +279,7 @@ class ZmConnector( IntegrationConnector, ZoneMinderMixin ):
 
         if not zm_run_state_sensor:
             result.error_list.append( 'Missing ZoneMinder sensor for ZM state.' )
-            return
+            return created_service_entity
 
         entity_state = zm_run_state_sensor.entity_state
         new_state_values = new_state_values_dict.keys()
@@ -284,7 +293,7 @@ class ZmConnector( IntegrationConnector, ZoneMinderMixin ):
                 f'Updated ZM state values to: {new_state_values_dict}'
             )
 
-        return
+        return created_service_entity
 
     def _sync_monitors( self, result : IntegrationSyncResult ):
         """Sync monitors and return the list of newly-created monitor

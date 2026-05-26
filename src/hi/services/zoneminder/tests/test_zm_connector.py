@@ -927,13 +927,14 @@ class TestZmConnectorWithRealData(TestCase):
                 self.assertEqual(len(result.created_list), 1)
 
 
-class TestZmConnectorSyncResultGrouping(TestCase):
-    """Phase 2 grouping behavior: every imported monitor entity goes
-    into a single 'Monitors' group on the IntegrationSyncResult.
-
-    The single-group choice reflects the typical ZM UX — operators
-    place all cameras into the same view — while the placement
-    modal's drill-down still allows per-monitor placement when needed."""
+class TestZmConnectorSyncImplCreatedEntities(TestCase):
+    """ZmConnector._sync_impl reports ALL newly-created entities on
+    result.created_entities, including the ZM service entity when
+    it was just created. The framework caller (render_sync_result)
+    feeds this list through gateway.group_entities_for_placement,
+    where the by-EntityType default produces a 'Camera' group and a
+    'Service' group (the operator may skip the service entity in the
+    placement modal — the system does not hide it)."""
 
     def setUp(self):
         self.synchronizer = ZmConnector()
@@ -951,25 +952,39 @@ class TestZmConnectorSyncResultGrouping(TestCase):
         entity.id = 0
         return entity
 
-    def test_sync_impl_emits_single_monitors_group(self):
+    def test_includes_freshly_created_service_entity(self):
+        service_entity = self._imported_entity('ZoneMinder', 'service')
         entity_a = self._imported_entity('Front Door', 'monitor.1')
         entity_b = self._imported_entity('Driveway', 'monitor.2')
-        with patch.object(self.synchronizer, '_sync_states'), \
+        with patch.object(self.synchronizer, '_sync_states',
+                          return_value=service_entity), \
              patch.object(self.synchronizer, '_sync_monitors',
                           return_value=[entity_a, entity_b]):
             result = self.synchronizer._sync_impl(is_initial_connect=True)
 
-        # Created entities flow through to the framework caller, which
-        # groups them via gateway.group_entities_for_placement.
-        self.assertEqual(result.created_entities, [entity_a, entity_b])
+        self.assertEqual(
+            result.created_entities,
+            [service_entity, entity_a, entity_b],
+        )
 
-    def test_sync_impl_emits_no_placement_input_when_no_monitors_imported(self):
-        with patch.object(self.synchronizer, '_sync_states'), \
+    def test_omits_service_entity_when_not_freshly_created(self):
+        # _sync_states returns None when the service entity already
+        # existed (re-sync after initial connect).
+        entity_a = self._imported_entity('Front Door', 'monitor.1')
+        with patch.object(self.synchronizer, '_sync_states',
+                          return_value=None), \
+             patch.object(self.synchronizer, '_sync_monitors',
+                          return_value=[entity_a]):
+            result = self.synchronizer._sync_impl(is_initial_connect=False)
+
+        self.assertEqual(result.created_entities, [entity_a])
+
+    def test_empty_when_nothing_created(self):
+        with patch.object(self.synchronizer, '_sync_states',
+                          return_value=None), \
              patch.object(self.synchronizer, '_sync_monitors', return_value=[]):
             result = self.synchronizer._sync_impl(is_initial_connect=True)
 
-        # No newly-created entities → empty created_entities → framework
-        # caller leaves placement_input as None.
         self.assertEqual(result.created_entities, [])
         self.assertIsNone(result.placement_input)
 

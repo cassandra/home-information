@@ -1,12 +1,6 @@
 import logging
 from typing import List, Optional
 
-from hi.apps.entity.entity_placement import (
-    EntityPlacementGroup,
-    EntityPlacementInput,
-    EntityPlacementItem,
-)
-from hi.apps.entity.models import Entity
 from hi.apps.system.enums import HealthStatusType
 
 from hi.integrations.integration_gateway import IntegrationGateway
@@ -80,24 +74,3 @@ class FrigateGateway( IntegrationGateway, FrigateMixin ):
         except Exception as e:
             logger.exception( f'Error in Frigate access validation: {e}' )
             return ConnectionTestResult.failure( f'Access validation error: {e}' )
-
-    def group_entities_for_placement(
-            self, entities: List[Entity],
-    ) -> EntityPlacementInput:
-        """Single 'Cameras' placement group: Frigate cameras usually
-        share a wall-of-views layout, so 'all cameras → same place'
-        is the right default. Operators can still drill into
-        per-camera placement from the dispatcher."""
-        if not entities:
-            return EntityPlacementInput()
-        items = [
-            EntityPlacementItem(
-                key = self._placement_item_key( entity = entity ),
-                label = entity.name,
-                entity = entity,
-            )
-            for entity in entities
-        ]
-        return EntityPlacementInput(
-            groups = [ EntityPlacementGroup( label = 'Cameras', items = items ) ],
-        )

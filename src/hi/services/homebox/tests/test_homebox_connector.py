@@ -131,13 +131,14 @@ class TestHomeBoxConnector(SimpleTestCase):
                             for message in result.error_list))
 
 
-class TestHomeBoxConnectorSyncResultGrouping(SimpleTestCase):
-    """Phase 2 grouping behavior: HomeBox has no domain notion of
-    grouping, so every imported item lands in `ungrouped_items`.
-    `groups` stays empty. The framework's placement modal decides
-    how to surface ungrouped items at render time."""
+class TestHomeBoxConnectorSyncImplCreatedEntities(SimpleTestCase):
+    """HomeBoxConnector._sync_impl reports newly-created entities
+    on result.created_entities. The framework caller does the
+    grouping via the gateway (HomeBox inherits the by-EntityType
+    default; with HbConverter currently stamping every item as
+    OTHER, the operator sees a single 'Other' group)."""
 
-    def test_sync_impl_populates_ungrouped_items_only(self):
+    def test_sync_impl_populates_created_entities(self):
         synchronizer = HomeBoxConnector()
         manager = Mock()
         manager.hb_client = object()

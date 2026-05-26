@@ -1,12 +1,6 @@
 import logging
 from typing import List, Optional
 
-from hi.apps.entity.entity_placement import (
-    EntityPlacementGroup,
-    EntityPlacementInput,
-    EntityPlacementItem,
-)
-from hi.apps.entity.models import Entity
 from hi.apps.system.enums import HealthStatusType
 
 from hi.integrations.integration_gateway import IntegrationGateway
@@ -76,27 +70,3 @@ class ZoneMinderGateway( IntegrationGateway, ZoneMinderMixin ):
         except Exception as e:
             logger.exception(f'Error in ZoneMinder access validation: {e}')
             return ConnectionTestResult.failure(f'Access validation error: {e}')
-
-    def group_entities_for_placement(
-            self, entities: List[Entity],
-    ) -> EntityPlacementInput:
-        """Single 'Monitors' group: ZM monitors typically share a
-        view, and the operator's first instinct is 'all cameras →
-        same place.' The dispatcher's drill-down still allows
-        per-monitor placement when needed.
-
-        Empty input → empty placement input (no dispatcher
-        rendering)."""
-        if not entities:
-            return EntityPlacementInput()
-        items = [
-            EntityPlacementItem(
-                key = self._placement_item_key( entity = entity ),
-                label = entity.name,
-                entity = entity,
-            )
-            for entity in entities
-        ]
-        return EntityPlacementInput(
-            groups = [ EntityPlacementGroup( label = 'Monitors', items = items ) ],
-        )

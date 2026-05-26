@@ -443,9 +443,10 @@ class IntegrationPlacementViewMixin:
         'free preview of what's about to be imported' signal that
         the always-visible group cards previously provided.
 
-        Returns an empty list for the all-ungrouped case (HomeBox-
-        style). Callers should hide the preview entirely in that
-        case, since restating the count is just noise.
+        Returns an empty list for the rare truly-ungrouped case
+        (no groups, only ``ungrouped_items``). Callers should hide
+        the preview entirely in that case, since restating the
+        count is just noise.
         """
         if not placement_input.groups:
             return []
