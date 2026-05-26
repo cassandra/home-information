@@ -8,6 +8,10 @@ class IntegrationCapability( LabeledEnum ):
 
     CONNECT = ( 'Connect', 'Live mirror of an upstream system.' )
     IMPORT = ( 'Import', 'One-shot pull of upstream items into HI.' )
+    ATTRIBUTE_REFERENCE = (
+        'Attribute Reference',
+        'Search-and-attach external documents as Entity/Location attributes.',
+    )
 
 
 ALL_CAPABILITIES = frozenset( IntegrationCapability )

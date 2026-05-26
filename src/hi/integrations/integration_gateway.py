@@ -6,6 +6,9 @@ from hi.apps.entity.entity_placement import (
 )
 from hi.apps.entity.models import Entity
 
+from hi.integrations.referencer.integration_attribute_referencer import (
+    IntegrationAttributeReferencer,
+)
 from hi.integrations.connector.integration_connector import IntegrationConnector
 from hi.integrations.importer.integration_importer import IntegrationImporter
 from hi.integrations.models import IntegrationAttribute
@@ -56,6 +59,17 @@ class IntegrationGateway:
         (Data Import page, preview, confirm, result modal, placement);
         the importer supplies the integration-specific candidate
         listing, item ingest, and discard operations.
+        """
+        return None
+
+    def get_attribute_referencer(self) -> Optional[IntegrationAttributeReferencer]:
+        """
+        Return the integration's attribute-referencer when it
+        supports the ATTRIBUTE_REFERENCE capability; None otherwise.
+        Parallel to get_connector() and get_importer(). The
+        framework owns the picker UI and the TEXT-attribute attach
+        lifecycle; the referencer supplies the integration-specific
+        search-against-upstream operation.
         """
         return None
 

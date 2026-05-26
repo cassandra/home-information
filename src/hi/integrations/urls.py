@@ -10,6 +10,7 @@ from . import views
 urlpatterns = [
     path( 'connect/', include( 'hi.integrations.connector.urls' )),
     path( 'import/', include( 'hi.integrations.importer.urls' )),
+    path( 'referencer/', include( 'hi.integrations.referencer.urls' )),
 
     re_path( r'^placement/(?P<integration_id>[\w\-]+)$',
              views.IntegrationPlacementView.as_view(),
