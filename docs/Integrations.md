@@ -39,6 +39,11 @@ enter it.
 - **[HomeBox](integrations/homebox.md)** — home inventory tracking.
   Imports HomeBox items as read-only HI items with custom fields and
   attached files (manuals, receipts, photos).
+- **[Paperless-ngx](integrations/paperless-ngx.md)** — document
+  management. Does not import items; instead lets you search
+  paperless from inside HI and attach matching documents (warranty
+  PDFs, manuals, receipts) as link references on items and
+  Locations you already have.
 
 More integrations will be added as demand arises. The per-integration
 pages each carry their own troubleshooting section that accretes
@@ -46,8 +51,11 @@ real-world fixes over time — start there if something is not working.
 
 ## Integrations vs. Data Import
 
-Integrations on this page are live: HI mirrors the upstream system
-continuously and changes flow in via the update action.
+Most integrations on this page are live: HI mirrors the upstream
+system continuously and changes flow in via the update action.
+Paperless-ngx is a different shape — it contributes attachable
+document references rather than importing items, and it talks to
+paperless only when the operator opens the picker.
 
 A separate feature, [Data Import](DataImport.md), is a one-time
 copy with no ongoing upstream link. Some integrations (HomeBox
