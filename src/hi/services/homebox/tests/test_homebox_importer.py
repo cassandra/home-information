@@ -14,14 +14,14 @@ from hi.services.homebox.hb_models import HbItem
 logging.disable(logging.CRITICAL)
 
 
-def _hb_item(item_id, name='Item', archived=False):
+def _hb_item(item_id, name='Item', archived=False, location_name='Garage', tag_names=None):
     return HbItem(
         api_dict={
             'id': item_id,
             'name': name,
             'archived': archived,
-            'location': {'id': 'loc-1', 'name': 'Garage'},
-            'tags': [],
+            'location': {'id': 'loc-1', 'name': location_name} if location_name else None,
+            'tags': [{'name': t} for t in (tag_names or [])],
             'fields': [],
             'attachments': [],
         },
@@ -35,6 +35,8 @@ class TestHomeBoxImporterGetCandidateItems(TestCase):
         importer = HomeBoxImporter()
         mock_manager = Mock()
         mock_manager.hb_client = Mock()
+        mock_manager.include_filter = ''
+        mock_manager.exclude_filter = ''
         mock_manager.fetch_hb_items_summary_from_api.return_value = [
             {'id': 'item-1', 'name': 'Hammer', 'archived': False},
             {'id': 'item-2', 'name': 'Saw', 'archived': True},
@@ -70,6 +72,8 @@ class TestHomeBoxImporterRunImport(TestCase):
         importer = HomeBoxImporter()
         mock_manager = Mock()
         mock_manager.hb_client = Mock()
+        mock_manager.include_filter = ''
+        mock_manager.exclude_filter = ''
         mock_manager.fetch_hb_items_from_api.return_value = [
             _hb_item('item-1', 'Should skip'),
             _hb_item('item-2', 'Should import'),
@@ -90,6 +94,8 @@ class TestHomeBoxImporterRunImport(TestCase):
         importer = HomeBoxImporter()
         mock_manager = Mock()
         mock_manager.hb_client = Mock()
+        mock_manager.include_filter = ''
+        mock_manager.exclude_filter = ''
         mock_manager.fetch_hb_items_from_api.return_value = [
             _hb_item('item-a', 'Item A'),
             _hb_item('item-b', 'Item B'),
@@ -146,3 +152,46 @@ class TestHomeBoxImporterDiscard(TestCase):
         result = importer.discard_imported_data(integration_id=HbMetaData.integration_id)
         self.assertEqual(result.count, 0)
         self.assertEqual(result.errors, [])
+
+
+class TestHomeBoxImporterFilter(TestCase):
+    """End-to-end coverage of the include/exclude filter on the
+    importer paths — preview (candidate items) and the import
+    itself."""
+
+    def test_get_candidate_items_honors_include_filter(self):
+        importer = HomeBoxImporter()
+        mock_manager = Mock()
+        mock_manager.hb_client = Mock()
+        mock_manager.include_filter = 'Garage'
+        mock_manager.exclude_filter = ''
+        mock_manager.fetch_hb_items_summary_from_api.return_value = [
+            {'id': '1', 'name': 'A', 'location': {'name': 'Garage'}, 'tags': []},
+            {'id': '2', 'name': 'B', 'location': {'name': 'Basement'}, 'tags': []},
+        ]
+        with patch.object(HomeBoxImporter, 'hb_manager', return_value=mock_manager):
+            candidates = importer.get_candidate_items()
+
+        self.assertEqual(len(candidates), 1)
+        self.assertEqual(candidates[0].integration_name, '1')
+
+    def test_run_import_filters_and_populates_count(self):
+        importer = HomeBoxImporter()
+        mock_manager = Mock()
+        mock_manager.hb_client = Mock()
+        mock_manager.include_filter = 'Garage'
+        mock_manager.exclude_filter = ''
+        mock_manager.fetch_hb_items_from_api.return_value = [
+            _hb_item('item-1', location_name='Garage'),
+            _hb_item('item-2', location_name='Basement'),
+            _hb_item('item-3', location_name='Garage'),
+        ]
+        with patch.object(HomeBoxImporter, 'hb_manager', return_value=mock_manager):
+            result = importer.run_import()
+
+        # 2 items in Garage imported; 1 in Basement filtered out.
+        self.assertEqual(result.items_imported_count, 2)
+        self.assertEqual(result.items_filtered_count, 1)
+        self.assertTrue(any('Filtered 1 item(s)' in message
+                            for message in result.info_list))
+        self.assertIn('Include Items By Location/Tag', result.footer_message)

@@ -16,6 +16,7 @@ from hi.integrations.transient_models import IntegrationKey
 
 from hi.services.homebox.connector.hb_external_view_resolver import HomeBoxExternalViewResolver
 from hi.services.homebox.hb_controller import HomeBoxController
+from hi.services.homebox.hb_filter_footer import HB_FILTER_FOOTER_MESSAGE
 from hi.services.homebox.monitors import HomeBoxMonitor
 from hi.services.homebox.hb_converter import HbConverter
 from hi.services.homebox.hb_manager import HomeBoxManager
@@ -62,6 +63,11 @@ class HomeBoxConnector( IntegrationConnector, HomeBoxMixin ):
         item becomes one HI entity whose ``integration_name`` is
         ``str(item.id)``. Adds/removes only — update detection via
         timestamps is deferred.
+
+        The include/exclude filter is applied here too so the
+        upstream key set matches what the full sync would actually
+        keep — otherwise drift detection reports phantom "missing"
+        items that the sync would have filtered out anyway.
         """
         hb_manager = await self.hb_manager_async()
         if hb_manager is None:
@@ -69,20 +75,29 @@ class HomeBoxConnector( IntegrationConnector, HomeBoxMixin ):
             # try again. Returning None opts this cycle out cleanly.
             return None
         summary_list = await hb_manager.fetch_hb_items_summary_from_api_async()
+        include_tokens = HbConverter.parse_filter_list( hb_manager.include_filter )
+        exclude_tokens = HbConverter.parse_filter_list( hb_manager.exclude_filter )
         # ``archived: true`` upstream is HomeBox's "no longer in
         # active use" marker. Treat archived items as if they were
         # absent so the sync-check correctly reports them as removed
         # — see ``_sync_helper_entities`` for the matching filter on
         # the full-detail fetch.
-        upstream_keys = {
-            IntegrationKey(
+        upstream_keys = set()
+        for item in summary_list:
+            if item.get('id') is None:
+                continue
+            if item.get('archived') is True:
+                continue
+            if include_tokens or exclude_tokens:
+                if not HbConverter.is_item_allowed(
+                        hb_item = HbItem( api_dict = item ),
+                        include_tokens = include_tokens,
+                        exclude_tokens = exclude_tokens ):
+                    continue
+            upstream_keys.add( IntegrationKey(
                 integration_id = HbMetaData.integration_id,
                 integration_name = str( item['id'] ),
-            )
-            for item in summary_list
-            if item.get('id') is not None
-            and item.get('archived') is not True
-        }
+            ) )
         current_keys = await sync_to_async( self._get_current_integration_keys )()
         return IntegrationSyncCheck.compute_delta(
             upstream_keys = upstream_keys,
@@ -132,22 +147,39 @@ class HomeBoxConnector( IntegrationConnector, HomeBoxMixin ):
 
         result.info_list.append( f'Found {len(item_list)} current HomeBox items.' )
 
+        include_tokens = HbConverter.parse_filter_list( hb_manager.include_filter )
+        exclude_tokens = HbConverter.parse_filter_list( hb_manager.exclude_filter )
+
         # Existing-entity updates do not need re-placement; only
         # newly-created entities surface in the dispatcher.
         created_entities = self._sync_helper_entities(
-            item_list = item_list, result = result )
+            item_list = item_list,
+            result = result,
+            include_tokens = include_tokens,
+            exclude_tokens = exclude_tokens,
+        )
         result.created_entities = created_entities
         return result
 
     def _sync_helper_entities( self,
                                item_list: List[HbItem],
-                               result: IntegrationSyncResult ) -> List[Entity]:
+                               result: IntegrationSyncResult,
+                               include_tokens = frozenset(),
+                               exclude_tokens = frozenset() ) -> List[Entity]:
         """Sync HomeBox items and return newly-created entities (for
         the caller to feed into group_entities_for_placement).
         Existing-entity updates do not contribute — they don't need
-        re-placement."""
+        re-placement.
+
+        ``include_tokens`` / ``exclude_tokens`` are pre-parsed by the
+        caller (``_sync_impl``); filtering is a no-op when both are
+        empty, which keeps callers without a configured filter on
+        the original code path."""
+        filter_active = bool( include_tokens or exclude_tokens )
+
         integration_key_to_item = dict()
         skipped_archived = 0
+        skipped_filtered = 0
         for item in item_list:
             # ``archived: true`` upstream means the item is no
             # longer in active use. Skip it so the sync's removal
@@ -159,6 +191,12 @@ class HomeBoxConnector( IntegrationConnector, HomeBoxMixin ):
             if item.archived is True:
                 skipped_archived += 1
                 continue
+            if filter_active and not HbConverter.is_item_allowed(
+                    hb_item = item,
+                    include_tokens = include_tokens,
+                    exclude_tokens = exclude_tokens ):
+                skipped_filtered += 1
+                continue
             try:
                 integration_key = HbConverter.hb_item_to_integration_key( hb_item = item )
                 integration_key_to_item[integration_key] = item
@@ -169,6 +207,12 @@ class HomeBoxConnector( IntegrationConnector, HomeBoxMixin ):
             result.info_list.append(
                 f'Skipped {skipped_archived} archived HomeBox item(s).'
             )
+        if skipped_filtered:
+            result.items_filtered_count = skipped_filtered
+            result.info_list.append(
+                f'Filtered {skipped_filtered} item(s) not matching your include/exclude filter.'
+            )
+            result.footer_message = HB_FILTER_FOOTER_MESSAGE
 
         integration_key_to_entity = self._get_existing_hb_entities( result = result )
         result.info_list.append( f'Found {len(integration_key_to_entity)} existing HomeBox items.' )

@@ -1,4 +1,4 @@
-from typing import Dict, List, Optional
+from typing import Dict, FrozenSet, List, Optional
 import mimetypes
 import os
 import re
@@ -174,6 +174,96 @@ _KEYWORD_PATTERNS = [
 
 
 class HbConverter:
+
+    # Single non-alphanumeric → space; collapsed and stripped.
+    # Common delimiters like '-' and '_' fall through this rule
+    # naturally — they become spaces, then the collapse step
+    # merges runs of spaces. ASCII-only by design; the filter
+    # vocabulary is operator-provided text.
+    _NORMALIZE_PATTERN = re.compile( r'[^a-z0-9]+' )
+
+    @classmethod
+    def _normalize_filter_token( cls, text: str ) -> str:
+        """Lower-case, treat any non-alphanumeric run as a
+        separator (so ``Garage-2``, ``garage_2`` and ``Garage 2``
+        all collapse to ``garage 2``), then collapse and strip
+        whitespace."""
+        if not text:
+            return ''
+        return cls._NORMALIZE_PATTERN.sub( ' ', text.lower() ).strip()
+
+    @classmethod
+    def parse_filter_list( cls, filter_text: str ) -> FrozenSet[ str ]:
+        """Parse the multiline operator-supplied include/exclude
+        filter into a normalized set of tokens. Empty / whitespace
+        lines silently skipped. Tokens that normalize to the empty
+        string are dropped."""
+        if not filter_text:
+            return frozenset()
+        tokens = set()
+        for line in filter_text.splitlines():
+            token = cls._normalize_filter_token( line )
+            if token:
+                tokens.add( token )
+        return frozenset( tokens )
+
+    @classmethod
+    def is_item_allowed( cls,
+                         hb_item       : HbItem,
+                         include_tokens : FrozenSet[ str ],
+                         exclude_tokens : FrozenSet[ str ],
+                         ) -> bool:
+        """Apply the include + exclude filter to a single HomeBox
+        item. Match is against the item's location name and any tag
+        name, all normalized via ``_normalize_filter_token``.
+
+        Precedence (per issue #371):
+          - Both filters empty → admit.
+          - Include set, item matches any token → survives the
+            include stage. Exclude then removes it if any item
+            token matches the exclude list.
+          - Include set, item matches no token → rejected.
+            (Orphans with no location and no tags fall here.)
+          - Include empty, exclude set → admit unless excluded.
+        """
+        item_tokens = cls._collect_item_tokens( hb_item = hb_item )
+
+        if include_tokens:
+            if not item_tokens.intersection( include_tokens ):
+                return False
+
+        if exclude_tokens and item_tokens.intersection( exclude_tokens ):
+            return False
+
+        return True
+
+    @classmethod
+    def _collect_item_tokens( cls, hb_item: HbItem ) -> FrozenSet[ str ]:
+        """Return the normalized comparison tokens for an item:
+        its location name (if any) plus each tag name."""
+        tokens = set()
+
+        location = hb_item.location
+        if isinstance( location, dict ):
+            location_name = location.get( 'name' )
+            if location_name:
+                normalized = cls._normalize_filter_token( location_name )
+                if normalized:
+                    tokens.add( normalized )
+
+        tags = hb_item.tags
+        if isinstance( tags, list ):
+            for tag in tags:
+                if not isinstance( tag, dict ):
+                    continue
+                tag_name = tag.get( 'name' )
+                if not tag_name:
+                    continue
+                normalized = cls._normalize_filter_token( tag_name )
+                if normalized:
+                    tokens.add( normalized )
+
+        return frozenset( tokens )
 
     @classmethod
     def hb_item_to_integration_key( cls, hb_item: HbItem ) -> IntegrationKey:

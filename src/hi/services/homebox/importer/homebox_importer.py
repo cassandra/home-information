@@ -29,8 +29,11 @@ from hi.integrations.importer.transient_models import (
 from hi.integrations.models import IntegrationAttribute
 from hi.integrations.transient_models import IntegrationMetaData, IntegrationValidationResult
 
+from hi.services.homebox.hb_converter import HbConverter
+from hi.services.homebox.hb_filter_footer import HB_FILTER_FOOTER_MESSAGE
 from hi.services.homebox.hb_metadata import HbMetaData
 from hi.services.homebox.hb_mixins import HomeBoxMixin
+from hi.services.homebox.hb_models import HbItem
 from hi.services.homebox.hb_entity_factory import HbEntityFactory
 
 from .hb_importer import populate_attributes_for_imported_entity
@@ -55,11 +58,16 @@ class HomeBoxImporter( IntegrationImporter, HomeBoxMixin ):
         """Lightweight upstream pull for the preview step. Returns the
         full upstream item list as ``CandidateItem``s; the framework
         decides which are new vs. already-imported by comparing
-        ``integration_name`` against existing HI entities."""
+        ``integration_name`` against existing HI entities. The
+        include/exclude filter is applied here so the preview count
+        matches what ``run_import`` will actually pull."""
         hb_manager = self.hb_manager()
         if not hb_manager.hb_client:
             return []
         summary_list = hb_manager.fetch_hb_items_summary_from_api()
+        include_tokens = HbConverter.parse_filter_list( hb_manager.include_filter )
+        exclude_tokens = HbConverter.parse_filter_list( hb_manager.exclude_filter )
+        filter_active = bool( include_tokens or exclude_tokens )
         candidates: List[CandidateItem] = []
         for summary in summary_list:
             item_id = summary.get( 'id' )
@@ -69,6 +77,11 @@ class HomeBoxImporter( IntegrationImporter, HomeBoxMixin ):
             # mirror the same filter as the Connect-mode sync check
             # so imports don't pull HomeBox's tombstones.
             if summary.get( 'archived' ) is True:
+                continue
+            if filter_active and not HbConverter.is_item_allowed(
+                    hb_item = HbItem( api_dict = summary ),
+                    include_tokens = include_tokens,
+                    exclude_tokens = exclude_tokens ):
                 continue
             candidates.append( CandidateItem(
                 name = summary.get( 'name' ) or f'HomeBox Item {item_id}',
@@ -110,9 +123,19 @@ class HomeBoxImporter( IntegrationImporter, HomeBoxMixin ):
             ).values_list( 'previous_integration_name', flat = True )
         )
 
+        include_tokens = HbConverter.parse_filter_list( hb_manager.include_filter )
+        exclude_tokens = HbConverter.parse_filter_list( hb_manager.exclude_filter )
+        filter_active = bool( include_tokens or exclude_tokens )
+
         created_entities = []
         for hb_item in item_list:
             if hb_item.archived is True:
+                continue
+            if filter_active and not HbConverter.is_item_allowed(
+                    hb_item = hb_item,
+                    include_tokens = include_tokens,
+                    exclude_tokens = exclude_tokens ):
+                result.items_filtered_count += 1
                 continue
             integration_name = str( hb_item.id )
             if integration_name in existing_integration_names:
@@ -141,6 +164,12 @@ class HomeBoxImporter( IntegrationImporter, HomeBoxMixin ):
             created_entities.append( entity )
 
         result.created_entities = created_entities
+
+        if result.items_filtered_count > 0:
+            result.info_list.append(
+                f'Filtered {result.items_filtered_count} item(s) not matching your include/exclude filter.'
+            )
+            result.footer_message = HB_FILTER_FOOTER_MESSAGE
 
     def discard_imported_data( self, integration_id: str ) -> IntegrationDiscardResult:
         """Remove all entities previously imported under this

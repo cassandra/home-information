@@ -29,3 +29,19 @@ class HbAttributeType( IntegrationAttributeType ):
         True,
         True,
     )
+    INCLUDE_FILTER = (
+        'Include Items By Location/Tag',
+        'One location or tag name per line.',
+        AttributeValueType.TEXT,
+        None,
+        True,
+        False,
+    )
+    EXCLUDE_FILTER = (
+        'Exclude Items By Location/Tag',
+        'One location or tag name per line.',
+        AttributeValueType.TEXT,
+        None,
+        True,
+        False,
+    )

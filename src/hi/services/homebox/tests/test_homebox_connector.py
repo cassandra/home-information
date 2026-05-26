@@ -28,6 +28,8 @@ class TestHomeBoxConnector(SimpleTestCase):
         synchronizer = HomeBoxConnector()
         manager = Mock()
         manager.hb_client = object()
+        manager.include_filter = ''
+        manager.exclude_filter = ''
         manager.fetch_hb_items_from_api.return_value = [Mock(), Mock(), Mock()]
 
         with patch.object(synchronizer, 'hb_manager', return_value=manager), \
@@ -39,6 +41,8 @@ class TestHomeBoxConnector(SimpleTestCase):
         sync_entities_mock.assert_called_once_with(
             item_list=manager.fetch_hb_items_from_api.return_value,
             result=result,
+            include_tokens=frozenset(),
+            exclude_tokens=frozenset(),
         )
 
     def test_sync_helper_entities_create_update_remove_entities(self):
@@ -130,6 +134,56 @@ class TestHomeBoxConnector(SimpleTestCase):
         self.assertTrue(any('Ignoring HomeBox item due to missing/invalid id' in message
                             for message in result.error_list))
 
+    def test_sync_helper_filters_items_and_populates_count(self):
+        """When include/exclude tokens are present, ``_sync_helper_entities``
+        rejects non-matching items, increments ``items_filtered_count``
+        on the result, and sets the standard footer message."""
+        synchronizer = HomeBoxConnector()
+        result = IntegrationSyncResult(title='X')
+
+        # Build minimal HbItem-like mocks: only the fields the
+        # predicate reads + the archived/id used by the helper.
+        from hi.services.homebox.hb_models import HbItem
+        item_in = HbItem(api_dict={
+            'id': '1',
+            'name': 'In',
+            'location': {'name': 'Garage'},
+            'tags': [],
+        })
+        item_out = HbItem(api_dict={
+            'id': '2',
+            'name': 'Out',
+            'location': {'name': 'Basement'},
+            'tags': [],
+        })
+
+        with ExitStack() as stack:
+            stack.enter_context(patch(
+                'hi.services.homebox.connector.homebox_connector.transaction.atomic',
+                return_value=nullcontext(),
+            ))
+            stack.enter_context(patch.object(
+                synchronizer, '_get_existing_hb_entities', return_value={},
+            ))
+            stack.enter_context(patch.object(
+                synchronizer, 'reconnect_disconnected_items',
+            ))
+            stack.enter_context(patch.object(
+                synchronizer, '_create_entity', return_value=Mock(),
+            ))
+
+            synchronizer._sync_helper_entities(
+                item_list=[item_in, item_out],
+                result=result,
+                include_tokens=frozenset({'garage'}),
+                exclude_tokens=frozenset(),
+            )
+
+        self.assertEqual(result.items_filtered_count, 1)
+        self.assertTrue(any('Filtered 1 item(s)' in message
+                            for message in result.info_list))
+        self.assertIn('Include Items By Location/Tag', result.footer_message)
+
 
 class TestHomeBoxConnectorSyncImplCreatedEntities(SimpleTestCase):
     """HomeBoxConnector._sync_impl reports newly-created entities
@@ -142,6 +196,8 @@ class TestHomeBoxConnectorSyncImplCreatedEntities(SimpleTestCase):
         synchronizer = HomeBoxConnector()
         manager = Mock()
         manager.hb_client = object()
+        manager.include_filter = ''
+        manager.exclude_filter = ''
         manager.fetch_hb_items_from_api.return_value = [Mock(), Mock()]
 
         entity_a = Mock()
@@ -172,6 +228,8 @@ class TestHomeBoxConnectorSyncImplCreatedEntities(SimpleTestCase):
         synchronizer = HomeBoxConnector()
         manager = Mock()
         manager.hb_client = object()
+        manager.include_filter = ''
+        manager.exclude_filter = ''
         manager.fetch_hb_items_from_api.return_value = []
 
         with patch.object(synchronizer, 'hb_manager', return_value=manager), \
@@ -251,9 +309,11 @@ class TestHomeBoxConnectorCheckNeedsSync(AsyncTaskTestCase):
                 integration_name=name,
             )
 
-    def _run_check(self, summary_list):
+    def _run_check(self, summary_list, include_filter='', exclude_filter=''):
         synchronizer = HomeBoxConnector()
         manager = Mock()
+        manager.include_filter = include_filter
+        manager.exclude_filter = exclude_filter
 
         async def fetch_summary():
             return summary_list

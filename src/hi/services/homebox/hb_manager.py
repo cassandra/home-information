@@ -87,6 +87,20 @@ class HomeBoxManager( SingletonManager, AggregateHealthProvider, ApiHealthStatus
     def hb_client(self) -> HbClient:
         return self._hb_client
 
+    @property
+    def include_filter( self ) -> str:
+        attribute = self._hb_attr_type_to_attribute.get( HbAttributeType.INCLUDE_FILTER )
+        if attribute and attribute.value:
+            return attribute.value
+        return ''
+
+    @property
+    def exclude_filter( self ) -> str:
+        attribute = self._hb_attr_type_to_attribute.get( HbAttributeType.EXCLUDE_FILTER )
+        if attribute and attribute.value:
+            return attribute.value
+        return ''
+
     def _reload_implementation( self ):
         try:
             self._hb_attr_type_to_attribute = self._load_attributes()

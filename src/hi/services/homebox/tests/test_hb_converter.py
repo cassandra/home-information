@@ -344,3 +344,153 @@ class TestHbItemToEntityType(TestCase):
             )),
             EntityType.CAMERA,
         )
+
+
+def _item_with(location_name=None, tag_names=None, item_id='item-1', name='X'):
+    """Build a stub HbItem with the given location / tag names.
+    The filter predicate only reads ``location`` and ``tags`` from
+    the api_dict, so the other fields can stay minimal."""
+    api_dict = {
+        'id': item_id,
+        'name': name,
+        'tags': (
+            [{'name': tag} for tag in tag_names]
+            if tag_names is not None else []
+        ),
+    }
+    if location_name is not None:
+        api_dict['location'] = {'name': location_name}
+    return HbItem(api_dict=api_dict, client=Mock())
+
+
+class TestHbConverterFilterNormalization(TestCase):
+    """Aggressive normalization is the entire reason the filter UX
+    can be a plain list of names. Pin the rule so a careless
+    refactor doesn't accidentally make the match strict."""
+
+    def test_case_folded(self):
+        self.assertEqual(HbConverter._normalize_filter_token('Garage'), 'garage')
+
+    def test_outer_whitespace_trimmed(self):
+        self.assertEqual(HbConverter._normalize_filter_token('  garage  '), 'garage')
+
+    def test_hyphen_underscore_treated_as_separator(self):
+        self.assertEqual(HbConverter._normalize_filter_token('Garage-Shelf_B'), 'garage shelf b')
+
+    def test_punctuation_stripped(self):
+        self.assertEqual(HbConverter._normalize_filter_token("John's Office!"), 'john s office')
+
+    def test_collapsed_whitespace_between_tokens(self):
+        self.assertEqual(HbConverter._normalize_filter_token('Garage   Shelf'), 'garage shelf')
+
+    def test_empty_input_returns_empty(self):
+        self.assertEqual(HbConverter._normalize_filter_token(''), '')
+        self.assertEqual(HbConverter._normalize_filter_token('   '), '')
+
+
+class TestHbConverterParseFilterList(TestCase):
+
+    def test_empty_text_yields_empty_set(self):
+        self.assertEqual(HbConverter.parse_filter_list(''), frozenset())
+
+    def test_one_per_line(self):
+        result = HbConverter.parse_filter_list('Garage\nOffice\nKitchen')
+        self.assertEqual(result, frozenset({'garage', 'office', 'kitchen'}))
+
+    def test_blank_and_whitespace_lines_ignored(self):
+        result = HbConverter.parse_filter_list('Garage\n\n   \nOffice\n')
+        self.assertEqual(result, frozenset({'garage', 'office'}))
+
+    def test_normalization_dedups_equivalent_tokens(self):
+        # "Garage-Shelf" and "garage shelf" normalize identically;
+        # the set carries only the normalized form.
+        result = HbConverter.parse_filter_list('Garage-Shelf\ngarage shelf\nGARAGE_SHELF')
+        self.assertEqual(result, frozenset({'garage shelf'}))
+
+
+class TestHbConverterIsItemAllowed(TestCase):
+    """End-to-end semantics of the include/exclude predicate.
+    Both filters empty → admit; include set requires a positive
+    match; exclude wins after the include stage; orphans rejected
+    when an include filter is present."""
+
+    EMPTY = frozenset()
+
+    def test_no_filters_admits_everything(self):
+        item = _item_with(location_name='Garage', tag_names=['tools'])
+        self.assertTrue(HbConverter.is_item_allowed(
+            hb_item=item, include_tokens=self.EMPTY, exclude_tokens=self.EMPTY,
+        ))
+
+    def test_include_matches_location(self):
+        item = _item_with(location_name='Garage', tag_names=[])
+        self.assertTrue(HbConverter.is_item_allowed(
+            hb_item=item,
+            include_tokens=frozenset({'garage'}),
+            exclude_tokens=self.EMPTY,
+        ))
+
+    def test_include_matches_tag(self):
+        item = _item_with(location_name='Storage', tag_names=['power-tools'])
+        self.assertTrue(HbConverter.is_item_allowed(
+            hb_item=item,
+            include_tokens=frozenset({'power tools'}),
+            exclude_tokens=self.EMPTY,
+        ))
+
+    def test_include_set_but_no_match_rejects(self):
+        item = _item_with(location_name='Basement', tag_names=['junk'])
+        self.assertFalse(HbConverter.is_item_allowed(
+            hb_item=item,
+            include_tokens=frozenset({'garage', 'office'}),
+            exclude_tokens=self.EMPTY,
+        ))
+
+    def test_exclude_removes_matching_item(self):
+        item = _item_with(location_name='Garage', tag_names=['tools', 'archive'])
+        self.assertFalse(HbConverter.is_item_allowed(
+            hb_item=item,
+            include_tokens=self.EMPTY,
+            exclude_tokens=frozenset({'archive'}),
+        ))
+
+    def test_exclude_takes_precedence_over_include(self):
+        # Item matches include (tag 'tools') but also matches exclude
+        # (tag 'archive') — exclude wins.
+        item = _item_with(location_name='Garage', tag_names=['tools', 'archive'])
+        self.assertFalse(HbConverter.is_item_allowed(
+            hb_item=item,
+            include_tokens=frozenset({'tools'}),
+            exclude_tokens=frozenset({'archive'}),
+        ))
+
+    def test_orphan_rejected_when_include_set(self):
+        # Items with no location and no tags can't match any include
+        # token, so an active include filter rejects them.
+        item = _item_with(location_name=None, tag_names=[])
+        self.assertFalse(HbConverter.is_item_allowed(
+            hb_item=item,
+            include_tokens=frozenset({'garage'}),
+            exclude_tokens=self.EMPTY,
+        ))
+
+    def test_orphan_admitted_when_only_exclude_set(self):
+        # No include, so orphans aren't subject to the
+        # "must positively match" rule. Exclude doesn't apply since
+        # the item carries no tokens to match.
+        item = _item_with(location_name=None, tag_names=[])
+        self.assertTrue(HbConverter.is_item_allowed(
+            hb_item=item,
+            include_tokens=self.EMPTY,
+            exclude_tokens=frozenset({'archive'}),
+        ))
+
+    def test_match_is_normalization_insensitive(self):
+        # The include token is normalized; the item's location is
+        # normalized; the comparison sees both as 'garage shelf b'.
+        item = _item_with(location_name='Garage-Shelf_B', tag_names=[])
+        self.assertTrue(HbConverter.is_item_allowed(
+            hb_item=item,
+            include_tokens=HbConverter.parse_filter_list('garage shelf b'),
+            exclude_tokens=self.EMPTY,
+        ))

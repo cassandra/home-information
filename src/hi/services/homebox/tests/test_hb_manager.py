@@ -41,7 +41,8 @@ class TestHomeBoxManagerAttributeMap(SimpleTestCase):
             enforce_requirements=True,
         )
 
-        self.assertEqual(set(result.keys()), set(HbAttributeType))
+        required_types = { t for t in HbAttributeType if t.is_required }
+        self.assertEqual(set(result.keys()), required_types)
 
     def test_build_map_raises_when_required_attribute_missing_and_enforced(self):
         attrs = [
