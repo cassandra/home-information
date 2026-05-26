@@ -1,3 +1,4 @@
+from enum import Enum
 from typing import List
 
 from hi.simulator.services.base_models import SimEntityDefinition
@@ -10,7 +11,33 @@ from .sim_models import (
 )
 
 
+class HbApiVersion( Enum ):
+    """The HomeBox API surface the simulator serves. v0.25 is the
+    legacy ``/v1/items/*`` shape (the only API for HomeBox versions
+    up to v0.25). v0.26+ is the ``/v1/entities/*`` shape introduced
+    by the entity-merge release. Toggle via the simulator's
+    HomeBox-specific settings panel."""
+
+    V0_25 = 'v0.25'
+    V0_26 = 'v0.26'
+
+    @classmethod
+    def default(cls):
+        return cls.V0_25
+
+    @property
+    def label(self):
+        # Operator-facing label; the value already reads naturally.
+        return self.value
+
+
 class HomeBoxSimulator( ServiceSimulator ):
+
+    def __init_singleton__( self ):
+        # Persist the operator-selected API version across SimProfile
+        # switches (same pattern as ``_fault_mode``).
+        self._api_version = HbApiVersion.default()
+        super().__init_singleton__()
 
     @property
     def id(self):
@@ -27,6 +54,24 @@ class HomeBoxSimulator( ServiceSimulator ):
     @property
     def sim_entity_definition_list(self) -> List[ SimEntityDefinition ]:
         return HOMEBOX_SIM_ENTITY_DEFINITION_LIST
+
+    @property
+    def api_version(self) -> HbApiVersion:
+        return self._api_version
+
+    def set_api_version( self, api_version: HbApiVersion ):
+        self._api_version = api_version
+        return
+
+    @property
+    def extras_template_name(self):
+        return 'homebox/panes/api_version_form.html'
+
+    def extras_context(self):
+        return {
+            'api_version': self._api_version,
+            'api_version_choices': list( HbApiVersion ),
+        }
 
     def get_sim_entity_pairs(self):
         """

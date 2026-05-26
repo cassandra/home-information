@@ -1,0 +1,37 @@
+{% comment %}
+  Operator toggle for the HomeBox simulator's served API version.
+  Swapped in place on submit (antinode data-async + data-mode=replace)
+  so the page doesn't reload on each flip.
+
+  Context:
+    api_version          : HbApiVersion — currently active value
+    api_version_choices  : list[HbApiVersion]
+{% endcomment %}
+<form id="hi-homebox-api-version-form"
+      method="post"
+      action="{% url 'homebox_api_version_set' %}"
+      class="form-inline mb-3"
+      data-async data-mode="replace">
+  {% csrf_token %}
+  <label for="hi-homebox-api-version" class="mr-2 mb-0">
+    <strong>API version:</strong>
+  </label>
+  <select id="hi-homebox-api-version"
+          name="api_version"
+          class="form-control form-control-sm"
+          onchange="this.form.requestSubmit ? this.form.requestSubmit() : this.form.submit()">
+    {% for choice in api_version_choices %}
+    <option value="{{ choice.name }}"
+            {% if choice == api_version %}selected{% endif %}>
+      {{ choice.label }}
+    </option>
+    {% endfor %}
+  </select>
+  <span class="text-muted small ml-2">
+    {% if api_version.name == "V0_25" %}
+      Serving <code>/v1/items/*</code> (HomeBox v0.25 and earlier).
+    {% else %}
+      Serving <code>/v1/entities/*</code> (HomeBox v0.26+).
+    {% endif %}
+  </span>
+</form>

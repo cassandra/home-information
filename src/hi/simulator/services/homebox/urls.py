@@ -13,5 +13,9 @@ urlpatterns = [
           views.ItemView.as_view(),
           name = 'homebox_item' ),
 
+    path( 'api-version/set/',
+          views.SetApiVersionView.as_view(),
+          name = 'homebox_api_version_set' ),
+
     path( 'api/', include('hi.simulator.services.homebox.api.urls' )),
 ]

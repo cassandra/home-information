@@ -102,7 +102,22 @@ class ServiceSimulator( Singleton ):
     def set_fault_mode( self, fault_mode : ServiceFaultMode ):
         self._fault_mode = fault_mode
         return
-        
+
+    @property
+    def extras_template_name(self) -> str:
+        """Optional template path included in the simulator's
+        service-page toolbar for simulator-specific controls
+        (e.g., HomeBox's API-version toggle). Return None to skip
+        the include; the default is no extras."""
+        return None
+
+    def extras_context(self) -> Dict:
+        """Extra context the ``extras_template_name`` template
+        needs beyond the standard service-page variables. Default
+        empty; override when the extras pane has dynamic choices
+        or other simulator-specific data to expose."""
+        return {}
+
     @property
     def label(self) -> str:
         """ A human-friendly label for this simulatior. """

@@ -41,6 +41,10 @@
   {% include "services/panes/fault_mode_form.html" with simulator=simulator fault_mode_choices=fault_mode_choices %}
 </div>
 
+{% if simulator.extras_template_name %}
+{% include simulator.extras_template_name %}
+{% endif %}
+
 {% for sim_entity in simulator.sim_entities %}
 {% include "services/panes/sim_entity.html" with simulator=simulator sim_entity=sim_entity %}
 {% empty %}

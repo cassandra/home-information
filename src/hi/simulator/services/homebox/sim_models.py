@@ -247,3 +247,67 @@ def build_item_api_dict( sim_entity_id    : int,
         'createdAt'        : created_at.isoformat(),
         'updatedAt'        : updated_at.isoformat(),
     }
+
+
+# Sentinel entity type emitted on every v0.26 response. The
+# simulator doesn't model the user-definable entity-type system
+# from the real HomeBox v0.26+ — every simulated row is an
+# inventory item, which maps to the default "Item" type. The id
+# stays constant so consumers that key off it see stable values
+# across reads.
+_DEFAULT_ENTITY_TYPE = {
+    'id'         : 'entity-type-item',
+    'name'       : 'Item',
+    'isLocation' : False,
+}
+
+
+def build_entity_api_dict( sim_entity_id    : int,
+                           fields           : HomeBoxInventoryItemFields,
+                           archived_state   : HomeBoxItemArchivedState,
+                           created_at,
+                           updated_at ) -> Dict[ str, Any ]:
+    """
+    Build the HomeBox v0.26 entity JSON shape returned by the
+    simulator's ``/v1/entities/*`` endpoints. Same content as
+    ``build_item_api_dict`` with two response-shape differences:
+
+      - The ``location`` field is renamed to ``parent`` (locations
+        are entities themselves in v0.26 and can nest under other
+        location-type entities; for the simulator the parent is
+        always a leaf location, mirroring v0.25 semantics).
+      - A new ``entityType`` discriminator is included on every
+        entity. The simulator emits a single static "Item" type
+        since it does not model the user-definable type system.
+
+    Consumed by ``_HbEntitiesBackend`` (#373 phase 3); the field
+    normalization on that backend renames ``parent`` back to
+    ``location`` so downstream code stays version-agnostic.
+    """
+    base = build_item_api_dict(
+        sim_entity_id  = sim_entity_id,
+        fields         = fields,
+        archived_state = archived_state,
+        created_at     = created_at,
+        updated_at     = updated_at,
+    )
+    parent = base.pop( 'location' )
+    base['parent'] = parent
+    base['entityType'] = dict( _DEFAULT_ENTITY_TYPE )
+    return base
+
+
+def build_paginated_envelope( items: list ) -> Dict[ str, Any ]:
+    """Wrap a list of entity dicts in the v0.26 paginated response
+    shape. The simulator returns everything in one page (sentinel
+    ``page=-1``/``pageSize=-1`` matches v0.25's "no pagination"
+    convention) — the entities backend always passes an explicit
+    ``pageSize`` and loops on ``total`` regardless, so this is
+    safe."""
+    return {
+        'page'       : -1,
+        'pageSize'   : -1,
+        'total'      : len( items ),
+        'items'      : items,
+        'totalPrice' : 0,
+    }
