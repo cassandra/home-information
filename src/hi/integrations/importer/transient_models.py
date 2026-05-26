@@ -40,9 +40,11 @@ class IntegrationImportResult:
     created_entities: List[Entity] = field(default_factory=list)
     items_imported_count: int = 0
     items_skipped_count: int = 0
+    items_filtered_count: int = 0
     imported_list: List[str] = field(default_factory=list)
     info_list: List[str] = field(default_factory=list)
     error_list: List[str] = field(default_factory=list)
+    footer_message: str = ''
 
     @property
     def has_imports(self) -> bool:

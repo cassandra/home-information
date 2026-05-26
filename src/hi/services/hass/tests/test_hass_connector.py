@@ -92,7 +92,7 @@ class TestHassConnectorSyncHelper(TestCase):
         self.mock_manager = Mock()
         self.mock_client = Mock()
         self.mock_manager.hass_client = self.mock_client
-        self.mock_manager.import_allowlist = None
+        self.mock_manager.include_filter = None
 
 
 class TestHassConnectorStateConversion(TestCase):
@@ -152,7 +152,7 @@ class TestHassConnectorTransactionBehavior(TestCase):
             # Setup manager
             mock_manager = Mock()
             mock_manager.hass_client = Mock()
-            mock_manager.import_allowlist = None
+            mock_manager.include_filter = None
             mock_hass_manager.return_value = mock_manager
 
             # Setup scenario: one new device, one entity to remove
@@ -188,7 +188,7 @@ class TestHassConnectorTransactionBehavior(TestCase):
             # Setup manager
             mock_manager = Mock()
             mock_manager.hass_client = Mock()
-            mock_manager.import_allowlist = None
+            mock_manager.include_filter = None
             mock_hass_manager.return_value = mock_manager
 
             # Setup API data
@@ -233,7 +233,7 @@ class TestHassConnectorErrorScenarios(TestCase):
         # Mock manager with client that fails API fetch
         mock_manager = Mock()
         mock_manager.hass_client = Mock()
-        mock_manager.import_allowlist = None
+        mock_manager.include_filter = None
         mock_manager.fetch_hass_states_from_api.side_effect = Exception("API connection failed")
         mock_hass_manager.return_value = mock_manager
         
@@ -252,7 +252,7 @@ class TestHassConnectorErrorScenarios(TestCase):
         # Setup mocks
         mock_manager = Mock()
         mock_manager.hass_client = Mock()
-        mock_manager.import_allowlist = None
+        mock_manager.include_filter = None
         mock_manager.fetch_hass_states_from_api.return_value = {'test': Mock()}
         mock_hass_manager.return_value = mock_manager
         
@@ -408,7 +408,7 @@ class TestHassConnectorCheckNeedsSync(AsyncTaskTestCase):
     def _run_check(self, hass_states_payload, allowlist=''):
         synchronizer = HassConnector()
         manager = Mock()
-        manager.import_allowlist = allowlist
+        manager.include_filter = allowlist
 
         async def fetch_states(verbose=True):
             return hass_states_payload

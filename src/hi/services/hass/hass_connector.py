@@ -83,9 +83,9 @@ class HassConnector( IntegrationConnector, HassMixin ):
         """Issue #283 — sync-check probe for Home Assistant.
 
         Fetches the same ``/api/states`` payload the periodic monitor
-        uses, applies the configured Allowed Item Types allowlist (so
-        the upstream key set matches what Refresh would actually
-        import — not what HA exposes raw), then compares against the
+        uses, applies the configured Allowed Item Types include
+        filter (so the upstream key set matches what Refresh would
+        actually import — not what HA exposes raw), then compares against the
         IntegrationKeys of HA-attached HI entities.
 
         Convention matched to
@@ -102,10 +102,10 @@ class HassConnector( IntegrationConnector, HassMixin ):
         hass_entity_id_to_state = await hass_manager.fetch_hass_states_from_api_async(
             verbose = False,
         )
-        import_allowlist = hass_manager.import_allowlist
+        include_filter = hass_manager.include_filter
         hass_device_id_to_device = HassConverter.hass_states_to_hass_devices(
             hass_entity_id_to_state = hass_entity_id_to_state,
-            import_allowlist = import_allowlist,
+            include_filter = include_filter,
         )
         upstream_keys = {
             HassConverter.hass_device_to_integration_key( hass_device )
@@ -154,14 +154,14 @@ class HassConnector( IntegrationConnector, HassMixin ):
         integration_key_to_entity = self._get_existing_hass_entities( result = result )
         result.info_list.append( f'Found {len(integration_key_to_entity)} existing Home Assistant items.' )
 
-        import_allowlist = hass_manager.import_allowlist
+        include_filter = hass_manager.include_filter
         hass_device_id_to_device = HassConverter.hass_states_to_hass_devices(
             hass_entity_id_to_state = hass_entity_id_to_state,
-            import_allowlist = import_allowlist,
+            include_filter = include_filter,
         )
         result.info_list.append( f'Found {len(hass_device_id_to_device)} current Home Assistant devices.' )
 
-        if import_allowlist:
+        if include_filter:
             total_states = len( hass_entity_id_to_state )
             imported_states = sum(
                 len( device.hass_state_list )
@@ -169,6 +169,7 @@ class HassConnector( IntegrationConnector, HassMixin ):
             )
             skipped_count = total_states - imported_states
             if skipped_count > 0:
+                result.items_filtered_count = skipped_count
                 result.info_list.append(
                     f'Filtered {skipped_count} states not matching the Allowed Item Types.'
                 )

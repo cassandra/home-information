@@ -91,6 +91,7 @@ class IntegrationSyncResult:
     info_list: List[str] = field(default_factory=list)
     error_list: List[str] = field(default_factory=list)
     footer_message: str = ''
+    items_filtered_count: int = 0
 
     @property
     def has_changes(self) -> bool:

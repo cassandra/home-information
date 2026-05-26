@@ -77,8 +77,9 @@ class HassConverter:
     """
 
     @staticmethod
-    def parse_import_allowlist( allowlist_text : str ) -> Tuple[ Set[str], Set[Tuple[str, str]] ]:
-        """Parse allowlist text into domain-only and domain:class rule sets.
+    def parse_include_filter( filter_text : str ) -> Tuple[ Set[str], Set[Tuple[str, str]] ]:
+        """Parse the user-supplied include-filter text into
+        domain-only and domain:class rule sets.
         Returns:
             (allowed_domains, allowed_domain_classes) where:
             - allowed_domains: set of domains where all classes are allowed
@@ -86,7 +87,7 @@ class HassConverter:
         """
         allowed_domains = set()
         allowed_domain_classes = set()
-        for line in allowlist_text.strip().splitlines():
+        for line in filter_text.strip().splitlines():
             rule = line.strip()
             if not rule:
                 continue
@@ -418,7 +419,7 @@ class HassConverter:
     @classmethod
     def hass_states_to_hass_devices( cls,
                                      hass_entity_id_to_state  : Dict[ str, HassState ],
-                                     import_allowlist          : Optional[str] = None,
+                                     include_filter          : Optional[str] = None,
                                      ) -> Dict[ str, HassDevice ]:
         """
         The Home Assistant (HAss) model we see by fetching the HAss states does
@@ -431,8 +432,8 @@ class HassConverter:
         
         # When an allowlist is configured, it is the sole authority on what
         # gets imported. When not configured, fall back to IGNORE_DOMAINS.
-        if import_allowlist:
-            allowed_domains, allowed_domain_classes = cls.parse_import_allowlist( import_allowlist )
+        if include_filter:
+            allowed_domains, allowed_domain_classes = cls.parse_include_filter( include_filter )
             use_allowlist = True
         else:
             allowed_domains = set()

@@ -202,11 +202,11 @@ class HassManager( SingletonManager, AggregateHealthProvider, ApiHealthStatusPro
         return False
 
     @property
-    def import_allowlist( self ) -> str:
-        attribute = self._hass_attr_type_to_attribute.get( HassAttributeType.IMPORT_ALLOWLIST )
+    def include_filter( self ) -> str:
+        attribute = self._hass_attr_type_to_attribute.get( HassAttributeType.INCLUDE_FILTER )
         if attribute and attribute.value:
             return attribute.value
-        return HassAttributeType.IMPORT_ALLOWLIST.initial_value
+        return HassAttributeType.INCLUDE_FILTER.initial_value
         
     def fetch_hass_states_from_api( self, verbose : bool = True ) -> Dict[ str, HassState ]:
         if verbose:

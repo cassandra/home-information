@@ -8,11 +8,11 @@ from hi.services.hass.hass_converter import HassConverter
 logging.disable( logging.CRITICAL )
 
 
-class TestParseImportAllowlist( SimpleTestCase ):
+class TestParseIncludeFilter( SimpleTestCase ):
 
     def test_parse_domain_only_rules( self ):
         allowlist = 'light\nswitch\nsensor'
-        domains, domain_classes = HassConverter.parse_import_allowlist( allowlist )
+        domains, domain_classes = HassConverter.parse_include_filter( allowlist )
 
         self.assertEqual( domains, { 'light', 'switch', 'sensor' } )
         self.assertEqual( domain_classes, set() )
@@ -20,7 +20,7 @@ class TestParseImportAllowlist( SimpleTestCase ):
 
     def test_parse_domain_class_rules( self ):
         allowlist = 'sensor:temperature\nbinary_sensor:motion'
-        domains, domain_classes = HassConverter.parse_import_allowlist( allowlist )
+        domains, domain_classes = HassConverter.parse_include_filter( allowlist )
 
         self.assertEqual( domains, set() )
         self.assertEqual( domain_classes, {
@@ -31,7 +31,7 @@ class TestParseImportAllowlist( SimpleTestCase ):
 
     def test_parse_mixed_rules( self ):
         allowlist = 'light\nsensor:temperature\nswitch\nbinary_sensor:door'
-        domains, domain_classes = HassConverter.parse_import_allowlist( allowlist )
+        domains, domain_classes = HassConverter.parse_include_filter( allowlist )
 
         self.assertEqual( domains, { 'light', 'switch' } )
         self.assertEqual( domain_classes, {
@@ -42,14 +42,14 @@ class TestParseImportAllowlist( SimpleTestCase ):
 
     def test_parse_ignores_blank_lines( self ):
         allowlist = 'light\n\n\nswitch\n  \n'
-        domains, domain_classes = HassConverter.parse_import_allowlist( allowlist )
+        domains, domain_classes = HassConverter.parse_include_filter( allowlist )
 
         self.assertEqual( domains, { 'light', 'switch' } )
         return
 
     def test_parse_strips_whitespace( self ):
         allowlist = '  light  \n  sensor:temperature  '
-        domains, domain_classes = HassConverter.parse_import_allowlist( allowlist )
+        domains, domain_classes = HassConverter.parse_include_filter( allowlist )
 
         self.assertEqual( domains, { 'light' } )
         self.assertEqual( domain_classes, { ( 'sensor', 'temperature' ) } )
