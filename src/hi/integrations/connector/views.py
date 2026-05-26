@@ -1,13 +1,11 @@
 import logging
 
 from django.core.exceptions import BadRequest
-from django.shortcuts import redirect
 from django.urls import reverse
 from django.views.generic import View
 
 from hi.apps.common import antinode
 from hi.apps.common.utils import str_to_bool
-from hi.enums import ViewMode, ViewType
 from hi.exceptions import ForceRedirectException
 from hi.hi_async_view import HiModalView
 from hi.views import page_not_found_response
@@ -16,26 +14,18 @@ from hi.apps.attribute.response_helpers import AttributeRedirectResponse
 from hi.apps.attribute.view_mixins import AttributeEditViewMixin
 from hi.apps.config.enums import ConfigPageType
 from hi.apps.config.views import ConfigPageView
-from hi.apps.entity.entity_placement import EntityPlacementService
 from hi.apps.entity.models import Entity
-from hi.apps.location.models import LocationView
 from hi.apps.sense.sensor_response_manager import SensorResponseManager
 
 from hi.integrations.enums import IntegrationCapability, IntegrationDisableMode
 from hi.integrations.exceptions import IntegrationConnectionError
 from hi.integrations.integration_manager import IntegrationManager
 from hi.integrations.integration_metadata_cache import IntegrationMetadataCache
-from hi.integrations.models import IntegrationAttribute
 
 from hi.integrations.entity_operations import EntityIntegrationOperations
 from hi.integrations.integration_attribute_edit_context import IntegrationAttributeItemEditContext
-from hi.integrations.placement_request import PlacementFormParser, PlacementUrlParams
 from .sync_check import IntegrationSyncCheck
-from .sync_result import IntegrationSyncResult
-from hi.integrations.view_mixins import (
-    IntegrationPlacementViewMixin,
-    IntegrationViewMixin,
-)
+from hi.integrations.view_mixins import IntegrationViewMixin
 from hi.integrations.views import CapabilityConfigureView
 
 logger = logging.getLogger(__name__)
@@ -61,7 +51,7 @@ class IntegrationHomeView( ConfigPageView, IntegrationViewMixin ):
                                 kwargs = { 'integration_id': integration_data.integration_id })
         raise ForceRedirectException( redirect_url )
 
-    
+
 class IntegrationSelectView( HiModalView, IntegrationViewMixin ):
 
     def get_template_name( self ) -> str:
@@ -94,7 +84,7 @@ class IntegrationPreSyncView( HiModalView, IntegrationViewMixin ):
     """
     Pre-sync confirmation modal for the manage-page UPDATE
     button. Surfaces the synchronizer's description and offers
-    Sync / Not now actions. Not used in the first-time sync 
+    Sync / Not now actions. Not used in the first-time sync
     enable flow.
 
     On the update-check path the modal additionally surfaces the
@@ -120,7 +110,7 @@ class IntegrationPreSyncView( HiModalView, IntegrationViewMixin ):
             integration_id = integration_data.integration_id,
         ).exists()
         sync_url = reverse(
-            'integrations_sync',
+            'integrations_connect_sync',
             kwargs = { 'integration_id': integration_data.integration_id },
         )
 
@@ -181,165 +171,6 @@ class IntegrationSyncView( HiModalView, IntegrationViewMixin ):
         )
 
 
-class IntegrationPlacementView( HiModalView, IntegrationViewMixin,
-                                IntegrationPlacementViewMixin ):
-    """Placement modal — single CBV handling both the GET (render)
-    and POST (form submission) paths on one URL.
-
-    GET queries currently-unplaced entities for the integration
-    (optionally scoped by ``entity_ids`` URL param), runs them
-    through the connector's ``group_entities_for_placement``,
-    and renders the placement modal. Empty result falls back to
-    a brief acknowledgement modal so the operator isn't dropped
-    onto an empty placement.
-
-    POST processes the placement form. The form has two submit
-    buttons — APPLY and NOT NOW — sharing ``name="action"`` with
-    distinct values; this view branches on the value to render
-    either the post-dispatch summary modal (apply path) or the
-    dismiss-confirm modal (not-now path).
-    """
-
-    DISMISS_ACTION_VALUE = 'dismiss'
-
-    def get_template_name( self ) -> str:
-        return 'integrations/modals/placement.html'
-
-    def get( self, request, *args, **kwargs ):
-        integration_data = self.get_integration_data( request, *args, **kwargs )
-        connector = integration_data.integration_gateway.get_connector()
-        if connector is None:
-            return page_not_found_response( request )
-
-        url_params = PlacementUrlParams.from_data( request.GET )
-        is_initial_connect = url_params.is_initial_connect
-        entity_id_filter = set( url_params.entity_ids ) if url_params.entity_ids else None
-
-        entities = EntityPlacementService.query_unplaced_entities(
-            integration_id = integration_data.integration_id,
-        )
-        # When the caller scoped the URL to specific entity ids
-        # (sync-result CTA), narrow the unplaced set to those.
-        # Without scoping, the placement operates on the full
-        # unplaced set for the integration (recovery flow).
-        if entity_id_filter is not None:
-            entities = [ e for e in entities if e.id in entity_id_filter ]
-
-        placement_input = connector.group_entities_for_placement(
-            entities = entities,
-        )
-        if placement_input.is_empty():
-            return self._render_empty(
-                request = request,
-                integration_data = integration_data,
-                connector = connector,
-                is_initial_connect = is_initial_connect,
-            )
-        return self.render_placement(
-            request = request,
-            integration_data = integration_data,
-            placement_input = placement_input,
-            is_initial_connect = is_initial_connect,
-            entity_id_filter = entity_id_filter,
-        )
-
-    def post( self, request, *args, **kwargs ):
-        integration_data = self.get_integration_data( request, *args, **kwargs )
-        url_params = PlacementUrlParams.from_data( request.POST )
-        is_initial_connect = url_params.is_initial_connect
-
-        if request.POST.get('action') == self.DISMISS_ACTION_VALUE:
-            entity_ids = self._extract_placement_entity_ids( request )
-            return self.render_dismiss_confirm(
-                request = request,
-                integration_data = integration_data,
-                entity_ids = entity_ids,
-                is_initial_connect = is_initial_connect,
-            )
-
-        decisions = PlacementFormParser.parse(
-            request = request, integration_data = integration_data,
-        )
-        outcome = EntityPlacementService.apply_decisions( decisions = decisions )
-        return self.render_post_placement(
-            request = request,
-            integration_data = integration_data,
-            outcome = outcome,
-            is_initial_connect = is_initial_connect,
-        )
-
-    @staticmethod
-    def _extract_placement_entity_ids( request ):
-        """Pull the entity ids the placement form just posted.
-        The placement renders ``all_group_<i>_entity_ids`` per
-        group plus a single ``ungrouped_entity_ids`` field — both
-        carry the entity ids regardless of whether the operator
-        opened any drill-down."""
-        ids = []
-        for key, values in request.POST.lists():
-            if key == 'ungrouped_entity_ids' or (
-                key.startswith( 'all_group_' )
-                and key.endswith( '_entity_ids' )
-            ):
-                for value in values:
-                    try:
-                        ids.append( int(value) )
-                    except (TypeError, ValueError):
-                        continue
-        return ids
-
-    def _render_empty( self, request, integration_data,
-                       connector, is_initial_connect : bool ):
-        """No-unplaced-items acknowledgement: render the result
-        modal with the integration's icon + a brief 'no items'
-        info note rather than an empty placement. Counts stay
-        zero so the modal lead reads 'Nothing new.'"""
-        sync_result = IntegrationSyncResult(
-            title = connector.get_result_title(
-                is_initial_connect = is_initial_connect,
-            ),
-            info_list = [ 'No items left to place.' ],
-        )
-        return self.modal_response(
-            request,
-            context = {
-                'sync_result': sync_result,
-                'integration_data': integration_data,
-                'is_initial_connect': is_initial_connect,
-            },
-            template_name = 'integrations/connector/modals/sync_result.html',
-        )
-
-
-class IntegrationRefineView( View ):
-    """
-    Convenience entry to edit-mode for a specific LocationView,
-    used by the post-dispatch modal's REFINE button(s). Sets the
-    session's current LocationView, flips view mode to EDIT, and
-    redirects to the location view page.
-    """
-
-    def get(self, request, *args, **kwargs):
-        try:
-            location_view_id = int( kwargs.get('location_view_id') )
-        except (TypeError, ValueError):
-            raise BadRequest( 'Invalid location_view_id' )
-        try:
-            location_view = LocationView.objects.get( id = location_view_id )
-        except LocationView.DoesNotExist:
-            return page_not_found_response( request )
-
-        request.view_parameters.view_type = ViewType.LOCATION_VIEW
-        request.view_parameters.update_location_view( location_view )
-        request.view_parameters.view_mode = ViewMode.EDIT
-        request.view_parameters.to_session( request )
-
-        return redirect( reverse(
-            'location_view',
-            kwargs = { 'location_view_id': location_view.id },
-        ) )
-
-
 class ConnectorConfigureView( CapabilityConfigureView ):
 
     capability    = IntegrationCapability.CONNECT
@@ -385,7 +216,7 @@ class ConnectorConfigureView( CapabilityConfigureView ):
         )
         return AttributeRedirectResponse( url = redirect_url )
 
-    
+
 class IntegrationDisableView( HiModalView, IntegrationViewMixin ):
     """
     Remove confirmation dialog. Classifies attached entities on GET to
@@ -437,7 +268,7 @@ class IntegrationDisableView( HiModalView, IntegrationViewMixin ):
             'disable_mode_all': IntegrationDisableMode.ALL.name,
         }
 
-    
+
 class IntegrationPauseView( View, IntegrationViewMixin ):
 
     def post(self, request, *args, **kwargs):
@@ -479,7 +310,7 @@ class ConnectorManageView( ConfigPageView, IntegrationViewMixin, AttributeEditVi
 
     def config_page_type(self) -> ConfigPageType:
         return ConfigPageType.INTEGRATIONS_CONNECT
-    
+
     def get_main_template_name( self ) -> str:
         return 'integrations/connector/pages/integration_manage.html'
 
@@ -571,13 +402,13 @@ class ConnectorManageView( ConfigPageView, IntegrationViewMixin, AttributeEditVi
 
         # Get health status from the integration gateway
         health_status_provider = integration_data.integration_gateway.get_connector().get_health_status_provider()
-                
+
         attr_item_context = IntegrationAttributeItemEditContext(
             integration_data = integration_data,
             capability = IntegrationCapability.CONNECT,
             health_status = health_status_provider.health_status,
         )
-        
+
         return self.post_attribute_form(
             request = request,
             attr_item_context = attr_item_context,
@@ -591,61 +422,5 @@ class ConnectorManageView( ConfigPageView, IntegrationViewMixin, AttributeEditVi
         self.validate_attributes_extra_helper(
             attr_item_context,
             regular_attributes_formset,
-            error_title = 'Cannot save settings.' )            
+            error_title = 'Cannot save settings.' )
         return
-
-    
-class IntegrationAttributeHistoryInlineView( View,
-                                             IntegrationViewMixin,
-                                             AttributeEditViewMixin ):
-
-    def get(self, request, integration_id, attribute_id, *args, **kwargs):
-        # Validate that the attribute belongs to this integration for security
-        try:
-            attribute = IntegrationAttribute.objects.select_related('integration').get(
-                pk = attribute_id, integration_id = integration_id )
-        except IntegrationAttribute.DoesNotExist:
-            return page_not_found_response(request, "Attribute not found.")
-
-        integration_data = IntegrationManager().get_integration_data(
-            integration_id = attribute.integration.integration_id,
-        )
-        attr_item_context = IntegrationAttributeItemEditContext(
-            integration_data = integration_data,
-            capability = IntegrationCapability.CONNECT,
-        )
-        return self.get_history(
-            request = request,
-            attribute = attribute,
-            attr_item_context = attr_item_context,
-        )
-
-
-class IntegrationAttributeRestoreInlineView( View,
-                                             IntegrationViewMixin,
-                                             AttributeEditViewMixin ):
-    """View for restoring IntegrationAttribute values from history inline."""
-    
-    def get(self, request, integration_id, attribute_id, history_id, *args, **kwargs):
-        """ Need to do restore in a GET since nested in main form and cannot have a form in a form """
-        try:
-            attribute = IntegrationAttribute.objects.select_related('integration').get(
-                pk = attribute_id, integration_id = integration_id
-            )
-        except IntegrationAttribute.DoesNotExist:
-            return page_not_found_response(request, "Attribute not found.")
-
-        integration_data = IntegrationManager().get_integration_data(
-            integration_id = attribute.integration.integration_id,
-        )
-
-        attr_item_context = IntegrationAttributeItemEditContext(
-            integration_data = integration_data,
-            capability = IntegrationCapability.CONNECT,
-        )
-        return self.post_restore(
-            request = request,
-            attribute = attribute,
-            history_id = history_id,
-            attr_item_context = attr_item_context,
-        )

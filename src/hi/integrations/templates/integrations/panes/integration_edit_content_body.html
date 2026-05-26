@@ -15,7 +15,7 @@
 <!-- Integration Health Status Display -->
 {% if health_status %}
 <div class="ml-3">
-  <a href="{% url 'integrations_health_status' integration_id=integration_data.integration_id %}"
+  <a href="{% url 'integrations_connect_health_status' integration_id=integration_data.integration_id %}"
      class="btn btn-link p-0 d-flex align-items-center text-decoration-none"
      data-async="modal"
      title="View health status details">

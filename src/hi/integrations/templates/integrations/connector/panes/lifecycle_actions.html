@@ -11,7 +11,7 @@
 {% if core.integration_data.is_enabled %}
 <form class="mr-2"
       method="post"
-      action="{% if core.integration_data.is_paused %}{% url 'integrations_resume' integration_id=core.integration_data.integration_id %}{% else %}{% url 'integrations_pause' integration_id=core.integration_data.integration_id %}{% endif %}"
+      action="{% if core.integration_data.is_paused %}{% url 'integrations_connect_resume' integration_id=core.integration_data.integration_id %}{% else %}{% url 'integrations_connect_pause' integration_id=core.integration_data.integration_id %}{% endif %}"
       data-async="true">
   {% csrf_token %}
   {% if core.integration_data.is_paused %}

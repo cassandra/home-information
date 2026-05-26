@@ -19,7 +19,7 @@
   nothing to compare against on a first run.
 {% endcomment %}
 {% if core.integration_data.is_enabled and core.integration_data.integration_gateway.get_connector %}
-<a href="{% url 'integrations_pre_sync' integration_id=core.integration_data.integration_id %}"
+<a href="{% url 'integrations_connect_pre_sync' integration_id=core.integration_data.integration_id %}"
    class="btn {% if core.has_entities %}{% if core.sync_check_result.needs_sync %}btn-primary{% else %}btn-outline-secondary{% endif %}{% else %}btn-outline-primary{% endif %}"
    role="button"
    data-async="modal">

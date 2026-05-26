@@ -4,7 +4,7 @@
 {% block header_class %}bg-secondary{% endblock %}
 
 {% block preamble %}
-<form action="{% url 'integrations_disable' integration_id=integration_data.integration_id %}"
+<form action="{% url 'integrations_connect_disable' integration_id=integration_data.integration_id %}"
       method="post"
       class="form" data-async="modal">
   {% csrf_token %}
