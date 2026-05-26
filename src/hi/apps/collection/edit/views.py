@@ -254,6 +254,7 @@ class CollectionManageItemsView( HiSideView ):
         entity_collection_group_list = CollectionManager().create_entity_collection_group_list(
             collection = collection,
             unused_entity_ids = unused_entity_ids,
+            exclude_delegates = True,
         )
         return {
             'entity_collection_group_list': entity_collection_group_list,

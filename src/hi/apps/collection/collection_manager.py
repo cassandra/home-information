@@ -343,9 +343,15 @@ class CollectionManager(Singleton):
 
     def create_entity_collection_group_list( self,
                                              collection : Collection,
-                                             unused_entity_ids : set = None ) -> List[EntityCollectionGroup]:
+                                             unused_entity_ids : set = None,
+                                             exclude_delegates : bool = False,
+                                             ) -> List[EntityCollectionGroup]:
 
         entity_queryset = Entity.objects.all()
+        if exclude_delegates:
+            entity_queryset = entity_queryset.exclude(
+                entity_state_delegations__isnull = False,
+            )
 
         if unused_entity_ids is None:
             unused_entity_ids = set()

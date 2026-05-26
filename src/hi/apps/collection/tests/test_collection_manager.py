@@ -4,8 +4,8 @@ from unittest.mock import Mock
 
 from hi.apps.collection.collection_manager import CollectionManager
 from hi.apps.collection.models import Collection, CollectionEntity, CollectionPosition, CollectionView, CollectionPath
-from hi.apps.entity.models import Entity
-from hi.apps.entity.enums import EntityGroupType
+from hi.apps.entity.models import Entity, EntityState, EntityStateDelegation
+from hi.apps.entity.enums import EntityGroupType, EntityStateType, EntityType
 from hi.apps.location.models import Location, LocationView
 from hi.testing.base_test_case import BaseTestCase
 
@@ -682,4 +682,69 @@ class TestCollectionManagerCreateCollection(BaseTestCase):
         manager.create_collection(name='Inventory')
         third = manager.create_collection(name='Inventory')
         self.assertEqual(third.name, 'Inventory (3)')
+
+
+class TestCreateEntityCollectionGroupListExcludeDelegates(BaseTestCase):
+    """``exclude_delegates`` hides entities that act as delegates of
+    some principal, so the edit-mode sidebar doesn't surface them
+    as separately-toggleable checkboxes."""
+
+    def _make_principal_with_delegate(self):
+        principal = Entity.objects.create(
+            name='Motion Sensor',
+            entity_type_str=str(EntityType.MOTION_SENSOR),
+        )
+        delegate_area = Entity.objects.create(
+            name='Living Room',
+            entity_type_str=str(EntityType.AREA),
+        )
+        state = EntityState.objects.create(
+            entity=principal,
+            entity_state_type_str=str(EntityStateType.MOVEMENT),
+            name='movement',
+        )
+        EntityStateDelegation.objects.create(
+            entity_state=state,
+            delegate_entity=delegate_area,
+        )
+        return principal, delegate_area
+
+    def _names_in_groups(self, group_list):
+        return {
+            item.entity.name
+            for group in group_list
+            for item in group.item_list
+        }
+
+    def _make_collection(self):
+        return Collection.objects.create(
+            name='Test Collection',
+            collection_type_str='OTHER',
+            collection_view_type_str='LIST',
+        )
+
+    def test_delegate_hidden_when_exclude_delegates_true(self):
+        principal, delegate_area = self._make_principal_with_delegate()
+        collection = self._make_collection()
+
+        group_list = CollectionManager().create_entity_collection_group_list(
+            collection=collection,
+            exclude_delegates=True,
+        )
+
+        names = self._names_in_groups(group_list)
+        self.assertIn(principal.name, names)
+        self.assertNotIn(delegate_area.name, names)
+
+    def test_delegate_visible_by_default(self):
+        principal, delegate_area = self._make_principal_with_delegate()
+        collection = self._make_collection()
+
+        group_list = CollectionManager().create_entity_collection_group_list(
+            collection=collection,
+        )
+
+        names = self._names_in_groups(group_list)
+        self.assertIn(principal.name, names)
+        self.assertIn(delegate_area.name, names)
 

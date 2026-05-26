@@ -84,10 +84,16 @@ class EntityManager(Singleton):
 
     def create_location_entity_view_group_list( self,
                                                 location_view : LocationView,
-                                                unused_entity_ids : set = None ) -> List[EntityViewGroup]:
+                                                unused_entity_ids : set = None,
+                                                exclude_delegates : bool = False,
+                                                ) -> List[EntityViewGroup]:
         existing_entities = [ x.entity
                               for x in location_view.entity_views.select_related('entity').all() ]
         all_entities = Entity.objects.all()
+        if exclude_delegates:
+            all_entities = all_entities.exclude(
+                entity_state_delegations__isnull = False,
+            )
         return self.create_entity_view_group_list(
             existing_entities = existing_entities,
             all_entities = all_entities,

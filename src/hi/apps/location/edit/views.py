@@ -422,6 +422,7 @@ class LocationViewManageItemsView( HiSideView ):
         entity_view_group_list = EntityManager().create_location_entity_view_group_list(
             location_view = location_view,
             unused_entity_ids = unused_entity_ids,
+            exclude_delegates = True,
         )
         collection_view_group = CollectionManager().create_location_collection_view_group(
             location_view = location_view,

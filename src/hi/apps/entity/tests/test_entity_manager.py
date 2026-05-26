@@ -1,8 +1,13 @@
 import logging
 
 from hi.apps.entity.entity_manager import EntityManager
-from hi.apps.entity.models import Entity
-from hi.apps.entity.enums import EntityGroupType, EntityType
+from hi.apps.entity.models import (
+    Entity,
+    EntityState,
+    EntityStateDelegation,
+)
+from hi.apps.entity.enums import EntityGroupType, EntityStateType, EntityType
+from hi.apps.location.tests.synthetic_data import LocationSyntheticData
 from hi.testing.base_test_case import BaseTestCase
 
 logging.disable(logging.CRITICAL)
@@ -189,7 +194,85 @@ class TestEntityManager(BaseTestCase):
             
             if camera_item:
                 self.assertFalse(camera_item.exists_in_view)
-        
+
         return
+
+
+class TestCreateLocationEntityViewGroupListExcludeDelegates(BaseTestCase):
+    """``exclude_delegates`` hides entities that act as delegates of
+    some principal, so the edit-mode sidebar doesn't surface them
+    as separately-toggleable checkboxes."""
+
+    def _make_principal_with_delegate(self):
+        principal = Entity.objects.create(
+            name='Motion Sensor',
+            entity_type_str=str(EntityType.MOTION_SENSOR),
+        )
+        delegate_area = Entity.objects.create(
+            name='Living Room',
+            entity_type_str=str(EntityType.AREA),
+        )
+        state = EntityState.objects.create(
+            entity=principal,
+            entity_state_type_str=str(EntityStateType.MOVEMENT),
+            name='movement',
+        )
+        EntityStateDelegation.objects.create(
+            entity_state=state,
+            delegate_entity=delegate_area,
+        )
+        return principal, delegate_area
+
+    def _names_in_groups(self, group_list):
+        return {
+            item.entity.name
+            for group in group_list
+            for item in group.item_list
+        }
+
+    def test_delegate_hidden_when_exclude_delegates_true(self):
+        principal, delegate_area = self._make_principal_with_delegate()
+        location_view = LocationSyntheticData.create_test_location_view()
+
+        group_list = EntityManager().create_location_entity_view_group_list(
+            location_view=location_view,
+            exclude_delegates=True,
+        )
+
+        names = self._names_in_groups(group_list)
+        self.assertIn(principal.name, names)
+        self.assertNotIn(delegate_area.name, names)
+
+    def test_delegate_visible_by_default(self):
+        # Default (exclude_delegates=False) preserves the pre-change
+        # behavior so the pairings modal and any other caller keeps
+        # seeing delegates.
+        principal, delegate_area = self._make_principal_with_delegate()
+        location_view = LocationSyntheticData.create_test_location_view()
+
+        group_list = EntityManager().create_location_entity_view_group_list(
+            location_view=location_view,
+        )
+
+        names = self._names_in_groups(group_list)
+        self.assertIn(principal.name, names)
+        self.assertIn(delegate_area.name, names)
+
+    def test_non_delegate_entity_unaffected_by_filter(self):
+        # An entity that is neither principal nor delegate keeps
+        # appearing whether the filter is on or off.
+        plain = Entity.objects.create(
+            name='Standalone Light',
+            entity_type_str=str(EntityType.LIGHT),
+        )
+        location_view = LocationSyntheticData.create_test_location_view()
+
+        group_list = EntityManager().create_location_entity_view_group_list(
+            location_view=location_view,
+            exclude_delegates=True,
+        )
+
+        names = self._names_in_groups(group_list)
+        self.assertIn(plain.name, names)
 
 
