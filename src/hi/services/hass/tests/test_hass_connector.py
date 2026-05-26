@@ -299,8 +299,8 @@ class TestHassConnectorMixinIntegration(TestCase):
 
 
 class TestHassConnectorSyncResultGrouping(TestCase):
-    """Default-grouping behavior: entities are grouped by EntityType
-    using the humanized type label. Exercised here against
+    """Default-grouping behavior: entities are grouped by their
+    ``EntityGroupType`` rollup label. Exercised here against
     HassGateway (which uses the framework default) — the same
     behavior applies to any integration that doesn't override
     group_entities_for_placement."""
@@ -317,8 +317,9 @@ class TestHassConnectorSyncResultGrouping(TestCase):
         )
         return entity
 
-    def test_groups_built_by_entity_type_alphabetical(self):
-        """Group ordering is alphabetical by humanized type label."""
+    def test_groups_built_by_entity_group_alphabetical(self):
+        """Group ordering is alphabetical by rollup label. LIGHT
+        rolls up to AUTOMATION; MOTION_SENSOR to SECURITY."""
         from hi.apps.entity.enums import EntityType
         entities = [
             self._entity('Kitchen Light', EntityType.LIGHT, 'light.kitchen'),
@@ -330,7 +331,7 @@ class TestHassConnectorSyncResultGrouping(TestCase):
         self.assertEqual(placement_input.ungrouped_items, [])
         self.assertEqual(
             [group.label for group in placement_input.groups],
-            ['Light', 'Motion Sensor'],
+            ['Automation', 'Security'],
         )
         self.assertEqual(
             [item.label for item in placement_input.groups[0].items],
@@ -341,9 +342,9 @@ class TestHassConnectorSyncResultGrouping(TestCase):
             ['Hall Sensor'],
         )
 
-    def test_falls_back_to_other_when_entity_type_unknown(self):
-        """Entities with an unrecognized entity_type_str fall into
-        the 'Other' bucket (EntityType.default())."""
+    def test_unrecognized_type_falls_back_to_general(self):
+        """Entities with an unrecognized entity_type_str resolve to
+        EntityType.OTHER, which rolls up to EntityGroupType.GENERAL."""
         entity = Entity.objects.create(
             name='Mystery',
             entity_type_str='UNRECOGNIZED_FUTURE_TYPE',
@@ -354,7 +355,7 @@ class TestHassConnectorSyncResultGrouping(TestCase):
 
         self.assertEqual(placement_input.ungrouped_items, [])
         self.assertEqual(len(placement_input.groups), 1)
-        self.assertEqual(placement_input.groups[0].label, 'Other')
+        self.assertEqual(placement_input.groups[0].label, 'General')
         self.assertEqual(placement_input.groups[0].items[0].entity, entity)
 
     def test_empty_input_yields_empty_groups(self):

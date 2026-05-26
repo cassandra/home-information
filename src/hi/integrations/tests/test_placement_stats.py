@@ -11,6 +11,7 @@ import logging
 from django.test import TestCase
 
 from hi.apps.entity.entity_placement import (
+    PLACEMENT_DEFAULT_HEADING,
     EntityPlacementGroup,
     EntityPlacementInput,
     EntityPlacementItem,
@@ -134,8 +135,12 @@ class TestEntityPlacementInputHeading(TestCase):
     input itself so the modal can render it without the supplier
     threading it through a parallel channel."""
 
-    def test_default_heading_is_item_type(self):
-        self.assertEqual(EntityPlacementInput().heading, 'Item Type')
+    def test_default_heading_matches_module_constant(self):
+        self.assertEqual(
+            EntityPlacementInput().heading,
+            PLACEMENT_DEFAULT_HEADING,
+        )
+        self.assertEqual(PLACEMENT_DEFAULT_HEADING, 'Item Type')
 
     def test_supplier_can_set_dimension_specific_heading(self):
         placement_input = EntityPlacementInput(heading='HomeBox Location')

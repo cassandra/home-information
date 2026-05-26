@@ -456,3 +456,85 @@ class EntityPlacementServiceTests(BaseTestCase):
         self.assertTrue(outcome.primary_summary.is_collection)
         # Highest-count is Tools (2 entities).
         self.assertEqual(outcome.primary_summary.collection, tools)
+
+
+class TestPlacementInputBuilder(BaseTestCase):
+    """The shared bucket-and-group helper used by the framework
+    default and any integration-specific grouper. Pins the rollup
+    grouping semantics and the no-signal handling."""
+
+    def _entity(self, name, entity_type):
+        return Entity.objects.create(
+            name=name,
+            entity_type_str=str(entity_type),
+        )
+
+    def _key(self, entity):
+        return f'entity:{entity.id}'
+
+    def test_by_entity_type_group_emits_rollup_labels(self):
+        from hi.apps.entity.entity_placement import PlacementInputBuilder
+        light = self._entity('Living Room Light', EntityType.LIGHT)
+        camera = self._entity('Front Door Camera', EntityType.CAMERA)
+        fridge = self._entity('Kitchen Fridge', EntityType.REFRIGERATOR)
+
+        placement_input = PlacementInputBuilder.by_entity_type_group(
+            entities=[light, camera, fridge],
+            item_key_fn=self._key,
+        )
+
+        labels = [g.label for g in placement_input.groups]
+        # Alphabetical: Appliances < Automation < Security.
+        self.assertEqual(labels, ['Appliances', 'Automation', 'Security'])
+        self.assertEqual(placement_input.ungrouped_items, [])
+
+    def test_by_label_fn_routes_none_label_to_fallback_group(self):
+        from hi.apps.entity.entity_placement import PlacementInputBuilder
+        a = self._entity('Has Tag', EntityType.OTHER)
+        b = self._entity('No Tag', EntityType.OTHER)
+        placement_input = PlacementInputBuilder.by_label_fn(
+            entities=[a, b],
+            item_key_fn=self._key,
+            label_fn=lambda e: 'tools' if e.name == 'Has Tag' else None,
+            heading='Tag',
+            fallback_label='Untagged',
+        )
+
+        labels = [g.label for g in placement_input.groups]
+        self.assertEqual(labels, ['tools', 'Untagged'])
+        self.assertEqual(placement_input.ungrouped_items, [])
+
+    def test_by_label_fn_routes_none_to_ungrouped_when_no_fallback(self):
+        from hi.apps.entity.entity_placement import PlacementInputBuilder
+        a = self._entity('Has Label', EntityType.OTHER)
+        b = self._entity('No Label', EntityType.OTHER)
+        placement_input = PlacementInputBuilder.by_label_fn(
+            entities=[a, b],
+            item_key_fn=self._key,
+            label_fn=lambda e: 'tools' if e.name == 'Has Label' else None,
+            heading='Tag',
+        )
+
+        self.assertEqual([g.label for g in placement_input.groups], ['tools'])
+        self.assertEqual(len(placement_input.ungrouped_items), 1)
+        self.assertEqual(placement_input.ungrouped_items[0].entity, b)
+
+    def test_heading_propagates(self):
+        from hi.apps.entity.entity_placement import PlacementInputBuilder
+        placement_input = PlacementInputBuilder.by_entity_type_group(
+            entities=[self._entity('A', EntityType.LIGHT)],
+            item_key_fn=self._key,
+            heading='Custom',
+        )
+        self.assertEqual(placement_input.heading, 'Custom')
+
+    def test_default_heading_is_module_constant(self):
+        from hi.apps.entity.entity_placement import (
+            PLACEMENT_DEFAULT_HEADING,
+            PlacementInputBuilder,
+        )
+        placement_input = PlacementInputBuilder.by_entity_type_group(
+            entities=[self._entity('A', EntityType.LIGHT)],
+            item_key_fn=self._key,
+        )
+        self.assertEqual(placement_input.heading, PLACEMENT_DEFAULT_HEADING)

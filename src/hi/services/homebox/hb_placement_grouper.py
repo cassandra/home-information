@@ -11,23 +11,26 @@ with an ordered viability fallback:
 
 1. Group by ``integration_payload['location']``.
 2. Group by each item's globally-most-popular tag.
-3. Fall back to the framework's by-EntityType default.
+3. Fall back to the framework's by-EntityGroupType default.
 
 Viability for #1 and #2 comes from
 ``hi.integrations.placement_stats.compute_grouping_stats``. The
 EntityType fallback is used unconditionally so a tiny or uniform
 batch still gets a sensible heading rather than collapsing to
 ungrouped.
+
+The bucketing machinery lives in
+``hi.apps.entity.entity_placement.PlacementInputBuilder``; this
+module just picks dimensions and labels.
 """
 
 from collections import Counter
 import logging
-from typing import Callable, Dict, List, Optional
+from typing import Callable, Dict, List
 
 from hi.apps.entity.entity_placement import (
-    EntityPlacementGroup,
     EntityPlacementInput,
-    EntityPlacementItem,
+    PlacementInputBuilder,
 )
 from hi.apps.entity.models import Entity
 
@@ -41,21 +44,12 @@ LOCATION_HEADING        = 'HomeBox Location'
 LOCATION_FALLBACK_LABEL = 'Other'
 TAG_HEADING             = 'HomeBox Tag'
 TAG_FALLBACK_LABEL      = 'Untagged'
-TYPE_HEADING            = 'Item Type'
-
-
-LabelFn = Callable[[Entity], Optional[str]]
 
 
 class HbPlacementGrouper:
-    """Builds an ``EntityPlacementInput`` for a HomeBox import batch.
-
-    Self-contained — does not delegate to the gateway base class.
-    The by-EntityType final fallback is implemented inline against
-    the same internal bucketing helper used by the Location and
-    Tag passes, so HomeBox's grouping policy stays stable even if
-    the framework default changes.
-    """
+    """Builds an ``EntityPlacementInput`` for a HomeBox import batch
+    via ordered viability fallback across Location, Tag, and the
+    framework default by-EntityGroupType pass."""
 
     def __init__(
             self,
@@ -68,8 +62,8 @@ class HbPlacementGrouper:
             self, entities: List[Entity],
     ) -> EntityPlacementInput:
         """Ordered-fallback grouping: Location → primary Tag →
-        EntityType. First viable wins; EntityType is used
-        unconditionally as the final fallback."""
+        EntityGroupType. First viable wins; the by-group default is
+        used unconditionally as the final fallback."""
         if not entities:
             return EntityPlacementInput()
 
@@ -81,13 +75,17 @@ class HbPlacementGrouper:
         if compute_grouping_stats( by_tag ).is_viable():
             return by_tag
 
-        return self._group_by_entity_type( entities = entities )
+        return PlacementInputBuilder.by_entity_type_group(
+            entities    = entities,
+            item_key_fn = self._placement_item_key_fn,
+        )
 
     def _group_by_location(
             self, entities: List[Entity],
     ) -> EntityPlacementInput:
-        return self._build_grouped_input(
+        return PlacementInputBuilder.by_label_fn(
             entities       = entities,
+            item_key_fn    = self._placement_item_key_fn,
             label_fn       = lambda e: (e.integration_payload or {}).get( 'location' ),
             heading        = LOCATION_HEADING,
             fallback_label = LOCATION_FALLBACK_LABEL,
@@ -99,24 +97,12 @@ class HbPlacementGrouper:
         primary_tag_lookup = self._compute_primary_tag_lookup(
             entities = entities,
         )
-        return self._build_grouped_input(
+        return PlacementInputBuilder.by_label_fn(
             entities       = entities,
+            item_key_fn    = self._placement_item_key_fn,
             label_fn       = lambda e: primary_tag_lookup.get( e.id ),
             heading        = TAG_HEADING,
             fallback_label = TAG_FALLBACK_LABEL,
-        )
-
-    def _group_by_entity_type(
-            self, entities: List[Entity],
-    ) -> EntityPlacementInput:
-        # ``entity_type.label`` is never None, so the fallback
-        # group never materializes; the empty label is a never-
-        # used sentinel rather than a meaningful UI string.
-        return self._build_grouped_input(
-            entities       = entities,
-            label_fn       = lambda e: e.entity_type.label,
-            heading        = TYPE_HEADING,
-            fallback_label = '',
         )
 
     @staticmethod
@@ -151,40 +137,3 @@ class HbPlacementGrouper:
                 key = lambda tag: ( global_counts[ tag ], tag ),
             )
         return primary_tag_by_entity
-
-    def _build_grouped_input(
-            self,
-            entities       : List[Entity],
-            label_fn       : LabelFn,
-            heading        : str,
-            fallback_label : str,
-    ) -> EntityPlacementInput:
-        """Bucket items by ``label_fn``; items with a None label
-        land in a labeled fallback group appended last. Named
-        groups are sorted alphabetically for stable presentation."""
-        label_to_items: Dict[str, List[EntityPlacementItem]] = {}
-        fallback_items: List[EntityPlacementItem] = []
-        for entity in entities:
-            item = EntityPlacementItem(
-                key    = self._placement_item_key_fn( entity ),
-                label  = entity.name,
-                entity = entity,
-            )
-            label = label_fn( entity )
-            if label is None:
-                fallback_items.append( item )
-                continue
-            label_to_items.setdefault( label, [] ).append( item )
-
-        groups = [
-            EntityPlacementGroup( label = label, items = label_to_items[ label ] )
-            for label in sorted( label_to_items.keys() )
-        ]
-        if fallback_items:
-            groups.append(
-                EntityPlacementGroup(
-                    label = fallback_label,
-                    items = fallback_items,
-                )
-            )
-        return EntityPlacementInput( groups = groups, heading = heading )

@@ -1,9 +1,8 @@
-from typing import Dict, List, Optional
+from typing import List, Optional
 
 from hi.apps.entity.entity_placement import (
-    EntityPlacementGroup,
     EntityPlacementInput,
-    EntityPlacementItem,
+    PlacementInputBuilder,
 )
 from hi.apps.entity.models import Entity
 
@@ -94,27 +93,14 @@ class IntegrationGateway:
         this same method, so a given integration groups its entities
         the same way regardless of how they arrived.
 
-        Default: group by ``EntityType`` using the humanized type
-        label as the group name. Sorted alphabetically by label for
-        stable presentation. Subclasses override when a different
-        domain grouping makes sense (e.g., ZM/Frigate use a single
-        static named group for their single-type case)."""
-        type_label_to_items: Dict[str, List[EntityPlacementItem]] = {}
-        for entity in entities:
-            type_label = entity.entity_type.label
-            type_label_to_items.setdefault( type_label, [] ).append(
-                EntityPlacementItem(
-                    key = self._placement_item_key( entity = entity ),
-                    label = entity.name,
-                    entity = entity,
-                )
-            )
-            continue
-        groups = [
-            EntityPlacementGroup( label = label, items = type_label_to_items[label] )
-            for label in sorted( type_label_to_items.keys() )
-        ]
-        return EntityPlacementInput( groups = groups )
+        Default: group by ``EntityGroupType`` rollup using the
+        rollup's humanized label as the group name. Subclasses
+        override when a different domain grouping makes sense
+        (e.g., HomeBox's Location/Tag/Type fallback)."""
+        return PlacementInputBuilder.by_entity_type_group(
+            entities    = entities,
+            item_key_fn = self._placement_item_key,
+        )
 
     def _placement_item_key(self, entity: Entity) -> str:
         """Stable per-entity placement key. Prefers the live

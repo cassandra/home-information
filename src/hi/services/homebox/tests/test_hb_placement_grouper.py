@@ -15,6 +15,7 @@ from django.test import TestCase
 from hi.apps.entity.enums import EntityType
 from hi.apps.entity.models import Entity
 
+from hi.apps.entity.entity_placement import PLACEMENT_DEFAULT_HEADING
 from hi.services.homebox.hb_metadata import HbMetaData
 from hi.services.homebox.hb_placement_grouper import (
     HbPlacementGrouper,
@@ -22,7 +23,6 @@ from hi.services.homebox.hb_placement_grouper import (
     LOCATION_HEADING,
     TAG_FALLBACK_LABEL,
     TAG_HEADING,
-    TYPE_HEADING,
 )
 from hi.services.homebox.integration import HomeBoxGateway
 
@@ -200,7 +200,10 @@ class TestHbPlacementGrouperTypeFallback(TestCase):
 
     def test_falls_through_to_type_when_neither_dimension_viable(self):
         # Two items each, location/tags blank — too small and
-        # too uniform for Location or Tag to be viable.
+        # too uniform for Location or Tag to be viable. The final
+        # fallback uses the framework default (EntityGroupType rollup),
+        # so LIGHT lands in AUTOMATION and CAMERA in SECURITY.
+        from hi.apps.entity.enums import EntityGroupType
         entities = [
             _create_entity('A', EntityType.LIGHT, {'location': None, 'tags': []}),
             _create_entity('B', EntityType.LIGHT, {'location': None, 'tags': []}),
@@ -212,10 +215,10 @@ class TestHbPlacementGrouperTypeFallback(TestCase):
 
         result = _grouper().group_entities(entities=entities)
 
-        self.assertEqual(result.heading, TYPE_HEADING)
+        self.assertEqual(result.heading, PLACEMENT_DEFAULT_HEADING)
         labels = {group.label for group in result.groups}
-        self.assertIn(EntityType.LIGHT.label, labels)
-        self.assertIn(EntityType.CAMERA.label, labels)
+        self.assertIn(EntityGroupType.AUTOMATION.label, labels)
+        self.assertIn(EntityGroupType.SECURITY.label, labels)
 
 
 class TestHomeBoxGatewayGroupingIntegration(TestCase):

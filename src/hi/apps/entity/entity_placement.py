@@ -31,12 +31,16 @@ inherits this behavior; revisit when it bites.
 from dataclasses import dataclass, field
 from decimal import Decimal
 import logging
-from typing import List, Optional, Tuple, Union
+from typing import Callable, Dict, List, Optional, Tuple, Union
 
 from django.db import transaction
 
 from hi.apps.entity.edit.forms import EntityPositionForm
-from hi.apps.entity.enums import EntityType, EntityTransitionType
+from hi.apps.entity.enums import (
+    EntityGroupType,
+    EntityType,
+    EntityTransitionType,
+)
 from hi.apps.location.models import Location, LocationView
 from hi.apps.location.path_geometry import PathGeometry
 from hi.apps.location.position_geometry import PositionGeometry
@@ -51,6 +55,14 @@ from .models import (
 )
 
 logger = logging.getLogger(__name__)
+
+
+# Default heading the placement modal renders above its group list.
+# "Type" reads naturally for both leaf EntityType and rollup
+# EntityGroupType — they're item types at different resolutions.
+# Integrations override on a per-placement-input basis when they
+# group by a different dimension (location, tag, etc.).
+PLACEMENT_DEFAULT_HEADING = 'Item Type'
 
 
 @dataclass(frozen=True)
@@ -111,11 +123,11 @@ class EntityPlacementInput:
     ``heading`` is the column-heading label the modal renders
     above the group list. Suppliers set it to name the grouping
     dimension (e.g., "HomeBox Location" or "Type"). Defaults to
-    the generic "Items".
+    ``PLACEMENT_DEFAULT_HEADING``.
     """
     groups: List[EntityPlacementGroup] = field(default_factory=list)
     ungrouped_items: List[EntityPlacementItem] = field(default_factory=list)
-    heading: str = 'Item Type'
+    heading: str = PLACEMENT_DEFAULT_HEADING
 
     def is_empty(self) -> bool:
         if self.ungrouped_items:
@@ -238,6 +250,86 @@ class PlacementOutcome:
                 continue
             result.append(summary)
         return result
+
+
+class PlacementInputBuilder:
+    """Reusable bucket-and-group builders for ``EntityPlacementInput``.
+
+    Both the framework default and integration-specific groupers
+    (e.g. HomeBox's Location/Tag/Type pipeline) route through here
+    so the bucketing semantics — alphabetical group ordering, the
+    no-signal handling, the heading wiring — stay in one place.
+    """
+
+    @staticmethod
+    def by_label_fn(
+            entities       : List['Entity'],
+            item_key_fn    : Callable[['Entity'], str],
+            label_fn       : Callable[['Entity'], Optional[str]],
+            heading        : str,
+            fallback_label : Optional[str] = None,
+    ) -> 'EntityPlacementInput':
+        """Bucket entities by ``label_fn(entity)``.
+
+        Entities for which ``label_fn`` returns None land in a
+        labeled fallback group when ``fallback_label`` is set,
+        else in ``ungrouped_items``. Named groups are emitted in
+        alphabetical label order; the fallback group is appended
+        last when present.
+        """
+        label_to_items: Dict[str, List[EntityPlacementItem]] = {}
+        fallback_items: List[EntityPlacementItem] = []
+        ungrouped_items: List[EntityPlacementItem] = []
+        for entity in entities:
+            item = EntityPlacementItem(
+                key    = item_key_fn( entity ),
+                label  = entity.name,
+                entity = entity,
+            )
+            label = label_fn( entity )
+            if label is None:
+                if fallback_label is not None:
+                    fallback_items.append( item )
+                else:
+                    ungrouped_items.append( item )
+                continue
+            label_to_items.setdefault( label, [] ).append( item )
+
+        groups = [
+            EntityPlacementGroup( label = label, items = label_to_items[ label ] )
+            for label in sorted( label_to_items.keys() )
+        ]
+        if fallback_items:
+            groups.append(
+                EntityPlacementGroup(
+                    label = fallback_label,
+                    items = fallback_items,
+                )
+            )
+        return EntityPlacementInput(
+            groups          = groups,
+            ungrouped_items = ungrouped_items,
+            heading         = heading,
+        )
+
+    @staticmethod
+    def by_entity_type_group(
+            entities    : List['Entity'],
+            item_key_fn : Callable[['Entity'], str],
+            heading     : str = PLACEMENT_DEFAULT_HEADING,
+    ) -> 'EntityPlacementInput':
+        """Default placement grouping: bucket entities by their
+        ``EntityGroupType`` rollup label. The rollup avoids
+        scattering a typical batch across many one- or two-item
+        leaf-type buckets."""
+        return PlacementInputBuilder.by_label_fn(
+            entities    = entities,
+            item_key_fn = item_key_fn,
+            label_fn    = lambda e: EntityGroupType.from_entity_type(
+                e.entity_type
+            ).label,
+            heading     = heading,
+        )
 
 
 class EntityPlacementService:
