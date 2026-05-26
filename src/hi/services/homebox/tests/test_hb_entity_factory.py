@@ -50,8 +50,8 @@ class TestHbEntityFactory(TestCase):
         self.assertFalse(entity.allow_internal_attributes)
         self.assertTrue(entity.is_external)
         self.assertNotIn('description', entity.integration_payload)
-        self.assertEqual(entity.integration_payload.get('location', {}).get('name'), 'Garage')
-        self.assertEqual(entity.integration_payload.get('tags')[0].get('name'), 'Tools')
+        self.assertEqual(entity.integration_payload.get('location'), 'Garage')
+        self.assertEqual(entity.integration_payload.get('tags'), ['Tools'])
 
     def test_create_models_for_hb_item_creates_entity_import_mode(self):
         item = self._mock_item(item_id='item-import', name='Drill')
@@ -92,7 +92,7 @@ class TestHbEntityFactory(TestCase):
         self.assertEqual(existing.integration_id, HbMetaData.integration_id)
         self.assertEqual(existing.integration_name, 'item-reconnect')
         self.assertEqual(
-            existing.integration_payload.get('location', {}).get('name'),
+            existing.integration_payload.get('location'),
             'Garage',
         )
 

@@ -28,7 +28,9 @@ multi-Location deployments can disambiguate views with shared names
 
 Context:
   integration_data      : IntegrationData (required)
-  placement_input       : EntityPlacementInput (required)
+  placement_input       : EntityPlacementInput (required) — including
+                          ``heading`` (str, defaults to "Items") shown
+                          above the group list when groups exist.
   location_view_groups  : List[(Location, List[LocationView])] (required)
   collection_list       : List[Collection] (required)
   top_default_value     : str (required) — pre-selected value for
@@ -104,6 +106,12 @@ Place new items
       for per-item placement. Empty selections inherit from the
       level above.
     </div>
+
+    {% if placement_input.groups %}
+    <div class="text-muted text-uppercase small mb-1 hi-placement-heading">
+      {{ placement_input.heading }}
+    </div>
+    {% endif %}
 
     {% for group in placement_input.groups %}
     {% with forloop.counter0 as group_index %}

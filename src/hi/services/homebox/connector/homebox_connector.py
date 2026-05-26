@@ -139,15 +139,6 @@ class HomeBoxConnector( IntegrationConnector, HomeBoxMixin ):
         result.created_entities = created_entities
         return result
 
-    # group_entities_for_placement: no override. HomeBox inherits
-    # the gateway base default (group by EntityType). Today
-    # ``HbConverter.hb_item_to_entity_type`` stamps every imported
-    # item as ``EntityType.OTHER``, so the result is a single
-    # ``Other`` group — functionally equivalent to ungrouped, just
-    # with an extra label level. A future HomeBox-specific override
-    # (e.g. by upstream Location, read from ``integration_payload``)
-    # will replace this default.
-
     def _sync_helper_entities( self,
                                item_list: List[HbItem],
                                result: IntegrationSyncResult ) -> List[Entity]:

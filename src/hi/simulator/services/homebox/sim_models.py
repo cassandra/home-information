@@ -68,6 +68,15 @@ class HomeBoxInventoryItemFields( SimEntityFields ):
             'help_text': 'CSV of HomeBox tag names.',
         },
     )
+    location_name     : str  = dc_field(
+        default = '',
+        metadata = {
+            'help_text': (
+                'HomeBox location name. When set, the simulator emits a '
+                'location dict on the item; when blank, location is null.'
+            ),
+        },
+    )
     # Comma-separated wire keys of ``AttachmentTemplate`` members
     # (``hi.simulator.services.homebox.attachment_catalog``);
     # unknown keys are dropped silently. The simulator's API
@@ -178,6 +187,17 @@ def _parse_tags( csv_value : str ) -> List[ Dict[ str, str ] ]:
     return tags
 
 
+def _build_location( location_name : str ):
+    name = ( location_name or '' ).strip()
+    if not name:
+        return None
+    slug = '-'.join( name.lower().split() )
+    return {
+        'id'   : f'loc-{slug}',
+        'name' : name,
+    }
+
+
 def build_item_api_dict( sim_entity_id    : int,
                          fields           : HomeBoxInventoryItemFields,
                          archived_state   : HomeBoxItemArchivedState,
@@ -187,11 +207,13 @@ def build_item_api_dict( sim_entity_id    : int,
     Build the HomeBox item JSON shape returned by the simulator's API,
     matching the fields the integration's HbItem parser consumes.
 
-    Location is emitted as null (out of simulator scope). Custom
-    fields, tags, and attachments are populated from per-item CSV
-    inputs; the actual attachment bytes are rendered on demand by
-    the download endpoint when the integration fetches each
-    attachment. Timestamps come from the persisted ``DbSimEntity``
+    Location is emitted as a minimal dict (``{id, name}``) when the
+    operator sets ``location_name``, else null. The ``id`` is derived
+    deterministically from the name so two items sharing a location
+    name share a location id. Custom fields, tags, and attachments
+    are populated from per-item CSV inputs; the actual attachment
+    bytes are rendered on demand by the download endpoint when the
+    integration fetches each attachment. Timestamps come from the persisted ``DbSimEntity``
     so they're stable across reads — change only when the operator
     actually edits the row, matching real HomeBox behavior.
     """
@@ -220,7 +242,7 @@ def build_item_api_dict( sim_entity_id    : int,
         'archived'         : archived_state.is_archived,
         'fields'           : _parse_custom_fields( fields.custom_fields ),
         'attachments'      : attachments,
-        'location'         : None,
+        'location'         : _build_location( fields.location_name ),
         'tags'             : _parse_tags( fields.tags ),
         'createdAt'        : created_at.isoformat(),
         'updatedAt'        : updated_at.isoformat(),

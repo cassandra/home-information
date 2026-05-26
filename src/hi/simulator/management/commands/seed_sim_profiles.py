@@ -455,11 +455,19 @@ class Command(BaseCommand):
         # shapes for targeted UI coverage (empty, partial, attachments-
         # only, mixed, fully rich, truncation-toggle). Items 007-025
         # use modular per-index rules to keep variety reproducible.
+        #
+        # Locations are distributed across four buckets so the placement
+        # grouping heuristic (#364) sees a viable Location strategy. One
+        # item is left location-less to exercise the Untagged/Other
+        # fallback bucket.
+        location_palette = [ 'Garage', 'Office', 'Kitchen', 'Workshop' ]
+
         self._add_homebox_item(
             profile,
             'Volume Item 001',
             item_id = 'volume-item-001',
             quantity = 1,
+            location_name = 'Garage',
         )
 
         self._add_homebox_item(
@@ -473,6 +481,7 @@ class Command(BaseCommand):
             serial_number = 'SN-00002',
             custom_fields = 'Color=Red',
             tags = 'tools,power',
+            location_name = 'Kitchen',
         )
 
         self._add_homebox_item(
@@ -484,6 +493,7 @@ class Command(BaseCommand):
                 AttachmentTemplate.MANUAL.key,
                 AttachmentTemplate.PHOTO.key,
             ]),
+            location_name = 'Office',
         )
 
         self._add_homebox_item(
@@ -500,6 +510,7 @@ class Command(BaseCommand):
                 AttachmentTemplate.RECEIPT.key,
                 AttachmentTemplate.PHOTO.key,
             ]),
+            location_name = 'Workshop',
         )
 
         self._add_homebox_item(
@@ -528,6 +539,7 @@ class Command(BaseCommand):
                 AttachmentTemplate.PHOTO.key,
                 AttachmentTemplate.WARRANTY.key,
             ]),
+            location_name = 'Garage',
         )
 
         # Item 006: varied-length values to exercise the JS Show
@@ -580,6 +592,7 @@ class Command(BaseCommand):
                 AttachmentTemplate.PHOTO_TALL.key,
                 AttachmentTemplate.PHOTO_TALL_X.key,
             ]),
+            location_name = 'Office',
         )
 
         custom_field_palette = [
@@ -702,6 +715,14 @@ class Command(BaseCommand):
 
             if index % 3 == 0:
                 kwargs['tags'] = tag_palette[ index % len( tag_palette ) ]
+
+            # Leave the final item location-less to exercise the
+            # Untagged/Other fallback bucket; cycle the rest through
+            # the palette so each bucket has multiple items.
+            if index < 24:
+                kwargs['location_name'] = location_palette[
+                    index % len( location_palette )
+                ]
 
             self._add_homebox_item(
                 profile,

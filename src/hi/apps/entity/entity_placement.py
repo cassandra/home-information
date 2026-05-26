@@ -107,9 +107,15 @@ class EntityPlacementInput:
     placement flow. The placement layer does not know what produced
     its input; suppliers do not know how the dispatcher renders or
     applies the result.
+
+    ``heading`` is the column-heading label the modal renders
+    above the group list. Suppliers set it to name the grouping
+    dimension (e.g., "HomeBox Location" or "Type"). Defaults to
+    the generic "Items".
     """
     groups: List[EntityPlacementGroup] = field(default_factory=list)
     ungrouped_items: List[EntityPlacementItem] = field(default_factory=list)
+    heading: str = 'Item Type'
 
     def is_empty(self) -> bool:
         if self.ungrouped_items:

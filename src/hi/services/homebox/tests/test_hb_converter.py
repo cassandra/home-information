@@ -134,6 +134,60 @@ class TestHbConverterPayloadTimestampOmission(TestCase):
         )
 
 
+class TestHbItemToEntityPayloadGroupingFields(TestCase):
+    """Pin the flat shape of the location/tags grouping fields.
+
+    These fields feed placement grouping (issue #364). Storing
+    them flat — string for location, list of strings for tags —
+    keeps payload-diff comparisons stable and avoids leaking HB
+    metadata (color, timestamps) that no downstream code reads.
+    Live HB API responses remain the source of truth for the rich
+    structures."""
+
+    def _mock_item(self, **api_overrides):
+        api_dict = {
+            'id': 'item-1',
+            'name': 'Item 1',
+            'description': 'desc',
+            'quantity': 1,
+            'location': {'id': 'loc-1', 'name': 'Garage'},
+            'tags': [
+                {'id': 'lab-1', 'name': 'Tools'},
+                {'id': 'lab-2', 'name': 'Power'},
+            ],
+            'fields': [],
+            'attachments': [],
+        }
+        api_dict.update(api_overrides)
+        return HbItem(api_dict=api_dict, client=Mock())
+
+    def test_location_persists_as_flat_name_string(self):
+        payload = HbConverter.hb_item_to_entity_payload(hb_item=self._mock_item())
+        self.assertEqual(payload['location'], 'Garage')
+
+    def test_tags_persist_as_flat_name_list(self):
+        payload = HbConverter.hb_item_to_entity_payload(hb_item=self._mock_item())
+        self.assertEqual(payload['tags'], ['Tools', 'Power'])
+
+    def test_missing_location_yields_none(self):
+        payload = HbConverter.hb_item_to_entity_payload(hb_item=self._mock_item(location=None))
+        self.assertIsNone(payload['location'])
+
+    def test_missing_tags_yields_empty_list(self):
+        payload = HbConverter.hb_item_to_entity_payload(hb_item=self._mock_item(tags=None))
+        self.assertEqual(payload['tags'], [])
+
+    def test_tags_without_name_are_skipped(self):
+        item = self._mock_item(tags=[
+            {'id': 'lab-1', 'name': 'Tools'},
+            {'id': 'lab-2'},
+            {'id': 'lab-3', 'name': ''},
+            {'id': 'lab-4', 'name': 'Power'},
+        ])
+        payload = HbConverter.hb_item_to_entity_payload(hb_item=item)
+        self.assertEqual(payload['tags'], ['Tools', 'Power'])
+
+
 class TestHbItemToEntityType(TestCase):
     """Heuristic EntityType assignment from HomeBox item text fields.
 

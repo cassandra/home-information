@@ -1,6 +1,8 @@
 import logging
 from typing import List, Optional
 
+from hi.apps.entity.entity_placement import EntityPlacementInput
+from hi.apps.entity.models import Entity
 from hi.apps.system.enums import HealthStatusType
 
 from hi.integrations.integration_gateway import IntegrationGateway
@@ -15,6 +17,7 @@ from hi.integrations.transient_models import (
 
 from hi.services.homebox.hb_manager import HomeBoxManager
 from hi.services.homebox.hb_metadata import HbMetaData
+from hi.services.homebox.hb_placement_grouper import HbPlacementGrouper
 from hi.services.homebox.connector.homebox_connector import HomeBoxConnector
 from hi.services.homebox.importer.homebox_importer import HomeBoxImporter
 
@@ -73,3 +76,13 @@ class HomeBoxGateway(IntegrationGateway):
         except Exception as e:
             logger.exception(f'Error in HomeBox access validation: {e}')
             return ConnectionTestResult.failure(f'Access validation error: {e}')
+
+    def group_entities_for_placement(
+            self, entities: List[Entity],
+    ) -> EntityPlacementInput:
+        """HomeBox grouping: ordered Location → Tag → EntityType
+        fallback. See ``HbPlacementGrouper`` for the policy."""
+        grouper = HbPlacementGrouper(
+            placement_item_key_fn = self._placement_item_key,
+        )
+        return grouper.group_entities( entities = entities )

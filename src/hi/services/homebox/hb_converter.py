@@ -260,37 +260,34 @@ class HbConverter:
             'notes': hb_item.notes,
         }
 
+        # Location is persisted as a flat string (the location name).
+        # No consumer currently needs the full HB location dict; if a
+        # future need arises, prefer reading from the live HB API
+        # response rather than expanding the payload. If the HomeBox
+        # API ever exposes a hierarchy field (treePath / parentId),
+        # this is the right place to extract the top-level segment so
+        # downstream consumers see consistently-flattened grouping
+        # keys.
         location = hb_item.location
         if location is None:
             logger.warning( f'HomeBox item {hb_item.id} missing location dict' )
             payload['location'] = None
         else:
-            payload['location'] = {
-                'id': location.get( 'id' ),
-                'name': location.get( 'name' ),
-                'description': location.get( 'description' ),
-                'createdAt': location.get( 'createdAt' ),
-                'updatedAt': location.get( 'updatedAt' ),
-            }
+            payload['location'] = location.get( 'name' )
 
+        # Tags persisted as a flat list of names. No consumer needs
+        # the rich tag dicts (color, timestamps, etc.); the live HB
+        # API response is the source of truth for those details.
         tags = hb_item.tags
         if tags is None:
             logger.warning( f'HomeBox item {hb_item.id} missing tags list' )
             payload['tags'] = []
         else:
-            normalized_tags: List[Dict] = []
-            for tag in tags:
-                if not isinstance( tag, dict ):
-                    continue
-                normalized_tags.append({
-                    'id': tag.get( 'id' ),
-                    'name': tag.get( 'name' ),
-                    'description': tag.get( 'description' ),
-                    'color': tag.get( 'color' ),
-                    'created_at': tag.get( 'createdAt' ),
-                    'updated_at': tag.get( 'updatedAt' ),
-                })
-            payload['tags'] = normalized_tags
+            payload['tags'] = [
+                tag.get( 'name' )
+                for tag in tags
+                if isinstance( tag, dict ) and tag.get( 'name' )
+            ]
 
         return payload
 
