@@ -132,3 +132,161 @@ class TestHbConverterPayloadTimestampOmission(TestCase):
             HbConverter.hb_item_to_entity_payload(hb_item=earlier),
             HbConverter.hb_item_to_entity_payload(hb_item=later),
         )
+
+
+class TestHbItemToEntityType(TestCase):
+    """Heuristic EntityType assignment from HomeBox item text fields.
+
+    Verifies the two-pass priority — outer field priority (name then
+    description) and inner keyword specificity (longer / multi-word
+    keywords win) — and that word-boundary semantics prevent false
+    positives like ``drilling`` matching ``drill``."""
+
+    def _item(self, name='', description=''):
+        from unittest.mock import Mock
+        api_dict = {
+            'id': 'test-item',
+            'name': name,
+            'description': description,
+            'location': {'id': 'loc-1', 'name': 'Garage'},
+            'tags': [],
+            'fields': [],
+            'attachments': [],
+        }
+        client = Mock()
+        return HbItem(api_dict=api_dict, client=client)
+
+    # --- positive matches across categories -----------------------
+
+    def test_tool_match_in_name(self):
+        from hi.apps.entity.enums import EntityType
+        self.assertEqual(
+            HbConverter.hb_item_to_entity_type(hb_item=self._item(name='Cordless Drill')),
+            EntityType.TOOL,
+        )
+
+    def test_light_match_in_name(self):
+        from hi.apps.entity.enums import EntityType
+        self.assertEqual(
+            HbConverter.hb_item_to_entity_type(hb_item=self._item(name='Floor Lamp')),
+            EntityType.LIGHT,
+        )
+
+    def test_camera_match_in_name(self):
+        from hi.apps.entity.enums import EntityType
+        self.assertEqual(
+            HbConverter.hb_item_to_entity_type(hb_item=self._item(name='Front Door Camera')),
+            EntityType.CAMERA,
+        )
+
+    def test_refrigerator_match_in_name(self):
+        from hi.apps.entity.enums import EntityType
+        self.assertEqual(
+            HbConverter.hb_item_to_entity_type(hb_item=self._item(name='Kitchen Refrigerator')),
+            EntityType.REFRIGERATOR,
+        )
+
+    def test_router_match_in_name(self):
+        from hi.apps.entity.enums import EntityType
+        self.assertEqual(
+            HbConverter.hb_item_to_entity_type(hb_item=self._item(name='Wi-Fi Router')),
+            EntityType.NETWORK_SWITCH,
+        )
+
+    # --- multi-word beats single-word within the same field ------
+
+    def test_multi_word_beats_single_word_in_same_field(self):
+        # Item named 'Ceiling Fan' should match the multi-word
+        # 'ceiling fan' keyword (CEILING_FAN), not just 'fan'
+        # — even if 'fan' were also in the keyword map.
+        from hi.apps.entity.enums import EntityType
+        self.assertEqual(
+            HbConverter.hb_item_to_entity_type(hb_item=self._item(name='Ceiling Fan')),
+            EntityType.CEILING_FAN,
+        )
+
+    def test_leaf_blower_beats_bare_blower(self):
+        from hi.apps.entity.enums import EntityType
+        # The bare 'blower' keyword would also match, but the multi-
+        # word 'leaf blower' is sorted first by specificity and wins.
+        self.assertEqual(
+            HbConverter.hb_item_to_entity_type(hb_item=self._item(name='Leaf Blower')),
+            EntityType.LEAF_BLOWER,
+        )
+
+    # --- field priority: name beats description ------------------
+
+    def test_name_match_beats_description_match(self):
+        from hi.apps.entity.enums import EntityType
+        # Name says drill (TOOL); description mentions lamp (LIGHT).
+        # Name wins.
+        self.assertEqual(
+            HbConverter.hb_item_to_entity_type(hb_item=self._item(
+                name='Cordless Drill',
+                description='Used as accessory next to the lamp',
+            )),
+            EntityType.TOOL,
+        )
+
+    def test_description_used_when_name_has_no_match(self):
+        from hi.apps.entity.enums import EntityType
+        # Name carries no category signal (just brand/model); the
+        # description identifies it as a leaf blower.
+        self.assertEqual(
+            HbConverter.hb_item_to_entity_type(hb_item=self._item(
+                name='Acme BG-2200',
+                description='Cordless leaf blower with two batteries',
+            )),
+            EntityType.LEAF_BLOWER,
+        )
+
+    # --- word-boundary correctness -------------------------------
+
+    def test_drilling_does_not_match_drill(self):
+        from hi.apps.entity.enums import EntityType
+        # 'drilling' is not the same as 'drill' — boundary regex
+        # must reject the suffix match.
+        self.assertEqual(
+            HbConverter.hb_item_to_entity_type(hb_item=self._item(
+                name='Drilling Machine',
+            )),
+            EntityType.OTHER,
+        )
+
+    def test_case_insensitive(self):
+        from hi.apps.entity.enums import EntityType
+        self.assertEqual(
+            HbConverter.hb_item_to_entity_type(hb_item=self._item(name='DRILL')),
+            EntityType.TOOL,
+        )
+
+    # --- edge cases ----------------------------------------------
+
+    def test_no_match_returns_other(self):
+        from hi.apps.entity.enums import EntityType
+        self.assertEqual(
+            HbConverter.hb_item_to_entity_type(hb_item=self._item(
+                name='Mystery Object',
+                description='Unknown thing',
+            )),
+            EntityType.OTHER,
+        )
+
+    def test_empty_name_and_description_returns_other(self):
+        from hi.apps.entity.enums import EntityType
+        self.assertEqual(
+            HbConverter.hb_item_to_entity_type(hb_item=self._item(name='', description='')),
+            EntityType.OTHER,
+        )
+
+    def test_only_description_present(self):
+        from hi.apps.entity.enums import EntityType
+        # No name field at all (None-like) — description still
+        # contributes.
+        self.assertEqual(
+            HbConverter.hb_item_to_entity_type(hb_item=self._item(
+                name='',
+                description='Mountain bike camera mount',
+            )),
+            EntityType.CAMERA,
+        )

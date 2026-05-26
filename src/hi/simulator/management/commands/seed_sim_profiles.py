@@ -600,6 +600,33 @@ class Command(BaseCommand):
             'garage,workshop',
             'consumables',
         ]
+        # Names and descriptions chosen to exercise the EntityType
+        # keyword heuristic (HbConverter.hb_item_to_entity_type).
+        # Most entries resolve to a specific EntityType; one
+        # ("Garden Hose") falls through to OTHER for fallback coverage.
+        # Ordering is deterministic — indices 6..24 cycle through
+        # the palette modulo its length.
+        name_description_palette = [
+            ( 'Cordless Drill', 'Compact 18V drill with two batteries.' ),
+            ( 'Floor Lamp', 'Adjustable arm reading lamp with LED bulb.' ),
+            ( 'WiFi Router', 'Mesh-capable home router with three nodes.' ),
+            ( 'Smart TV', '55-inch 4K television in the family room.' ),
+            ( 'Bookshelf Speaker', 'Pair of bookshelf speakers for stereo setup.' ),
+            ( 'Kitchen Refrigerator', 'Energy-efficient refrigerator with ice maker.' ),
+            ( 'Microwave Oven', 'Countertop microwave with sensor cooking.' ),
+            ( 'Front Door Camera', 'Outdoor security camera with night vision.' ),
+            ( 'Lawn Mower', 'Battery-powered lawn mower with collection bag.' ),
+            ( 'Leaf Blower', 'Cordless leaf blower with two batteries.' ),
+            ( 'Pressure Washer', 'Electric pressure washer rated for driveway use.' ),
+            ( 'Smart Thermostat', 'Programmable thermostat with WiFi connectivity.' ),
+            ( 'Circular Saw', 'Heavy-duty corded circular saw with carrying case.' ),
+            ( 'Claw Hammer', 'Steel-headed claw hammer with rubber grip.' ),
+            ( 'Wrench Set', 'Metric and standard wrench set in a case.' ),
+            ( 'Backup Laptop', 'Spare laptop kept in the office desk drawer.' ),
+            ( 'AV Receiver', 'Multi-channel audio receiver, 7.2 surround.' ),
+            ( 'Wireless Doorbell', 'Battery-powered doorbell with chime unit.' ),
+            ( 'Garden Hose', 'Standard 50-foot garden hose with brass fittings.' ),
+        ]
         # Attachment template buckets indexed modulo 25 — first ~5
         # empty, next ~10 single, next ~5 paired, last ~5 with
         # three+ templates. Different choices keep the mime mix
@@ -639,16 +666,18 @@ class Command(BaseCommand):
 
         for index in range(6, 25):
             item_number = index + 1
+            palette_index = ( index - 6 ) % len( name_description_palette )
+            palette_name, palette_description = name_description_palette[ palette_index ]
             kwargs = {
                 'item_id': f'volume-item-{item_number:03}',
                 'quantity': (index % 4) + 1,
                 'attachment_keys': attachment_buckets[index],
+                'description': palette_description,
             }
 
             if index % 5 == 0:
                 # Fully documented item: every top-level field populated.
                 kwargs.update({
-                    'description': f'Stress-test inventory item #{item_number}',
                     'manufacturer': 'Acme',
                     'model_number': f'AC-{item_number:03}',
                     'serial_number': f'SN-{item_number:05}',
@@ -676,7 +705,7 @@ class Command(BaseCommand):
 
             self._add_homebox_item(
                 profile,
-                f'Volume Item {item_number:03}',
+                palette_name,
                 **kwargs,
             )
         return profile.db_sim_entities.count()

@@ -45,7 +45,8 @@ class TestHbEntityFactory(TestCase):
         self.assertEqual(entity.integration_id, HbMetaData.integration_id)
         self.assertEqual(entity.integration_name, 'item-create')
         self.assertEqual(entity.name, 'Drill')
-        self.assertEqual(entity.entity_type, EntityType.OTHER)
+        # HbConverter's keyword heuristic resolves 'Drill' to TOOL.
+        self.assertEqual(entity.entity_type, EntityType.TOOL)
         self.assertFalse(entity.allow_internal_attributes)
         self.assertTrue(entity.is_external)
         self.assertNotIn('description', entity.integration_payload)

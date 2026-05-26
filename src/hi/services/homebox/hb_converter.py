@@ -1,6 +1,7 @@
 from typing import Dict, List, Optional
 import mimetypes
 import os
+import re
 
 from django.core.files.base import ContentFile
 
@@ -31,6 +32,144 @@ HB_ITEM_FIELD_PAIRS = [
     ( 'warranty_details', 'Warranty Details' ),
     ( 'warranty_expires', 'Warranty Expires' ),
     ( 'notes', 'Notes' ),
+]
+
+
+# Keyword → EntityType map for heuristic type assignment of HomeBox
+# items. Authoring order does not matter — ``_KEYWORD_PATTERNS`` below
+# pre-sorts by specificity (word count descending, then char length
+# descending, then alphabetical). Multi-word keywords always win over
+# single-word matches; longer keywords win over shorter at equal word
+# count.
+#
+# Add keywords liberally as real-world data accumulates. The
+# false-positive risk is small as long as keywords are nouns naming
+# the kind of thing (not adjectives or verbs).
+HB_KEYWORD_ENTITY_TYPE_MAP = [
+    # Multi-word patterns.
+    ( 'access point', EntityType.ACCESS_POINT ),
+    ( 'attic stairs', EntityType.ATTIC_STAIRS ),
+    ( 'av receiver', EntityType.AV_RECEIVER ),
+    ( 'battery storage', EntityType.BATTERY_STORAGE ),
+    ( 'carbon monoxide', EntityType.CARBON_MONOXIDE_DETECTOR ),
+    ( 'ceiling fan', EntityType.CEILING_FAN ),
+    ( 'clothes dryer', EntityType.CLOTHES_DRYER ),
+    ( 'clothes washer', EntityType.CLOTHES_WASHER ),
+    ( 'coffee machine', EntityType.COFFEE_MAKER ),
+    ( 'coffee maker', EntityType.COFFEE_MAKER ),
+    ( 'door lock', EntityType.DOOR_LOCK ),
+    ( 'electric meter', EntityType.ELECTRICITY_METER ),
+    ( 'electric panel', EntityType.ELECTRIC_PANEL ),
+    ( 'electrical outlet', EntityType.ELECTRICAL_OUTLET ),
+    ( 'ev charger', EntityType.EV_CHARGER ),
+    ( 'exhaust fan', EntityType.EXHAUST_FAN ),
+    ( 'fire extinguisher', EntityType.FIRE_EXTINGUISHER ),
+    ( 'garage door', EntityType.GARAGE_DOOR ),
+    ( 'garbage disposal', EntityType.GARBAGE_DISPOSAL ),
+    ( 'gas detector', EntityType.GAS_DETECTOR ),
+    ( 'gas meter', EntityType.GAS_METER ),
+    ( 'hedge trimmer', EntityType.HEDGE_TRIMMER ),
+    ( 'lawn mower', EntityType.LAWN_MOWER ),
+    ( 'leaf blower', EntityType.LEAF_BLOWER ),
+    ( 'microwave oven', EntityType.MICROWAVE_OVEN ),
+    ( 'motion sensor', EntityType.MOTION_SENSOR ),
+    ( 'network switch', EntityType.NETWORK_SWITCH ),
+    ( 'pool filter', EntityType.POOL_FILTER ),
+    ( 'pool heater', EntityType.POOL_HEATER ),
+    ( 'pool pump', EntityType.POOL_PUMP ),
+    ( 'power washer', EntityType.POWER_WASHER ),
+    ( 'pressure washer', EntityType.POWER_WASHER ),
+    ( 'radon detector', EntityType.RADON_DETECTOR ),
+    ( 'range hood', EntityType.RANGE_HOOD ),
+    ( 'satellite dish', EntityType.SATELLITE_DISH ),
+    ( 'smoke detector', EntityType.SMOKE_DETECTOR ),
+    ( 'solar panel', EntityType.SOLAR_PANEL ),
+    ( 'sump pump', EntityType.SUMP_PUMP ),
+    ( 'wall switch', EntityType.WALL_SWITCH ),
+    ( 'water filter', EntityType.WATER_FILTER ),
+    ( 'water heater', EntityType.WATER_HEATER ),
+    ( 'water meter', EntityType.WATER_METER ),
+    ( 'water softener', EntityType.WATER_SOFTENER ),
+    ( 'weather station', EntityType.WEATHER_STATION ),
+    # Single-word patterns. Tools.
+    ( 'drill', EntityType.TOOL ),
+    ( 'hammer', EntityType.TOOL ),
+    ( 'pliers', EntityType.TOOL ),
+    ( 'sander', EntityType.TOOL ),
+    ( 'saw', EntityType.TOOL ),
+    ( 'screwdriver', EntityType.TOOL ),
+    ( 'wrench', EntityType.TOOL ),
+    # Lighting.
+    ( 'bulb', EntityType.LIGHT ),
+    ( 'chandelier', EntityType.LIGHT ),
+    ( 'lamp', EntityType.LIGHT ),
+    ( 'light', EntityType.LIGHT ),
+    ( 'sconce', EntityType.LIGHT ),
+    # Computer / network.
+    ( 'computer', EntityType.COMPUTER ),
+    ( 'desktop', EntityType.COMPUTER ),
+    ( 'laptop', EntityType.COMPUTER ),
+    ( 'modem', EntityType.MODEM ),
+    ( 'printer', EntityType.PRINTER ),
+    ( 'router', EntityType.NETWORK_SWITCH ),
+    ( 'server', EntityType.SERVER ),
+    ( 'ups', EntityType.UPS ),
+    # Audio / visual.
+    ( 'receiver', EntityType.AV_RECEIVER ),
+    ( 'soundbar', EntityType.SPEAKER ),
+    ( 'speaker', EntityType.SPEAKER ),
+    ( 'television', EntityType.TELEVISION ),
+    ( 'tv', EntityType.TELEVISION ),
+    # Appliances.
+    ( 'dishwasher', EntityType.DISHWASHER ),
+    ( 'dryer', EntityType.CLOTHES_DRYER ),
+    ( 'freezer', EntityType.FREEZER ),
+    ( 'fridge', EntityType.REFRIGERATOR ),
+    ( 'grill', EntityType.GRILL ),
+    ( 'microwave', EntityType.MICROWAVE_OVEN ),
+    ( 'oven', EntityType.OVEN ),
+    ( 'refrigerator', EntityType.REFRIGERATOR ),
+    ( 'washer', EntityType.CLOTHES_WASHER ),
+    # Climate.
+    ( 'barometer', EntityType.BAROMETER ),
+    ( 'humidifier', EntityType.HUMIDIFIER ),
+    ( 'hygrometer', EntityType.HYGROMETER ),
+    ( 'thermometer', EntityType.THERMOMETER ),
+    ( 'thermostat', EntityType.THERMOSTAT ),
+    # Outdoor.
+    ( 'blower', EntityType.LEAF_BLOWER ),
+    ( 'generator', EntityType.GENERATOR ),
+    ( 'inverter', EntityType.INVERTER ),
+    ( 'mower', EntityType.LAWN_MOWER ),
+    ( 'trimmer', EntityType.TRIMMER ),
+    # Security / cameras.
+    ( 'camera', EntityType.CAMERA ),
+    ( 'doorbell', EntityType.DOORBELL ),
+    # Fixtures.
+    ( 'bathtub', EntityType.BATHTUB ),
+    ( 'shower', EntityType.SHOWER ),
+    ( 'sink', EntityType.SINK ),
+    ( 'toilet', EntityType.TOILET ),
+]
+
+
+# Fields scanned for keyword matches, in priority order. A match in
+# an earlier-listed field wins over any match in a later field.
+_TYPE_HEURISTIC_FIELDS = ( 'name', 'description' )
+
+
+# Pre-sorted keyword patterns. Multi-word matches always beat
+# single-word matches within the same field; longer keywords beat
+# shorter at equal word count; alphabetical break for determinism.
+_KEYWORD_PATTERNS = [
+    (
+        re.compile( rf'\b{re.escape(keyword)}\b', re.IGNORECASE ),
+        entity_type,
+    )
+    for keyword, entity_type in sorted(
+        HB_KEYWORD_ENTITY_TYPE_MAP,
+        key = lambda pair: ( -len( pair[0].split() ), -len( pair[0] ), pair[0] ),
+    )
 ]
 
 
@@ -70,6 +209,27 @@ class HbConverter:
 
     @classmethod
     def hb_item_to_entity_type( cls, hb_item: HbItem ) -> EntityType:
+        """Heuristic EntityType assignment for a HomeBox item.
+
+        Two-pass priority:
+          1. Field priority — ``name`` first, then ``description``.
+             A match in name wins over any match in description.
+             The user titled the item deliberately; the description
+             is incidental commentary.
+          2. Keyword specificity — within a field, longer / multi-
+             word keyword matches beat shorter ones (handled by the
+             pre-sort in ``_KEYWORD_PATTERNS``).
+
+        Fallback: ``EntityType.OTHER`` when no keyword matches
+        either field.
+        """
+        for field_name in _TYPE_HEURISTIC_FIELDS:
+            field_value = getattr( hb_item, field_name, None )
+            if not field_value:
+                continue
+            for pattern, entity_type in _KEYWORD_PATTERNS:
+                if pattern.search( field_value ):
+                    return entity_type
         return EntityType.OTHER
 
     @classmethod
