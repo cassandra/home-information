@@ -10,12 +10,15 @@ Each integration is a Django app in `hi/services/` directory. The `hi.integratio
 - **detail_attrs**: Opaque data blob - only the integration uses this data
 
 ### Capability model
-Each integration declares its `IntegrationCapability` set on `IntegrationMetaData.capabilities` (`hi/integrations/enums.py`). Two capabilities exist today:
+Each integration declares its `IntegrationCapability` set on `IntegrationMetaData.capabilities` (`hi/integrations/enums.py`). Three capabilities exist today:
 
-- **`CONNECT`** — live mirror of an upstream system. Realized by an `IntegrationConnector` subclass returned from `IntegrationGateway.get_connector()`. All four production integrations (HA, ZM, Frigate, HomeBox) declare CONNECT.
-- **`IMPORT`** — one-shot copy of upstream items into HI as locally-owned entities. Realized by an `IntegrationImporter` subclass returned from `IntegrationGateway.get_importer()`. HomeBox is the first integration to declare IMPORT alongside CONNECT (see [`docs/dev/integrations/data-import.md`](data-import.md) for the developer surface).
+- **`CONNECT`** — live mirror of an upstream system. Realized by an `IntegrationConnector` subclass returned from `IntegrationGateway.get_connector()`. All four "Connectors"-tab integrations (HA, ZM, Frigate, HomeBox) declare CONNECT.
+- **`IMPORT`** — one-shot copy of upstream items into HI as locally-owned entities. Realized by an `IntegrationImporter` subclass returned from `IntegrationGateway.get_importer()`. HomeBox is the only integration to declare IMPORT alongside CONNECT today (see [`docs/dev/integrations/data-import.md`](data-import.md) for the developer surface).
+- **`ATTRIBUTE_REFERENCE`** — search-and-attach surface that contributes URL attributes to existing Entity / Location records (no entity import, no live mirror). Realized by an `IntegrationAttributeReferencer` subclass returned from `IntegrationGateway.get_attribute_referencer()`. Paperless-ngx is the only integration to declare ATTRIBUTE_REFERENCE today. ATTRIBUTE_REFERENCE-only integrations are configured on a sibling tab labeled "Content Sources" instead of "Connectors" — the page chrome differs because there's no monitor / sync lifecycle.
 
-The two abstractions don't share a base class — commonality is composed through shared helpers (`hi/integrations/entity_operations.py`, `hi/integrations/placement_request.py`, etc.). The `connector/` and `importer/` sub-packages live as peers under `hi/integrations/`.
+The three per-capability classes (`IntegrationConnector`, `IntegrationImporter`, `IntegrationAttributeReferencer`) share a common base `CapabilityGateway` (`hi/integrations/capability_gateway.py`). Each declares a `capability` class attribute identifying the `IntegrationCapability` it realizes, and overrides cross-capability concerns: `get_metadata()` (abstract), `get_description()` (operator-facing one-line description), and `get_attribute_actions_template_name()` (optional template fragment for the attribute form's action bar). Capability-specific concerns (sync, import, search) stay on the subclass. Adding a new capability means subclassing `CapabilityGateway`, declaring the `capability` class attribute, and overriding only the methods that apply to the new shape.
+
+The `connector/`, `importer/`, and `referencer/` sub-packages live as peers under `hi/integrations/`.
 
 Per-attribute `IntegrationAttributeType` declarations may carry an optional `capabilities` set to restrict which capability's UI surfaces the attribute. Default is `ALL_CAPABILITIES`.
 
@@ -79,7 +82,9 @@ Each integration is a self-contained Django app under `hi/services/<integration_
 - `monitors.py` — `PeriodicMonitor` subclass(es) for polling and health probes
 - `apps.py`, `urls.py`, `views.py` — standard Django wiring
 
-`<prefix>` is a short integration mnemonic (`hass_`, `zm_`, `hb_`). Keep it consistent across all files within the integration.
+`<prefix>` is a short integration mnemonic (`hass_`, `zm_`, `hb_`, `pl_`). Keep it consistent across all files within the integration.
+
+ATTRIBUTE_REFERENCE-only integrations (paperless-ngx today) don't need all the role-files above — they have no monitors, no sync, no converter, and no manager singleton (the capability has no live state to own). They still ship `integration.py`, `<prefix>_metadata.py`, `<prefix>_client.py`, plus a `<prefix>_referencer.py` for the `IntegrationAttributeReferencer` subclass and `<prefix>_models.py` (or `_constants.py`) for the wire-format strings.
 
 ### Centralize wire-format strings
 Every integration centralizes its wire-format strings — domain/endpoint names, attribute keys, device-class names, service names, special-state sentinels — in a single class per integration. The exemplar is `HassApi` in `hi/services/hass/hass_models.py`; ZoneMinder's equivalent is `hi/services/zoneminder/constants.py`. The converter, sync, controller, and service composer all import their wire strings from this single source.
@@ -113,17 +118,24 @@ cd src/hi/services
 - Set fully qualified name in `apps.py`: `name = 'hi.services.myintegration'`
 - Add to `INSTALLED_APPS` in `hi/settings/base.py`
 
-### 3. Define Integration Type
-Add to `IntegrationType` enum in appropriate enums file
+### 3. Declare Metadata and Capabilities
+Create a module-level `IntegrationMetaData` instance (in `<prefix>_metadata.py`) declaring the integration's `integration_id`, label, logo path, attribute-type enum, and `capabilities` set. The `capabilities` set is what binds the integration to its UI surfaces — CONNECT puts it on the Connectors tab; IMPORT adds it to the Data Import tab; ATTRIBUTE_REFERENCE puts it on the Content Sources tab.
 
 ### 4. Create Gateway Class
-Implement `IntegrationGateway` with required methods:
-- `activate(integration_instance)` - Setup and validation
-- `deactivate(integration_instance)` - Cleanup and shutdown
-- `manage(request, integration_instance)` - Management interface
+Implement `IntegrationGateway` (in `integration.py`) with the methods that apply to the declared capabilities:
 
-### 5. Register with Factory
-Add gateway mapping in `hi/integrations/integration_factory.py`
+- `get_metadata()` — return the `IntegrationMetaData` instance. Required.
+- `get_connector()` — return an `IntegrationConnector` subclass instance when CONNECT is advertised; default `None`.
+- `get_importer()` — return an `IntegrationImporter` subclass instance when IMPORT is advertised; default `None`.
+- `get_attribute_referencer()` — return an `IntegrationAttributeReferencer` subclass instance when ATTRIBUTE_REFERENCE is advertised; default `None`.
+- `validate_configuration(integration_attributes)` — schema-only validation of the attribute set. Required (no network operations).
+- `validate_access(integration_attributes, timeout_secs)` — bounded live probe against the configured credentials. Required (used by the configure flow and by health-check helpers).
+- `notify_settings_changed()` — invoked by the framework after the operator saves attributes. Reload your manager / re-init clients here. Default no-op.
+
+The per-capability work (sync, candidate-listing, search) lives on the capability subclass returned from the matching `get_*` method.
+
+### 5. Auto-Discovery
+No factory registration is needed. `IntegrationManager.discover_defined_integrations()` walks `INSTALLED_APPS` for `hi.services.*` apps, imports each app's `integration.py`, and registers any `IntegrationGateway` subclass it finds. As long as the app is in `INSTALLED_APPS` and `integration.py` exposes a gateway subclass, it shows up automatically.
 
 ### 6. Write Per-Integration Documentation
 Every user-configured integration MUST ship with two short docs based
@@ -152,15 +164,13 @@ the user-facing landing page at [`docs/Integrations.md`](../../Integrations.md).
 ## Gateway Implementation Patterns
 
 ### Gateway Methods
-**activate()**: Validate config, validate access, initialize resources
-**deactivate()**: Clean up entities, close connections, update status
-**manage()**: Handle POST actions (sync, test, config), render management UI
+See "4. Create Gateway Class" above for the full method list. Highlights:
 
-### Return Format
-All gateway methods return dict with:
-- `status`: 'success' or 'error'
-- `message`: User-friendly status message
-- `redirect`: Optional redirect URL
+- **`validate_configuration(attrs)`** — schema check only. Returns `IntegrationValidationResult`. Must not perform network operations.
+- **`validate_access(attrs, timeout_secs)`** — live probe against the proposed credentials. Returns `ConnectionTestResult`. Must respect the timeout. Used at attribute-save time and before relaunching monitors on Resume.
+- **`get_<capability>()`** — return the capability instance the framework consults for capability-specific work. Returning `None` opts the integration out of that capability's UI surfaces even if the capability is in `IntegrationMetaData.capabilities` (defensive disable).
+
+The framework owns the surrounding workflow (configure modal, save lifecycle, sync UI, picker UI). The gateway and its capability instances supply the integration-specific bits.
 
 ## Integration Patterns
 
@@ -175,27 +185,29 @@ All gateway methods return dict with:
 - **Cleanup**: Remove entities no longer in external system
 
 ### Error Handling
-Custom exception hierarchy:
-- `IntegrationError` - Base class
-- `ConnectionError` - Network/connectivity issues
-- `AuthenticationError` - Auth/authorization failures
-- `DataValidationError` - Invalid data from external source
+Custom exception hierarchy (`hi/integrations/exceptions.py`):
+- `IntegrationError` — base class.
+- `IntegrationDisabledError` — operation attempted against a disabled integration.
+- `IntegrationAttributeError` — required attribute missing or invalid.
+- `IntegrationConnectionError` — upstream unreachable / auth rejected during a live operation.
 
 ## Key Base Classes & Modules
 
 ### Core Classes
-- `hi.integration.integration_gateway.IntegrationGateway` - Base gateway class
-- `hi.utils.singleton.Singleton` - Singleton pattern for gateways
-- `hi.integrations.enums.IntegrationStatus` - Status enumeration
-
-### Factory Pattern
-- `hi.integrations.integration_factory.py` - Gateway registration
-- `hi.integrations.exceptions.py` - Custom exception classes
+- `hi.integrations.integration_gateway.IntegrationGateway` — per-integration entry point; auto-discovered from each `hi.services.*` app's `integration.py`.
+- `hi.integrations.capability_gateway.CapabilityGateway` — shared base of the three per-capability classes; carries `capability`, `get_metadata`, `get_description`, `get_attribute_actions_template_name`.
+- `hi.integrations.connector.integration_connector.IntegrationConnector` — CONNECT capability surface (sync, monitor, controller, health).
+- `hi.integrations.importer.integration_importer.IntegrationImporter` — IMPORT capability surface (candidate list, run, discard).
+- `hi.integrations.referencer.integration_referencer.IntegrationAttributeReferencer` — ATTRIBUTE_REFERENCE capability surface (search).
+- `hi.integrations.integration_manager.IntegrationManager` — discovery and lifecycle singleton.
+- `hi.apps.common.singleton.Singleton` — singleton base used by `IntegrationManager` and many per-integration managers.
 
 ### Example Integrations
-- `hi.services.hass/` - Home Assistant integration
-- `hi.services.zoneminder/` - ZoneMinder integration
-- `hi.services.homebox/` - HomeBox integration
+- `hi.services.hass/` — Home Assistant (CONNECT).
+- `hi.services.zoneminder/` — ZoneMinder (CONNECT).
+- `hi.services.frigate/` — Frigate (CONNECT).
+- `hi.services.homebox/` — HomeBox (CONNECT + IMPORT).
+- `hi.services.paperless/` — paperless-ngx (ATTRIBUTE_REFERENCE-only). Slimmer file layout — no manager singleton, no monitors, no converter — because the capability has no live state to own.
 
 ## Related Documentation
 - [Service Patterns](service-patterns.md)
