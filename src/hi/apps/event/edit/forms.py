@@ -28,7 +28,7 @@ class EventDefinitionForm( forms.ModelForm ):
         )
 
     event_type_str = forms.ChoiceField(
-        label = 'Trigger Type',
+        label = 'Match Type',
         choices = EventType.choices,
         initial = EventType.default_value(),
         required = True,

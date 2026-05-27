@@ -5,7 +5,7 @@
 <div class="container-fluid">
   <div class="d-flex justify-content-between my-1">
     <div class="h3">
-      Trigger Rules
+      Rules
       <span class="badge badge-secondary align-middle ml-1" style="font-size: 0.5em;">BETA</span>
     </div>
     <div>
@@ -17,7 +17,7 @@
     </div>
   </div>
   <p class="text-muted mb-3">
-    Triggers alerts or actions when entity states match a defined condition.
+    Raises alerts or runs actions when entity states match a defined condition.
     The current interface covers the core cases; richer editing is planned.
   </p>
 
@@ -73,7 +73,7 @@
           </td>
         </tr>
         {% empty %}
-        <tr><td colspan="6"><div class="col-12 alert alert-info" >No event definitions.</div></td></tr>
+        <tr><td colspan="6"><div class="col-12 alert alert-info" >No rules defined.</div></td></tr>
         {% endfor %}
       </tbody>
     </table>

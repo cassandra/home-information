@@ -18,13 +18,13 @@ class EventClauseOperator(LabeledEnum):
     via ``float()`` at match time and silently no-op on parse failure
     so a malformed wire value never raises into the matcher."""
 
-    EQ  = ( 'Equals'       , 'Trigger when the value equals the target string.' )
-    NEQ = ( 'Not Equals'   , 'Trigger when the value does not equal the target string.' )
-    IN  = ( 'Is One Of'    , 'Trigger when the value matches any item in a comma-separated list.' )
-    LT  = ( 'Less Than'    , 'Trigger when the numeric value drops below the threshold.' )
-    LTE = ( 'At Most'      , 'Trigger when the numeric value is at or below the threshold.' )
-    GT  = ( 'Greater Than' , 'Trigger when the numeric value rises above the threshold.' )
-    GTE = ( 'At Least'     , 'Trigger when the numeric value is at or above the threshold.' )
+    EQ  = ( 'Equals'       , 'Match when the value equals the target string.' )
+    NEQ = ( 'Not Equals'   , 'Match when the value does not equal the target string.' )
+    IN  = ( 'Is One Of'    , 'Match when the value matches any item in a comma-separated list.' )
+    LT  = ( 'Less Than'    , 'Match when the numeric value drops below the threshold.' )
+    LTE = ( 'At Most'      , 'Match when the numeric value is at or below the threshold.' )
+    GT  = ( 'Greater Than' , 'Match when the numeric value rises above the threshold.' )
+    GTE = ( 'At Least'     , 'Match when the numeric value is at or above the threshold.' )
 
     @classmethod
     def default(cls):

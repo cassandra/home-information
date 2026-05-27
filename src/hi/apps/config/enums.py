@@ -17,7 +17,7 @@ class ConfigPageType(LabeledEnum):
         return
 
     SETTINGS                = ('Settings'        , ''   , 'config_settings' )
-    EVENTS                  = ('Triggers'        , ''   , 'event_definitions' )
+    EVENTS                  = ('Rules'           , ''   , 'event_definitions' )
     INTEGRATIONS_CONNECT    = ('Connectors'      , ''   , 'integrations_connect_home' )
     INTEGRATIONS_REFERENCE  = ('Content Sources' , ''   , 'integrations_reference_home' )
     INTEGRATIONS_IMPORT     = ('Data Import'     , ''   , 'integrations_import_home' )

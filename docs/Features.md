@@ -49,7 +49,7 @@ Home Information provides comprehensive tools for organizing, monitoring, and co
 - **Device control** - lights, switches, sensors, and other Home Assistant-managed devices
 - **Status monitoring** - real-time device states displayed visually on your home layout
 - **Historical data** - device state change histories and usage patterns
-- **Automated rules** - create event triggers and automation rules
+- **Automated rules** - create rules that raise alerts or run actions when entity states match defined conditions
 
 **Real-world benefit:** Instead of opening a separate app and navigating device lists, you see device status right on your home map and control them in context.
 

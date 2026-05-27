@@ -91,13 +91,13 @@ If the integation provides cameras with video feeds (e.g., ZoneMinder), the came
 
 <img src="img/getting-started/video-stream-live-1024x768.png" alt="video-stream-live-1024x768.png" width="400" /> &nbsp; <img src="img/getting-started/video-stream-history-1024x768.png" alt="video-stream-history-1024x768.png" width="400" />
 
-### Alert Triggering Rules and Security Modes
+### Alert Rules and Security Modes
 
-By default, if you have motion sensors, open/close sensors, camera motion, etc. the integration item import automatically creates alert triggering rules.  You can view, refine and manage these in the configuration pages.
+By default, if you have motion sensors, open/close sensors, camera motion, etc. the integration item import automatically creates alert rules.  You can view, refine and manage these in the configuration pages.
 
-<img src="img/getting-started/trigger-rules-1024x768.png" alt="trigger-rules-1024x768" width="400" />
+<img src="img/getting-started/trigger-rules-1024x768.png" alt="rules-1024x768" width="400" />
 
-The triggering rules allows you to target different "security modes" for better control of what alerts and when. 
+The rules allow you to target different "security modes" for better control of what alerts and when. 
 
 <img src="img/getting-started/security-modes.png" alt="security-modes" width="250" />
 
