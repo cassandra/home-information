@@ -2,10 +2,8 @@ import asyncio
 import logging
 
 import hi.apps.common.datetimeproxy as datetimeproxy
-from hi.apps.alert.enums import AlarmLevel
 from hi.apps.monitor.periodic_monitor import PeriodicMonitor
 
-from hi.apps.alert.alert_mixins import AlertMixin
 from hi.apps.config.settings_mixins import SettingsMixin
 from hi.apps.system.provider_info import ProviderInfo
 
@@ -16,7 +14,7 @@ from .weather_source_manager import WeatherSourceManager
 logger = logging.getLogger(__name__)
 
 
-class WeatherMonitor( PeriodicMonitor, AlertMixin, SettingsMixin ):
+class WeatherMonitor( PeriodicMonitor, SettingsMixin ):
 
     MONITOR_ID = 'hi.apps.weather.monitor'
 
@@ -68,15 +66,6 @@ class WeatherMonitor( PeriodicMonitor, AlertMixin, SettingsMixin ):
                 WeatherSettingsHelper.DEFAULT_POLLING_INTERVAL_SECONDS
             ),
         )
-
-    def alarm_ceiling(self):
-        # Cap at INFO for two reasons:
-        #   1. Weather staleness is informational — the user is not
-        #      typically depending on the configured freshness window.
-        #   2. The monitor records WARNING during its startup-safety
-        #      window. Capping at INFO prevents that startup transition
-        #      from firing alarms on every server restart.
-        return AlarmLevel.INFO
 
     async def do_work(self):
 
