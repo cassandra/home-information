@@ -11,8 +11,10 @@ the integration participates by translating a search query into a
 list of ``AttributeReferenceResult`` candidates.
 """
 
-from typing import List
+from typing import List, Optional
 
+from hi.integrations.capability_gateway import CapabilityGateway
+from hi.integrations.enums import IntegrationCapability
 from hi.integrations.models import IntegrationAttribute
 from hi.integrations.transient_models import (
     IntegrationMetaData,
@@ -22,7 +24,9 @@ from hi.integrations.transient_models import (
 from .transient_models import AttributeReferenceResult
 
 
-class IntegrationAttributeReferencer:
+class IntegrationAttributeReferencer( CapabilityGateway ):
+
+    capability = IntegrationCapability.ATTRIBUTE_REFERENCE
     """Search-and-attach surface contributed by integrations that
     expose a queryable corpus of linkable resources (documents,
     pages, files in an external CMS, etc.). The framework calls
@@ -61,3 +65,11 @@ class IntegrationAttributeReferencer:
           - Not raise on empty/whitespace queries; return [].
         """
         raise NotImplementedError('Subclasses must override this method')
+
+    def get_attribute_actions_template_name(self) -> Optional[str]:
+        """Per-capability template fragment to render in the
+        integration attribute form's action bar. ATTRIBUTE_REFERENCE
+        contributes the enabled/disabled status badge plus the
+        Disable button. Individual integrations can override to
+        substitute their own fragment."""
+        return 'integrations/referencer/panes/reference_attribute_actions.html'

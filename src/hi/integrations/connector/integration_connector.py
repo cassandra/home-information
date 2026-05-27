@@ -24,7 +24,9 @@ from hi.apps.monitor.periodic_monitor import PeriodicMonitor
 from hi.apps.sense.transient_models import SensorResponse
 from hi.apps.system.health_status_provider import HealthStatusProvider
 
+from hi.integrations.capability_gateway import CapabilityGateway
 from hi.integrations.entity_operations import EntityIntegrationOperations
+from hi.integrations.enums import IntegrationCapability
 from .external_view_data import ExternalViewData
 from .integration_controller import IntegrationController
 from .sync_check import IntegrationSyncCheck, SyncDelta
@@ -34,7 +36,7 @@ from hi.integrations.transient_models import IntegrationKey, IntegrationMetaData
 logger = logging.getLogger(__name__)
 
 
-class IntegrationConnector:
+class IntegrationConnector( CapabilityGateway ):
     """
     Base class for per-integration connectors.
 
@@ -52,11 +54,13 @@ class IntegrationConnector:
     integration genuinely needs concurrent sync.
     """
 
+    capability = IntegrationCapability.CONNECT
+
     # Single shared lock name across all integration syncs. See class
     # docstring above for the rationale.
     SYNCHRONIZATION_LOCK_NAME = 'integrations_sync'
 
-    def get_description(self, is_initial_connect: bool) -> Optional[str]:
+    def get_sync_description(self, is_initial_connect: bool) -> Optional[str]:
         """
         Optional copy describing what this integration's sync will do,
         surfaced to the operator in the framework's pre-sync
@@ -105,6 +109,14 @@ class IntegrationConnector:
         health banners and System Info page can report upstream
         availability."""
         raise NotImplementedError('Subclasses must override this method')
+
+    def get_attribute_actions_template_name(self) -> Optional[str]:
+        """Per-capability template fragment to render in the
+        integration attribute form's action bar. CONNECT contributes
+        the health-status badge that links to the health-detail
+        modal. Individual integrations can override to substitute
+        their own fragment."""
+        return 'integrations/connector/panes/connect_attribute_actions.html'
 
     def get_entity_video_stream(self, entity: Entity) -> Optional[VideoStream]:
         """Return the live video stream for ``entity``, or ``None`` when

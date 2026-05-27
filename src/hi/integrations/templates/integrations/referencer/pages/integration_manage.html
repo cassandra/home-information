@@ -1,0 +1,83 @@
+{% extends "config/pages/config_base.html" %}
+{% load icons static %}
+
+{% block config_content %}
+<div id="hi-integration-settings" class="d-flex">
+  <nav class="nav flex-column hi-vertical-nav">
+    <div class="hi-vertical-nav-header">
+      <span class="d-flex align-items-center justify-content-center w-100 font-weight-bold text-muted py-2"
+            style="white-space: nowrap;">
+        {% icon "collection" size="sm" css_class="hi-icon-left" %}CONTENT SOURCES
+      </span>
+    </div>
+    {% for item in core.integration_data_list %}
+    <a class="nav-link hi-vertical-nav-link {% if core.integration_data.integration_id == item.integration_id %}active{% endif %}"
+       href="{% url 'integrations_reference_manage' integration_id=item.integration_id %}"
+       data-async="true">
+      <div class="d-flex justify-content-between align-items-center">
+        <span class="d-flex align-items-center" style="white-space: nowrap;">
+          <img src="{% static item.integration_metadata.logo_static_path %}"
+               alt="{{ item.label }}"
+               style="max-height: 18px; width: auto; margin-right: 6px; flex-shrink: 0;">
+          {{ item.label }}
+        </span>
+      </div>
+    </a>
+    {% endfor %}
+  </nav>
+  <div class="flex-column flex-grow-1" style="min-width: 0;">
+    <div class="tab-content m-3">
+
+      <div id="{{ attr_item_context.container_html_id }}"
+           class="{{ DIVID.ATTR_V2_CONTAINER_CLASS }}" >
+
+        <div class="border-bottom mb-2 pb-2">
+          <div class="d-flex justify-content-between">
+            <div class="h3 integration-title">
+              <img class="img-fluid"
+                   src="{% static core.integration_data.integration_metadata.logo_static_path %}"
+                   alt="{{ core.integration_data.integration_metadata.label }} Logo">
+              {{ core.integration_data.integration_metadata.label }}
+            </div>
+          </div>
+        </div>
+
+        <div class="{{ DIVID.ATTR_V2_FORM_CLASS }}">
+          <form id="{{ attr_item_context.form_html_id }}"
+                action="{% url 'integrations_reference_manage' integration_id=core.integration_data.integration_id %}"
+                method="post"
+                class="{{ DIVID.ATTR_V2_FORM_CLASS }} form"
+                enctype="multipart/form-data">
+            {% csrf_token %}
+
+            <div id="{{ attr_item_context.content_html_id }}"
+                 class="{{ DIVID.ATTR_V2_CONTENT_CLASS }}">
+              {% include "integrations/panes/integration_edit_content_body.html" %}
+            </div>
+          </form>
+        </div>
+
+        {% if messages %}
+        <div class="{{ DIVID.ATTR_V2_MESSAGES }}" id="{{ DIVID.ATTR_V2_MESSAGES }}">
+          {% for message in messages %}
+          <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+            {{ message }}
+            <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+              <span aria-hidden="true">&times;</span>
+            </button>
+          </div>
+          {% endfor %}
+        </div>
+        {% endif %}
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script>
+ if (window.Hi && window.Hi.attr && window.Hi.attr.initializeContainer) {
+   window.Hi.attr.initializeContainer('#{{ attr_item_context.container_html_id }}');
+ }
+</script>
+{% endblock %}

@@ -172,7 +172,8 @@
                 _updateOrderIndexes($container);
             }
             
-            const formData = new FormData($form[0]);
+            const submitter = options.submitter || null;
+            const formData = new FormData($form[0], submitter);
             const url = $form.attr('action');
             const method = $form.attr('method') || 'POST';
             
@@ -649,8 +650,13 @@
             // Add custom Ajax submission handler
             $form.on(`submit.${ATTR_V2_INTERNAL.AJAX_EVENT_NAMESPACE}`, function(e) {
                 e.preventDefault();
-                
-                _ajax.submitFormWithAjax(form);
+
+                // Pass the submitter so the clicked button's name/value
+                // is included in FormData — matches native browser
+                // behavior for multi-submit-button forms (e.g., a form
+                // with both SAVE and DISABLE buttons).
+                const submitter = (e.originalEvent && e.originalEvent.submitter) || null;
+                _ajax.submitFormWithAjax(form, { submitter });
             });
         });
         

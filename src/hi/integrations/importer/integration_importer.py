@@ -11,6 +11,8 @@ candidate-listing, item ingest, and discard operations.
 """
 from typing import List
 
+from hi.integrations.capability_gateway import CapabilityGateway
+from hi.integrations.enums import IntegrationCapability
 from hi.integrations.models import IntegrationAttribute
 from hi.integrations.transient_models import (
     IntegrationMetaData,
@@ -24,7 +26,9 @@ from .transient_models import (
 )
 
 
-class IntegrationImporter:
+class IntegrationImporter( CapabilityGateway ):
+
+    capability = IntegrationCapability.IMPORT
 
     def get_metadata(self) -> IntegrationMetaData:
         raise NotImplementedError('Subclasses must override this method')

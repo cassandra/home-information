@@ -118,7 +118,7 @@ class FrigateConnector( IntegrationConnector, FrigateMixin ):
             metadata = { 'event_id': event_id },
         )
 
-    def get_description(self, is_initial_connect : bool) -> Optional[ str ]:
+    def get_sync_description(self, is_initial_connect : bool) -> Optional[ str ]:
         if is_initial_connect:
             return (
                 'Each Frigate camera becomes a HI camera entity with'

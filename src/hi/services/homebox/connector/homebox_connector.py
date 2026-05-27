@@ -45,7 +45,7 @@ class HomeBoxConnector( IntegrationConnector, HomeBoxMixin ):
     def get_external_view_data(self, entity: Entity) -> Optional[ExternalViewData]:
         return HomeBoxExternalViewResolver().get_external_view_data(entity)
 
-    def get_description(self, is_initial_connect: bool) -> Optional[str]:
+    def get_sync_description(self, is_initial_connect: bool) -> Optional[str]:
         return (
             'HomeBox Labels and Locations are kept as metadata on '
             'each item, not as separate organizational concepts in HI.'

@@ -57,10 +57,18 @@ class CapabilityConfigureView( HiModalView,
     def get_template_name( self ) -> str:
         return self.template_name
 
+    def get_capability_gateway( self, integration_data ):
+        """Return the ``CapabilityGateway`` instance for this configure
+        view's capability. Subclasses implement by calling the
+        appropriate per-capability getter on the gateway. The base
+        class deliberately does not enumerate capabilities — each
+        subclass already knows its own."""
+        raise NotImplementedError('Subclasses must override this method')
+
     def _build_attr_item_context( self, integration_data ):
         return IntegrationAttributeItemEditContext(
             integration_data       = integration_data,
-            capability             = self.capability,
+            capability_gateway     = self.get_capability_gateway( integration_data ),
             update_button_label    = self.button_label,
             suppress_history       = True,
             show_secrets           = True,
@@ -304,7 +312,7 @@ class IntegrationAttributeHistoryInlineView( View,
         )
         attr_item_context = IntegrationAttributeItemEditContext(
             integration_data = integration_data,
-            capability = IntegrationCapability.CONNECT,
+            capability_gateway = integration_data.integration_gateway.get_connector(),
         )
         return self.get_history(
             request = request,
@@ -333,7 +341,7 @@ class IntegrationAttributeRestoreInlineView( View,
 
         attr_item_context = IntegrationAttributeItemEditContext(
             integration_data = integration_data,
-            capability = IntegrationCapability.CONNECT,
+            capability_gateway = integration_data.integration_gateway.get_connector(),
         )
         return self.post_restore(
             request = request,

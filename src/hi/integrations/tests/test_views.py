@@ -194,11 +194,16 @@ class _SyncTestSynchronizer:
     unit tests; the views only need methods the framework actually
     calls on it.
     """
+
+    # Duck-typed CapabilityGateway surface: the framework reads this
+    # when building the attribute edit context.
+    capability = IntegrationCapability.CONNECT
+
     def __init__(self, description='Test integration sync description.'):
         self._description = description
         self.sync_called = False
 
-    def get_description(self, is_initial_connect):
+    def get_sync_description(self, is_initial_connect):
         self.last_is_initial_connect = is_initial_connect
         return self._description
 
@@ -571,11 +576,14 @@ class _PlacementTestSynchronizer:
     enough to exercise group default, drill-down override, and
     ungrouped per-item paths.
     """
+
+    capability = IntegrationCapability.CONNECT
+
     def __init__(self, sync_result):
         self._sync_result = sync_result
         self.sync_called = False
 
-    def get_description(self, is_initial_connect):
+    def get_sync_description(self, is_initial_connect):
         return None
 
     def get_result_title(self, is_initial_connect):

@@ -1,0 +1,20 @@
+{% comment %}
+Attribute-form action-bar fragment for the CONNECT capability:
+health-status badge linking to the health-detail modal. Rendered
+when ``health_status`` is in scope (the CONNECT manage view passes
+it; modals that include this body do not).
+
+Context (inherited from the surrounding edit body):
+  health_status     : HealthStatus (optional)
+  integration_data  : IntegrationData (required)
+{% endcomment %}
+{% if health_status %}
+<div class="ml-3">
+  <a href="{% url 'integrations_connect_health_status' integration_id=integration_data.integration_id %}"
+     class="btn btn-link p-0 d-flex align-items-center text-decoration-none"
+     data-async="modal"
+     title="View health status details">
+    {% include "system/panes/health_status_badge.html" with health_status=health_status %}
+  </a>
+</div>
+{% endif %}

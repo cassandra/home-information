@@ -41,17 +41,28 @@ from django.core.exceptions import BadRequest
 from django.db import transaction
 from django.http import Http404
 from django.template.loader import render_to_string
+from django.urls import reverse
 
+from hi.apps.attribute.edit_form_handler import AttributeEditFormHandler
+from hi.apps.attribute.edit_response_renderer import AttributeEditResponseRenderer
 from hi.apps.attribute.enums import AttributeType, AttributeValueType
+from hi.apps.attribute.view_mixins import AttributeEditViewMixin
 from hi.apps.common import antinode
+from hi.apps.config.enums import ConfigPageType
+from hi.apps.config.views import ConfigPageView
 from hi.apps.entity.models import Entity, EntityAttribute
 from hi.apps.location.models import Location, LocationAttribute
 from hi.enums import ItemType
+from hi.exceptions import ForceRedirectException
 from hi.hi_async_view import HiModalView
 
 from hi.integrations.enums import IntegrationCapability
+from hi.integrations.integration_attribute_edit_context import (
+    IntegrationAttributeItemEditContext,
+)
 from hi.integrations.integration_data import IntegrationData
 from hi.integrations.integration_manager import IntegrationManager
+from hi.integrations.view_mixins import IntegrationViewMixin
 
 from .integration_attribute_referencer import IntegrationAttributeReferencer
 from .transient_models import AttributeReferenceResult, WireField
@@ -363,3 +374,218 @@ class AttributeReferencePickerView( HiModalView ):
             'body_html_id': body_html_id,
             'WireField': WireField,
         }
+
+
+# ----------------------------------------------------------------------
+# Reference-capability management page
+# ----------------------------------------------------------------------
+#
+# Parallel to the Connectors page (CONNECT capability) and the Data
+# Import page (IMPORT capability). The operator-facing tab label is
+# "Content Sources"; code-side naming uses ``reference`` to align
+# with the capability and the surrounding referencer/ directory.
+
+
+class ReferenceHomeView( ConfigPageView, IntegrationViewMixin ):
+    """Landing route for the reference-management page. Picks the
+    first ATTRIBUTE_REFERENCE integration (enabled or not) and
+    redirects to its manage URL. Returns the empty-state template
+    when none are discovered (defensive — currently can't happen
+    at runtime as long as the paperless app is installed)."""
+
+    def config_page_type(self) -> ConfigPageType:
+        return ConfigPageType.INTEGRATIONS_REFERENCE
+
+    def get_main_template_name( self ) -> str:
+        return 'integrations/referencer/pages/no_integrations.html'
+
+    def get_main_template_context( self, request, *args, **kwargs ):
+        integration_data_list = IntegrationManager().get_integration_data_list(
+            capabilities = frozenset({ IntegrationCapability.ATTRIBUTE_REFERENCE }),
+        )
+        if not integration_data_list:
+            return dict()
+        redirect_url = reverse(
+            'integrations_reference_manage',
+            kwargs = { 'integration_id': integration_data_list[0].integration_id },
+        )
+        raise ForceRedirectException( redirect_url )
+
+
+class ReferenceManageView( ConfigPageView, IntegrationViewMixin, AttributeEditViewMixin ):
+    """Per-integration attribute-form page for ATTRIBUTE_REFERENCE
+    integrations.
+
+    Differences from ``ConnectorManageView``:
+      - Filters by ATTRIBUTE_REFERENCE (not CONNECT).
+      - Does not read health status / sync-check state /
+        has_entities; ATTRIBUTE_REFERENCE has no monitors and no
+        sync cycle.
+      - Passes ``capability = ATTRIBUTE_REFERENCE`` to the attribute
+        edit context so the attribute queryset is filtered to the
+        attributes the capability declares.
+      - Tolerates ``is_enabled = False`` integrations — the operator
+        configures credentials here before the integration is
+        enabled.
+    """
+
+    def config_page_type(self) -> ConfigPageType:
+        return ConfigPageType.INTEGRATIONS_REFERENCE
+
+    def get_main_template_name( self ) -> str:
+        return 'integrations/referencer/pages/integration_manage.html'
+
+    def get_main_template_context( self, request, *args, **kwargs ):
+        integration_data, integration_data_list = self._resolve(
+            kwargs.get( 'integration_id' )
+        )
+        attr_item_context = self._build_attr_item_context( integration_data )
+
+        template_context = self.create_initial_template_context(
+            attr_item_context = attr_item_context,
+        )
+        template_context.update({
+            'core': {
+                'integration_data_list': integration_data_list,
+                'integration_data': integration_data,
+            },
+        })
+        return template_context
+
+    ACTION_DISABLE = 'disable'
+
+    def post( self, request, *args, **kwargs ):
+        integration_data, _ = self._resolve( kwargs.get( 'integration_id' ) )
+        if request.POST.get( 'action' ) == self.ACTION_DISABLE:
+            return self._handle_disable( request, integration_data )
+        return self._handle_save( request, integration_data )
+
+    def _handle_disable( self, request, integration_data ):
+        """Flip ``is_enabled`` to False; credentials remain in the DB
+        so a future ENABLE is one click. Re-renders the form area in
+        place so the badge and the submit-button label update via
+        antinode partial swap without a full page reload."""
+        if integration_data.integration.is_enabled:
+            integration_data.integration.is_enabled = False
+            integration_data.integration.save(
+                update_fields = [ 'is_enabled' ],
+            )
+        attr_item_context = self._build_attr_item_context( integration_data )
+        renderer = AttributeEditResponseRenderer()
+        return renderer.render_form_success_response(
+            attr_item_context = attr_item_context,
+            request = request,
+            message = None,
+        )
+
+    def _handle_save( self, request, integration_data ):
+        # Capture pre-save enabled state so we can flip it on a
+        # successful first-time save (the ``ENABLE`` flow).
+        was_enabled = integration_data.integration.is_enabled
+        attr_item_context = self._build_attr_item_context( integration_data )
+
+        form_handler = AttributeEditFormHandler()
+        renderer = AttributeEditResponseRenderer()
+        edit_form_data = form_handler.create_edit_form_data(
+            attr_item_context = attr_item_context,
+            form_data = request.POST,
+        )
+
+        forms_valid = form_handler.validate_forms( edit_form_data = edit_form_data )
+        if forms_valid:
+            # Schema + access check via the shared helper; populates
+            # ``_non_form_errors`` on failure so the next is_valid()
+            # call returns False.
+            self.validate_attributes_extra(
+                attr_item_context = attr_item_context,
+                regular_attributes_formset = edit_form_data.regular_attributes_formset,
+                request = request,
+            )
+            forms_valid = edit_form_data.regular_attributes_formset.is_valid()
+
+        if not forms_valid:
+            return renderer.render_form_error_response(
+                attr_item_context = attr_item_context,
+                edit_form_data = edit_form_data,
+                request = request,
+            )
+
+        form_handler.save_forms(
+            attr_item_context = attr_item_context,
+            edit_form_data = edit_form_data,
+            request = request,
+        )
+        if not was_enabled:
+            # First-time ENABLE: credentials just validated upstream
+            # via the helper's access probe, so flipping is_enabled
+            # to True reflects what's now true on the wire.
+            integration_data.integration.is_enabled = True
+            integration_data.integration.save(
+                update_fields = [ 'is_enabled' ],
+            )
+
+        return renderer.render_form_success_response(
+            attr_item_context = attr_item_context,
+            request = request,
+            message = None,
+        )
+
+    def validate_attributes_extra( self, attr_item_context,
+                                   regular_attributes_formset, request ):
+        # The shared helper runs both gateway.validate_configuration
+        # (schema) and gateway.validate_access (live probe) and
+        # decorates the formset with the failure message on either
+        # failure. We deliberately want the access probe on every
+        # save so a credential typo on UPDATE-while-enabled is
+        # rejected (atomic semantics — nothing changes on failure).
+        self.validate_attributes_extra_helper(
+            attr_item_context,
+            regular_attributes_formset,
+            error_title = 'Cannot save settings.',
+        )
+        return
+
+    def _resolve( self, integration_id ):
+        integration_data_list = IntegrationManager().get_integration_data_list(
+            capabilities = frozenset({ IntegrationCapability.ATTRIBUTE_REFERENCE }),
+        )
+        if not integration_data_list:
+            raise Http404( 'No reference integrations are installed.' )
+        integration_data = self._find_integration_data(
+            integration_data_list = integration_data_list,
+            integration_id = integration_id,
+        )
+        if integration_data is None:
+            raise Http404(
+                f'Unknown reference integration: {integration_id!r}'
+            )
+        return integration_data, integration_data_list
+
+    def _build_attr_item_context( self, integration_data ):
+        # Button label flips with enabled state: ``ENABLE`` is the
+        # first-time activation path; ``UPDATE`` is the
+        # already-enabled re-validate-and-save path. Both share the
+        # same form-submission endpoint and the same validation
+        # gates — only the label and the post-save bookkeeping
+        # differ.
+        update_label = (
+            'UPDATE' if integration_data.integration.is_enabled else 'ENABLE'
+        )
+        return IntegrationAttributeItemEditContext(
+            integration_data = integration_data,
+            capability_gateway = integration_data.integration_gateway.get_attribute_referencer(),
+            health_status = None,
+            update_button_label = update_label,
+        )
+
+    @staticmethod
+    def _find_integration_data(
+            integration_data_list: List[ IntegrationData ],
+            integration_id: str,
+    ) -> IntegrationData:
+        for candidate in integration_data_list:
+            if candidate.integration_id == integration_id:
+                return candidate
+        return None
+
+

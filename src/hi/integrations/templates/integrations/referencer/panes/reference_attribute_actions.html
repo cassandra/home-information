@@ -1,0 +1,33 @@
+{% load icons %}
+{% comment %}
+Attribute-form action-bar fragment for the ATTRIBUTE_REFERENCE
+capability: ENABLED / DISABLED status badge plus the DISABLE
+button (only when enabled). The framework re-renders this
+fragment as part of the attribute form's post-save response, so
+the badge and button update in place on every successful save.
+
+Context (inherited from the surrounding edit body):
+  integration_data : IntegrationData (required)
+{% endcomment %}
+{% if integration_data.integration.is_enabled %}
+<span class="badge badge-success ml-3 px-2 py-1 align-self-center">
+  {% icon "check-circle" size="sm" css_class="hi-icon-left" %}ENABLED
+</span>
+{% comment %}
+DISABLE shares the surrounding attribute form (HTML forbids nested
+forms; the attr.js wiring reads the outer form's ``action`` and
+ignores ``formaction``). Dispatch is via the ``action`` POST field
+— the manage view's POST handler branches on it.
+{% endcomment %}
+<button type="submit"
+        name="action"
+        value="disable"
+        formnovalidate
+        class="btn btn-outline-danger ml-2">
+  {% icon "close" size="sm" css_class="hi-icon-left" %}DISABLE
+</button>
+{% else %}
+<span class="badge badge-secondary ml-3 px-2 py-1 align-self-center">
+  {% icon "info-circle" size="sm" css_class="hi-icon-left" %}DISABLED
+</span>
+{% endif %}

@@ -180,7 +180,7 @@ class ZmConnector( IntegrationConnector, ZoneMinderMixin ):
         'Nodect': 'Nodect',
     }
 
-    def get_description(self, is_initial_connect: bool) -> Optional[str]:
+    def get_sync_description(self, is_initial_connect: bool) -> Optional[str]:
         if is_initial_connect:
             return (
                 'Each monitor becomes a camera with motion and'

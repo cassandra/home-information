@@ -75,6 +75,9 @@ class ImporterConfigureView( CapabilityConfigureView ):
     template_name = 'integrations/importer/modals/importer_configure.html'
     error_title   = 'Cannot configure import.'
 
+    def get_capability_gateway( self, integration_data ):
+        return integration_data.integration_gateway.get_importer()
+
     def handle_post_success(self, request, integration_data):
         # Synchronously refresh the integration's singleton manager so
         # the freshly-saved credentials are visible before the importer

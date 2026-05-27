@@ -7,6 +7,8 @@ import logging
 from django.test import TestCase
 
 from hi.apps.attribute.enums import AttributeValueType
+from hi.integrations.connector.integration_connector import IntegrationConnector
+from hi.integrations.importer.integration_importer import IntegrationImporter
 from hi.integrations.integration_attribute_edit_context import (
     IntegrationAttributeItemEditContext,
 )
@@ -85,10 +87,10 @@ class CapabilityFilteredFormsetTests(TestCase):
             integration=self.integration,
         )
 
-    def _attribute_names_for(self, capability):
+    def _attribute_names_for(self, capability_gateway):
         edit_context = IntegrationAttributeItemEditContext(
             integration_data=self.integration_data,
-            capability=capability,
+            capability_gateway=capability_gateway,
         )
         return sorted(
             attr.integration_key.integration_name
@@ -97,12 +99,12 @@ class CapabilityFilteredFormsetTests(TestCase):
 
     def test_connect_context_excludes_import_only(self):
         self.assertEqual(
-            self._attribute_names_for(IntegrationCapability.CONNECT),
+            self._attribute_names_for(IntegrationConnector()),
             ['connect_field', 'shared_field'],
         )
 
     def test_import_context_excludes_connect_only(self):
         self.assertEqual(
-            self._attribute_names_for(IntegrationCapability.IMPORT),
+            self._attribute_names_for(IntegrationImporter()),
             ['import_field', 'shared_field'],
         )

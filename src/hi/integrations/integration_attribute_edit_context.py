@@ -14,7 +14,7 @@ from hi.apps.attribute.forms import AttributeUploadForm
 from hi.apps.attribute.models import AttributeModel
 from hi.apps.system.health_status import HealthStatus
 
-from hi.integrations.enums import IntegrationCapability
+from hi.integrations.capability_gateway import CapabilityGateway
 from hi.integrations.forms import IntegrationAttributeRegularFormSet
 from hi.integrations.models import Integration, IntegrationAttribute
 from hi.integrations.transient_models import IntegrationKey
@@ -25,14 +25,20 @@ from .integration_data import IntegrationData
 class IntegrationAttributeItemEditContext(AttributeItemEditContext):
     """
     Integration-specific context provider for attribute editing templates.
-    
+
     This class encapsulates Integration-specific knowledge while providing
     the generic interface expected by attribute editing templates.
+
+    Construction takes the active ``CapabilityGateway`` directly (rather
+    than the capability enum). The instance carries both the capability
+    identity (``capability_gateway.capability``) used for attribute
+    filtering and the capability-specific UI hooks (description,
+    attribute-form action template) the rendered templates consult.
     """
-    
+
     def __init__( self,
                   integration_data     : IntegrationData,
-                  capability           : IntegrationCapability,
+                  capability_gateway   : Optional[ CapabilityGateway ],
                   health_status        : HealthStatus      = None,
                   update_button_label  : str               = 'UPDATE',
                   suppress_history     : bool              = False,
@@ -40,7 +46,15 @@ class IntegrationAttributeItemEditContext(AttributeItemEditContext):
                   ) -> None:
         super().__init__( owner_type = 'integration', owner = integration_data.integration )
         self.integration_data = integration_data
-        self._capability = capability
+        self._capability_gateway = capability_gateway
+        # capability_gateway may be None in legacy paths (e.g., an
+        # integration declares a capability metadata-side but
+        # exposes no implementation instance). The attribute
+        # queryset falls back to "no capability filter" in that
+        # case, which preserves existing behavior.
+        self._capability = (
+            capability_gateway.capability if capability_gateway is not None else None
+        )
         self._health_status = health_status
         self._update_button_label = update_button_label
         self._suppress_history = suppress_history
@@ -99,7 +113,7 @@ class IntegrationAttributeItemEditContext(AttributeItemEditContext):
                 integration_name = str( member ),
             ).integration_key_str
             for member in AttributeType
-            if self._capability in member.capabilities
+            if self._capability is None or self._capability in member.capabilities
         ]
         return self.integration.attributes.filter(
             integration_key_str__in = key_strs,
@@ -120,5 +134,6 @@ class IntegrationAttributeItemEditContext(AttributeItemEditContext):
         template_context.update({
             'integration_data': self.integration_data,
             'health_status': self._health_status,
+            'capability_gateway': self._capability_gateway,
         })
         return template_context

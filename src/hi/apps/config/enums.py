@@ -16,11 +16,12 @@ class ConfigPageType(LabeledEnum):
         self.url_name = url_name
         return
 
-    SETTINGS      = ('Settings'     , ''   , 'config_settings' )
-    INTEGRATIONS_CONNECT  = ('Integrations' , ''   , 'integrations_connect_home' )
-    EVENTS        = ('Triggers'     , ''   , 'event_definitions' )
-    INTEGRATIONS_IMPORT   = ('Data Import'  , ''   , 'integrations_import_home' )
-    SYSTEM_INFO   = ('System Info'  , ''   , 'system_info' )
+    SETTINGS                = ('Settings'        , ''   , 'config_settings' )
+    EVENTS                  = ('Triggers'        , ''   , 'event_definitions' )
+    INTEGRATIONS_CONNECT    = ('Connectors'      , ''   , 'integrations_connect_home' )
+    INTEGRATIONS_REFERENCE  = ('Content Sources' , ''   , 'integrations_reference_home' )
+    INTEGRATIONS_IMPORT     = ('Data Import'     , ''   , 'integrations_import_home' )
+    SYSTEM_INFO             = ('System Info'     , ''   , 'system_info' )
 
     @classmethod
     def default(cls):

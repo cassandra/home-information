@@ -124,7 +124,7 @@ class IntegrationPreSyncView( HiModalView, IntegrationViewMixin ):
         context = {
             'integration_data': integration_data,
             'is_initial_connect': is_initial_connect,
-            'sync_description': connector.get_description(
+            'sync_description': connector.get_sync_description(
                 is_initial_connect = is_initial_connect,
             ),
             'sync_url': sync_url,
@@ -178,6 +178,9 @@ class ConnectorConfigureView( CapabilityConfigureView, ConnectorViewMixin ):
     button_label  = 'CONNECT'
     template_name = 'integrations/connector/modals/integration_enable.html'
     error_title   = 'Cannot configure integration.'
+
+    def get_capability_gateway( self, integration_data ):
+        return integration_data.integration_gateway.get_connector()
 
     def handle_post_success(self, request, integration_data):
         IntegrationManager().enable_integration(
@@ -334,7 +337,7 @@ class ConnectorManageView( ConfigPageView, IntegrationViewMixin, AttributeEditVi
 
         attr_item_context = IntegrationAttributeItemEditContext(
             integration_data = integration_data,
-            capability = IntegrationCapability.CONNECT,
+            capability_gateway = integration_data.integration_gateway.get_connector(),
             health_status = health_status_provider.health_status,
         )
         integration_data_list = self.get_integration_data_list(
@@ -406,7 +409,7 @@ class ConnectorManageView( ConfigPageView, IntegrationViewMixin, AttributeEditVi
 
         attr_item_context = IntegrationAttributeItemEditContext(
             integration_data = integration_data,
-            capability = IntegrationCapability.CONNECT,
+            capability_gateway = integration_data.integration_gateway.get_connector(),
             health_status = health_status_provider.health_status,
         )
 

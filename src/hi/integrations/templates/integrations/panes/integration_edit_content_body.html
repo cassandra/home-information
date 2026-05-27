@@ -12,17 +12,18 @@
 </a>
 {% endif %}
 
-<!-- Integration Health Status Display -->
-{% if health_status %}
-<div class="ml-3">
-  <a href="{% url 'integrations_connect_health_status' integration_id=integration_data.integration_id %}"
-     class="btn btn-link p-0 d-flex align-items-center text-decoration-none"
-     data-async="modal"
-     title="View health status details">
-    {% include "system/panes/health_status_badge.html" with health_status=health_status %}
-  </a>
-</div>
+{% comment %}
+Capability-owned action fragment. The active CapabilityGateway
+returns its own template path; the framework template stays
+capability-agnostic. Each capability's fragment renders its own
+status / lifecycle controls (CONNECT health badge, REFERENCE
+enable/disable, etc.).
+{% endcomment %}
+{% with capability_actions_template=capability_gateway.get_attribute_actions_template_name %}
+{% if capability_actions_template %}
+{% include capability_actions_template %}
 {% endif %}
+{% endwith %}
 {% endblock %}
 
 {% block file_upload_button %}{% endblock %}
