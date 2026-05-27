@@ -67,4 +67,4 @@ class IntegrationAttributeReferencer( CapabilityGateway ):
         contributes the enabled/disabled status badge plus the
         Disable button. Individual integrations can override to
         substitute their own fragment."""
-        return 'integrations/referencer/panes/reference_attribute_actions.html'
+        return 'integrations/referencer/panes/attribute_actions.html'

@@ -5,7 +5,7 @@ container for result cards (server-rendered partial swapped in on
 each search by attr-picker.js).
 
 The chip row, Cancel button, and Add button live in the modal
-footer (see picker_modal.html). The footer stays anchored when the
+footer (see attr_picker.html). The footer stays anchored when the
 body scrolls because the modal opts into Bootstrap's
 ``modal-dialog-scrollable`` behavior.
 
@@ -111,5 +111,5 @@ returns; attr-picker.js swaps the container's contents on each
 subsequent search.
 {% endcomment %}
 <div class="{{ DIVID.ATTR_PICKER_RESULTS_CLASS }}">
-  {% include "integrations/referencer/panes/picker_results.html" %}
+  {% include "integrations/referencer/panes/attr_picker_results.html" %}
 </div>

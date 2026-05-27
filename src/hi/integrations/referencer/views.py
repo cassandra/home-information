@@ -65,7 +65,7 @@ from hi.integrations.integration_data import IntegrationData
 from hi.integrations.integration_manager import IntegrationManager
 from hi.integrations.view_mixins import IntegrationViewMixin
 
-from .integration_attribute_referencer import IntegrationAttributeReferencer
+from .integration_referencer import IntegrationAttributeReferencer
 from .transient_models import AttributeReferenceResult
 
 
@@ -238,7 +238,7 @@ class AttributeReferencePickerView( HiModalView ):
     and the final commit posts to
     ``integrations_attribute_reference_attach``."""
 
-    MODAL_TEMPLATE_NAME = 'integrations/referencer/modals/picker_modal.html'
+    MODAL_TEMPLATE_NAME = 'integrations/referencer/modals/attr_picker.html'
 
     def get_template_name(self) -> str:
         return self.MODAL_TEMPLATE_NAME
@@ -266,7 +266,7 @@ class AttributeReferencePickerView( HiModalView ):
         # what they're already configuring. Goes through the same
         # ``_search_upstream`` the search endpoint uses; the body
         # template's results container renders the same
-        # ``picker_results.html`` partial the search response
+        # ``attr_picker_results.html`` partial the search response
         # returns.
         query = owner.name
         referencer = integration_data.integration_gateway.get_attribute_referencer()
@@ -298,7 +298,7 @@ class AttributeReferenceSearchView( View ):
     Empty / whitespace queries short-circuit to an empty result
     partial (no upstream call)."""
 
-    RESULTS_TEMPLATE_NAME = 'integrations/referencer/panes/picker_results.html'
+    RESULTS_TEMPLATE_NAME = 'integrations/referencer/panes/attr_picker_results.html'
 
     def post(self, request, *args, **kwargs):
         integration_data_list = _get_referencer_integration_data_list()

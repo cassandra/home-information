@@ -29,7 +29,7 @@ from django.urls import reverse
 from requests import HTTPError
 
 from hi.integrations.exceptions import IntegrationAttributeError
-from hi.integrations.referencer.integration_attribute_referencer import (
+from hi.integrations.referencer.integration_referencer import (
     IntegrationAttributeReferencer,
 )
 from hi.integrations.referencer.transient_models import (

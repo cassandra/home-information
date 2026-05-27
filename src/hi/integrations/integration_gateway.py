@@ -6,7 +6,7 @@ from hi.apps.entity.entity_placement import (
 )
 from hi.apps.entity.models import Entity
 
-from hi.integrations.referencer.integration_attribute_referencer import (
+from hi.integrations.referencer.integration_referencer import (
     IntegrationAttributeReferencer,
 )
 from hi.integrations.connector.integration_connector import IntegrationConnector

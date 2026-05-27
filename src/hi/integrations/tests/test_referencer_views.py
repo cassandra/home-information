@@ -30,7 +30,7 @@ from hi.integrations.integration_data import IntegrationData
 from hi.integrations.integration_gateway import IntegrationGateway
 from hi.integrations.integration_manager import IntegrationManager
 from hi.integrations.models import Integration
-from hi.integrations.referencer.integration_attribute_referencer import (
+from hi.integrations.referencer.integration_referencer import (
     IntegrationAttributeReferencer,
 )
 from hi.constants import DIVID
