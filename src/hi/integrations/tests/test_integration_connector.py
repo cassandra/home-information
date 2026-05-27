@@ -48,7 +48,7 @@ class TestSynchronizer(IntegrationConnector):
     abstract hooks so the class can be instantiated; sync() itself
     is not exercised here."""
 
-    def get_integration_metadata(self):
+    def get_metadata(self):
         return _stub_integration_metadata()
 
     def get_result_title(self, is_initial_connect=False):
@@ -1254,7 +1254,7 @@ class ReconnectDisconnectedItemsFrameworkTests(TestCase):
         integration_label = self.INTEGRATION_LABEL
 
         class RecordingSynchronizer(IntegrationConnector):
-            def get_integration_metadata(self):
+            def get_metadata(self):
                 return _stub_integration_metadata(
                     integration_id=integration_id,
                     label=integration_label,
@@ -1361,7 +1361,7 @@ class ReconnectDisconnectedItemsFrameworkTests(TestCase):
             # _rebuild_integration_components hook (the missing
             # override under test) rather than tripping on the
             # earlier metadata abstract-hook check.
-            def get_integration_metadata(_self):
+            def get_metadata(_self):
                 return _stub_integration_metadata(
                     integration_id=self.INTEGRATION_ID,
                     label=self.INTEGRATION_LABEL,
@@ -1417,7 +1417,7 @@ class IntegrationConnectorReconnectCycleTests(TestCase):
         integration_label = self.INTEGRATION_LABEL
 
         class TestE2ESynchronizer(IntegrationConnector):
-            def get_integration_metadata(self):
+            def get_metadata(self):
                 return _stub_integration_metadata(
                     integration_id=integration_id,
                     label=integration_label,

@@ -31,7 +31,7 @@ from .external_view_data import ExternalViewData
 from .integration_controller import IntegrationController
 from .sync_check import IntegrationSyncCheck, SyncDelta
 from .sync_result import IntegrationSyncResult
-from hi.integrations.transient_models import IntegrationKey, IntegrationMetaData
+from hi.integrations.transient_models import IntegrationKey
 
 logger = logging.getLogger(__name__)
 
@@ -222,7 +222,7 @@ class IntegrationConnector( CapabilityGateway ):
         if result.error_list:
             return
         try:
-            metadata = self.get_integration_metadata()
+            metadata = self.get_metadata()
         except NotImplementedError:
             return
         try:
@@ -280,19 +280,9 @@ class IntegrationConnector( CapabilityGateway ):
         """
         return None
 
-    def get_integration_metadata(self) -> IntegrationMetaData:
-        """
-        Subclasses return their integration's ``IntegrationMetaData``
-        constant (the same object the gateway exposes via
-        ``get_metadata()``). The framework reads ``.integration_id``
-        and ``.label`` from it for shared operations like the
-        auto-reconnect pre-pass and the entity-removal helper, so
-        each subclass declares the source of truth in one place
-        instead of repeating the values at every call site.
-        """
-        raise NotImplementedError(
-            f'{self.__class__.__name__} must override get_integration_metadata()'
-        )
+    # ``get_metadata`` is inherited from CapabilityGateway. CONNECT
+    # subclasses must implement it; the base raises NotImplementedError
+    # via the inherited abstract.
 
     def reconnect_disconnected_items(
             self,
@@ -344,7 +334,7 @@ class IntegrationConnector( CapabilityGateway ):
         if not unmatched_upstream_keys:
             return
 
-        metadata = self.get_integration_metadata()
+        metadata = self.get_metadata()
         candidates = EntityIntegrationOperations.find_reconnect_candidates(
             integration_id = metadata.integration_id,
             upstream_keys = unmatched_upstream_keys,
@@ -442,7 +432,7 @@ class IntegrationConnector( CapabilityGateway ):
         """
         EntityIntegrationOperations.remove_entities_with_closure(
             seed_entity_ids = { entity.id },
-            integration_name = self.get_integration_metadata().label,
+            integration_name = self.get_metadata().label,
             preserve_user_data = getattr( self, '_preserve_user_data', True ),
             result = result,
         )

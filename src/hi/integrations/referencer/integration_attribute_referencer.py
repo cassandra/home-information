@@ -16,10 +16,7 @@ from typing import List, Optional
 from hi.integrations.capability_gateway import CapabilityGateway
 from hi.integrations.enums import IntegrationCapability
 from hi.integrations.models import IntegrationAttribute
-from hi.integrations.transient_models import (
-    IntegrationMetaData,
-    IntegrationValidationResult,
-)
+from hi.integrations.transient_models import IntegrationValidationResult
 
 from .transient_models import AttributeReferenceResult
 
@@ -33,9 +30,6 @@ class IntegrationAttributeReferencer( CapabilityGateway ):
     returned candidates to the operator for multi-select attach."""
 
     capability = IntegrationCapability.ATTRIBUTE_REFERENCE
-
-    def get_metadata(self) -> IntegrationMetaData:
-        raise NotImplementedError('Subclasses must override this method')
 
     def validate_configuration(
             self,

@@ -32,7 +32,7 @@ logger = logging.getLogger(__name__)
 
 class ZmConnector( IntegrationConnector, ZoneMinderMixin ):
 
-    def get_integration_metadata(self):
+    def get_metadata(self):
         return ZmMetaData
 
     def get_monitor(self) -> ZoneMinderMonitor:

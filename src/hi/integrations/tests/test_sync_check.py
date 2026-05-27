@@ -664,7 +664,7 @@ class IntegrationConnectorPostSyncHookTests(TestCase):
         class _TestSynchronizer(IntegrationConnector):
             SYNCHRONIZATION_LOCK_NAME = 'sync_check_test_lock'
 
-            def get_integration_metadata(self):
+            def get_metadata(self):
                 return IntegrationMetaData(
                     integration_id=IntegrationConnectorPostSyncHookTests.INTEGRATION_ID,
                     label=IntegrationConnectorPostSyncHookTests.INTEGRATION_LABEL,

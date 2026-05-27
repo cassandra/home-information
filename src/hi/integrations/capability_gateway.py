@@ -20,6 +20,7 @@ make sense for the new shape.
 from typing import Optional
 
 from .enums import IntegrationCapability
+from .transient_models import IntegrationMetaData
 
 
 class CapabilityGateway:
@@ -29,6 +30,17 @@ class CapabilityGateway:
     # realize. The framework reads this when iterating an
     # integration's capability gateways uniformly.
     capability: IntegrationCapability
+
+    def get_metadata(self) -> IntegrationMetaData:
+        """Return the integration's ``IntegrationMetaData`` constant
+        (the same object the integration's ``IntegrationGateway``
+        exposes via ``get_metadata()``). The framework reads
+        ``.integration_id`` and ``.label`` from it for shared
+        operations like the auto-reconnect pre-pass and the
+        entity-removal helper, so each subclass declares the source
+        of truth in one place instead of repeating the values at
+        every call site."""
+        raise NotImplementedError('Subclasses must override this method')
 
     def get_description(self) -> Optional[str]:
         """One-line operator-facing description of what this

@@ -27,7 +27,7 @@ logger = logging.getLogger(__name__)
 
 class HassConnector( IntegrationConnector, HassMixin ):
 
-    def get_integration_metadata(self):
+    def get_metadata(self):
         return HassMetaData
 
     def get_monitor(self) -> HassMonitor:

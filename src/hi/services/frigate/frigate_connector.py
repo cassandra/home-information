@@ -39,7 +39,7 @@ class FrigateConnector( IntegrationConnector, FrigateMixin ):
 
     CAMERA_SNAPSHOT_STREAM_FPS = 1.0
 
-    def get_integration_metadata(self):
+    def get_metadata(self):
         return FrigateMetaData
 
     def get_monitor(self) -> FrigateMonitor:

@@ -30,7 +30,7 @@ logger = logging.getLogger(__name__)
 
 class HomeBoxConnector( IntegrationConnector, HomeBoxMixin ):
 
-    def get_integration_metadata(self):
+    def get_metadata(self):
         return HbMetaData
 
     def get_monitor(self) -> HomeBoxMonitor:
