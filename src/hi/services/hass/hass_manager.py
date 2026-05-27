@@ -148,7 +148,18 @@ class HassManager( SingletonManager, AggregateHealthProvider, ApiHealthStatusPro
             integration_id = HassMetaData.integration_id,
             integration_name__startswith = f'{HassApi.CAMERA_DOMAIN}.',
         ).values_list( 'entity_state__entity_id', 'integration_name' )
-        self._entity_id_to_ha_state_id = dict( pairs )
+        # Camera Sensors carry substate-suffixed integration_names
+        # ('camera.front_door~state', '...~motion_detection') since
+        # cameras went through the multi-substate decomposition path.
+        # The latest-attrs cache is keyed by the bare HA state id
+        # ('camera.front_door'); strip the suffix so the snapshot
+        # lookup hits the cache. Multiple substate sensors for the
+        # same camera all collapse to the same bare key — consistent
+        # by construction.
+        self._entity_id_to_ha_state_id = {
+            entity_id: name.split( '~', 1 )[ 0 ]
+            for entity_id, name in pairs
+        }
         return
 
     def get_ha_state_id_for_entity( self, entity ) -> Optional[ str ]:

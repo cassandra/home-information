@@ -513,7 +513,16 @@ class HassConverter:
                 hass_device.add_state( hass_state = hass_state )
                 continue
 
-            # Next case is when the short name matches to another state
+            # Next case is when the short name matches to another state.
+            # NOTE: pairing happens only across states present in the
+            # *current* sync pass. If the operator excludes a domain
+            # (e.g. ``camera``) on one sync and re-enables it on a
+            # later sync, the previously-orphaned partner (e.g.
+            # ``binary_sensor.X_motion``) is already a standalone HI
+            # entity of its standalone type and will not be absorbed
+            # into the newly-arriving camera entity. Workaround:
+            # wipe the orphan and re-sync. Rare power-user path; not
+            # worth the cross-pass absorption logic until it bites.
             if short_name in hass_device_id_to_device:
                 hass_device = hass_device_id_to_device[short_name]
                 hass_device.add_state( hass_state = hass_state )
