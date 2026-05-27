@@ -1,38 +1,50 @@
 {% load icons %}
-{% url 'integrations_attribute_reference_picker' as picker_url %}
 {% comment %}
-Picker body partial. Self-contained: the form below carries every
-piece of state the server needs to re-render or attach, including
-the currently-selected ATTRIBUTE_REFERENCE integration. The
-wrapping div is the data-async swap target — its id changes per
-render so a re-render produces a fresh target id matching the new
-form's data-async attribute.
+Picker modal body. The static structure of the picker:
 
-Context: see picker_modal.html.
+  - Optional integration selector (when 2+ ATTRIBUTE_REFERENCE
+    integrations are enabled).
+  - Search form (POSTs to the search endpoint via attr-picker.js;
+    the JS handles the async swap of the results container).
+  - Selection chip row (the only HTML the JS module renders).
+  - Results container (server-rendered partial swapped in on each
+    search).
+  - Attach form holding ``selections_json`` and the Add button. The
+    JS serializes its in-memory selection set into the hidden
+    input right before submit; the server then creates one TEXT
+    attribute per record and returns antinode.refresh_response().
+
+Per-search state and selection state are JS-owned. This template
+renders the surrounding scaffold and the initial empty state.
+
+DOM classes, data-attribute names, and wire-format field names
+come from ``hi.constants.DIVID`` (mirrored in ``static/js/main.js``
+under ``Hi.ATTR_PICKER_*``) so templates / JS / view code all use
+the same strings.
+
+Context:
+  integration_data_list : list[IntegrationData]
+  integration_data      : IntegrationData          (the default-selected source)
+  item_type_value       : str (ItemType serialized)
+  item_id               : int
+  limit                 : int                       (initial page size)
+  page_size_choices     : tuple[int]
 {% endcomment %}
-<div id="{{ body_html_id }}">
-  <form method="post"
-        action="{{ picker_url }}"
-        data-async="#{{ body_html_id }}"
-        data-mode="replace"
-        data-stay-in-modal="true"
-        class="hi-referencer-picker-form">
-    {% csrf_token %}
-    {# Routing fields — required for both search re-renders and attach. #}
-    <input type="hidden" name="{{ WireField.ITEM_TYPE }}" value="{{ item_type_value }}">
-    <input type="hidden" name="{{ WireField.ITEM_ID }}" value="{{ item_id }}">
-    {# Canonical multi-select state, carried across re-renders. #}
-    <input type="hidden" name="{{ WireField.SELECTIONS_JSON }}" value="{{ selections_json }}">
+<div class="{{ DIVID.ATTR_PICKER_ROOT_CLASS }}">
 
-    {# ----- Integration selector / row ----- #}
+  {# ----- Search form ----- #}
+  <form class="{{ DIVID.ATTR_PICKER_SEARCH_FORM_CLASS }}"
+        {{ DIVID.ATTR_PICKER_SEARCH_URL_ATTR }}="{% url 'integrations_attribute_reference_search' %}">
+    {% csrf_token %}
+
     {% if integration_data_list|length > 1 %}
     <div class="form-row align-items-end mb-3">
       <div class="col">
-        <label for="hi-referencer-integration-{{ body_html_id }}" class="small text-muted mb-1">
+        <label for="hi-attr-picker-integration" class="small text-muted mb-1">
           Source
         </label>
-        <select id="hi-referencer-integration-{{ body_html_id }}"
-                name="{{ WireField.INTEGRATION_ID }}"
+        <select id="hi-attr-picker-integration"
+                name="{{ DIVID.ATTR_PICKER_INTEGRATION_ID_FIELD }}"
                 class="form-control form-control-sm">
           {% for option in integration_data_list %}
           <option value="{{ option.integration_id }}"
@@ -45,30 +57,28 @@ Context: see picker_modal.html.
     </div>
     {% else %}
     <input type="hidden"
-           name="{{ WireField.INTEGRATION_ID }}"
+           name="{{ DIVID.ATTR_PICKER_INTEGRATION_ID_FIELD }}"
            value="{{ integration_data.integration_id }}">
     {% endif %}
 
-    {# ----- Search row ----- #}
     <div class="form-row align-items-end mb-3">
       <div class="col">
-        <label for="hi-referencer-query-{{ body_html_id }}" class="small text-muted mb-1">
+        <label for="hi-attr-picker-query" class="small text-muted mb-1">
           Search
         </label>
         <input type="text"
-               id="hi-referencer-query-{{ body_html_id }}"
-               name="{{ WireField.QUERY }}"
-               value="{{ query }}"
+               id="hi-attr-picker-query"
+               name="{{ DIVID.ATTR_PICKER_QUERY_FIELD }}"
                placeholder="Type to search and press Enter"
                class="form-control form-control-sm"
                autofocus>
       </div>
       <div class="col-auto">
-        <label for="hi-referencer-limit-{{ body_html_id }}" class="small text-muted mb-1">
+        <label for="hi-attr-picker-limit" class="small text-muted mb-1">
           Page size
         </label>
-        <select id="hi-referencer-limit-{{ body_html_id }}"
-                name="{{ WireField.LIMIT }}"
+        <select id="hi-attr-picker-limit"
+                name="{{ DIVID.ATTR_PICKER_LIMIT_FIELD }}"
                 class="form-control form-control-sm">
           {% for choice in page_size_choices %}
           <option value="{{ choice }}" {% if choice == limit %}selected{% endif %}>{{ choice }}</option>
@@ -81,83 +91,41 @@ Context: see picker_modal.html.
         </button>
       </div>
     </div>
-
-    {# ----- Selected chips ----- #}
-    {% if selections %}
-    <div class="mb-3">
-      <div class="small text-muted mb-1">Selected ({{ selections|length }})</div>
-      <div class="d-flex flex-wrap">
-        {% for s in selections %}
-        <span class="badge badge-secondary mr-2 mb-2 d-inline-flex align-items-center">
-          <span class="mr-1 text-truncate" style="max-width: 220px;" title="{{ s.title }}">
-            {{ s.title }}
-          </span>
-          <button type="submit"
-                  name="{{ WireField.REMOVE_URL }}"
-                  value="{{ s.source_url }}"
-                  class="btn btn-link btn-sm p-0 text-white ml-1"
-                  title="Remove from selection">
-            ×
-          </button>
-        </span>
-        {% endfor %}
-      </div>
-    </div>
-    {% endif %}
-
-    {# ----- Results list ----- #}
-    {% if query and not results %}
-    <div class="text-muted small mb-3">No results.</div>
-    {% endif %}
-    {% if results %}
-    <div class="list-group mb-3 hi-referencer-picker-results">
-      {% for r in results %}
-      <label class="list-group-item d-flex align-items-start mb-0">
-        <input type="hidden"
-               name="{{ WireField.VISIBLE_URL }}"
-               value="{{ r.source_url }}">
-        <input type="checkbox"
-               name="{{ WireField.RESULT_URL }}"
-               value="{{ r.source_url }}"
-               class="mt-1 mr-3"
-               {% if r.source_url in selected_urls %}checked{% endif %}>
-        {% if r.thumbnail_url %}
-        <img src="{{ r.thumbnail_url }}"
-             alt=""
-             class="mr-3 rounded"
-             style="width: 56px; height: 56px; object-fit: cover;">
-        {% else %}
-        <div class="mr-3 d-flex align-items-center justify-content-center bg-light rounded text-muted"
-             style="width: 56px; height: 56px;">
-          {% icon "info-circle" size="sm" %}
-        </div>
-        {% endif %}
-        <div class="flex-grow-1" style="min-width: 0;">
-          <div class="font-weight-bold text-truncate">{{ r.title }}</div>
-          {% if r.snippet %}
-          <div class="small text-muted text-truncate">{{ r.snippet }}</div>
-          {% endif %}
-          <a href="{{ r.source_url }}" target="_blank" rel="noopener"
-             class="small text-truncate d-block"
-             onclick="event.stopPropagation();">
-            {{ r.source_url }}
-          </a>
-        </div>
-      </label>
-      {% endfor %}
-    </div>
-    {% endif %}
-
-    {# ----- Attach action ----- #}
-    <div class="d-flex justify-content-end">
-      <button type="submit"
-              name="{{ WireField.ACTION }}"
-              value="{{ WireField.ACTION_ATTACH }}"
-              class="btn btn-primary"
-              {% if not selections %}disabled{% endif %}>
-        {% icon "check-circle" size="sm" css_class="hi-icon-left" %}
-        Add {{ selections|length }} References
-      </button>
-    </div>
   </form>
+
+  {# ----- Selection chips (JS-rendered) ----- #}
+  <div class="mb-3">
+    <div class="{{ DIVID.ATTR_PICKER_CHIPS_EMPTY_CLASS }} small text-muted mb-1">
+      No references selected yet.
+    </div>
+    <div class="{{ DIVID.ATTR_PICKER_CHIPS_CLASS }} d-flex flex-wrap"></div>
+  </div>
+
+  {# ----- Results container (swapped by attr-picker JS) ----- #}
+  <div class="{{ DIVID.ATTR_PICKER_RESULTS_CLASS }} mb-3"></div>
+
+  {# ----- Attach form ----- #}
+  {% comment %}
+  No ``data-async`` here: attr-picker.js owns the submit so it can
+  populate ``selections_json`` before posting. It still routes
+  through antinode (AN.hideModalIfNeeded + AN.post) so modal
+  cleanup and the ``{refresh: true}`` response are handled in one
+  place. Letting antinode also bind via ``data-async`` would race
+  the field-population — antinode reads the form at the <body>
+  level before attr-picker's document-level submit handler fires.
+  {% endcomment %}
+  <form class="{{ DIVID.ATTR_PICKER_ATTACH_FORM_CLASS }} d-flex justify-content-end"
+        method="post"
+        action="{% url 'integrations_attribute_reference_attach' %}">
+    {% csrf_token %}
+    <input type="hidden" name="{{ DIVID.ATTR_PICKER_ITEM_TYPE_FIELD }}" value="{{ item_type_value }}">
+    <input type="hidden" name="{{ DIVID.ATTR_PICKER_ITEM_ID_FIELD }}" value="{{ item_id }}">
+    <input type="hidden" name="{{ DIVID.ATTR_PICKER_SELECTIONS_JSON_FIELD }}" value="">
+    <button type="submit"
+            class="btn btn-primary {{ DIVID.ATTR_PICKER_ATTACH_BTN_CLASS }}"
+            disabled>
+      {% icon "check-circle" size="sm" css_class="hi-icon-left" %}<span class="{{ DIVID.ATTR_PICKER_ATTACH_LABEL_CLASS }}">Add 0 References</span>
+    </button>
+  </form>
+
 </div>

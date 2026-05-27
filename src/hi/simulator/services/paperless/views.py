@@ -18,6 +18,7 @@ Three endpoint families:
     fragment (the form posts via antinode ``data-async`` so the
     extras pane swaps in place).
 """
+import hashlib
 import random
 import time
 from dataclasses import replace
@@ -66,6 +67,16 @@ _SNIPPET_FRAGMENTS = (
 )
 
 
+def _stable_document_id( query : str, index : int ) -> int:
+    """Map (query, index) to a stable, distinct, positive document
+    id. Different queries produce distinct ids; the same query
+    repeated yields the same ids. Real paperless uses unbounded
+    integer document ids, so a 7-hex-digit hash (~268M range) is a
+    safe stand-in."""
+    digest = hashlib.sha256( f'{query}\x00{index}'.encode() ).hexdigest()
+    return int( digest[:7], 16 )
+
+
 def _pick_mime( mix : MimeMix, index : int ) -> str:
     """Deterministic per-index mime pick. Cycles through the palette
     so a multi-result page rendered with MIXED visits each type."""
@@ -85,15 +96,22 @@ def _generate_results(
     for index in range( settings.result_count ):
         mime_type = _pick_mime( settings.mime_mix, index )
         extension = _EXTENSION_BY_MIME[ mime_type ]
-        document_id = index + 1
+        # Document id is derived from (query, index) so different
+        # queries produce distinct ids — the picker uses the resulting
+        # source URL as the per-result identity, and repeating ids
+        # across queries would make the picker think different docs
+        # were the same. (query, index) repeats stay stable, matching
+        # real paperless's "same document re-found in multiple
+        # searches" behavior.
+        document_id = _stable_document_id( query or '', index )
         content = (
             rng.choice( _SNIPPET_FRAGMENTS ).format( query = query or 'document' )
             if settings.snippets else ''
         )
-        # Titles carry the query string + a per-result suffix so the
-        # operator can visually verify the picker is wiring the
-        # search input through correctly.
-        title = f'{query or "document"} — Result {document_id}'
+        # Titles use a human-readable index, not the hashed id, so
+        # operators see "Result 1, Result 2, ..." regardless of
+        # whatever id the URL ends up with.
+        title = f'{query or "document"} — Result {index + 1}'
         documents.append({
             'id'                  : document_id,
             'correspondent'       : None,
@@ -106,7 +124,7 @@ def _generate_results(
             'modified'            : now_iso,
             'added'               : now_iso,
             'archive_serial_number': None,
-            'original_file_name'  : f'doc-{document_id}.{extension}',
+            'original_file_name'  : f'doc-{index + 1}.{extension}',
             'archived_file_name'  : None,
             'mime_type'           : mime_type,
             'is_shared_by_requester': False,

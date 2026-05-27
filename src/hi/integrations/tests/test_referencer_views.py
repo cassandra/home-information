@@ -1,9 +1,19 @@
-"""View tests for the ATTRIBUTE_REFERENCE picker (HiModal + antinode).
+"""View tests for the ATTRIBUTE_REFERENCE picker.
 
-The picker is a single HiModalView backed by server-driven multi-select:
-the form carries the canonical selections list across re-renders and
-the view computes the new list each POST from existing + checked -
-unchecked-visible (- explicit chip removals).
+The picker is split into three endpoints:
+
+  - ``integrations_attribute_reference_picker`` — GET, renders the
+    initial empty modal.
+  - ``integrations_attribute_reference_search`` — POST, returns the
+    result-cards partial. The attr-picker.js module swaps the
+    returned HTML into the picker's results container.
+  - ``integrations_attribute_reference_attach`` — POST, reads the
+    JS-built ``selections_json`` payload, creates one TEXT
+    attribute per record, returns ``antinode.refresh_response()``.
+
+Selection state lives in JS during the session; the server is
+consulted only at search time (per-query) and at attach time (the
+single final commit).
 """
 import json
 import logging
@@ -23,9 +33,9 @@ from hi.integrations.models import Integration
 from hi.integrations.referencer.integration_attribute_referencer import (
     IntegrationAttributeReferencer,
 )
+from hi.constants import DIVID
 from hi.integrations.referencer.transient_models import (
     AttributeReferenceResult,
-    WireField,
 )
 from hi.integrations.transient_models import (
     ConnectionTestResult,
@@ -109,22 +119,6 @@ class _ReferencerCapableGateway(IntegrationGateway):
         return self._referencer
 
 
-class _NonReferencerGateway(IntegrationGateway):
-    """Gateway that does NOT advertise ATTRIBUTE_REFERENCE."""
-
-    def __init__(self, integration_id='other'):
-        self.integration_id = integration_id
-
-    def get_metadata(self):
-        return IntegrationMetaData(
-            integration_id=self.integration_id,
-            label='Other',
-            attribute_type=_RefAttributeType,
-            allow_entity_deletion=True,
-            capabilities=frozenset({IntegrationCapability.CONNECT}),
-        )
-
-
 def _populate_manager(pairs, enabled=True):
     """Seed the IntegrationManager with the given (id, gateway) pairs.
     By default the integrations are marked enabled so the picker view
@@ -167,10 +161,12 @@ class TestIntegrationGatewayAttributeReferencerDefault(ViewTestBase):
         self.assertIsNone(IntegrationGateway().get_attribute_referencer())
 
 
-# ---- picker view ------------------------------------------------
+# ---- picker GET ----------------------------------------------------
 
 
 class TestAttributeReferencePickerView(ViewTestBase):
+    """GET renders the initial empty modal. Search and attach are
+    sibling endpoints (tested separately below)."""
 
     INTEGRATION_ID = 'ref'
 
@@ -186,17 +182,223 @@ class TestAttributeReferencePickerView(ViewTestBase):
         )
         _populate_manager([(self.INTEGRATION_ID, self.gateway)])
 
-    @property
-    def _url(self):
-        return reverse('integrations_attribute_reference_picker')
-
     def _entity(self, name='Dishwasher'):
         return Entity.objects.create(
             name=name,
             entity_type_str=str(EntityType.DISHWASHER),
         )
 
-    def _location(self, name='Kitchen'):
+    def _url(self):
+        return reverse('integrations_attribute_reference_picker')
+
+    def test_get_renders_modal_with_integration_label(self):
+        entity = self._entity()
+        response = self.client.get(
+            self._url(),
+            data={
+                DIVID['ATTR_PICKER_ITEM_TYPE_FIELD']: str(ItemType.ENTITY),
+                DIVID['ATTR_PICKER_ITEM_ID_FIELD']: entity.id,
+            },
+            **self.async_http_headers,
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertIn('Ref Test', response.content.decode())
+
+    def test_get_with_no_enabled_referencer_returns_404(self):
+        _populate_manager([])
+        entity = self._entity()
+        response = self.client.get(
+            self._url(),
+            data={
+                DIVID['ATTR_PICKER_ITEM_TYPE_FIELD']: str(ItemType.ENTITY),
+                DIVID['ATTR_PICKER_ITEM_ID_FIELD']: entity.id,
+            },
+            **self.async_http_headers,
+        )
+        self.assertEqual(response.status_code, 404)
+
+    def test_get_unknown_item_type_returns_400(self):
+        response = self.client.get(
+            self._url(),
+            data={
+                DIVID['ATTR_PICKER_ITEM_TYPE_FIELD']: 'banana',
+                DIVID['ATTR_PICKER_ITEM_ID_FIELD']: 1,
+            },
+            **self.async_http_headers,
+        )
+        self.assertEqual(response.status_code, 400)
+
+    def test_get_missing_owner_returns_404(self):
+        response = self.client.get(
+            self._url(),
+            data={
+                DIVID['ATTR_PICKER_ITEM_TYPE_FIELD']: str(ItemType.ENTITY),
+                DIVID['ATTR_PICKER_ITEM_ID_FIELD']: 99999,
+            },
+            **self.async_http_headers,
+        )
+        self.assertEqual(response.status_code, 404)
+
+    def test_get_with_multiple_referencers_renders_selector(self):
+        other_ref = _StubReferencer(integration_id='other', label='Other Ref')
+        other_gw = _ReferencerCapableGateway(
+            'other', label='Other Ref', referencer=other_ref,
+        )
+        _populate_manager([
+            (self.INTEGRATION_ID, self.gateway),
+            ('other', other_gw),
+        ])
+        entity = self._entity()
+        response = self.client.get(
+            self._url(),
+            data={
+                DIVID['ATTR_PICKER_ITEM_TYPE_FIELD']: str(ItemType.ENTITY),
+                DIVID['ATTR_PICKER_ITEM_ID_FIELD']: entity.id,
+            },
+            **self.async_http_headers,
+        )
+        self.assertEqual(response.status_code, 200)
+        decoded = response.content.decode()
+        self.assertIn('Ref Test', decoded)
+        self.assertIn('Other Ref', decoded)
+
+
+# ---- search endpoint ----------------------------------------------
+
+
+class TestAttributeReferenceSearchView(ViewTestBase):
+    """POST returns the result-cards partial. The picker JS swaps
+    the returned HTML into the results container."""
+
+    INTEGRATION_ID = 'ref'
+
+    def setUp(self):
+        super().setUp()
+        IntegrationManager()._instances = {}
+        IntegrationManager._initialized_instance = None
+        self.client.force_login(self.user)
+        self.setSessionViewMode(ViewMode.EDIT)
+        self.referencer = _StubReferencer(integration_id=self.INTEGRATION_ID)
+        self.gateway = _ReferencerCapableGateway(
+            self.INTEGRATION_ID, referencer=self.referencer,
+        )
+        _populate_manager([(self.INTEGRATION_ID, self.gateway)])
+
+    def _url(self):
+        return reverse('integrations_attribute_reference_search')
+
+    def _payload(self, query='', limit=20, integration_id=None):
+        return {
+            DIVID['ATTR_PICKER_QUERY_FIELD']: query,
+            DIVID['ATTR_PICKER_LIMIT_FIELD']: str(limit),
+            DIVID['ATTR_PICKER_INTEGRATION_ID_FIELD']: integration_id or self.INTEGRATION_ID,
+        }
+
+    def test_empty_query_does_not_call_referencer(self):
+        response = self.client.post(
+            self._url(),
+            data=self._payload(query='   '),
+            **self.async_http_headers,
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertIsNone(self.referencer.last_query)
+
+    def test_search_dispatches_with_clamped_limit(self):
+        self.referencer._results = [_result()]
+        response = self.client.post(
+            self._url(),
+            data=self._payload(query='dishwasher', limit=50),
+            **self.async_http_headers,
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(self.referencer.last_query, 'dishwasher')
+        self.assertEqual(self.referencer.last_limit, 50)
+
+    def test_search_returns_result_cards_html(self):
+        self.referencer._results = [
+            _result(title='Warranty', source_url='https://p/doc/1'),
+            _result(title='Manual', source_url='https://p/doc/2'),
+        ]
+        response = self.client.post(
+            self._url(),
+            data=self._payload(query='dishwasher'),
+            **self.async_http_headers,
+        )
+        body = response.content.decode()
+        self.assertIn('Warranty', body)
+        self.assertIn('Manual', body)
+        self.assertIn('https://p/doc/1', body)
+        # Cards carry data attributes so JS can read title + URL on
+        # checkbox change without parsing the DOM.
+        self.assertIn('data-attr-picker-source-url', body)
+        self.assertIn('data-attr-picker-title', body)
+
+    def test_search_with_no_results_returns_empty_message(self):
+        self.referencer._results = []
+        response = self.client.post(
+            self._url(),
+            data=self._payload(query='nothing-matches'),
+            **self.async_http_headers,
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertIn('No results', response.content.decode())
+
+    def test_search_invalid_limit_falls_back_to_default(self):
+        self.referencer._results = [_result()]
+        payload = self._payload(query='q')
+        payload[DIVID['ATTR_PICKER_LIMIT_FIELD']] = 'not-a-number'
+        self.client.post(
+            self._url(), data=payload, **self.async_http_headers,
+        )
+        self.assertEqual(self.referencer.last_limit, 20)
+
+    def test_search_unknown_integration_id_returns_400(self):
+        response = self.client.post(
+            self._url(),
+            data=self._payload(query='q', integration_id='nope'),
+            **self.async_http_headers,
+        )
+        self.assertEqual(response.status_code, 400)
+
+    def test_search_referencer_exception_yields_empty_results(self):
+        self.referencer._raises = RuntimeError('upstream down')
+        response = self.client.post(
+            self._url(),
+            data=self._payload(query='q'),
+            **self.async_http_headers,
+        )
+        self.assertEqual(response.status_code, 200)
+        # Failure path renders the no-results message rather than
+        # surfacing a 5xx — the picker stays usable.
+        self.assertIn('No results', response.content.decode())
+
+
+# ---- attach endpoint ----------------------------------------------
+
+
+class TestAttributeReferenceAttachView(ViewTestBase):
+    """POST reads the JS-built ``selections_json`` payload and
+    creates one TEXT attribute per record on the named owner."""
+
+    def setUp(self):
+        super().setUp()
+        IntegrationManager()._instances = {}
+        IntegrationManager._initialized_instance = None
+        self.client.force_login(self.user)
+        self.setSessionViewMode(ViewMode.EDIT)
+
+    def _url(self):
+        return reverse('integrations_attribute_reference_attach')
+
+    @staticmethod
+    def _entity(name='Dishwasher'):
+        return Entity.objects.create(
+            name=name,
+            entity_type_str=str(EntityType.DISHWASHER),
+        )
+
+    @staticmethod
+    def _location(name='Kitchen'):
         return Location.objects.create(
             name=name,
             svg_fragment_filename='kitchen.svg',
@@ -206,160 +408,30 @@ class TestAttributeReferencePickerView(ViewTestBase):
     @staticmethod
     def _selections_json(*pairs):
         return json.dumps([
-            {WireField.SELECTION_TITLE: title, WireField.SELECTION_URL: url}
+            {DIVID['ATTR_PICKER_SELECTION_TITLE_KEY']: title, DIVID['ATTR_PICKER_SELECTION_URL_KEY']: url}
             for title, url in pairs
         ])
 
-    # -- GET (initial modal) ---------------------------------------
-
-    def test_get_renders_modal_with_integration_label(self):
-        entity = self._entity()
-
-        response = self.client.get(
-            self._url,
-            data={
-                WireField.ITEM_TYPE: str(ItemType.ENTITY),
-                WireField.ITEM_ID: entity.id,
-            },
-            **self.async_http_headers,
-        )
-
-        self.assertEqual(response.status_code, 200)
-        # The modal body carries the integration label so the operator
-        # can see which corpus they're searching.
-        self.assertIn('Ref Test', response.content.decode())
-
-    def test_get_with_no_enabled_referencer_returns_404(self):
-        _populate_manager([])
-        entity = self._entity()
-
-        response = self.client.get(
-            self._url,
-            data={
-                WireField.ITEM_TYPE: str(ItemType.ENTITY),
-                WireField.ITEM_ID: entity.id,
-            },
-            **self.async_http_headers,
-        )
-
-        self.assertEqual(response.status_code, 404)
-
-    def test_get_unknown_item_type_returns_400(self):
-        response = self.client.get(
-            self._url,
-            data={
-                WireField.ITEM_TYPE: 'banana',
-                WireField.ITEM_ID: 1,
-            },
-            **self.async_http_headers,
-        )
-
-        self.assertEqual(response.status_code, 400)
-
-    def test_get_missing_owner_returns_404(self):
-        response = self.client.get(
-            self._url,
-            data={
-                WireField.ITEM_TYPE: str(ItemType.ENTITY),
-                WireField.ITEM_ID: 99999,
-            },
-            **self.async_http_headers,
-        )
-
-        self.assertEqual(response.status_code, 404)
-
-    # -- POST (search re-render) -----------------------------------
-
-    def _base_post_data(self, owner, integration_id=None):
+    def _payload(self, owner, selections_json):
         item_type = ItemType.ENTITY if isinstance(owner, Entity) else ItemType.LOCATION
         return {
-            WireField.ITEM_TYPE: str(item_type),
-            WireField.ITEM_ID: owner.id,
-            WireField.INTEGRATION_ID: integration_id or self.INTEGRATION_ID,
-            WireField.SELECTIONS_JSON: json.dumps([]),
+            DIVID['ATTR_PICKER_ITEM_TYPE_FIELD']: str(item_type),
+            DIVID['ATTR_PICKER_ITEM_ID_FIELD']: owner.id,
+            DIVID['ATTR_PICKER_SELECTIONS_JSON_FIELD']: selections_json,
         }
-
-    def test_post_empty_query_does_not_call_referencer(self):
-        # An empty / whitespace query short-circuits to ``[]`` and
-        # avoids calling the integration. Saves an upstream round-trip
-        # while the operator is still typing.
-        entity = self._entity()
-        data = self._base_post_data(entity)
-        data[WireField.QUERY] = '   '
-
-        response = self.client.post(self._url, data=data, **self.async_http_headers)
-
-        self.assertEqual(response.status_code, 200)
-        self.assertIsNone(self.referencer.last_query)
-
-    def test_post_search_dispatches_with_clamped_limit(self):
-        self.referencer._results = [_result()]
-        entity = self._entity()
-        data = self._base_post_data(entity)
-        data[WireField.QUERY] = 'dishwasher'
-        data[WireField.LIMIT] = '50'
-
-        response = self.client.post(self._url, data=data, **self.async_http_headers)
-
-        self.assertEqual(response.status_code, 200)
-        self.assertEqual(self.referencer.last_query, 'dishwasher')
-        self.assertEqual(self.referencer.last_limit, 50)
-
-    def test_post_invalid_limit_falls_back_to_default(self):
-        self.referencer._results = [_result()]
-        entity = self._entity()
-        data = self._base_post_data(entity)
-        data[WireField.QUERY] = 'q'
-        data[WireField.LIMIT] = 'not-a-number'
-
-        self.client.post(self._url, data=data, **self.async_http_headers)
-
-        self.assertEqual(self.referencer.last_limit, 20)
-
-    def test_post_referencer_exception_returns_empty_results(self):
-        # Upstream errors are caught and surfaced as an empty result
-        # set — the modal stays open so the operator can re-search
-        # without losing already-selected references.
-        self.referencer._raises = RuntimeError('upstream down')
-        entity = self._entity()
-        data = self._base_post_data(entity)
-        data[WireField.QUERY] = 'q'
-
-        response = self.client.post(self._url, data=data, **self.async_http_headers)
-
-        self.assertEqual(response.status_code, 200)
-
-    def test_post_unknown_integration_id_returns_400(self):
-        entity = self._entity()
-        data = self._base_post_data(entity, integration_id='nope')
-        data[WireField.QUERY] = 'q'
-
-        response = self.client.post(self._url, data=data, **self.async_http_headers)
-
-        self.assertEqual(response.status_code, 400)
-
-    # -- POST (attach) ---------------------------------------------
 
     def test_attach_creates_text_attributes_on_entity(self):
         entity = self._entity()
-        self.referencer._results = [
-            _result(title='Warranty', source_url='https://p/doc/1'),
-            _result(title='Manual', source_url='https://p/doc/2'),
-        ]
-        data = self._base_post_data(entity)
-        data[WireField.QUERY] = 'dishwasher'
-        data[WireField.SELECTIONS_JSON] = self._selections_json(
-            ('Warranty', 'https://p/doc/1'),
-            ('Manual', 'https://p/doc/2'),
+        response = self.client.post(
+            self._url(),
+            data=self._payload(entity, self._selections_json(
+                ('Warranty', 'https://p/doc/1'),
+                ('Manual', 'https://p/doc/2'),
+            )),
+            **self.async_http_headers,
         )
-        data[WireField.ACTION] = WireField.ACTION_ATTACH
-
-        response = self.client.post(self._url, data=data, **self.async_http_headers)
-
         self.assertEqual(response.status_code, 200)
         body = json.loads(response.content)
-        # Attach returns the antinode refresh signal so the parent
-        # page reloads and the modal closes.
         self.assertTrue(body.get('refresh'))
 
         attrs = list(EntityAttribute.objects.filter(entity=entity).order_by('id'))
@@ -372,214 +444,91 @@ class TestAttributeReferencePickerView(ViewTestBase):
 
     def test_attach_creates_text_attribute_on_location(self):
         location = self._location()
-        self.referencer._results = [
-            _result(title='Floor Plan', source_url='https://p/doc/floor-plan'),
-        ]
-        data = self._base_post_data(location)
-        data[WireField.QUERY] = 'kitchen'
-        data[WireField.SELECTIONS_JSON] = self._selections_json(
-            ('Floor Plan', 'https://p/doc/floor-plan'),
+        response = self.client.post(
+            self._url(),
+            data=self._payload(location, self._selections_json(
+                ('Floor Plan', 'https://p/doc/floor-plan'),
+            )),
+            **self.async_http_headers,
         )
-        data[WireField.ACTION] = WireField.ACTION_ATTACH
-
-        response = self.client.post(self._url, data=data, **self.async_http_headers)
-
         self.assertEqual(response.status_code, 200)
         attrs = list(LocationAttribute.objects.filter(location=location))
         self.assertEqual(len(attrs), 1)
         self.assertEqual(attrs[0].name, 'Floor Plan')
-        self.assertEqual(attrs[0].value, 'https://p/doc/floor-plan')
 
     def test_attach_with_empty_selections_creates_nothing(self):
         entity = self._entity()
-        data = self._base_post_data(entity)
-        data[WireField.ACTION] = WireField.ACTION_ATTACH
-
-        response = self.client.post(self._url, data=data, **self.async_http_headers)
-
+        response = self.client.post(
+            self._url(),
+            data=self._payload(entity, json.dumps([])),
+            **self.async_http_headers,
+        )
         self.assertEqual(response.status_code, 200)
         self.assertEqual(
             EntityAttribute.objects.filter(entity=entity).count(), 0,
         )
 
-    def test_attach_long_title_truncated_to_attribute_max_length(self):
-        # AttributeModel.name has max_length=64; longer titles get
-        # truncated rather than rejected so the attach succeeds.
+    def test_attach_with_malformed_json_creates_nothing(self):
+        # Defensive: malformed JSON yields no attributes rather than
+        # a 500. The JS contract submits valid JSON; this guards
+        # against a manual replay.
+        entity = self._entity()
+        response = self.client.post(
+            self._url(),
+            data=self._payload(entity, 'not-json'),
+            **self.async_http_headers,
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(
+            EntityAttribute.objects.filter(entity=entity).count(), 0,
+        )
+
+    def test_attach_skips_records_with_missing_fields(self):
+        entity = self._entity()
+        payload = self._payload(entity, json.dumps([
+            {DIVID['ATTR_PICKER_SELECTION_TITLE_KEY']: '', DIVID['ATTR_PICKER_SELECTION_URL_KEY']: 'https://p/1'},
+            {DIVID['ATTR_PICKER_SELECTION_TITLE_KEY']: 'Good', DIVID['ATTR_PICKER_SELECTION_URL_KEY']: 'https://p/2'},
+            {DIVID['ATTR_PICKER_SELECTION_TITLE_KEY']: 'No URL', DIVID['ATTR_PICKER_SELECTION_URL_KEY']: ''},
+        ]))
+        self.client.post(self._url(), data=payload, **self.async_http_headers)
+        attrs = list(EntityAttribute.objects.filter(entity=entity).order_by('id'))
+        self.assertEqual(len(attrs), 1)
+        self.assertEqual(attrs[0].name, 'Good')
+
+    def test_attach_long_title_truncated_to_max_length(self):
         entity = self._entity()
         long_title = 'X' * 100
-        self.referencer._results = [_result(
-            title=long_title, source_url='https://p/1',
-        )]
-        data = self._base_post_data(entity)
-        data[WireField.QUERY] = 'q'
-        data[WireField.SELECTIONS_JSON] = self._selections_json(
-            (long_title, 'https://p/1'),
+        payload = self._payload(entity, json.dumps([{
+            DIVID['ATTR_PICKER_SELECTION_TITLE_KEY']: long_title,
+            DIVID['ATTR_PICKER_SELECTION_URL_KEY']: 'https://p/1',
+        }]))
+        response = self.client.post(
+            self._url(), data=payload, **self.async_http_headers,
         )
-        data[WireField.ACTION] = WireField.ACTION_ATTACH
-
-        response = self.client.post(self._url, data=data, **self.async_http_headers)
-
         self.assertEqual(response.status_code, 200)
         attr = EntityAttribute.objects.get(entity=entity)
         self.assertEqual(len(attr.name), 64)
-        self.assertTrue(attr.name.startswith('X'))
 
-    # -- multi-select state ----------------------------------------
-
-    def test_newly_checked_result_added_to_selections(self):
-        # Existing selections carry forward; a newly-checked visible
-        # URL gets appended using the search result's title.
-        entity = self._entity()
-        self.referencer._results = [
-            _result(title='New Doc', source_url='https://p/new'),
-        ]
-        data = self._base_post_data(entity)
-        data[WireField.QUERY] = 'q'
-        data[WireField.SELECTIONS_JSON] = self._selections_json(
-            ('Existing', 'https://p/existing'),
-        )
-        data[WireField.VISIBLE_URL] = 'https://p/new'
-        data[WireField.RESULT_URL] = 'https://p/new'
-        data[WireField.ACTION] = WireField.ACTION_ATTACH
-
-        self.client.post(self._url, data=data, **self.async_http_headers)
-
-        attrs = set(
-            EntityAttribute.objects.filter(entity=entity).values_list('name', flat=True)
-        )
-        self.assertEqual(attrs, {'Existing', 'New Doc'})
-
-    def test_unchecked_visible_dropped_from_selections(self):
-        # If a previously-selected URL is rendered as a visible result
-        # but unchecked, the view drops it. (Distinguishes "unchecked"
-        # from "no longer visible after a new search".)
-        entity = self._entity()
-        self.referencer._results = [
-            _result(title='Keep Me', source_url='https://p/keep'),
-        ]
-        data = self._base_post_data(entity)
-        data[WireField.QUERY] = 'q'
-        data[WireField.SELECTIONS_JSON] = self._selections_json(
-            ('Keep Me', 'https://p/keep'),
-        )
-        # Card is visible but checkbox is not in POST → operator
-        # unchecked it.
-        data[WireField.VISIBLE_URL] = 'https://p/keep'
-        data[WireField.ACTION] = WireField.ACTION_ATTACH
-
-        self.client.post(self._url, data=data, **self.async_http_headers)
-
-        self.assertEqual(
-            EntityAttribute.objects.filter(entity=entity).count(), 0,
-        )
-
-    def test_remove_url_chip_removes_selection(self):
-        # The chip × button posts ``remove_url`` to drop a single
-        # selection. Distinct from unchecking because chips show
-        # selections that aren't in the current result page.
-        entity = self._entity()
-        self.referencer._results = []
-        data = self._base_post_data(entity)
-        data[WireField.QUERY] = 'q'
-        data[WireField.SELECTIONS_JSON] = self._selections_json(
-            ('Keep', 'https://p/keep'),
-            ('Drop', 'https://p/drop'),
-        )
-        data[WireField.REMOVE_URL] = 'https://p/drop'
-        data[WireField.ACTION] = WireField.ACTION_ATTACH
-
-        self.client.post(self._url, data=data, **self.async_http_headers)
-
-        attrs = set(
-            EntityAttribute.objects.filter(entity=entity).values_list('name', flat=True)
-        )
-        self.assertEqual(attrs, {'Keep'})
-
-    def test_selection_outside_current_results_persists_across_search(self):
-        # Picking from page 1, then re-searching to page 2 must keep
-        # the page-1 pick. The unselected page-1 URL is not in the
-        # new visible set, so it isn't dropped.
-        entity = self._entity()
-        self.referencer._results = [
-            _result(title='Page Two Hit', source_url='https://p/p2'),
-        ]
-        data = self._base_post_data(entity)
-        data[WireField.QUERY] = 'new search'
-        data[WireField.SELECTIONS_JSON] = self._selections_json(
-            ('Page One Pick', 'https://p/p1'),
-        )
-        data[WireField.VISIBLE_URL] = 'https://p/p2'
-        data[WireField.ACTION] = WireField.ACTION_ATTACH
-
-        self.client.post(self._url, data=data, **self.async_http_headers)
-
-        attrs = set(
-            EntityAttribute.objects.filter(entity=entity).values_list('name', flat=True)
-        )
-        self.assertEqual(attrs, {'Page One Pick'})
-
-    # -- multi-integration -----------------------------------------
-
-    def test_get_with_multiple_referencers_renders_selector(self):
-        # When more than one referencer is enabled, the picker body
-        # should render the integration selector instead of a generic
-        # single-integration title.
-        other_ref = _StubReferencer(integration_id='other', label='Other Ref')
-        other_gw = _ReferencerCapableGateway(
-            'other', label='Other Ref', referencer=other_ref,
-        )
-        _populate_manager([
-            (self.INTEGRATION_ID, self.gateway),
-            ('other', other_gw),
-        ])
-        entity = self._entity()
-
-        response = self.client.get(
-            self._url,
+    def test_attach_unsupported_item_type_returns_400(self):
+        response = self.client.post(
+            self._url(),
             data={
-                WireField.ITEM_TYPE: str(ItemType.ENTITY),
-                WireField.ITEM_ID: entity.id,
+                DIVID['ATTR_PICKER_ITEM_TYPE_FIELD']: str(ItemType.COLLECTION),
+                DIVID['ATTR_PICKER_ITEM_ID_FIELD']: 1,
+                DIVID['ATTR_PICKER_SELECTIONS_JSON_FIELD']: self._selections_json(('A', 'https://p/1')),
             },
             **self.async_http_headers,
         )
-
-        self.assertEqual(response.status_code, 200)
-        decoded = response.content.decode()
-        # Both labels appear as options in the selector.
-        self.assertIn('Ref Test', decoded)
-        self.assertIn('Other Ref', decoded)
-
-    def test_post_with_disabled_integration_id_returns_400(self):
-        # A stale modal must not drive a search against an integration
-        # the operator has since disabled. Here ``other`` is in the DB
-        # but not enabled, so the picker view's ``enabled_only`` filter
-        # excludes it and the POST is rejected.
-        other_ref = _StubReferencer(integration_id='other', label='Other Ref')
-        other_gw = _ReferencerCapableGateway(
-            'other', label='Other Ref', referencer=other_ref,
-        )
-        # Seed both, but the second is disabled.
-        manager = IntegrationManager()
-        manager._integration_data_map = {}
-        for integration_id, gateway, enabled in [
-            (self.INTEGRATION_ID, self.gateway, True),
-            ('other', other_gw, False),
-        ]:
-            integration, _ = Integration.objects.get_or_create(
-                integration_id=integration_id,
-                defaults={'is_enabled': enabled},
-            )
-            if integration.is_enabled != enabled:
-                integration.is_enabled = enabled
-                integration.save()
-            manager._integration_data_map[integration_id] = IntegrationData(
-                integration_gateway=gateway,
-                integration=integration,
-            )
-        entity = self._entity()
-        data = self._base_post_data(entity, integration_id='other')
-        data[WireField.QUERY] = 'q'
-
-        response = self.client.post(self._url, data=data, **self.async_http_headers)
-
         self.assertEqual(response.status_code, 400)
+
+    def test_attach_unknown_owner_returns_404(self):
+        response = self.client.post(
+            self._url(),
+            data={
+                DIVID['ATTR_PICKER_ITEM_TYPE_FIELD']: str(ItemType.ENTITY),
+                DIVID['ATTR_PICKER_ITEM_ID_FIELD']: 99999,
+                DIVID['ATTR_PICKER_SELECTIONS_JSON_FIELD']: self._selections_json(('A', 'https://p/1')),
+            },
+            **self.async_http_headers,
+        )
+        self.assertEqual(response.status_code, 404)

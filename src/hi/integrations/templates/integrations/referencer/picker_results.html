@@ -1,0 +1,52 @@
+{% load icons %}
+{% comment %}
+Result-cards partial returned by the search endpoint and swapped
+into the picker's results container by attr-picker.js. Each card
+carries the source title and URL as data attributes so the JS can
+read them on checkbox change without parsing the DOM.
+
+DOM classes / data-attribute names come from ``hi.constants.DIVID``
+(mirrored in ``static/js/main.js`` under ``Hi.ATTR_PICKER_*``).
+
+Context:
+  query     : str  (the search query that produced these results;
+                    used only for the no-results message)
+  results   : list[AttributeReferenceResult]
+{% endcomment %}
+{% if query and not results %}
+<div class="text-muted small">No results.</div>
+{% endif %}
+{% if results %}
+<div class="list-group">
+  {% for r in results %}
+  <label class="list-group-item d-flex align-items-start mb-0">
+    <input type="checkbox"
+           class="{{ DIVID.ATTR_PICKER_RESULT_CHECKBOX_CLASS }} mt-1 mr-3"
+           {{ DIVID.ATTR_PICKER_TITLE_ATTR }}="{{ r.title }}"
+           {{ DIVID.ATTR_PICKER_SOURCE_URL_ATTR }}="{{ r.source_url }}">
+    {% if r.thumbnail_url %}
+    <img src="{{ r.thumbnail_url }}"
+         alt=""
+         class="mr-3 rounded"
+         style="width: 56px; height: 56px; object-fit: cover;">
+    {% else %}
+    <div class="mr-3 d-flex align-items-center justify-content-center bg-light rounded text-muted"
+         style="width: 56px; height: 56px;">
+      {% icon "info-circle" size="sm" %}
+    </div>
+    {% endif %}
+    <div class="flex-grow-1" style="min-width: 0;">
+      <div class="font-weight-bold text-truncate">{{ r.title }}</div>
+      {% if r.snippet %}
+      <div class="small text-muted text-truncate">{{ r.snippet }}</div>
+      {% endif %}
+      <a href="{{ r.source_url }}" target="_blank" rel="noopener"
+         class="small text-truncate d-block"
+         onclick="event.stopPropagation();">
+        {{ r.source_url }}
+      </a>
+    </div>
+  </label>
+  {% endfor %}
+</div>
+{% endif %}

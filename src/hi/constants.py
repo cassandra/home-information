@@ -161,6 +161,32 @@ DIVID = {
     # Entity Picker - Filter values
     'ENTITY_PICKER_FILTER_ALL': 'all',
 
+    # ATTRIBUTE_REFERENCE picker — DOM classes / data attributes
+    # / wire-format field names shared between the picker templates,
+    # the picker views, and attr-picker.js. Mirror these in
+    # ``src/hi/static/js/main.js`` (``Hi.ATTR_PICKER_*``).
+    'ATTR_PICKER_ROOT_CLASS': 'hi-attr-picker',
+    'ATTR_PICKER_CHIPS_CLASS': 'hi-attr-picker-chips',
+    'ATTR_PICKER_CHIPS_EMPTY_CLASS': 'hi-attr-picker-chips-empty',
+    'ATTR_PICKER_CHIP_REMOVE_CLASS': 'hi-attr-picker-chip-remove',
+    'ATTR_PICKER_RESULTS_CLASS': 'hi-attr-picker-results',
+    'ATTR_PICKER_SEARCH_FORM_CLASS': 'hi-attr-picker-search-form',
+    'ATTR_PICKER_ATTACH_FORM_CLASS': 'hi-attr-picker-attach-form',
+    'ATTR_PICKER_ATTACH_BTN_CLASS': 'hi-attr-picker-attach-btn',
+    'ATTR_PICKER_ATTACH_LABEL_CLASS': 'hi-attr-picker-attach-label',
+    'ATTR_PICKER_RESULT_CHECKBOX_CLASS': 'hi-attr-picker-result-checkbox',
+    'ATTR_PICKER_SEARCH_URL_ATTR': 'data-attr-picker-search-url',
+    'ATTR_PICKER_TITLE_ATTR': 'data-attr-picker-title',
+    'ATTR_PICKER_SOURCE_URL_ATTR': 'data-attr-picker-source-url',
+    'ATTR_PICKER_QUERY_FIELD': 'query',
+    'ATTR_PICKER_LIMIT_FIELD': 'limit',
+    'ATTR_PICKER_ITEM_TYPE_FIELD': 'item_type',
+    'ATTR_PICKER_ITEM_ID_FIELD': 'item_id',
+    'ATTR_PICKER_INTEGRATION_ID_FIELD': 'integration_id',
+    'ATTR_PICKER_SELECTIONS_JSON_FIELD': 'selections_json',
+    'ATTR_PICKER_SELECTION_TITLE_KEY': 'title',
+    'ATTR_PICKER_SELECTION_URL_KEY': 'source_url',
+
     # Location SVG Editor Grid Structure
     'LOCATION_SVG_EDIT_TOP': 'hi-location-svg-editor-top',
     'LOCATION_SVG_EDIT_BOTTOM': 'hi-location-svg-editor-bottom',
