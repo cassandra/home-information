@@ -8,6 +8,8 @@
 {% endblock %}
 
 {% block body %}
+{% include "integrations/panes/integration_modal_header.html" %}
+
 <h5 class="mb-3">Cannot configure as {{ my_label }}.</h5>
 <p>
   {{ integration_data.label }} {{ existing_mode_clause }}

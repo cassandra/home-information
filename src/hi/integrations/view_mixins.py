@@ -63,17 +63,17 @@ class CapabilityBlockViewMixin:
                 'my_label': 'Import',
                 'existing_count': existing_count,
                 'existing_mode_clause': (
-                    'has data configured as Integration with'
+                    'already configured as a Connector with'
                 ),
                 'desired_action_clause': (
-                    f'use {integration_data.label} as Import'
+                    f'use {integration_data.label} as a Data Importer'
                 ),
                 'remediation_clause': (
                     f'disable the {integration_data.label} '
-                    f'Integration'
+                    f'Connector'
                 ),
                 'link_url': reverse( 'integrations_connect_home' ),
-                'link_label': 'GO TO INTEGRATIONS',
+                'link_label': 'GO TO CONNECTORS',
             },
             template_name = 'integrations/modals/capability_blocked.html',
         )
