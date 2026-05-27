@@ -162,7 +162,7 @@ class DataImportPageViewTests(TestCase):
             )),
         ])
         response = self.client.get(reverse('integrations_import_home'))
-        self.assertIn('Also available as an', response.content.decode())
+        self.assertIn('Also available as a Connector', response.content.decode())
 
 
 class ImporterConfigureViewTests(TestCase):

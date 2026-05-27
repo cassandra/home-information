@@ -67,7 +67,7 @@ Check {{ integration_data.label }} for updates?
 </p>
 {% if removal_summary.has_mixed_state %}
 <p>
-  This integration has <strong>{{ removal_summary.user_data_count }}</strong>
+  This connector has <strong>{{ removal_summary.user_data_count }}</strong>
   {% if removal_summary.user_data_count == 1 %}item{% else %}items{% endif %}
   with custom data you've added. If an update would drop
   {% if removal_summary.user_data_count == 1 %}that item{% else %}any of them{% endif %}:
@@ -75,7 +75,7 @@ Check {{ integration_data.label }} for updates?
 <ul>
   <li>
     <strong>RETAIN MISSING</strong> — preserve any missing items with custom data
-    (detached from this integration; they will show as
+    (detached from this connector; they will show as
     <em>Detached from {{ integration_data.label }}</em> in the entity-detail UI,
     with custom attributes and layout retained).
   </li>
