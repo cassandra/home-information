@@ -734,9 +734,10 @@ class Command(BaseCommand):
     # ----- ZoneMinder builders -----
 
     def _build_zm_baseline(self, profile: SimProfile) -> int:
-        # 1 server (singleton) + 2 monitors + a ★-prefixed monitor
-        # anchor for the ZM detach/reconnect cycle.
-        self._add_zm_server( profile )
+        # 2 monitors + a ★-prefixed monitor anchor for the ZM
+        # detach/reconnect cycle. The ZM Server entity is auto-created
+        # on first access by the simulator; persisting it here would
+        # double up.
         self._add_zm_monitor( profile, 'Front Door Camera' , monitor_id = 1 )
         self._add_zm_monitor( profile, 'Driveway Camera'   , monitor_id = 2 )
         self._add_zm_monitor(
@@ -757,18 +758,18 @@ class Command(BaseCommand):
         #                         avoid colliding with the
         #                         ★-prefixed Detached anchor when
         #                         flipping back.
-        self._add_zm_server( profile )
+        # ZM Server is auto-created on first access by the simulator.
         self._add_zm_monitor( profile, 'Front Porch Camera' , monitor_id = 1 )
         self._add_zm_monitor( profile, 'Garage Camera'      , monitor_id = 3 )
         return profile.db_sim_entities.count()
 
     def _build_zm_volume(self, profile: SimProfile) -> int:
-        # 1 server + 10 monitors. Stresses dispatcher group sizing.
-        self._add_zm_server( profile )
+        # 10 monitors. Stresses dispatcher group sizing. ZM Server is
+        # auto-created on first access by the simulator.
         for index in range(10):
             self._add_zm_monitor(
                 profile,
-                f'Volume Camera {index + 1:02}',
+                f'ZM Camera {index + 1:02}',
                 monitor_id = 100 + index,
             )
         return profile.db_sim_entities.count()
@@ -805,8 +806,8 @@ class Command(BaseCommand):
         for index in range(10):
             self._add_frigate_camera(
                 profile,
-                f'Volume Camera {index + 1:02}',
-                camera_name = f'volume_camera_{index + 1:02}',
+                f'Frigate Camera {index + 1:02}',
+                camera_name = f'frigate_camera_{index + 1:02}',
             )
         return profile.db_sim_entities.count()
 

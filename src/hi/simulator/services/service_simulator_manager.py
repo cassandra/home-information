@@ -115,8 +115,14 @@ class ServiceSimulatorManager( Singleton ):
             self._discover_defined_simulators()
             self._fetch_sim_entity_definitions()
             self._register_profile_callbacks()
-            await sync_to_async( self._load_entities_for_all_simulators,
-                                 thread_sensitive = True )()
+        # Release the lock before per-simulator hydration: each
+        # _load_entities_for_simulator acquires the lock for the
+        # duration of its own clear+rehydrate, and post_load_hook
+        # then calls back through add_sim_entity which re-acquires
+        # the lock. Holding the lock across the sync_to_async hop
+        # would also block any other thread that tried to acquire it.
+        await sync_to_async( self._load_entities_for_all_simulators,
+                             thread_sensitive = True )()
         return
 
     async def shutdown( self ) -> None:
@@ -206,24 +212,34 @@ class ServiceSimulatorManager( Singleton ):
         logger.debug(
             f'Loading entities for {simulator.id} from profile {profile}.'
         )
-        simulator.initialize()
-        simulator_data = self._simulator_data_map.get( simulator.id )
-        if simulator_data is None:
-            return
-        sim_entity_definition_map = simulator_data.sim_entity_definition_map
+        # Hold the lock for the entire clear+rehydrate so concurrent
+        # add_sim_entity calls (e.g. an on-demand auto-create racing
+        # in via a request while we're mid-hydration) cannot see a
+        # partially-populated map and decide a singleton is missing.
+        # Without this, the auto-create persists a duplicate row and
+        # the duplicate sticks in the DB for that profile thereafter.
+        with self._data_lock:
+            simulator.initialize()
+            simulator_data = self._simulator_data_map.get( simulator.id )
+            if simulator_data is None:
+                return
+            sim_entity_definition_map = simulator_data.sim_entity_definition_map
 
-        for db_sim_entity in DbSimEntity.objects.filter( sim_profile = profile ):
-            class_id = db_sim_entity.entity_fields_class_id
-            sim_entity_definition = sim_entity_definition_map.get( class_id )
-            if not sim_entity_definition:
+            for db_sim_entity in DbSimEntity.objects.filter( sim_profile = profile ):
+                class_id = db_sim_entity.entity_fields_class_id
+                sim_entity_definition = sim_entity_definition_map.get( class_id )
+                if not sim_entity_definition:
+                    continue
+                sim_entity = SimEntity(
+                    db_sim_entity = db_sim_entity,
+                    sim_entity_definition = sim_entity_definition,
+                )
+                try:
+                    simulator.add_sim_entity( sim_entity = sim_entity )
+                except SimEntityValidationError:
+                    logger.exception( 'Could not add DB simulator entity.' )
                 continue
-            sim_entity = SimEntity(
-                db_sim_entity = db_sim_entity,
-                sim_entity_definition = sim_entity_definition,
-            )
-            try:
-                simulator.add_sim_entity( sim_entity = sim_entity )
-            except SimEntityValidationError:
-                logger.exception( 'Could not add DB simulator entity.' )
-            continue
+        # Outside the lock: the hook may call back through
+        # add_sim_entity, which re-acquires the lock.
+        simulator.post_load_hook()
         return

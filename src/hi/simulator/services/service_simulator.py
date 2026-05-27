@@ -154,6 +154,20 @@ class ServiceSimulator( Singleton ):
         """
         self._sim_entity_map : Dict[ id, SimEntity ] = dict()
         return
+
+    def post_load_hook( self ):
+        """Called once by the ServiceSimulatorManager after a profile
+        load has finished hydrating ``self._sim_entity_map`` from the
+        database. Subclasses override this to ensure required default
+        entities exist for the freshly-loaded profile — e.g. a
+        singleton "server" entity that should be present in every
+        profile. Default is a no-op.
+
+        Implementations may call back into the manager (e.g. via
+        ``add_sim_entity``) and so must NOT be called while the
+        manager's data lock is held.
+        """
+        return
     
     def validate_new_sim_entity_fields( self, new_sim_entity_fields : SimEntityFields ):
         """

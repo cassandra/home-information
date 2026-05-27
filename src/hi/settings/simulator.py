@@ -36,6 +36,7 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 
+    'hi.simulator.middleware.NoStoreMiddleware',
     'hi.simulator.services.middleware.ServiceFaultInjectionMiddleware',
 ]
 

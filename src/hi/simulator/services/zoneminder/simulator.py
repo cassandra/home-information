@@ -55,6 +55,14 @@ class ZoneMinderSimulator( ServiceSimulator ):
             continue
         return None
 
+    def post_load_hook( self ):
+        # Materialize the singleton ZM Server entity at profile-load
+        # time so a freshly-created or freshly-switched-to profile
+        # always shows it without needing a ZM-specific request to
+        # trigger the on-demand creation in get_zm_server_sim_entity.
+        self.get_zm_server_sim_entity()
+        return
+
     def get_zm_server_sim_entity( self ) -> ZmSimServer:
         for sim_entity in self.sim_entities:
             if sim_entity.sim_entity_definition.sim_entity_fields_class == ZmServerSimEntityFields:

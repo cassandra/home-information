@@ -142,6 +142,7 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 
+    'hi.middleware.NoStoreMiddleware',
     'hi.middleware.ExceptionMiddleware',
     'hi.middleware.ViewMiddleware',
     'hi.apps.console.middleware.ConsoleLockMiddleware',
