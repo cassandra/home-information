@@ -185,8 +185,8 @@ class TestAttributeTextUrlFilters(TestCase):
     def test_attribute_text_has_url_detects_url_with_wrapping_punctuation(self):
         self.assertTrue(attribute_text_has_url("Open this (https://example.com/docs)."))
 
-    def test_attribute_text_has_url_ignores_invalid_http_candidates(self):
-        self.assertFalse(attribute_text_has_url("Broken candidate: https://bad"))
+    def test_attribute_text_has_url_accepts_single_label_intranet_host(self):
+        self.assertTrue(attribute_text_has_url("Internal: http://cassandra:4100/documents/8/details/"))
 
     def test_attribute_text_linkify_renders_multiple_links_inline(self):
         rendered = attribute_text_linkify(
@@ -217,9 +217,15 @@ class TestAttributeTextUrlFilters(TestCase):
             rendered,
         )
 
-    def test_attribute_text_linkify_does_not_link_invalid_candidates(self):
-        rendered = attribute_text_linkify('Broken: https://bad and valid: https://example.com')
-        self.assertIn('Broken: https://bad', rendered)
+    def test_attribute_text_linkify_links_single_label_intranet_host(self):
+        rendered = attribute_text_linkify(
+            'Intranet: http://cassandra:4100/documents/8/details/ and public: https://example.com'
+        )
+        self.assertIn(
+            '<a href="http://cassandra:4100/documents/8/details/" target="_blank" rel="noopener noreferrer">'
+            'http://cassandra:4100/documents/8/details/</a>',
+            rendered,
+        )
         self.assertIn(
             '<a href="https://example.com" target="_blank" rel="noopener noreferrer">https://example.com</a>',
             rendered,

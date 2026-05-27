@@ -1,24 +1,29 @@
 import re
+from urllib.parse import urlparse
 
 from django import template
-from django.core.exceptions import ValidationError
-from django.core.validators import URLValidator
 from django.utils.html import escape, format_html
 from django.utils.safestring import mark_safe
 
 register = template.Library()
-_url_validator = URLValidator()
 _URL_IN_TEXT_PATTERN = re.compile(r'https?://[^\s<>"\']+')
 _TRAILING_PUNCTUATION = '.,;:!?)]}'
 
 
 def _is_valid_url(value):
-    """Return True when value passes Django URL validation."""
+    """Return True when value looks like an http(s) URL with a host.
+
+    Single-label intranet hostnames (e.g. ``http://cassandra:4100/…``)
+    are accepted; Django's URLValidator rejects those because they
+    lack a TLD, but they're common on LANs.
+    """
     try:
-        _url_validator(value)
-    except ValidationError:
+        parsed = urlparse(value)
+    except ValueError:
         return False
-    return True
+    if parsed.scheme not in ('http', 'https'):
+        return False
+    return bool(parsed.netloc)
 
 
 def _split_url_and_trailing_punctuation(candidate):
