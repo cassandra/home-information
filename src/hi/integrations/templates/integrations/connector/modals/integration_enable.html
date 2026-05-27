@@ -2,9 +2,11 @@
 {% load icons %}
 
 {% block modal_dialog_class %}hi-modal-dialog-600{% endblock %}
-{% block title_text %}{{ integration_data.label }} Integration{% endblock %}
+{% block title_text %}{{ integration_data.label }} Connector{% endblock %}
 
 {% block body %}
+{% include "integrations/panes/integration_modal_header.html" %}
+
 <!-- Root container for this attribute editing context -->
 <div id="{{ attr_page_context.container_html_id }}" 
      class="{{ DIVID.ATTR_V2_CONTAINER_CLASS }}">

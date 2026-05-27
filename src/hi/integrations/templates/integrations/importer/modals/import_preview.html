@@ -12,6 +12,8 @@ Import from {{ integration_data.label }}?
 {% endblock %}
 
 {% block body %}
+{% include "integrations/panes/integration_modal_header.html" %}
+
 {% if error_message %}
 <div class="alert alert-warning">{{ error_message }}</div>
 {% elif new_count == 0 %}

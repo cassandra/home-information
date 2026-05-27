@@ -15,6 +15,8 @@
 {% endblock %}
 
 {% block body %}
+{% include "integrations/panes/integration_modal_header.html" %}
+
 <h4>Discard imported {{ integration_data.label }} items?</h4>
 
 {% if imported_count == 0 %}

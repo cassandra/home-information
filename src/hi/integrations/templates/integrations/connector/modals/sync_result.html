@@ -38,16 +38,7 @@
 {% endblock %}
 
 {% block body %}
-{% if integration_data %}
-<div class="d-flex align-items-center mb-3 pb-2 border-bottom">
-  <img class="mr-2 hi-integration-logo"
-       src="{% static integration_data.integration_metadata.logo_static_path %}"
-       alt="{{ integration_data.label }} Logo">
-  <div class="text-muted small text-uppercase hi-uppercase-label">
-    {{ integration_data.label }}
-  </div>
-</div>
-{% endif %}
+{% include "integrations/panes/integration_modal_header.html" %}
 
 {% comment %}
   Hero headline — the operator's first read of the modal. Errors

@@ -5,6 +5,8 @@
 {% block title_text %}Import from {{ integration_data.label }}{% endblock %}
 
 {% block body %}
+{% include "integrations/panes/integration_modal_header.html" %}
+
 <div id="{{ attr_page_context.container_html_id }}"
      class="{{ DIVID.ATTR_V2_CONTAINER_CLASS }}">
 

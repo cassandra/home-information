@@ -15,6 +15,7 @@
 {% endblock %}
 
 {% block body %}
+  {% include "integrations/panes/integration_modal_header.html" %}
 <h4>Disable {{ integration_data.label }} Connector?</h4>
 
 {% if removal_summary.total_count == 0 %}

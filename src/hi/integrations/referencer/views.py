@@ -238,7 +238,7 @@ class AttributeReferencePickerView( HiModalView ):
     and the final commit posts to
     ``integrations_attribute_reference_attach``."""
 
-    MODAL_TEMPLATE_NAME = 'integrations/referencer/picker_modal.html'
+    MODAL_TEMPLATE_NAME = 'integrations/referencer/modals/picker_modal.html'
 
     def get_template_name(self) -> str:
         return self.MODAL_TEMPLATE_NAME
@@ -298,7 +298,7 @@ class AttributeReferenceSearchView( View ):
     Empty / whitespace queries short-circuit to an empty result
     partial (no upstream call)."""
 
-    RESULTS_TEMPLATE_NAME = 'integrations/referencer/picker_results.html'
+    RESULTS_TEMPLATE_NAME = 'integrations/referencer/panes/picker_results.html'
 
     def post(self, request, *args, **kwargs):
         integration_data_list = _get_referencer_integration_data_list()

@@ -53,6 +53,8 @@ Check {{ integration_data.label }} for updates?
 {% endblock %}
 
 {% block body %}
+{% include "integrations/panes/integration_modal_header.html" %}
+  
 {% if is_initial_connect %}
 <p>
   Connect will pull items from <strong>{{ integration_data.label }}</strong>
