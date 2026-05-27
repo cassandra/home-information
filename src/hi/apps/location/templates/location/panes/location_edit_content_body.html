@@ -12,7 +12,7 @@ Extends the generic attribute edit content body with location-specific field lay
 <a href="{% url 'integrations_attribute_reference_picker' %}?item_type=LOCATION&item_id={{ attr_item_context.owner.id }}"
    data-async="modal"
    class="btn btn-sm btn-outline-primary mb-0">
-  {% icon "plug" size="sm" css_class="hi-icon-left" %}Link Content
+  {% icon "link" size="sm" css_class="hi-icon-left" %}Link Content
 </a>
 {% endif %}
 {% endblock %}

@@ -48,6 +48,7 @@ AVAILABLE_ICONS = {
     'info-circle',
     'layers',
     'lightbulb',
+    'link',
     'lock',
     'map-pin',
     'minus-circle',
