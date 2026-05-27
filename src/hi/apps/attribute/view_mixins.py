@@ -246,6 +246,7 @@ class AttributeMultiEditViewMixin( AttributeEditCommonMixin ):
         multi_edit_form_data_list = form_handler.create_multi_edit_form_data(
             attr_item_context_list = attr_item_context_list,
         )
+        
         return renderer.render_restore_success_response_multi(
             attr_page_context = attr_page_context,
             multi_edit_form_data_list = multi_edit_form_data_list,

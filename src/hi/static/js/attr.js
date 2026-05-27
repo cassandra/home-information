@@ -1530,6 +1530,17 @@
         if ($hiddenField && $hiddenField.length > 0) {
             $hiddenField.val(defaultValue);
         }
+
+        // Refresh the read-mode display so the operator sees the
+        // restored value immediately. The read content was rendered
+        // server-side with attribute_text_linkify; we replace with
+        // escaped plain text here. Server re-linkifies on save.
+        const $readContent = $card.find(
+            Hi.ATTR_V2_TEXT_READ_CONTENT_SELECTOR
+        ).first();
+        if ($readContent.length > 0) {
+            $readContent.text(defaultValue || ' ');
+        }
     }
 
     function _restoreSelect($card, defaultValue) {

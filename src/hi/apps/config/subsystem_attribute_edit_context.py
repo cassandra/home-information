@@ -16,11 +16,26 @@ from .models import Subsystem, SubsystemAttribute
 
 class SubsystemAttributePageEditContext(AttributePageEditContext):
 
-    def __init__( self, selected_subsystem_id : str ) -> None:
-        """Initialize context for Subsystem attribute editing."""
-        # Use 'subsystem' as owner_type to match URL patterns
+    def __init__( self, selected_subsystem_id ) -> None:
+        """Initialize context for Subsystem attribute editing.
+
+        ``selected_subsystem_id`` is normalized to a string so the
+        template's tab-pane ``show active`` comparison
+        (``selected_subsystem_id == owner.id|stringformat:'s'``)
+        works regardless of whether the caller's URL captured the
+        id as ``<int:>`` (restore views) or ``\\d+`` via ``re_path``
+        (the initial config-settings view). Without this, restore
+        responses render every tab-pane inactive — the action bar
+        stays visible but the attribute body is hidden by Bootstrap's
+        ``.fade`` rule, looking exactly like 'only the UPDATE button
+        re-rendered'.
+        """
         super().__init__( owner_type = 'subsystem' )
-        self.selected_subsystem_id = selected_subsystem_id
+        self.selected_subsystem_id = (
+            str( selected_subsystem_id )
+            if selected_subsystem_id is not None
+            else None
+        )
         return
 
     @property
