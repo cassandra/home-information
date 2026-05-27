@@ -26,12 +26,13 @@ from .transient_models import AttributeReferenceResult
 
 class IntegrationAttributeReferencer( CapabilityGateway ):
 
-    capability = IntegrationCapability.ATTRIBUTE_REFERENCE
     """Search-and-attach surface contributed by integrations that
     expose a queryable corpus of linkable resources (documents,
     pages, files in an external CMS, etc.). The framework calls
     ``search_references`` from the picker view and presents the
     returned candidates to the operator for multi-select attach."""
+
+    capability = IntegrationCapability.ATTRIBUTE_REFERENCE
 
     def get_metadata(self) -> IntegrationMetaData:
         raise NotImplementedError('Subclasses must override this method')

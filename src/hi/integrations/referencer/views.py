@@ -523,6 +523,11 @@ class ReferenceManageView( ConfigPageView, IntegrationViewMixin, AttributeEditVi
             integration_data.integration.save(
                 update_fields = [ 'is_enabled' ],
             )
+            # Rebuild the edit context so the response renders the
+            # post-flip state: ``update_button_label`` flips from
+            # ENABLE to UPDATE and the action-bar fragment reads
+            # ``is_enabled = True``.
+            attr_item_context = self._build_attr_item_context( integration_data )
 
         return renderer.render_form_success_response(
             attr_item_context = attr_item_context,

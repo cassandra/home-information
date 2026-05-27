@@ -310,9 +310,12 @@ class IntegrationAttributeHistoryInlineView( View,
         integration_data = IntegrationManager().get_integration_data(
             integration_id = attribute.integration.integration_id,
         )
+        # History inline ops target a specific attribute by id; the
+        # capability filter inside the edit context is not consulted
+        # here, so no capability gateway is needed.
         attr_item_context = IntegrationAttributeItemEditContext(
             integration_data = integration_data,
-            capability_gateway = integration_data.integration_gateway.get_connector(),
+            capability_gateway = None,
         )
         return self.get_history(
             request = request,
@@ -339,9 +342,12 @@ class IntegrationAttributeRestoreInlineView( View,
             integration_id = attribute.integration.integration_id,
         )
 
+        # Restore inline ops target a specific attribute by id; the
+        # capability filter inside the edit context is not consulted
+        # here, so no capability gateway is needed.
         attr_item_context = IntegrationAttributeItemEditContext(
             integration_data = integration_data,
-            capability_gateway = integration_data.integration_gateway.get_connector(),
+            capability_gateway = None,
         )
         return self.post_restore(
             request = request,

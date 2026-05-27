@@ -33,12 +33,15 @@
 
         <div class="border-bottom mb-2 pb-2">
           <div class="d-flex justify-content-between">
-            <div class="h3 integration-title">
+            <div class="h3 integration-title mb-0">
               <img class="img-fluid"
                    src="{% static core.integration_data.integration_metadata.logo_static_path %}"
                    alt="{{ core.integration_data.integration_metadata.label }} Logo">
               {{ core.integration_data.integration_metadata.label }}
             </div>
+          </div>
+          <div class="text-muted small mt-1">
+            Find related content in {{ core.integration_data.integration_metadata.label }} and link to it.
           </div>
         </div>
 
