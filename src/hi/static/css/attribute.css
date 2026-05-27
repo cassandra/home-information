@@ -1757,3 +1757,40 @@
     padding-left: 0;
 }
 
+/* ====================================================================== */
+/* ATTRIBUTE_REFERENCE picker                                             */
+/* ====================================================================== */
+
+/* Bootstrap's modal-dialog-scrollable shrinks the flex children of
+   modal-content to fit the constrained height. The default Bootstrap
+   markup has .modal-header / .modal-footer with flex-shrink:0 so only
+   .modal-body shrinks; this project uses .modal-title in place of
+   .modal-header, so we re-establish the contract here for any modal
+   that opts into scrollable behavior. */
+.modal-dialog-scrollable .modal-title,
+.modal-dialog-scrollable .modal-footer {
+    flex-shrink: 0;
+}
+
+/* The picker modal opts into Bootstrap's modal-dialog-scrollable so the
+   modal-body is the scroll container while the header and footer stay
+   anchored. Pin the search controls to the top edge of the body so the
+   operator can refine their query at any scroll position without
+   scrolling back up to find the search row. */
+.hi-attr-picker-search-form {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    background-color: var(--background-color, #fff);
+    padding-top: 0.5rem;
+    padding-bottom: 0.5rem;
+}
+
+/* Zero the modal-body's top padding so the sticky search form is flush
+   against the title — otherwise modal-body's default padding-top shows
+   scrolling content through the gap above the sticky element. The
+   search form supplies its own padding-top for breathing room. */
+.hi-attr-picker .modal-body {
+    padding-top: 0;
+}
+

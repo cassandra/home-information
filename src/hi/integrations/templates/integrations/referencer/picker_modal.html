@@ -4,11 +4,23 @@
 {% comment %}
 ATTRIBUTE_REFERENCE picker modal.
 
-Selection state lives in attr-picker.js (one selection set per
-open modal instance, keyed by the .hi-attr-picker DOM node).
-attr-picker.js attaches its handlers as delegated listeners at
-document level, so antinode-injected modal content wires up
-automatically — no init step in this template.
+Selection state lives in attr-picker.js (one selection set per open
+modal instance, keyed by the picker-root DOM node — i.e., this
+modal-dialog). attr-picker.js attaches its handlers as delegated
+listeners at document level, so antinode-injected modal content
+wires up automatically — no init step in this template.
+
+Layout:
+
+  - Modal dialog gets ``modal-dialog-scrollable`` (Bootstrap-native
+    opt-in: the modal-body scrolls, while modal-header and
+    modal-footer stay anchored). The selection chip row + Add
+    button live in the footer alongside Cancel, so they remain
+    visible regardless of how far the operator scrolls through
+    search results.
+  - The picker-root class lives on the modal-dialog so JS handlers
+    can ``closest()`` from either body (search row, result cards)
+    or footer (chips, attach form) and find the same picker.
 
 Context:
   integration_data_list : list[IntegrationData]
@@ -18,10 +30,12 @@ Context:
   limit                 : int  (initial page size)
   page_size_choices     : tuple[int]
 
-  Wire-format strings (DOM class names, data-attribute names, form
-  field names) come from ``hi.constants.DIVID`` (mirrored in
-  ``static/js/main.js`` under ``Hi.ATTR_PICKER_*``).
+Wire-format strings (DOM class names, data-attribute names, form
+field names) come from ``hi.constants.DIVID`` (mirrored in
+``static/js/main.js`` under ``Hi.ATTR_PICKER_*``).
 {% endcomment %}
+
+{% block modal_dialog_class %}modal-dialog-scrollable {{ DIVID.ATTR_PICKER_ROOT_CLASS }}{% endblock %}
 
 {% block title_text %}
 {% if integration_data_list|length > 1 %}Link References{% else %}Add from {{ integration_data.label }}{% endif %}
@@ -31,12 +45,45 @@ Context:
 {% include "integrations/referencer/picker_body.html" %}
 {% endblock %}
 
-{% block action_right %}
-{% comment %}
-The Add submit lives inside the body's attach form so attr-picker.js
-can serialize its selection set into ``selections_json`` just
-before the form submits. The framework's modal footer keeps the
-Cancel button; the body's Add button substitutes for the usual
-footer primary action.
-{% endcomment %}
+{% block footer %}
+<div class="w-100">
+
+  {# ----- Chip row + empty-state hint ----- #}
+  <div class="d-flex flex-wrap align-items-center mb-2 mt-1">
+    <div class="{{ DIVID.ATTR_PICKER_CHIPS_EMPTY_CLASS }} small text-muted">
+      No references selected yet.
+    </div>
+    <div class="{{ DIVID.ATTR_PICKER_CHIPS_CLASS }} d-flex flex-wrap"></div>
+  </div>
+
+  {# ----- Cancel + Add row ----- #}
+  <div class="d-flex justify-content-between align-items-center">
+    <a id="hi-modal-cancel" role="button"
+       class="btn btn-outline-tertiary" href="#" data-dismiss="modal">
+      {% icon "cancel" size="sm" css_class="hi-icon-left" %}CANCEL
+    </a>
+    {% comment %}
+    No ``data-async`` here: attr-picker.js owns the submit so it can
+    populate ``selections_json`` and POST through antinode's public
+    API (``AN.hideModalIfNeeded`` + ``AN.post``). Letting antinode
+    also bind via ``data-async`` would race the field-population —
+    antinode reads the form at the <body> level before attr-picker's
+    document-level submit handler fires.
+    {% endcomment %}
+    <form class="{{ DIVID.ATTR_PICKER_ATTACH_FORM_CLASS }} m-0"
+          method="post"
+          action="{% url 'integrations_attribute_reference_attach' %}">
+      {% csrf_token %}
+      <input type="hidden" name="{{ DIVID.ATTR_PICKER_ITEM_TYPE_FIELD }}" value="{{ item_type_value }}">
+      <input type="hidden" name="{{ DIVID.ATTR_PICKER_ITEM_ID_FIELD }}" value="{{ item_id }}">
+      <input type="hidden" name="{{ DIVID.ATTR_PICKER_SELECTIONS_JSON_FIELD }}" value="">
+      <button type="submit"
+              class="btn btn-primary {{ DIVID.ATTR_PICKER_ATTACH_BTN_CLASS }}"
+              disabled>
+        {% icon "check-circle" size="sm" css_class="hi-icon-left" %}<span class="{{ DIVID.ATTR_PICKER_ATTACH_LABEL_CLASS }}">Add 0 References</span>
+      </button>
+    </form>
+  </div>
+
+</div>
 {% endblock %}

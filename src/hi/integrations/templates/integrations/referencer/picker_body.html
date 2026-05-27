@@ -1,26 +1,21 @@
 {% load icons %}
 {% comment %}
-Picker modal body. The static structure of the picker:
+Picker modal body. Holds the search controls and a placeholder
+container for result cards (server-rendered partial swapped in on
+each search by attr-picker.js).
 
-  - Optional integration selector (when 2+ ATTRIBUTE_REFERENCE
-    integrations are enabled).
-  - Search form (POSTs to the search endpoint via attr-picker.js;
-    the JS handles the async swap of the results container).
-  - Selection chip row (the only HTML the JS module renders).
-  - Results container (server-rendered partial swapped in on each
-    search).
-  - Attach form holding ``selections_json`` and the Add button. The
-    JS serializes its in-memory selection set into the hidden
-    input right before submit; the server then creates one TEXT
-    attribute per record and returns antinode.refresh_response().
+The chip row, Cancel button, and Add button live in the modal
+footer (see picker_modal.html). The footer stays anchored when the
+body scrolls because the modal opts into Bootstrap's
+``modal-dialog-scrollable`` behavior.
 
-Per-search state and selection state are JS-owned. This template
-renders the surrounding scaffold and the initial empty state.
+The picker-root class lives on the modal-dialog, not on this body,
+so JS handlers in both body and footer can ``closest()`` to the
+same picker instance.
 
 DOM classes, data-attribute names, and wire-format field names
 come from ``hi.constants.DIVID`` (mirrored in ``static/js/main.js``
-under ``Hi.ATTR_PICKER_*``) so templates / JS / view code all use
-the same strings.
+under ``Hi.ATTR_PICKER_*``).
 
 Context:
   integration_data_list : list[IntegrationData]
@@ -30,102 +25,75 @@ Context:
   limit                 : int                       (initial page size)
   page_size_choices     : tuple[int]
 {% endcomment %}
-<div class="{{ DIVID.ATTR_PICKER_ROOT_CLASS }}">
 
-  {# ----- Search form ----- #}
-  <form class="{{ DIVID.ATTR_PICKER_SEARCH_FORM_CLASS }}"
-        {{ DIVID.ATTR_PICKER_SEARCH_URL_ATTR }}="{% url 'integrations_attribute_reference_search' %}">
-    {% csrf_token %}
+{# ----- Search form ----- #}
+<form class="{{ DIVID.ATTR_PICKER_SEARCH_FORM_CLASS }}"
+      {{ DIVID.ATTR_PICKER_SEARCH_URL_ATTR }}="{% url 'integrations_attribute_reference_search' %}">
+  {% csrf_token %}
 
-    {% if integration_data_list|length > 1 %}
-    <div class="form-row align-items-end mb-3">
-      <div class="col">
-        <label for="hi-attr-picker-integration" class="small text-muted mb-1">
-          Source
-        </label>
-        <select id="hi-attr-picker-integration"
-                name="{{ DIVID.ATTR_PICKER_INTEGRATION_ID_FIELD }}"
-                class="form-control form-control-sm">
-          {% for option in integration_data_list %}
-          <option value="{{ option.integration_id }}"
-                  {% if option.integration_id == integration_data.integration_id %}selected{% endif %}>
-            {{ option.label }}
-          </option>
-          {% endfor %}
-        </select>
-      </div>
+  {% if integration_data_list|length > 1 %}
+  <div class="form-row align-items-end mb-3">
+    <div class="col">
+      <label for="hi-attr-picker-integration" class="small text-muted mb-1">
+        Source
+      </label>
+      <select id="hi-attr-picker-integration"
+              name="{{ DIVID.ATTR_PICKER_INTEGRATION_ID_FIELD }}"
+              class="form-control form-control-sm">
+        {% for option in integration_data_list %}
+        <option value="{{ option.integration_id }}"
+                {% if option.integration_id == integration_data.integration_id %}selected{% endif %}>
+          {{ option.label }}
+        </option>
+        {% endfor %}
+      </select>
     </div>
-    {% else %}
-    <input type="hidden"
-           name="{{ DIVID.ATTR_PICKER_INTEGRATION_ID_FIELD }}"
-           value="{{ integration_data.integration_id }}">
-    {% endif %}
-
-    <div class="form-row align-items-end mb-3">
-      <div class="col">
-        <label for="hi-attr-picker-query" class="small text-muted mb-1">
-          Search
-        </label>
-        <input type="text"
-               id="hi-attr-picker-query"
-               name="{{ DIVID.ATTR_PICKER_QUERY_FIELD }}"
-               placeholder="Type to search and press Enter"
-               class="form-control form-control-sm"
-               autofocus>
-      </div>
-      <div class="col-auto">
-        <label for="hi-attr-picker-limit" class="small text-muted mb-1">
-          Page size
-        </label>
-        <select id="hi-attr-picker-limit"
-                name="{{ DIVID.ATTR_PICKER_LIMIT_FIELD }}"
-                class="form-control form-control-sm">
-          {% for choice in page_size_choices %}
-          <option value="{{ choice }}" {% if choice == limit %}selected{% endif %}>{{ choice }}</option>
-          {% endfor %}
-        </select>
-      </div>
-      <div class="col-auto">
-        <button type="submit" class="btn btn-sm btn-outline-primary">
-          {% icon "zoom" size="sm" css_class="hi-icon-left" %}Search
-        </button>
-      </div>
-    </div>
-  </form>
-
-  {# ----- Selection chips (JS-rendered) ----- #}
-  <div class="mb-3">
-    <div class="{{ DIVID.ATTR_PICKER_CHIPS_EMPTY_CLASS }} small text-muted mb-1">
-      No references selected yet.
-    </div>
-    <div class="{{ DIVID.ATTR_PICKER_CHIPS_CLASS }} d-flex flex-wrap"></div>
   </div>
+  {% else %}
+  <input type="hidden"
+         name="{{ DIVID.ATTR_PICKER_INTEGRATION_ID_FIELD }}"
+         value="{{ integration_data.integration_id }}">
+  {% endif %}
 
-  {# ----- Results container (swapped by attr-picker JS) ----- #}
-  <div class="{{ DIVID.ATTR_PICKER_RESULTS_CLASS }} mb-3"></div>
+  <div class="form-row align-items-end mb-3">
+    <div class="col">
+      <label for="hi-attr-picker-query" class="small text-muted mb-1">
+        Search
+      </label>
+      <input type="text"
+             id="hi-attr-picker-query"
+             name="{{ DIVID.ATTR_PICKER_QUERY_FIELD }}"
+             value="{{ query }}"
+             placeholder="Type to search and press Enter"
+             class="form-control form-control-sm"
+             autofocus>
+    </div>
+    <div class="col-auto">
+      <label for="hi-attr-picker-limit" class="small text-muted mb-1">
+        Page size
+      </label>
+      <select id="hi-attr-picker-limit"
+              name="{{ DIVID.ATTR_PICKER_LIMIT_FIELD }}"
+              class="form-control form-control-sm">
+        {% for choice in page_size_choices %}
+        <option value="{{ choice }}" {% if choice == limit %}selected{% endif %}>{{ choice }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="col-auto">
+      <button type="submit" class="btn btn-sm btn-outline-primary">
+        {% icon "zoom" size="sm" css_class="hi-icon-left" %}Search
+      </button>
+    </div>
+  </div>
+</form>
 
-  {# ----- Attach form ----- #}
-  {% comment %}
-  No ``data-async`` here: attr-picker.js owns the submit so it can
-  populate ``selections_json`` before posting. It still routes
-  through antinode (AN.hideModalIfNeeded + AN.post) so modal
-  cleanup and the ``{refresh: true}`` response are handled in one
-  place. Letting antinode also bind via ``data-async`` would race
-  the field-population — antinode reads the form at the <body>
-  level before attr-picker's document-level submit handler fires.
-  {% endcomment %}
-  <form class="{{ DIVID.ATTR_PICKER_ATTACH_FORM_CLASS }} d-flex justify-content-end"
-        method="post"
-        action="{% url 'integrations_attribute_reference_attach' %}">
-    {% csrf_token %}
-    <input type="hidden" name="{{ DIVID.ATTR_PICKER_ITEM_TYPE_FIELD }}" value="{{ item_type_value }}">
-    <input type="hidden" name="{{ DIVID.ATTR_PICKER_ITEM_ID_FIELD }}" value="{{ item_id }}">
-    <input type="hidden" name="{{ DIVID.ATTR_PICKER_SELECTIONS_JSON_FIELD }}" value="">
-    <button type="submit"
-            class="btn btn-primary {{ DIVID.ATTR_PICKER_ATTACH_BTN_CLASS }}"
-            disabled>
-      {% icon "check-circle" size="sm" css_class="hi-icon-left" %}<span class="{{ DIVID.ATTR_PICKER_ATTACH_LABEL_CLASS }}">Add 0 References</span>
-    </button>
-  </form>
-
+{# ----- Results container ----- #}
+{% comment %}
+The initial render uses the same partial the search endpoint
+returns; attr-picker.js swaps the container's contents on each
+subsequent search.
+{% endcomment %}
+<div class="{{ DIVID.ATTR_PICKER_RESULTS_CLASS }}">
+  {% include "integrations/referencer/picker_results.html" %}
 </div>

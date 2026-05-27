@@ -260,6 +260,22 @@ class AttributeReferencePickerView( HiModalView ):
         # can switch via the picker's integration <select> when more
         # than one referencer is configured.
         integration_data = integration_data_list[0]
+
+        # Seed the picker with a query based on the owner's name so
+        # the operator opens to relevant results without retyping
+        # what they're already configuring. Goes through the same
+        # ``_search_upstream`` the search endpoint uses; the body
+        # template's results container renders the same
+        # ``picker_results.html`` partial the search response
+        # returns.
+        query = owner.name
+        referencer = integration_data.integration_gateway.get_attribute_referencer()
+        results = _search_upstream(
+            referencer=referencer,
+            query=query,
+            limit=_DEFAULT_LIMIT,
+        ) if referencer is not None else []
+
         context = {
             'integration_data_list': integration_data_list,
             'integration_data': integration_data,
@@ -267,6 +283,8 @@ class AttributeReferencePickerView( HiModalView ):
             'item_id': owner.id,
             'limit': _DEFAULT_LIMIT,
             'page_size_choices': _PAGE_SIZE_CHOICES,
+            'query': query,
+            'results': results,
         }
         return self.modal_response( request, context=context )
 
