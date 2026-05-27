@@ -119,7 +119,7 @@
         const $btn = $pickerRoot.find(
             _classSelector(Hi.ATTR_PICKER_ATTACH_BTN_CLASS)
         );
-        const noun = count === 1 ? 'Reference' : 'References';
+        const noun = count === 1 ? 'Link' : 'Links';
         const $label = $btn.find(
             _classSelector(Hi.ATTR_PICKER_ATTACH_LABEL_CLASS)
         );
@@ -251,6 +251,41 @@
             }
             window.AN.hideModalIfNeeded($form[0]);
             window.AN.post($form.attr('action'), $form.serialize());
+        }
+    );
+
+    $(document).on(
+        'click' + EventNs,
+        _classSelector(Hi.ATTR_PICKER_SOURCE_OPTION_CLASS),
+        function(e) {
+            // Switch the active source: update the banner face, set
+            // the hidden integration_id input, and re-issue the
+            // current search against the new source. Selections
+            // already in state stay put — they're keyed by URL, not
+            // by source.
+            e.preventDefault();
+            const $option = $(this);
+            const $pickerRoot = $option.closest(
+                _classSelector(Hi.ATTR_PICKER_ROOT_CLASS)
+            );
+            if ($pickerRoot.length === 0) return;
+            const sourceId = $option.attr(Hi.ATTR_PICKER_SOURCE_ID_ATTR);
+            const sourceLogo = $option.attr(Hi.ATTR_PICKER_SOURCE_LOGO_ATTR);
+            const sourceLabel = $option.attr(Hi.ATTR_PICKER_SOURCE_LABEL_ATTR);
+            if (sourceId == null) return;
+            $pickerRoot
+                .find(_classSelector(Hi.ATTR_PICKER_SOURCE_BANNER_LOGO_CLASS))
+                .attr('src', sourceLogo);
+            $pickerRoot
+                .find(_classSelector(Hi.ATTR_PICKER_SOURCE_BANNER_LABEL_CLASS))
+                .text(sourceLabel);
+            const fieldName = Hi.ATTR_PICKER_INTEGRATION_ID_FIELD;
+            $pickerRoot
+                .find('input[name="' + fieldName + '"]')
+                .val(sourceId);
+            $pickerRoot
+                .find(_classSelector(Hi.ATTR_PICKER_SEARCH_FORM_CLASS))
+                .trigger('submit');
         }
     );
 

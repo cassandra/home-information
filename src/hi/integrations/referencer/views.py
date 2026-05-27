@@ -275,7 +275,7 @@ class AttributeReferencePickerView( HiModalView ):
             query=query,
             limit=_DEFAULT_LIMIT,
         ) if referencer is not None else []
-
+        
         context = {
             'integration_data_list': integration_data_list,
             'integration_data': integration_data,

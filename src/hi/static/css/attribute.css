@@ -1794,3 +1794,33 @@
     padding-top: 0;
 }
 
+/* Source banner — always rendered. With one source the button is
+   disabled (no caret, no hover affordance) so the visual matches
+   the multi-source case structurally but doesn't invite a click
+   that does nothing useful. The button face shows the source's
+   logo on a light background; native logos meant for white render
+   correctly here. */
+.hi-attr-picker-source-banner {
+    background-color: #fff;
+    border: 1px solid var(--line-color, #dee2e6);
+    padding: 0.5rem 0.75rem;
+}
+.hi-attr-picker-source-banner-logo {
+    max-height: 24px;
+    width: auto;
+}
+.hi-attr-picker-source-banner-label {
+    font-weight: 500;
+}
+.hi-attr-picker-source-banner-single .dropdown-toggle::after {
+    display: none;
+}
+.hi-attr-picker-source-banner-single .dropdown-toggle:disabled {
+    opacity: 1;
+    cursor: default;
+}
+.hi-attr-picker-source-option img {
+    max-height: 20px;
+    width: auto;
+}
+

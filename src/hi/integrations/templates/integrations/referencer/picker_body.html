@@ -1,4 +1,4 @@
-{% load icons %}
+{% load icons static %}
 {% comment %}
 Picker modal body. Holds the search controls and a placeholder
 container for result cards (server-rendered partial swapped in on
@@ -31,29 +31,45 @@ Context:
       {{ DIVID.ATTR_PICKER_SEARCH_URL_ATTR }}="{% url 'integrations_attribute_reference_search' %}">
   {% csrf_token %}
 
-  {% if integration_data_list|length > 1 %}
-  <div class="form-row align-items-end mb-3">
-    <div class="col">
-      <label for="hi-attr-picker-integration" class="small text-muted mb-1">
-        Source
-      </label>
-      <select id="hi-attr-picker-integration"
-              name="{{ DIVID.ATTR_PICKER_INTEGRATION_ID_FIELD }}"
-              class="form-control form-control-sm">
-        {% for option in integration_data_list %}
-        <option value="{{ option.integration_id }}"
-                {% if option.integration_id == integration_data.integration_id %}selected{% endif %}>
-          {{ option.label }}
-        </option>
-        {% endfor %}
-      </select>
+  {% comment %}
+  Source banner: always rendered so the UI shape is identical
+  whether one source or many. Bootstrap dropdown shows
+  ``[logo] [name] [caret]``; the caret + dropdown are disabled
+  via CSS when only one source is configured. The current source
+  is carried in a sibling hidden input that attr-picker.js
+  updates on dropdown selection.
+  {% endcomment %}
+  <div class="dropdown mb-3
+              {% if integration_data_list|length == 1 %}hi-attr-picker-source-banner-single{% endif %}">
+    <button type="button"
+            class="btn btn-light btn-block dropdown-toggle text-left d-flex align-items-center {{ DIVID.ATTR_PICKER_SOURCE_BANNER_CLASS }}"
+            data-toggle="dropdown"
+            aria-haspopup="true"
+            aria-expanded="false"
+            {% if integration_data_list|length == 1 %}disabled{% endif %}>
+      <img class="mr-2 {{ DIVID.ATTR_PICKER_SOURCE_BANNER_LOGO_CLASS }}"
+           src="{% static integration_data.integration_metadata.logo_static_path %}"
+           alt="">
+      <span class="flex-grow-1 {{ DIVID.ATTR_PICKER_SOURCE_BANNER_LABEL_CLASS }}">
+        {{ integration_data.label }}
+      </span>
+    </button>
+    <div class="dropdown-menu w-100">
+      {% for option in integration_data_list %}
+      <a href="#"
+         class="dropdown-item d-flex align-items-center {{ DIVID.ATTR_PICKER_SOURCE_OPTION_CLASS }}"
+         {{ DIVID.ATTR_PICKER_SOURCE_ID_ATTR }}="{{ option.integration_id }}"
+         {{ DIVID.ATTR_PICKER_SOURCE_LOGO_ATTR }}="{% static option.integration_metadata.logo_static_path %}"
+         {{ DIVID.ATTR_PICKER_SOURCE_LABEL_ATTR }}="{{ option.label }}">
+        <img class="mr-2" src="{% static option.integration_metadata.logo_static_path %}" alt="">
+        <span>{{ option.label }}</span>
+      </a>
+      {% endfor %}
     </div>
   </div>
-  {% else %}
   <input type="hidden"
          name="{{ DIVID.ATTR_PICKER_INTEGRATION_ID_FIELD }}"
          value="{{ integration_data.integration_id }}">
-  {% endif %}
 
   <div class="form-row align-items-end mb-3">
     <div class="col">

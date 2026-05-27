@@ -186,7 +186,14 @@
         ATTR_PICKER_INTEGRATION_ID_FIELD:    'integration_id',
         ATTR_PICKER_SELECTIONS_JSON_FIELD:   'selections_json',
         ATTR_PICKER_SELECTION_TITLE_KEY:     'title',
-        ATTR_PICKER_SELECTION_URL_KEY:       'source_url'
+        ATTR_PICKER_SELECTION_URL_KEY:       'source_url',
+        ATTR_PICKER_SOURCE_BANNER_CLASS:     'hi-attr-picker-source-banner',
+        ATTR_PICKER_SOURCE_BANNER_LOGO_CLASS: 'hi-attr-picker-source-banner-logo',
+        ATTR_PICKER_SOURCE_BANNER_LABEL_CLASS: 'hi-attr-picker-source-banner-label',
+        ATTR_PICKER_SOURCE_OPTION_CLASS:     'hi-attr-picker-source-option',
+        ATTR_PICKER_SOURCE_ID_ATTR:          'data-attr-picker-source-id',
+        ATTR_PICKER_SOURCE_LOGO_ATTR:        'data-attr-picker-source-logo',
+        ATTR_PICKER_SOURCE_LABEL_ATTR:       'data-attr-picker-source-label'
     };
     
     window.Hi = Hi;
