@@ -14,8 +14,16 @@ enter it.
 
 ## Enabling an integration
 
+Most integrations are configured from the **Connectors** tab on the
+Configure page. Paperless-ngx is configured from the **Content
+Sources** tab instead, because it contributes searchable document
+references rather than importing items — see its own page for the
+walkthrough.
+
+For a Connectors-tab integration:
+
 1. In HI, click **CONFIGURE** at the bottom of the screen.
-2. Select the **Integrations** tab.
+2. Select the **Connectors** tab.
 3. Open the integrations picker:
    - If no integrations are configured yet, click **CONFIGURE
      INTEGRATIONS** in the main panel.

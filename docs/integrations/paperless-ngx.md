@@ -44,18 +44,26 @@ or a property's deed to the matching HI item or Location.
 
 ## Setup walkthrough
 
-Follow the standard [Enabling an integration](../Integrations.md#enabling-an-integration)
-flow, choose **Paperless-ngx**, and fill in the two configuration
-values above. **Test Connection** issues a tiny probe against
-`/api/documents/?page_size=1` and reports back. Once **Connect**
-succeeds, the picker is wired up.
+Paperless is configured from the **Content Sources** tab on the
+Configure page (it is not on the Connectors tab — see
+[Integrations](../Integrations.md) for the distinction).
 
-From any HI item or Location edit page, click the **Link** button in
-the action bar. The picker modal opens, you type a query, tick the
-documents you want, and click **Add References**. Each selection
-becomes a new TEXT attribute on the item — the attribute's name is
-the document title and its value is the per-document URL on your
-paperless server. Clicking the saved link later takes you to
+1. In HI, click **CONFIGURE** at the bottom of the screen.
+2. Select the **Content Sources** tab.
+3. Choose **Paperless-ngx** and fill in the two configuration values
+   above. **Test Connection** issues a small probe against your
+   paperless server and reports back; **Save** records the values.
+
+Once paperless is configured, use it from any item or Location edit
+page:
+
+1. Click **Link Content** in the action bar to open the picker.
+2. Type a query, tick the documents you want, and click **Add
+   Links** (the button shows the running count, e.g. "Add 3 Links").
+
+Each selection becomes a new attribute on the item — the attribute's
+name is the document title and its value is the per-document URL on
+your paperless server. Clicking the saved link later takes you to
 paperless directly (you authenticate with paperless's own session).
 
 ## Troubleshooting
