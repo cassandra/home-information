@@ -34,15 +34,14 @@ motion bit and label.
 The integration was validated against Frigate with authentication
 disabled. No credentials are required in that mode. For installs
 that gate Frigate behind authentication, see
-[Authentication caveat](#authentication-caveat) at the end of this
-page.
+[Authentication](#authentication) at the end of this page.
 
 ## Configuration values
 
 | Field | What to enter | Notes |
 |-------|---------------|-------|
 | Base URL | Frigate's API root, e.g. `http://frigate.local:5000` | No trailing slash. |
-| Authorization Header | Optional verbatim `Authorization` header value. | See [Authentication caveat](#authentication-caveat). |
+| Authorization Header | Optional verbatim `Authorization` header value. | See [Authentication](#authentication). |
 
 ## Setup walkthrough
 
@@ -122,16 +121,22 @@ about).
   originates from Frigate. Configure detection sensitivity, zones,
   and recording in Frigate's own config.
 
-## Authentication caveat
+## Authentication
 
-The integration was validated only against Frigate installs with
-authentication disabled. It exposes an optional
-**Authorization Header** field that, when set, is sent verbatim on
-every request — intended for installs that either use Frigate's
-internal auth with a static token, or place Frigate behind a
-reverse proxy that enforces auth. **This path has not been tested.**
-No other authentication flow is supported: no login, no token
-refresh, no JWT handling.
+The integration was validated against Frigate with authentication
+disabled — the default on a local network. For installs that gate
+Frigate behind auth, the supported options are:
+
+| Your Frigate setup | What to put in **Authorization Header** |
+|---|---|
+| No auth (LAN default) | Leave blank. |
+| Reverse proxy with HTTP Basic auth | `Basic <base64(user:pass)>` |
+| Reverse proxy with a long-lived bearer token | `Bearer <token>` |
+| Reverse proxy with anonymous backend access (proxy enforces auth, but the **HI** server reaches Frigate on an internal address) | Leave blank. |
+| Frigate's built-in username/password login | **Not supported in v1.** Frigate issues short-lived JWTs that require a login flow not implemented here. Workaround: front Frigate with a reverse proxy that handles auth and either expose the unauthenticated backend to **HI** on an internal network, or use one of the static schemes above. |
+
+The value you provide is sent verbatim as the `Authorization` HTTP
+header on every request to Frigate.
 
 ## References
 
