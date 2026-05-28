@@ -248,11 +248,7 @@
         },
 
         insertDirtyIndicator: function(container, indicator) {
-            if (container.classList.contains(Hi.ATTR_V2_ATTRIBUTE_NAME_CLASS)) {
-                container.appendChild(indicator);
-            } else {
-                container.appendChild(indicator);
-            }
+            container.appendChild(indicator);
         },
 
         // Add fallback CSS classes for browsers without :has() support
