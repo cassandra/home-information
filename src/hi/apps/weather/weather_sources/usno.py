@@ -275,7 +275,7 @@ class USNO( WeatherDataSource, WeatherMixin ):
                 if illum_str:
                     illumination_percent = float(illum_str)
 
-                    astronomical_data.moon_illumnination = NumericDataPoint(
+                    astronomical_data.moon_illumination = NumericDataPoint(
                         station = station,
                         source_datetime = source_datetime,
                         quantity_ave = UnitQuantity(illumination_percent, 'percent'),

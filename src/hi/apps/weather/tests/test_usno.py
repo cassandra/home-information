@@ -119,9 +119,9 @@ class TestUSNO(BaseTestCase):
         self.assertEqual(result.moonset.value, time(0, 52))
         
         # Verify moon phase data
-        self.assertIsNotNone(result.moon_illumnination)
-        self.assertIsInstance(result.moon_illumnination, NumericDataPoint)
-        self.assertEqual(result.moon_illumnination.quantity_ave.magnitude, 35.0)
+        self.assertIsNotNone(result.moon_illumination)
+        self.assertIsInstance(result.moon_illumination, NumericDataPoint)
+        self.assertEqual(result.moon_illumination.quantity_ave.magnitude, 35.0)
         
         self.assertIsNotNone(result.moon_is_waxing)
         self.assertIsInstance(result.moon_is_waxing, BooleanDataPoint)
@@ -399,7 +399,7 @@ class TestUSNO(BaseTestCase):
         self.assertIsInstance(result, AstronomicalData)
         self.assertIsNone(result.sunrise)
         self.assertIsNone(result.sunset)
-        self.assertIsNone(result.moon_illumnination)
+        self.assertIsNone(result.moon_illumination)
         return
 
     @patch('hi.apps.common.datetimeproxy.now')
@@ -455,9 +455,9 @@ class TestUSNO(BaseTestCase):
         self.assertEqual(result.moonset.value, time(0, 52))
 
         # Verify moon phase data - this is the key new feature
-        self.assertIsInstance(result.moon_illumnination, NumericDataPoint)
-        self.assertEqual(result.moon_illumnination.quantity.magnitude, 35.0)
-        self.assertEqual(result.moon_illumnination.quantity.units, UnitQuantity(1, 'percent').units)
+        self.assertIsInstance(result.moon_illumination, NumericDataPoint)
+        self.assertEqual(result.moon_illumination.quantity.magnitude, 35.0)
+        self.assertEqual(result.moon_illumination.quantity.units, UnitQuantity(1, 'percent').units)
         
         self.assertIsInstance(result.moon_is_waxing, BooleanDataPoint)
         self.assertTrue(result.moon_is_waxing.value)
@@ -555,7 +555,7 @@ class TestUSNO(BaseTestCase):
             self.assertIsNone(result.sunset)
             
             # Should not have moon phase data without fracillum
-            self.assertIsNone(result.moon_illumnination)
+            self.assertIsNone(result.moon_illumination)
             self.assertIsNone(result.moon_is_waxing)
         return
 
@@ -620,7 +620,7 @@ class TestUSNO(BaseTestCase):
                     source_datetime = mock_today,
                     value = time(7, 40),
                 ),
-                moon_illumnination = NumericDataPoint(
+                moon_illumination = NumericDataPoint(
                     station = Station(
                         source = self.usno.data_point_source,
                         station_id = 'test-station',
@@ -724,7 +724,7 @@ class TestUSNO(BaseTestCase):
                 source_datetime = source_datetime,
                 value = time(7, 40),
             ),
-            moon_illumnination = NumericDataPoint(
+            moon_illumination = NumericDataPoint(
                 station = station,
                 source_datetime = source_datetime,
                 quantity_ave = UnitQuantity(35.0, 'percent'),
@@ -740,7 +740,7 @@ class TestUSNO(BaseTestCase):
         # Test data_source_counts property
         source_counts = astronomical_data.data_source_counts
         self.assertEqual(len(source_counts), 1)
-        self.assertEqual(source_counts[source], 2)  # sunrise + moon_illumnination
+        self.assertEqual(source_counts[source], 2)  # sunrise + moon_illumination
         return
 
     def test_moon_phase_integration(self):
@@ -770,7 +770,7 @@ class TestUSNO(BaseTestCase):
 
         for illumination, is_waxing, expected_phase_name in test_cases:
             astronomical_data = AstronomicalData(
-                moon_illumnination = NumericDataPoint(
+                moon_illumination = NumericDataPoint(
                     station = station,
                     source_datetime = source_datetime,
                     quantity_ave = UnitQuantity(illumination, 'percent'),

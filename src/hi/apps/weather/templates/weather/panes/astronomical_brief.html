@@ -20,7 +20,7 @@
   </div>
   <div>
     Moon: 
-    {% if astronomical_data.moon_illumnination %}
+    {% if astronomical_data.moon_illumination %}
     {% with astronomical_data.moon_phase as moon_phase %}
     <img height="32" src="{% static moon_phase.icon_filename %}"
          alt="{{ moon_phase.label }}" />

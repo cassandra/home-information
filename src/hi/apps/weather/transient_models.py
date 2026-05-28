@@ -309,7 +309,7 @@ class AstronomicalData( EnvironmentalData ):
     solar_noon                   : TimeDataPoint     | None = None
     moonrise                     : TimeDataPoint     | None = None
     moonset                      : TimeDataPoint     | None = None
-    moon_illumnination           : NumericDataPoint  | None = None  # Percent
+    moon_illumination            : NumericDataPoint  | None = None  # Percent
     moon_is_waxing               : BooleanDataPoint  | None = None
     civil_twilight_begin         : TimeDataPoint     | None = None
     civil_twilight_end           : TimeDataPoint     | None = None
@@ -320,10 +320,10 @@ class AstronomicalData( EnvironmentalData ):
 
     @property
     def moon_phase(self) -> MoonPhase:
-        if self.moon_illumnination is None or self.moon_is_waxing is None:
+        if self.moon_illumination is None or self.moon_is_waxing is None:
             return None
         return MoonPhase.from_illumination(
-            illumination_percent = self.moon_illumnination.quantity.magnitude,
+            illumination_percent = self.moon_illumination.quantity.magnitude,
             is_waxing = self.moon_is_waxing.value,
         )
 
@@ -333,7 +333,7 @@ class AstronomicalData( EnvironmentalData ):
             return 0
         if not self.moon_is_waxing.value:
             return round( 14.77 + self.days_until_new_moon )
-        return round( 14.77 * (( 100.0 - self.moon_illumnination.quantity.magnitude ) / 100.0 ))
+        return round( 14.77 * (( 100.0 - self.moon_illumination.quantity.magnitude ) / 100.0 ))
     
     @property
     def days_until_new_moon(self):
@@ -341,7 +341,7 @@ class AstronomicalData( EnvironmentalData ):
             return 0
         if self.moon_is_waxing.value:
             return round( 14.77 + self.days_until_full_moon )
-        return round( 14.77 * ( self.moon_illumnination.quantity.magnitude / 100.0 ))
+        return round( 14.77 * ( self.moon_illumination.quantity.magnitude / 100.0 ))
 
     
 @dataclass( kw_only = True, frozen = True )

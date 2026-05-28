@@ -211,7 +211,7 @@ class WeatherSyntheticData:
                     second=random.randint(0, 59)
                 ),
             ),
-            moon_illumnination=NumericDataPoint(
+            moon_illumination=NumericDataPoint(
                 station=station,
                 source_datetime=now,
                 quantity_ave=UnitQuantity(random.randint(0, 100), 'percent'),

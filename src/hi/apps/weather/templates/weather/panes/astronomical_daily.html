@@ -12,31 +12,31 @@
       <th>Moon</th>
     </thead>
     <tbody>
-      {% for interval_astronommical in daily_astronomical_data.data_list %}
+      {% for interval_astronomical in daily_astronomical_data.data_list %}
       <tr>
-        <td>{{ interval_astronommical.interval.start |localtime|date:"n/j" }}
+        <td>{{ interval_astronomical.interval.start |localtime|date:"n/j" }}
         </td>
         <td>
-          {% if interval_astronommical.data.sunrise %}
-          {{ interval_astronommical.data.sunrise.value }}
+          {% if interval_astronomical.data.sunrise %}
+          {{ interval_astronomical.data.sunrise.value }}
           {% else %}
           --
           {% endif %}     
         </td>
         <td>
-          {% if interval_astronommical.data.sunset %}
-          {{ interval_astronommical.data.sunset.value }}
+          {% if interval_astronomical.data.sunset %}
+          {{ interval_astronomical.data.sunset.value }}
           {% else %}
           --
           {% endif %}     
         </td>
         <td>
-          {% if interval_astronommical.data.moon_illumnination %}
-          {% with interval_astronommical.data.moon_phase as moon_phase %}
+          {% if interval_astronomical.data.moon_illumination %}
+          {% with interval_astronomical.data.moon_phase as moon_phase %}
           <img height="32" src="{% static moon_phase.icon_filename %}"
                alt="{{ moon_phase.label }}" />
           {% endwith %}
-          {{  interval_astronommical.data.moon_illumnination.quantity }}
+          {{  interval_astronomical.data.moon_illumination.quantity }}
           {% else %}
           --
           {% endif %}     

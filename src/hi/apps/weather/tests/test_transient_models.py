@@ -393,7 +393,7 @@ class TestWeatherTransientModels(BaseTestCase):
         for illumination, is_waxing, expected_phase in test_cases:
             with self.subTest(illumination=illumination, waxing=is_waxing):
                 astro_data = AstronomicalData(
-                    moon_illumnination=NumericDataPoint(
+                    moon_illumination=NumericDataPoint(
                         station=self.test_station,
                         source_datetime=self.test_datetime,
                         quantity_ave=UnitQuantity(illumination, 'percent')
@@ -421,7 +421,7 @@ class TestWeatherTransientModels(BaseTestCase):
         
         # Missing waxing status
         astro_data = AstronomicalData(
-            moon_illumnination=NumericDataPoint(
+            moon_illumination=NumericDataPoint(
                 station=self.test_station,
                 source_datetime=self.test_datetime,
                 quantity_ave=UnitQuantity(50, 'percent')
@@ -447,7 +447,7 @@ class TestWeatherTransientModels(BaseTestCase):
         for test_data in test_data_list:
             with self.subTest(test_data=test_data):
                 astro_data = AstronomicalData(
-                    moon_illumnination=NumericDataPoint(
+                    moon_illumination=NumericDataPoint(
                         station=self.test_station,
                         source_datetime=self.test_datetime,
                         quantity_ave=UnitQuantity(test_data['percent'], 'percent')
@@ -483,7 +483,7 @@ class TestWeatherTransientModels(BaseTestCase):
         for test_data in test_data_list:
             with self.subTest(test_data=test_data):
                 astro_data = AstronomicalData(
-                    moon_illumnination=NumericDataPoint(
+                    moon_illumination=NumericDataPoint(
                         station=self.test_station,
                         source_datetime=self.test_datetime,
                         quantity_ave=UnitQuantity(test_data['percent'], 'percent')
@@ -653,7 +653,7 @@ class TestWeatherTransientModels(BaseTestCase):
         """Test the bug fix for moon_phase null safety"""
         # Test with missing moon_is_waxing
         astro_data = AstronomicalData(
-            moon_illumnination=NumericDataPoint(
+            moon_illumination=NumericDataPoint(
                 station=self.test_station,
                 source_datetime=self.test_datetime,
                 quantity_ave=UnitQuantity(50, 'percent')
@@ -664,9 +664,9 @@ class TestWeatherTransientModels(BaseTestCase):
         # Should return None safely, not crash
         self.assertIsNone(astro_data.moon_phase)
         
-        # Test with missing moon_illumnination
+        # Test with missing moon_illumination
         astro_data2 = AstronomicalData(
-            moon_illumnination=None,
+            moon_illumination=None,
             moon_is_waxing=BooleanDataPoint(
                 station=self.test_station,
                 source_datetime=self.test_datetime,

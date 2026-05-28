@@ -20,7 +20,7 @@
   </div>
   <div>
     Moon:
-    {% if astronomical_data.moon_illumnination %}
+    {% if astronomical_data.moon_illumination %}
     {% if astronomical_data.moon_is_waxing.value %}Waxing{% else %}Waning{% endif %}
     {% else %}
     --
@@ -31,16 +31,16 @@
 <div class="d-flex justify-content-around">
   <div>
     Moon Illumination:
-    {% if astronomical_data.moon_illumnination %}
-    {{ astronomical_data.moon_illumnination.quantity|format_magnitude:1 }}
-    <small>{{ astronomical_data.moon_illumnination.quantity|format_units }}</small>
+    {% if astronomical_data.moon_illumination %}
+    {{ astronomical_data.moon_illumination.quantity|format_magnitude:1 }}
+    <small>{{ astronomical_data.moon_illumination.quantity|format_units }}</small>
     {% else %}
     --
     {% endif %}
   </div>
   <div>
     Moon Phase:
-    {% if astronomical_data.moon_illumnination %}
+    {% if astronomical_data.moon_illumination %}
     {{ moon_phase.label  }}
     {% else %}
     --
