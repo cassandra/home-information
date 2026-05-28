@@ -34,9 +34,9 @@ class IntervalDataManager:
         self._data_class = data_class
         self._aggregated_interval_data_list = list()
         self._was_initialized = False
-        
-        # For daily intervals (24-hour), use local timezone boundaries
-        # For hourly intervals (1-hour), continue using UTC boundaries
+
+        # Daily intervals (24h) use local-timezone day boundaries;
+        # hourly intervals use UTC boundaries.
         self._use_local_timezone = (interval_hours == 24)
         if self._use_local_timezone:
             self._console_helper = ConsoleSettingsHelper()
@@ -62,7 +62,7 @@ class IntervalDataManager:
 
         # Update intervals first to handle time passage (remove old, add new intervals)
         self._update_intervals()
-        
+
         self._add_source_data_to_interval_data(
             data_point_source = data_point_source,
             source_interval_data_list = new_interval_data_list,
@@ -122,17 +122,15 @@ class IntervalDataManager:
         
     def _get_calculated_intervals( self ):
         """ Create the intervals needed for the current time. """
-        
+
         if self._use_local_timezone:
-            # For daily intervals, use local timezone boundaries
             return self._get_calculated_intervals_local_timezone()
         else:
-            # For hourly intervals, use UTC boundaries
             return self._get_calculated_intervals_utc()
-    
+
     def _get_calculated_intervals_utc( self ):
         """ Create UTC-based intervals (for hourly forecasts). """
-        
+
         now = datetimeproxy.now()
         
         rounded_start = now.replace(
@@ -163,35 +161,30 @@ class IntervalDataManager:
     
     def _get_calculated_intervals_local_timezone( self ):
         """ Create local timezone-based intervals (for daily forecasts). """
-        
-        # Get current time in local timezone
+
         user_timezone = self._console_helper.get_tz_name()
         local_tz = pytz.timezone(user_timezone)
         utc_now = datetimeproxy.now()
         local_now = utc_now.astimezone(local_tz)
-        
+
         if self.TRACE:
             logger.debug(f'Creating daily intervals for timezone: {user_timezone}')
             logger.debug(f'UTC now: {utc_now}')
             logger.debug(f'Local now: {local_now}')
-        
-        # For daily intervals, start from the beginning of the current day in local timezone
+
         local_day_start = local_now.replace(hour=0, minute=0, second=0, microsecond=0)
-        
-        # For historical data (descending), start from yesterday
+
         if not self._is_order_ascending:
             local_day_start = local_day_start  # Keep today's start for calculation reference
-        
+
         time_interval_list = list()
 
         for idx in range( self._max_interval_count ):
             if self._is_order_ascending:
-                # Future dates: today, tomorrow, etc.
                 local_interval_start = local_day_start + timedelta(days=idx)
                 local_interval_end = local_day_start + timedelta(days=idx + 1)
             else:
-                # Past dates: yesterday, day before yesterday, etc.
-                # idx=0 should be yesterday, idx=1 should be day before yesterday, etc.
+                # idx=0 is yesterday, idx=1 is day before yesterday, etc.
                 local_interval_start = local_day_start - timedelta(days=idx + 1)
                 local_interval_end = local_day_start - timedelta(days=idx)
 

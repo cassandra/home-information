@@ -32,14 +32,12 @@ class TodaysAstronomicalDetailsView( HiModalView, WeatherMixin ):
     def get(self, request, *args, **kwargs):
         todays_astronomical_data = self.weather_manager().get_todays_astronomical_data()
         daily_astronomical_data = self.weather_manager().get_daily_astronomical_data()
-        
-        # Check if any astronomical data comes from sunrise-sunset-org source
+
         has_sunrise_sunset_data = bool(
             todays_astronomical_data
             and SunriseSunsetOrg.SOURCE_ID in {x.id for x in todays_astronomical_data.data_sources}
         )
-        
-        # Check if any astronomical data comes from USNO source
+
         has_usno_data = bool(
             todays_astronomical_data
             and USNO.SOURCE_ID in {x.id for x in todays_astronomical_data.data_sources}

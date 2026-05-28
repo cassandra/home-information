@@ -9,14 +9,13 @@ Label = 'Weather'
 def _create_dynamic_weather_settings() -> Dict[str, SettingDefinition]:
     """Dynamically create settings based on discovered weather sources."""
     from .weather_source_discovery import WeatherSourceDiscovery
-    
+
     settings_dict = {}
     discovered_sources = WeatherSourceDiscovery.discover_weather_data_source_instances()
-    
+
     for source in discovered_sources:
         source_key_prefix = source.id.upper().replace( '-', '_' )
 
-        # Create enabled/disabled setting for each source
         enabled_key = f"{source_key_prefix}_ENABLED"
         settings_dict[enabled_key] = SettingDefinition(
             label=f'Enable {source.label}',
@@ -46,7 +45,6 @@ def _create_dynamic_weather_settings() -> Dict[str, SettingDefinition]:
             initial_value=canonical_base_url,
         )
 
-        # Create API key setting if source requires it
         if source.requires_api_key():
             api_key_key = f"{source_key_prefix}_API_KEY"
             settings_dict[api_key_key] = SettingDefinition(
@@ -59,7 +57,6 @@ def _create_dynamic_weather_settings() -> Dict[str, SettingDefinition]:
                 initial_value='',
             )
 
-    # Add general weather settings
     settings_dict['DEFAULT_POLLING_INTERVAL_SECONDS'] = SettingDefinition(
         label='Default Polling Interval (Seconds)',
         description='Default interval in seconds for polling weather data from enabled sources.',
@@ -107,6 +104,5 @@ def _create_dynamic_weather_settings() -> Dict[str, SettingDefinition]:
     return settings_dict
 
 
-# Dynamically create the WeatherSetting enum
 _dynamic_settings = _create_dynamic_weather_settings()
 WeatherSetting = SettingEnum('WeatherSetting', _dynamic_settings)

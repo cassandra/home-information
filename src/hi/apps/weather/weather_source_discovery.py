@@ -11,15 +11,12 @@ logger = logging.getLogger(__name__)
 
 
 class WeatherSourceDiscovery:
-    """Centralized weather data source discovery utility."""
-    
+
     @classmethod
     def discover_weather_data_source_instances(cls) -> List[WeatherDataSource]:
         """
-        Discover all WeatherDataSource instances from the weather_sources directory.
-        
-        This is the single source of truth for weather source discovery,
-        used by both the settings system and the monitoring system.
+        Single source of truth for WeatherDataSource discovery from the
+        weather_sources directory; shared by settings and monitoring systems.
         """
         from .weather_data_source import WeatherDataSource
         
@@ -53,7 +50,7 @@ class WeatherSourceDiscovery:
                 continue
         except Exception as e:
             logger.warning(f'Error accessing weather sources directory {sources_dir}: {e}')
-            
+
         # Sort by priority (lower numbers = higher priority)
         discovered_sources.sort(key=lambda item: item.priority)
         return discovered_sources

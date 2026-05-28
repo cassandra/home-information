@@ -79,7 +79,7 @@ class DataPoint:
 
     @property
     def value_str(self):
-        # Use the default dataclass representation to avoid recursion
+        # Use the default dataclass representation to avoid recursion via __str__
         return super().__str__()
     
     @property
@@ -95,7 +95,7 @@ class DataPoint:
         return self.station.source
         
     
-T = TypeVar("T")  # Define a generic type placeholder
+T = TypeVar("T")
 
 
 @dataclass( kw_only = True )
@@ -148,12 +148,11 @@ class NumericDataPoint( DataPoint ):
                 self.quantity_max = self.quantity_ave
         elif self.quantity_min is not None and self.quantity_max is not None:
             if self.quantity_ave is None:
-                # For offset units (like Celsius), convert to absolute units for arithmetic
                 try:
                     self.quantity_ave = ( self.quantity_min + self.quantity_max ) / 2.0
                 except OffsetUnitCalculusError:
-                    # Handle offset unit arithmetic by converting to absolute units
-                    # Convert to absolute units (e.g., Celsius -> Kelvin), average, then convert back
+                    # Offset units (e.g. Celsius) cannot be averaged directly;
+                    # convert to base (Kelvin), average, then convert back.
                     min_abs = self.quantity_min.to_base_units()
                     max_abs = self.quantity_max.to_base_units() 
                     ave_abs = (min_abs + max_abs) / 2.0
@@ -193,8 +192,7 @@ class EnvironmentalData:
         for a_field in fields( self ):
             field_name = a_field.name
             datapoint = getattr( self, field_name )
-            
-            # Check if the actual value is a DataPoint instance (not the type annotation)
+
             if not isinstance( datapoint, DataPoint ):
                 continue
             if not datapoint.station:
@@ -203,15 +201,13 @@ class EnvironmentalData:
             continue
         return list( station_map.values() )
 
-    @property 
+    @property
     def data_source_counts(self) -> Dict[DataPointSource, int]:
-        """Get counts of DataPoint fields by data source."""
         source_counts = dict()
         for a_field in fields( self ):
             field_name = a_field.name
             datapoint = getattr( self, field_name )
-            
-            # Check if the actual value is a DataPoint instance (not the type annotation)
+
             if not isinstance( datapoint, DataPoint ):
                 continue
             if not datapoint.source:
@@ -224,8 +220,7 @@ class EnvironmentalData:
 
     @property
     def data_sources(self) -> Set[DataPointSource]:
-        """Get all data sources that have at least one DataPoint field."""
-        return set(self.data_source_counts.keys()) 
+        return set(self.data_source_counts.keys())
 
 
 @dataclass( kw_only = True )
@@ -356,7 +351,7 @@ class TimeInterval:
     name    : StringDataPoint   | None = None
 
     def __post_init__(self):
-        # Invariant is start time always less that end time.
+        # Invariant: start time always less than end time.
         assert self.start < self.end
         return
     

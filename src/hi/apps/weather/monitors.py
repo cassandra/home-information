@@ -44,7 +44,6 @@ class WeatherMonitor( PeriodicMonitor, SettingsMixin ):
             api_health_status_provider_sequence = discovered_sources,
         )
 
-        # During startup safety/warmup, consider everything healthy.
         for weather_data_source in self._weather_data_source_instance_list:
             is_enabled = await self._settings_helper.is_weather_source_enabled_async(
                 weather_data_source.id

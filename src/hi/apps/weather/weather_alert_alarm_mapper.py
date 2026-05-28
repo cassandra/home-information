@@ -1,14 +1,8 @@
 """
-Weather Alert to System Alarm Mapping
+Convert weather alerts (using canonical WeatherEventType) into system alarms.
 
-This module handles the conversion of weather alerts (using canonical WeatherEventType)
-into system alarms that can trigger notifications and user alerts.
-
-The mapping strategy is based on:
-1. Event type significance (life-threatening vs informational)
-2. Alert severity level 
-3. Alert status (actual vs test/exercise)
-4. Alert urgency and certainty
+Mapping inputs: event type significance (life-threatening vs informational),
+alert severity, alert status (actual vs test/exercise), urgency, and certainty.
 """
 import logging
 from typing import List, Optional
@@ -182,73 +176,47 @@ class WeatherAlertAlarmMapper:
     DEFAULT_LIFETIME_SECS = 4 * 60 * 60  # 4 hours
     
     def should_create_alarm(self, weather_alert: WeatherAlert) -> bool:
-        """
-        Determine if a weather alert should create a system alarm.
-        
-        Args:
-            weather_alert: The weather alert to evaluate
-            
-        Returns:
-            True if this alert should create a system alarm
-        """
-        # Never create alarms for test messages or exercises
         if weather_alert.status in [AlertStatus.TEST, AlertStatus.EXERCISE, AlertStatus.DRAFT]:
             return False
-        
-        # Always create alarms for critical event types
+
         if weather_alert.event_type in self.CRITICAL_EVENT_TYPES:
             return True
-        
-        # For severity-dependent events, check severity level
+
         if weather_alert.event_type in self.SEVERITY_DEPENDENT_EVENT_TYPES:
-            # Create alarms for EXTREME and SEVERE, optionally for MODERATE based on urgency
             if weather_alert.severity in [AlertSeverity.EXTREME, AlertSeverity.SEVERE]:
                 return True
             if ( weather_alert.severity == AlertSeverity.MODERATE
                  and weather_alert.urgency == AlertUrgency.IMMEDIATE ):
                 return True
-        
-        # Don't create alarms for informational events
+
         if weather_alert.event_type in self.INFORMATIONAL_EVENT_TYPES:
             return False
-        
-        # For other event types, be conservative - only create for EXTREME severity
+
+        # Conservative fallback for unclassified event types: alarm only on EXTREME.
         if weather_alert.severity == AlertSeverity.EXTREME:
             return True
-        
+
         return False
     
     def get_alarm_level(self, weather_alert: WeatherAlert) -> Optional[AlarmLevel]:
-        """
-        Determine the appropriate alarm level for a weather alert.
-        
-        Args:
-            weather_alert: The weather alert to map
-            
-        Returns:
-            The appropriate AlarmLevel or None if no alarm should be created
-        """
         if not self.should_create_alarm(weather_alert):
             return None
-        
-        # Get base alarm level from event type
+
         base_level = self.EVENT_TYPE_TO_BASE_ALARM_LEVEL.get(
-            weather_alert.event_type, 
+            weather_alert.event_type,
             AlarmLevel.INFO
         )
-        
-        # Adjust based on severity
+
+        # Severity adjustment: EXTREME always CRITICAL; SEVERE at least WARNING (CRITICAL
+        # only if base is CRITICAL); MODERATE caps at WARNING; MINOR caps at INFO.
         if weather_alert.severity == AlertSeverity.EXTREME:
-            # Extreme severity always gets CRITICAL
             return AlarmLevel.CRITICAL
         elif weather_alert.severity == AlertSeverity.SEVERE:
-            # Severe gets at least WARNING, could be CRITICAL for critical event types
             if base_level == AlarmLevel.CRITICAL:
                 return AlarmLevel.CRITICAL
             else:
                 return AlarmLevel.WARNING
         elif weather_alert.severity == AlertSeverity.MODERATE:
-            # Moderate gets at most WARNING
             if base_level == AlarmLevel.CRITICAL:
                 return AlarmLevel.WARNING
             elif base_level == AlarmLevel.WARNING:
@@ -256,60 +224,28 @@ class WeatherAlertAlarmMapper:
             else:
                 return AlarmLevel.INFO
         else:  # MINOR
-            # Minor severity gets at most INFO
             return AlarmLevel.INFO
     
     def get_alarm_lifetime(self, weather_alert: WeatherAlert) -> int:
-        """
-        Calculate appropriate alarm lifetime for the weather alert.
-        
-        Args:
-            weather_alert: The weather alert to calculate lifetime for
-            
-        Returns:
-            Alarm lifetime in seconds
-        """
-        # If the weather alert has an expiration time, use that
+        """ Alarm lifetime in seconds. """
         if weather_alert.expires:
             now = datetimeproxy.now()
             if weather_alert.expires > now:
                 lifetime_seconds = int((weather_alert.expires - now).total_seconds())
                 # Cap at reasonable maximum (48 hours) and minimum (15 minutes)
                 return max(15 * 60, min(lifetime_seconds, 48 * 60 * 60))
-        
-        # Use event type-based lifetime
+
         return self.EVENT_TYPE_TO_LIFETIME.get(
-            weather_alert.event_type, 
+            weather_alert.event_type,
             self.DEFAULT_LIFETIME_SECS
         )
     
     def get_alarm_type(self, weather_alert: WeatherAlert) -> str:
-        """
-        Generate alarm type string for the weather alert.
-        
-        This creates a consistent alarm type based on the canonical event type,
-        which will be used in the alarm signature for grouping similar alerts.
-        
-        Args:
-            weather_alert: The weather alert to generate type for
-            
-        Returns:
-            A string representing the alarm type
-        """
-        # Use the canonical event type name as the alarm type
-        # This ensures consistent grouping across different weather sources
+        """ Alarm-type string; canonical event-type name groups equivalent alerts
+        across different weather sources in the alarm signature. """
         return weather_alert.event_type.name
     
     def create_sensor_responses(self, weather_alert: WeatherAlert) -> List[SensorResponse]:
-        """
-        Create sensor responses from weather alert information.
-        
-        Args:
-            weather_alert: The weather alert to create sensor responses for
-            
-        Returns:
-            List of SensorResponse for this weather alert
-        """
         detail_attrs = {
             'Event Type': weather_alert.event_type.label,
             'Source Event': weather_alert.event,
@@ -322,71 +258,54 @@ class WeatherAlertAlarmMapper:
             'Effective': weather_alert.effective.strftime('%Y-%m-%d %H:%M:%S') if weather_alert.effective else 'Unknown',
         }
         
-        # Add optional fields if available
         if weather_alert.expires:
             detail_attrs['Expires'] = weather_alert.expires.strftime('%Y-%m-%d %H:%M:%S')
-        
+
         if weather_alert.instruction:
-            # Truncate instructions for alarm details
             instruction = weather_alert.instruction
             if len(instruction) > 200:
                 instruction = instruction[:200] + '...'
             detail_attrs['Instructions'] = instruction
-        
-        # Add brief description
+
         if weather_alert.description:
             description = weather_alert.description
             if len(description) > 300:
                 description = description[:300] + '...'
             detail_attrs['Description'] = description
-        
-        # Create a SensorResponse for weather alerts
-        # Weather alerts don't have sensors, so we use a synthetic integration key
-        # Use event type and timestamp to create a unique identifier
+
+        # Weather alerts have no associated sensor; build a synthetic integration key
+        # from event type and timestamp.
         alert_id = f'{weather_alert.event_type.name}.{weather_alert.effective.timestamp() if weather_alert.effective else "unknown"}'
         integration_key = IntegrationKey(
             integration_id='weather',
             integration_name=f'alert.{alert_id}'
         )
-        
+
         return [SensorResponse(
             integration_key=integration_key,
-            value='active',  # Weather alerts are active when they exist
+            value='active',
             timestamp=weather_alert.effective or datetimeproxy.now(),
-            sensor=None,  # No sensor for weather alerts
+            sensor=None,
             detail_attrs=detail_attrs,
-            has_event_video_clip=False,  # Weather alerts have no video
+            has_event_video_clip=False,
         )]
     
     def create_alarm(self, weather_alert: WeatherAlert) -> Optional[Alarm]:
-        """
-        Create a system alarm from a weather alert.
-        
-        Args:
-            weather_alert: The weather alert to convert
-            
-        Returns:
-            An Alarm object or None if no alarm should be created
-        """
-        # Check if this alert should create an alarm
         if not self.should_create_alarm(weather_alert):
             logger.debug(f'Weather alert does not warrant system alarm: {weather_alert.event_type.label}')
             return None
-        
-        # Get alarm level
+
         alarm_level = self.get_alarm_level(weather_alert)
         if not alarm_level:
             logger.debug(f'Weather alert does not map to alarm level: {weather_alert.event_type.label}')
             return None
-        
-        # Create alarm title from headline or event type
+
         title = weather_alert.headline
         if not title or len(title.strip()) == 0:
             title = f"{weather_alert.event_type.label} - {weather_alert.severity.label}"
-        
-        # Create the alarm. source_alarm_id ties this Alarm record
-        # back to the specific upstream alert, so repeated polls of
-        # the same active alert refresh expiry without incrementing
+
+        # source_alarm_id ties this Alarm record back to the specific upstream alert,
+        # so repeated polls of the same active alert refresh expiry without incrementing
         # alarm_count.
         alarm = Alarm(
             alarm_source=AlarmSource.WEATHER,
@@ -404,15 +323,6 @@ class WeatherAlertAlarmMapper:
         return alarm
     
     def create_alarms_from_weather_alerts(self, weather_alerts: List[WeatherAlert]) -> List[Alarm]:
-        """
-        Process a list of weather alerts and create system alarms for qualifying ones.
-        
-        Args:
-            weather_alerts: List of weather alerts to process
-            
-        Returns:
-            List of created Alarm objects
-        """
         alarms = []
         
         for weather_alert in weather_alerts:

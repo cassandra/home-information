@@ -88,11 +88,11 @@ class WeatherDataSource( ApiHealthStatusProvider ):
     async def get_data(self):
         """ Main method periodically called to fetch data """
         pass
-    
+
     def requires_api_key(self) -> bool:
         """Override in subclasses that require an API key."""
         return False
-    
+
     def get_default_enabled_state(self) -> bool:
         """Override in subclasses to set default enabled/disabled state."""
         return True
@@ -202,20 +202,17 @@ class WeatherDataSource( ApiHealthStatusProvider ):
             from hi.apps.weather.weather_settings_helper import WeatherSettingsHelper
             self._weather_settings_helper = WeatherSettingsHelper()
         return self._weather_settings_helper
-    
-    @property 
+
+    @property
     def is_enabled(self) -> bool:
-        """Check if this weather source is enabled in settings."""
         return self._get_weather_settings_helper().is_weather_source_enabled(self._id)
-    
+
     @property
     def api_key(self) -> str:
-        """Get the API key for this weather source from settings."""
         return self._get_weather_settings_helper().get_weather_source_api_key(self._id)
-    
+
     @property
     def is_cache_enabled(self) -> bool:
-        """Check if weather data caching is enabled."""
         return self._get_weather_settings_helper().is_weather_cache_enabled()
         
     @classmethod

@@ -887,7 +887,7 @@ class WmoUnits:
         if unit_str.startswith( 'wmoUnit:' ):
             unit_str = unit_str[8:].strip()
         elif unit_str.startswith( 'wmo:' ):
-            unit_str = unit_str[4:].strip()  # Fixed: was 5, should be 4
+            unit_str = unit_str[4:].strip()
         elif unit_str.startswith( 'unit:' ):
             unit_str = unit_str[5:].strip()
 

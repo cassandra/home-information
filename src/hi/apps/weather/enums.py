@@ -53,7 +53,7 @@ class MoonPhase( LabeledEnum ):
 
     @classmethod
     def from_illumination( cls, illumination_percent : float, is_waxing : bool ):
-        """ Thresholds are balanced for people's perceptions, not technicla deifnitions. """
+        """ Thresholds are balanced for people's perceptions, not technical definitions. """
         if is_waxing:
             if illumination_percent <= 3:
                 return cls.NEW_MOON
@@ -106,7 +106,6 @@ class AlertSeverity( LabeledEnum ):
     UNKNOWN      = ( 'Unknown'    , '' )
 
     def css_class(self):
-        """Return Bootstrap alert CSS class for this severity level."""
         severity_css_map = {
             'EXTREME': 'danger',
             'SEVERE': 'warning',
@@ -141,10 +140,7 @@ class AlertStatus( LabeledEnum ):
 
 
 class WeatherEventType( LabeledEnum ):
-    """
-    Canonical weather event types that can come from multiple data sources.
-    This provides a standardized classification system for weather alerts.
-    """
+    """ Canonical weather event types unified across data sources. """
     
     # Severe Weather Events
     TORNADO                = ( 'Tornado'   , 'Rotating column of air extending from thunderstorm to ground' )
