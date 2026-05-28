@@ -1,12 +1,11 @@
 """
 Data Import page + Configure form views.
 
-CONFIGURE on the page row opens the credentials form modal (reuses
-``IntegrationAttributeItemEditContext`` with ``capability=IMPORT``).
-The form's IMPORT submit validates credentials, fetches upstream
-candidates via ``IntegrationImporter.get_candidate_items()``, computes a
-new-vs-skipped split against existing HI entities, and renders the
-preview modal. Phase 5 wires CONFIRM IMPORT → run.
+CONFIGURE on the page row opens the credentials form modal. The
+form's IMPORT submit validates credentials, fetches upstream
+candidates via ``IntegrationImporter.get_candidate_items()``,
+computes a new-vs-skipped split against existing HI entities, and
+renders the preview modal.
 """
 import logging
 from typing import Any, Dict
@@ -68,7 +67,7 @@ class ImporterConfigureView( CapabilityConfigureView ):
     """Credentials form for IMPORT. The form's submit (IMPORT) runs
     validate_configuration + validate_access, fetches candidates, and
     renders the preview modal with new/skipped counts. No DB writes
-    to entities yet — that happens in the confirm step."""
+    to entities -- those happen in the confirm step."""
 
     capability    = IntegrationCapability.IMPORT
     button_label  = 'IMPORT'
@@ -134,7 +133,6 @@ class ImporterConfigureView( CapabilityConfigureView ):
 
 
 class DataImportInfoView( HiModalView ):
-    """Static info modal explaining Data Import vs. Integration."""
 
     def get_template_name(self) -> str:
         return 'integrations/importer/modals/data_import_info.html'
@@ -154,9 +152,8 @@ class ImporterRunView( HiModalView, IntegrationViewMixin ):
         try:
             result = importer.run_import()
         finally:
-            # Mirror the post-sync invalidations so any cached
-            # metadata or sensor-response state pinned by polls that
-            # raced the import gets dropped.
+            # Drop cached metadata / sensor-response state that may
+            # have been pinned by polls racing the import.
             IntegrationMetadataCache().invalidate()
             SensorResponseManager().invalidate_local_sensor_cache()
 
@@ -191,7 +188,7 @@ class ImporterRunView( HiModalView, IntegrationViewMixin ):
 class ImporterDiscardView( HiModalView, IntegrationViewMixin ):
     """DISCARD handler. GET renders the confirmation modal with the
     count of imported entities; POST runs discard_imported_data and
-    redirects back to the Data Import page. Single-action confirm —
+    redirects back to the Data Import page. Single-action confirm --
     imported items ARE the user data, so the Connect-side SAFE/ALL
     split doesn't apply."""
 
@@ -222,9 +219,8 @@ class ImporterDiscardView( HiModalView, IntegrationViewMixin ):
                 integration_id = integration_data.integration_id,
             )
         finally:
-            # Mirror the Connect-side Disable cleanup: any cached
-            # metadata / sensor-response state for the just-deleted
-            # entities must drop too.
+            # Drop cached metadata / sensor-response state for the
+            # just-deleted entities.
             IntegrationMetadataCache().invalidate()
             SensorResponseManager().invalidate_local_sensor_cache()
 

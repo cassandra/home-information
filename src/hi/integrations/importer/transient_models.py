@@ -11,7 +11,7 @@ class CandidateItem:
 
     ``integration_name`` is the per-integration unique identifier for
     the upstream item; matched against existing entities'
-    ``integration_name`` to detect already-imported items.
+    ``previous_integration_name`` to detect already-imported items.
     """
     name: str
     integration_name: str
@@ -21,7 +21,6 @@ class CandidateItem:
 class IntegrationImportResult:
     """Outcome of a single IntegrationImporter.run_import() invocation.
 
-    Parallel to IntegrationSyncResult but with import-specific fields.
     Imports are add-only: items not already in HI are created;
     pre-existing matches are reported as skipped. There is no
     update/remove path.
@@ -29,11 +28,6 @@ class IntegrationImportResult:
     ``placement_input`` is None when the import produced no new
     entities to place; populated when the result modal should expose
     the post-import placement flow.
-
-    ``created_entities`` carries the just-created ``Entity``
-    instances back to the framework caller, which passes them
-    through ``gateway.group_entities_for_placement`` to build the
-    ``placement_input`` — same shape as the Connect-sync flow.
     """
     title: str
     placement_input: Optional[EntityPlacementInput] = None
@@ -55,9 +49,7 @@ class IntegrationImportResult:
 class IntegrationDiscardResult:
     """Outcome of an IntegrationImporter.discard_imported_data() invocation.
 
-    ``count`` is the number of imported entities removed. ``errors``
-    carries per-entity failure messages; an empty list means clean
-    removal.
+    ``errors`` carries per-entity failure messages.
     """
     count: int = 0
     errors: List[str] = field(default_factory=list)

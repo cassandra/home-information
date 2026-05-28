@@ -176,6 +176,23 @@ When reviewing comments on a branch or in a directory, decide per comment:
 - Is commented-out code or a vague TODO.
 - **Flatten module-vs-class docstring duplication.** When a module docstring and a class docstring in the same file repeat the same content, keep what's unique at each level. The module docstring is the right home for cross-class wire formats and inter-class contracts; the class docstring is the right home for the class's own scope and invariants.
 
+### Partial Removal — Strip and Salvage
+
+The remove-on-sight patterns in "When a Comment Does Not Belong" are shortcuts. The fuller rule for any comment that *contains* an offending element (issue number, "Phase N" prefix, "(as of yet)" hedge, caller-name parenthetical, "Mirrors X" framing, UI label outside the per-language carve-outs, etc.):
+
+1. **Strip the offending substring** — prefix, parenthetical, sentence, or fragment.
+2. **Examine the residue.** Is it load-bearing on its own? Does it state a contract, invariant, design rationale, or non-obvious WHY?
+3. **Act on what remains:**
+   - Substantive residue → **REWRITE** to a tight standalone form.
+   - Trivial residue (the offending part was carrying most of the weight) → **REMOVE** the whole comment.
+
+Examples:
+- `"Phase 5: CONFIRM IMPORT on the preview modal posts to the run view."` → strip `"Phase 5: "`, residue describes a real workflow → REWRITE (keep the workflow description).
+- `"Issue #283 sync-check probe rides on the connector."` → strip `"Issue #283 "`, residue is informational about the connector → REWRITE.
+- `"Per the discussion in #281, we removed this branch."` → strip the work-stream reference, residue (`"we removed this branch"`) is itself archeology → REMOVE the whole comment.
+
+The "if it has X, remove" shortcut is fine when the X-bearing comments are almost always entirely noise. Use the strip-and-salvage check whenever the comment shows any sign of independent substance — better to keep a substantive sentence with the work-stream prefix shaved off than to drop both.
+
 ### When Unsure — Keep and Flag
 
 Removing a *bad* comment is free. Removing a *load-bearing* comment is expensive and easy to miss in review. When in doubt:
@@ -185,11 +202,13 @@ Removing a *bad* comment is free. Removing a *load-bearing* comment is expensive
 
 A cleanup pass that errs toward keeping ambiguous comments is correct. A cleanup pass that silently deletes load-bearing context is a regression.
 
-### Authoring Boundary — Edit, Don't Author
+### Authoring Boundary — Don't Insert Missing Comments
 
-The cleanup pass reviews and edits *existing* comments. It does not author new ones — even when a file would clearly benefit from a comment that isn't there (a missing Context block in a template, a missing docstring on a public method, a missing invariant note next to a non-obvious guard).
+The cleanup pass operates on *existing* comments. It does not insert comments where there are none — even when a file would clearly benefit from one (a missing Context block in a template, a missing docstring on a public method, a missing invariant note next to a non-obvious guard).
 
 Identifying these gaps is valuable but is a separate authoring task with different inputs (design intent, contract knowledge) than what the cleanup pass operates on. Surface the gap as a flagged observation if useful; do not silently fill it.
+
+**Rewriting is editing, not authoring.** When an existing comment has substance worth preserving but framing or structure that needs to change, rewriting it — including significant restructuring, stripping offending prefixes or parentheticals, reshaping a multi-paragraph block into a single sentence, or salvaging the substance and discarding everything around it — is part of normal cleanup work. The boundary is about *inserting* where there was nothing, not about how aggressively to *reshape* what was there.
 
 ### Substance-at-Wrong-Location — Stay Myopic
 
