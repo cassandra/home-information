@@ -284,6 +284,36 @@ a.clickable-card:active {
     background-color: var(--muted-color) !important;
 }
 
+/* Add-action button. Reusable treatment for "create new X"             */
+/* affordances. Dashed border + the edit-mode warm color: dashed is     */
+/* the long-standing UX convention for "this slot is awaiting           */
+/* content", and reusing the edit-mode dash color makes these buttons   */
+/* visually cluster with the dashed bar borders that mark edit-mode    */
+/* chrome. Differentiates from primary (nav), secondary (active        */
+/* state), and tertiary (settings) so an "add" stands out at a         */
+/* glance.                                                              */
+.btn-add {
+    color: var(--edit-mode-dash-color) !important;
+    /* Light translucent warm fill rather than fully transparent. The   */
+    /* edit-mode bar background is itself a warm tone, so a transparent */
+    /* dashed button would be warm-on-warm with minimal contrast. The   */
+    /* translucent chip gives the button presence as a discrete slot    */
+    /* while preserving the dashed-create vocabulary.                    */
+    background-color: rgba(169, 74, 50, 0.08) !important;
+    border: 2px dashed var(--edit-mode-dash-color) !important;
+}
+.btn-add:hover,
+.btn-add:focus,
+.btn-add:active,
+.btn-add.active {
+    color: var(--edit-mode-dash-color) !important;
+    background-color: rgba(169, 74, 50, 0.18) !important;
+    border-color: var(--edit-mode-border-color) !important;
+}
+.btn-add:focus {
+    box-shadow: 0 0 0 0.2rem rgba(169, 74, 50, 0.25) !important;
+}
+
 /* Outline Button Overrides */
 .btn-outline-primary {
     color: var(--primary-color) !important;
