@@ -1,10 +1,9 @@
 """
 Per-integration ATTRIBUTE_REFERENCE base class.
 
-Parallel to ``IntegrationConnector`` (CONNECT capability) and
-``IntegrationImporter`` (IMPORT capability). Each integration that
-advertises ``IntegrationCapability.ATTRIBUTE_REFERENCE`` provides a
-concrete subclass and returns an instance from
+Each integration that advertises
+``IntegrationCapability.ATTRIBUTE_REFERENCE`` provides a concrete
+subclass and returns an instance from
 ``IntegrationGateway.get_attribute_referencer()``. The framework
 owns the picker UI, attach lifecycle, and TEXT-attribute creation;
 the integration participates by translating a search query into a
@@ -36,8 +35,7 @@ class IntegrationAttributeReferencer( CapabilityGateway ):
             integration_attributes: List[IntegrationAttribute],
     ) -> IntegrationValidationResult:
         """Schema-only validation of the proposed configuration.
-        Must NOT perform network operations. Mirrors the contract
-        for the same operation on the Connect / Import sides."""
+        Must NOT perform network operations."""
         raise NotImplementedError('Subclasses must override this method')
 
     def search_references(

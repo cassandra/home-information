@@ -1,16 +1,14 @@
 """
-ATTRIBUTE_REFERENCE picker — one HiModal view backed by antinode
+ATTRIBUTE_REFERENCE picker -- one HiModal view backed by antinode
 partial swaps.
 
 Workflow:
 
   - GET ``/integrations/referencer/picker/`` with ``item_type`` +
     ``item_id`` query params renders the full picker modal. The
-    action-bar "LINK" button in EntityEdit / LocationEdit opens
-    the modal via ``data-async="modal"``. The view discovers all
-    currently-enabled ATTRIBUTE_REFERENCE integrations and lets
-    the operator choose between them via an in-modal selector
-    when more than one is configured.
+    view discovers all currently-enabled ATTRIBUTE_REFERENCE
+    integrations and lets the operator choose between them via an
+    in-modal selector when more than one is configured.
 
   - POST to the same URL re-renders the picker body. The form
     carries ``integration_id`` as a hidden field so the view knows
@@ -28,8 +26,8 @@ Multi-select state is server-driven via three form fields:
 (hidden per result; identifies what was rendered), and ``result_url``
 (checkbox value per result; only submitted when checked). The view
 computes the new selection list each POST: existing + newly checked
-- unchecked visibles ± an explicit ``remove_url`` if the operator
-clicked a chip's × button.
+- unchecked visibles +/- an explicit ``remove_url`` if the operator
+clicked a chip's remove button.
 """
 
 import json
@@ -76,7 +74,7 @@ _PAGE_SIZE_CHOICES = (20, 50, 100)
 _DEFAULT_LIMIT = 20
 _MAX_LIMIT = 100
 
-# ItemType → (owner model, attribute model, owner FK field name).
+# ItemType -> (owner model, attribute model, owner FK field name).
 _ATTRIBUTE_OWNER_MODELS = {
     ItemType.ENTITY: (Entity, EntityAttribute, 'entity'),
     ItemType.LOCATION: (Location, LocationAttribute, 'location'),
@@ -231,12 +229,11 @@ def _create_attributes(
 
 
 class AttributeReferencePickerView( HiModalView ):
-    """GET the picker modal. Initial render is empty — no results,
-    no selections. Selection state lives in JS (see
-    ``static/js/attr-picker.js``); subsequent search results arrive
-    via async POST to ``integrations_attribute_reference_search``,
-    and the final commit posts to
-    ``integrations_attribute_reference_attach``."""
+    """GET the picker modal. Initial render seeds the result list
+    by searching on the owner's name; selection state then lives in
+    JS. Subsequent search results arrive via async POST to
+    ``integrations_attribute_reference_search``, and the final
+    commit posts to ``integrations_attribute_reference_attach``."""
 
     MODAL_TEMPLATE_NAME = 'integrations/referencer/modals/attr_picker.html'
 
@@ -263,11 +260,7 @@ class AttributeReferencePickerView( HiModalView ):
 
         # Seed the picker with a query based on the owner's name so
         # the operator opens to relevant results without retyping
-        # what they're already configuring. Goes through the same
-        # ``_search_upstream`` the search endpoint uses; the body
-        # template's results container renders the same
-        # ``attr_picker_results.html`` partial the search response
-        # returns.
+        # what they're already configuring.
         query = owner.name
         referencer = integration_data.integration_gateway.get_attribute_referencer()
         results = _search_upstream(
@@ -357,22 +350,16 @@ class AttributeReferenceAttachView( View ):
         return antinode.refresh_response()
 
 
-# ----------------------------------------------------------------------
-# Reference-capability management page
-# ----------------------------------------------------------------------
-#
-# Parallel to the Connectors page (CONNECT capability) and the Data
-# Import page (IMPORT capability). The operator-facing tab label is
-# "Content Sources"; code-side naming uses ``reference`` to align
-# with the capability and the surrounding referencer/ directory.
+# The operator-facing tab label is "Content Sources"; code-side
+# naming uses ``reference`` to align with the capability and the
+# surrounding referencer/ directory.
 
 
 class ReferenceHomeView( ConfigPageView, IntegrationViewMixin ):
     """Landing route for the reference-management page. Picks the
     first ATTRIBUTE_REFERENCE integration (enabled or not) and
     redirects to its manage URL. Returns the empty-state template
-    when none are discovered (defensive — currently can't happen
-    at runtime as long as the paperless app is installed)."""
+    when none are discovered."""
 
     def config_page_type(self) -> ConfigPageType:
         return ConfigPageType.INTEGRATIONS_REFERENCE
@@ -397,17 +384,12 @@ class ReferenceManageView( ConfigPageView, IntegrationViewMixin, AttributeEditVi
     """Per-integration attribute-form page for ATTRIBUTE_REFERENCE
     integrations.
 
-    Differences from ``ConnectorManageView``:
-      - Filters by ATTRIBUTE_REFERENCE (not CONNECT).
-      - Does not read health status / sync-check state /
-        has_entities; ATTRIBUTE_REFERENCE has no monitors and no
-        sync cycle.
-      - Passes ``capability = ATTRIBUTE_REFERENCE`` to the attribute
-        edit context so the attribute queryset is filtered to the
-        attributes the capability declares.
-      - Tolerates ``is_enabled = False`` integrations — the operator
-        configures credentials here before the integration is
-        enabled.
+    ATTRIBUTE_REFERENCE has no monitors and no sync cycle, so the
+    page does not surface health status, sync-check state, or
+    has_entities. The attribute queryset is filtered to attributes
+    the ATTRIBUTE_REFERENCE capability declares. ``is_enabled =
+    False`` integrations are tolerated so the operator can configure
+    credentials here before the integration is enabled.
     """
 
     def config_page_type(self) -> ConfigPageType:
@@ -518,12 +500,9 @@ class ReferenceManageView( ConfigPageView, IntegrationViewMixin, AttributeEditVi
 
     def validate_attributes_extra( self, attr_item_context,
                                    regular_attributes_formset, request ):
-        # The shared helper runs both gateway.validate_configuration
-        # (schema) and gateway.validate_access (live probe) and
-        # decorates the formset with the failure message on either
-        # failure. We deliberately want the access probe on every
-        # save so a credential typo on UPDATE-while-enabled is
-        # rejected (atomic semantics — nothing changes on failure).
+        # We deliberately want the access probe on every save so a
+        # credential typo on UPDATE-while-enabled is rejected
+        # (atomic semantics -- nothing changes on failure).
         self.validate_attributes_extra_helper(
             attr_item_context,
             regular_attributes_formset,
@@ -552,7 +531,7 @@ class ReferenceManageView( ConfigPageView, IntegrationViewMixin, AttributeEditVi
         # first-time activation path; ``UPDATE`` is the
         # already-enabled re-validate-and-save path. Both share the
         # same form-submission endpoint and the same validation
-        # gates — only the label and the post-save bookkeeping
+        # gates -- only the label and the post-save bookkeeping
         # differ.
         update_label = (
             'UPDATE' if integration_data.integration.is_enabled else 'ENABLE'

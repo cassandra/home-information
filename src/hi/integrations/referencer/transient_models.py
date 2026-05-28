@@ -24,7 +24,7 @@ class AttributeReferenceResult:
     """One row in the picker's result list.
 
     ``title`` and ``source_url`` are the only fields that survive
-    the attach step — they become the attribute's ``name`` and
+    the attach step -- they become the attribute's ``name`` and
     ``value`` respectively. Everything else is picker chrome.
     """
     title: str
