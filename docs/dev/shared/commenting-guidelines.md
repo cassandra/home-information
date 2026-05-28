@@ -245,6 +245,20 @@ CSS has no nesting, no module system, and no function/class structure. Section l
 
 **Inline trailing comments on property values are useful and should be kept** when they explain a magic value (`min-height: 44px; /* Touch-friendly minimum */`), a behavioral choice (`flex-shrink: 0; /* Don't shrink button */`), or a browser-compat reason (`border-width: 0.5px; /* Sharper on retina */`). They are pure WHY at the most precise location.
 
+### Django Views
+
+Django view classes (`HiModalView`, `View`, `ConfigPageView` subclasses, etc.) sit at the boundary between backend logic and rendered UI. The same UI-label exception that applies to templates and CSS applies here: the view is the file that *defines* the rendering for the UI surface it owns.
+
+**UI labels that the view directly renders, dispatches on, or names in its modal/page contract are keep-worthy.** Examples that earned their place across the codebase:
+
+- Button labels rendered by the view's template: `UPDATE`, `CONNECT`, `Sync / Not now`, `Refresh and Retain` / `Refresh and Remove`.
+- Mode names dispatched by the view's POST: `DELETE`, `DELETE SAFE`, `DELETE ALL`, `SAFE` / `ALL`.
+- CTAs and modal flows the view assembles: `'Place N new items' CTA`, "the manage page", "the sync result modal".
+
+The reasoning matches templates and CSS: the label and the comment about it live in the same file (or in the view's own contract with its template) and change together. Stripping these labels in favor of generic phrasing ("preserve/hard-delete pair", "confirm/cancel actions") loses precision without gaining stability — when the button label changes, the view's logic has to change too, and the comment will surface as part of that change.
+
+Pattern #4 still applies when a backend non-view file references UI labels owned elsewhere (e.g., a manager class mentioning the "Detached" tile). The view-layer carve-out is for the view itself.
+
 ## What Is Out of Scope for the Cleanup Pass
 
 The cleanup pass is about **content and semantics**. The following are syntactic concerns that belong to general code review and to [Coding Standards](coding-standards.md):

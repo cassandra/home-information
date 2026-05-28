@@ -49,15 +49,11 @@ class IntegrationConnector( CapabilityGateway ):
     Synchronization is process-wide rather than per-integration: at
     most one integration sync runs at a time. Concurrent syncs across
     integrations could race over shared infrastructure (entity tables,
-    location-view bookkeeping in later phases) and the user is unlikely
-    to need parallelism here. Override at a subclass level if a future
-    integration genuinely needs concurrent sync.
+    location-view bookkeeping).
     """
 
     capability = IntegrationCapability.CONNECT
 
-    # Single shared lock name across all integration syncs. See class
-    # docstring above for the rationale.
     SYNCHRONIZATION_LOCK_NAME = 'integrations_sync'
 
     def get_sync_description(self, is_initial_connect: bool) -> Optional[str]:
@@ -80,10 +76,8 @@ class IntegrationConnector( CapabilityGateway ):
         Short, generic header for the sync result modal: 'Connect
         Result' for the first-time path, 'Update Check Result'
         otherwise. The integration's identity is surfaced in the
-        modal body (logo + label) rather than the title bar — keeps
-        the title bar contrast predictable regardless of integration.
-        Override only if a specific integration genuinely needs custom
-        copy.
+        modal body rather than the title bar so title-bar contrast
+        stays predictable regardless of integration.
         """
         if is_initial_connect:
             return 'Connect Result'
@@ -93,13 +87,13 @@ class IntegrationConnector( CapabilityGateway ):
         """Return the integration's periodic monitor when it has one;
         None otherwise. The monitor polls upstream state for live
         sensor responses and surfaces health status. Connect-only
-        by nature — Import has no ongoing connection to monitor."""
+        by nature -- Import has no ongoing connection to monitor."""
         return None
 
     def get_controller(self) -> Optional[IntegrationController]:
         """Return the integration's controller when it accepts control
         actions; None otherwise. The controller routes a control value
-        from HI to the upstream system. Connect-only — Import-mode
+        from HI to the upstream system. Connect-only -- Import-mode
         entities are HI-owned and their controllers are HI-native."""
         return None
 
@@ -120,14 +114,13 @@ class IntegrationConnector( CapabilityGateway ):
 
     def get_entity_video_stream(self, entity: Entity) -> Optional[VideoStream]:
         """Return the live video stream for ``entity``, or ``None`` when
-        the integration cannot produce one. Opt-in capability — most
-        integrations leave this as the default."""
+        the integration cannot produce one. Opt-in capability."""
         return None
 
     def get_entity_video_snapshot(self, entity: Entity) -> Optional[VideoSnapshot]:
         """Return a fresh still-image snapshot for ``entity``, or
         ``None`` when the integration cannot produce one. Opt-in
-        capability — most integrations leave this as the default."""
+        capability."""
         return None
 
     def get_sensor_response_video_stream(
@@ -147,14 +140,14 @@ class IntegrationConnector( CapabilityGateway ):
         URL always reflects current integration configuration (e.g.,
         an operator who moves the upstream host doesn't get stale
         URLs on historical rows). Pair with
-        ``SensorResponse.has_event_video_snapshot`` — only call when
+        ``SensorResponse.has_event_video_snapshot`` -- only call when
         the flag is True."""
         return None
 
     def get_external_view_data(self, entity: Entity) -> Optional[ExternalViewData]:
         """Return the external-data view payload for the entity-detail
         modal. Return ``None`` if this integration has no external view
-        for ``entity`` — the external-data region is then suppressed.
+        for ``entity`` -- the external-data region is then suppressed.
 
         Defaults to ``None``; integrations whose data lives upstream
         override this hook to return a populated ``ExternalViewData``
@@ -177,10 +170,8 @@ class IntegrationConnector( CapabilityGateway ):
 
         ``preserve_user_data`` controls how user-data entities are
         handled when the sync drops them as no-longer-present
-        upstream — symmetric to the integration-disable flow's SAFE
-        / ALL choice. True (default, "Refresh and Retain") detaches
-        them; False ("Refresh and Remove") hard-deletes them. Stored
-        on the instance for the duration so
+        upstream: True (default) detaches them; False hard-deletes
+        them. Stored on the instance for the duration so
         ``_remove_entity_intelligently`` can read it without
         threading the flag through every subclass's ``_sync_impl``;
         the process-wide ``SYNCHRONIZATION_LOCK_NAME`` precludes
@@ -213,11 +204,11 @@ class IntegrationConnector( CapabilityGateway ):
 
     def _record_sync_check_complete_if_successful(
             self, result : IntegrationSyncResult ) -> None:
-        """Issue #283: a successful sync brings HI in line with upstream
-        as of right now. Write a zero-delta sync-check result with the
-        current timestamp so UI surfaces clear immediately and the next
+        """A successful sync brings HI in line with upstream as of right
+        now. Write a zero-delta sync-check result with the current
+        timestamp so UI surfaces clear immediately and the next
         background probe has a fresh baseline. Cache write failures must
-        not propagate — the sync itself succeeded and the caller's
+        not propagate -- the sync itself succeeded and the caller's
         flow should continue regardless."""
         if result.error_list:
             return
@@ -244,7 +235,7 @@ class IntegrationConnector( CapabilityGateway ):
         process-level state derives from those records should refresh
         here. Default is no-op.
 
-        Runs regardless of result.error_list — partial syncs may have
+        Runs regardless of result.error_list -- partial syncs may have
         committed enough changes to invalidate process-level state."""
         return
 
@@ -256,33 +247,28 @@ class IntegrationConnector( CapabilityGateway ):
         raise NotImplementedError('Subclasses must override this method')
 
     async def check_needs_sync(self) -> Optional[SyncDelta]:
-        """Issue #283 — periodic sync-check probe. Return a
-        ``SyncDelta`` describing how upstream has drifted from HI's
-        current state, or ``None`` to opt out.
+        """Periodic sync-check probe. Return a ``SyncDelta`` describing
+        how upstream has drifted from HI's current state, or ``None``
+        to opt out.
 
-        The framework monitor in ``hi.integrations.monitors`` invokes
-        this on each enabled+unpaused integration's synchronizer once
-        per cycle (default 4 hours). Implementations should do a
-        *cheap* upstream fetch — the probe is purely informational and
-        runs even when no user action is in progress — and delegate
-        the comparison to ``IntegrationSyncCheck.compute_delta``. The
-        framework wraps the returned delta into a
-        ``SyncCheckResult`` (with timestamp and summary) and caches
-        it; subclasses do not touch the cache directly.
+        The framework monitor invokes this on each enabled+unpaused
+        integration's synchronizer once per cycle. Implementations
+        should do a *cheap* upstream fetch -- the probe is purely
+        informational and runs even when no user action is in
+        progress -- and delegate the comparison to
+        ``IntegrationSyncCheck.compute_delta``. The framework wraps
+        the returned delta into a ``SyncCheckResult`` and caches it;
+        subclasses do not touch the cache directly.
 
         Failures (client unavailable, upstream unreachable) should
         propagate; the framework monitor's per-call try/except
         classifies the cycle as ERROR for that integration and
         continues with the others.
 
-        Default returns ``None`` — opt-out. Sync-check is opt-in even
+        Default returns ``None`` -- opt-out. Sync-check is opt-in even
         among integrations that support full sync.
         """
         return None
-
-    # ``get_metadata`` is inherited from CapabilityGateway. CONNECT
-    # subclasses must implement it; the base raises NotImplementedError
-    # via the inherited abstract.
 
     def reconnect_disconnected_items(
             self,
@@ -290,26 +276,20 @@ class IntegrationConnector( CapabilityGateway ):
             integration_key_to_entity   : Dict[ IntegrationKey, Entity ],
             result                      : IntegrationSyncResult ):
         """
-        Framework-level auto-reconnect (Issue #281). Symmetric to
-        the framework-level disconnect path
-        (``EntityIntegrationOperations.preserve_with_user_data``):
-        both directions of the cycle live in shared code, with each
-        integration contributing only the minimal piece that's
-        genuinely integration-specific — the converter dispatch via
+        Framework-level auto-reconnect. Each integration contributes
+        only the minimal piece that's genuinely integration-specific:
+        the converter dispatch via
         ``_rebuild_integration_components()``.
 
         For each unmatched upstream key with a unique secondary
         match, this method:
 
-          * clears the previous-identity columns (which removes the
-            "From <integration>" badge in the UI),
+          * clears the previous-identity columns,
           * dispatches to ``_rebuild_integration_components()`` so the
             integration's converter repopulates the integration-owned
             components on the existing entity,
           * appends the entity name to ``result.reconnected_list``
-            (which drives the "Reconnected" tile + per-category list
-            in the sync result modal) and to ``result.info_list``
-            (the diagnostic Details section),
+            and to ``result.info_list``,
           * inserts the reconnected entity into
             ``integration_key_to_entity`` so the synchronizer's main
             loop sees it as primary-matched and gives it the standard
@@ -325,7 +305,7 @@ class IntegrationConnector( CapabilityGateway ):
         Ambiguous secondary matches are handled inside
         ``find_reconnect_candidates``: dropped silently, with a
         WARNING log + ``info_list`` breadcrumb so the operator can
-        find them and resolve via merge (#263).
+        find them and resolve via merge.
         """
         unmatched_upstream_keys = [
             integration_key for integration_key in integration_key_to_upstream
@@ -360,11 +340,11 @@ class IntegrationConnector( CapabilityGateway ):
                 )
                 # The disconnect path set is_disabled=True (the
                 # capability gate that hides detached entities from
-                # listings like the Cameras sidebar). Reconnect is
-                # the symmetric clear: the entity is integration-
-                # attached again and should participate in those
-                # listings. Capability flags like has_video_stream
-                # are converter-owned and should already have been
+                # capability-filtered listings). Reconnect is the
+                # symmetric clear: the entity is integration-attached
+                # again and should participate in those listings.
+                # Capability flags like has_video_stream are
+                # converter-owned and should already have been
                 # re-established by _rebuild_integration_components.
                 entity.is_disabled = False
                 # Defensive save: subclasses' converters typically
@@ -380,11 +360,6 @@ class IntegrationConnector( CapabilityGateway ):
                         'is_disabled',
                     ],
                 )
-                # reconnected_list drives the operator-visible
-                # "Reconnected" tile + per-category list in the
-                # sync result modal; info_list keeps the same name
-                # in the diagnostic Details section so the operator
-                # sees a consistent record across both surfaces.
                 result.reconnected_list.append( entity.name )
                 result.info_list.append(
                     f'Auto-reconnected {metadata.label} item "{entity.name}"'
@@ -397,16 +372,14 @@ class IntegrationConnector( CapabilityGateway ):
                                          upstream : Any,
                                          result   : IntegrationSyncResult ):
         """
-        Subclass hook for the auto-reconnect (Issue #281) path. Given
-        an existing Entity (the previously-disconnected one) and the
-        upstream payload for it, repopulate the entity's
-        integration-owned components by dispatching to the
-        integration's converter with the existing-entity parameter set.
+        Subclass hook for the auto-reconnect path. Given an existing
+        Entity (the previously-disconnected one) and the upstream
+        payload for it, repopulate the entity's integration-owned
+        components by dispatching to the integration's converter with
+        the existing-entity parameter set.
 
         The base class raises NotImplementedError; subclasses must
-        override to participate in auto-reconnect. (Reconnect is
-        framework-driven; the only piece each integration owns is
-        this thin converter-dispatch override.)
+        override to participate in auto-reconnect.
         """
         raise NotImplementedError(
             f'{self.__class__.__name__} must override '
@@ -420,15 +393,14 @@ class IntegrationConnector( CapabilityGateway ):
         """
         Remove an entity that no longer exists in the integration.
 
-        Delegates to ``EntityIntegrationOperations.remove_entities_with_closure``
-        — the same path the integration-disable flow uses. The
-        closure walk picks up delegate entities (e.g., the Area
+        Delegates to ``EntityIntegrationOperations.remove_entities_with_closure``.
+        The closure walk picks up delegate entities (e.g., the Area
         auto-created when a camera was placed in a view) when their
         only remaining principal is being removed. Whether
         operator-added attributes trigger the detach-and-preserve
         branch is controlled by ``self._preserve_user_data`` (set on
-        ``sync()`` entry from the operator's pre-sync choice;
-        defaults to True / preserve when not explicitly set).
+        ``sync()`` entry; defaults to True / preserve when not
+        explicitly set).
         """
         EntityIntegrationOperations.remove_entities_with_closure(
             seed_entity_ids = { entity.id },

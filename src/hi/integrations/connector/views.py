@@ -83,19 +83,17 @@ class IntegrationHealthStatusView( HiModalView, IntegrationViewMixin ):
 
 class IntegrationPreSyncView( HiModalView, IntegrationViewMixin ):
     """
-    Pre-sync confirmation modal for the manage-page UPDATE
-    button. Surfaces the synchronizer's description and offers
-    Sync / Not now actions. Not used in the first-time sync
-    enable flow.
+    Pre-sync confirmation modal for the manage-page UPDATE button.
+    Surfaces the synchronizer's description and offers Sync / Not now
+    actions. Not used in the first-time sync enable flow.
 
-    On the update-check path the modal additionally surfaces the
-    same SAFE / ALL policy choice the disable modal does when the
-    integration has any user-data entities — the operator's choice
-    expresses the policy applied at sync execution if any drops
-    carry user data.
+    On the update-check path the modal additionally surfaces the same
+    SAFE / ALL policy choice the disable modal does when the integration
+    has any user-data entities -- the operator's choice expresses the
+    policy applied at sync execution if any drops carry user data.
 
-    404s when the integration does not provide a connector (sync
-    is opt-in capability — not every integration supports it).
+    404s when the integration does not provide a connector (sync is
+    opt-in capability -- not every integration supports it).
     """
 
     def get_template_name( self ) -> str:
@@ -135,20 +133,19 @@ class IntegrationPreSyncView( HiModalView, IntegrationViewMixin ):
 
 class IntegrationSyncView( HiModalView, IntegrationViewMixin, ConnectorViewMixin ):
     """
-    Framework sync execution view. Invokes the integration's
-    connector and always renders the sync result modal — the
-    operator's single end-of-sync surface. When the sync produced
-    new entities to place, the result modal exposes a primary
-    'Place N new items' CTA that navigates (via antinode modal-to-
-    modal) to the placement GET endpoint where the operator picks
+    Framework sync execution view. Invokes the integration's connector
+    and always renders the sync result modal -- the operator's single
+    end-of-sync surface. When the sync produced new entities to place,
+    the result modal exposes a primary 'Place N new items' CTA that
+    navigates to the placement GET endpoint where the operator picks
     targets. When there are no new entities (refresh-with-updates,
     refresh-with-removes, errors, or nothing-new), the result modal
     shows just a dismissal action.
 
     This shape was chosen so updates and removes are never silently
-    swallowed by an automatic transition to the placement: the
-    operator always sees what changed, and only opts into placement
-    when there's actually something to place.
+    swallowed by an automatic transition to placement: the operator
+    always sees what changed, and only opts into placement when
+    there's actually something to place.
     """
 
     def get_template_name( self ) -> str:
@@ -159,7 +156,7 @@ class IntegrationSyncView( HiModalView, IntegrationViewMixin, ConnectorViewMixin
         # Operator's per-Refresh policy for items that would be
         # dropped. True ("Refresh and Retain") preserves user-data
         # entities by detaching them; False ("Refresh and Remove")
-        # hard-deletes everything dropped. Defaults to True — the
+        # hard-deletes everything dropped. Defaults to True -- the
         # safe value when the choice was not surfaced (no user-data
         # entities) or the field was absent for any reason.
         preserve_user_data = str_to_bool(
@@ -187,9 +184,9 @@ class ConnectorConfigureView( CapabilityConfigureView, ConnectorViewMixin ):
             integration_data = integration_data,
         )
 
-        # Connect-side managers (Frigate/Hass/ZM) gate client (re)build
-        # on integration.is_enabled, so the notify MUST fire after
-        # enable_integration — otherwise the manager reloads with
+        # Connect-side managers gate client (re)build on
+        # integration.is_enabled, so the notify MUST fire after
+        # enable_integration -- otherwise the manager reloads with
         # is_enabled=False, nulls its client, and the immediately-
         # following sync sees no client. Calling unconditionally also
         # covers the re-Configure path (already enabled), where
@@ -222,9 +219,9 @@ class ConnectorConfigureView( CapabilityConfigureView, ConnectorViewMixin ):
 class IntegrationDisableView( HiModalView, IntegrationViewMixin ):
     """
     Remove confirmation dialog. Classifies attached entities on GET to
-    decide between a single DELETE action (no user-data entities exist) or
-    DELETE SAFE / DELETE ALL variants (some entities have user-added data).
-    POST dispatches to disable_integration with the chosen mode.
+    decide between a single DELETE action (no user-data entities exist)
+    or DELETE SAFE / DELETE ALL variants (some entities have user-added
+    data). POST dispatches to disable_integration with the chosen mode.
     """
 
     def get_template_name( self ) -> str:
@@ -330,7 +327,6 @@ class ConnectorManageView( ConfigPageView, IntegrationViewMixin, AttributeEditVi
         if not integration_data.integration.is_enabled:
             raise BadRequest( f'{integration_data.label} integration is not configured' )
 
-        # Get health status from the integration gateway
         health_status_provider = integration_data.integration_gateway.get_connector().get_health_status_provider()
 
         attr_item_context = IntegrationAttributeItemEditContext(
@@ -350,10 +346,9 @@ class ConnectorManageView( ConfigPageView, IntegrationViewMixin, AttributeEditVi
             integration_id = integration_data.integration_id,
         ).exists()
 
-        # Issue #283 sync-check state.
+        # Sync-check state for the manage page:
         #   * sync_check_result drives the banner and the Refresh
-        #     button emphasis on the active integration's manage
-        #     page.
+        #     button emphasis on the active integration's manage page.
         #   * sidebar_items pairs each integration with its current
         #     sync-check result so the sidebar template iterates one
         #     pre-resolved list instead of looking up per-integration
@@ -402,7 +397,6 @@ class ConnectorManageView( ConfigPageView, IntegrationViewMixin, AttributeEditVi
         if not integration_data.integration.is_enabled:
             raise BadRequest( f'{integration_data.label} integration is not configured' )
 
-        # Get health status from the integration gateway
         health_status_provider = integration_data.integration_gateway.get_connector().get_health_status_provider()
 
         attr_item_context = IntegrationAttributeItemEditContext(
@@ -420,7 +414,6 @@ class ConnectorManageView( ConfigPageView, IntegrationViewMixin, AttributeEditVi
                                    attr_item_context,
                                    regular_attributes_formset,
                                    request ):
-        """ Override for AttributeEditViewMixin """
         self.validate_attributes_extra_helper(
             attr_item_context,
             regular_attributes_formset,

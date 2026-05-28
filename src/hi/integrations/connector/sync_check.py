@@ -2,17 +2,17 @@
 Per-integration sync-check state, and the integration-agnostic delta
 primitive used to compute it.
 
-Issue #283: a periodic background probe surfaces a "needs-sync"
-signal when an integration's HI representation has drifted from
-upstream. The probe never modifies entities — the user always
-chooses when to invoke Refresh. Per-integration probe logic lives in
-each ``IntegrationConnector.check_needs_sync()`` override, which
-returns a ``SyncDelta``; sync-check rides on the same opt-in surface
-as full sync (an integration without a synchronizer naturally opts
-out of the periodic drift check too). The framework monitor wraps
-the returned delta into a ``SyncCheckResult`` (delta + timestamp +
+A periodic background probe surfaces a "needs-sync" signal when an
+integration's HI representation has drifted from upstream. The probe
+never modifies entities -- the user always chooses when to invoke
+Refresh. Per-integration probe logic lives in each
+``IntegrationConnector.check_needs_sync()`` override, which returns
+a ``SyncDelta``; sync-check rides on the same opt-in surface as full
+sync (an integration without a synchronizer naturally opts out of
+the periodic drift check too). The framework monitor wraps the
+returned delta into a ``SyncCheckResult`` (delta + timestamp +
 summary) and caches it. The cache entry is the *last known state of
-the check*, not a "warning flag" — a successful Refresh records a
+the check*, not a "warning flag" -- a successful Refresh records a
 zero-delta result with a current timestamp so the UI can show
 "verified up to date at HH:MM".
 
@@ -40,8 +40,8 @@ logger = logging.getLogger(__name__)
 class SyncCheckOutcome( LabeledEnum ):
     """
     Per-integration result classification used by the framework
-    monitor's bookkeeping. Not user-facing — this drives the cycle's
-    summary log line and tests, not the UI banner.
+    monitor's bookkeeping. Not user-facing -- this drives the cycle's
+    summary log line, not the UI banner.
     """
     OPTED_OUT  = ( 'Opted Out'  , 'Integration does not implement sync-check.' )
     IN_SYNC    = ( 'In Sync'    , 'Upstream and HI match as of this check.' )
@@ -52,16 +52,16 @@ class SyncCheckOutcome( LabeledEnum ):
 @dataclass(frozen=True)
 class SyncDelta:
     """
-    Result of comparing two integration-key sets — what the
+    Result of comparing two integration-key sets -- what the
     synchronizer's ``check_needs_sync()`` returns. Integration-
     agnostic; the convention is that ``added`` contains keys upstream
     but not in HI, and ``removed`` contains keys in HI but not
     upstream. Update detection (key-present-on-both-sides but content
-    changed) is out of scope for v1.
+    changed) is not modeled.
 
     Both sets contain ``IntegrationKey`` instances so comparison and
     hashing automatically apply the canonical normalization
-    (``IntegrationKey.__post_init__``) — the same canonicalization
+    (``IntegrationKey.__post_init__``) -- the same canonicalization
     that produced the stored ``entity.integration_key`` values. The
     probe never has to know about the normalization rule.
     """
@@ -87,7 +87,7 @@ class SyncCheckResult:
     Cached state for one integration: the most recent ``SyncDelta``
     plus when the check ran and a short human-readable summary for
     the UI. Always present after the first cycle (or after a
-    successful Refresh) — even when nothing has drifted, the
+    successful Refresh) -- even when nothing has drifted, the
     zero-delta result records "verified up to date at HH:MM".
     """
     delta             : SyncDelta
@@ -149,7 +149,7 @@ class IntegrationSyncCheck:
         in-place. Without a guard, every read of a stale entry would
         propagate the unpickle exception out through the manage page.
         Catch broadly, evict the bad key so the next request runs
-        clean, and degrade to a cache miss — the next probe cycle (or
+        clean, and degrade to a cache miss -- the next probe cycle (or
         a successful Refresh) writes fresh state."""
         if not integration_id:
             return None
@@ -178,19 +178,18 @@ class IntegrationSyncCheck:
         in-progress drift does not re-alarm cycle after cycle.
 
         Concurrency: this is a read-modify-write on the cache without
-        a lock. The two callers — the framework monitor's probe cycle
+        a lock. The two writers (the framework monitor's probe cycle
         and ``record_sync_complete`` via the synchronizer's post-sync
-        hook — can theoretically run concurrently if a user-triggered
-        Refresh overlaps a probe cycle. By inspection the
-        interleavings are benign: duplicate-direction races (both
-        writers see prior=clean and call ``_fire_needs_sync_alarm``)
-        collapse to a single alert via ``AlertManager``'s
-        signature-based dedup, and opposite-direction races worst
-        case fire a stale alarm for drift that was just cleared
-        — dismissable, rare, no correctness impact. A Redis lock
-        would prevent it but trades real cache-backend portability
-        risk (LocMemCache in tests) for a marginal UX win, so we
-        intentionally do not lock here."""
+        hook) can run concurrently if a user-triggered Refresh
+        overlaps a probe cycle. By inspection the interleavings are
+        benign: duplicate-direction races (both writers see
+        prior=clean and call ``_fire_needs_sync_alarm``) collapse to
+        a single alert via ``AlertManager``'s signature-based dedup,
+        and opposite-direction races worst case fire a stale alarm
+        for drift that was just cleared -- dismissable, rare, no
+        correctness impact. A Redis lock would prevent it but trades
+        real cache-backend portability risk (LocMemCache in tests)
+        for a marginal UX win, so we intentionally do not lock here."""
         if not integration_id:
             return
         prior = cls.get_state( integration_id )
@@ -207,8 +206,8 @@ class IntegrationSyncCheck:
         )
         if cls._should_alarm( prior = prior, current = result ):
             # Alarm delivery failures must not break the cache write
-            # — the probe state is already persisted; the next
-            # clear→set transition will re-attempt notification.
+            # -- the probe state is already persisted; the next
+            # clear->set transition will re-attempt notification.
             try:
                 cls._fire_needs_sync_alarm(
                     integration_id = integration_id,
@@ -223,12 +222,12 @@ class IntegrationSyncCheck:
     @staticmethod
     def _should_alarm( prior   : Optional[ SyncCheckResult ],
                        current : SyncCheckResult ) -> bool:
-        """Notification gate. Fires only on the clear → needs-sync
+        """Notification gate. Fires only on the clear -> needs-sync
         transition: prior was None (first probe / cache expired) or
         in-sync, AND current reports needs-sync. Drift that persists
-        across cycles (needs-sync → needs-sync) does not re-alarm —
+        across cycles (needs-sync -> needs-sync) does not re-alarm --
         the user has already been told. Refresh-induced
-        needs-sync → in-sync transitions are not a notification
+        needs-sync -> in-sync transitions are not a notification
         direction."""
         if not current.needs_sync:
             return False
@@ -243,9 +242,8 @@ class IntegrationSyncCheck:
         into the needs-sync state. Per-integration unique signature
         (``integrations.needs_sync.<integration_id>``) so two
         integrations both reporting drift surface as two distinct
-        alerts. Lifetime is ``Alarm.MAX_LIFETIME_SECS`` — the
-        canonical "until acknowledged" value (see
-        ``hi/apps/alert/alarm.py``)."""
+        alerts. Lifetime is ``Alarm.MAX_LIFETIME_SECS`` -- the
+        canonical "until acknowledged" value."""
         from hi.apps.alert.alarm import Alarm
         from hi.apps.alert.alert_manager import AlertManager
         from hi.apps.alert.enums import AlarmLevel, AlarmSource

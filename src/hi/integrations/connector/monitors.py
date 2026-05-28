@@ -1,28 +1,26 @@
 """
-Framework-level periodic monitor for the Issue #283 sync-check
-feature.
+Framework-level periodic monitor for the sync-check feature.
 
 A single ``IntegrationSyncCheckMonitor`` runs at a long cadence
-(``IntegrationSyncCheck.INTERVAL_SECS``, currently 4 hours), iterates
-the enabled and unpaused integrations, gets each integration's
-connector via ``gateway.get_connector()``, and dispatches to
-its ``check_needs_sync()``. Sync-check rides on the same opt-in
-surface as full sync — an integration without a connector
-naturally opts out of the periodic drift check too. Per-integration
-calls are wrapped in try/except so one integration's transient
-failure does not abort the cycle for the others. Sequential (not
-parallel) iteration is deliberate: we hit one upstream at a time
-across all integrations, which avoids lock-step CPU bursts when
-monitors of multiple integrations would otherwise align at the long
-boundary.
+(``IntegrationSyncCheck.INTERVAL_SECS``), iterates the enabled and
+unpaused integrations, gets each integration's connector via
+``gateway.get_connector()``, and dispatches to its
+``check_needs_sync()``. Sync-check rides on the same opt-in surface
+as full sync -- an integration without a connector naturally opts
+out of the periodic drift check too. Per-integration calls are
+wrapped in try/except so one integration's transient failure does
+not abort the cycle for the others. Sequential (not parallel)
+iteration is deliberate: we hit one upstream at a time across all
+integrations, which avoids lock-step CPU bursts when monitors of
+multiple integrations would otherwise align at the long boundary.
 
 Lifecycle: started from ``IntegrationManager`` after the
-per-integration health monitors have been launched. Stopped from the
-same lifecycle. The first cycle runs immediately on start (the base
-``PeriodicMonitor`` semantics) — that gives best-effort cache
-population at server boot. Per-integration calls that fail because
-their underlying manager / client is not yet ready are reported as
-errors for this cycle only and the next cycle catches them.
+per-integration health monitors have been launched. The first cycle
+runs immediately on start (the base ``PeriodicMonitor`` semantics)
+-- that gives best-effort cache population at server boot.
+Per-integration calls that fail because their underlying manager /
+client is not yet ready are reported as errors for this cycle only
+and the next cycle catches them.
 """
 
 import logging
@@ -50,7 +48,7 @@ class IntegrationSyncCheckMonitor( PeriodicMonitor ):
         return
 
     def alarm_ceiling(self):
-        # Drift detection is informational by design — the user always
+        # Drift detection is informational by design -- the user always
         # confirms the actual sync. Cap at INFO so probe failures
         # never escalate beyond a notice.
         return AlarmLevel.INFO
@@ -103,7 +101,7 @@ class IntegrationSyncCheckMonitor( PeriodicMonitor ):
 
         connector = gateway.get_connector()
         if connector is None:
-            # No connector means no sync support — and therefore
+            # No connector means no sync support -- and therefore
             # no sync-check. Cache state is not touched.
             return SyncCheckOutcome.OPTED_OUT
 
@@ -141,7 +139,7 @@ class IntegrationSyncCheckMonitor( PeriodicMonitor ):
                               ) -> None:
         """Summarize the cycle into the monitor's own health-status
         surface. The framework monitor's job is "did I iterate and
-        dispatch every enabled integration?" — that always succeeds
+        dispatch every enabled integration?" -- that always succeeds
         when we reach this method (per-integration call failures are
         absorbed by ``_check_one_integration``'s try/except). So
         cycle outcome is reported as HEALTHY regardless of how many
@@ -157,7 +155,7 @@ class IntegrationSyncCheckMonitor( PeriodicMonitor ):
         True framework / process failures (cache layer unavailable,
         ``IntegrationManager`` not initialized, etc.) raise out of
         ``do_work`` and are caught by the base class's
-        ``run_query``, which records them as ERROR — that is the
+        ``run_query``, which records them as ERROR -- that is the
         only path that should alert from this monitor.
         """
         checked = (

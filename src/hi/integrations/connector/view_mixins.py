@@ -11,7 +11,7 @@ from hi.integrations.placement_request import PlacementUrlParams
 class ConnectorViewMixin:
     """Connect-mode-specific view helpers. Lives in the connector
     sub-package because every method here is meaningful only to the
-    Connect capability — sync runs, sync-result modals, and the
+    Connect capability -- sync runs, sync-result modals, and the
     placement CTA off a sync result."""
 
     def render_sync_result( self,
@@ -19,14 +19,11 @@ class ConnectorViewMixin:
                             integration_data,
                             preserve_user_data : bool = True ):
         """Run the integration's connector and render the
-        sync-result modal. Shared by the initial-connect flow
-        (ConnectorConfigureView.post after enable) and the update-check
-        flow (IntegrationSyncView.post after pre-sync confirm).
-
-        Returns the modal response directly, including the placement
-        URL for the 'Place new items' CTA when sync produced new
-        entities. Cache invalidations run in a ``finally`` so a
-        partial-commit failure during sync also flushes."""
+        sync-result modal. Returns the modal response directly,
+        including the placement URL for the placement CTA when sync
+        produced new entities. Cache invalidations run in a
+        ``finally`` so a partial-commit failure during sync also
+        flushes."""
         gateway = integration_data.integration_gateway
         connector = gateway.get_connector()
         if connector is None:

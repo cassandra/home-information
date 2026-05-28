@@ -19,33 +19,25 @@ class EntityUserDataDetector:
     """
     Detects user-created data associated with entities to determine
     whether an entity should be preserved during integration deletion.
-    
-    This class provides analysis methods only - no database operations
-    are performed. The calling code is responsible for acting on the
-    information provided by these methods.
+    Analytical only -- the caller acts on the returned information.
     """
 
     @staticmethod
     def has_user_created_attributes(entity: Entity) -> bool:
         """
-        Check if an entity has user-created attributes that justify preservation.
+        Check if an entity has user-created attributes that justify
+        preservation.
 
         Provenance is determined by ``attribute_type_str``:
-          - ``AttributeType.CUSTOM`` → user-added via the UI.
-          - ``AttributeType.PREDEFINED`` → defined by the system or by an
+          - ``AttributeType.CUSTOM`` -> user-added via the UI.
+          - ``AttributeType.PREDEFINED`` -> defined by the system or by an
             integration's converter.
 
-        ``integration_key_str`` is *not* a provenance signal — it is an
+        ``integration_key_str`` is *not* a provenance signal -- it is an
         optional per-attribute upstream backreference some integrations
         (e.g., HomeBox) use for fine-grained sync, and is absent for
         integration-created attributes that have no per-field upstream id
         (e.g., HA's synthesized Insteon-address attribute).
-
-        Args:
-            entity: The Entity to check for user-created attributes
-
-        Returns:
-            True if the entity has user-created attributes, False otherwise
         """
         user_attributes = entity.attributes.filter(
             attribute_type_str=str(AttributeType.CUSTOM),
@@ -115,17 +107,14 @@ class EntityUserDataDetector:
         orphaned_state_ids = set()
         
         for state in entity.states.all():
-            # Check if state will have any remaining sensors
             remaining_sensors = state.sensors.exclude(
                 id__in=removed_sensor_ids
             ).exists()
-            
-            # Check if state will have any remaining controllers
+
             remaining_controllers = state.controllers.exclude(
                 id__in=removed_controller_ids
             ).exists()
-            
-            # If no remaining sensors or controllers, this state can be deleted
+
             if not remaining_sensors and not remaining_controllers:
                 orphaned_state_ids.add(state.id)
                 logger.debug(f'EntityState {state} will be orphaned and should be removed')

@@ -4,22 +4,17 @@ Transient data shapes returned by integration sync operations.
 The framework owns the sync workflow (pre-sync modal, sync view,
 post-sync placement modal). Each integration's
 ``IntegrationConnector.sync()`` returns an
-``IntegrationSyncResult`` describing what happened during sync —
-title, structured change counts, info/error notes — plus an
+``IntegrationSyncResult`` describing what happened during sync --
+title, structured change counts, info/error notes -- plus an
 optional ``EntityPlacementInput`` that drives the placement modal
 when the sync produced new entities to place.
 
 The placement input shape lives in ``hi.apps.entity.entity_placement``
-because it isn't sync-specific: any future flow that bulk-places
-entities (e.g., a "place unplaced items" recovery feature) builds
-the same shape from a different source. Sync is one supplier among
-several.
+because it isn't sync-specific: sync is one supplier among
+several. The shape is built from entities, not from sync-time
+context.
 
-The result modal renders a counts-driven lead summary
-("N created, M updated, R removed") with per-category disclosures
-that enumerate the affected items by name, plus collapsible
-Details (``info_list``) and Errors (``error_list``) sections.
-Counts are derived from list lengths — the lists are the source
+Counts are derived from list lengths -- the lists are the source
 of truth. ``info_list`` carries diagnostic context the per-item
 lists can't express ("Found N upstream items", "Filtered N by
 allowlist", etc.).
@@ -36,41 +31,33 @@ class IntegrationSyncResult:
     """Outcome of a single integration sync run.
 
     ``placement_input`` is None when the sync produced no new
-    entities to place (the typical refresh-with-no-new-items case);
-    populated when there's something for the placement modal to
-    show. The framework uses presence/absence of placement_input —
-    not emptiness checks against groups/ungrouped_items — to decide
-    whether to show the placement.
+    entities to place; populated when there's something for the
+    placement modal to show. The framework uses presence/absence of
+    placement_input -- not emptiness checks against
+    groups/ungrouped_items -- to decide whether to show the
+    placement.
 
     ``created_list`` / ``updated_list`` / ``reconnected_list`` /
     ``detached_list`` / ``removed_list`` hold the *names* of entities
     affected by this sync run, populated by the per-integration
-    synchronizer as it walks upstream items. The result modal uses
-    list length for the count badges and the list contents for
-    per-category "Show items" disclosures so the operator can see
-    which entities were touched. Names only — per-attribute change
-    detail is intentionally not surfaced.
+    synchronizer as it walks upstream items. Names only --
+    per-attribute change detail is intentionally not surfaced.
 
     The five categories are mutually exclusive for any given entity
     in a single sync run:
-      * ``created_list``      — brand new entities this sync.
-      * ``updated_list``      — existing primary-matched entities
-                                whose payload changed.
-      * ``reconnected_list``  — previously-detached entities that
-                                were re-attached this sync (Issue
-                                #281 auto-reconnect).
-      * ``detached_list``     — entities preserved with user data on
-                                this sync (sync-time preservation
-                                or Disable-SAFE). They retain their
-                                custom attributes / layout / etc.
-                                and surface in the UI as "Detached
-                                from <integration>".
-      * ``removed_list``      — entities hard-deleted this sync.
+      * ``created_list``      -- brand new entities this sync.
+      * ``updated_list``      -- existing primary-matched entities
+                                 whose payload changed.
+      * ``reconnected_list``  -- previously-detached entities that
+                                 were re-attached this sync.
+      * ``detached_list``     -- entities preserved with user data on
+                                 this sync. They retain their
+                                 custom attributes / layout / etc.
+      * ``removed_list``      -- entities hard-deleted this sync.
 
-    ``info_list`` carries diagnostic notes — "Found N upstream
+    ``info_list`` carries diagnostic notes -- "Found N upstream
     items", "Filtered N by allowlist", ambiguous-reconnect
-    breadcrumbs — that the per-item lists can't express. Rendered
-    as a collapsible Details section in the result modal.
+    breadcrumbs -- that the per-item lists can't express.
     ``error_list`` is the parallel for failures.
 
     ``created_entities`` carries the just-created ``Entity``
@@ -95,8 +82,7 @@ class IntegrationSyncResult:
 
     @property
     def has_changes(self) -> bool:
-        """True if the sync produced any operator-relevant change.
-        Drives the 'Nothing new' lead line when False."""
+        """True if the sync produced any operator-relevant change."""
         return bool(
             self.created_list
             or self.updated_list
