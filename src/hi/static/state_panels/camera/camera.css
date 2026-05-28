@@ -46,6 +46,10 @@
 .hi-state-panel-camera .stream .video-container {
     width: 100%;
     height: 100%;
+    /* Override the main video pane's 400px collapse-guard — panels  */
+    /* size their stream box from their own context (tile cell or    */
+    /* modal stream rule below), not from the container itself.      */
+    min-height: 0;
 }
 .hi-state-panel-camera .stream .video-container img,
 .hi-state-panel-camera .stream img.img-fluid {
@@ -71,6 +75,12 @@
  * the base rule keeps each image whole inside its cell. */
 .hi-state-panel-camera--modal .stream {
     margin-bottom: 16px;
+    /* Collapse-guard for the EntityStatus modal: the image is        */
+    /* ``height: auto`` here, so a hung stream with no natural        */
+    /* dimensions would otherwise drop the box to 0. Sized smaller    */
+    /* than the main video pane's 400px since the modal frames a     */
+    /* single camera in a tighter chrome.                             */
+    min-height: 200px;
 }
 .hi-state-panel-camera--modal .stream .video-container img,
 .hi-state-panel-camera--modal .stream img.img-fluid {
