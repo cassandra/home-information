@@ -216,6 +216,16 @@
         PLACEHOLDER_CLASS: 'video-load-error-placeholder',
         REGISTERED_FLAG: 'videoErrorHandlerRegistered',
 
+        // First-frame watchdog. Some upstream failures (ZM camera
+        // unreachable, HA endpoint hung) leave the TCP connection open
+        // with HTTP headers returned but no payload, so the browser
+        // fires neither ``load`` nor ``error`` and the <img> sits
+        // permanently in a "still loading" state. After this many ms
+        // with no first frame we synthesize an error so the placeholder
+        // surfaces. A later real ``load`` heals it via ``_handleLoad``.
+        FIRST_LOAD_TIMEOUT_MS: 10000,
+        firstLoadTimers: new Map(),
+
         // Heading + subtitle per marker. Mirrors the server-rendered
         // ``.video-placeholder`` markup for the no-source case, so the
         // failed-to-load and no-data cases look visually identical.
@@ -247,11 +257,44 @@
             element.dataset[ this.REGISTERED_FLAG ] = '1';
             const handler = this;
             element.addEventListener( 'error', function() {
+                handler._clearFirstLoadWatchdog( element );
                 handler._handleError( element );
             });
             element.addEventListener( 'load', function() {
+                handler._clearFirstLoadWatchdog( element );
                 handler._handleLoad( element );
             });
+            this._startFirstLoadWatchdog( element );
+        },
+
+        _startFirstLoadWatchdog: function( element ) {
+            if ( ! element.src || element.src.startsWith( 'data:' )) return;
+            // Image may have settled before our listeners attached
+            // (initial server render, fast cache hit). ``complete`` is
+            // true on both success and failure; ``naturalWidth`` of 0
+            // distinguishes the failed case.
+            if ( element.complete ) {
+                if ( element.naturalWidth === 0 ) this._handleError( element );
+                return;
+            }
+            const handler = this;
+            const timer = setTimeout( function() {
+                handler.firstLoadTimers.delete( element );
+                if ( element.src
+                     && ! element.src.startsWith( 'data:' )
+                     && element.naturalWidth === 0 ) {
+                    handler._handleError( element );
+                }
+            }, this.FIRST_LOAD_TIMEOUT_MS );
+            this.firstLoadTimers.set( element, timer );
+        },
+
+        _clearFirstLoadWatchdog: function( element ) {
+            const timer = this.firstLoadTimers.get( element );
+            if ( timer !== undefined ) {
+                clearTimeout( timer );
+                this.firstLoadTimers.delete( element );
+            }
         },
 
         _handleError: function( element ) {
