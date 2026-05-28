@@ -1,8 +1,17 @@
 {% load icons %}
 <div class="p-1">
-  <div class="d-flex justify-content-between">
+  <div class="d-flex justify-content-between hi-button-bar">
     {% include "collection/panes/collection_buttons.html" %}
-    <div class="d-flex justify-content-end">
+    {% if request.view_parameters.is_editing %}
+    <div class="hi-button-bar-fixed px-1">
+      <a href="{% url 'collection_add' %}"
+         class="btn btn-primary btn-control" role="button"
+         data-async="modal" >
+        {% icon "plus" size="sm" css_class="hi-icon-left" %}ADD COLLECTION
+      </a>
+    </div>
+    {% endif %}
+    <div class="d-flex justify-content-end hi-button-bar-fixed">
       {% if request.view_parameters.is_editing %}
       <div class="mx-1 d-flex align-items-center">
         <label class="mb-0 mx-1" style="font-size: 0.85rem;"><b>Snap:</b></label>

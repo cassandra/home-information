@@ -1,12 +1,21 @@
 {% load static %}
 {% load icons %}
 <div class="p-1">
-  <div class="d-flex justify-content-between">
+  <div class="d-flex justify-content-between hi-button-bar">
     {% include "location/panes/location_view_buttons.html" %}
-    <div>
+    {% if request.view_parameters.is_editing %}
+    <div class="hi-button-bar-fixed px-1">
+      <a href="{% url 'location_edit_location_view_add' %}"
+         class="btn btn-primary btn-control" role="button"
+         data-async="modal" >
+        {% icon "plus" size="sm" css_class="hi-icon-left" %}ADD VIEW
+      </a>
+    </div>
+    {% endif %}
+    <div class="hi-button-bar-center">
       <img src="{% static 'img/hi-logo-149x64.png' %}" alt="Home Information Logo">
     </div>
-    <div class="d-flex justify-content-end">
+    <div class="d-flex justify-content-end hi-button-bar-fixed">
       {% if request.view_parameters.location %}
       <div class="px-1">
         {% if request.view_parameters.is_editing %}
@@ -14,13 +23,13 @@
            href="{% url 'location_edit_mode' location_id=request.view_parameters.location.id %}"
            data-async="true" >
           {% icon "edit" size="sm" css_class="" %}
-          {{ request.view_parameters.location.name }}
+          {{ request.view_parameters.location.name|truncatechars:18 }}
         </a>
         {% else %}
         <a class="btn btn-primary btn-control" role="button"
            href="{% url 'location_edit_location_edit' location_id=request.view_parameters.location.id %}"
              data-async="true" >
-          {% icon "info-circle" size="sm" css_class="hi-icon-left" %}{{ request.view_parameters.location.name }}
+          {% icon "info-circle" size="sm" css_class="hi-icon-left" %}{{ request.view_parameters.location.name|truncatechars:18 }}
         </a>
         {% endif %}
       </div>

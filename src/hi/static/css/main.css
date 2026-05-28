@@ -402,6 +402,33 @@ a.clickable-card:active {
     max-height: 2rem;
     width: auto;
 }
+
+/* Top/bottom button bars. The right (and top-center logo) groups        */
+/* reserve their content width so the fixed app-nav controls are never   */
+/* pushed off-screen by a long list of user-defined view buttons. The    */
+/* left group takes the remaining width and scrolls horizontally on      */
+/* overflow as a stopgap; a future pass will replace the raw scroll      */
+/* with an edge-fade affordance and auto-scroll-to-active behavior.      */
+.hi-button-bar {
+    flex-wrap: nowrap;
+    align-items: center;
+    gap: 0.5rem;
+}
+.hi-button-bar-fixed,
+.hi-button-bar-center {
+    flex: 0 0 auto;
+}
+.hi-button-bar-flex {
+    flex: 1 1 auto;
+    /* Override flexbox's default min-width:auto so this group can       */
+    /* actually shrink below its children's intrinsic widths.            */
+    min-width: 0;
+    overflow-x: auto;
+    scrollbar-width: thin;
+}
+.hi-button-bar-flex > * {
+    flex-shrink: 0;
+}
 .hi-side {
     padding-left: 0;
     padding-right: 0;

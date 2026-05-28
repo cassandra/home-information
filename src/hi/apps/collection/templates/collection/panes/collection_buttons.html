@@ -1,5 +1,5 @@
 {% load icons %}
-<div class="d-flex justify-content-start draggable-container">
+<div class="d-flex justify-content-start draggable-container hi-button-bar-flex">
   {% for collection in collection_list %}
   <div id="{{ collection.html_id }}-button"
        class="{% if request.view_parameters.is_editing %}draggable{% endif %} mx-1"
@@ -8,19 +8,10 @@
     <a href="{% url 'collection_view' collection_id=collection.id %}"
        class="btn {% if collection == request.view_parameters.active_collection %}btn-secondary{% else %}btn-primary{% endif %} btn-control"
        role="button" >
-      {{ collection.name }}
+      {{ collection.name|truncatechars:18 }}
     </a>
   </div>
   {% empty %}
   <div><em>No collections defined.</em></div>
   {% endfor %}
-  {% if request.view_parameters.is_editing %}
-  <div class="ml-3">
-    <a href="{% url 'collection_add' %}"
-       class="btn btn-primary btn-control" role="button"
-       data-async="modal" >
-      {% icon "plus" size="sm" css_class="hi-icon-left" %}ADD
-    </a>
-  </div>
-  {% endif %}
 </div>
