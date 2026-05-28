@@ -202,6 +202,22 @@ Removing a *bad* comment is free. Removing a *load-bearing* comment is expensive
 
 A cleanup pass that errs toward keeping ambiguous comments is correct. A cleanup pass that silently deletes load-bearing context is a regression.
 
+### Typo Fixes — Comments and Docstrings Only
+
+Obvious typos in comments and docstrings are fixable by the cleanup pass. Treat them like ASCII normalization: a syntactic concern applied during cleanup as a courtesy when the agent is already touching the file.
+
+In scope:
+- Misspellings (`Attrribute` → `Attribute`, `recieve` → `receive`).
+- Duplicate words (`the the`, `placement placement`, `is is`).
+- Obvious transpositions (`teh` → `the`).
+- Missing capitalization on sentence starts.
+
+Out of scope:
+- **Typos in code identifiers** (variable, method, class, attribute names) — those are renaming refactors with much broader implications. Even if a typo appears in a public class name, the cleanup pass does not rename it.
+- **Typos in user-facing strings** (HTML body text, button labels, `help_text`, error messages, log messages) — those follow the user-facing-strings hard constraint and have their own review process.
+
+If the typo's intent is ambiguous — the misspelling might be a deliberate word choice, or the apparent "typo" might be a domain-specific term — KEEP and FLAG rather than fix.
+
 ### Authoring Boundary — Don't Insert Missing Comments
 
 The cleanup pass operates on *existing* comments. It does not insert comments where there are none — even when a file would clearly benefit from one (a missing Context block in a template, a missing docstring on a public method, a missing invariant note next to a non-obvious guard).
@@ -253,6 +269,10 @@ Context:
 — is keep-worthy in a way that a Python function's parameter-listing docstring is not. Python has type hints; templates have nothing equivalent. The Context block is the closest thing to a signature, and serves the same purpose: telling a caller (or reader) what to pass in. Preserve these blocks even when they look long, but strip the surrounding caller-naming (which caller passes what is the caller's concern, not the template's).
 
 **UI labels that the template itself renders are not pattern #4 violations.** The "UI element name-dropping in backend code" rule targets backend comments that quote UI labels living elsewhere — those references rot when the UI changes. A template that *renders* a button labeled `UPDATE` and refers to "UPDATE" in its top comment is a different case: the label and the comment about it live in the same file and change together. The cleanup pass can leave these in place. Backend code that references the same `UPDATE` button by name is still pattern #4 — the rule applies to cross-file references, not local self-reference.
+
+**Section labels are keep-worthy for navigation.** Templates have nominal grouping constructs (`{% block %}`, `{% if %}`, `{% for %}`, etc.) but they are not visually distinct without IDE-level Django template syntax awareness. Banner-style and short single-line section labels (`{# ----- Search form ----- #}`, `{# Cancel + Add row #}`, `{# Sticky header #}`) earn their place as navigation aids in dense templates. The bar for removing a template section label is high: only remove when the label adds *zero* information and the next block's content is completely self-explanatory.
+
+**`<!-- -->` HTML comments in templates — flag, don't convert.** Django templates should use `{# ... #}` (single-line) or `{% comment %} ... {% endcomment %}` (multi-line) for developer comments, because `<!-- -->` comments render in the browser. When the cleanup pass encounters an `<!-- -->` comment inside a Django template, it should **FLAG** the syntactic mismatch but **not convert** it. A future intentional use — for example, a comment deliberately rendered in the browser HTML as documentation for downstream consumers — would be silently broken by automatic conversion. The conversion is a coding-standards decision that requires human verification of intent.
 
 ### CSS
 

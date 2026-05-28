@@ -2,37 +2,32 @@
 {% load icons %}
 
 {% comment %}
-Pre-sync confirmation modal for the manage-page UPDATE 
-button. Not used for the first-time enable sync flow. The modal confirms
-intent and explains what the operation will do; it does NOT surface
-integration health.
+Pre-sync confirmation modal. Confirms intent and explains what the
+operation will do; does NOT surface integration health.
 
-`is_initial_connect` is still threaded because the manage page can
-expose a CONNECT variant when the integration is enabled but has no
-attached entities (e.g., entities deleted post-enable). That path
-shares this template.
+The CONNECT variant renders when the integration is enabled but has
+no attached entities (e.g., entities deleted post-enable).
 
 When `removal_summary.has_mixed_state` (update-check path with at
-least one user-data entity present), the modal mirrors the disable
-modal's policy choice: RETAIN MISSING preserves dropped user-data
-items by detaching, REMOVE MISSING hard-deletes them. The summary is
-the integration's full footprint; the operator's choice expresses
-policy that applies at sync execution if any drops carry user data.
+least one user-data entity present), the modal offers a policy
+choice: RETAIN MISSING preserves dropped user-data items by
+detaching, REMOVE MISSING hard-deletes them. The summary is the
+integration's full footprint; the operator's choice expresses policy
+that applies at sync execution if any drops carry user data.
 
 The form is opened in `preamble` and closed in `postamble` so each
-action button is a plain `<button name="preserve_user_data" value=…>`
-on the same form (mirrors the integration_disable.html pattern).
+action button is a plain `<button name="preserve_user_data" value=...>`
+on the same form.
 
 Context:
-  integration_data        : IntegrationData (required) — for label, id.
-  is_initial_connect       : bool (required) — True when no entities for
+  integration_data        : IntegrationData (required) -- for label, id.
+  is_initial_connect      : bool (required) -- True when no entities for
                             this integration have been imported yet
                             (initial CONNECT); False for subsequent
                             update-check operations.
-  sync_description        : Optional[str] — per-integration text from
-                            IntegrationConnector.get_sync_description.
-  sync_url                : str (required) — URL the form posts to.
-  removal_summary         : Optional[IntegrationRemovalSummary] —
+  sync_description        : Optional[str]
+  sync_url                : str (required) -- URL the form posts to.
+  removal_summary         : Optional[IntegrationRemovalSummary] --
                             integration's user-data classification.
                             None when no entities are attached. Drives
                             the Retain / Remove choice on the

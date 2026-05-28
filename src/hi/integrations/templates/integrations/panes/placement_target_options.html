@@ -4,15 +4,12 @@ Reusable dropdown options for placement target-selects (LocationViews
 
 Renders LocationViews first as one <optgroup> per Location (ordered
 by Location.order_id, views within by LocationView.order_id), then
-a single 'Collections' <optgroup>. Option values are *tagged* —
-``view:<id>`` or ``collection:<id>`` — so views and collections can
+a single 'Collections' <optgroup>. Option values are *tagged* --
+``view:<id>`` or ``collection:<id>`` -- so views and collections can
 share the same select element without colliding on numeric ids.
 
-Optionally honors ``selected_view_id`` / ``selected_collection_id``
-(passed via ``include … with …``) by adding the ``selected``
-attribute to the matching option. Used by the placement's top
-dropdown so the smart-default sticks; group/entity dropdowns don't
-pass them.
+When ``selected_view_id`` / ``selected_collection_id`` are provided,
+the matching option gets the ``selected`` attribute.
 
 Context:
   location_view_groups   : List[(Location, List[LocationView])]

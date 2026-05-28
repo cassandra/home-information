@@ -5,10 +5,10 @@
 ATTRIBUTE_REFERENCE picker modal.
 
 Selection state lives in attr-picker.js (one selection set per open
-modal instance, keyed by the picker-root DOM node — i.e., this
+modal instance, keyed by the picker-root DOM node -- i.e., this
 modal-dialog). attr-picker.js attaches its handlers as delegated
 listeners at document level, so antinode-injected modal content
-wires up automatically — no init step in this template.
+wires up automatically -- no init step in this template.
 
 Layout:
 
@@ -66,7 +66,7 @@ Link Content
     No ``data-async`` here: attr-picker.js owns the submit so it can
     populate ``selections_json`` and POST through antinode's public
     API (``AN.hideModalIfNeeded`` + ``AN.post``). Letting antinode
-    also bind via ``data-async`` would race the field-population —
+    also bind via ``data-async`` would race the field-population --
     antinode reads the form at the <body> level before attr-picker's
     document-level submit handler fires.
     {% endcomment %}

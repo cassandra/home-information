@@ -81,16 +81,16 @@ Update check complete
       refinement is optional polish). Right = REFINE/REVIEW on
       the highest-occupied target.
     * Single centered OK button when nothing was placed (operator
-      chose 'Don't place' everywhere) — no real action was
+      chose 'Don't place' everywhere) -- no real action was
       completed, so OK ('acknowledge info, dismiss') is more
       accurate than DONE ('action completed'). Centered via the
-      action_3 layout's action_center slot — using a side slot
+      action_3 layout's action_center slot -- using a side slot
       would look skewed compared to other single-button modals
       across the app.
 
   Either button reloads the page on dismiss. The modal-to-modal
-  flow that brought the operator here (Configure → pre-sync →
-  result → placement → post-dispatch) never refreshed the
+  flow that brought the operator here (Configure -> pre-sync ->
+  result -> placement -> post-dispatch) never refreshed the
   underlying integrations page; the entities just imported and
   placed need to surface there.
 {% endcomment %}

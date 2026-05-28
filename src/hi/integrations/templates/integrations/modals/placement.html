@@ -2,7 +2,7 @@
 {% load icons %}
 
 {% comment %}
-Post-sync entity placement placement.
+Post-sync entity placement.
 
 Progressive disclosure: by default only the top-level decision is
 visible ("Place all new items in [target]") with an inventory
@@ -11,8 +11,8 @@ and per-item rows are hidden behind a "Place differently"
 disclosure. Inside the disclosure, group rows are single-line and
 each carries its own per-item drill-down disclosure.
 
-Three-level inheritance under the hood is unchanged: top default →
-group default → per-item. Empty selections at any level inherit
+Three-level inheritance under the hood is unchanged: top default ->
+group default -> per-item. Empty selections at any level inherit
 from the level above; explicit "Don't place" at any level prevents
 placement for that branch.
 
@@ -29,29 +29,29 @@ multi-Location deployments can disambiguate views with shared names
 Context:
   integration_data      : IntegrationData (required)
   placement_input       : EntityPlacementInput (required)
-  grouping_heading      : Optional[str] — column-header text shown
+  grouping_heading      : Optional[str] -- column-header text shown
                           above the group list inside the override
                           panel. None when the heading is the
                           implicit default ("Item Type"); the
                           column header is suppressed in that case.
   location_view_groups  : List[(Location, List[LocationView])] (required)
   collection_list       : List[Collection] (required)
-  top_default_value     : str (required) — pre-selected value for
+  top_default_value     : str (required) -- pre-selected value for
                           the top dropdown ('__new_view__',
                           'view:<id>', 'collection:<id>', or '')
-  new_view_name         : str (required) — pre-disambiguated name
+  new_view_name         : str (required) -- pre-disambiguated name
                           shown in the '+ New view: "X"' option
                           label; matches what the apply path will
                           actually create.
-  new_collection_name   : str (required) — pre-disambiguated name
+  new_collection_name   : str (required) -- pre-disambiguated name
                           shown in the '+ New collection: "X"'
                           option label; matches what the apply
                           path will actually create.
-  inventory_preview     : List[{'label', 'count'}] (required) —
+  inventory_preview     : List[{'label', 'count'}] (required) --
                           group label + count tuples for the
                           summary line; empty for all-ungrouped
                           inputs (preview hidden in that case)
-  placement_url        : str (required) — same URL that rendered
+  placement_url        : str (required) -- same URL that rendered
                           this modal; the form POSTs back to it
                           and the view branches on the submitted
                           ``action`` value.

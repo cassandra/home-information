@@ -3,30 +3,26 @@
 {% load static %}
 
 {% comment %}
-  Integration sync result modal.
-
-  The single end-of-sync surface: always rendered after sync
-  completes, regardless of what changed. Updates and removes are
-  surfaced here in their own right rather than being silently
-  swallowed by an automatic transition to the placement.
+  Integration sync result modal. Always rendered after sync
+  completes, regardless of what changed -- updates and removes are
+  surfaced rather than silently swallowed by an automatic transition
+  to placement.
 
   Renders a hero headline, a stat-card row of change counts,
   color-coded per-category enumerations of affected entities, and
   collapsible Errors / Details sections. When the sync produced
-  newly-created entities, the footer's primary CTA navigates to
-  the placement modal (via antinode modal-to-modal); otherwise
-  the footer is a single dismissal button.
+  newly-created entities, the footer's primary CTA navigates to the
+  placement modal; otherwise the footer is a single dismissal button.
 
-  The modal title bar keeps the generic HI logo + short generic
-  title ('Connect Result' / 'Update Check Result'); the integration's
-  identity is surfaced as a body subtitle row (logo + label) where
-  the white background gives the transparent integration logos
-  predictable contrast.
+  The modal title bar uses the generic HI logo + short generic title;
+  the integration's identity is surfaced as a body subtitle row
+  (logo + label) where the white background gives the transparent
+  integration logos predictable contrast.
 
   Context:
     sync_result      : IntegrationSyncResult (required)
     integration_data : IntegrationData (required)
-    placement_url   : str (optional) — target of the 'Place N items'
+    placement_url   : str (optional) -- target of the 'Place N items'
                        CTA. Required when sync_result.created_list is
                        non-empty; ignored otherwise.
 {% endcomment %}
@@ -41,10 +37,8 @@
 {% include "integrations/panes/integration_modal_header.html" %}
 
 {% comment %}
-  Hero headline — the operator's first read of the modal. Errors
-  take precedence; otherwise the change-count summary speaks.
-  Centered, with a leading status icon at display weight so this
-  zone clearly outranks the detail sections below.
+  Hero headline -- errors take precedence; otherwise the
+  change-count summary speaks.
 {% endcomment %}
 {% if sync_result.error_list and not sync_result.has_changes %}
   <div class="text-center mb-4">
@@ -89,11 +83,8 @@
   </div>
 
   {% comment %}
-    Stat-card row: big number + label per non-zero category.
-    Visually anchors the result so the operator's eye lands on
-    'what changed and how much' before scanning the per-category
-    item lists. Only non-zero categories render — symmetry is less
-    important than not implying a third stat that doesn't exist.
+    Only non-zero categories render -- symmetry is less important
+    than not implying a stat that doesn't exist.
   {% endcomment %}
   <div class="d-flex justify-content-around flex-wrap text-center mb-4 pb-3 border-bottom">
     {% if sync_result.created_list %}
@@ -138,12 +129,6 @@
     {% endif %}
   </div>
 
-  {% comment %}
-    Per-category item enumeration — color-coded left border bars
-    matching the stat colors so the eye links each list back to
-    its stat card. Section header is small/uppercase to subordinate
-    the affordance to the entity names themselves.
-  {% endcomment %}
   {% if sync_result.removed_list %}
   <div class="mb-3 pl-3 hi-category-section hi-category-section--danger">
     <div class="small text-danger text-uppercase mb-1 hi-uppercase-label">
@@ -210,17 +195,12 @@
   {% endif %}
 {% endif %}
 
-{% comment %}
-  Actionable hint (e.g., HASS allowlist) — promoted from muted
-  footer text to a real callout.
-{% endcomment %}
 {% if sync_result.footer_message %}
   <div class="alert alert-info small mb-3">
     {{ sync_result.footer_message }}
   </div>
 {% endif %}
 
-{% comment %}Errors detail — expanded by default when present.{% endcomment %}
 {% if sync_result.error_list %}
 <div class="mb-2 pl-3 hi-category-section hi-category-section--danger">
   <a class="small text-danger text-uppercase hi-uppercase-label" data-toggle="collapse"
@@ -238,7 +218,6 @@
 </div>
 {% endif %}
 
-{% comment %}Diagnostic notes — collapsed by default.{% endcomment %}
 {% if sync_result.info_list %}
 <div class="mt-2">
   <a class="text-muted small" data-toggle="collapse"
@@ -259,13 +238,13 @@
 
 {% comment %}
   Each footer block is declared unconditionally; the {% if %} is
-  inside the block content, not around the {% block %} tag.
-  Django parses block declarations regardless of enclosing if-
-  conditions, so wrapping the declarations would render both
-  branches simultaneously.
+  inside the block content, not around the {% block %} tag. Django
+  parses block declarations regardless of enclosing if-conditions,
+  so wrapping the declarations would render both branches
+  simultaneously.
 
   Page-reload onclick on the dismiss buttons: the modal-to-modal
-  flow that lands here never refreshed the underlying integrations
+  flow that lands here never refreshes the underlying integrations
   page, so a plain dismiss leaves a stale background. Reload makes
   the background page consistent with anything the sync changed.
 {% endcomment %}
