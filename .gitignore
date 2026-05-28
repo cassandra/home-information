@@ -29,4 +29,12 @@ __pycache__/
 /docs/**/*.html
 
 !.github/
+
+# .claude/ -- include agents/ and commands/, ignore runtime state
+# (settings.local.json, scheduled_tasks.lock, state/, etc.)
+!.claude/
+.claude/*
+!.claude/agents/
+!.claude/commands/
+
 /CLAUDE.md
