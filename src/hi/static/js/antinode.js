@@ -663,6 +663,7 @@ function asyncUpdateDataFromJson( $target, $mode, json ) {
     //
     if ( 'html' in json ) {
      if ( $target ) {
+         beforeContentRemoval( $target );
          if ( $mode == 'replace' ) {
              $target.replaceWith( json['html'] );
          }
@@ -680,6 +681,7 @@ function asyncUpdateDataFromJson( $target, $mode, json ) {
     if ( 'replace' in json ) {
         for ( let htmlId in json['replace'] ) {
             let targetObj = $("#"+htmlId);
+            beforeContentRemoval( targetObj );
             targetObj.replaceWith( json['replace'][htmlId] ).show();
             handleNewContentAdded( targetObj );
         }
@@ -691,6 +693,7 @@ function asyncUpdateDataFromJson( $target, $mode, json ) {
     if ( 'insert' in json ) {
         for ( let htmlId in json['insert'] ) {
             let targetObj = $("#"+htmlId);
+            beforeContentRemoval( targetObj );
             targetObj.empty();
             targetObj.html( json['insert'][htmlId] ).show();
             handleNewContentAdded( targetObj );
