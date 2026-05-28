@@ -42,6 +42,45 @@ A useful comment in any of these categories is short, points at the non-obvious 
 
 Earning a place is the first bar; earning the current *length* is the second. Many genuinely useful comments are wordier than the substance warrants — extra qualifications, restated context, parenthetical examples that no longer pull their weight. When keeping a comment, ask whether the same substance reads cleaner in half the words. Bias toward shorter even when keeping.
 
+### WHY vs WHAT — The One-Liner Override Test
+
+When a method overrides a public contract (a base-class method, a `requires_X() -> bool`-style configuration hook), a one-line docstring is keep-worthy when it explains *why* the method returns the specific value it does — domain knowledge the signature cannot carry. Example:
+
+```python
+def requires_api_key(self) -> bool:
+    """NWS does not require an API key."""
+    return False
+```
+
+The docstring tells the reader *why* (the NWS API's actual policy), not just *what* (returns False). Without it, the reader infers the policy by absence — workable but worse than knowing.
+
+The keep applies when:
+- The override implements a public contract where the choice of return value carries domain meaning.
+- The docstring names that meaning in terms the signature cannot.
+
+The keep does **not** apply when:
+- A higher-level docstring (class, module) already establishes the WHY. For example, a `ProfileManager` class that documents its robust-loading strategy makes per-method `"""Create X with error tracking..."""` docstrings redundant — the WHY lives once at the class level.
+- The docstring restates only the WHAT (`"""Return False."""`, `"""Returns the integration's id."""`).
+- The override is mechanical, with no domain knowledge to convey.
+
+### Disambiguating Adjacent Similar Patterns
+
+When two visually similar code patterns appear in the same file but serve different purposes, comments that disambiguate which case each instance is are keep-worthy — even when each individual comment looks like a section label. Example:
+
+```python
+if entity_id not in lookup:
+    continue  # Skip comment-only entries
+
+# ... different method ...
+
+if entity_id not in lookup:
+    continue  # Skip if entity creation failed upstream
+```
+
+Both comments label an `if X not in lookup: continue` line, which alone reads as the "section labels restating well-named code" anti-pattern. But each comment names a *different reason* for the same code shape (skip-by-design vs skip-due-to-error), and that disambiguation is the load-bearing information.
+
+The keep applies when removing the comment would leave a reader uncertain which of two valid behaviors the code is implementing.
+
 ## When a Comment Does Not Belong
 
 Remove comments that fall into any of these categories. These are the patterns observed most often.
@@ -115,6 +154,10 @@ When the backend genuinely needs to mention UI behavior, describe it functionall
 - "See also" pointers to specific lines.
 
 If a cross-reference is genuinely load-bearing, prefer a stable signal: a shared constant, an explicit import, or a name match enforced by the code itself.
+
+**Carve-out: external API documentation URLs are keep-worthy.** A URL to the definitive contract documentation for an external system the code depends on (e.g., `https://api.weather.gov/openapi`, `https://open-meteo.com/en/docs`, an RFC, WMO/METAR specs) is a bookmark to the source of truth — not a maintenance liability. If the URL rots, the implementation that depends on the underlying API has a bigger problem than the comment.
+
+The distinction from the bullets above: internal code references (file paths, method names) rot when *internal* code is renamed; external API URLs rot only when the external system itself changes, which is precisely the event the URL is helping the reader trace.
 
 ### Commented-out code
 Delete it. Version control retains the history. Commented blocks create ambiguity about whether the code should be active and tend to drift out of compilability.
@@ -201,6 +244,8 @@ Removing a *bad* comment is free. Removing a *load-bearing* comment is expensive
 - Flag it for human review with the specific reason for uncertainty.
 
 A cleanup pass that errs toward keeping ambiguous comments is correct. A cleanup pass that silently deletes load-bearing context is a regression.
+
+**Multi-rule conflict counts as uncertainty.** When a single comment hits two rules that point in opposite directions — for example, Comment-vs-Code Drift says "fix it" while a remove-on-sight pattern says "remove it" — that is, by definition, uncertainty about the right action. KEEP and FLAG. Don't pick a side silently.
 
 ### Typo Fixes — Comments and Docstrings Only
 

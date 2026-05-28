@@ -22,20 +22,17 @@ def mark_first_location_created(request):
 
 def mark_edit_mode_entry(request):
     """
-    Called when entering edit mode. 
+    Called when entering edit mode.
     Only tracks if this is the same session that initialized the profile.
     """
-    # Only track edit mode in the initialization session
     if VIEW_INTRO_HELP_SESSION_KEY not in request.session:
         return
-    
-    # Increment entry count
+
     count = request.session.get(EDIT_MODE_ENTRY_COUNT_KEY, 0)
-    
-    # On first entry, start the help timer
+
     if count == 0:
         request.session[EDIT_INTRO_HELP_SESSION_KEY] = time.time()
-    
+
     request.session[EDIT_MODE_ENTRY_COUNT_KEY] = count + 1
 
     
@@ -45,7 +42,6 @@ def dismiss_view_intro_help(request):
 
 
 def should_show_view_intro_help(request):
-    """Check if view mode help should be shown based on session timing."""
     timestamp = request.session.get(VIEW_INTRO_HELP_SESSION_KEY)
     if not timestamp:
         return False
@@ -61,14 +57,11 @@ def should_show_edit_intro_help(request):
     2. This is the first edit mode entry
     3. We're still within the time window
     """
-    # Must be in initialization session
     if VIEW_INTRO_HELP_SESSION_KEY not in request.session:
         return False
-    
-    # Must have entered edit mode at least once
+
     timestamp = request.session.get(EDIT_INTRO_HELP_SESSION_KEY)
     if not timestamp:
         return False
-    
-    # Must be within time window
+
     return (time.time() - timestamp) < EDIT_INTRO_HELP_DURATION_SECONDS

@@ -28,7 +28,6 @@ logger = logging.getLogger(__name__)
 
 @dataclass
 class ProfileLoadingStats:
-    """Track success/failure counts during profile loading."""
     locations_attempted: int = 0
     locations_succeeded: int = 0
     locations_failed: int = 0
@@ -74,7 +73,6 @@ class ProfileLoadingStats:
     collection_views_failed: int = 0
     
     def log_summary(self, profile_label: str):
-        """Log a comprehensive summary of loading results."""
         logger.info(f'Profile loading summary for {profile_label}:')
         logger.info(f'  Locations: {self.locations_succeeded}/{self.locations_attempted} succeeded')
         logger.info(f'  Entities: {self.entities_succeeded}/{self.entities_attempted} succeeded')
@@ -131,23 +129,18 @@ class ProfileManager:
             json.JSONDecodeError: If profile JSON is invalid
             Exception: For other fundamental errors during profile loading
         """
-        # Validate database is empty before starting
         self._validate_empty_database()
-        
+
         json_file_path = self._get_profile_json_path(profile_type)
         profile_data = self._load_json_file( json_file_path )
-        
-        # Validate fundamental requirements before starting
+
         self._validate_fundamental_requirements(profile_data)
-        
-        # Copy SVG fragment files from assets to MEDIA_ROOT before validation
+
         self._render_svg_templates(profile_data)
-        
-        # Initialize tracking
+
         stats = ProfileLoadingStats()
-        
+
         with transaction.atomic():
-            # Create core models with error tracking
             locations, location_lookup = self._create_locations_robust(
                 profile_data.get(PC.PROFILE_FIELD_LOCATIONS, []), stats)
             
@@ -156,8 +149,7 @@ class ProfileManager:
             
             collections, collection_lookup = self._create_collections_robust(
                 profile_data.get(PC.PROFILE_FIELD_COLLECTIONS, []), stats)
-            
-            # Create relationships with error tracking
+
             self._create_entity_positions_and_paths_robust(
                 profile_data.get(PC.PROFILE_FIELD_ENTITIES, []), 
                 entity_lookup, location_lookup, stats)
@@ -181,16 +173,14 @@ class ProfileManager:
             self._create_collection_views_robust(
                 profile_data.get(PC.PROFILE_FIELD_COLLECTIONS, []),
                 collection_lookup, location_lookup, stats)
-            
-            # Validate minimum requirements were met
+
             if not stats.meets_minimum_requirements():
                 raise ValueError(
                     f'Profile loading failed: Minimum requirements not met. '
                     f'Successfully loaded {stats.locations_succeeded} locations '
                     f'and {stats.entities_succeeded} entities. '
                     f'At least 1 location and 1 entity are required.')
-            
-            # Log comprehensive results
+
             stats.log_summary(profile_type.label)
             return stats
     
@@ -201,7 +191,6 @@ class ProfileManager:
         Raises:
             ValueError: If fundamental requirements are not met
         """
-        # Ensure there are locations defined
         locations_data = profile_data.get(PC.PROFILE_FIELD_LOCATIONS, [])
         if not locations_data:
             raise ValueError('Profile must contain at least one location definition')
@@ -354,7 +343,6 @@ class ProfileManager:
         return
 
     def _create_entities( self, entity_data_list: List[dict] ) -> List[Entity]:
-        """Create Entity instances from profile data"""
         entities = []
         
         for entity_data in entity_data_list:
@@ -549,8 +537,7 @@ class ProfileManager:
                 )
                 position_count += 1
                 continue
-            
-            # Create CollectionPath instances
+
             for path_data in collection_data.get(PC.COLLECTION_FIELD_PATHS, []):
                 location = location_lookup[path_data[PC.COMMON_FIELD_LOCATION_NAME]]
                 
@@ -604,10 +591,7 @@ class ProfileManager:
         logger.debug(f'Created {view_count} collection views')
         return
 
-    # Robust error handling versions of creation methods
-    
     def _create_locations_robust(self, location_data_list: List[dict], stats: ProfileLoadingStats) -> tuple[List[Location], Dict[str, Location]]:
-        """Create locations with error tracking and graceful failure handling."""
         locations = []
         
         for location_data in location_data_list:
@@ -636,7 +620,6 @@ class ProfileManager:
         return locations, location_lookup
 
     def _create_entities_robust(self, entity_data_list: List[dict], stats: ProfileLoadingStats) -> tuple[List[Entity], Dict[str, Entity]]:
-        """Create entities with error tracking and graceful failure handling."""
         entities = []
         
         for entity_data in entity_data_list:
@@ -667,7 +650,6 @@ class ProfileManager:
         return entities, entity_lookup
 
     def _create_collections_robust(self, collection_data_list: List[dict], stats: ProfileLoadingStats) -> tuple[List[Collection], Dict[str, Collection]]:
-        """Create collections with error tracking and graceful failure handling."""
         collections = []
         
         for collection_data in collection_data_list:
@@ -706,18 +688,16 @@ class ProfileManager:
                                                   entity_lookup: Dict[str, Entity],
                                                   location_lookup: Dict[str, Location],
                                                   stats: ProfileLoadingStats):
-        """Create entity positions and paths with error tracking and graceful failure handling."""
         for entity_data in entity_data_list:
             if PC.ENTITY_FIELD_NAME not in entity_data:
                 continue
-            
+
             entity_name = entity_data[PC.ENTITY_FIELD_NAME]
             if entity_name not in entity_lookup:
                 continue  # Skip if entity creation failed
-                
+
             entity = entity_lookup[entity_name]
-            
-            # Handle positions
+
             for position_data in entity_data.get(PC.ENTITY_FIELD_POSITIONS, []):
                 stats.entity_positions_attempted += 1
                 try:
@@ -741,8 +721,7 @@ class ProfileManager:
                     stats.entity_positions_failed += 1
                     logger.error(f'Failed to create position for entity "{entity_name}": {e}')
                     continue
-            
-            # Handle paths
+
             for path_data in entity_data.get(PC.ENTITY_FIELD_PATHS, []):
                 stats.entity_paths_attempted += 1
                 try:
@@ -770,7 +749,6 @@ class ProfileManager:
     def _create_location_views_robust(self, location_data_list: List[dict], 
                                       location_lookup: Dict[str, Location],
                                       stats: ProfileLoadingStats):
-        """Create location views with error tracking and graceful failure handling."""
         for location_data in location_data_list:
             location_name = location_data[PC.LOCATION_FIELD_NAME]
             if location_name not in location_lookup:
@@ -813,21 +791,19 @@ class ProfileManager:
                                     entity_lookup: Dict[str, Entity],
                                     location_lookup: Dict[str, Location],
                                     stats: ProfileLoadingStats):
-        """Create entity views with error tracking and graceful failure handling."""
         for entity_data in entity_data_list:
             if PC.ENTITY_FIELD_NAME not in entity_data:
                 continue
-                
+
             entity_name = entity_data[PC.ENTITY_FIELD_NAME]
             if entity_name not in entity_lookup:
                 continue  # Skip if entity creation failed
-                
+
             entity = entity_lookup[entity_name]
-            
+
             for view_name in entity_data.get(PC.ENTITY_FIELD_VISIBLE_IN_VIEWS, []):
                 stats.entity_views_attempted += 1
                 try:
-                    # Find the LocationView by searching all locations
                     location_view = None
                     for location in location_lookup.values():
                         try:
@@ -860,7 +836,6 @@ class ProfileManager:
                                            collection_lookup: Dict[str, Collection],
                                            entity_lookup: Dict[str, Entity],
                                            stats: ProfileLoadingStats):
-        """Create collection-entity relationships with error tracking and graceful failure handling."""
         for collection_data in collection_data_list:
             if PC.COLLECTION_FIELD_NAME not in collection_data:
                 continue
@@ -898,18 +873,16 @@ class ProfileManager:
                                                       collection_lookup: Dict[str, Collection],
                                                       location_lookup: Dict[str, Location],
                                                       stats: ProfileLoadingStats):
-        """Create collection positions and paths with error tracking and graceful failure handling."""
         for collection_data in collection_data_list:
             if PC.COLLECTION_FIELD_NAME not in collection_data:
                 continue
-                
+
             collection_name = collection_data[PC.COLLECTION_FIELD_NAME]
             if collection_name not in collection_lookup:
                 continue  # Skip if collection creation failed
-                
+
             collection = collection_lookup[collection_name]
-            
-            # Handle positions
+
             for position_data in collection_data.get(PC.COLLECTION_FIELD_POSITIONS, []):
                 stats.collection_positions_attempted += 1
                 try:
@@ -933,8 +906,7 @@ class ProfileManager:
                     stats.collection_positions_failed += 1
                     logger.error(f'Failed to create position for collection "{collection_name}": {e}')
                     continue
-            
-            # Handle paths
+
             for path_data in collection_data.get(PC.COLLECTION_FIELD_PATHS, []):
                 stats.collection_paths_attempted += 1
                 try:
@@ -963,21 +935,19 @@ class ProfileManager:
                                         collection_lookup: Dict[str, Collection],
                                         location_lookup: Dict[str, Location],
                                         stats: ProfileLoadingStats):
-        """Create collection views with error tracking and graceful failure handling."""
         for collection_data in collection_data_list:
             if PC.COLLECTION_FIELD_NAME not in collection_data:
                 continue
-                
+
             collection_name = collection_data[PC.COLLECTION_FIELD_NAME]
             if collection_name not in collection_lookup:
                 continue  # Skip if collection creation failed
-                
+
             collection = collection_lookup[collection_name]
-            
+
             for view_name in collection_data.get(PC.COLLECTION_FIELD_VISIBLE_IN_VIEWS, []):
                 stats.collection_views_attempted += 1
                 try:
-                    # Find the LocationView by searching all locations
                     location_view = None
                     for location in location_lookup.values():
                         try:

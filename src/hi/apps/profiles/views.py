@@ -41,7 +41,6 @@ class InitializePredefinedView(View):
         This view should only be accessible when the database is empty
         (no LocationView objects exist).
         """
-        # Validate profile_type parameter - raise 404 for invalid URLs
         try:
             profile_enum = ProfileType.from_name(profile_type)
         except ValueError:
@@ -51,8 +50,7 @@ class InitializePredefinedView(View):
         try:
             profile_manager.load_profile( profile_enum )
             logger.info( f'Successfully loaded profile: {profile_enum}' )
-            
-            # Mark profile as initialized for help system
+
             mark_profile_initialized(request)
 
             request.view_parameters.view_mode = ViewMode.MONITOR
