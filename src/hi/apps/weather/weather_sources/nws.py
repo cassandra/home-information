@@ -48,7 +48,7 @@ class NationalWeatherService( WeatherDataSource, WeatherMixin ):
     STATIONS_DATA_CACHE_EXPIRY_SECS = 12 * 60 * 60  # Data can change, but not often
     OBSERVATIONS_DATA_CACHE_EXPIRY_SECS = 5 * 60  # Cache for rate-limit risk reduction
     FORECAST_DATA_CACHE_EXPIRY_SECS = 60 * 60
-    ALERTS_DATA_CACHE_EXPIRY_SECS = 10 * 60  # Alerts can change frequently, short cache
+    ALERTS_DATA_CACHE_EXPIRY_SECS = 10 * 60
 
     @classmethod
     def weather_source_id(cls):
@@ -67,7 +67,7 @@ class NationalWeatherService( WeatherDataSource, WeatherMixin ):
             priority = 1,
             requests_per_day_limit = 432,
             requests_per_polling_interval = 3,
-            min_polling_interval_secs = 10 * 60,  # NWS station's data seem to update only hourly
+            min_polling_interval_secs = 10 * 60,  # NWS station data updates only hourly
         )
 
         self._headers = {
@@ -77,11 +77,9 @@ class NationalWeatherService( WeatherDataSource, WeatherMixin ):
         return
     
     def requires_api_key(self) -> bool:
-        """NWS does not require an API key."""
         return False
-    
+
     def get_default_enabled_state(self) -> bool:
-        """NWS is enabled by default."""
         return True
     
     async def get_data(self):
@@ -96,7 +94,6 @@ class NationalWeatherService( WeatherDataSource, WeatherMixin ):
             logger.warning( 'Weather manager not available. Skipping NWS weather fetch.' )
             return
 
-        # Fetch current conditions
         try:
             current_conditions_data = self.get_current_conditions(
                 geographic_location = geographic_location,
@@ -109,7 +106,6 @@ class NationalWeatherService( WeatherDataSource, WeatherMixin ):
         except Exception as e:
             self._log_fetch_error( 'current conditions', e )
 
-        # Fetch hourly forecast data
         try:
             interval_hourly_forecast_list = self.get_forecast_hourly(
                 geographic_location = geographic_location,
@@ -122,7 +118,7 @@ class NationalWeatherService( WeatherDataSource, WeatherMixin ):
         except Exception as e:
             self._log_fetch_error( 'hourly forecast', e )
 
-        # Fetch 12-hour forecast data (used for daily forecast)
+        # NWS 12h forecast feeds the daily forecast slot.
         try:
             interval_daily_forecast_list = self.get_forecast_12h(
                 geographic_location = geographic_location,
@@ -135,10 +131,10 @@ class NationalWeatherService( WeatherDataSource, WeatherMixin ):
         except Exception as e:
             self._log_fetch_error( 'daily forecast', e )
 
-        # Fetch weather alerts. Always push the result — even an empty
-        # list — so removed-upstream alerts clear from our stored list.
-        # NWS /alerts/active is contractually the full set of active
-        # alerts, so wholesale replacement is correct.
+        # Always push the result -- even an empty list -- so
+        # removed-upstream alerts clear from our stored list. NWS
+        # /alerts/active is contractually the full set of active alerts,
+        # so wholesale replacement is correct.
         try:
             weather_alerts = self.get_weather_alerts(
                 geographic_location = geographic_location,
@@ -150,9 +146,8 @@ class NationalWeatherService( WeatherDataSource, WeatherMixin ):
         except Exception as e:
             self._log_fetch_error( 'weather alerts', e )
 
-        # Note: NWS does not provide historical weather data or astronomical data
-        # These would need to be fetched from other sources if needed
-        
+        # NWS does not provide historical or astronomical data; other
+        # sources cover those.
         return
 
     def get_current_conditions( self, geographic_location : GeographicLocation ) -> WeatherConditionsData:
@@ -239,7 +234,6 @@ class NationalWeatherService( WeatherDataSource, WeatherMixin ):
             timestamp_str = properties_data.get( 'timestamp' )
             source_datetime = datetime.fromisoformat( timestamp_str )
         except Exception as e:
-            # Use current time if problem.
             logger.warning( f'Missing or bad timestamp in NWS observation payload: {e}' )
             source_datetime = datetimeproxy.now()
 
@@ -367,7 +361,6 @@ class NationalWeatherService( WeatherDataSource, WeatherMixin ):
             timestamp_str = properties_data.get( 'generatedAt' )
             source_datetime = datetime.fromisoformat( timestamp_str )
         except Exception as e:
-            # Use current time if problem.
             logger.warning( f'Missing or bad timestamp in NWS hourly forecast payload: {e}' )
             source_datetime = datetimeproxy.now()
 
@@ -384,7 +377,6 @@ class NationalWeatherService( WeatherDataSource, WeatherMixin ):
         interval_weather_forecast_list = list()
         for period_data in period_data_list:
 
-            # Parse time interval
             try:
                 interval_start_str = period_data.get( 'startTime' )
                 interval_start = datetime.fromisoformat( interval_start_str )
@@ -397,8 +389,7 @@ class NationalWeatherService( WeatherDataSource, WeatherMixin ):
             except Exception as e:
                 logger.warning( f'Missing or bad endTime in NWS forecast payload: {e}' )
                 continue
-            
-            # Create name for time interval
+
             interval_name = period_data.get('name')
             name_data_point = None
             if interval_name:
@@ -407,15 +398,13 @@ class NationalWeatherService( WeatherDataSource, WeatherMixin ):
                     source_datetime = source_datetime,
                     value = interval_name,
                 )
-            
-            # Create time interval
+
             time_interval = TimeInterval(
                 start=interval_start,
                 end=interval_end,
                 name=name_data_point
             )
-            
-            # Create weather forecast data
+
             forecast_data = WeatherForecastData()
             description_short = period_data.get('shortForecast')
             if description_short:
@@ -474,8 +463,7 @@ class NationalWeatherService( WeatherDataSource, WeatherMixin ):
                     )
                 except ValueError:
                     logger.warning( f'Unknown NWS wind direction "{wind_direction_str}"' )
-            
-            # Create interval weather forecast
+
             interval_weather_forecast = IntervalWeatherForecast(
                 interval=time_interval,
                 data=forecast_data
@@ -598,7 +586,6 @@ class NationalWeatherService( WeatherDataSource, WeatherMixin ):
         return stations_data
 
     def _get_stations_data_from_api( self, geographic_location : GeographicLocation ) -> Dict[ str, Any ]:
-        # Can cache this data, expires 12 hours-ish (they do not change often)
         points_data = self._get_points_data( geographic_location = geographic_location )
         stations_url = points_data['properties']['observationStations']
 
@@ -630,7 +617,6 @@ class NationalWeatherService( WeatherDataSource, WeatherMixin ):
         return points_data
 
     def _get_points_data_from_api( self, geographic_location : GeographicLocation ) -> Dict[ str, Any ]:
-        # Can cache this data, expires 12 hours-ish (they do not change often)
         points_url = f'{self._get_base_url()}points/{geographic_location.latitude},{geographic_location.longitude}'
 
         return self._api_get_json(
@@ -667,11 +653,10 @@ class NationalWeatherService( WeatherDataSource, WeatherMixin ):
         
         if closest_station:
             return closest_station
-        
-        # Backup if all parsing fails
+
         if (( 'observationStations' in stations_data )
             and len( stations_data['observationStations']) > 0 ):
-            station_url = stations_data['observationStations'][0]  # Choose from list????
+            station_url = stations_data['observationStations'][0]
             observations_url = f'{station_url}/observations/latest'
 
             return Station(
@@ -1017,7 +1002,6 @@ class NationalWeatherService( WeatherDataSource, WeatherMixin ):
         return
 
     def get_weather_alerts( self, geographic_location : GeographicLocation ) -> List[WeatherAlert]:
-        """Get active weather alerts for the given location."""
         alerts_data = self._get_alerts_data( geographic_location = geographic_location )
         return self._parse_alerts_data( 
             alerts_data = alerts_data,
@@ -1025,7 +1009,6 @@ class NationalWeatherService( WeatherDataSource, WeatherMixin ):
         )
 
     def _get_alerts_data( self, geographic_location : GeographicLocation ) -> Dict[str, Any]:
-        """Get alerts data from cache or API."""
         cache_key = f'ws:{self.id}:alerts:{geographic_location.latitude:.3f}:{geographic_location.longitude:.3f}'
         alerts_data_str = self.redis_client.get(cache_key)
 
@@ -1049,7 +1032,6 @@ class NationalWeatherService( WeatherDataSource, WeatherMixin ):
         return alerts_data
 
     def _get_alerts_data_from_api( self, geographic_location : GeographicLocation ) -> Dict[str, Any]:
-        """Make API call to NWS for alerts data."""
         alerts_url = f'{self._get_base_url()}alerts/active?point={geographic_location.latitude},{geographic_location.longitude}'
         logger.debug(f'NWS alerts API request: {alerts_url}')
         
@@ -1059,10 +1041,9 @@ class NationalWeatherService( WeatherDataSource, WeatherMixin ):
             headers = self._headers,
         )
 
-    def _parse_alerts_data( self, 
+    def _parse_alerts_data( self,
                             alerts_data : Dict[str, Any],
                             geographic_location : GeographicLocation ) -> List[WeatherAlert]:
-        """Parse NWS alerts API response into WeatherAlert objects."""
         weather_alerts = []
         
         features = alerts_data.get('features', [])
@@ -1077,69 +1058,60 @@ class NationalWeatherService( WeatherDataSource, WeatherMixin ):
                     continue
 
                 # NWS publishes a stable per-alert id at the feature
-                # level (typically a URI). Threading it onto the
-                # parsed WeatherAlert lets the alarm mapper use it as
+                # level (typically a URI). Threading it onto the parsed
+                # WeatherAlert lets the alarm mapper use it as
                 # source_alarm_id to dedup repeat polls of the same
                 # active alert.
                 alert_id = feature.get('id')
 
-                # Extract basic alert information
                 event = properties.get('event', 'Unknown Event')
                 headline = properties.get('headline', '')
                 description = properties.get('description', '')
                 instruction = properties.get('instruction', '')
                 area_desc = properties.get('areaDesc', '')
-                
-                # Parse status using NwsConverters
+
                 status_str = properties.get('status', 'Actual')
                 status = NwsConverters.to_alert_status(status_str)
                 if status is None:
                     logger.warning(f'Unknown alert status: {status_str}')
                     status = AlertStatus.ACTUAL
-                
-                # Parse severity using NwsConverters
+
                 severity_str = properties.get('severity', 'Minor')
-                severity = NwsConverters.to_alerts_severity(severity_str)  # Note: using existing typo
+                severity = NwsConverters.to_alert_severity(severity_str)
                 if severity is None:
                     logger.warning(f'Unknown alert severity: {severity_str}')
                     severity = AlertSeverity.MINOR
-                    
-                # Parse urgency using NwsConverters
+
                 urgency_str = properties.get('urgency', 'Unknown')
                 urgency = NwsConverters.to_alert_urgency(urgency_str)
                 if urgency is None:
                     logger.warning(f'Unknown alert urgency: {urgency_str}')
                     urgency = AlertUrgency.UNKNOWN
-                    
-                # Parse certainty using NwsConverters
+
                 certainty_str = properties.get('certainty', 'Possible')
                 certainty = NwsConverters.to_alert_certainty(certainty_str)
                 if certainty is None:
                     logger.warning(f'Unknown alert certainty: {certainty_str}')
                     certainty = AlertCertainty.POSSIBLE
-                
-                # Parse category using NwsConverters (check for category field, default to meteorological)
+
                 category_str = properties.get('category', 'met')
                 category = NwsConverters.to_alert_category(category_str)
                 if category is None:
                     category = AlertCategory.METEOROLOGICAL
-                
-                # Extract NWS event code and convert to canonical event type
+
                 event_code = None
                 event_code_data = properties.get('eventCode', {})
                 if event_code_data and 'NationalWeatherService' in event_code_data:
                     nws_codes = event_code_data['NationalWeatherService']
                     if nws_codes and len(nws_codes) > 0:
-                        event_code = nws_codes[0]  # Take the first code
-                
-                # Convert to canonical event type (with fallback to event name)
+                        event_code = nws_codes[0]
+
                 if event_code:
                     event_type = NwsConverters.to_weather_event_type(event_code)
                 else:
                     event_type = NwsConverters.to_weather_event_type_from_event_name(event)
                     logger.debug(f'No event code found for {event}, using fallback mapping to {event_type}')
-                
-                # Parse timestamps
+
                 try:
                     effective = self._parse_iso_datetime(properties.get('effective'))
                     expires = self._parse_iso_datetime(properties.get('expires'))
@@ -1181,12 +1153,9 @@ class NationalWeatherService( WeatherDataSource, WeatherMixin ):
         return weather_alerts
 
     def _parse_iso_datetime(self, iso_string: str) -> datetime:
-        """Parse ISO datetime string to datetime object."""
         if not iso_string:
             return None
         try:
-            # Handle ISO format with timezone info
             return datetime.fromisoformat(iso_string.replace('Z', '+00:00'))
         except ValueError:
-            # Fallback for other formats
             return datetimeproxy.iso_to_datetime_utc(iso_string)

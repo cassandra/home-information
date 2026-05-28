@@ -65,20 +65,18 @@ class USNO( WeatherDataSource, WeatherMixin ):
             priority = 2,  # Higher priority than sunrise-sunset.org due to moon phase data
             requests_per_day_limit = 1000,  # Conservative estimate
             requests_per_polling_interval = 1,  # Only need one request per day per location
-            min_polling_interval_secs = 24 * 60 * 60,  # Daily data - minimum 24 hours
+            min_polling_interval_secs = 24 * 60 * 60,  # Daily data only updates once per day
         )
 
         self._headers = {
             'User-Agent': 'HomeInformation (weather@homeinformation.org)',
         }
         return
-    
+
     def requires_api_key(self) -> bool:
-        """USNO API does not require an API key."""
         return False
-    
+
     def get_default_enabled_state(self) -> bool:
-        """USNO is enabled by default."""
         return True
     
     async def get_data(self):
@@ -95,7 +93,6 @@ class USNO( WeatherDataSource, WeatherMixin ):
             logger.warning('Weather manager not available. Skipping USNO fetch.')
             return
 
-        # Fetch 10 days of astronomical data
         try:
             astronomical_data_list = self.get_astronomical_data_list(
                 geographic_location = geographic_location,
@@ -129,7 +126,6 @@ class USNO( WeatherDataSource, WeatherMixin ):
     def get_astronomical_data( self,
                                geographic_location : GeographicLocation,
                                target_date         : date = None) -> AstronomicalData:
-        """Get astronomical data for a specific date and location."""
         if target_date is None:
             target_date = datetimeproxy.now().date()
             
@@ -162,7 +158,8 @@ class USNO( WeatherDataSource, WeatherMixin ):
                 )
                 
                 if astronomical_data:
-                    # Create local day boundaries (midnight to midnight in local time)
+                    # Day boundaries are midnight-to-midnight in local time,
+                    # then converted to UTC for internal storage.
                     local_start = local_tz.localize(datetime.combine( target_date,
                                                                       datetime.min.time()) )
                     local_end = local_tz.localize(datetime.combine( target_date,
@@ -189,22 +186,20 @@ class USNO( WeatherDataSource, WeatherMixin ):
                 
         return astronomical_data_list
 
-    def _parse_astronomical_data(self, 
+    def _parse_astronomical_data(self,
                                  api_data: Dict,
                                  geographic_location: GeographicLocation,
                                  target_date: date) -> AstronomicalData:
-        """Parse USNO API response into AstronomicalData object."""
-        
-        # Check for API errors
+
         if 'error' in api_data:
             raise ValueError(f'USNO API error: {api_data["error"]}')
-            
+
         properties = api_data.get('properties', {})
         if not properties:
             raise ValueError('Missing "properties" in USNO API response')
-            
+
+        # Empty data is allowed: USNO returns empty data for some dates.
         data = properties.get('data', {})
-        # Note: Empty data is allowed - API might return empty data for some dates
 
         source_datetime = datetimeproxy.now()
         
@@ -219,16 +214,15 @@ class USNO( WeatherDataSource, WeatherMixin ):
         )
         
         astronomical_data = AstronomicalData()
-        
-        # Parse solar phenomena (sundata)
+
         sundata = data.get('sundata', [])
         for event in sundata:
             phen = event.get('phen', '').lower()
             time_str = event.get('time')
-            
+
             if time_str and phen in ['rise', 'set', 'upper transit']:
                 try:
-                    # Parse time - it's already in local time from the API
+                    # Time is already in local time from the API.
                     time_obj = self._parse_usno_time(time_str)
                     if time_obj:
                         time_data_point = TimeDataPoint(
@@ -246,16 +240,15 @@ class USNO( WeatherDataSource, WeatherMixin ):
                             
                 except Exception as e:
                     logger.warning(f'Problem parsing USNO solar {phen} time "{time_str}": {e}')
-        
-        # Parse lunar phenomena (moondata)
+
         moondata = data.get('moondata', [])
         for event in moondata:
             phen = event.get('phen', '').lower()
             time_str = event.get('time')
-            
+
             if time_str and phen in ['rise', 'set']:
                 try:
-                    # Parse time - it's already in local time from the API
+                    # Time is already in local time from the API.
                     time_obj = self._parse_usno_time(time_str)
                     if time_obj:
                         time_data_point = TimeDataPoint(
@@ -271,26 +264,23 @@ class USNO( WeatherDataSource, WeatherMixin ):
                             
                 except Exception as e:
                     logger.warning(f'Problem parsing USNO lunar {phen} time "{time_str}": {e}')
-        
-        # Parse moon phase data
+
         try:
-            # Get current moon phase information
             curphase = data.get('curphase', '')
             fracillum = data.get('fracillum', '')
-            
+
             if fracillum:
-                # Parse fractional illumination (format like "35%" -> 35.0)
+                # Fractional illumination format like "35%" -> 35.0.
                 illum_str = fracillum.replace('%', '').strip()
                 if illum_str:
                     illumination_percent = float(illum_str)
-                    
+
                     astronomical_data.moon_illumnination = NumericDataPoint(
                         station = station,
                         source_datetime = source_datetime,
                         quantity_ave = UnitQuantity(illumination_percent, 'percent'),
                     )
-                    
-                    # Determine if moon is waxing based on phase name
+
                     is_waxing = self._determine_moon_waxing_status(curphase)
                     if is_waxing is not None:
                         astronomical_data.moon_is_waxing = BooleanDataPoint(
@@ -306,21 +296,19 @@ class USNO( WeatherDataSource, WeatherMixin ):
 
     def _parse_usno_time(self, time_str: str) -> time:
         """
-        Parse USNO time string. Since we request data with our local timezone offset,
-        the returned times are already in local time.
+        USNO returns times already in local time because we send a tz
+        offset on the request. Input format is "HH:MM".
         """
         try:
-            # Parse the time string (format: "HH:MM")
             time_parts = time_str.split(':')
             if len(time_parts) != 2:
                 return None
-                
+
             hour = int(time_parts[0])
             minute = int(time_parts[1])
-            
-            # Return the time object - it's already in local time
+
             return time(hour, minute)
-            
+
         except Exception:
             return None
 
@@ -345,13 +333,11 @@ class USNO( WeatherDataSource, WeatherMixin ):
         elif 'last quarter' in phase_lower or 'last' in phase_lower or 'third quarter' in phase_lower:
             return False
         else:
-            # For indeterminate phases, return None
             return None
 
     def _get_astronomical_api_data( self,
                                     geographic_location : GeographicLocation,
                                     target_date         : date) -> Dict[str, Any]:
-        """Get astronomical data from cache or API."""
         cache_key = f'ws:{self.id}:astronomical:{geographic_location.latitude:.3f}:{geographic_location.longitude:.3f}:{target_date}'
         api_data_str = self.redis_client.get(cache_key)
 
@@ -378,15 +364,12 @@ class USNO( WeatherDataSource, WeatherMixin ):
     def _get_astronomical_api_data_from_api( self,
                                              geographic_location : GeographicLocation,
                                              target_date         : date) -> Dict[str, Any]:
-        """Make API call to USNO for astronomical data."""
-        
-        # Calculate timezone offset for the request
+
         local_tz = pytz.timezone(self.tz_name)
         local_dt = local_tz.localize(datetime.combine(target_date, datetime.min.time()))
         offset_seconds = local_dt.utcoffset().total_seconds()
-        tz_offset = offset_seconds / 3600  # Convert to hours
-        
-        # Build API URL with parameters
+        tz_offset = offset_seconds / 3600
+
         url = (f"{self._get_base_url()}?"
                f"date={target_date.isoformat()}&"
                f"coords={geographic_location.latitude},{geographic_location.longitude}&"

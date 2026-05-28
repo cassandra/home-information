@@ -9,11 +9,8 @@ logger = logging.getLogger(__name__)
 
 
 class OpenMeteoConverters:
-    """Converts OpenMeteo API data formats to canonical weather data model."""
 
-    # OpenMeteo weather codes mapping to descriptive text
-    # Based on WMO weather interpretation codes (WW)
-    # See: https://open-meteo.com/en/docs
+    # WMO weather interpretation codes (WW). See https://open-meteo.com/en/docs
     WEATHER_CODE_DESCRIPTIONS = {
         0: "Clear sky",
         1: "Mainly clear",
@@ -47,34 +44,13 @@ class OpenMeteoConverters:
 
     @staticmethod
     def weather_code_to_description(weather_code: int) -> str:
-        """
-        Convert OpenMeteo weather code to descriptive text.
-        
-        Args:
-            weather_code: OpenMeteo weather code (WMO code)
-            
-        Returns:
-            Descriptive text for the weather condition
-            
-        Raises:
-            ValueError: If weather code is not recognized
-        """
         if weather_code in OpenMeteoConverters.WEATHER_CODE_DESCRIPTIONS:
             return OpenMeteoConverters.WEATHER_CODE_DESCRIPTIONS[weather_code]
-        
+
         raise ValueError(f'Unknown OpenMeteo weather code: {weather_code}')
 
     @staticmethod
     def normalize_temperature_unit(unit_str: str) -> str:
-        """
-        Normalize OpenMeteo temperature unit to Pint-compatible format.
-        
-        Args:
-            unit_str: OpenMeteo temperature unit string
-            
-        Returns:
-            Pint-compatible unit string
-        """
         if unit_str == '°C':
             return 'degC'
         elif unit_str == '°F':
@@ -87,15 +63,6 @@ class OpenMeteoConverters:
 
     @staticmethod
     def normalize_wind_unit(unit_str: str) -> str:
-        """
-        Normalize OpenMeteo wind speed unit to Pint-compatible format.
-        
-        Args:
-            unit_str: OpenMeteo wind speed unit string
-            
-        Returns:
-            Pint-compatible unit string
-        """
         if unit_str == 'km/h':
             return 'km/h'
         elif unit_str == 'm/s':
@@ -110,15 +77,6 @@ class OpenMeteoConverters:
 
     @staticmethod
     def normalize_precipitation_unit(unit_str: str) -> str:
-        """
-        Normalize OpenMeteo precipitation unit to Pint-compatible format.
-        
-        Args:
-            unit_str: OpenMeteo precipitation unit string
-            
-        Returns:
-            Pint-compatible unit string
-        """
         if unit_str == 'mm':
             return 'mm'
         elif unit_str == 'inch':
@@ -129,15 +87,6 @@ class OpenMeteoConverters:
 
     @staticmethod
     def normalize_pressure_unit(unit_str: str) -> str:
-        """
-        Normalize OpenMeteo pressure unit to Pint-compatible format.
-        
-        Args:
-            unit_str: OpenMeteo pressure unit string
-            
-        Returns:
-            Pint-compatible unit string
-        """
         if unit_str == 'hPa':
             return 'hPa'
         elif unit_str == 'Pa':
@@ -152,15 +101,6 @@ class OpenMeteoConverters:
 
     @staticmethod
     def is_weather_code_precipitation(weather_code: int) -> bool:
-        """
-        Check if a weather code indicates precipitation.
-        
-        Args:
-            weather_code: OpenMeteo weather code
-            
-        Returns:
-            True if the weather code indicates precipitation
-        """
         precipitation_codes = {
             51, 53, 55, 56, 57,  # Drizzle
             61, 63, 65, 66, 67,  # Rain
@@ -172,29 +112,12 @@ class OpenMeteoConverters:
 
     @staticmethod
     def is_weather_code_clear(weather_code: int) -> bool:
-        """
-        Check if a weather code indicates clear/sunny conditions.
-        
-        Args:
-            weather_code: OpenMeteo weather code
-            
-        Returns:
-            True if the weather code indicates clear conditions
-        """
         clear_codes = {0, 1}  # Clear sky, mainly clear
         return weather_code in clear_codes
 
     @staticmethod
     def get_weather_code_severity(weather_code: int) -> str:
-        """
-        Get the severity level of a weather condition.
-        
-        Args:
-            weather_code: OpenMeteo weather code
-            
-        Returns:
-            Severity level: 'clear', 'light', 'moderate', 'heavy', 'severe'
-        """
+        """Return one of: 'clear', 'light', 'moderate', 'heavy', 'severe'."""
         if weather_code in {0, 1}:
             return 'clear'
         elif weather_code in {2, 3}:

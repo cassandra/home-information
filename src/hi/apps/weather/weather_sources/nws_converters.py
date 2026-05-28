@@ -115,7 +115,6 @@ class NwsConverters:
         "WSW": "Winter Storm Warning",
     }
     
-    # NWS alert codes to canonical weather event types
     NwsCodeToWeatherEventTypeMap = {
         # Severe Weather
         'TOR': WeatherEventType.TORNADO,
@@ -282,7 +281,7 @@ class NwsConverters:
         return cls.NwsAlertCategoryMap.get( nws_string.strip().lower() )
 
     @classmethod
-    def to_alerts_severity( cls, nws_string : str ) -> AlertSeverity:
+    def to_alert_severity( cls, nws_string : str ) -> AlertSeverity:
         return cls.NwsAlertSeverityMap.get( nws_string.strip().lower() )
         
     @classmethod
@@ -299,42 +298,19 @@ class NwsConverters:
         
     @classmethod
     def to_weather_event_type( cls, nws_code : str ) -> WeatherEventType:
-        """
-        Convert NWS alert code to canonical weather event type.
-        
-        Args:
-            nws_code: NWS alert code (e.g., 'TOR', 'FFW', 'SVR', 'LWY')
-            
-        Returns:
-            Corresponding WeatherEventType or WeatherEventType.OTHER if not found
-        """
         if not nws_code:
             return WeatherEventType.OTHER
-            
-        # NWS codes are typically 3 characters, case-insensitive
         code_upper = nws_code.strip().upper()
         return cls.NwsCodeToWeatherEventTypeMap.get(code_upper, WeatherEventType.OTHER)
     
     @classmethod
     def to_weather_event_type_from_event_name( cls, event_name : str ) -> WeatherEventType:
-        """
-        Convert NWS event name to canonical weather event type (fallback method).
-        
-        This is used when the eventCode field is not available in the API response.
-        
-        Args:
-            event_name: NWS event name (e.g., 'Tornado Warning', 'Lake Wind Advisory')
-            
-        Returns:
-            Corresponding WeatherEventType or WeatherEventType.OTHER if not found
-        """
+        """Fallback used when the eventCode field is absent from the API response."""
         if not event_name:
             return WeatherEventType.OTHER
-            
-        # Normalize the event name for comparison
+
         event_upper = event_name.strip().upper()
-        
-        # Map common NWS event names to canonical types (key patterns)
+
         if 'TORNADO' in event_upper:
             return WeatherEventType.TORNADO
         elif 'SEVERE THUNDERSTORM' in event_upper:

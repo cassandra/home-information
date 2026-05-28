@@ -33,9 +33,9 @@ class OpenMeteo(WeatherDataSource, WeatherMixin):
     BASE_URL = "https://api.open-meteo.com/v1/"
     ARCHIVE_BASE_URL = "https://archive-api.open-meteo.com/v1/archive"
     
-    CURRENT_DATA_CACHE_EXPIRY_SECS = 10 * 60  # Cache for 10 minutes
-    FORECAST_DATA_CACHE_EXPIRY_SECS = 60 * 60  # Cache for 1 hour
-    HISTORICAL_DATA_CACHE_EXPIRY_SECS = 30 * 24 * 60 * 60  # 30 days - historical data rarely changes
+    CURRENT_DATA_CACHE_EXPIRY_SECS = 10 * 60
+    FORECAST_DATA_CACHE_EXPIRY_SECS = 60 * 60
+    HISTORICAL_DATA_CACHE_EXPIRY_SECS = 30 * 24 * 60 * 60  # Long TTL: historical data rarely changes
     
     
     @classmethod
@@ -55,7 +55,7 @@ class OpenMeteo(WeatherDataSource, WeatherMixin):
             priority = 2,  # Lower priority than NWS
             requests_per_day_limit = 10000,  # Open-Meteo is very generous
             requests_per_polling_interval = 5,
-            min_polling_interval_secs = 5 * 60,  # 5 minutes minimum
+            min_polling_interval_secs = 5 * 60,
         )
 
         self._headers = {
@@ -64,11 +64,9 @@ class OpenMeteo(WeatherDataSource, WeatherMixin):
         return
     
     def requires_api_key(self) -> bool:
-        """Open-Meteo does not require an API key."""
         return False
-    
+
     def get_default_enabled_state(self) -> bool:
-        """Open-Meteo is enabled by default."""
         return True
     
     async def get_data(self):
@@ -85,7 +83,6 @@ class OpenMeteo(WeatherDataSource, WeatherMixin):
             logger.warning('Weather manager not available. Skipping OpenMeteo weather fetch.')
             return
 
-        # Fetch current conditions
         try:
             current_conditions_data = self.get_current_conditions(
                 geographic_location = geographic_location,
@@ -99,7 +96,6 @@ class OpenMeteo(WeatherDataSource, WeatherMixin):
             self.record_error( 'Current conditions fetch error: {e}' )
             self._log_fetch_error( 'current conditions', e )
 
-        # Fetch hourly forecast data
         try:
             interval_hourly_forecast_list = self.get_forecast_hourly(
                 geographic_location = geographic_location,
@@ -113,7 +109,6 @@ class OpenMeteo(WeatherDataSource, WeatherMixin):
             self.record_error( 'Hourly forecast fetch error: {e}' )
             self._log_fetch_error( 'hourly forecast', e )
 
-        # Fetch daily forecast data
         try:
             interval_daily_forecast_list = self.get_forecast_daily(
                 geographic_location = geographic_location,
@@ -127,7 +122,6 @@ class OpenMeteo(WeatherDataSource, WeatherMixin):
             self.record_error( 'Daily forecast fetch error: {e}' )
             self._log_fetch_error( 'daily forecast', e )
 
-        # Fetch historical weather data (last 7 days)
         try:
             logger.debug('Fetching OpenMeteo historical weather data for 7 days')
             interval_daily_history_list = self.get_historical_weather(
@@ -145,9 +139,7 @@ class OpenMeteo(WeatherDataSource, WeatherMixin):
             self.record_error( 'Historical data fetch error: {e}' )
             self._log_fetch_error( 'historical data', e )
 
-        # Note: OpenMeteo does not provide astronomical data
-        # This would need to be fetched from other sources if needed
-        
+        # OpenMeteo does not provide astronomical data; other sources cover that.
         return
 
     def get_current_conditions(self, geographic_location: GeographicLocation) -> WeatherConditionsData:
@@ -222,7 +214,6 @@ class OpenMeteo(WeatherDataSource, WeatherMixin):
             
         weather_conditions_data = WeatherConditionsData()
 
-        # Temperature from current weather
         temperature = current_weather_data.get('temperature')
         if temperature is not None:
             temp_unit = current_weather_units.get('temperature', '°C')
@@ -233,7 +224,6 @@ class OpenMeteo(WeatherDataSource, WeatherMixin):
                                              OpenMeteoConverters.normalize_temperature_unit(temp_unit)),
             )
 
-        # Wind speed from current weather
         windspeed = current_weather_data.get('windspeed')
         if windspeed is not None:
             wind_unit = current_weather_units.get('windspeed', 'km/h')
@@ -243,7 +233,6 @@ class OpenMeteo(WeatherDataSource, WeatherMixin):
                 quantity_ave = UnitQuantity(windspeed, OpenMeteoConverters.normalize_wind_unit(wind_unit)),
             )
 
-        # Wind direction from current weather
         wind_direction = current_weather_data.get('winddirection')
         if wind_direction is not None:
             weather_conditions_data.wind_direction = NumericDataPoint(
@@ -252,7 +241,6 @@ class OpenMeteo(WeatherDataSource, WeatherMixin):
                 quantity_ave = UnitQuantity(wind_direction, 'degrees'),
             )
 
-        # Weather code description
         weather_code = current_weather_data.get('weathercode')
         if weather_code is not None:
             try:
@@ -265,7 +253,6 @@ class OpenMeteo(WeatherDataSource, WeatherMixin):
             except ValueError:
                 logger.warning(f'Unknown OpenMeteo weather code: {weather_code}')
 
-        # Is daytime
         is_day = current_weather_data.get('is_day')
         if is_day is not None:
             weather_conditions_data.is_daytime = BooleanDataPoint(
@@ -274,13 +261,13 @@ class OpenMeteo(WeatherDataSource, WeatherMixin):
                 value = bool(is_day),
             )
 
-        # Additional data from hourly arrays (get current hour data)
+        # Pull current-hour values from the hourly arrays for fields the
+        # current_weather payload does not expose directly.
         if hourly_data and hourly_data.get('time'):
             current_hour_str = source_datetime.strftime('%Y-%m-%dT%H:00')
             try:
                 current_hour_index = hourly_data['time'].index(current_hour_str)
-                
-                # Relative humidity
+
                 if 'relativehumidity_2m' in hourly_data:
                     humidity = hourly_data['relativehumidity_2m'][current_hour_index]
                     if humidity is not None:
@@ -290,7 +277,6 @@ class OpenMeteo(WeatherDataSource, WeatherMixin):
                             quantity_ave = UnitQuantity(humidity, 'percent'),
                         )
 
-                # Dew point
                 if 'dewpoint_2m' in hourly_data:
                     dewpoint = hourly_data['dewpoint_2m'][current_hour_index]
                     if dewpoint is not None:
@@ -304,7 +290,6 @@ class OpenMeteo(WeatherDataSource, WeatherMixin):
                             ),
                         )
 
-                # Precipitation
                 if 'precipitation' in hourly_data:
                     precipitation = hourly_data['precipitation'][current_hour_index]
                     if precipitation is not None:
@@ -318,7 +303,6 @@ class OpenMeteo(WeatherDataSource, WeatherMixin):
                             ),
                         )
 
-                # Pressure (sea level)
                 if 'pressure_msl' in hourly_data:
                     pressure = hourly_data['pressure_msl'][current_hour_index]
                     if pressure is not None:
@@ -369,25 +353,21 @@ class OpenMeteo(WeatherDataSource, WeatherMixin):
         interval_weather_forecast_list = list()
         
         for i, time_str in enumerate(time_list):
-            
-            # Parse time interval
+
             try:
                 interval_start = datetimeproxy.iso_naive_to_datetime_utc(time_str)
                 interval_end = interval_start + timedelta(hours = 1)
             except Exception as e:
                 logger.warning(f'Missing or bad time in OpenMeteo hourly forecast payload: {e}')
                 continue
-                
-            # Create time interval
+
             time_interval = TimeInterval(
                 start=interval_start,
                 end=interval_end
             )
-            
-            # Create weather forecast data
+
             forecast_data = WeatherForecastData()
-            
-            # Temperature
+
             if 'temperature_2m' in hourly_data and i < len(hourly_data['temperature_2m']):
                 temperature = hourly_data['temperature_2m'][i]
                 if temperature is not None:
@@ -401,7 +381,6 @@ class OpenMeteo(WeatherDataSource, WeatherMixin):
                         ),
                     )
 
-            # Relative humidity
             if 'relativehumidity_2m' in hourly_data and i < len(hourly_data['relativehumidity_2m']):
                 humidity = hourly_data['relativehumidity_2m'][i]
                 if humidity is not None:
@@ -411,7 +390,6 @@ class OpenMeteo(WeatherDataSource, WeatherMixin):
                         quantity_ave = UnitQuantity(humidity, 'percent'),
                     )
 
-            # Wind speed
             if 'windspeed_10m' in hourly_data and i < len(hourly_data['windspeed_10m']):
                 windspeed = hourly_data['windspeed_10m'][i]
                 if windspeed is not None:
@@ -425,7 +403,6 @@ class OpenMeteo(WeatherDataSource, WeatherMixin):
                         ),
                     )
 
-            # Wind direction
             if 'winddirection_10m' in hourly_data and i < len(hourly_data['winddirection_10m']):
                 wind_direction = hourly_data['winddirection_10m'][i]
                 if wind_direction is not None:
@@ -435,7 +412,6 @@ class OpenMeteo(WeatherDataSource, WeatherMixin):
                         quantity_ave = UnitQuantity(wind_direction, 'degrees'),
                     )
 
-            # Precipitation
             if 'precipitation' in hourly_data and i < len(hourly_data['precipitation']):
                 precipitation = hourly_data['precipitation'][i]
                 if precipitation is not None:
@@ -449,7 +425,6 @@ class OpenMeteo(WeatherDataSource, WeatherMixin):
                         ),
                     )
 
-            # Weather code
             if 'weathercode' in hourly_data and i < len(hourly_data['weathercode']):
                 weather_code = hourly_data['weathercode'][i]
                 if weather_code is not None:
@@ -463,7 +438,6 @@ class OpenMeteo(WeatherDataSource, WeatherMixin):
                     except ValueError:
                         logger.warning(f'Unknown OpenMeteo weather code: {weather_code}')
 
-            # Create interval weather forecast
             interval_weather_forecast = IntervalWeatherForecast(
                 interval=time_interval,
                 data=forecast_data
@@ -473,7 +447,7 @@ class OpenMeteo(WeatherDataSource, WeatherMixin):
 
         return interval_weather_forecast_list
 
-    def _parse_daily_forecast_data(self, 
+    def _parse_daily_forecast_data(self,
                                    forecast_data: Dict,
                                    geographic_location: GeographicLocation) -> List[IntervalWeatherForecast]:
 
@@ -510,8 +484,7 @@ class OpenMeteo(WeatherDataSource, WeatherMixin):
         interval_weather_forecast_list = list()
         
         for i, date_str in enumerate(time_list):
-            
-            # Parse time interval
+
             try:
                 date_obj = datetime.fromisoformat(date_str).date()
                 datetime_obj = datetime.combine( date_obj, datetime.min.time() ).isoformat()
@@ -520,16 +493,14 @@ class OpenMeteo(WeatherDataSource, WeatherMixin):
             except Exception as e:
                 logger.warning(f'Missing or bad date in OpenMeteo daily forecast payload: {e}')
                 continue
-                
+
             time_interval = TimeInterval(
                 start=interval_start,
                 end=interval_end
             )
-            
-            # Create weather forecast data
+
             forecast_data = WeatherForecastData()
-            
-            # Temperature max
+
             if 'temperature_2m_max' in daily_data and i < len(daily_data['temperature_2m_max']):
                 temp_max = daily_data['temperature_2m_max'][i]
                 if temp_max is not None:
@@ -543,7 +514,6 @@ class OpenMeteo(WeatherDataSource, WeatherMixin):
                         ),
                     )
 
-            # Temperature min
             if 'temperature_2m_min' in daily_data and i < len(daily_data['temperature_2m_min']):
                 temp_min = daily_data['temperature_2m_min'][i]
                 if temp_min is not None:
@@ -561,7 +531,6 @@ class OpenMeteo(WeatherDataSource, WeatherMixin):
                     else:
                         forecast_data.temperature.quantity_min = quantity_min
 
-            # Precipitation sum
             if 'precipitation_sum' in daily_data and i < len(daily_data['precipitation_sum']):
                 precipitation = daily_data['precipitation_sum'][i]
                 if precipitation is not None:
@@ -575,7 +544,6 @@ class OpenMeteo(WeatherDataSource, WeatherMixin):
                         ),
                     )
 
-            # Weather code
             if 'weathercode' in daily_data and i < len(daily_data['weathercode']):
                 weather_code = daily_data['weathercode'][i]
                 if weather_code is not None:
@@ -589,7 +557,6 @@ class OpenMeteo(WeatherDataSource, WeatherMixin):
                     except ValueError:
                         logger.warning(f'Unknown OpenMeteo weather code: {weather_code}')
 
-            # Create interval weather forecast
             interval_weather_forecast = IntervalWeatherForecast(
                 interval=time_interval,
                 data=forecast_data
@@ -649,8 +616,7 @@ class OpenMeteo(WeatherDataSource, WeatherMixin):
             )
 
             history_data = WeatherHistoryData()
-            
-            # Temperature max
+
             if 'temperature_2m_max' in daily_data and i < len(daily_data['temperature_2m_max']):
                 temp_max = daily_data['temperature_2m_max'][i]
                 if temp_max is not None:
@@ -664,7 +630,6 @@ class OpenMeteo(WeatherDataSource, WeatherMixin):
                         ),
                     )
 
-            # Temperature min
             if 'temperature_2m_min' in daily_data and i < len(daily_data['temperature_2m_min']):
                 temp_min = daily_data['temperature_2m_min'][i]
                 if temp_min is not None:
@@ -681,8 +646,7 @@ class OpenMeteo(WeatherDataSource, WeatherMixin):
                         )
                     else:
                         history_data.temperature.quantity_min = quantity_min
-                        
-            # Precipitation sum
+
             if 'precipitation_sum' in daily_data and i < len(daily_data['precipitation_sum']):
                 precipitation = daily_data['precipitation_sum'][i]
                 if precipitation is not None:
@@ -696,7 +660,6 @@ class OpenMeteo(WeatherDataSource, WeatherMixin):
                         ),
                     )
 
-            # Weather code
             if 'weathercode' in daily_data and i < len(daily_data['weathercode']):
                 weather_code = daily_data['weathercode'][i]
                 if weather_code is not None:
@@ -741,7 +704,6 @@ class OpenMeteo(WeatherDataSource, WeatherMixin):
         return current_data
 
     def _get_current_weather_data_from_api(self, geographic_location: GeographicLocation) -> Dict[str, Any]:
-        # Request current weather plus additional hourly data for current hour
         url = (f"{self._get_base_url()}forecast?"
                f"latitude={geographic_location.latitude}&"
                f"longitude={geographic_location.longitude}&"
@@ -777,7 +739,6 @@ class OpenMeteo(WeatherDataSource, WeatherMixin):
         return forecast_data
 
     def _get_hourly_forecast_data_from_api(self, geographic_location: GeographicLocation) -> Dict[str, Any]:
-        # Request 7 days of hourly forecast data
         url = (f"{self._get_base_url()}forecast?"
                f"latitude={geographic_location.latitude}&"
                f"longitude={geographic_location.longitude}&"
@@ -813,7 +774,6 @@ class OpenMeteo(WeatherDataSource, WeatherMixin):
         return forecast_data
 
     def _get_daily_forecast_data_from_api(self, geographic_location: GeographicLocation) -> Dict[str, Any]:
-        # Request 14 days of daily forecast data
         url = (f"{self._get_base_url()}forecast?"
                f"latitude={geographic_location.latitude}&"
                f"longitude={geographic_location.longitude}&"
@@ -859,7 +819,6 @@ class OpenMeteo(WeatherDataSource, WeatherMixin):
                                                geographic_location  : GeographicLocation,
                                                start_date           : date,
                                                end_date             : date ) -> Dict[str, Any]:
-        # Request historical weather data from archive API
         url = (f"{self.ARCHIVE_BASE_URL}?"
                f"latitude={geographic_location.latitude}&"
                f"longitude={geographic_location.longitude}&"

@@ -56,20 +56,18 @@ class SunriseSunsetOrg(WeatherDataSource, WeatherMixin):
             priority = 3,  # Lower priority than NWS and OpenMeteo
             requests_per_day_limit = 1000,  # Conservative estimate for "reasonable" usage
             requests_per_polling_interval = 1,  # Only need one request per day per location
-            min_polling_interval_secs = 24 * 60 * 60,  # Daily data - minimum 24 hours
+            min_polling_interval_secs = 24 * 60 * 60,  # Daily data only updates once per day
         )
 
         self._headers = {
             'User-Agent': 'HomeInformation (weather@homeinformation.org)',
         }
         return
-    
+
     def requires_api_key(self) -> bool:
-        """Sunrise-Sunset API does not require an API key."""
         return False
-    
+
     def get_default_enabled_state(self) -> bool:
-        """Sunrise-Sunset is enabled by default."""
         return True
     
     async def get_data(self):
@@ -86,7 +84,6 @@ class SunriseSunsetOrg(WeatherDataSource, WeatherMixin):
             logger.warning('Weather manager not available. Skipping Sunrise-Sunset.org fetch.')
             return
 
-        # Fetch 10 days of astronomical data using the new multi-day method
         try:
             astronomical_data_list = self.get_astronomical_data_list(
                 geographic_location = geographic_location,
@@ -120,10 +117,9 @@ class SunriseSunsetOrg(WeatherDataSource, WeatherMixin):
     def get_astronomical_data( self,
                                geographic_location : GeographicLocation,
                                target_date         : date = None) -> AstronomicalData:
-        """Get astronomical data for a specific date and location."""
         if target_date is None:
             target_date = datetimeproxy.now().date()
-            
+
         api_data = self._get_astronomical_api_data(
             geographic_location = geographic_location,
             target_date = target_date,
@@ -134,12 +130,11 @@ class SunriseSunsetOrg(WeatherDataSource, WeatherMixin):
             target_date = target_date,
         )
 
-    def _parse_astronomical_data(self, 
+    def _parse_astronomical_data(self,
                                  api_data: Dict,
                                  geographic_location: GeographicLocation,
                                  target_date: date) -> AstronomicalData:
-        
-        # Check API status
+
         status = api_data.get('status')
         if status != SunriseSunsetStatus.OK.value:
             raise ValueError(f'Sunrise-Sunset API error: {status}')
@@ -161,8 +156,7 @@ class SunriseSunsetOrg(WeatherDataSource, WeatherMixin):
         )
         
         astronomical_data = AstronomicalData()
-        
-        # Parse time fields from UTC ISO format
+
         time_fields = [
             ('sunrise', 'sunrise'),
             ('sunset', 'sunset'), 
@@ -203,26 +197,24 @@ class SunriseSunsetOrg(WeatherDataSource, WeatherMixin):
         
         astronomical_data_list = []
         today = datetimeproxy.now().date()
-        
-        # Get local timezone from superclass
+
         local_tz = pytz.timezone(self.tz_name)
-        
+
         for day_offset in range(days_count):
             target_date = today + timedelta(days=day_offset)
-            
+
             try:
-                # Get astronomical data for this date
                 astronomical_data = self.get_astronomical_data(
                     geographic_location=geographic_location,
                     target_date=target_date
                 )
-                
+
                 if astronomical_data:
-                    # Create local day boundaries (midnight to midnight in local time)
+                    # Day boundaries are midnight-to-midnight in local time,
+                    # then converted to UTC for internal storage.
                     local_start = local_tz.localize(datetime.combine(target_date, datetime.min.time()))
                     local_end = local_tz.localize(datetime.combine(target_date, datetime.max.time()))
-                    
-                    # Convert to UTC for internal storage (following IntervalDataManager pattern)
+
                     interval_start = local_start.astimezone(pytz.UTC)
                     interval_end = local_end.astimezone(pytz.UTC)
                     
@@ -273,7 +265,6 @@ class SunriseSunsetOrg(WeatherDataSource, WeatherMixin):
     def _get_astronomical_api_data_from_api( self,
                                              geographic_location : GeographicLocation,
                                              target_date         : date) -> Dict[str, Any]:
-        # Build API URL with parameters
         url = (f"{self._get_base_url()}?"
                f"lat={geographic_location.latitude}&"
                f"lng={geographic_location.longitude}&"
