@@ -1,0 +1,52 @@
+{% comment %}
+Stat-card row for the sync-result hero. Only non-zero categories
+render -- symmetry is less important than not implying a stat that
+doesn't exist. Caller is responsible for gating on
+``sync_result.has_changes`` so this partial is not rendered for the
+error / nothing-new states.
+
+Context:
+  sync_result : IntegrationSyncResult (or subclass).
+{% endcomment %}
+<div class="d-flex justify-content-around flex-wrap text-center mb-4 pb-3 border-bottom">
+  {% if sync_result.created_list %}
+  <div class="px-3">
+    <div class="text-success font-weight-bold hi-sync-result-stat-number">
+      {{ sync_result.created_list|length }}
+    </div>
+    <div class="text-muted small text-uppercase hi-uppercase-label">Created</div>
+  </div>
+  {% endif %}
+  {% if sync_result.updated_list %}
+  <div class="px-3">
+    <div class="text-info font-weight-bold hi-sync-result-stat-number">
+      {{ sync_result.updated_list|length }}
+    </div>
+    <div class="text-muted small text-uppercase hi-uppercase-label">Updated</div>
+  </div>
+  {% endif %}
+  {% if sync_result.reconnected_list %}
+  <div class="px-3">
+    <div class="text-info font-weight-bold hi-sync-result-stat-number">
+      {{ sync_result.reconnected_list|length }}
+    </div>
+    <div class="text-muted small text-uppercase hi-uppercase-label">Reconnected</div>
+  </div>
+  {% endif %}
+  {% if sync_result.detached_list %}
+  <div class="px-3">
+    <div class="text-secondary font-weight-bold hi-sync-result-stat-number">
+      {{ sync_result.detached_list|length }}
+    </div>
+    <div class="text-muted small text-uppercase hi-uppercase-label">Detached</div>
+  </div>
+  {% endif %}
+  {% if sync_result.removed_list %}
+  <div class="px-3">
+    <div class="text-danger font-weight-bold hi-sync-result-stat-number">
+      {{ sync_result.removed_list|length }}
+    </div>
+    <div class="text-muted small text-uppercase hi-uppercase-label">Removed</div>
+  </div>
+  {% endif %}
+</div>

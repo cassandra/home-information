@@ -8,11 +8,16 @@
   surfaced rather than silently swallowed by an automatic transition
   to placement.
 
-  Renders a hero headline, a stat-card row of change counts,
-  color-coded per-category enumerations of affected entities, and
-  collapsible Errors / Details sections. When the sync produced
-  newly-created entities, the footer's primary CTA navigates to the
-  placement modal; otherwise the footer is a single dismissal button.
+  The body composes shared panes:
+    sync_result_hero.html       -- headline (success / nothing-new /
+                                   error-partial / error-fatal).
+    sync_result_stats.html      -- stat-card row (success-only).
+    sync_result_categories.html -- per-category enumerations.
+    sync_result_errors.html     -- collapsible errors block.
+    sync_result_info.html       -- collapsible details block.
+
+  The preview-result modal reuses the same partials with preview
+  framing.
 
   The modal title bar uses the generic HI logo + short generic title;
   the integration's identity is surfaced as a body subtitle row
@@ -22,7 +27,7 @@
   Context:
     sync_result      : IntegrationSyncResult (required)
     integration_data : IntegrationData (required)
-    placement_url   : str (optional) -- target of the 'Place N items'
+    placement_url    : str (optional) -- target of the 'Place N items'
                        CTA. Required when sync_result.created_list is
                        non-empty; ignored otherwise.
 {% endcomment %}
@@ -36,163 +41,11 @@
 {% block body %}
 {% include "integrations/panes/integration_modal_header.html" %}
 
-{% comment %}
-  Hero headline -- errors take precedence; otherwise the
-  change-count summary speaks.
-{% endcomment %}
-{% if sync_result.error_list and not sync_result.has_changes %}
-  <div class="text-center mb-4">
-    <div class="text-danger mb-1 hi-sync-result-hero-icon">&#x26A0;</div>
-    <h3 class="text-danger mb-1">
-      {% if is_initial_connect %}Connect failed{% else %}Update check failed{% endif %}
-    </h3>
-    <div class="text-muted small">
-      {{ sync_result.error_list|length }} error{{ sync_result.error_list|length|pluralize }} — see details below.
-    </div>
-  </div>
-{% elif sync_result.error_list %}
-  <div class="text-center mb-4">
-    <div class="text-warning mb-1 hi-sync-result-hero-icon">&#x26A0;</div>
-    <h3 class="text-warning mb-1">
-      {% if is_initial_connect %}Connect completed with errors{% else %}Update check completed with errors{% endif %}
-    </h3>
-    <div class="text-muted small">
-      {{ sync_result.error_list|length }} error{{ sync_result.error_list|length|pluralize }} — see details below.
-    </div>
-  </div>
-{% elif not sync_result.has_changes %}
-  <div class="text-center mb-4">
-    <div class="text-muted mb-1 hi-sync-result-hero-icon">&#x2014;</div>
-    <h3 class="text-muted mb-1">
-      {% if is_initial_connect %}No items found.{% else %}Nothing new{% endif %}
-    </h3>
-    <div class="text-muted small">
-      {% if is_initial_connect %}
-      The connection succeeded but the upstream source returned no items.
-      {% else %}
-      No changes since the last update check.
-      {% endif %}
-    </div>
-  </div>
-{% else %}
-  <div class="text-center mb-3">
-    <div class="text-success mb-1 hi-sync-result-hero-icon">&#x2713;</div>
-    <h3 class="text-success mb-1">
-      {% if is_initial_connect %}Connect complete{% else %}Update check complete{% endif %}
-    </h3>
-  </div>
+{% include "integrations/connector/panes/sync_result_hero.html" %}
 
-  {% comment %}
-    Only non-zero categories render -- symmetry is less important
-    than not implying a stat that doesn't exist.
-  {% endcomment %}
-  <div class="d-flex justify-content-around flex-wrap text-center mb-4 pb-3 border-bottom">
-    {% if sync_result.created_list %}
-    <div class="px-3">
-      <div class="text-success font-weight-bold hi-sync-result-stat-number">
-        {{ sync_result.created_list|length }}
-      </div>
-      <div class="text-muted small text-uppercase hi-uppercase-label">Created</div>
-    </div>
-    {% endif %}
-    {% if sync_result.updated_list %}
-    <div class="px-3">
-      <div class="text-info font-weight-bold hi-sync-result-stat-number">
-        {{ sync_result.updated_list|length }}
-      </div>
-      <div class="text-muted small text-uppercase hi-uppercase-label">Updated</div>
-    </div>
-    {% endif %}
-    {% if sync_result.reconnected_list %}
-    <div class="px-3">
-      <div class="text-info font-weight-bold hi-sync-result-stat-number">
-        {{ sync_result.reconnected_list|length }}
-      </div>
-      <div class="text-muted small text-uppercase hi-uppercase-label">Reconnected</div>
-    </div>
-    {% endif %}
-    {% if sync_result.detached_list %}
-    <div class="px-3">
-      <div class="text-secondary font-weight-bold hi-sync-result-stat-number">
-        {{ sync_result.detached_list|length }}
-      </div>
-      <div class="text-muted small text-uppercase hi-uppercase-label">Detached</div>
-    </div>
-    {% endif %}
-    {% if sync_result.removed_list %}
-    <div class="px-3">
-      <div class="text-danger font-weight-bold hi-sync-result-stat-number">
-        {{ sync_result.removed_list|length }}
-      </div>
-      <div class="text-muted small text-uppercase hi-uppercase-label">Removed</div>
-    </div>
-    {% endif %}
-  </div>
-
-  {% if sync_result.removed_list %}
-  <div class="mb-3 pl-3 hi-category-section hi-category-section--danger">
-    <div class="small text-danger text-uppercase mb-1 hi-uppercase-label">
-      Removed ({{ sync_result.removed_list|length }})
-    </div>
-    <ul class="list-unstyled small mb-0 hi-sync-result-item-list">
-      {% for name in sync_result.removed_list %}
-      <li>{{ name }}</li>
-      {% endfor %}
-    </ul>
-  </div>
-  {% endif %}
-
-  {% if sync_result.detached_list %}
-  <div class="mb-3 pl-3 hi-category-section hi-category-section--secondary">
-    <div class="small text-secondary text-uppercase mb-1 hi-uppercase-label">
-      Detached ({{ sync_result.detached_list|length }})
-    </div>
-    <ul class="list-unstyled small mb-0 hi-sync-result-item-list">
-      {% for name in sync_result.detached_list %}
-      <li>{{ name }}</li>
-      {% endfor %}
-    </ul>
-  </div>
-  {% endif %}
-
-  {% if sync_result.updated_list %}
-  <div class="mb-3 pl-3 hi-category-section hi-category-section--info">
-    <div class="small text-info text-uppercase mb-1 hi-uppercase-label">
-      Updated ({{ sync_result.updated_list|length }})
-    </div>
-    <ul class="list-unstyled small mb-0 hi-sync-result-item-list">
-      {% for name in sync_result.updated_list %}
-      <li>{{ name }}</li>
-      {% endfor %}
-    </ul>
-  </div>
-  {% endif %}
-
-  {% if sync_result.reconnected_list %}
-  <div class="mb-3 pl-3 hi-category-section hi-category-section--info">
-    <div class="small text-info text-uppercase mb-1 hi-uppercase-label">
-      Reconnected ({{ sync_result.reconnected_list|length }})
-    </div>
-    <ul class="list-unstyled small mb-0 hi-sync-result-item-list">
-      {% for name in sync_result.reconnected_list %}
-      <li>{{ name }}</li>
-      {% endfor %}
-    </ul>
-  </div>
-  {% endif %}
-
-  {% if sync_result.created_list %}
-  <div class="mb-3 pl-3 hi-category-section hi-category-section--success">
-    <div class="small text-success text-uppercase mb-1 hi-uppercase-label">
-      Created ({{ sync_result.created_list|length }})
-    </div>
-    <ul class="list-unstyled small mb-0 hi-sync-result-item-list">
-      {% for name in sync_result.created_list %}
-      <li>{{ name }}</li>
-      {% endfor %}
-    </ul>
-  </div>
-  {% endif %}
+{% if sync_result.has_changes %}
+  {% include "integrations/connector/panes/sync_result_stats.html" %}
+  {% include "integrations/connector/panes/sync_result_categories.html" %}
 {% endif %}
 
 {% if sync_result.footer_message %}
@@ -201,39 +54,8 @@
   </div>
 {% endif %}
 
-{% if sync_result.error_list %}
-<div class="mb-2 pl-3 hi-category-section hi-category-section--danger">
-  <a class="small text-danger text-uppercase hi-uppercase-label" data-toggle="collapse"
-     href="#hi-sync-result-errors" role="button"
-     aria-expanded="true" aria-controls="hi-sync-result-errors">
-    Errors ({{ sync_result.error_list|length }})
-  </a>
-  <div class="collapse show" id="hi-sync-result-errors">
-    <ul class="list-unstyled small mt-1 mb-0">
-      {% for error_message in sync_result.error_list %}
-      <li class="text-danger">{{ error_message }}</li>
-      {% endfor %}
-    </ul>
-  </div>
-</div>
-{% endif %}
-
-{% if sync_result.info_list %}
-<div class="mt-2">
-  <a class="text-muted small" data-toggle="collapse"
-     href="#hi-sync-result-info" role="button"
-     aria-expanded="false" aria-controls="hi-sync-result-info">
-    Show details ({{ sync_result.info_list|length }})
-  </a>
-  <div class="collapse" id="hi-sync-result-info">
-    <ul class="small mt-1 mb-0 text-muted hi-sync-result-info-list">
-      {% for info_message in sync_result.info_list %}
-      <li>{{ info_message }}</li>
-      {% endfor %}
-    </ul>
-  </div>
-</div>
-{% endif %}
+{% include "integrations/connector/panes/sync_result_errors.html" %}
+{% include "integrations/connector/panes/sync_result_info.html" %}
 {% endblock %}
 
 {% comment %}

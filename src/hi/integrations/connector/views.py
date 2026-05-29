@@ -114,10 +114,16 @@ class IntegrationPreSyncView( HiModalView, IntegrationViewMixin ):
         )
 
         removal_summary = None
+        supports_preview = False
         if not is_initial_connect:
             removal_summary = EntityIntegrationOperations.summarize_for_removal(
                 integration_id = integration_data.integration_id,
             )
+            # Preview is only meaningful on the update-check path -- on
+            # initial-connect there's nothing in HI to be cautious
+            # about yet. Surface the link only when the connector also
+            # declares it can produce a preview.
+            supports_preview = connector.supports_preview
 
         context = {
             'integration_data': integration_data,
@@ -127,8 +133,60 @@ class IntegrationPreSyncView( HiModalView, IntegrationViewMixin ):
             ),
             'sync_url': sync_url,
             'removal_summary': removal_summary,
+            'supports_preview': supports_preview,
         }
         return self.modal_response( request, context )
+
+
+class IntegrationSyncPreviewView( HiModalView, IntegrationViewMixin ):
+    """Read-only preview of what a sync would do, without committing
+    any changes. Reached from the pre-sync modal's Preview link as a
+    cautious-operator option before pulling the trigger on Refresh.
+
+    The preview-result modal carries forward the same RETAIN / REMOVE
+    policy actions the pre-sync modal exposes, but only when the
+    preview's ``detached_list`` is non-empty -- meaning the policy
+    choice actually matters for this sync's removals. Connectors that
+    don't support preview return 404."""
+
+    def get_template_name( self ) -> str:
+        return 'integrations/connector/modals/sync_preview_result.html'
+
+    def get( self, request, *args, **kwargs ):
+        integration_data = self.get_integration_data( request, *args, **kwargs )
+        connector = integration_data.integration_gateway.get_connector()
+        if connector is None or not connector.supports_preview:
+            return page_not_found_response( request )
+
+        # Threaded through so the result title's update-vs-connect
+        # framing stays correct in the edge case that this endpoint
+        # is reached for an integration with no HI entities yet. The
+        # framework doesn't *surface* the affordance there (the
+        # pre-sync modal gates the Preview link on not-initial), but
+        # we don't refuse a direct call either.
+        is_initial_connect = not Entity.objects.filter(
+            integration_id = integration_data.integration_id,
+        ).exists()
+
+        sync_result = connector.sync_preview(
+            is_initial_connect = is_initial_connect,
+            preserve_user_data = True,
+        )
+
+        sync_url = reverse(
+            'integrations_connect_sync',
+            kwargs = { 'integration_id': integration_data.integration_id },
+        )
+
+        return self.modal_response(
+            request,
+            context = {
+                'sync_result': sync_result,
+                'integration_data': integration_data,
+                'is_initial_connect': is_initial_connect,
+                'sync_url': sync_url,
+            },
+        )
 
 
 class IntegrationSyncView( HiModalView, IntegrationViewMixin, ConnectorViewMixin ):

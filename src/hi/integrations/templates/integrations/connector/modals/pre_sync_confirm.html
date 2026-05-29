@@ -90,6 +90,13 @@ Check {{ integration_data.label }} for updates?
 {% endblock %}
 
 {% block action_center %}
+{% if supports_preview %}
+<a class="btn btn-outline-primary"
+   href="{% url 'integrations_connect_sync_preview' integration_id=integration_data.integration_id %}"
+   role="button" data-async="modal">
+  {% icon "eye" size="sm" css_class="hi-icon-left" %}PREVIEW CHANGES
+</a>
+{% endif %}
 {% if removal_summary.has_mixed_state %}
 <button type="submit" class="btn btn-outline-danger ml-2"
         name="preserve_user_data" value="false">

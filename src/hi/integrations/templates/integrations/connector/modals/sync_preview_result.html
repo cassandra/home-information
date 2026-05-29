@@ -1,0 +1,110 @@
+{% extends "modals/action_3.html" %}
+{% load icons %}
+
+{% comment %}
+Sync preview-result modal. Same shape as sync_result.html but with
+preview framing -- the operator sees what a sync would do without
+committing it, and decides to proceed or back out.
+
+Reuses the five sync-result partials so the information layout
+matches the post-sync modal exactly. Preview-specific surfaces (the
+approximation disclaimer and the technical-key debug expander) sit
+alongside them.
+
+Footer action selection mirrors the pre-sync modal's policy logic
+but is driven by the preview's actual ``detached_list`` rather than
+the integration's general removal_summary -- the preview's smarter
+because it already knows which removals would carry user data. When
+the preview reports no detachments, only a single SYNC button shows.
+When it reports detachments, the operator picks RETAIN MISSING or
+REMOVE MISSING (same wire format as pre_sync_confirm.html).
+
+Context:
+  sync_result      : IntegrationSyncPreviewResult (required)
+  integration_data : IntegrationData (required)
+  sync_url         : str (required) -- target of the SYNC actions.
+{% endcomment %}
+
+{% block modal_dialog_class %}hi-modal-dialog-600{% endblock %}
+
+{% block title_text %}
+Preview: {{ sync_result.title }}
+{% endblock %}
+
+{% block preamble %}
+<form action="{{ sync_url }}" method="post" class="form" data-async="modal">
+  {% csrf_token %}
+{% endblock %}
+
+{% block body %}
+{% include "integrations/panes/integration_modal_header.html" %}
+
+<div class="alert alert-info small text-center mb-3">
+  <strong>Preview</strong> — no changes have been made.
+</div>
+
+{% include "integrations/connector/panes/sync_result_hero.html" with is_initial_connect=False %}
+
+{% if sync_result.has_changes %}
+  {% include "integrations/connector/panes/sync_result_stats.html" %}
+  {% include "integrations/connector/panes/sync_result_categories.html" %}
+{% endif %}
+
+{% if sync_result.approximation_message %}
+  <div class="alert alert-light small mb-3 border">
+    <strong>Note:</strong> {{ sync_result.approximation_message }}
+  </div>
+{% endif %}
+
+{% if sync_result.upstream_added_keys %}
+  <div class="mt-2 mb-3">
+    <a class="text-muted small" data-toggle="collapse"
+       href="#hi-sync-preview-upstream-keys" role="button"
+       aria-expanded="false" aria-controls="hi-sync-preview-upstream-keys">
+      Show upstream identifiers ({{ sync_result.upstream_added_keys|length }})
+    </a>
+    <div class="collapse" id="hi-sync-preview-upstream-keys">
+      <ul class="small mt-1 mb-0 text-muted">
+        {% for key in sync_result.upstream_added_keys %}
+        <li><code>{{ key }}</code></li>
+        {% endfor %}
+      </ul>
+    </div>
+  </div>
+{% endif %}
+
+{% include "integrations/connector/panes/sync_result_errors.html" %}
+{% include "integrations/connector/panes/sync_result_info.html" %}
+{% endblock %}
+
+{% block action_left %}
+<a id="hi-modal-cancel" role="button"
+   class="btn btn-outline-tertiary" href="#" data-dismiss="modal">CANCEL</a>
+{% endblock %}
+
+{% block action_center %}
+{% if sync_result.detached_list %}
+<button type="submit" class="btn btn-outline-danger"
+        name="preserve_user_data" value="false">
+  {% icon "warning" size="sm" css_class="hi-icon-left" %}REMOVE MISSING
+</button>
+{% endif %}
+{% endblock %}
+
+{% block action_right %}
+{% if sync_result.detached_list %}
+<button type="submit" class="btn btn-primary"
+        name="preserve_user_data" value="true">
+  {% icon "shield" size="sm" css_class="hi-icon-left" %}RETAIN MISSING
+</button>
+{% else %}
+<button type="submit" class="btn btn-primary"
+        name="preserve_user_data" value="true">
+  {% icon "sync" size="lg" css_class="hi-icon-left" %}UPDATE
+</button>
+{% endif %}
+{% endblock %}
+
+{% block postamble %}
+</form>
+{% endblock %}

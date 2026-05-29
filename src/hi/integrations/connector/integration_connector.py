@@ -30,7 +30,8 @@ from hi.integrations.enums import IntegrationCapability
 from .external_view_data import ExternalViewData
 from .integration_controller import IntegrationController
 from .sync_check import IntegrationSyncCheck, SyncDelta
-from .sync_result import IntegrationSyncResult
+from .sync_preview import IntegrationSyncPreviewer
+from .sync_result import IntegrationSyncResult, IntegrationSyncPreviewResult
 from hi.integrations.transient_models import IntegrationKey
 
 logger = logging.getLogger(__name__)
@@ -245,6 +246,87 @@ class IntegrationConnector( CapabilityGateway ):
         Called with the synchronization lock held.
         """
         raise NotImplementedError('Subclasses must override this method')
+
+    @property
+    def supports_preview(self) -> bool:
+        """Whether this connector can produce a sync preview without
+        committing changes. True when the subclass overrides either
+        ``_sync_preview_impl`` (higher-fidelity preview) or
+        ``check_needs_sync`` (the framework default impl is built on
+        the latter). The pre-sync modal's Preview affordance is gated
+        on this so connectors that opt out of both don't surface a
+        non-functional button.
+
+        Structural check (method override detection) rather than a
+        runtime probe so it stays cheap and succeeds before upstream
+        connectivity is established.
+        """
+        if type(self)._sync_preview_impl is not IntegrationConnector._sync_preview_impl:
+            return True
+        return type(self).check_needs_sync is not IntegrationConnector.check_needs_sync
+
+    def sync_preview(self,
+                     is_initial_connect : bool,
+                     preserve_user_data : bool = True,
+                     ) -> IntegrationSyncPreviewResult:
+        """Public preview entry point. Parallels ``sync()`` but commits
+        no upstream or HI changes -- the framework default impl uses
+        ``check_needs_sync()`` (a cheap read-only upstream probe) and
+        higher-fidelity overrides are expected to honor the same
+        no-mutation contract.
+
+        Acquires the same lock as ``sync()`` so the preview reflects
+        the same DB state a real sync would see, and a real sync can't
+        race in mid-preview. Skips ``post_sync`` and the sync-check
+        cache write that ``sync()`` performs on success -- both are
+        side effects of a real sync and don't apply to preview.
+
+        Subclasses override ``_sync_preview_impl`` when they want
+        higher-fidelity preview than what ``check_needs_sync`` can
+        provide; the public entry point stays the same.
+        """
+        try:
+            with ExclusionLockContext(name=self.SYNCHRONIZATION_LOCK_NAME):
+                logger.debug(f'{self.__class__.__name__} sync_preview started.')
+                result = self._sync_preview_impl(
+                    is_initial_connect = is_initial_connect,
+                    preserve_user_data = preserve_user_data,
+                )
+        except Exception as e:
+            # Broad catch: any failure during preview must surface in
+            # the result modal as an error rather than crashing the
+            # view or -- worse -- silently rendering the "Nothing new"
+            # state. Preview is a read-only diagnostic; an
+            # unobservable failure defeats the purpose.
+            logger.exception(e)
+            result = IntegrationSyncPreviewResult(
+                title = self.get_result_title(is_initial_connect=is_initial_connect),
+                error_list = [str(e) or e.__class__.__name__],
+            )
+        finally:
+            logger.debug(f'{self.__class__.__name__} sync_preview ended.')
+        return result
+
+    def _sync_preview_impl(self,
+                           is_initial_connect : bool,
+                           preserve_user_data : bool,
+                           ) -> IntegrationSyncPreviewResult:
+        """Default preview implementation. Delegates to
+        ``IntegrationSyncPreviewer.build_from_check`` which leverages
+        the integration's ``check_needs_sync`` drift probe.
+
+        Subclasses with cleanly-separated change-detection logic
+        (e.g., a synchronizer whose ``_sync_impl`` accepts a
+        ``dry_run`` flag) override this method to deliver
+        full-fidelity preview.
+        """
+        return IntegrationSyncPreviewer.build_from_check(
+            check_needs_sync_callable = self.check_needs_sync,
+            result_title = self.get_result_title(
+                is_initial_connect = is_initial_connect,
+            ),
+            preserve_user_data = preserve_user_data,
+        )
 
     async def check_needs_sync(self) -> Optional[SyncDelta]:
         """Periodic sync-check probe. Return a ``SyncDelta`` describing

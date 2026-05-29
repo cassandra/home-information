@@ -1,0 +1,25 @@
+{% comment %}
+Collapsible "show details" block carrying diagnostic notes the
+per-item lists can't express ("Found N upstream items", "Filtered
+N by allowlist", ambiguous-reconnect breadcrumbs, etc.). Default
+closed -- secondary to the change counts above.
+
+Context:
+  sync_result : IntegrationSyncResult (or subclass).
+{% endcomment %}
+{% if sync_result.info_list %}
+<div class="mt-2">
+  <a class="text-muted small" data-toggle="collapse"
+     href="#hi-sync-result-info" role="button"
+     aria-expanded="false" aria-controls="hi-sync-result-info">
+    Show details ({{ sync_result.info_list|length }})
+  </a>
+  <div class="collapse" id="hi-sync-result-info">
+    <ul class="small mt-1 mb-0 text-muted hi-sync-result-info-list">
+      {% for info_message in sync_result.info_list %}
+      <li>{{ info_message }}</li>
+      {% endfor %}
+    </ul>
+  </div>
+</div>
+{% endif %}

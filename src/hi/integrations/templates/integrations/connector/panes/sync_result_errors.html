@@ -1,0 +1,25 @@
+{% comment %}
+Collapsible error block. Default open -- errors are the operator's
+first concern when present. Caller renders this regardless of result
+state; the partial gates internally so it's a no-op when there are
+no errors.
+
+Context:
+  sync_result : IntegrationSyncResult (or subclass).
+{% endcomment %}
+{% if sync_result.error_list %}
+<div class="mb-2 pl-3 hi-category-section hi-category-section--danger">
+  <a class="small text-danger text-uppercase hi-uppercase-label" data-toggle="collapse"
+     href="#hi-sync-result-errors" role="button"
+     aria-expanded="true" aria-controls="hi-sync-result-errors">
+    Errors ({{ sync_result.error_list|length }})
+  </a>
+  <div class="collapse show" id="hi-sync-result-errors">
+    <ul class="list-unstyled small mt-1 mb-0">
+      {% for error_message in sync_result.error_list %}
+      <li class="text-danger">{{ error_message }}</li>
+      {% endfor %}
+    </ul>
+  </div>
+</div>
+{% endif %}

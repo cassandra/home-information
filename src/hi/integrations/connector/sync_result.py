@@ -90,3 +90,40 @@ class IntegrationSyncResult:
             or self.detached_list
             or self.removed_list
         )
+
+    @property
+    def has_displayable_created_list(self) -> bool:
+        """True iff ``created_list`` contains at least one non-empty
+        name worth rendering in the Created category section. The
+        preview's framework default impl populates ``created_list``
+        with placeholder empty entries to keep the stat-card "Created"
+        count consistent with the upstream-added count; the templates
+        use this to skip rendering an empty-bodied Created section in
+        that case. For real sync results every entry is a real entity
+        name and this is equivalent to ``bool(created_list)``."""
+        return any(self.created_list)
+
+
+@dataclass
+class IntegrationSyncPreviewResult(IntegrationSyncResult):
+    """Preview-time result for a sync that has not been executed.
+
+    Shape-compatible with ``IntegrationSyncResult`` so the result-modal
+    partials render either; carries two preview-specific fields:
+
+    * ``approximation_message`` -- prose disclaimer about preview
+      fidelity (what wasn't predicted, or couldn't be). Rendered as a
+      small callout in the preview-result modal. ``None`` when the
+      preview is full-fidelity and has nothing to caveat.
+
+    * ``upstream_added_keys`` -- the integration_name tokens for items
+      detected upstream but not present in HI. The default preview
+      impl can't resolve these into display names (the upstream side
+      is opaque at the framework layer), so they're hidden from the
+      main visible result and surfaced via a collapsible debug section
+      so the operator can verify what would be created without
+      committing to sync. Stays empty when an integration's higher-
+      fidelity override populates ``created_list`` with real names.
+    """
+    approximation_message: Optional[str] = None
+    upstream_added_keys: List[str] = field(default_factory=list)

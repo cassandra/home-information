@@ -27,9 +27,11 @@ class IntegrationGateway:
 
     def notify_settings_changed(self):
         """Called when Integration or IntegrationAttribute models are
-        modified. Subclass implementations should reload configuration and
-        notify dependent components."""
-        raise NotImplementedError('Subclasses must override this method')
+        modified. Default is no-op; integrations with cached upstream
+        clients or manager state override to reload them. Reference-
+        only integrations (no connector, no monitor) have nothing to
+        reload on a settings change and inherit the default."""
+        return
 
     def get_connector(self) -> Optional[IntegrationConnector]:
         """Return the integration's connector when it supports the CONNECT
