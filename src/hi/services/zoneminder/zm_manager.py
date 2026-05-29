@@ -215,40 +215,29 @@ class ZoneMinderManager( SingletonManager, AggregateHealthProvider, ApiHealthSta
             enforce_requirements=True
         )
 
-    # TODO: Factor this coercion-with-fallback helper out to the
-    # integrations framework before doing HASS / HomeBox / Frigate --
-    # the pattern repeats verbatim for each one. Candidate location:
-    # a small method on IntegrationGateway or a free function in
-    # hi.integrations.attribute_helpers (alongside the per-integration
-    # validation helpers).
     def _read_polling_interval_secs(self) -> int:
-        """Coerce the user-configured polling interval to a positive
-        int. The attribute schema declares ``INTEGER`` but the
-        framework doesn't enforce a server-side type or range, so we
-        validate here and fall back to the static default on any
-        malformed value -- a typo at the settings page must not stop
-        the monitor."""
+        """Read the configured polling interval. Form-level validation
+        (``AttributeForm._clean_integer_value`` + the schema's
+        ``value_range`` declaration) enforces type and range at save
+        time, so any persisted value should already be a positive int
+        within bounds. The defensive fallbacks here only fire on the
+        edge cases form validation can't cover: the attribute row is
+        missing (integration enabled but never saved) or the DB was
+        manually edited / migrated from legacy data."""
         attribute = self._zm_attr_type_to_attribute.get(
             ZmAttributeType.POLLING_INTERVAL_SECS,
         )
         if attribute is None or not attribute.value:
             return ZmTimeouts.POLLING_INTERVAL_SECS
         try:
-            value = int( attribute.value )
+            return int( attribute.value )
         except (ValueError, TypeError):
             logger.warning(
-                f'Invalid ZM polling interval value '
-                f'"{attribute.value}"; falling back to default '
-                f'{ZmTimeouts.POLLING_INTERVAL_SECS}s'
-            )
-            return ZmTimeouts.POLLING_INTERVAL_SECS
-        if value <= 0:
-            logger.warning(
-                f'Non-positive ZM polling interval ({value}); falling '
+                f'Malformed ZM polling interval value "{attribute.value}" '
+                f'(form validation should have caught this); falling '
                 f'back to default {ZmTimeouts.POLLING_INTERVAL_SECS}s'
             )
             return ZmTimeouts.POLLING_INTERVAL_SECS
-        return value
 
     @property
     def polling_interval_secs(self) -> int:

@@ -1,5 +1,6 @@
 import json
 import logging
+from typing import Any, List, Optional, Tuple
 
 from django.core.files.storage import default_storage
 from django.db import models
@@ -137,7 +138,7 @@ class AttributeModel(models.Model):
     def is_predefined(self):
         return bool( self.attribute_type == AttributeType.PREDEFINED )
     
-    def choices(self):
+    def choices(self) -> List[ Tuple[ str, str ] ]:
         # First check predefined ids
         choice_list = PredefinedValueRanges.get_choices( self.value_range_str )
         if choice_list:
@@ -153,7 +154,76 @@ class AttributeModel(models.Model):
         except json.JSONDecodeError as e:
             logger.error( f'Bad value range for attribute {self.name}: {e}' )
             pass
-        return dict()
+        return list()
+
+    def _parse_value_range_raw(self) -> Optional[ Tuple[ Any, Any ] ]:
+        """Shared parser for ``value_range`` / ``value_range_int``.
+        Returns the ``(min, max)`` pair as the raw JSON-decoded
+        values without type coercion, so each typed wrapper can apply
+        its own validation policy. Returns ``None`` for missing,
+        unparseable, or unrecognized-shape data.
+
+        Recognized shapes (parallel to ``choices()`` so authors can
+        declare numeric ranges in either form):
+          * Two-element list:  ``"[5, 86400]"``
+          * Object with min/max keys:  ``'{"min": 5, "max": 86400}'``"""
+        if not self.value_range_str:
+            return None
+        try:
+            value_range = json.loads( self.value_range_str )
+        except (json.JSONDecodeError, TypeError):
+            return None
+        if isinstance( value_range, list ) and len( value_range ) == 2:
+            return ( value_range[0], value_range[1] )
+        if ( isinstance( value_range, dict )
+             and 'min' in value_range and 'max' in value_range ):
+            return ( value_range['min'], value_range['max'] )
+        return None
+
+    def value_range(self) -> Optional[ Tuple[ float, float ] ]:
+        """Parse ``value_range_str`` as a numeric ``(min, max)`` range
+        for FLOAT-typed attributes (also serves callers that just need
+        either-int-or-float bounds as floats). Returns ``None`` when
+        the field is missing, malformed, or has the bounds reversed.
+
+        Integer-typed call sites should prefer ``value_range_int()`` --
+        this method coerces both bounds via ``float()`` and will
+        therefore accept declarations like ``"[5.7, 10.2]"`` that an
+        integer caller shouldn't honor."""
+        raw = self._parse_value_range_raw()
+        if raw is None:
+            return None
+        low_raw, high_raw = raw
+        try:
+            low  = float( low_raw )
+            high = float( high_raw )
+        except (ValueError, TypeError):
+            return None
+        if low > high:
+            return None
+        return ( low, high )
+
+    def value_range_int(self) -> Optional[ Tuple[ int, int ] ]:
+        """Integer-typed variant of ``value_range()``. Accepts the same
+        list / dict shapes but requires both bounds to be JSON
+        integers (so ``"[5, 10]"`` is honored and ``"[5.0, 10.0]"`` is
+        rejected -- the author declared floats and ``int(5.0)`` would
+        silently coerce). Returns ``None`` on any failure mode of the
+        underlying parse or on a non-int bound.
+
+        ``bool`` is excluded explicitly because Python's
+        ``isinstance(True, int)`` is True; allowing it would silently
+        coerce a misplaced ``"[true, 100]"`` into ``(1, 100)``."""
+        raw = self._parse_value_range_raw()
+        if raw is None:
+            return None
+        low_raw, high_raw = raw
+        for bound in ( low_raw, high_raw ):
+            if isinstance( bound, bool ) or not isinstance( bound, int ):
+                return None
+        if low_raw > high_raw:
+            return None
+        return ( low_raw, high_raw )
 
     @property
     def supports_thumbnail_generation(self):

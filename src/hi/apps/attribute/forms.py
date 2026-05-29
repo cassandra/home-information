@@ -116,7 +116,7 @@ class AttributeForm( forms.ModelForm ):
         cleaned_data = super().clean()
         name = cleaned_data.get('name')
         value = cleaned_data.get('value')
-        
+
         form_is_bound = bool( self.instance.pk )
         if form_is_bound:
             if not self.instance.is_editable:
@@ -125,20 +125,68 @@ class AttributeForm( forms.ModelForm ):
                  and ( name is not None )
                  and ( name != self.instance.name )):
                 raise ValidationError( 'Changing name forbidden for predefined attributes.' )
-            
+
             value = cleaned_data.get('value')
             if self.instance.is_required and is_blank( value ):
                 self.add_error( 'value', 'A value is required.')
             if self.instance.value_type.is_boolean:
                 cleaned_data['value'] = str(str_to_bool( value ))
-                
+            elif self.instance.value_type.is_integer and not is_blank( value ):
+                self._clean_integer_value( cleaned_data, value )
+            elif self.instance.value_type.is_float and not is_blank( value ):
+                self._clean_float_value( cleaned_data, value )
+
         if self.cleaned_data.get('secret'):
             stripped_value = value.strip()
             value_lines = stripped_value.splitlines()
             if len( value_lines) > 1:
                 self.add_error( 'value', 'Secret attributes are limited ot a single line.')
-            
+
         return cleaned_data
+
+    def _clean_integer_value(self, cleaned_data, value):
+        """Server-side enforcement for ``AttributeValueType.INTEGER``
+        attributes. The HTML5 ``<input type="number">`` provides only
+        client-side validation; this catches direct POSTs and any path
+        where the browser's check was bypassed, and applies the
+        ``value_range_int()`` bounds declared on the schema."""
+        try:
+            int_value = int( value )
+        except (ValueError, TypeError):
+            self.add_error( 'value', 'Must be an integer.' )
+            return
+        cleaned_data['value'] = str( int_value )
+        bounds = self.instance.value_range_int()
+        if bounds is None:
+            return
+        low, high = bounds
+        if int_value < low or int_value > high:
+            self.add_error(
+                'value',
+                f'Must be between {low} and {high}.',
+            )
+        return
+
+    def _clean_float_value(self, cleaned_data, value):
+        """Server-side enforcement for ``AttributeValueType.FLOAT``
+        attributes. Mirrors the INTEGER path but uses
+        ``value_range()`` (float-valued bounds) so float-typed
+        schemas can declare ``[0.0, 1.0]`` and similar."""
+        try:
+            float_value = float( value )
+        except (ValueError, TypeError):
+            self.add_error( 'value', 'Must be a number.' )
+            return
+        bounds = self.instance.value_range()
+        if bounds is None:
+            return
+        low, high = bounds
+        if float_value < low or float_value > high:
+            self.add_error(
+                'value',
+                f'Must be between {low} and {high}.',
+            )
+        return
 
     def save( self, commit = True ):
         instance = super().save( commit = False )

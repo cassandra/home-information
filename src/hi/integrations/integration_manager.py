@@ -467,13 +467,25 @@ class IntegrationManager( Singleton ):
         # ``attribute_type.value`` as the row's ``order_id`` makes the
         # config-page render order match the operator-facing order
         # the integration author defined.
+        # Only json-serialize when a range/choices declaration is
+        # actually present. Without this guard ``json.dumps(None)``
+        # would serialize the literal string ``'null'`` into the DB,
+        # which then trips the ``if not self.value_range_str`` early-
+        # return paths in the reader methods (the four-character
+        # string is truthy). Most attributes are TEXT / SECRET /
+        # BOOLEAN with no range, so this is the common case.
+        if attribute_type.value_range is not None:
+            value_range_str = json.dumps( attribute_type.value_range )
+        else:
+            value_range_str = None
+
         attribute = IntegrationAttribute(
             integration = integration,
             name = attribute_type.label,
             value = attribute_type.initial_value,
             description = attribute_type.description or '',
             value_type_str = str(attribute_type.value_type),
-            value_range_str = json.dumps( attribute_type.value_range_dict ),
+            value_range_str = value_range_str,
             integration_key_str = str(integration_key),
             attribute_type_str = AttributeType.PREDEFINED,
             is_editable = attribute_type.is_editable,

@@ -4,13 +4,16 @@ Renders a number input for integer attributes
 {% endcomment %}
 
 <div class="attr-v2-integer-value">
-  <input type="number" 
+  {% with bounds=attribute_form.instance.value_range_int %}
+  <input type="number"
          id="{{ attribute_form.value.id_for_label }}"
          name="{{ attribute_form.value.html_name }}"
          class="form-control"
          value="{{ attribute_form.value.value|default_if_none:'' }}"
          step="1"
+         {% if bounds %}min="{{ bounds.0 }}" max="{{ bounds.1 }}"{% endif %}
          {% if attribute_form.instance and not attribute_form.instance.is_editable %}disabled="true"{% endif %} />
+  {% endwith %}
   {% if attribute_form.value.errors %}
     <div class="attr-v2-field-errors">
       {% for error in attribute_form.value.errors %}
