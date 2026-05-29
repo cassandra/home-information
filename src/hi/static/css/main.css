@@ -469,7 +469,17 @@ a.clickable-card:active {
     display: flex;
     align-items: stretch;
     border-bottom: 1px solid var(--line-color);
-    margin-bottom: 0.5rem;
+    /* Keep top-level domain switcher visible while the pane content    */
+    /* scrolls underneath. Bg matches whichever wrapper bg the sidebar  */
+    /* is showing (white in items mode, warm in detail modes) so the    */
+    /* scrolled content can't bleed through.                            */
+    position: sticky;
+    top: 0;
+    z-index: 20;
+    background-color: var(--edit-mode-primary-bg);
+}
+.hi-screen[hi-edit="True"] #hi-side-content:has(.entity-picker-container) .hi-edit-sidebar-tabs {
+    background-color: var(--white);
 }
 .hi-edit-sidebar-tab {
     flex: 1 1 0;
@@ -1656,9 +1666,11 @@ g[hover] {
     background: var(--muted-bg-light);
     border-bottom: 1px solid var(--line-color);
     padding: 0.5rem;
-    /* Make sticky within the sidebar scroll */
+    /* Stick below the sidebar tabs strip when scrolling. ``top`` is    */
+    /* an approximation of the tabs' rendered height; both elements'    */
+    /* z-index lets the tabs sit above this if values drift.            */
     position: sticky;
-    top: 0;
+    top: 2.5rem;
     z-index: 10;
 }
 

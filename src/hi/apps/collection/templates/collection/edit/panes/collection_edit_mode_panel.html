@@ -3,26 +3,23 @@
 
 {% block view_tab_active %} active{% endblock %}
 
-{% block tab_header %}
-<div class="my-2 h5">
-  <small>Editing:</small> <em>{{ collection.name }}</em>
-</div>
-{% endblock %}
-
 {% block tab_content %}
 <div id="{{ DIVID.COLLECTION_EDIT_PANE }}">
   {% include "collection/edit/panes/collection_properties_edit.html" %}
 </div>
 
 {% if collection_position_form %}
+<hr />
+<div class="h5">Position</div>
 <div id="{{ DIVID.COLLECTION_POSITION_EDIT_PANE }}">
   {% include "collection/edit/panes/collection_position_edit.html" %}
 </div>
 {% endif %}
 
-<div class="my-3">
+<hr class="my-4" />
+<div class="my-2">
   <a href="{% url 'collection_edit_collection_delete' collection_id=collection.id %}"
-     class="btn btn-sm btn-danger btn-block btn-control" role="button" data-async="true">
+     class="btn btn-outline-danger btn-sm btn-block btn-control" role="button" data-async="true">
     DELETE COLLECTION
   </a>
 </div>

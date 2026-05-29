@@ -3,14 +3,17 @@
 
 {% block view_tab_active %} active{% endblock %}
 
-{% block tab_header %}
-<div class="my-2 h5">
-  <small>Editing:</small> <em>{{ request.view_parameters.location_view.name }}</em>
-</div>
-{% endblock %}
-
 {% block tab_content %}
 <div id="{{ DIVID.LOCATION_VIEW_EDIT_PANE }}">
   {% include "location/edit/panes/location_view_properties_edit.html" %}
+</div>
+
+<hr class="my-4" />
+<div class="my-2">
+  <a href="{% url 'location_edit_location_view_delete' location_view_id=location_view.id %}"
+     id="hi-delete-location-view-link" class="btn btn-outline-danger btn-sm btn-block btn-control" role="button"
+     data-async="true">
+    {% icon "delete" size="sm" css_class="hi-icon-left" %}DELETE THIS VIEW
+  </a>
 </div>
 {% endblock %}

@@ -3,14 +3,25 @@
 
 {% block space_tab_active %} active{% endblock %}
 
-{% block tab_header %}
-<div class="my-2 h5">
-  <small>Editing:</small> <em>{{ request.view_parameters.location.name }}</em>
-</div>
-{% endblock %}
-
 {% block tab_content %}
 <div id="{{ DIVID.LOCATION_PROPERTIES_PANE }}">
   {% include "location/edit/panes/location_properties_edit.html" %}
+</div>
+
+<div class="mt-3">
+  <a href="{% url 'location_svg_background' location_id=location.id %}"
+     id="hi-svg-background-link" class="btn btn-outline-primary btn-block btn-control" role="button"
+     data-async="true">
+    {% icon "layers" size="sm" css_class="hi-icon-left" %}BACKGROUND IMAGE
+  </a>
+</div>
+
+<hr class="my-4" />
+<div class="my-2">
+  <a href="{% url 'location_edit_location_delete' location_id=location.id %}"
+     id="hi-delete-location-link" class="btn btn-outline-danger btn-sm btn-block btn-control" role="button"
+     data-async="true">
+    {% icon "delete" size="sm" css_class="hi-icon-left" %}DELETE SPACE AND ALL VIEWS
+  </a>
 </div>
 {% endblock %}
