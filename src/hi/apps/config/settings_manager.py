@@ -40,22 +40,27 @@ class SettingsManager( Singleton ):
         return
     
     def reload(self):
+        # Build the new map locally and atomically swap. Readers
+        # (``get_setting_value``) do not hold ``_attributes_lock``, so
+        # mutating the live map in place would briefly expose an empty
+        # or partially-populated view to any concurrent reader -- which
+        # caused spurious ``None`` returns during settings saves.
         with self._attributes_lock:
             self._subsystem_list = sorted(self._subsystem_list, key=lambda s: s.name)
-            self._attribute_value_map = dict()
+            new_attribute_value_map = dict()
             for subsystem in self._subsystem_list:
                 try:
                     subsystem.refresh_from_db()
                     for subsystem_attribute in subsystem.attributes.all():
                         attr_type = subsystem_attribute.setting_key
-                        self._attribute_value_map[attr_type] = subsystem_attribute.value
+                        new_attribute_value_map[attr_type] = subsystem_attribute.value
                         continue
                 except Subsystem.DoesNotExist:
-                    # Log error - this should not normally happen outside of test teardown
                     logger.error(f'Subsystem {subsystem} no longer exists in database during reload. '
                                  'This may indicate a configuration issue or test teardown problem.')
                 continue
-            
+            self._attribute_value_map = new_attribute_value_map
+
         self._notify_change_listeners()
         return
 
