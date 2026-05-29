@@ -79,6 +79,7 @@
   --hi-panel-tile-target-size: 280px;
   --hi-panel-tile-max-size: 360px;
   --hi-panel-tile-large-min-size: 380px;
+  --hi-panel-tile-small-min-size: 120px;
   --hi-panel-row-min-height: 56px;
   --hi-panel-row-target-height: 80px;
   --hi-panel-row-max-height: 128px;
@@ -1937,6 +1938,20 @@ g[hover] {
     grid-template-columns: repeat(
         auto-fit, minmax(var(--hi-panel-tile-large-min-size), 1fr)
     );
+}
+/* GRID_SMALL halves the minimum tile size so roughly twice as many
+ * columns fit in the same container. Used for collections where
+ * many simple panels (binary status, single value) benefit from a
+ * denser layout. Cards also get a halved min-height so the aspect
+ * ratio stays comparable to GRID rather than going tall-and-narrow.
+ */
+.collection-tile-grid--small {
+    grid-template-columns: repeat(
+        auto-fit, minmax(var(--hi-panel-tile-small-min-size), 1fr)
+    );
+}
+.collection-tile-grid--small .entity-card--tile {
+    min-height: var(--hi-panel-tile-small-min-size);
 }
 .collection-default {
     grid-template-columns: repeat(

@@ -33,6 +33,7 @@ class CollectionViewType(LabeledEnum):
     DEFAULT    = ( 'Default', '' )
     GRID       = ( 'Grid', '' )
     GRID_LARGE = ( 'Grid (Large)', '' )
+    GRID_SMALL = ( 'Grid (Small)', '' )
     LIST       = ( 'List', '' )
     SECURITY   = ( 'Security', '' )
 
@@ -47,6 +48,10 @@ class CollectionViewType(LabeledEnum):
     @property
     def is_grid_large(self):
         return self == CollectionViewType.GRID_LARGE
+
+    @property
+    def is_grid_small(self):
+        return self == CollectionViewType.GRID_SMALL
 
     @property
     def is_list(self):

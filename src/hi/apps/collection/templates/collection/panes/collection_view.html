@@ -26,11 +26,11 @@
       </div>
 
     {% else %}
-      {# GRID, GRID_LARGE, and SECURITY dispatch panels to the TILE   #}
-      {# context; the wrapper modifier class drives the column-count  #}
-      {# budget. SECURITY is an aspirational placeholder, rendering   #}
-      {# identically to GRID today.                                   #}
-      <div class="collection-tile-grid{% if collection.collection_view_type.is_grid_large %} collection-tile-grid--large{% endif %}">
+      {# GRID, GRID_LARGE, GRID_SMALL, and SECURITY dispatch panels  #}
+      {# to the TILE context; the wrapper modifier class drives the  #}
+      {# column-count budget. SECURITY is an aspirational placeholder, #}
+      {# rendering identically to GRID today.                          #}
+      <div class="collection-tile-grid{% if collection.collection_view_type.is_grid_large %} collection-tile-grid--large{% elif collection.collection_view_type.is_grid_small %} collection-tile-grid--small{% endif %}">
         {% for state_panel_data in state_panel_data_list %}
           <div id="{{ state_panel_data.entity.html_id }}"
                class="entity-item {{ state_panel_data.display_category.css_class }} {% if request.view_parameters.is_editing %}draggable{% endif %}"

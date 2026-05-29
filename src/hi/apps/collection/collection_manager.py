@@ -107,9 +107,9 @@ class CollectionManager(Singleton):
             return None
         if collection_view_type.is_list:
             return DisplayContext.ROW
-        # GRID, GRID_LARGE, and SECURITY all use TILE — they differ
-        # only in the wrapper-level column-count budget, not in the
-        # panel template selection.
+        # GRID, GRID_LARGE, GRID_SMALL, and SECURITY all use TILE --
+        # they differ only in the wrapper-level column-count budget,
+        # not in the panel template selection.
         return DisplayContext.TILE
 
     def create_collection( self, name : str ) -> Collection:
