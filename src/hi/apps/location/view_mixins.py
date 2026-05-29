@@ -65,10 +65,26 @@ class LocationViewMixin:
             status_display_data = EntityStateDisplayData(
                 entity_state_status_data = entity_state_status_data,
             )
-            selector = f'[data-state-id="{status_display_data.entity_state.id}"]'
-            set_attributes_map.update({
-                selector: status_display_data.attribute_dict
-            })
+            attribute_dict = status_display_data.attribute_dict
+            if not attribute_dict:
+                continue
+            state_id = status_display_data.entity_state.id
+            # Mirror the polling-refresh dispatch contract documented
+            # in ``entity_state_status.js``: icon wrappers
+            # (``data-status``) get only the ``status`` attribute so
+            # the parent <g>'s ``fill`` / ``fill-opacity`` / ``stroke``
+            # don't cascade into child paths that depend on browser-
+            # default ``fill: black`` or on full opacity. Path
+            # elements (``data-svg-style``) live on the element being
+            # styled, so the full presentation attribute set is the
+            # right payload there.
+            icon_selector = f'[data-state-id="{state_id}"][data-status]'
+            path_selector = f'[data-state-id="{state_id}"][data-svg-style]'
+            if 'status' in attribute_dict:
+                set_attributes_map[ icon_selector ] = {
+                    'status': attribute_dict[ 'status' ],
+                }
+            set_attributes_map[ path_selector ] = attribute_dict
             continue
         return antinode.response(
             set_attributes_map = set_attributes_map,
