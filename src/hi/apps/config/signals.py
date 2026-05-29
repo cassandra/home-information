@@ -1,3 +1,4 @@
+import json
 import logging
 
 from django.db import transaction
@@ -103,7 +104,9 @@ class SettingsInitializer:
                 name = setting_definition.label,
                 value = setting_definition.initial_value,
                 value_type_str = str(setting_definition.value_type),
-                value_range_str = setting_definition.value_range_str,
+                value_range_str = self._coerce_value_range_str(
+                    setting_definition.value_range,
+                ),
                 attribute_type_str = AttributeType.PREDEFINED,
                 is_editable = setting_definition.is_editable,
                 is_required = setting_definition.is_required,
@@ -123,3 +126,15 @@ class SettingsInitializer:
                     track_history = False,
                 )
         return attribute
+
+    def _coerce_value_range_str( self, value_range ):
+        # PredefinedValueRanges IDs and JSON ranges share the same DB
+        # column. Strings pass through untouched; lists/dicts get
+        # JSON-encoded; ``None`` becomes empty so the model's
+        # ``not self.value_range_str`` early-out fires (rather than
+        # storing the literal string ``'null'``).
+        if value_range is None:
+            return ''
+        if isinstance( value_range, str ):
+            return value_range
+        return json.dumps( value_range )

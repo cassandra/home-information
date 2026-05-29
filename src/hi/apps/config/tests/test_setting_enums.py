@@ -13,7 +13,7 @@ class TestSetting(SettingEnum):
         label='First Setting',
         description='Description for first setting',
         value_type=AttributeValueType.TEXT,
-        value_range_str='',
+        value_range=None,
         is_editable=True,
         is_required=True,
         initial_value='default_first',
@@ -22,7 +22,7 @@ class TestSetting(SettingEnum):
         label='Second Setting',
         description='Description for second setting',
         value_type=AttributeValueType.INTEGER,
-        value_range_str='[1, 100]',
+        value_range=[1, 100],
         is_editable=False,
         is_required=False,
         initial_value='50',
@@ -34,7 +34,7 @@ class AnotherTestSetting(SettingEnum):
         label='Another Setting',
         description='Description for another setting',
         value_type=AttributeValueType.BOOLEAN,
-        value_range_str='',
+        value_range=None,
         is_editable=True,
         is_required=True,
         initial_value='true',
@@ -47,7 +47,7 @@ class NestedModuleTestSetting(SettingEnum):
         label='Nested Setting',
         description='Setting in nested module context',
         value_type=AttributeValueType.TEXT,
-        value_range_str='',
+        value_range=None,
         is_editable=True,
         is_required=True,
         initial_value='nested_default',
@@ -62,16 +62,16 @@ class TestSettingDefinition(BaseTestCase):
             label='Test Setting',
             description='A test setting for testing',
             value_type=AttributeValueType.TEXT,
-            value_range_str='[a-z]+',
+            value_range='[a-z]+',
             is_editable=True,
             is_required=False,
             initial_value='default',
         )
-        
+
         self.assertEqual(definition.label, 'Test Setting')
         self.assertEqual(definition.description, 'A test setting for testing')
         self.assertEqual(definition.value_type, AttributeValueType.TEXT)
-        self.assertEqual(definition.value_range_str, '[a-z]+')
+        self.assertEqual(definition.value_range, '[a-z]+')
         self.assertTrue(definition.is_editable)
         self.assertFalse(definition.is_required)
         self.assertEqual(definition.initial_value, 'default')
@@ -95,7 +95,7 @@ class TestSettingDefinition(BaseTestCase):
                     label=f'{value_type.name} Setting',
                     description=f'Setting for {value_type.name}',
                     value_type=value_type,
-                    value_range_str='',
+                    value_range=None,
                     is_editable=True,
                     is_required=True,
                     initial_value=initial_value,
@@ -225,13 +225,13 @@ class TestSettingEnum(BaseTestCase):
         editable_setting = TestSetting.FIRST_SETTING
         self.assertTrue(editable_setting.definition.is_editable)
         self.assertTrue(editable_setting.definition.is_required)
-        self.assertEqual(editable_setting.definition.value_range_str, '')
-        
+        self.assertIsNone(editable_setting.definition.value_range)
+
         # Test non-editable setting attributes
         readonly_setting = TestSetting.SECOND_SETTING
         self.assertFalse(readonly_setting.definition.is_editable)
         self.assertFalse(readonly_setting.definition.is_required)
-        self.assertEqual(readonly_setting.definition.value_range_str, '[1, 100]')
+        self.assertEqual(readonly_setting.definition.value_range, [1, 100])
         return
 
     def test_enum_value_type_preservation(self):

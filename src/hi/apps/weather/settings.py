@@ -21,7 +21,7 @@ def _create_dynamic_weather_settings() -> Dict[str, SettingDefinition]:
             label=f'Enable {source.label}',
             description=f'Enable the {source.label} weather data source.',
             value_type=AttributeValueType.BOOLEAN,
-            value_range_str='',
+            value_range=None,
             is_editable=True,
             is_required=True,
             initial_value=source.get_default_enabled_state(),
@@ -39,7 +39,7 @@ def _create_dynamic_weather_settings() -> Dict[str, SettingDefinition]:
                 f'Usually: {canonical_base_url}'
             ),
             value_type=AttributeValueType.TEXT,
-            value_range_str='',
+            value_range=None,
             is_editable=True,
             is_required=False,
             initial_value=canonical_base_url,
@@ -51,7 +51,7 @@ def _create_dynamic_weather_settings() -> Dict[str, SettingDefinition]:
                 label=f'{source.label} API Key',
                 description=f'API key for {source.label} weather service (required if is enabled).',
                 value_type=AttributeValueType.SECRET,
-                value_range_str='',
+                value_range=None,
                 is_editable=True,
                 is_required=False,
                 initial_value='',
@@ -61,7 +61,7 @@ def _create_dynamic_weather_settings() -> Dict[str, SettingDefinition]:
         label='Default Polling Interval (Seconds)',
         description='Default interval in seconds for polling weather data from enabled sources.',
         value_type=AttributeValueType.INTEGER,
-        value_range_str='5-86400',  # 5 seconds to 24 hours
+        value_range=[ 5, 86400 ],
         is_editable=True,
         is_required=True,
         initial_value=600,
@@ -75,27 +75,27 @@ def _create_dynamic_weather_settings() -> Dict[str, SettingDefinition]:
             'rate-limit hits during restart loops. 0 disables warmup.'
         ),
         value_type=AttributeValueType.INTEGER,
-        value_range_str='0-300',
+        value_range=[ 0, 300 ],
         is_editable=True,
         is_required=True,
         initial_value=30,
     )
-    
+
     settings_dict['WEATHER_CACHE_ENABLED'] = SettingDefinition(
         label='Enable Weather Data Caching',
         description='Enable caching of weather data to reduce API calls and improve performance.',
         value_type=AttributeValueType.BOOLEAN,
-        value_range_str='',
+        value_range=None,
         is_editable=True,
         is_required=True,
         initial_value=True,
     )
-    
+
     settings_dict['WEATHER_ALERTS_ENABLED'] = SettingDefinition(
         label='Enable Weather Alerts',
         description='Enable processing of weather alerts from data sources and creation of system alarms.',
         value_type=AttributeValueType.BOOLEAN,
-        value_range_str='',
+        value_range=None,
         is_editable=True,
         is_required=True,
         initial_value=True,

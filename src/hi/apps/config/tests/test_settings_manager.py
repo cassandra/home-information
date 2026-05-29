@@ -17,7 +17,7 @@ class TestSetting(SettingEnum):
         label='Test Setting',
         description='A test setting',
         value_type=AttributeValueType.TEXT,
-        value_range_str='',
+        value_range=None,
         is_editable=True,
         is_required=True,
         initial_value='test_initial',

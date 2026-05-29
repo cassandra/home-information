@@ -133,7 +133,7 @@ def settings_manager_model_changed( sender, instance, **kwargs ):
     Queue the SettingsManager.reload() call to execute after the transaction
     is committed.  This prevents reloading multiple times if multiple
     models saved as part of a transaction (which is the normal case for
-    SettingsDefinition and its related models.)
+    SettingDefinition and its related models.)
     """
     _settings_processor.schedule_processing()
         

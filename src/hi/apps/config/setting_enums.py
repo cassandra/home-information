@@ -1,6 +1,7 @@
 import importlib
 from dataclasses import dataclass
 from enum import Enum
+from typing import Dict, List, Optional, Union
 
 from hi.apps.attribute.enums import AttributeValueType
 
@@ -10,10 +11,15 @@ class SettingDefinition:
     label             : str
     description       : str
     value_type        : AttributeValueType
-    value_range_str   : str
+    # ``str`` carries a PredefinedValueRanges key (looked up via the
+    # model's ``choices()``); ``list``/``dict`` carries an inline
+    # numeric range or enum choice map (JSON-encoded into the
+    # ``AttributeModel.value_range_str`` field at write time);
+    # ``None`` means unbounded.
+    value_range       : Optional[ Union[ str, List, Dict ] ]
     is_editable       : bool
     is_required       : bool
-    initial_value     : str    
+    initial_value     : str
 
 
 class SettingEnum(Enum):

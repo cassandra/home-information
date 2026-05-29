@@ -15,7 +15,7 @@ class TestModuleSetting(SettingEnum):
         label='Test Setting One',
         description='First test setting',
         value_type=AttributeValueType.TEXT,
-        value_range_str='',
+        value_range=None,
         is_editable=True,
         is_required=True,
         initial_value='test_default_one',
@@ -24,7 +24,7 @@ class TestModuleSetting(SettingEnum):
         label='Test Setting Two',
         description='Second test setting',
         value_type=AttributeValueType.INTEGER,
-        value_range_str='[0, 100]',
+        value_range=[0, 100],
         is_editable=True,
         is_required=False,
         initial_value='10',
@@ -36,7 +36,7 @@ class AnotherTestSetting(SettingEnum):
         label='Another Test Setting',
         description='Another test setting',
         value_type=AttributeValueType.BOOLEAN,
-        value_range_str='',
+        value_range=None,
         is_editable=True,
         is_required=True,
         initial_value='false',
@@ -248,7 +248,7 @@ class TestAppSettings(BaseTestCase):
         self.assertEqual(setting_two_def.label, 'Test Setting Two')
         self.assertEqual(setting_two_def.description, 'Second test setting')
         self.assertEqual(setting_two_def.value_type, AttributeValueType.INTEGER)
-        self.assertEqual(setting_two_def.value_range_str, '[0, 100]')
+        self.assertEqual(setting_two_def.value_range, [0, 100])
         self.assertTrue(setting_two_def.is_editable)
         self.assertFalse(setting_two_def.is_required)
         self.assertEqual(setting_two_def.initial_value, '10')
