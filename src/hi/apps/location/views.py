@@ -124,11 +124,19 @@ class LocationItemStatusView( View, LocationViewMixin, EntityViewMixin ):
         raise BadRequest( f'Unknown item type "{item_type}".' )
         
     def _handle_entity(self, request : HttpRequest, entity : Entity ):
-        
+
         location_view_id = request.view_parameters.location_view_id
         location_view = LocationView.objects.get( id = location_view_id )
 
-        if location_view.location_view_type not in [ LocationViewType.AUTOMATION ]:
+        # ``long_press`` signals that the gesture-based escape hatch
+        # was used; in AUTOMATION views a tap fires one-click control,
+        # so the long-press is the only way operators have to reach
+        # status / history / edit for a controllable entity in that
+        # view. The JS doesn't dictate which view to surface -- it
+        # just reports the gesture -- and the server picks the route.
+        long_press = ( request.GET.get( 'long_press' ) == '1' )
+        if ( long_press
+             or location_view.location_view_type not in [ LocationViewType.AUTOMATION ] ):
             return self._entity_status_response(
                 request = request,
                 entity = entity,

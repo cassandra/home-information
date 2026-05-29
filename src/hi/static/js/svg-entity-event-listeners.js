@@ -19,12 +19,22 @@
     const POTENTIAL_CLICK_POSITION_DELTA_THRESHOLD = 5;
     const POTENTIAL_CLICK_DELAY_MS = 50;
 
+    // Synthetic long-press gesture. The listener layer manages
+    // timing and movement cancellation, then dispatches to the same
+    // icon -> path -> location chain as the other pointer events. It
+    // has no opinion about what should happen on a long-press -- each
+    // consuming module decides for itself.
+    const LONG_PRESS_DURATION_MS = 750;
+    const LONG_PRESS_MOVE_THRESHOLD_PIXELS = 5;
+
     const activePointers = new Map();
     const gLastMoveEventTimes = new Map();
     let gCurrentSingleEvent = null;
     let gCurrentDoubleEvent = null;
     // Tracks pointer down/up events to generate synthetic click events when real clicks don't fire (e.g., MacBook trackpads on SVG elements)
     let gPotentialClickState = null;
+    let gLongPressState = null;
+    let gSuppressNextClick = false;
 	
     class SinglePointerEvent {
 	constructor( startEvent ) {
@@ -159,6 +169,56 @@
 	}
     }
     
+    function startLongPressTracking( event ) {
+	gLongPressState = {
+	    pointerId: event.pointerId,
+	    startEvent: event,
+	    startPosition: { x: event.clientX, y: event.clientY },
+	    triggerTimer: setTimeout( function() {
+		fireLongPress();
+	    }, LONG_PRESS_DURATION_MS ),
+	};
+    }
+
+    function cancelLongPress() {
+	if ( ! gLongPressState ) { return; }
+	clearTimeout( gLongPressState.triggerTimer );
+	gLongPressState = null;
+    }
+
+    function checkLongPressMove( event ) {
+	if ( ! gLongPressState ) { return; }
+	if ( event.pointerId !== gLongPressState.pointerId ) { return; }
+	const dx = Math.abs( event.clientX - gLongPressState.startPosition.x );
+	const dy = Math.abs( event.clientY - gLongPressState.startPosition.y );
+	if ( Math.max( dx, dy ) > LONG_PRESS_MOVE_THRESHOLD_PIXELS ) {
+	    cancelLongPress();
+	}
+    }
+
+    function fireLongPress() {
+	if ( ! gLongPressState ) { return; }
+	const startEvent = gLongPressState.startEvent;
+	gLongPressState = null;
+	// Suppress the trailing click so the consumer's default tap
+	// action isn't also invoked when the pointer is released.
+	gSuppressNextClick = true;
+	if ( navigator.vibrate ) {
+	    navigator.vibrate( 50 );
+	}
+	dispatchLongPress( startEvent );
+    }
+
+    function dispatchLongPress( startEvent ) {
+	let handled = Hi.edit.icon.handleLongPress( startEvent );
+	if ( ! handled ) {
+	    handled = Hi.edit.path.handleLongPress( startEvent );
+	}
+	if ( ! handled ) {
+	    Hi.location.handleLongPress( startEvent );
+	}
+    }
+
     function handlePointerDownEvent( event ) {
 	if ( shouldIgnoreEvent( event )) { return; }
 
@@ -169,6 +229,10 @@
 	// Start potential click tracking for single pointer events
 	if (currentActivePointersSize === 1) {
 	    startPotentialClickTracking(event);
+	    startLongPressTracking(event);
+	} else {
+	    // Multi-touch is for pan/zoom/rotate; long-press is single-finger only.
+	    cancelLongPress();
 	}
 
 	if (( initialActivePointersSize === 0 ) && ( currentActivePointersSize === 1 )) {
@@ -199,7 +263,12 @@
 	if ( ! lastPointer ) {
 	    return;
 	}
-	
+
+	// Long-press cancellation runs before the move-throttle so even
+	// throttled events count toward the cumulative-displacement
+	// threshold (cheap check, no DOM work).
+	checkLongPressMove( event );
+
 	// Guarding against event floods and performance issues.
 	let now = Date.now();
 	if ( gLastMoveEventTimes.has( event.pointerId )) {
@@ -249,6 +318,13 @@
 	activePointers.delete( event.pointerId );
 	gLastMoveEventTimes.delete( event.pointerId );
 	const currentActivePointersSize = activePointers.size;
+
+	// Released before the long-press trigger fired -- treat as a
+	// normal click; cancellation is a no-op if the timer already
+	// fired and cleared the state.
+	if ( gLongPressState && gLongPressState.pointerId === event.pointerId ) {
+	    cancelLongPress();
+	}
 
 	// Reset potential click state when switching to multi-touch
 	if (currentActivePointersSize > 1) {
@@ -406,7 +482,18 @@
 
 	$(document).on('click', Hi.LOCATION_VIEW_AREA_SELECTOR, function( event ) {
 	    if ( shouldIgnoreEvent( event )) { return; }
-	    
+
+	    // Long-press already dispatched the status request; the
+	    // browser's trailing click on pointer-up must not also fire
+	    // the default action (which in AUTOMATION view would be the
+	    // one-click control).
+	    if ( gSuppressNextClick ) {
+		gSuppressNextClick = false;
+		event.preventDefault();
+		event.stopImmediatePropagation();
+		return;
+	    }
+
 	    // Cancel synthetic click if real click event fires
 	    if (gPotentialClickState?.waitingForClick) {
 		gPotentialClickState = null;

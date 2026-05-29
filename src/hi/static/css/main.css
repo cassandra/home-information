@@ -885,6 +885,7 @@ svg .highlighted {
 
 g.hi-icon {
     pointer-events: all;
+    touch-action: manipulation;
 }
 
 /* Hide background rectangles used for click targets */

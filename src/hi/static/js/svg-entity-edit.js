@@ -110,6 +110,23 @@
             }
             return false;
         },
+        handleLongPress: function( event ) {
+            /* Long-press on an entity icon is the gesture-based escape
+               hatch out of a view-type-specific tap behavior (e.g.,
+               AUTOMATION's one-click control). The server decides what
+               to surface; we just signal that the gesture happened. */
+            if ( Hi.isEditMode ) { return false; }
+            var group = $( event.target ).closest( 'g' );
+            if ( group.length === 0 ) { return false; }
+            if ( group.attr( Hi.DATA_TYPE_ATTR ) !== Hi.DATA_TYPE_ICON_VALUE ) {
+                return false;
+            }
+            var svgItemId = group.attr( 'id' );
+            if ( ! svgItemId ) { return false; }
+            AN.get( Hi.API_LOCATION_ITEM_STATUS_URL + '/' + svgItemId
+                    + '?long_press=1' );
+            return true;
+        },
         handleKeyDown: function( event ) {
             if ( ! Hi.isEditMode ) { return false; }
             return Hi.SvgIconCore.handleKeyDown( event );
@@ -201,6 +218,9 @@
                     }
                 }
             }
+            return false;
+        },
+        handleLongPress: function( event ) {
             return false;
         },
         handleKeyDown: function( event ) {
@@ -298,6 +318,9 @@
                     return true;
                 }
             }
+            return false;
+        },
+        handleLongPress: function( event ) {
             return false;
         },
         handleKeyDown: function( event ) {
