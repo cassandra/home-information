@@ -1,0 +1,54 @@
+{% comment %}
+Edit-mode sidebar base. Three tabs -- Items / View / Space -- pure
+visual chrome: each tab is an antinode link that loads a different
+side-panel template, and the loaded template hardcodes its own
+``active_tab`` block. No client-side tab state. URL routing branches
+on ``request.view_parameters.view_type`` so LocationView and
+CollectionView contexts dispatch to the right manage-items / edit
+target without per-child boilerplate.
+
+Child templates override:
+  active_tab  - one of ``items`` / ``view`` / ``space``.
+  tab_header  - optional title strip inside the pane (e.g.
+                ``Editing: <name>``); omitted on the default
+                Items picker view.
+  tab_content - the pane body.
+{% endcomment %}
+{% load icons %}
+
+{% comment %}
+Context-aware URL resolution: the Items + View tabs route differently
+depending on whether the active view is a LocationView or a
+CollectionView. Space tab always points at the active location.
+{% endcomment %}
+{% if request.view_parameters.view_type.is_collection %}
+  {% url 'collection_edit_collection_manage_items' as items_tab_url %}
+  {% if request.view_parameters.collection_id %}
+    {% url 'collection_edit_mode' collection_id=request.view_parameters.collection_id as view_tab_url %}
+  {% endif %}
+{% else %}
+  {% url 'location_edit_location_view_manage_items' as items_tab_url %}
+  {% if request.view_parameters.location_view.id %}
+    {% url 'location_view_edit_mode' location_view_id=request.view_parameters.location_view.id as view_tab_url %}
+  {% endif %}
+{% endif %}
+{% if request.view_parameters.location.id %}
+  {% url 'location_edit_mode' location_id=request.view_parameters.location.id as space_tab_url %}
+{% endif %}
+
+<nav class="hi-edit-sidebar-tabs">
+  <a href="{{ items_tab_url|default:'#' }}"
+     class="hi-edit-sidebar-tab{% block items_tab_active %}{% endblock %}{% if not items_tab_url %} disabled{% endif %}"
+     {% if items_tab_url %}data-async="true"{% endif %}>Items</a>
+  <a href="{{ view_tab_url|default:'#' }}"
+     class="hi-edit-sidebar-tab{% block view_tab_active %}{% endblock %}{% if not view_tab_url %} disabled{% endif %}"
+     {% if view_tab_url %}data-async="true"{% endif %}>{% if request.view_parameters.view_type.is_collection %}Collection{% else %}View{% endif %}</a>
+  <a href="{{ space_tab_url|default:'#' }}"
+     class="hi-edit-sidebar-tab{% block space_tab_active %}{% endblock %}{% if not space_tab_url %} disabled{% endif %}"
+     {% if space_tab_url %}data-async="true"{% endif %}>Space</a>
+</nav>
+
+<div class="hi-edit-sidebar-content">
+  {% block tab_header %}{% endblock %}
+  {% block tab_content %}{% endblock %}
+</div>

@@ -1,14 +1,15 @@
+{% extends "edit/panes/sidebar_tabbed.html" %}
 {% load icons %}
-<div class="d-flex justify-content-between my-2">
-  <div class="align-self-center h4">Collection Edit</div>
-  <div class="align-self-center ">
-    <a href="{% url 'edit_item_details_close' %}"
-       class="btn btn-sm btn-outline-danger" role="button" data-async="true">
-      {% icon "close" size="sm" css_class="" %}
-    </a>
-  </div>
-</div>
 
+{% block view_tab_active %} active{% endblock %}
+
+{% block tab_header %}
+<div class="my-2 h5">
+  <small>Editing:</small> <em>{{ collection.name }}</em>
+</div>
+{% endblock %}
+
+{% block tab_content %}
 <div id="{{ DIVID.COLLECTION_EDIT_PANE }}">
   {% include "collection/edit/panes/collection_properties_edit.html" %}
 </div>
@@ -25,3 +26,4 @@
     DELETE COLLECTION
   </a>
 </div>
+{% endblock %}

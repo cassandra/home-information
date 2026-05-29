@@ -1,12 +1,6 @@
 {% extends "edit/panes/entity_picker.html" %}
 {% load icons %}
 
-{% block header %}
-<div class="mt-2">
-  {% include "location/edit/panes/location_view_edit_mode_header.html" %}
-</div>
-{% endblock %}
-
 {% block entity_groups %}
 {% for entity_view_group in entity_view_group_list %}
 <div class="{{ DIVID.ENTITY_PICKER_GROUP_SECTION_CLASS }}" data-group="{{ entity_view_group.entity_group_type.label|slugify }}">

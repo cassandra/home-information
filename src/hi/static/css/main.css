@@ -459,6 +459,58 @@ a.clickable-card:active {
 .hi-button-bar-flex > * {
     flex-shrink: 0;
 }
+
+/* Edit-mode sidebar tab strip. Three tabs (Items / View / Space) act  */
+/* as visual chrome over the existing per-template side views: each    */
+/* tab is just an antinode link to a different side-panel URL. The     */
+/* "active" class is hardcoded into the loaded template, so there's    */
+/* no client-side tab state.                                            */
+.hi-edit-sidebar-tabs {
+    display: flex;
+    align-items: stretch;
+    border-bottom: 1px solid var(--line-color);
+    margin-bottom: 0.5rem;
+}
+.hi-edit-sidebar-tab {
+    flex: 1 1 0;
+    text-align: center;
+    padding: 0.5rem 0.25rem;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--primary-color);
+    text-decoration: none;
+    border-bottom: 3px solid transparent;
+    margin-bottom: -1px;
+}
+.hi-edit-sidebar-tab:hover {
+    text-decoration: none;
+    background-color: rgba(23, 112, 114, 0.05);
+}
+.hi-edit-sidebar-tab.active {
+    color: var(--edit-mode-dash-color);
+    border-bottom-color: var(--edit-mode-dash-color);
+    background-color: var(--edit-mode-tertiary-bg);
+}
+.hi-edit-sidebar-tab.disabled {
+    color: #aaa;
+    pointer-events: none;
+    cursor: default;
+}
+.hi-edit-sidebar-content {
+    padding: 0.25rem;
+}
+
+/* Touch-target utility. Apply alongside any visual treatment           */
+/* (typically Bootstrap ``small``/``text-muted``) to give a small      */
+/* text affordance the iOS-HIG 44px tap floor without changing how    */
+/* it looks. Use anywhere a glyph-light link or icon needs to remain   */
+/* finger-friendly on a wall-mounted tablet.                            */
+.hi-tap-target {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    padding: 0.5rem 0.75rem;
+}
 .hi-side {
     padding-left: 0;
     padding-right: 0;
