@@ -113,9 +113,15 @@ class AlertQueue:
             for alert in self._alert_list:
                 if not alert.is_matching_alarm( alarm = alarm ):
                     continue
-                alert.upsert_alarm( alarm = alarm )
+                appended = alert.upsert_alarm( alarm = alarm )
                 self._last_changed_datetime = datetimeproxy.now()
-                logger.debug( f'Added to existing alert: alarm={alarm}, alert={alert}' )
+                if appended:
+                    logger.debug( f'Added alarm to existing alert:'
+                                  f' alarm={alarm}, alert={alert}' )
+                else:
+                    logger.debug( f'Discarded duplicate alarm'
+                                  f' (source_alarm_id already tracked):'
+                                  f' alarm={alarm}, alert={alert}' )
                 return alert
 
             # No matching alert. Make room if needed by evicting the
