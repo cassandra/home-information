@@ -69,14 +69,14 @@ class NwsSimAlert( models.Model ):
     instruction = models.TextField( blank = True, default = '' )
     area_desc = models.CharField( max_length = 255, default = 'Simulator Test Area' )
     effective_offset_secs = models.IntegerField(
-        default = -60,
+        default = -900,
         help_text = (
             'When the alert becomes effective, relative to "now" in seconds. '
             'Negative = in the past, positive = in the future.'
         ),
     )
     expires_offset_secs = models.IntegerField(
-        default = 3600,
+        default = 900,
         help_text = 'When the alert expires, relative to "now" in seconds.',
     )
     created_datetime = models.DateTimeField( auto_now_add = True )

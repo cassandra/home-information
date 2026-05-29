@@ -1334,8 +1334,8 @@ class Command(BaseCommand):
                        severity, certainty, urgency, category,
                        area_desc, headline, description, instruction,
                        status = 'Actual',
-                       effective_offset_secs = -3600,
-                       expires_offset_secs = 43200):
+                       effective_offset_secs = -900,
+                       expires_offset_secs = 900):
         NwsSimAlert.objects.create(
             sim_profile = profile,
             is_active = False,
