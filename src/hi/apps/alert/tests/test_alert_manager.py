@@ -259,7 +259,7 @@ class TestAlertManagerMaintenance(AsyncTaskFastTestCase):
         """Test periodic maintenance handles exceptions gracefully."""
         async def async_test_logic():
             # Mock the alert queue to raise an exception
-            with patch.object(self.manager._alert_queue, 'remove_expired_or_acknowledged_alerts') as mock_cleanup:
+            with patch.object(self.manager._alert_queue, 'remove_expired_alerts') as mock_cleanup:
                 mock_cleanup.side_effect = Exception("Test exception")
 
                 result = await self.manager.do_periodic_maintenance()

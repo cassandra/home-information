@@ -18,17 +18,20 @@ class TestAlertQueue(BaseTestCase):
     def setUp(self):
         super().setUp()
         self.queue = AlertQueue()
-        self.test_alarm = Alarm(
+        self.test_alarm = self._make_alarm('test_alarm')
+        return
+
+    def _make_alarm(self, alarm_type: str, level=AlarmLevel.WARNING) -> Alarm:
+        return Alarm(
             alarm_source=AlarmSource.EVENT,
-            alarm_type='test_alarm',
-            alarm_level=AlarmLevel.WARNING,
-            title='Test Alarm',
+            alarm_type=alarm_type,
+            alarm_level=level,
+            title=f'Alarm {alarm_type}',
             sensor_response_list=[],
             security_level=SecurityLevel.LOW,
             alarm_lifetime_secs=300,
             timestamp=datetimeproxy.now(),
         )
-        return
 
     def test_alert_queue_initialization(self):
         """Test AlertQueue initialization - critical state setup."""
@@ -137,14 +140,52 @@ class TestAlertQueue(BaseTestCase):
         self.assertTrue(bool(self.queue))
         return
 
-    def test_alert_queue_max_size_constraint(self):
-        """Test MAX_ALERT_LIST_SIZE constraint - critical for memory management."""
-        # The AlertQueue doesn't appear to enforce the MAX_ALERT_LIST_SIZE in the current code,
-        # but we should test that the constant exists and can be used for future enforcement
-        self.assertEqual(AlertQueue.MAX_ALERT_LIST_SIZE, 50)
-        
-        # If size enforcement were implemented, it would be critical business logic
-        # For now, just verify the constant exists as part of the class design
+    def test_alert_queue_max_size_evicts_oldest_acknowledged(self):
+        """At capacity, a new alert evicts the oldest acknowledged alert.
+        Unacknowledged alerts are never evicted."""
+        # Override the cap to a small number for test speed.
+        original_cap = AlertQueue.MAX_ALERT_LIST_SIZE
+        AlertQueue.MAX_ALERT_LIST_SIZE = 3
+        try:
+            queue = AlertQueue()
+            # Fill: two acked (old, newer) and one unacked, in that order.
+            acked_old = queue.add_alarm(self._make_alarm('acked_old'))
+            queue.acknowledge_alert(acked_old.id)
+            acked_newer = queue.add_alarm(self._make_alarm('acked_newer'))
+            queue.acknowledge_alert(acked_newer.id)
+            unacked = queue.add_alarm(self._make_alarm('unacked'))
+
+            self.assertEqual(len(queue), 3)
+
+            # Adding a fourth distinct alert should evict the OLDEST acked
+            # (acked_old) and keep the unacked alert untouched.
+            queue.add_alarm(self._make_alarm('new'))
+
+            self.assertEqual(len(queue), 3)
+            with self.assertRaises(KeyError):
+                queue.get_alert(acked_old.id)
+            # Other two survive.
+            queue.get_alert(acked_newer.id)
+            queue.get_alert(unacked.id)
+        finally:
+            AlertQueue.MAX_ALERT_LIST_SIZE = original_cap
+        return
+
+    def test_alert_queue_max_size_unacknowledged_not_evicted(self):
+        """When the queue is full of only unacknowledged alerts, growth
+        is allowed -- an active alert must never be silently lost."""
+        original_cap = AlertQueue.MAX_ALERT_LIST_SIZE
+        AlertQueue.MAX_ALERT_LIST_SIZE = 2
+        try:
+            queue = AlertQueue()
+            queue.add_alarm(self._make_alarm('a'))
+            queue.add_alarm(self._make_alarm('b'))
+            self.assertEqual(len(queue), 2)
+            # No acked alerts to evict; queue should grow past the cap.
+            queue.add_alarm(self._make_alarm('c'))
+            self.assertEqual(len(queue), 3)
+        finally:
+            AlertQueue.MAX_ALERT_LIST_SIZE = original_cap
         return
 
     def test_alert_queue_last_changed_datetime_tracking(self):
@@ -345,15 +386,7 @@ class TestAlertQueue(BaseTestCase):
         return
 
     def test_alert_queue_remove_expired_alerts(self):
-        """Test remove_expired_or_acknowledged_alerts - critical for cleanup.
-
-        Advances ``datetimeproxy`` past the alarm's expiration rather
-        than constructing an alarm with non-positive lifetime
-        (``Alarm.__post_init__`` rejects that). The alert system
-        consults ``datetimeproxy.now()`` for ``end_datetime``
-        comparison, so the simulated clock advance is what makes the
-        cleanup observe the alarm as expired.
-        """
+        """Expired alerts are removed; not-yet-expired alerts survive."""
         from datetime import timedelta
         baseline = datetimeproxy.now()
         expired_alarm = Alarm(
@@ -366,7 +399,7 @@ class TestAlertQueue(BaseTestCase):
             alarm_lifetime_secs=1,
             timestamp=baseline,
         )
-        
+
         # Add expired and active alarms
         expired_alert = self.queue.add_alarm(expired_alarm)
         active_alert = self.queue.add_alarm(self.test_alarm)
@@ -375,45 +408,104 @@ class TestAlertQueue(BaseTestCase):
         self.assertEqual(initial_count, 2)
 
         # Advance the simulated clock past the expired alarm's end
-        # but still before the active alarm's. The cleanup pass reads
-        # the time via ``datetimeproxy.now()`` so this is sufficient
-        # to make it observe the first alarm as expired.
+        # but still before the active alarm's.
         datetimeproxy.set(baseline + timedelta(seconds=10))
         try:
-            self.queue.remove_expired_or_acknowledged_alerts()
+            self.queue.remove_expired_alerts()
 
-            # Should remove expired alert but keep active one
             self.assertEqual(len(self.queue), 1)
-
-            # Should not find expired alert
             with self.assertRaises(KeyError):
                 self.queue.get_alert(expired_alert.id)
-
-            # Should still find active alert
             found_alert = self.queue.get_alert(active_alert.id)
             self.assertEqual(found_alert, active_alert)
         finally:
             datetimeproxy.reset()
         return
 
-    def test_alert_queue_remove_acknowledged_alerts(self):
-        """Test remove_expired_or_acknowledged_alerts removes acknowledged - critical for cleanup."""
-        # Add alert and acknowledge it
+    def test_alert_queue_acknowledged_alert_kept_as_dedup_anchor(self):
+        """Acknowledged alerts stay in the queue until their natural
+        ``end_datetime`` so they continue to suppress duplicate alarms
+        with the same signature. This is the regression-prevention for
+        the dismissed-alert-immediately-reappears bug."""
         alert = self.queue.add_alarm(self.test_alarm)
         self.queue.acknowledge_alert(alert.id)
-        
+
+        # Cleanup does not remove acked-but-not-expired alerts.
+        self.queue.remove_expired_alerts()
         self.assertEqual(len(self.queue), 1)
-        self.assertTrue(alert.is_acknowledged)
-        
-        # Run cleanup
-        self.queue.remove_expired_or_acknowledged_alerts()
-        
-        # Should remove acknowledged alert
-        self.assertEqual(len(self.queue), 0)
-        
-        # Should not find acknowledged alert
-        with self.assertRaises(KeyError):
-            self.queue.get_alert(alert.id)
+        self.queue.get_alert(alert.id)
+
+        # A second matching alarm is silently absorbed by the
+        # acknowledged anchor -- not surfaced as a fresh alert.
+        before_count = len(self.queue)
+        duplicate_alarm = self._make_alarm('test_alarm')
+        returned_alert = self.queue.add_alarm(duplicate_alarm)
+        self.assertEqual(returned_alert.id, alert.id)
+        self.assertEqual(len(self.queue), before_count)
+        self.assertEqual(len(self.queue.unacknowledged_alert_list), 0)
+        return
+
+    def test_alert_queue_acknowledged_alert_end_datetime_not_extended(self):
+        """``upsert_alarm`` must not refresh ``end_datetime`` on an
+        acknowledged alert; otherwise a chronic upstream condition
+        could keep the suppression alive indefinitely."""
+        from datetime import timedelta
+        baseline = datetimeproxy.now()
+        datetimeproxy.set(baseline)
+        try:
+            alert = self.queue.add_alarm(self.test_alarm)
+            self.queue.acknowledge_alert(alert.id)
+            ack_end_datetime = alert.end_datetime
+
+            # Time passes and the same upstream condition is re-emitted.
+            datetimeproxy.set(baseline + timedelta(seconds=120))
+            self.queue.add_alarm(self._make_alarm('test_alarm'))
+
+            # end_datetime unchanged: suppression still rides the
+            # original window, not the latest poll.
+            self.assertEqual(alert.end_datetime, ack_end_datetime)
+        finally:
+            datetimeproxy.reset()
+        return
+
+    def test_alert_queue_remove_expired_counts_acknowledged_among_removed(self):
+        """``acknowledged_removed`` reports the subset of expired alerts
+        that had been acknowledged. No longer a removal trigger; just
+        a stat."""
+        from datetime import timedelta
+        baseline = datetimeproxy.now()
+        short_lived_acked = Alarm(
+            alarm_source=AlarmSource.EVENT,
+            alarm_type='short_acked',
+            alarm_level=AlarmLevel.WARNING,
+            title='Short-lived acked',
+            sensor_response_list=[],
+            security_level=SecurityLevel.LOW,
+            alarm_lifetime_secs=1,
+            timestamp=baseline,
+        )
+        short_lived_unacked = Alarm(
+            alarm_source=AlarmSource.EVENT,
+            alarm_type='short_unacked',
+            alarm_level=AlarmLevel.WARNING,
+            title='Short-lived unacked',
+            sensor_response_list=[],
+            security_level=SecurityLevel.LOW,
+            alarm_lifetime_secs=1,
+            timestamp=baseline,
+        )
+        a1 = self.queue.add_alarm(short_lived_acked)
+        self.queue.add_alarm(short_lived_unacked)
+        self.queue.acknowledge_alert(a1.id)
+
+        datetimeproxy.set(baseline + timedelta(seconds=10))
+        try:
+            result = self.queue.remove_expired_alerts()
+            self.assertEqual(result.expired_removed, 2)
+            self.assertEqual(result.acknowledged_removed, 1)
+            self.assertEqual(result.total_removed, 2)
+        finally:
+            datetimeproxy.reset()
         return
 
     def test_alert_queue_concurrent_access_thread_safety(self):

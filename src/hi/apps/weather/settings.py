@@ -58,8 +58,12 @@ def _create_dynamic_weather_settings() -> Dict[str, SettingDefinition]:
             )
 
     settings_dict['DEFAULT_POLLING_INTERVAL_SECONDS'] = SettingDefinition(
-        label='Default Polling Interval (Seconds)',
-        description='Default interval in seconds for polling weather data from enabled sources.',
+        label='Minimum Polling Interval (seconds)',
+        description=(
+            'Minimum time between weather data updates. Some weather '
+            'services may update less frequently to honor their own '
+            'API rate limits.'
+        ),
         value_type=AttributeValueType.INTEGER,
         value_range=[ 5, 86400 ],
         is_editable=True,

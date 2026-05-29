@@ -118,10 +118,15 @@ class Alert:
 
     def upsert_alarm( self, alarm : Alarm ):
         assert alarm.signature == self.first_alarm.signature
-        # Always refresh expiry from the incoming alarm. A follow-up
-        # submission with a shorter lifetime correctly shortens the
-        # Alert's end_datetime (e.g. NWS reducing its ``expires``).
-        self._end_datetime = datetimeproxy.now() + timedelta( seconds = alarm.alarm_lifetime_secs )
+        # Refresh expiry only while unacknowledged. Once acknowledged,
+        # the alert stays in the queue as a dedup anchor until its
+        # original ``end_datetime`` -- continually extending it on
+        # every poll would leave a chronic upstream condition
+        # suppressed for as long as the source keeps re-reporting it.
+        # Letting the original window expire restores the natural
+        # "re-alert me eventually" behavior.
+        if not self._is_acknowledged:
+            self._end_datetime = datetimeproxy.now() + timedelta( seconds = alarm.alarm_lifetime_secs )
         # If the caller identified this as a specific incident and we
         # already have that incident in the deque, do not count it
         # again — the alarm_count should reflect distinct occurrences,

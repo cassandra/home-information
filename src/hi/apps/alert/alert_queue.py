@@ -14,7 +14,11 @@ logger = logging.getLogger(__name__)
 
 class AlertQueue:
 
-    MAX_ALERT_LIST_SIZE = 50
+    # Caps the queue's memory of past (acknowledged) alerts. Active
+    # (unacknowledged) alerts are never evicted by this cap -- the
+    # operator must always see them. When a new alert would push the
+    # queue past this size, the oldest acknowledged alert is dropped.
+    MAX_ALERT_LIST_SIZE = 200
 
     TRACE = False  # for debugging
     
@@ -113,14 +117,40 @@ class AlertQueue:
                 self._last_changed_datetime = datetimeproxy.now()
                 logger.debug( f'Added to existing alert: alarm={alarm}, alert={alert}' )
                 return alert
-            
+
+            # No matching alert. Make room if needed by evicting the
+            # oldest acknowledged alert. Unacknowledged alerts are
+            # never evicted, so the queue can grow past the cap if all
+            # entries are still active -- losing an active alert is
+            # worse than briefly exceeding the soft cap.
+            if len( self._alert_list ) >= self.MAX_ALERT_LIST_SIZE:
+                self._evict_oldest_acknowledged_alert()
+
             new_alert = Alert( first_alarm = alarm )
             new_alert.queue_insertion_datetime = datetimeproxy.now()
             self._alert_list.append( new_alert )
             self._last_changed_datetime = datetimeproxy.now()
             logger.debug( f'Added new alert: {new_alert}' )
             return new_alert
-    
+
+        return
+
+    def _evict_oldest_acknowledged_alert(self):
+        oldest_index = None
+        oldest_insertion_dt = None
+        for index, alert in enumerate( self._alert_list ):
+            if not alert.is_acknowledged:
+                continue
+            insertion_dt = alert.queue_insertion_datetime
+            if oldest_insertion_dt is None or (
+                    insertion_dt is not None
+                    and insertion_dt < oldest_insertion_dt ):
+                oldest_insertion_dt = insertion_dt
+                oldest_index = index
+            continue
+        if oldest_index is not None:
+            evicted = self._alert_list.pop( oldest_index )
+            logger.debug( f'Evicted oldest acknowledged alert to make room: {evicted}' )
         return
 
     def acknowledge_alert( self, alert_id : str ):
@@ -135,9 +165,15 @@ class AlertQueue:
 
             raise KeyError( f'Alert not found for {alert_id}' )
 
-    def remove_expired_or_acknowledged_alerts(self):
-        """Remove expired and acknowledged alerts and return detailed results."""
+    def remove_expired_alerts(self):
+        """Remove alerts whose ``end_datetime`` has passed. Acknowledged
+        alerts are kept until their natural expiry so they continue to
+        suppress duplicate alarms (the queue is the dedup memory)."""
         expired_removed = 0
+        # Counts, among the removed (now strictly expired) alerts, how
+        # many had been acknowledged. Useful as a stat (e.g. measuring
+        # how often suppression "saved" the operator from a re-alert);
+        # no longer a removal trigger.
         acknowledged_removed = 0
 
         with self._active_alerts_lock:
@@ -151,24 +187,22 @@ class AlertQueue:
             for alert in self._alert_list:
                 if alert.end_datetime <= now_datetime:
                     expired_removed += 1
-                    continue
-                if alert.is_acknowledged:
-                    acknowledged_removed += 1
+                    if alert.is_acknowledged:
+                        acknowledged_removed += 1
                     continue
                 new_list.append( alert )
                 continue
-            
-            total_removed = expired_removed + acknowledged_removed
-            logger.debug( f'Removed "{total_removed}" alerts: {expired_removed}'
-                          f' expired, {acknowledged_removed} acknowledged.' )
-            if total_removed > 0:
+
+            logger.debug( f'Removed "{expired_removed}" expired alerts'
+                          f' ({acknowledged_removed} had been acknowledged).' )
+            if expired_removed > 0:
                 self._alert_list = new_list
                 self._last_changed_datetime = datetimeproxy.now()
 
         return AlertQueueCleanupResult(
             expired_removed = expired_removed,
             acknowledged_removed = acknowledged_removed,
-            total_removed = total_removed
+            total_removed = expired_removed,
         )
     
     

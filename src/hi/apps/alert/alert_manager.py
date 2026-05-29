@@ -133,7 +133,7 @@ class AlertManager( Singleton, NotificationMixin, SecurityMixin ):
             result.alerts_before_cleanup = len(self._alert_queue)
 
             # Perform cleanup and get detailed results
-            cleanup_result = self._alert_queue.remove_expired_or_acknowledged_alerts()
+            cleanup_result = self._alert_queue.remove_expired_alerts()
             result.expired_alerts_removed = cleanup_result.expired_removed
             result.acknowledged_alerts_removed = cleanup_result.acknowledged_removed
 
