@@ -199,6 +199,11 @@ class _SyncTestSynchronizer:
     # when building the attribute edit context.
     capability = IntegrationCapability.CONNECT
 
+    # Pre-sync view reads this to decide whether to surface a Preview
+    # button. The stub doesn't implement the preview flow; False keeps
+    # the existing pre-sync tests focused on the sync path only.
+    supports_preview = False
+
     def __init__(self, description='Test integration sync description.'):
         self._description = description
         self.sync_called = False

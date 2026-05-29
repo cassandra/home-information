@@ -27,7 +27,7 @@ class TestSecurityMonitor(AsyncTaskFastTestCase):
         
         # Should be properly configured as periodic monitor
         self.assertEqual(monitor.id, monitor.MONITOR_ID)
-        self.assertEqual(monitor._query_interval_secs, SecurityMonitor.SECURITY_POLLING_INTERVAL_SECS)
+        self.assertEqual(monitor.get_polling_interval_secs(), SecurityMonitor.SECURITY_POLLING_INTERVAL_SECS)
         self.assertIsNotNone(monitor._last_security_state_check_datetime)
     
     def test_security_monitor_interval_timing(self):
@@ -35,7 +35,7 @@ class TestSecurityMonitor(AsyncTaskFastTestCase):
         monitor = SecurityMonitor()
         
         # Should use configured polling interval
-        self.assertEqual(monitor._query_interval_secs, 5)  # SECURITY_POLLING_INTERVAL_SECS
+        self.assertEqual(monitor.get_polling_interval_secs(), 5)  # SECURITY_POLLING_INTERVAL_SECS
     
     async def test_do_work_calls_check_security_state(self):
         """Test do_work method calls security state checking."""

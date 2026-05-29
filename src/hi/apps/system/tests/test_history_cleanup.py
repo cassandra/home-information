@@ -342,7 +342,7 @@ class SystemIntegrationTests(TransactionTestCase):
 
         # Verify monitor has correct configuration
         self.assertEqual(monitor.id, 'hi.apps.system.monitor')
-        self.assertEqual(monitor._query_interval_secs, 8 * 60 * 60)  # 8 hours
+        self.assertEqual(monitor.get_polling_interval_secs(), 8 * 60 * 60)  # 8 hours
 
         # Test that do_work() runs without errors
 

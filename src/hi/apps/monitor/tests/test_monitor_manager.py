@@ -15,8 +15,11 @@ logging.disable(logging.CRITICAL)
 class TestMonitor1(PeriodicMonitor):
     """Test monitor for discovery."""
     def __init__(self):
-        super().__init__(id='test-monitor-1', interval_secs=60)
-    
+        super().__init__(id='test-monitor-1')
+
+    def get_polling_interval_secs(self) -> int:
+        return 60
+
     async def do_work(self):
         pass
 
@@ -24,7 +27,10 @@ class TestMonitor1(PeriodicMonitor):
 class TestMonitor2(PeriodicMonitor):
     """Another test monitor for discovery."""
     def __init__(self):
-        super().__init__(id='test-monitor-2', interval_secs=60)
+        super().__init__(id='test-monitor-2')
+
+    def get_polling_interval_secs(self) -> int:
+        return 60
 
     async def do_work(self):
         pass
@@ -220,7 +226,7 @@ class TestAppMonitorManager(AsyncTaskFastTestCase):
             mock_monitor_instance.id = 'test-monitor'
             mock_monitor_instance.is_running = False
             mock_monitor_instance.start = Mock()
-            mock_monitor_instance._query_interval_secs = 10
+            mock_monitor_instance.get_polling_interval_secs.return_value = 10
             
             mock_monitor_class = Mock(return_value=mock_monitor_instance)
             
@@ -272,7 +278,7 @@ class TestAppMonitorManager(AsyncTaskFastTestCase):
             mock_monitor_instance.id = 'running-monitor'
             mock_monitor_instance.is_running = True  # Already running
             mock_monitor_instance.start = Mock()
-            mock_monitor_instance._query_interval_secs = 10
+            mock_monitor_instance.get_polling_interval_secs.return_value = 10
             
             mock_monitor_class = Mock(return_value=mock_monitor_instance)
             

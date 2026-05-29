@@ -65,6 +65,7 @@ class TestCollectionViewType(BaseTestCase):
                 view_type.is_default,
                 view_type.is_grid,
                 view_type.is_grid_large,
+                view_type.is_grid_small,
                 view_type.is_list,
                 view_type.is_security,
             ]

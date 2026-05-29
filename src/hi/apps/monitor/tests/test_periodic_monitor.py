@@ -10,31 +10,38 @@ logging.disable(logging.CRITICAL)
 
 class ConcreteTestMonitor(PeriodicMonitor):
     """Concrete implementation of PeriodicMonitor for testing."""
-    
+
     def __init__(self):
-        super().__init__(id='test-monitor', interval_secs=1)
+        super().__init__(id='test-monitor')
+        # Mutable so tests that need fast cycles can shrink the
+        # interval without poking superclass internals; the framework
+        # calls ``get_polling_interval_secs`` each tick.
+        self.polling_interval_secs = 1
         self.do_work_called = 0
         self.initialize_called = False
         self.cleanup_called = False
         self.do_work_error = None  # Set to raise an error in do_work
-    
+
+    def get_polling_interval_secs(self) -> int:
+        return self.polling_interval_secs
+
     async def initialize(self):
         self.initialize_called = True
         await super().initialize()
-    
+
     @classmethod
     def get_provider_info(cls) -> ProviderInfo:
         return ProviderInfo(
             provider_id = 'test_monitor',
             provider_name = 'Test Monitor',
-            description = '',            
+            description = '',
         )
 
     async def do_work(self):
         self.do_work_called += 1
         if self.do_work_error:
             raise self.do_work_error
-    
+
     async def cleanup(self):
         self.cleanup_called = True
         await super().cleanup()
@@ -55,14 +62,17 @@ class TestPeriodicMonitor(AsyncTaskFastTestCase):
         
         class IncompleteMonitor(PeriodicMonitor):
             def __init__(self):
-                super().__init__(id='incomplete', interval_secs=1)
-                
+                super().__init__(id='incomplete')
+
+            def get_polling_interval_secs(self) -> int:
+                return 1
+
             @classmethod
             def get_provider_info(cls) -> ProviderInfo:
                 return ProviderInfo(
                     provider_id = 'test_monitor',
                     provider_name = 'Test Monitor',
-                    description = '',            
+                    description = '',
                 )
         
         monitor = IncompleteMonitor()
@@ -76,7 +86,7 @@ class TestPeriodicMonitor(AsyncTaskFastTestCase):
     def test_monitor_initialization(self):
         """Test monitor initializes with correct properties."""
         self.assertEqual(self.monitor.id, 'test-monitor')
-        self.assertEqual(self.monitor._query_interval_secs, 1)
+        self.assertEqual(self.monitor.get_polling_interval_secs(), 1)
         self.assertEqual(self.monitor._query_counter, 0)
         self.assertFalse(self.monitor.is_running)
     
@@ -235,7 +245,7 @@ class TestPeriodicMonitor(AsyncTaskFastTestCase):
         async def test_logic():
             # Use a very short interval for testing
             fast_monitor = ConcreteTestMonitor()
-            fast_monitor._query_interval_secs = 0.05  # 50ms
+            fast_monitor.polling_interval_secs = 0.05  # 50ms
             
             # Start the monitor
             task = asyncio.create_task(fast_monitor.start())
@@ -265,7 +275,7 @@ class TestPeriodicMonitor(AsyncTaskFastTestCase):
         
         async def test_logic():
             fast_monitor = ConcreteTestMonitor()
-            fast_monitor._query_interval_secs = 0.05  # 50ms
+            fast_monitor.polling_interval_secs = 0.05  # 50ms
             
             # Set error for first call
             fast_monitor.do_work_error = ValueError("Test error")
