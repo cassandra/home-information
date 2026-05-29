@@ -10,6 +10,7 @@ from hi.apps.config.views import ConfigPageView
 from hi.apps.monitor.monitor_manager import AppMonitorManager
 from hi.apps.weather.weather_source_manager import WeatherSourceManager
 
+from hi.integrations.enums import IntegrationCapability
 from hi.integrations.integration_manager import IntegrationManager
 
 from .asyncio_health_provider import AsyncioHealthStatusProvider
@@ -39,6 +40,7 @@ class SystemInfoView( ConfigPageView ):
         integration_manager = IntegrationManager()
         configured_integration_data_list = integration_manager.get_integration_data_list(
             enabled_only = True,
+            capabilities = frozenset({ IntegrationCapability.CONNECT }),
         )
         provider_by_integration_id = integration_manager.get_health_status_provider_map()
         integration_health_items = [

@@ -385,7 +385,11 @@ class ConnectorManageView( ConfigPageView, IntegrationViewMixin, AttributeEditVi
         if not integration_data.integration.is_enabled:
             raise BadRequest( f'{integration_data.label} integration is not configured' )
 
-        health_status_provider = integration_data.integration_gateway.get_connector().get_health_status_provider()
+        connector = integration_data.integration_gateway.get_connector()
+        if not connector:
+            raise BadRequest( f'{integration_data.label} integration not supported' )
+
+        health_status_provider = connector.get_health_status_provider()
 
         attr_item_context = IntegrationAttributeItemEditContext(
             integration_data = integration_data,
