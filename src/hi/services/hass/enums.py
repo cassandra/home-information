@@ -1,6 +1,8 @@
 from hi.apps.attribute.enums import AttributeValueType
 from hi.integrations.enums import IntegrationAttributeType
 
+from .constants import HassTimeouts
+
 
 class HassAttributeType( IntegrationAttributeType ):
 
@@ -47,6 +49,17 @@ class HassAttributeType( IntegrationAttributeType ):
         'media_player\n'
         'sensor\n'
         'switch',
+    )
+    POLLING_INTERVAL_SECS = (
+        'Polling Interval (seconds)',
+        'How often the monitor polls Home Assistant for state changes. '
+        'Lower values are more responsive but increase API load on the '
+        'Home Assistant server.',
+        AttributeValueType.INTEGER,
+        [ 1, 86400 ],   # value_range: 1 second to 24 hours
+        True,
+        True,
+        str( HassTimeouts.POLLING_INTERVAL_SECS ),
     )
 
 

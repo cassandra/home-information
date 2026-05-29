@@ -2,6 +2,8 @@ from hi.apps.attribute.enums import AttributeValueType
 
 from hi.integrations.enums import IntegrationAttributeType
 
+from .constants import HbTimeouts
+
 
 class HbAttributeType( IntegrationAttributeType ):
 
@@ -44,4 +46,16 @@ class HbAttributeType( IntegrationAttributeType ):
         None,
         True,
         False,
+    )
+    POLLING_INTERVAL_SECS = (
+        'Polling Interval (seconds)',
+        'How often the monitor probes HomeBox for reachability. Lower '
+        'values produce a faster signal when the API goes down but '
+        'increase background API load; HomeBox is inventory data, so '
+        'longer intervals are usually appropriate.',
+        AttributeValueType.INTEGER,
+        [ 1, 86400 ],   # value_range: 1 second to 24 hours
+        True,
+        True,
+        str( HbTimeouts.POLLING_INTERVAL_SECS ),
     )

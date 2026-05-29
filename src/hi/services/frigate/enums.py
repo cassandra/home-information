@@ -2,6 +2,8 @@ from hi.apps.attribute.enums import AttributeValueType
 
 from hi.integrations.enums import IntegrationAttributeType
 
+from .constants import FrigateTimeouts
+
 
 class FrigateAttributeType( IntegrationAttributeType ):
 
@@ -30,4 +32,15 @@ class FrigateAttributeType( IntegrationAttributeType ):
         True,
         False,
         True,
+    )
+    POLLING_INTERVAL_SECS = (
+        'Polling Interval (seconds)',
+        'How often the monitor polls Frigate for new events. Lower '
+        'values are more responsive but increase API load on the '
+        'Frigate server.',
+        AttributeValueType.INTEGER,
+        [ 1, 86400 ],   # value_range: 1 second to 24 hours
+        True,
+        True,
+        str( FrigateTimeouts.POLLING_INTERVAL_SECS ),
     )

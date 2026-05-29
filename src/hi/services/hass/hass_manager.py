@@ -24,6 +24,7 @@ from hi.integrations.transient_models import (
 )
 from hi.integrations.models import Integration, IntegrationAttribute
 
+from .constants import HassTimeouts
 from .enums import HassAttributeType
 from .hass_client import HassClient
 from .hass_client_factory import HassClientFactory
@@ -46,6 +47,12 @@ class HassManager( SingletonManager, AggregateHealthProvider, ApiHealthStatusPro
         self._client_factory = HassClientFactory()
 
         self._change_listeners = set()
+
+        # Seeded from constants and refreshed on every reload(). Read
+        # by HassMonitor.get_polling_interval_secs at each tick; the
+        # framework picks up changes on the iteration following a
+        # settings save.
+        self._polling_interval_secs = HassTimeouts.POLLING_INTERVAL_SECS
 
         # Selective-insert LRU cache (see update_latest_attrs_cache
         # for the policy). The lock guards both writes and reads
@@ -111,6 +118,7 @@ class HassManager( SingletonManager, AggregateHealthProvider, ApiHealthStatusPro
         """
         try:
             self._hass_attr_type_to_attribute = self._load_attributes()
+            self._polling_interval_secs = self._read_polling_interval_secs()
             self._hass_client = self.create_hass_client( self._hass_attr_type_to_attribute )
             self.clear_caches()
             self._rebuild_entity_id_to_ha_state_id_map()
@@ -186,15 +194,43 @@ class HassManager( SingletonManager, AggregateHealthProvider, ApiHealthStatusPro
             hass_integration = Integration.objects.get( integration_id = HassMetaData.integration_id )
         except Integration.DoesNotExist:
             raise IntegrationError( 'Home Assistant integration is not implemented.' )
-        
+
         if not hass_integration.is_enabled:
             raise IntegrationDisabledError( 'Home Assistant integration is not enabled.' )
-        
+
         integration_attributes = list(hass_integration.attributes.all())
         return self._build_hass_attr_type_to_attribute_map(
             integration_attributes=integration_attributes,
             enforce_requirements=True
         )
+
+    def _read_polling_interval_secs(self) -> int:
+        """Read the configured polling interval. Form-level validation
+        (``AttributeForm._clean_integer_value`` + the schema's
+        ``value_range`` declaration) enforces type and range at save
+        time, so any persisted value should already be a positive int
+        within bounds. The defensive fallbacks here only fire on the
+        edge cases form validation can't cover: the attribute row is
+        missing (integration enabled but never saved) or the DB was
+        manually edited / migrated from legacy data."""
+        attribute = self._hass_attr_type_to_attribute.get(
+            HassAttributeType.POLLING_INTERVAL_SECS,
+        )
+        if attribute is None or not attribute.value:
+            return HassTimeouts.POLLING_INTERVAL_SECS
+        try:
+            return int( attribute.value )
+        except (ValueError, TypeError):
+            logger.warning(
+                f'Malformed HASS polling interval value "{attribute.value}" '
+                f'(form validation should have caught this); falling '
+                f'back to default {HassTimeouts.POLLING_INTERVAL_SECS}s'
+            )
+            return HassTimeouts.POLLING_INTERVAL_SECS
+
+    @property
+    def polling_interval_secs(self) -> int:
+        return self._polling_interval_secs
     
     def create_hass_client(
             self,

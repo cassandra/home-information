@@ -4,6 +4,7 @@ from hi.apps.alert.enums import AlarmLevel
 from hi.apps.monitor.periodic_monitor import PeriodicMonitor
 from hi.apps.system.provider_info import ProviderInfo
 
+from .constants import HbTimeouts
 from .hb_mixins import HomeBoxMixin
 
 logger = logging.getLogger(__name__)
@@ -18,8 +19,6 @@ class HomeBoxMonitor( PeriodicMonitor, HomeBoxMixin ):
     """
 
     MONITOR_ID = 'hi.services.homebox.monitor'
-    HOMEBOX_POLLING_INTERVAL_SECS = 300
-    HOMEBOX_API_TIMEOUT_SECS = 20.0
 
     def __init__( self ):
         super().__init__( id = self.MONITOR_ID )
@@ -27,10 +26,20 @@ class HomeBoxMonitor( PeriodicMonitor, HomeBoxMixin ):
         return
 
     def get_polling_interval_secs(self) -> int:
-        return self.HOMEBOX_POLLING_INTERVAL_SECS
+        # The framework calls this at sort time (before _initialize
+        # has run ``await self.hb_manager_async()`` and cached the
+        # manager reference on this instance), and on every tick
+        # after that. Use the manager's reloaded value when the
+        # mixin's cached ``_hb_manager`` attribute exists; fall back
+        # to the static constant before then -- avoids triggering
+        # the manager mixin's sync ``ensure_initialized`` from the
+        # async event-loop thread.
+        if hasattr( self, '_hb_manager' ):
+            return self._hb_manager.polling_interval_secs
+        return HbTimeouts.POLLING_INTERVAL_SECS
 
     def get_api_timeout(self) -> float:
-        return self.HOMEBOX_API_TIMEOUT_SECS
+        return HbTimeouts.API_TIMEOUT_SECS
 
     def alarm_ceiling(self):
         # HomeBox tracks inventory data — degraded availability is

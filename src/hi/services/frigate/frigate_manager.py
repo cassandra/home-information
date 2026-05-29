@@ -21,7 +21,7 @@ from hi.integrations.transient_models import (
 
 from hi.integrations.models import Integration
 
-from .constants import FrigateApi
+from .constants import FrigateApi, FrigateTimeouts
 from .enums import FrigateAttributeType
 from .frigate_client import FrigateClient
 from .frigate_client_factory import FrigateClientFactory
@@ -55,6 +55,11 @@ class FrigateManager( SingletonManager, AggregateHealthProvider, ApiHealthStatus
         self._change_listeners = set()
         self._frigate_client : Optional[ FrigateClient ] = None
         self._attribute_map : Dict[ FrigateAttributeType, IntegrationAttribute ] = {}
+        # Seeded from constants and refreshed on every reload(). Read
+        # by FrigateMonitor.get_polling_interval_secs at each tick;
+        # the framework picks up changes on the iteration following a
+        # settings save.
+        self._polling_interval_secs = FrigateTimeouts.POLLING_INTERVAL_SECS
         self.add_api_health_status_provider( self )
         return
 
@@ -97,6 +102,7 @@ class FrigateManager( SingletonManager, AggregateHealthProvider, ApiHealthStatus
         self._attribute_map = self._build_attribute_map(
             integration_attributes = integration_attributes,
         )
+        self._polling_interval_secs = self._read_polling_interval_secs()
         try:
             self._frigate_client = FrigateClientFactory.create_client(
                 integration_attributes = integration_attributes,
@@ -107,6 +113,34 @@ class FrigateManager( SingletonManager, AggregateHealthProvider, ApiHealthStatus
             return
         self.record_healthy( 'Reloaded' )
         return
+
+    def _read_polling_interval_secs(self) -> int:
+        """Read the configured polling interval. Form-level validation
+        (``AttributeForm._clean_integer_value`` + the schema's
+        ``value_range`` declaration) enforces type and range at save
+        time, so any persisted value should already be a positive int
+        within bounds. The defensive fallbacks here only fire on the
+        edge cases form validation can't cover: the attribute row is
+        missing (integration enabled but never saved) or the DB was
+        manually edited / migrated from legacy data."""
+        attribute = self._attribute_map.get(
+            FrigateAttributeType.POLLING_INTERVAL_SECS,
+        )
+        if attribute is None or not attribute.value:
+            return FrigateTimeouts.POLLING_INTERVAL_SECS
+        try:
+            return int( attribute.value )
+        except (ValueError, TypeError):
+            logger.warning(
+                f'Malformed Frigate polling interval value "{attribute.value}" '
+                f'(form validation should have caught this); falling '
+                f'back to default {FrigateTimeouts.POLLING_INTERVAL_SECS}s'
+            )
+            return FrigateTimeouts.POLLING_INTERVAL_SECS
+
+    @property
+    def polling_interval_secs(self) -> int:
+        return self._polling_interval_secs
 
     @staticmethod
     def _build_attribute_map(

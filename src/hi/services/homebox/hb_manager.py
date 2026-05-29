@@ -20,6 +20,7 @@ from hi.integrations.transient_models import (
 from hi.integrations.models import Integration, IntegrationAttribute
 
 from hi.services.homebox.enums import HbAttributeType
+from .constants import HbTimeouts
 from .hb_client import HbClient
 from .hb_client_factory import HbClientFactory
 from .hb_models import HbItem
@@ -43,6 +44,12 @@ class HomeBoxManager( SingletonManager, AggregateHealthProvider, ApiHealthStatus
         self._hb_maintenances_list = list()
 
         self._change_listeners = set()
+
+        # Seeded from constants and refreshed on every reload(). Read
+        # by HomeBoxMonitor.get_polling_interval_secs at each tick;
+        # the framework picks up changes on the iteration following a
+        # settings save.
+        self._polling_interval_secs = HbTimeouts.POLLING_INTERVAL_SECS
 
         self.add_api_health_status_provider(self)
 
@@ -104,6 +111,7 @@ class HomeBoxManager( SingletonManager, AggregateHealthProvider, ApiHealthStatus
     def _reload_implementation( self ):
         try:
             self._hb_attr_type_to_attribute = self._load_attributes()
+            self._polling_interval_secs = self._read_polling_interval_secs()
             self._hb_client = self.create_hb_client( self._hb_attr_type_to_attribute )
             self.clear_caches()
             self.record_healthy('Reloaded')
@@ -142,6 +150,34 @@ class HomeBoxManager( SingletonManager, AggregateHealthProvider, ApiHealthStatus
             integration_attributes = integration_attributes,
             enforce_requirements = True,
         )
+
+    def _read_polling_interval_secs(self) -> int:
+        """Read the configured polling interval. Form-level validation
+        (``AttributeForm._clean_integer_value`` + the schema's
+        ``value_range`` declaration) enforces type and range at save
+        time, so any persisted value should already be a positive int
+        within bounds. The defensive fallbacks here only fire on the
+        edge cases form validation can't cover: the attribute row is
+        missing (integration enabled but never saved) or the DB was
+        manually edited / migrated from legacy data."""
+        attribute = self._hb_attr_type_to_attribute.get(
+            HbAttributeType.POLLING_INTERVAL_SECS,
+        )
+        if attribute is None or not attribute.value:
+            return HbTimeouts.POLLING_INTERVAL_SECS
+        try:
+            return int( attribute.value )
+        except (ValueError, TypeError):
+            logger.warning(
+                f'Malformed HomeBox polling interval value "{attribute.value}" '
+                f'(form validation should have caught this); falling '
+                f'back to default {HbTimeouts.POLLING_INTERVAL_SECS}s'
+            )
+            return HbTimeouts.POLLING_INTERVAL_SECS
+
+    @property
+    def polling_interval_secs(self) -> int:
+        return self._polling_interval_secs
 
     def create_hb_client(
             self,

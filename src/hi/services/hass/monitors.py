@@ -11,6 +11,7 @@ from hi.apps.sense.transient_models import SensorResponse
 from hi.apps.system.provider_info import ProviderInfo
 from hi.testing.dev_overrides import DevOverrideManager
 
+from .constants import HassTimeouts
 from .hass_converter import HassConverter
 from .hass_mixins import HassMixin
 
@@ -20,8 +21,6 @@ logger = logging.getLogger(__name__)
 class HassMonitor( PeriodicMonitor, HassMixin, SensorResponseMixin ):
 
     MONITOR_ID = 'hi.services.hass.monitor'
-    HASS_POLLING_INTERVAL_SECS = 4
-    HASS_API_TIMEOUT_SECS = 10.0  # Shorter timeout appropriate for 2-second polling
 
     def __init__( self ):
         super().__init__( id = self.MONITOR_ID )
@@ -29,10 +28,20 @@ class HassMonitor( PeriodicMonitor, HassMixin, SensorResponseMixin ):
         return
 
     def get_polling_interval_secs(self) -> int:
-        return self.HASS_POLLING_INTERVAL_SECS
+        # The framework calls this at sort time (before _initialize
+        # has run ``await self.hass_manager_async()`` and cached the
+        # manager reference on this instance), and on every tick
+        # after that. Use the manager's reloaded value when the
+        # mixin's cached ``_hass_manager`` attribute exists; fall
+        # back to the static constant before then -- avoids
+        # triggering the manager mixin's sync ``ensure_initialized``
+        # from the async event-loop thread.
+        if hasattr( self, '_hass_manager' ):
+            return self._hass_manager.polling_interval_secs
+        return HassTimeouts.POLLING_INTERVAL_SECS
 
     def get_api_timeout(self) -> float:
-        return self.HASS_API_TIMEOUT_SECS
+        return HassTimeouts.API_TIMEOUT_SECS
 
     def alarm_ceiling(self):
         # HA outage in the background masks security and home-automation
