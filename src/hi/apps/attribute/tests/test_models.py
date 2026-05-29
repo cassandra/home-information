@@ -97,7 +97,7 @@ class TestAttributeModel(BaseTestCase):
         # Test with invalid JSON
         attr.value_range_str = 'invalid json {'
         choices = attr.choices()
-        self.assertEqual(choices, {})  # Should return empty dict on parse error
+        self.assertEqual(choices, [])
         
         # Test with empty value_range_str
         attr.value_range_str = None

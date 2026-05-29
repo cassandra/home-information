@@ -34,6 +34,7 @@ class TestHomeBoxManagerAttributeMap(SimpleTestCase):
             self._mock_attribute(HbAttributeType.API_URL, 'https://homebox.local/api'),
             self._mock_attribute(HbAttributeType.API_USER, 'user'),
             self._mock_attribute(HbAttributeType.API_PASSWORD, 'secret'),
+            self._mock_attribute(HbAttributeType.POLLING_INTERVAL_SECS, '300'),
         ]
 
         result = self.manager._build_hb_attr_type_to_attribute_map(

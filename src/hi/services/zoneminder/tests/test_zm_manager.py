@@ -64,6 +64,7 @@ class ZoneMinderManagerConfigurationTest(TransactionTestCase):
         self.create_attribute(ZmAttributeType.API_USER, 'testuser')
         self.create_attribute(ZmAttributeType.API_PASSWORD, 'testpass')
         self.create_attribute(ZmAttributeType.TIMEZONE, 'America/Chicago')
+        self.create_attribute(ZmAttributeType.POLLING_INTERVAL_SECS, '5')
 
     def tearDown(self):
         """Clean up singleton instance for next test."""
@@ -178,6 +179,12 @@ class ZoneMinderManagerThreadLocalTest(TransactionTestCase):
             value='America/Chicago',
             is_required=True
         )
+        IntegrationAttribute.objects.create(
+            integration=self.integration,
+            integration_key_str=f"{ZmMetaData.integration_id}.{ZmAttributeType.POLLING_INTERVAL_SECS}",
+            value='5',
+            is_required=True
+        )
 
     def tearDown(self):
         """Clean up singleton instance for next test."""
@@ -265,6 +272,12 @@ class ZoneMinderManagerHealthStatusTest(TestCase):
             value='America/Chicago',
             is_required=True
         )
+        IntegrationAttribute.objects.create(
+            integration=self.integration,
+            integration_key_str=f"{ZmMetaData.integration_id}.{ZmAttributeType.POLLING_INTERVAL_SECS}",
+            value='5',
+            is_required=True
+        )
 
     def tearDown(self):
         """Clean up singleton instance."""
@@ -318,6 +331,12 @@ class ZoneMinderManagerReloadTest(TransactionTestCase):
             integration=self.integration,
             integration_key_str=f"{ZmMetaData.integration_id}.{ZmAttributeType.TIMEZONE}",
             value='America/Chicago',
+            is_required=True
+        )
+        IntegrationAttribute.objects.create(
+            integration=self.integration,
+            integration_key_str=f"{ZmMetaData.integration_id}.{ZmAttributeType.POLLING_INTERVAL_SECS}",
+            value='5',
             is_required=True
         )
 

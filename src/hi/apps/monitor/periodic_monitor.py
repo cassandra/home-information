@@ -10,6 +10,8 @@ class PeriodicMonitor( HealthStatusProvider ):
     and periodically updated from some external source.
     """
 
+    SLEEP_CHUNK_SECS = 10
+
     def __init__( self, id: str ) -> None:
         self._id = id
         self._query_counter = 0
@@ -72,18 +74,8 @@ class PeriodicMonitor( HealthStatusProvider ):
                     self.record_error(f"Query execution failed: {str(e)}")
                     # Continue running despite individual query failures
 
-                # Re-read each tick so a polling-interval change
-                # picked up by an overriding ``get_polling_interval_secs``
-                # takes effect on the very next sleep. Health-status
-                # sync is handled at ``health_status`` access time
-                # (the framework refreshes from
-                # ``get_expected_heartbeat_interval_secs`` on every
-                # read) so no explicit mutation is needed here.
-                interval_secs = self.get_polling_interval_secs()
-                # Log sleep phase for debugging hanging issues
-                self._logger.debug(f"{self.__class__.__name__} sleeping"
-                                   f" for {interval_secs}s")
-                await asyncio.sleep(interval_secs)
+                self._logger.debug(f"{self.__class__.__name__} entering sleep")
+                await self._sleep_until_next_poll()
                 self._logger.debug( f"{self.__class__.__name__} woke up,"
                                     f" checking if still running: {self._is_running}")
 
@@ -105,6 +97,23 @@ class PeriodicMonitor( HealthStatusProvider ):
         """Stops the monitor."""
         self._is_running = False
         self._logger.info(f"Stopping {self.__class__.__name__}...")
+        return
+
+    async def _sleep_until_next_poll(self) -> None:
+        # Sleep in chunks and re-check the configured interval each
+        # chunk so a mid-sleep reduction (e.g. 300s -> 5s) takes
+        # effect within one chunk rather than waiting out the original
+        # interval. An increased interval finishes the current cycle
+        # and governs the next one.
+        interval_secs = self.get_polling_interval_secs()
+        remaining = interval_secs
+        while self._is_running:
+            if (( remaining <= 0 )
+                or ( self.get_polling_interval_secs() < interval_secs )):
+                return
+            chunk = min( remaining, self.SLEEP_CHUNK_SECS )
+            await asyncio.sleep( chunk )
+            remaining -= chunk
         return
 
     async def initialize(self) -> None:
