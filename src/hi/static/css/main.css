@@ -774,6 +774,56 @@ input[type="password"],
     color: var(--black) !important;
     background-color: #f8f8f8 !important;
 }
+
+/* Location switcher dropdown items: touch-friendly heights and a       */
+/* visible current-space marker (check icon + bold) so the user can    */
+/* see which space they're on at a glance.                              */
+.dropdown-item.plain {
+    padding: 0.6rem 1rem;
+    min-height: 44px;
+    display: flex;
+    align-items: center;
+}
+.dropdown-item.plain.active {
+    background-color: transparent;
+    color: var(--primary-color);
+    font-weight: 600;
+}
+.dropdown-item.plain.active:hover,
+.dropdown-item.plain.active:focus {
+    background-color: rgba(23, 112, 114, 0.05);
+    color: var(--primary-color);
+}
+
+/* ADD NEW SPACE: same btn-add vocabulary as other "add" affordances   */
+/* (top-bar ADD VIEW / ADD COLLECTION, entity-picker ADD NEW ITEM),    */
+/* but at a lower visual weight appropriate to its dropdown context —  */
+/* this is a secondary action accessed from a navigation menu, not a   */
+/* primary CTA. ``box-sizing: border-box`` + a horizontal margin keep  */
+/* the chip inset from the menu edges without pushing past the menu's  */
+/* right border.                                                        */
+.dropdown-item-add {
+    box-sizing: border-box;
+    width: calc(100% - 1rem);
+    margin: 0.25rem 0.5rem;
+    padding: 0.35rem 0.75rem !important;
+    min-height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px dashed var(--edit-mode-dash-color);
+    border-radius: 0.25rem;
+    color: var(--edit-mode-dash-color) !important;
+    background-color: rgba(169, 74, 50, 0.06) !important;
+    font-size: 0.9rem;
+    font-weight: 500;
+}
+.dropdown-item-add:hover,
+.dropdown-item-add:focus {
+    background-color: rgba(169, 74, 50, 0.16) !important;
+    border-color: var(--edit-mode-border-color) !important;
+    color: var(--edit-mode-dash-color) !important;
+}
 .hi-custom-select .input-group-text {
     height: calc(1.5em + 0.75rem + 2px);
     line-height: 1.5;
