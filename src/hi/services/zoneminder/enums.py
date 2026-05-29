@@ -4,6 +4,8 @@ from hi.integrations.enums import IntegrationAttributeType
 
 from hi.constants import TIMEZONE_NAME_LIST
 
+from .constants import ZmTimeouts
+
 
 class ZmAttributeType( IntegrationAttributeType ):
 
@@ -56,4 +58,15 @@ class ZmAttributeType( IntegrationAttributeType ):
         True,
         False,
         True,
+    )
+    POLLING_INTERVAL_SECS = (
+        'Polling Interval (seconds)',
+        'How often the monitor polls ZoneMinder for new events. Lower '
+        'values are more responsive but increase API load on the '
+        'ZoneMinder server.',
+        AttributeValueType.INTEGER,
+        None,
+        True,
+        True,
+        str( ZmTimeouts.POLLING_INTERVAL_SECS ),
     )

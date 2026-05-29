@@ -70,6 +70,12 @@ class ZoneMinderManager( SingletonManager, AggregateHealthProvider, ApiHealthSta
 
         self._change_listeners = set()
 
+        # Seeded from constants and refreshed on every reload(). Read
+        # by ZmMonitor.get_polling_interval_secs at each tick; the
+        # framework picks up changes on the iteration following a
+        # settings save.
+        self._polling_interval_secs = ZmTimeouts.POLLING_INTERVAL_SECS
+
         # Add self as the API health status provider to aggregate
         self.add_api_health_status_provider(self)
 
@@ -140,6 +146,7 @@ class ZoneMinderManager( SingletonManager, AggregateHealthProvider, ApiHealthSta
     def _reload_implementation(self):
         try:
             self._zm_attr_type_to_attribute = self._load_attributes()
+            self._polling_interval_secs = self._read_polling_interval_secs()
             # Clear all thread-local clients since configuration changed
             self._clear_thread_local_clients()
             self.clear_caches()
@@ -198,7 +205,7 @@ class ZoneMinderManager( SingletonManager, AggregateHealthProvider, ApiHealthSta
             zm_integration = Integration.objects.get( integration_id = ZmMetaData.integration_id )
         except Integration.DoesNotExist:
             raise IntegrationError( 'ZoneMinder integration is not implemented.' )
-        
+
         if not zm_integration.is_enabled:
             raise IntegrationDisabledError( 'ZoneMinder integration is not enabled.' )
 
@@ -207,6 +214,45 @@ class ZoneMinderManager( SingletonManager, AggregateHealthProvider, ApiHealthSta
             integration_attributes=integration_attributes,
             enforce_requirements=True
         )
+
+    # TODO: Factor this coercion-with-fallback helper out to the
+    # integrations framework before doing HASS / HomeBox / Frigate --
+    # the pattern repeats verbatim for each one. Candidate location:
+    # a small method on IntegrationGateway or a free function in
+    # hi.integrations.attribute_helpers (alongside the per-integration
+    # validation helpers).
+    def _read_polling_interval_secs(self) -> int:
+        """Coerce the user-configured polling interval to a positive
+        int. The attribute schema declares ``INTEGER`` but the
+        framework doesn't enforce a server-side type or range, so we
+        validate here and fall back to the static default on any
+        malformed value -- a typo at the settings page must not stop
+        the monitor."""
+        attribute = self._zm_attr_type_to_attribute.get(
+            ZmAttributeType.POLLING_INTERVAL_SECS,
+        )
+        if attribute is None or not attribute.value:
+            return ZmTimeouts.POLLING_INTERVAL_SECS
+        try:
+            value = int( attribute.value )
+        except (ValueError, TypeError):
+            logger.warning(
+                f'Invalid ZM polling interval value '
+                f'"{attribute.value}"; falling back to default '
+                f'{ZmTimeouts.POLLING_INTERVAL_SECS}s'
+            )
+            return ZmTimeouts.POLLING_INTERVAL_SECS
+        if value <= 0:
+            logger.warning(
+                f'Non-positive ZM polling interval ({value}); falling '
+                f'back to default {ZmTimeouts.POLLING_INTERVAL_SECS}s'
+            )
+            return ZmTimeouts.POLLING_INTERVAL_SECS
+        return value
+
+    @property
+    def polling_interval_secs(self) -> int:
+        return self._polling_interval_secs
         
     def create_zm_client(
             self,

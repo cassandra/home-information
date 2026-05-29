@@ -50,6 +50,16 @@ class ZoneMinderMonitor( PeriodicMonitor, ZoneMinderMixin, SensorResponseMixin )
         return
 
     def get_polling_interval_secs(self) -> int:
+        # The framework calls this at sort time (before _initialize
+        # has run ``await self.zm_manager_async()`` and cached the
+        # manager reference on this instance), and on every tick
+        # after that. Use the manager's reloaded value when the
+        # mixin's cached ``_zm_manager`` attribute exists; fall back
+        # to the static constant before then -- avoids triggering
+        # the manager mixin's sync ``ensure_initialized`` from the
+        # async event-loop thread.
+        if hasattr( self, '_zm_manager' ):
+            return self._zm_manager.polling_interval_secs
         return self.ZONEMINDER_POLLING_INTERVAL_SECS
 
     def get_api_timeout(self) -> float:
