@@ -77,7 +77,13 @@ class ConsoleSettingsHelper( Singleton, SettingsMixin ):
         label can honor cross-entity context:
 
         1. Strip whole-word "camera" tokens (case-insensitive) and
-           collapse intermediate whitespace.
+           collapse intermediate whitespace. As a follow-up suffix
+           pass, also strip a trailing "camera" (case-insensitive, with
+           or without a preceding space) when the original name is at
+           least 9 characters -- catches concatenated forms like
+           "BackdoorCamera" the word-boundary regex misses, while the
+           length floor avoids reducing short names like "MyCamera"
+           to a 2-letter label.
         2. If two or more entities share a leading whole-word token,
            strip that common token-prefix from each. Only applied when
            every per-entity result remains non-empty after stripping;
@@ -91,7 +97,10 @@ class ConsoleSettingsHelper( Singleton, SettingsMixin ):
         """
         def strip_camera_tokens( name : str ) -> str:
             cleaned = re.sub( r'\bcamera\b', '', name, flags = re.IGNORECASE )
-            return re.sub( r'\s+', ' ', cleaned ).strip()
+            cleaned = re.sub( r'\s+', ' ', cleaned ).strip()
+            if len( name ) >= 9 and cleaned.lower().endswith( 'camera' ):
+                cleaned = cleaned[ :-6 ].rstrip()
+            return cleaned
 
         stripped : Dict[ int, str ] = {
             e.id: strip_camera_tokens( e.name ) or e.name for e in entity_list
