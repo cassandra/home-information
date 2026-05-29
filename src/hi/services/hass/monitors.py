@@ -24,13 +24,13 @@ class HassMonitor( PeriodicMonitor, HassMixin, SensorResponseMixin ):
     HASS_API_TIMEOUT_SECS = 10.0  # Shorter timeout appropriate for 2-second polling
 
     def __init__( self ):
-        super().__init__(
-            id = self.MONITOR_ID,
-            interval_secs = self.HASS_POLLING_INTERVAL_SECS,
-        )
+        super().__init__( id = self.MONITOR_ID )
         self._was_initialized = False
         return
-    
+
+    def get_polling_interval_secs(self) -> int:
+        return self.HASS_POLLING_INTERVAL_SECS
+
     def get_api_timeout(self) -> float:
         return self.HASS_API_TIMEOUT_SECS
 
@@ -72,7 +72,6 @@ class HassMonitor( PeriodicMonitor, HassMixin, SensorResponseMixin ):
             provider_id = cls.MONITOR_ID,
             provider_name = 'Home Assistant Monitor',
             description = 'Home Assistant device state monitoring',
-            expected_heartbeat_interval_secs = cls.HASS_POLLING_INTERVAL_SECS,
         )
 
     async def do_work(self):

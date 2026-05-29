@@ -23,11 +23,11 @@ class SystemMonitor( PeriodicMonitor ):
     SYSTEM_MAINTENANCE_INTERVAL_SECS = 8 * 60 * 60  # 8 hours
 
     def __init__(self):
-        super().__init__(
-            id = self.MONITOR_ID,
-            interval_secs = self.SYSTEM_MAINTENANCE_INTERVAL_SECS,
-        )
+        super().__init__( id = self.MONITOR_ID )
         return
+
+    def get_polling_interval_secs(self) -> int:
+        return self.SYSTEM_MAINTENANCE_INTERVAL_SECS
 
     @classmethod
     def get_provider_info(cls) -> ProviderInfo:
@@ -35,7 +35,6 @@ class SystemMonitor( PeriodicMonitor ):
             provider_id = cls.MONITOR_ID,
             provider_name = 'System Monitor',
             description = 'Automated system maintenance tasks',
-            expected_heartbeat_interval_secs = cls.SYSTEM_MAINTENANCE_INTERVAL_SECS,
         )
 
     def alarm_ceiling(self):

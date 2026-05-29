@@ -34,9 +34,13 @@ class HealthStatusProvider(ABC):
             status = HealthStatusType.UNKNOWN,
             last_update = datetimeproxy.now(),
             last_message = 'Initialization',
-            expected_heartbeat_interval_secs = provider_info.expected_heartbeat_interval_secs,
+            # ``expected_heartbeat_interval_secs`` deliberately left
+            # at the dataclass default. The ``health_status`` property
+            # refreshes it from ``get_expected_heartbeat_interval_secs``
+            # on every read, so seeding here would be discarded
+            # immediately on the first access.
         )
-        
+
     def _ensure_health_status_provider_setup(self):
         if hasattr( self, '_health_status' ):
             return
@@ -50,10 +54,31 @@ class HealthStatusProvider(ABC):
         """Get the API service info for this class. Must be implemented by subclasses."""
         pass
 
+    def get_expected_heartbeat_interval_secs(self) -> Optional[int]:
+        """Return the current expected heartbeat interval, in seconds.
+        ``None`` means this provider has no expected cadence -- its
+        health is not driven by periodic ticks (aggregators, on-demand
+        probes, etc.).
+
+        The framework refreshes ``HealthStatus.expected_heartbeat_interval_secs``
+        from this method on every ``health_status`` read, so a value
+        change takes effect on the next read without any explicit
+        mutation. Periodic providers override this to return their
+        live polling cadence; everything else inherits the ``None``
+        default and the modal's 'Expected every' row is suppressed."""
+        return None
+
     @property
     def health_status(self) -> HealthStatus:
         self._ensure_health_status_provider_setup()
         with self._health_lock:
+            # Refresh the dynamic field on every read so a change in
+            # the source-of-truth (e.g., a config-page edit of a
+            # polling interval) is visible immediately, without the
+            # provider having to mutate state through a side channel.
+            self._health_status.expected_heartbeat_interval_secs = (
+                self.get_expected_heartbeat_interval_secs()
+            )
             health_status = copy.deepcopy( self._health_status )
         return health_status
 

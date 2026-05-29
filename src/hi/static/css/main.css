@@ -262,6 +262,20 @@ a.clickable-card:active {
     color: var(--on-tertiary-color);
 }
 
+/* Bootstrap doesn't ship an .alert-tertiary variant, so the weather   */
+/* alerts banner falls back to no background when AlertSeverity.UNKNOWN */
+/* maps the severity to "tertiary" (real NWS alerts routinely carry    */
+/* severity = "Unknown" on advisory products like Special Weather       */
+/* Statements). Filling the gap with neutral-grey tinted-bg styling    */
+/* matching the visual rhythm of the other alert variants -- soft      */
+/* enough to signal "no specific severity" rather than the heavier     */
+/* near-black ``bg-tertiary`` treatment.                                */
+.alert-tertiary {
+    color: #383d41;
+    background-color: #e2e3e5;
+    border-color: #d6d8db;
+}
+
 .bg-danger, .btn-error, .btn-danger {
     color: var(--on-error-color) !important;
     background-color: var(--error-color) !important;

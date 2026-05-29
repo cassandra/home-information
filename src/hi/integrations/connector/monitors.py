@@ -41,11 +41,11 @@ class IntegrationSyncCheckMonitor( PeriodicMonitor ):
     INTERVAL_SECS = IntegrationSyncCheck.INTERVAL_SECS
 
     def __init__( self ):
-        super().__init__(
-            id = self.MONITOR_ID,
-            interval_secs = self.INTERVAL_SECS,
-        )
+        super().__init__( id = self.MONITOR_ID )
         return
+
+    def get_polling_interval_secs(self) -> int:
+        return self.INTERVAL_SECS
 
     def alarm_ceiling(self):
         # Drift detection is informational by design -- the user always
@@ -62,7 +62,6 @@ class IntegrationSyncCheckMonitor( PeriodicMonitor ):
                 'Periodic check across integrations for '
                 'changes that would warrant a Refresh.'
             ),
-            expected_heartbeat_interval_secs = cls.INTERVAL_SECS,
         )
 
     async def do_work(self):

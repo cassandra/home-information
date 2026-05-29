@@ -61,14 +61,14 @@ class FrigateMonitor( PeriodicMonitor, FrigateMixin, SensorResponseMixin ):
     MAX_OPEN_EVENT_AGE_SECS = FrigateTimeouts.MAX_OPEN_EVENT_AGE_SECS
 
     def __init__(self):
-        super().__init__(
-            id = self.MONITOR_ID,
-            interval_secs = self.POLLING_INTERVAL_SECS,
-        )
+        super().__init__( id = self.MONITOR_ID )
         self._poll_cursor_datetime : Optional[ datetime ] = None
         self._tracked_events : Dict[ str, TrackedFrigateEvent ] = {}
         self._was_initialized = False
         return
+
+    def get_polling_interval_secs(self) -> int:
+        return self.POLLING_INTERVAL_SECS
 
     def get_api_timeout(self) -> float:
         return self.API_TIMEOUT_SECS
@@ -84,7 +84,6 @@ class FrigateMonitor( PeriodicMonitor, FrigateMixin, SensorResponseMixin ):
             provider_id = cls.MONITOR_ID,
             provider_name = 'Frigate Monitor',
             description = 'Frigate camera motion + object detection',
-            expected_heartbeat_interval_secs = cls.POLLING_INTERVAL_SECS,
         )
 
     async def _initialize(self):

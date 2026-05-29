@@ -17,11 +17,11 @@ class AlertMonitor( PeriodicMonitor, AlertMixin ):
     TRACE = False  # for debugging
     
     def __init__( self ):
-        super().__init__(
-            id = self.MONITOR_ID,
-            interval_secs = self.ALERT_POLLING_INTERVAL_SECS,
-        )
+        super().__init__( id = self.MONITOR_ID )
         return
+
+    def get_polling_interval_secs(self) -> int:
+        return self.ALERT_POLLING_INTERVAL_SECS
 
     @classmethod
     def get_provider_info(cls) -> ProviderInfo:
@@ -29,7 +29,6 @@ class AlertMonitor( PeriodicMonitor, AlertMixin ):
             provider_id = cls.MONITOR_ID,
             provider_name = 'Alert Monitor',
             description = 'Alert processing and notification management',
-            expected_heartbeat_interval_secs = cls.ALERT_POLLING_INTERVAL_SECS,
         )
 
     def alarm_ceiling(self):

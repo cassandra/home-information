@@ -10,9 +10,8 @@ class PeriodicMonitor( HealthStatusProvider ):
     and periodically updated from some external source.
     """
 
-    def __init__( self, id: str, interval_secs: int ) -> None:
+    def __init__( self, id: str ) -> None:
         self._id = id
-        self._query_interval_secs = interval_secs
         self._query_counter = 0
         self._is_running = False
         self._logger = logging.getLogger(__name__)
@@ -28,10 +27,33 @@ class PeriodicMonitor( HealthStatusProvider ):
     def is_running(self):
         return self._is_running
 
+    def get_polling_interval_secs(self) -> int:
+        """Return the current polling interval in seconds. Subclasses
+        must override. The loop calls this each tick before sleeping
+        so a value change takes effect on the very next iteration.
+
+        Implementations should be cheap (typically a single attribute
+        lookup) -- expensive source-of-truth reads belong in the
+        subclass's own cache-and-subscribe code, not here. Static-
+        interval monitors return a class constant; dynamic monitors
+        return a cache that they keep current via their own listener.
+        """
+        raise NotImplementedError(
+            'Subclasses must implement get_polling_interval_secs()'
+        )
+
+    def get_expected_heartbeat_interval_secs(self):
+        """A monitor's expected heartbeat is its polling cadence.
+        Wires the ``HealthStatusProvider`` hook to the live polling
+        value so the modal's 'Expected every' and the dynamic
+        staleness thresholds track configuration changes without any
+        per-subclass involvement."""
+        return self.get_polling_interval_secs()
+
     async def start(self) -> None:
         self._is_running = True
         self._logger.debug( f"{self.__class__.__name__} async task starting"
-                            f" (interval: {self._query_interval_secs}s)")
+                            f" (interval: {self.get_polling_interval_secs()}s)")
 
         try:
             await self.initialize()
@@ -44,16 +66,24 @@ class PeriodicMonitor( HealthStatusProvider ):
                 try:
                     await self.run_query()
                     self.record_heartbeat()
-                    
+
                 except Exception as e:
                     self._logger.exception(f"Query execution failed in {self.__class__.__name__}: {e}")
                     self.record_error(f"Query execution failed: {str(e)}")
                     # Continue running despite individual query failures
 
+                # Re-read each tick so a polling-interval change
+                # picked up by an overriding ``get_polling_interval_secs``
+                # takes effect on the very next sleep. Health-status
+                # sync is handled at ``health_status`` access time
+                # (the framework refreshes from
+                # ``get_expected_heartbeat_interval_secs`` on every
+                # read) so no explicit mutation is needed here.
+                interval_secs = self.get_polling_interval_secs()
                 # Log sleep phase for debugging hanging issues
                 self._logger.debug(f"{self.__class__.__name__} sleeping"
-                                   f" for {self._query_interval_secs}s")
-                await asyncio.sleep(self._query_interval_secs)
+                                   f" for {interval_secs}s")
+                await asyncio.sleep(interval_secs)
                 self._logger.debug( f"{self.__class__.__name__} woke up,"
                                     f" checking if still running: {self._is_running}")
 
@@ -96,11 +126,14 @@ class PeriodicMonitor( HealthStatusProvider ):
             self._logger.debug(f"Query {self._query_counter} completed successfully"
                                f" in {query_duration:.2f}s")
 
-            # Log warning if query is taking too long relative to interval
-            if query_duration > (self._query_interval_secs * 0.5):
+            # Log warning if query is taking too long relative to
+            # interval. Captured into a local so the threshold check
+            # and the message both refer to the same reading.
+            interval_secs = self.get_polling_interval_secs()
+            if query_duration > (interval_secs * 0.5):
                 self._logger.warning(
                     f"Query {self._query_counter} took {query_duration:.2f}s, "
-                    f"which is over 50% of the {self._query_interval_secs}s interval"
+                    f"which is over 50% of the {interval_secs}s interval"
                 )
 
         except Exception as e:

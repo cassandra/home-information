@@ -22,12 +22,12 @@ class HomeBoxMonitor( PeriodicMonitor, HomeBoxMixin ):
     HOMEBOX_API_TIMEOUT_SECS = 20.0
 
     def __init__( self ):
-        super().__init__(
-            id = self.MONITOR_ID,
-            interval_secs = self.HOMEBOX_POLLING_INTERVAL_SECS,
-        )
+        super().__init__( id = self.MONITOR_ID )
         self._was_initialized = False
         return
+
+    def get_polling_interval_secs(self) -> int:
+        return self.HOMEBOX_POLLING_INTERVAL_SECS
 
     def get_api_timeout(self) -> float:
         return self.HOMEBOX_API_TIMEOUT_SECS
@@ -60,7 +60,6 @@ class HomeBoxMonitor( PeriodicMonitor, HomeBoxMixin ):
             provider_id = cls.MONITOR_ID,
             provider_name = 'HomeBox Monitor',
             description = 'HomeBox integration health monitor',
-            expected_heartbeat_interval_secs = cls.HOMEBOX_POLLING_INTERVAL_SECS,
         )
 
     async def do_work(self):

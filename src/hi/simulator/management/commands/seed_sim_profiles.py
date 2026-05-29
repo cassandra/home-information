@@ -814,11 +814,15 @@ class Command(BaseCommand):
     # ----- NWS builders -----
 
     def _build_nws_sample(self, profile: SimProfile) -> int:
-        # 8-alert catalog spanning event types and severities. Every
+        # 9-alert catalog spanning event types and severities. Every
         # alert is inactive by default so the operator toggles each on
         # individually to drive the active-alerts feed through one
         # event type at a time. Severity / certainty / urgency follow
-        # the canonical CAP pairings the NWS issues for each product.
+        # the canonical CAP pairings the NWS issues for each product;
+        # the trailing SPS entry intentionally carries severity
+        # "Unknown" -- NWS routinely sends that on advisory products,
+        # and exercising it surfaces the AlertSeverity.UNKNOWN styling
+        # path that the other entries skip.
         area = 'Demo County, ZZ'
         self._add_nws_alert(
             profile,
@@ -954,6 +958,24 @@ class Command(BaseCommand):
                 'Sensitive groups including children, the elderly, and '
                 'those with heart or lung conditions should limit '
                 'prolonged outdoor exertion.'
+            ),
+        )
+        self._add_nws_alert(
+            profile,
+            event_code = 'SPS',
+            event_name = 'Special Weather Statement',
+            severity = 'Unknown', certainty = 'Likely', urgency = 'Expected',
+            category = 'met', area_desc = area,
+            headline = 'Special Weather Statement for Demo County',
+            description = (
+                'A line of showers and thunderstorms is moving through '
+                'Demo County. Brief heavy rainfall and gusty winds are '
+                'possible. No watches or warnings are in effect at this '
+                'time.'
+            ),
+            instruction = (
+                'Use caution if you must travel. Monitor later forecasts '
+                'for any updates.'
             ),
         )
         return profile.nws_sim_alerts.count()

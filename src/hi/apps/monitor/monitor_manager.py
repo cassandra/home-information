@@ -62,7 +62,7 @@ class AppMonitorManager( Singleton ):
 
         # Sort monitors by query interval (ascending) for priority ordering
         # This ensures critical monitors with shorter intervals start first
-        sorted_monitors = sorted(self._get_all_monitors(), key=lambda m: m._query_interval_secs)
+        sorted_monitors = sorted(self._get_all_monitors(), key=lambda m: m.get_polling_interval_secs())
 
         # Start monitors with staggered delays (no lock needed)
         for monitor in sorted_monitors:
@@ -72,7 +72,7 @@ class AppMonitorManager( Singleton ):
                     continue
 
                 # Staggered startup: sleep before starting each monitor
-                logger.debug(f'Delaying startup of {monitor.id} by {self.START_DELAY_INTERVAL_SECS}s (interval: {monitor._query_interval_secs}s)')
+                logger.debug(f'Delaying startup of {monitor.id} by {self.START_DELAY_INTERVAL_SECS}s (interval: {monitor.get_polling_interval_secs()}s)')
                 await asyncio.sleep(self.START_DELAY_INTERVAL_SECS)
 
                 logger.debug(f'Starting app monitor: {monitor.id}')

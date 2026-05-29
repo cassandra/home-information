@@ -20,12 +20,12 @@ class SecurityMonitor( PeriodicMonitor, SettingsMixin, SecurityMixin ):
     SECURITY_POLLING_INTERVAL_SECS = 5
 
     def __init__( self ):
-        super().__init__(
-            id = self.MONITOR_ID,
-            interval_secs = self.SECURITY_POLLING_INTERVAL_SECS,
-        )
+        super().__init__( id = self.MONITOR_ID )
         self._last_security_state_check_datetime = datetimeproxy.now()
         return
+
+    def get_polling_interval_secs(self) -> int:
+        return self.SECURITY_POLLING_INTERVAL_SECS
 
     @classmethod
     def get_provider_info(cls) -> ProviderInfo:
@@ -33,7 +33,6 @@ class SecurityMonitor( PeriodicMonitor, SettingsMixin, SecurityMixin ):
             provider_id = cls.MONITOR_ID,
             provider_name = 'Security Monitor',
             description = 'Security state monitoring',
-            expected_heartbeat_interval_secs = cls.SECURITY_POLLING_INTERVAL_SECS,
         )
 
     def alarm_ceiling(self):

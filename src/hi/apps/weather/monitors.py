@@ -20,22 +20,35 @@ class WeatherMonitor( PeriodicMonitor, SettingsMixin ):
 
     def __init__( self ):
         self._settings_helper = WeatherSettingsHelper()
-        super().__init__(
-            id = self.MONITOR_ID,
-            # Provisional interval; ``initialize()`` reads the configured
-            # value via the async settings path and overwrites it. The
-            # async loop reads self._query_interval_secs each tick so a
-            # post-init change takes effect before the next sleep.
-            interval_secs = WeatherSettingsHelper.DEFAULT_POLLING_INTERVAL_SECONDS,
+        # Subclass-owned cache of the configured polling interval.
+        # Seeded with the default; ``initialize`` reads the saved value
+        # via the async-safe path, and a settings change listener
+        # refreshes it whenever the operator edits it on the config
+        # page. The framework calls ``get_polling_interval_secs`` each
+        # tick and reads this attribute.
+        self._polling_interval_secs = (
+            WeatherSettingsHelper.DEFAULT_POLLING_INTERVAL_SECONDS
         )
+        super().__init__( id = self.MONITOR_ID )
         self._weather_data_source_instance_list = list()
         self._started_datetime = datetimeproxy.now()
         return
 
+    def get_polling_interval_secs(self) -> int:
+        return self._polling_interval_secs
+
     async def initialize(self) -> None:
-        self._query_interval_secs = (
+        # Pick up the operator's saved value before the loop begins.
+        # The async helper handles the singleton's first-time DB init
+        # safely; subsequent sync access (from the listener below) is
+        # safe because that init has already happened here.
+        self._polling_interval_secs = (
             await self._settings_helper.get_default_polling_interval_secs_async()
         )
+        settings_manager = await self._settings_helper.settings_manager_async()
+        if settings_manager is not None:
+            settings_manager.register_change_listener( self._on_settings_changed )
+
         discovered_sources = WeatherSourceDiscovery.discover_weather_data_source_instances()
         self._weather_data_source_instance_list = discovered_sources
 
@@ -54,16 +67,27 @@ class WeatherMonitor( PeriodicMonitor, SettingsMixin ):
                 weather_data_source.record_disabled()
             continue
         return
-    
+
+    def _on_settings_changed(self) -> None:
+        """Settings change listener. Sync because
+        ``SettingsManager._notify_change_listeners`` calls callbacks
+        synchronously; safe to do sync settings access because the
+        singleton is already initialized by ``initialize`` above."""
+        new_interval = self._settings_helper.get_default_polling_interval_secs()
+        if new_interval != self._polling_interval_secs:
+            logger.debug(
+                f'WeatherMonitor polling interval changed: '
+                f'{self._polling_interval_secs}s -> {new_interval}s'
+            )
+            self._polling_interval_secs = new_interval
+        return
+
     @classmethod
     def get_provider_info(cls) -> ProviderInfo:
         return ProviderInfo(
             provider_id = cls.MONITOR_ID,
             provider_name = 'Weather Monitor',
             description = 'Weather data collection and monitoring',
-            expected_heartbeat_interval_secs = (
-                WeatherSettingsHelper.DEFAULT_POLLING_INTERVAL_SECONDS
-            ),
         )
 
     async def do_work(self):
@@ -84,7 +108,7 @@ class WeatherMonitor( PeriodicMonitor, SettingsMixin ):
             return
 
         disabled_count = 0
-        
+
         task_list = list()
         for weather_data_source in self._weather_data_source_instance_list:
             is_enabled = await self._settings_helper.is_weather_source_enabled_async(
@@ -110,4 +134,3 @@ class WeatherMonitor( PeriodicMonitor, SettingsMixin ):
             self.record_warning( message )
             weather_source_manager.record_warning( message )
         return
-

@@ -15,11 +15,11 @@ class NotificationMonitor( PeriodicMonitor, NotificationMixin ):
     NOTIFICATION_POLLING_INTERVAL_SECS = 10
 
     def __init__( self ):
-        super().__init__(
-            id = self.MONITOR_ID,
-            interval_secs = self.NOTIFICATION_POLLING_INTERVAL_SECS,
-        )
+        super().__init__( id = self.MONITOR_ID )
         return
+
+    def get_polling_interval_secs(self) -> int:
+        return self.NOTIFICATION_POLLING_INTERVAL_SECS
 
     @classmethod
     def get_provider_info(cls) -> ProviderInfo:
@@ -27,7 +27,6 @@ class NotificationMonitor( PeriodicMonitor, NotificationMixin ):
             provider_id = cls.MONITOR_ID,
             provider_name = 'Notifications Monitor',
             description = 'Notification processing and delivery',
-            expected_heartbeat_interval_secs = cls.NOTIFICATION_POLLING_INTERVAL_SECS,
         )
 
     def alarm_ceiling(self):
