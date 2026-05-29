@@ -497,7 +497,17 @@ a.clickable-card:active {
     cursor: default;
 }
 .hi-edit-sidebar-content {
-    padding: 0.25rem;
+    padding: 0.5rem;
+}
+
+/* Items-list mode: the entity rows carry status-based background      */
+/* shading (in-view / unused) and integration logos authored on        */
+/* white, so the edit-mode sidebar tint is overridden to white when    */
+/* the items list template is loaded. ``:has()`` lets the parent       */
+/* react to which child template was rendered without JS coordination, */
+/* so the white extends edge-to-edge -- no scroll edge cases.           */
+.hi-screen[hi-edit="True"] #hi-side-content:has(.entity-picker-container) {
+    background: var(--white);
 }
 
 /* Touch-target utility. Apply alongside any visual treatment           */
@@ -518,8 +528,6 @@ a.clickable-card:active {
 #hi-side-content {
     height: calc(100vh - var(--top-buttons-height) - var(--bottom-buttons-height));
     display: flex;
-    padding-left: 0.5rem;
-    padding-right: 0.5rem;
     flex-direction: column;
     overflow-y: auto;
 }
@@ -1638,17 +1646,11 @@ g[hover] {
     }
 }
 
-/* Entity Picker Styles */
-.entity-picker-container {
-    /* Let the container flow naturally with sidebar scroll */
-}
-
-.entity-picker-panel {
-    background: var(--white);
-    border: 1px solid var(--line-color);
-    border-radius: 8px;
-    /* Remove fixed height - let it grow with content */
-}
+/* Entity Picker Styles. The container/panel wrappers are structural    */
+/* only (they exist for ``:has()`` detection and for template parity   */
+/* with downstream JS that may key off them). Sidebar background and   */
+/* gutters live one layer up: ``#hi-side-content`` paints the white,   */
+/* ``.hi-edit-sidebar-content`` owns the padding. Nothing here.        */
 
 .entity-picker-header {
     background: var(--muted-bg-light);
@@ -1698,8 +1700,8 @@ g[hover] {
 }
 
 .entity-picker-items {
-    /* Remove inner scroll - let sidebar handle scrolling */
-    padding: 0 5px 5px;
+    /* No styling -- gutter is owned by .hi-edit-sidebar-content one    */
+    /* layer up. Kept as a class hook for JS / template parity.         */
 }
 
 .entity-group-section {
