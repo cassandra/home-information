@@ -175,13 +175,25 @@ def _search_upstream(
     except Exception:
         # The contract asks referencers to populate ``error_message``
         # instead of raising, so reaching this branch means the
-        # referencer itself is broken. Surface a generic message so
-        # the picker stays usable; the stack lands in the server log.
+        # referencer itself is broken. Surface a labeled message so
+        # operators with multiple referencers know which one to look
+        # at; the stack lands in the server log.
         logger.exception( 'Attribute-reference search failed.' )
+        label = _safe_label( referencer )
         return AttributeReferenceSearchResult(
             results = [],
-            error_message = 'Search failed — see server logs.',
+            error_message = f'{label} search failed — see server logs.',
         )
+
+
+def _safe_label( referencer: IntegrationAttributeReferencer ) -> str:
+    # Defensive: a referencer broken enough to raise from search may
+    # also raise from get_metadata. Fall back to a generic label so
+    # the banner never compounds the failure.
+    try:
+        return referencer.get_metadata().label
+    except Exception:
+        return 'Integration'
 
 
 def _parse_selections_json(raw: str) -> List[ Dict[str, str] ]:

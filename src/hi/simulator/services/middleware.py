@@ -56,6 +56,12 @@ class ServiceFaultInjectionMiddleware:
                 status = 401,
             )
 
+        if fault_mode == ServiceFaultMode.FORBIDDEN:
+            return JsonResponse(
+                { 'message': 'Forbidden' },
+                status = 403,
+            )
+
         if fault_mode == ServiceFaultMode.SERVER_ERROR:
             return JsonResponse(
                 { 'message': 'Internal server error' },

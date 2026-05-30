@@ -51,6 +51,7 @@ class ServiceFaultMode(LabeledEnum):
 
     HEALTHY       = ( 'Healthy'      , 'Pass requests through normally (default).' )
     AUTH_FAIL     = ( 'Auth Fail'    , 'Return 401 from every API request.' )
+    FORBIDDEN     = ( 'Forbidden'    , 'Return 403 from every API request (credentials recognized, action forbidden — e.g., scope or role missing).' )
     SERVER_ERROR  = ( 'Server Error' , 'Return 500 from every API request.' )
     SLOW          = ( 'Slow'         , 'Sleep past the integration probe timeout, then pass through.' )
     NON_JSON      = ( 'Non-JSON'     , 'Return 200 with text/html body (simulates wrong base URL / proxy).' )

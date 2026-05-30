@@ -15,9 +15,9 @@ class ImAttributeType( IntegrationAttributeType ):
     )
     API_KEY = (
         'API Key',
-        'Immich API key sent as ``x-api-key`` on every request. Create '
+        'Immich API key sent as x-api-key on every request. Create '
         'one in the Immich web UI under Account Settings → API Keys '
-        'with at least the ``asset.read`` permission.',
+        'with at least the asset.read permission.',
         AttributeValueType.SECRET,
         None,
         True,

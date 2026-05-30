@@ -86,19 +86,33 @@ class ImmichAttributeReferencer( IntegrationAttributeReferencer ):
             envelope.get( ImmichApi.RESPONSE_ASSETS, {} )
             or {}
         ).get( ImmichApi.RESPONSE_ITEMS, []) or []
-        return AttributeReferenceSearchResult(
+        try:
             results = [
                 self._translate( client = client, asset = asset )
                 for asset in items
-            ],
-        )
+            ]
+        except Exception as e:
+            # Per-asset translation can fail on shape drift (missing
+            # id, etc.). Surface as the same unexpected-response
+            # signal the HTTP layer uses so the picker banner names
+            # the integration instead of falling to the framework's
+            # generic fallback message.
+            logger.warning(
+                f'Immich asset translation failed for query '
+                f'{query!r}: {e}'
+            )
+            return AttributeReferenceSearchResult(
+                results = [],
+                error_message = self._http_error_message( None ),
+            )
+        return AttributeReferenceSearchResult( results = results )
 
     @staticmethod
     def _http_error_message( status : Optional[int] ) -> str:
         if status == 401:
             return 'Immich API key not recognized (HTTP 401).'
         if status == 403:
-            return ( 'Immich API key is missing the ``asset.read`` '
+            return ( 'Immich API key is missing the asset.read '
                      'permission (HTTP 403).' )
         if status is None:
             return 'Immich returned an unexpected response.'

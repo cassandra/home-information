@@ -64,6 +64,17 @@ class TestImmichThumbnailProxyView(TestCase):
         self.assertEqual(result.status_code, 502)
 
     @patch('hi.services.immich.views.build_client')
+    def test_upstream_500_returns_502(self, mock_build):
+        client = Mock()
+        response = Mock()
+        response.status_code = 500
+        client.download_thumbnail.side_effect = HTTPError('500', response = response)
+        mock_build.return_value = client
+
+        result = self.client.get(self._url())
+        self.assertEqual(result.status_code, 502)
+
+    @patch('hi.services.immich.views.build_client')
     def test_connection_error_returns_502(self, mock_build):
         client = Mock()
         client.download_thumbnail.side_effect = RequestException('boom')

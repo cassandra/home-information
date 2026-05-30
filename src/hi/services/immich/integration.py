@@ -84,10 +84,9 @@ class ImmichGateway( IntegrationGateway ):
             )
         if response.status_code == 403:
             return ConnectionTestResult.failure(
-                'Immich API key is missing the ``asset.read`` '
-                'permission (HTTP 403). Re-create the key in Immich '
-                '→ Account Settings → API Keys with ``asset.read`` '
-                'granted.'
+                'Immich API key is missing the asset.read permission '
+                '(HTTP 403). Re-create the key in Immich → Account '
+                'Settings → API Keys with asset.read granted.'
             )
         return ConnectionTestResult.failure(
             f'Immich responded HTTP {response.status_code}.'

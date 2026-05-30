@@ -14,7 +14,7 @@ Each integration declares its `IntegrationCapability` set on `IntegrationMetaDat
 
 - **`CONNECT`** — live mirror of an upstream system. Realized by an `IntegrationConnector` subclass returned from `IntegrationGateway.get_connector()`. All four "Connectors"-tab integrations (HA, ZM, Frigate, HomeBox) declare CONNECT.
 - **`IMPORT`** — one-shot copy of upstream items into HI as locally-owned entities. Realized by an `IntegrationImporter` subclass returned from `IntegrationGateway.get_importer()`. HomeBox is the only integration to declare IMPORT alongside CONNECT today (see [`docs/dev/integrations/data-import.md`](data-import.md) for the developer surface).
-- **`ATTRIBUTE_REFERENCE`** — search-and-attach surface that contributes URL attributes to existing Entity / Location records (no entity import, no live mirror). Realized by an `IntegrationAttributeReferencer` subclass returned from `IntegrationGateway.get_attribute_referencer()`. Paperless-ngx is the only integration to declare ATTRIBUTE_REFERENCE today. ATTRIBUTE_REFERENCE-only integrations are configured on a sibling tab labeled "Content Sources" instead of "Connectors" — the page chrome differs because there's no monitor / sync lifecycle.
+- **`ATTRIBUTE_REFERENCE`** — search-and-attach surface that contributes URL attributes to existing Entity / Location records (no entity import, no live mirror). Realized by an `IntegrationAttributeReferencer` subclass returned from `IntegrationGateway.get_attribute_referencer()`. Paperless-ngx and Immich declare ATTRIBUTE_REFERENCE today. ATTRIBUTE_REFERENCE-only integrations are configured on a sibling tab labeled "Content Sources" instead of "Connectors" — the page chrome differs because there's no monitor / sync lifecycle.
 
 The three per-capability classes (`IntegrationConnector`, `IntegrationImporter`, `IntegrationAttributeReferencer`) share a common base `CapabilityGateway` (`hi/integrations/capability_gateway.py`). Each declares a `capability` class attribute identifying the `IntegrationCapability` it realizes, and overrides cross-capability concerns: `get_metadata()` (abstract), `get_description()` (operator-facing one-line description), and `get_attribute_actions_template_name()` (optional template fragment for the attribute form's action bar). Capability-specific concerns (sync, import, search) stay on the subclass. Adding a new capability means subclassing `CapabilityGateway`, declaring the `capability` class attribute, and overriding only the methods that apply to the new shape.
 
@@ -82,9 +82,9 @@ Each integration is a self-contained Django app under `hi/services/<integration_
 - `monitors.py` — `PeriodicMonitor` subclass(es) for polling and health probes
 - `apps.py`, `urls.py`, `views.py` — standard Django wiring
 
-`<prefix>` is a short integration mnemonic (`hass_`, `zm_`, `hb_`, `pl_`). Keep it consistent across all files within the integration.
+`<prefix>` is a short integration mnemonic (`hass_`, `zm_`, `hb_`, `pl_`, `im_`). Keep it consistent across all files within the integration.
 
-ATTRIBUTE_REFERENCE-only integrations (paperless-ngx today) don't need all the role-files above — they have no monitors, no sync, no converter, and no manager singleton (the capability has no live state to own). They still ship `integration.py`, `<prefix>_metadata.py`, `<prefix>_client.py`, plus a `<prefix>_referencer.py` for the `IntegrationAttributeReferencer` subclass and `<prefix>_models.py` (or `_constants.py`) for the wire-format strings.
+ATTRIBUTE_REFERENCE-only integrations (paperless-ngx and Immich today) don't need all the role-files above — they have no monitors, no sync, no converter, and no manager singleton (the capability has no live state to own). They still ship `integration.py`, `<prefix>_metadata.py`, `<prefix>_client.py`, plus a `<prefix>_referencer.py` for the `IntegrationAttributeReferencer` subclass and `<prefix>_models.py` (or `_constants.py`) for the wire-format strings.
 
 ### Centralize wire-format strings
 Every integration centralizes its wire-format strings — domain/endpoint names, attribute keys, device-class names, service names, special-state sentinels — in a single class per integration. The exemplar is `HassApi` in `hi/services/hass/hass_models.py`; ZoneMinder's equivalent is `hi/services/zoneminder/constants.py`. The converter, sync, controller, and service composer all import their wire strings from this single source.
@@ -208,6 +208,7 @@ Custom exception hierarchy (`hi/integrations/exceptions.py`):
 - `hi.services.frigate/` — Frigate (CONNECT).
 - `hi.services.homebox/` — HomeBox (CONNECT + IMPORT).
 - `hi.services.paperless/` — paperless-ngx (ATTRIBUTE_REFERENCE-only). Slimmer file layout — no manager singleton, no monitors, no converter — because the capability has no live state to own.
+- `hi.services.immich/` — Immich (ATTRIBUTE_REFERENCE-only). Same slimmer layout as paperless-ngx.
 
 ## Related Documentation
 - [Service Patterns](service-patterns.md)

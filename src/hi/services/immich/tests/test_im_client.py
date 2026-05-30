@@ -1,6 +1,7 @@
 import logging
 from unittest.mock import Mock, patch
 
+import requests
 from django.test import TestCase
 
 from hi.apps.attribute.enums import AttributeValueType
@@ -40,9 +41,15 @@ class TestImmichClient(TestCase):
         self.assertEqual(c1.api_url, 'https://im.example.com/')
         self.assertEqual(c2.api_url, 'https://im.example.com/')
 
-    def test_api_key_header_set_on_session(self):
+    def test_api_key_carries_on_outbound_requests(self):
+        # Verify the contract (every outbound request carries the
+        # x-api-key) via Session.prepare_request rather than poking
+        # the private session.headers dict.
         client = ImmichClient(api_url = 'https://im.example.com', api_key = 'abc')
-        self.assertEqual(client._session.headers['x-api-key'], 'abc')
+        prepared = client._session.prepare_request(
+            requests.Request('GET', 'https://im.example.com/api/probe'),
+        )
+        self.assertEqual(prepared.headers.get('x-api-key'), 'abc')
 
     def test_search_smart_posts_json_to_smart_endpoint(self):
         client = ImmichClient(api_url = 'https://im.example.com/', api_key = 'k')

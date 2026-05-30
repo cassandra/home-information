@@ -225,6 +225,21 @@ class TestSearchReferencesErrorMessages(TestCase):
         self.assertEqual(result.results, [])
         self.assertIn('Immich search failed', result.error_message)
 
+    @patch('hi.services.immich.im_referencer.build_client')
+    def test_translation_failure_surfaces_unexpected_response(self, mock_build):
+        # A non-dict item in the assets list makes _translate's
+        # ``asset.get(...)`` raise AttributeError. The referencer
+        # must report it as an Immich-named error instead of letting
+        # the exception escape to the framework's generic fallback.
+        client = _make_client(_envelope('not-a-dict'))
+        mock_build.return_value = client
+        result = ImmichAttributeReferencer().search_references(
+            query = 'q', limit = 20,
+        )
+        self.assertEqual(result.results, [])
+        self.assertIn('Immich', result.error_message)
+        self.assertIn('unexpected', result.error_message.lower())
+
 
 class TestBuildSecondaryText(TestCase):
     """The snippet replacement for photos. Returns None when nothing

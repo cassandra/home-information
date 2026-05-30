@@ -110,8 +110,10 @@ simulator at `src/hi/simulator/services/immich/`. It supports
 parametric response shapes (result count, EXIF on/off, artificial
 latency) and a `/photos/<id>` preview page so saved source links
 land somewhere instead of 404ing. Auth-failure simulation goes
-through the framework-wide `ServiceFaultMode` (no per-simulator key
-check).
+through the framework-wide `ServiceFaultMode` — `AUTH_FAIL` returns
+401 (key unrecognized), `FORBIDDEN` returns 403 (key lacks
+`asset.read`); both exercise the corresponding distinct error
+messages the integration produces.
 
 ## References
 

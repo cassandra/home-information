@@ -13,7 +13,6 @@ class ImmichApi:
     # has no free-text query field.
     SEARCH_METADATA_PROBE_PATH = 'api/search/metadata'
     ASSET_THUMBNAIL_PATH = 'api/assets/{id}/thumbnail'
-    SERVER_PING_PATH     = 'api/server/ping'
     # Per-asset web UI route. Used unchanged as the persisted attribute
     # value; operators clicking the saved link land on Immich's own
     # page (authenticated by their Immich session, not by HI).
@@ -54,8 +53,3 @@ class ImmichApi:
 
     EXIF_CITY    = 'city'
     EXIF_COUNTRY = 'country'
-
-    # ---- Asset type sentinels ----
-
-    ASSET_TYPE_IMAGE = 'IMAGE'
-    ASSET_TYPE_VIDEO = 'VIDEO'
