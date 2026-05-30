@@ -3,7 +3,7 @@ from unittest.mock import patch
 
 import hi.apps.common.datetimeproxy as datetimeproxy
 from hi.apps.alert.alert_manager import AlertManager, AlertMaintenanceResult
-from hi.apps.alert.alarm import Alarm
+from hi.apps.alert.alarm import Alarm, AlarmSignature
 from hi.apps.alert.enums import AlarmLevel, AlarmSource
 from hi.apps.security.enums import SecurityLevel
 from hi.testing.async_task_utils import AsyncTaskFastTestCase
@@ -167,6 +167,91 @@ class TestAlertManager(BaseTestCase):
         self.assertEqual(
             mock_notification_manager.return_value.add_notification_item.call_count, 1
         )
+        return
+
+    def test_clear_alarms_removes_matching_alert(self):
+        """``AlertManager.clear_alarms`` takes an ``AlarmSignature``
+        the producer constructs from the same fields the original
+        ``Alarm`` carried. The composition (joined-string form, used
+        for diagnostics) stays inside ``AlarmSignature``; the queue
+        compares structurally."""
+        manager = AlertManager()
+        manager._alert_queue._alert_list.clear()
+
+        test_alarm = Alarm(
+            alarm_source=AlarmSource.EVENT,
+            alarm_type='clear_alarms_test',
+            alarm_level=AlarmLevel.WARNING,
+            title='Clear-alarms target',
+            sensor_response_list=[],
+            security_level=SecurityLevel.LOW,
+            alarm_lifetime_secs=300,
+            timestamp=datetimeproxy.now(),
+        )
+        manager._alert_queue.add_alarm(test_alarm)
+
+        removed = manager.clear_alarms(
+            signature=AlarmSignature(
+                alarm_source=AlarmSource.EVENT,
+                alarm_type='clear_alarms_test',
+                alarm_level=AlarmLevel.WARNING,
+            )
+        )
+
+        self.assertEqual(removed, 1)
+        self.assertEqual(len(manager.unacknowledged_alert_list), 0)
+        return
+
+    def test_clear_alarms_returns_zero_when_no_match(self):
+        """``clear_alarms`` returns 0 (not None / not error) when
+        nothing in the queue matches. Producers may call it
+        speculatively on every recovery transition; the no-op outcome
+        must be cheap and silent."""
+        manager = AlertManager()
+        manager._alert_queue._alert_list.clear()
+
+        removed = manager.clear_alarms(
+            signature=AlarmSignature(
+                alarm_source=AlarmSource.EVENT,
+                alarm_type='nothing.like.this.is.queued',
+                alarm_level=AlarmLevel.WARNING,
+            )
+        )
+
+        self.assertEqual(removed, 0)
+        return
+
+    def test_clear_alarms_matches_alarm_signature(self):
+        """The ``AlarmSignature`` a producer constructs MUST equal the
+        ``Alarm.signature`` of an alarm with the same fields. Pins
+        the contract that ``AlarmSignature`` is the structural
+        identity, not a coincidental string match."""
+        manager = AlertManager()
+        manager._alert_queue._alert_list.clear()
+
+        test_alarm = Alarm(
+            alarm_source=AlarmSource.EVENT,
+            alarm_type='roundtrip_test',
+            alarm_level=AlarmLevel.CRITICAL,
+            title='Round-trip target',
+            sensor_response_list=[],
+            security_level=SecurityLevel.LOW,
+            alarm_lifetime_secs=300,
+            timestamp=datetimeproxy.now(),
+        )
+        alert = manager._alert_queue.add_alarm(test_alarm)
+
+        producer_signature = AlarmSignature(
+            alarm_source=AlarmSource.EVENT,
+            alarm_type='roundtrip_test',
+            alarm_level=AlarmLevel.CRITICAL,
+        )
+        # Producer's signature equals the alert's signature -- otherwise
+        # ``clear_alarms`` would silently miss its target.
+        self.assertEqual(producer_signature, alert.signature)
+
+        removed = manager.clear_alarms(signature=producer_signature)
+        self.assertEqual(removed, 1)
         return
 
     def test_alert_manager_alert_queue_integration(self):

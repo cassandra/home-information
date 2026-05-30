@@ -4,7 +4,7 @@ import threading
 
 import hi.apps.common.datetimeproxy as datetimeproxy
 
-from .alarm import Alarm
+from .alarm import Alarm, AlarmSignature
 from .alert import Alert
 from .enums import AlarmLevel
 from .transient_models import AlertQueueCleanupResult
@@ -174,6 +174,38 @@ class AlertQueue:
                 return True
 
             raise KeyError( f'Alert not found for {alert_id}' )
+
+    def clear_signature( self, signature : AlarmSignature ) -> int:
+        """Remove any alert -- acked or unacked -- whose signature
+        matches. Producer-callable: when a producer detects that the
+        upstream condition this signature represents has resolved
+        (e.g., a health-status provider transitions back to HEALTHY,
+        a sync drift is resolved by a successful refresh), calling
+        this drops the matching alert from the queue so the next
+        bad-state alarm with the same signature creates a fresh alert
+        and re-fires notification, rather than being absorbed by the
+        stale dedup anchor.
+
+        Returns the number of alerts removed. Zero is a normal
+        outcome (no matching alert in the queue) -- callers should
+        not treat zero as an error."""
+        with self._active_alerts_lock:
+            if len( self._alert_list ) < 1:
+                return 0
+            new_list = list()
+            removed = 0
+            for alert in self._alert_list:
+                if alert.signature == signature:
+                    removed += 1
+                    continue
+                new_list.append( alert )
+                continue
+            if removed > 0:
+                self._alert_list = new_list
+                self._last_changed_datetime = datetimeproxy.now()
+                logger.debug( f'Cleared {removed} alert(s)'
+                              f' with signature "{signature}".' )
+        return removed
 
     def remove_expired_alerts(self):
         """Remove alerts whose ``end_datetime`` has passed. Acknowledged

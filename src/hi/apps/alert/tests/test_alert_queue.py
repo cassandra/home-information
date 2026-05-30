@@ -5,7 +5,7 @@ import threading
 import hi.apps.common.datetimeproxy as datetimeproxy
 from hi.apps.alert.alert_queue import AlertQueue
 from hi.apps.alert.alert import Alert
-from hi.apps.alert.alarm import Alarm
+from hi.apps.alert.alarm import Alarm, AlarmSignature
 from hi.apps.alert.enums import AlarmLevel, AlarmSource
 from hi.apps.security.enums import SecurityLevel
 from hi.testing.base_test_case import BaseTestCase
@@ -513,6 +513,146 @@ class TestAlertQueue(BaseTestCase):
             self.assertEqual(alert.end_datetime, ack_end_datetime)
         finally:
             datetimeproxy.reset()
+        return
+
+    def test_clear_signature_removes_unacked_matching_alert(self):
+        """``clear_signature`` drops an unacknowledged alert with the
+        matching signature -- this is the path producers will use
+        when an external condition resolves before the operator has
+        seen the alert."""
+        alert = self.queue.add_alarm(self.test_alarm)
+        signature = alert.signature
+        self.assertEqual(len(self.queue), 1)
+
+        removed = self.queue.clear_signature(signature)
+
+        self.assertEqual(removed, 1)
+        self.assertEqual(len(self.queue), 0)
+        with self.assertRaises(KeyError):
+            self.queue.get_alert(alert.id)
+        return
+
+    def test_clear_signature_removes_acked_dedup_anchor(self):
+        """The primary use case: an acknowledged alert that was
+        retained as a dedup anchor must be removable by
+        ``clear_signature`` when the producer detects state
+        recovery."""
+        alert = self.queue.add_alarm(self.test_alarm)
+        self.queue.acknowledge_alert(alert.id)
+        signature = alert.signature
+        self.assertEqual(len(self.queue), 1)
+
+        removed = self.queue.clear_signature(signature)
+
+        self.assertEqual(removed, 1)
+        self.assertEqual(len(self.queue), 0)
+        return
+
+    def test_clear_signature_no_op_when_no_match(self):
+        """No matching alert -> returns 0, queue unchanged. Callers
+        must not treat zero as an error."""
+        alert = self.queue.add_alarm(self.test_alarm)
+        before_changed = self.queue._last_changed_datetime
+
+        non_matching = AlarmSignature(
+            alarm_source=AlarmSource.EVENT,
+            alarm_type='not_in_queue',
+            alarm_level=AlarmLevel.INFO,
+        )
+        removed = self.queue.clear_signature(non_matching)
+
+        self.assertEqual(removed, 0)
+        self.assertEqual(len(self.queue), 1)
+        self.assertEqual(self.queue.get_alert(alert.id), alert)
+        # ``_last_changed_datetime`` must NOT advance when nothing
+        # was removed -- consumers polling on that timestamp would
+        # otherwise see spurious "queue changed" signals.
+        self.assertEqual(self.queue._last_changed_datetime, before_changed)
+        return
+
+    def test_clear_signature_no_op_on_empty_queue(self):
+        """Empty queue: returns 0 without touching state."""
+        self.assertEqual(len(self.queue), 0)
+        before_changed = self.queue._last_changed_datetime
+
+        removed = self.queue.clear_signature(
+            AlarmSignature(
+                alarm_source=AlarmSource.EVENT,
+                alarm_type='anything',
+                alarm_level=AlarmLevel.INFO,
+            )
+        )
+
+        self.assertEqual(removed, 0)
+        self.assertEqual(self.queue._last_changed_datetime, before_changed)
+        return
+
+    def test_clear_signature_leaves_non_matching_alerts_intact(self):
+        """Only the targeted signature is removed; other alerts
+        survive."""
+        target = self.queue.add_alarm(self.test_alarm)
+        other = self.queue.add_alarm(
+            self._make_alarm('other_type', level=AlarmLevel.CRITICAL),
+        )
+        self.assertEqual(len(self.queue), 2)
+
+        removed = self.queue.clear_signature(target.signature)
+
+        self.assertEqual(removed, 1)
+        self.assertEqual(len(self.queue), 1)
+        self.assertEqual(self.queue.get_alert(other.id), other)
+        return
+
+    def test_clear_signature_updates_last_changed_only_on_removal(self):
+        """The ``_last_changed_datetime`` advances when the call
+        removes alerts but not when it's a no-op. Polling consumers
+        rely on the timestamp to detect state changes."""
+        from datetime import timedelta
+        baseline = datetimeproxy.now()
+        datetimeproxy.set(baseline)
+        try:
+            alert = self.queue.add_alarm(self.test_alarm)
+            insertion_changed = self.queue._last_changed_datetime
+            # Advance the clock and call clear_signature on a
+            # non-matching signature: timestamp must not move.
+            datetimeproxy.set(baseline + timedelta(seconds=10))
+            self.queue.clear_signature(
+                AlarmSignature(
+                    alarm_source=AlarmSource.EVENT,
+                    alarm_type='not_matching',
+                    alarm_level=AlarmLevel.INFO,
+                )
+            )
+            self.assertEqual(self.queue._last_changed_datetime, insertion_changed)
+            # Advance further and clear the actual signature: timestamp
+            # must now advance to reflect the change.
+            datetimeproxy.set(baseline + timedelta(seconds=20))
+            self.queue.clear_signature(alert.signature)
+            self.assertGreater(
+                self.queue._last_changed_datetime, insertion_changed
+            )
+        finally:
+            datetimeproxy.reset()
+        return
+
+    def test_clear_signature_then_matching_alarm_creates_fresh_alert(self):
+        """Regression check on the design goal: after ``clear_signature``,
+        a subsequent matching alarm produces a NEW alert (not absorbed
+        into a stale anchor), so notification re-fires."""
+        first_alert = self.queue.add_alarm(self.test_alarm)
+        self.queue.acknowledge_alert(first_alert.id)
+        signature = first_alert.signature
+
+        self.queue.clear_signature(signature)
+        # Same signature alarm arrives after recovery -- must NOT
+        # absorb (queue is empty); must create a new alert with a
+        # distinct id.
+        re_alarm = self._make_alarm('test_alarm')
+        re_alert = self.queue.add_alarm(re_alarm)
+
+        self.assertEqual(re_alert.signature, signature)
+        self.assertNotEqual(re_alert.id, first_alert.id)
+        self.assertEqual(len(self.queue.unacknowledged_alert_list), 1)
         return
 
     def test_alert_queue_remove_expired_counts_acknowledged_among_removed(self):

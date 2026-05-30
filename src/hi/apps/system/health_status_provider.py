@@ -176,11 +176,21 @@ class HealthStatusProvider(ABC):
                                     error_count      : int,
                                     timestamp ) -> None:
         """
-        Map a state transition to an alarm and queue it via AlertManager
+        Map a state transition to an alarm action against AlertManager
         when the provider is opted in (alarm_ceiling returns
-        non-None). The framework calls into the alert subsystem
-        directly — the dependency direction (apps/system -> apps/alert)
-        is acceptable since alert is a more general-purpose facility.
+        non-None). Two paths:
+
+        - Degrade (HEALTHY/UNKNOWN -> WARNING/ERROR, and same-level
+          re-degrade): mapper produces an Alarm; we ``upsert_alarm``.
+        - Recovery (anything-bad -> HEALTHY): mapper produces the
+          ``AlarmSignature`` of the prior bad-state alarm; we
+          ``clear_alarms`` so the operator's queue returns to clean
+          instead of accumulating a second "recovered" alert
+          alongside the original error alert.
+
+        The framework calls into the alert subsystem directly -- the
+        dependency direction (apps/system -> apps/alert) is acceptable
+        since alert is a more general-purpose facility.
 
         Caller (update_health_status) wraps invocations in a safety
         net, so subclass overrides do not need to defend against their
@@ -203,7 +213,19 @@ class HealthStatusProvider(ABC):
             error_count = error_count,
             timestamp = timestamp,
         )
-        alarm = HealthStatusAlarmMapper().create_alarm(
+
+        mapper = HealthStatusAlarmMapper()
+        if transition.is_recovery:
+            signature = mapper.get_recovery_target_signature(
+                transition = transition,
+                max_level = max_level,
+            )
+            if signature is None:
+                return
+            AlertManager().clear_alarms( signature = signature )
+            return
+
+        alarm = mapper.create_alarm(
             transition = transition,
             max_level = max_level,
         )

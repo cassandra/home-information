@@ -81,13 +81,17 @@ class HealthStatusAlarmMapperTest(SimpleTestCase):
         t = _transition(HealthStatusType.HEALTHY, HealthStatusType.ERROR)
         self.assertTrue(self.mapper.should_create_alarm(t))
 
-    def test_error_to_healthy_recovery_alarms(self):
-        t = _transition(HealthStatusType.ERROR, HealthStatusType.HEALTHY)
-        self.assertTrue(self.mapper.should_create_alarm(t))
-
-    def test_warning_to_healthy_recovery_alarms(self):
-        t = _transition(HealthStatusType.WARNING, HealthStatusType.HEALTHY)
-        self.assertTrue(self.mapper.should_create_alarm(t))
+    def test_recovery_transitions_do_not_create_alarm(self):
+        """Recovery transitions are handled by the clear-target path
+        (``get_recovery_target_signature`` + ``AlertManager.clear_alarms``),
+        not the create-alarm path. ``should_create_alarm`` must return
+        False so the caller doesn't double-handle the transition."""
+        for prev in (HealthStatusType.ERROR, HealthStatusType.WARNING):
+            t = _transition(prev, HealthStatusType.HEALTHY)
+            self.assertFalse(
+                self.mapper.should_create_alarm(t),
+                f'recovery from {prev} should NOT create an alarm',
+            )
 
     # --- get_alarm_level: natural levels and ceiling clamp ---
 
@@ -105,11 +109,13 @@ class HealthStatusAlarmMapperTest(SimpleTestCase):
             AlarmLevel.WARNING,
         )
 
-    def test_recovery_natural_level_is_info(self):
+    def test_recovery_returns_no_alarm_level(self):
+        """Recovery transitions don't fire alarms (cleared via
+        ``clear_alarms`` instead); their ``get_alarm_level`` returns
+        ``None``."""
         t = _transition(HealthStatusType.ERROR, HealthStatusType.HEALTHY)
-        self.assertEqual(
-            self.mapper.get_alarm_level(t, max_level=AlarmLevel.CRITICAL),
-            AlarmLevel.INFO,
+        self.assertIsNone(
+            self.mapper.get_alarm_level(t, max_level=AlarmLevel.CRITICAL)
         )
 
     def test_error_clamped_down_when_provider_caps_at_info(self):
@@ -140,18 +146,15 @@ class HealthStatusAlarmMapperTest(SimpleTestCase):
 
     # --- alarm types: signature stability ---
 
-    def test_error_and_recovery_have_distinct_types(self):
+    def test_error_alarm_type_includes_provider_id(self):
+        """The error alarm type embeds the provider id so signatures
+        from distinct providers don't collapse together. ``get_alarm_type``
+        is only called from ``create_alarm`` (degrade path); recovery
+        is handled by ``get_recovery_target_signature``."""
         t_err = _transition(HealthStatusType.HEALTHY, HealthStatusType.ERROR)
-        t_rec = _transition(HealthStatusType.ERROR, HealthStatusType.HEALTHY)
-        self.assertNotEqual(
-            self.mapper.get_alarm_type(t_err),
-            self.mapper.get_alarm_type(t_rec),
-        )
-        self.assertIn('error', self.mapper.get_alarm_type(t_err))
-        self.assertIn('recovered', self.mapper.get_alarm_type(t_rec))
-        # Provider id is part of the type so different providers don't
-        # collapse into the same alarm.
-        self.assertIn('test.provider', self.mapper.get_alarm_type(t_err))
+        alarm_type = self.mapper.get_alarm_type(t_err)
+        self.assertIn('error', alarm_type)
+        self.assertIn('test.provider', alarm_type)
 
     # --- create_alarm end-to-end ---
 
@@ -168,12 +171,16 @@ class HealthStatusAlarmMapperTest(SimpleTestCase):
         self.assertEqual(sr.detail_attrs['Status'], HealthStatusType.ERROR.label)
         self.assertEqual(sr.detail_attrs['Message'], 'upstream unreachable')
 
-    def test_create_alarm_full_shape_for_recovery(self):
-        t = _transition(HealthStatusType.ERROR, HealthStatusType.HEALTHY)
-        alarm = self.mapper.create_alarm(t, max_level=AlarmLevel.CRITICAL)
-        self.assertIsNotNone(alarm)
-        self.assertEqual(alarm.alarm_level, AlarmLevel.INFO)
-        self.assertIn('recovered', alarm.title.lower())
+    def test_create_alarm_returns_none_for_recovery(self):
+        """Recovery transitions no longer fire their own alarm. The
+        caller invokes ``get_recovery_target_signature`` and
+        ``AlertManager.clear_alarms`` instead."""
+        for prev in (HealthStatusType.ERROR, HealthStatusType.WARNING):
+            t = _transition(prev, HealthStatusType.HEALTHY)
+            self.assertIsNone(
+                self.mapper.create_alarm(t, max_level=AlarmLevel.CRITICAL),
+                f'recovery from {prev} should produce no alarm',
+            )
 
     def test_create_alarm_returns_none_for_suppressed_edges(self):
         for prev, curr in [
@@ -187,14 +194,87 @@ class HealthStatusAlarmMapperTest(SimpleTestCase):
                 f'{prev} -> {curr} should produce no alarm',
             )
 
-    def test_error_and_recovery_share_lifetime(self):
-        # Recovery must not expire before the error it's resolving —
-        # otherwise the user sees a bare error alert with no recovery
-        # context for the rest of the error's lifetime, suggesting the
-        # integration is still broken.
-        t_err = _transition(HealthStatusType.HEALTHY, HealthStatusType.ERROR)
-        t_rec = _transition(HealthStatusType.ERROR, HealthStatusType.HEALTHY)
-        self.assertEqual(
-            self.mapper.get_alarm_lifetime_secs(t_err),
-            self.mapper.get_alarm_lifetime_secs(t_rec),
+    # --- get_recovery_target_signature ---
+
+    def test_recovery_target_signature_error_to_healthy(self):
+        """Recovery from ERROR clears the CRITICAL-level error alarm
+        the prior degrade transition would have queued."""
+        t = _transition(HealthStatusType.ERROR, HealthStatusType.HEALTHY)
+        signature = self.mapper.get_recovery_target_signature(
+            transition=t, max_level=AlarmLevel.CRITICAL,
         )
+        self.assertIsNotNone(signature)
+        self.assertEqual(signature.alarm_source, AlarmSource.HEALTH_STATUS)
+        self.assertIn('test.provider', signature.alarm_type)
+        self.assertIn('error', signature.alarm_type)
+        self.assertEqual(signature.alarm_level, AlarmLevel.CRITICAL)
+
+    def test_recovery_target_signature_warning_to_healthy(self):
+        """Recovery from WARNING clears the WARNING-level alarm. Each
+        bad-state level produces its own signature so the clear must
+        target the correct one."""
+        t = _transition(HealthStatusType.WARNING, HealthStatusType.HEALTHY)
+        signature = self.mapper.get_recovery_target_signature(
+            transition=t, max_level=AlarmLevel.CRITICAL,
+        )
+        self.assertIsNotNone(signature)
+        self.assertEqual(signature.alarm_level, AlarmLevel.WARNING)
+
+    def test_recovery_target_signature_uses_clamped_level(self):
+        """The clear-target's level must reflect the SAME ceiling-clamp
+        applied when the original degrade alarm was queued, otherwise
+        the produced signature won't match what's actually in the
+        queue."""
+        t = _transition(HealthStatusType.ERROR, HealthStatusType.HEALTHY)
+        signature = self.mapper.get_recovery_target_signature(
+            transition=t, max_level=AlarmLevel.INFO,
+        )
+        self.assertIsNotNone(signature)
+        # ERROR would naturally fire CRITICAL but is clamped down to
+        # the provider's INFO ceiling. Recovery target must apply the
+        # same clamp so the signatures match.
+        self.assertEqual(signature.alarm_level, AlarmLevel.INFO)
+
+    def test_recovery_target_signature_none_for_non_recovery(self):
+        """Forward (degrade) transitions have nothing to clear."""
+        for prev, curr in [
+            (HealthStatusType.HEALTHY, HealthStatusType.ERROR),
+            (HealthStatusType.HEALTHY, HealthStatusType.WARNING),
+            (HealthStatusType.WARNING, HealthStatusType.ERROR),
+        ]:
+            t = _transition(prev, curr)
+            self.assertIsNone(
+                self.mapper.get_recovery_target_signature(
+                    transition=t, max_level=AlarmLevel.CRITICAL,
+                ),
+                f'{prev} -> {curr} is not a recovery; signature should be None',
+            )
+
+    def test_recovery_target_signature_none_for_suppressed_previous(self):
+        """A recovery from a suppressed state (UNKNOWN/DISABLED) had no
+        prior alarm queued, so there's nothing to clear."""
+        for prev in (HealthStatusType.UNKNOWN, HealthStatusType.DISABLED):
+            t = _transition(prev, HealthStatusType.HEALTHY)
+            self.assertIsNone(
+                self.mapper.get_recovery_target_signature(
+                    transition=t, max_level=AlarmLevel.CRITICAL,
+                ),
+                f'recovery from suppressed {prev} should produce no signature',
+            )
+
+    def test_recovery_target_signature_matches_prior_degrade_signature(self):
+        """End-to-end contract: the signature a recovery produces equals
+        the signature ``create_alarm`` on the prior degrade transition
+        would have queued. If these ever drift, ``clear_alarms`` would
+        silently miss its target."""
+        max_level = AlarmLevel.CRITICAL
+        t_degrade = _transition(HealthStatusType.HEALTHY, HealthStatusType.ERROR)
+        degrade_alarm = self.mapper.create_alarm(t_degrade, max_level=max_level)
+        self.assertIsNotNone(degrade_alarm)
+
+        t_recover = _transition(HealthStatusType.ERROR, HealthStatusType.HEALTHY)
+        signature = self.mapper.get_recovery_target_signature(
+            transition=t_recover, max_level=max_level,
+        )
+        self.assertIsNotNone(signature)
+        self.assertEqual(signature, degrade_alarm.signature)

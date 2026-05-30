@@ -17,6 +17,7 @@ class TestAlarm(BaseTestCase):
 
     def test_alarm_signature_generation(self):
         """Test alarm signature generation - critical for alarm aggregation logic."""
+        from hi.apps.alert.alarm import AlarmSignature
         alarm = Alarm(
             alarm_source=AlarmSource.EVENT,
             alarm_type='test_alarm',
@@ -27,10 +28,20 @@ class TestAlarm(BaseTestCase):
             alarm_lifetime_secs=300,
             timestamp=datetime.now(),
         )
-        
-        expected_signature = f'{AlarmSource.EVENT}.test_alarm.{AlarmLevel.WARNING}'
+
+        expected_signature = AlarmSignature(
+            alarm_source=AlarmSource.EVENT,
+            alarm_type='test_alarm',
+            alarm_level=AlarmLevel.WARNING,
+        )
         self.assertEqual(alarm.signature, expected_signature)
-        
+        # Joined-string form (used in diagnostics) preserves the
+        # dotted ``source.type.level`` shape.
+        self.assertEqual(
+            str(alarm.signature),
+            f'{AlarmSource.EVENT}.test_alarm.{AlarmLevel.WARNING}',
+        )
+
         # Test with different values
         critical_alarm = Alarm(
             alarm_source=AlarmSource.EVENT,
@@ -42,10 +53,14 @@ class TestAlarm(BaseTestCase):
             alarm_lifetime_secs=300,
             timestamp=datetime.now(),
         )
-        
-        expected_critical_signature = f'{AlarmSource.EVENT}.critical_test.{AlarmLevel.CRITICAL}'
+
+        expected_critical_signature = AlarmSignature(
+            alarm_source=AlarmSource.EVENT,
+            alarm_type='critical_test',
+            alarm_level=AlarmLevel.CRITICAL,
+        )
         self.assertEqual(critical_alarm.signature, expected_critical_signature)
-        
+
         # Signatures should be different
         self.assertNotEqual(alarm.signature, critical_alarm.signature)
         return

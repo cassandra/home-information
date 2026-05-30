@@ -2,35 +2,39 @@
 Map HealthStatusProvider state transitions to system alarms.
 
 Stateless policy concentrator. Inputs: a HealthStatusTransition plus the
-provider's declared maximum allowed alarm level. Output: an Optional[Alarm]
-that the caller (HealthStatusProvider._dispatch_transition_alarm) hands to
-AlertManager.
+provider's declared maximum allowed alarm level. Output for a degrade
+transition: an Optional[Alarm] the caller hands to AlertManager. Output
+for a recovery transition: an Optional[AlarmSignature] the caller hands
+to AlertManager.clear_alarms so the prior bad-state alert drops from
+the queue, leaving the operator with a clean dashboard.
+
+The "recovery fires its own alarm" pattern was retired with the
+introduction of AlertManager.clear_alarms (#378). Recovery transitions
+no longer produce an alarm at all -- the recovery-target helper
+reconstructs the signature the prior error alarm was issued at so the
+caller can clear it directly.
 
 Design echoes WeatherAlertAlarmMapper:
-- Single create_alarm() entry point; helper methods are pure.
-- Alarms apply at SecurityLevel.OFF (universal — health affects everyone).
-- Distinct alarm_type strings for error vs recovery so the alert queue
-  treats them as separate alerts the user can see and acknowledge
-  independently.
+- Single create_alarm() entry point for degrades; helper methods are pure.
+- Alarms apply at SecurityLevel.OFF (universal -- health affects everyone).
 
 Per-provider seriousness is expressed as a maximum alarm level (the
 "ceiling"), declared by the provider via HealthStatusProvider.alarm_ceiling.
 The mapper picks a "natural" alarm level for the transition class
-(ERROR=CRITICAL, WARNING=WARNING, recovery=INFO) and clamps to the
-provider's ceiling. This lets each provider declare relative importance
-(e.g., HASS/ZM ceiling=CRITICAL, HomeBox ceiling=INFO) without owning the
-full mapping policy.
+(ERROR=CRITICAL, WARNING=WARNING) and clamps to the provider's ceiling.
+The recovery-target helper applies the SAME clamp, so the level it
+returns matches the level the error alarm was queued at.
 
 Transitions involving UNKNOWN or DISABLED on either side are
-suppressed entirely (no alarm fires). UNKNOWN is initialization noise
-with no settled baseline; DISABLED is operator-initiated and the
-operator already knows.
+suppressed entirely (no alarm fires, no recovery target). UNKNOWN is
+initialization noise with no settled baseline; DISABLED is
+operator-initiated and the operator already knows.
 """
 from typing import List, Optional
 import logging
 
 import hi.apps.common.datetimeproxy as datetimeproxy
-from hi.apps.alert.alarm import Alarm
+from hi.apps.alert.alarm import Alarm, AlarmSignature
 from hi.apps.alert.enums import AlarmLevel, AlarmSource
 from hi.apps.security.enums import SecurityLevel
 from hi.apps.sense.transient_models import SensorResponse
@@ -44,21 +48,15 @@ logger = logging.getLogger(__name__)
 
 class HealthStatusAlarmMapper:
 
-    # Single shared lifetime for both error and recovery alarms. They
-    # MUST match: if recovery expired before the error it's resolving,
-    # the user would be left looking at a bare error alert from the
-    # moment the recovery disappeared until the error finally expired —
-    # incorrectly suggesting the integration is still broken.
     ALARM_LIFETIME_SECS = 30 * 60
 
     # Natural alarm level for each transition class, BEFORE the
     # per-provider ceiling is applied. DISABLED is intentionally
-    # omitted — see _ALARM_SUPPRESSED_STATES.
+    # omitted -- see _ALARM_SUPPRESSED_STATES.
     NATURAL_LEVEL_FOR_NEW_STATUS = {
         HealthStatusType.ERROR    : AlarmLevel.CRITICAL,
         HealthStatusType.WARNING  : AlarmLevel.WARNING,
     }
-    RECOVERY_NATURAL_LEVEL = AlarmLevel.INFO
 
     # States whose presence on EITHER side of a transition disqualifies
     # the transition from alarming:
@@ -73,14 +71,22 @@ class HealthStatusAlarmMapper:
         HealthStatusType.DISABLED,
     })
 
+    @staticmethod
+    def _error_alarm_type( provider_id : str ) -> str:
+        # Single source of truth for the error-alarm-type format used by
+        # both forward (degrade) and reverse (recovery target lookup)
+        # paths. Recovery clears the alarm an earlier degrade queued, so
+        # the two paths MUST agree on the type string.
+        return f'health_status.{provider_id}.error'
+
     def should_create_alarm( self, transition : HealthStatusTransition ) -> bool:
+        # Recovery transitions are handled by the clear-target path, not
+        # the create-alarm path; never produce an alarm for them.
+        if transition.is_recovery:
+            return False
         if ( transition.previous_status in self._ALARM_SUPPRESSED_STATES
              or transition.current_status in self._ALARM_SUPPRESSED_STATES ):
             return False
-
-        # Recovery: HEALTHY from a non-HEALTHY state.
-        if transition.is_recovery:
-            return True
 
         # Forward transitions into states that warrant an alarm.
         if transition.current_status in self.NATURAL_LEVEL_FOR_NEW_STATUS:
@@ -88,42 +94,72 @@ class HealthStatusAlarmMapper:
 
         return False
 
+    def _natural_level_for_bad_status(
+            self,
+            status     : HealthStatusType,
+            max_level  : AlarmLevel ) -> Optional[ AlarmLevel ]:
+        # The clamped alarm level a forward (degrade) transition INTO
+        # ``status`` would fire at -- shared by ``get_alarm_level`` and
+        # ``get_recovery_target_triple`` so the two paths produce
+        # identical levels for the same (status, ceiling) pair.
+        natural = self.NATURAL_LEVEL_FOR_NEW_STATUS.get( status )
+        if natural is None:
+            return None
+        if natural.priority > max_level.priority:
+            return max_level
+        return natural
+
     def get_alarm_level( self,
                          transition  : HealthStatusTransition,
                          max_level   : AlarmLevel ) -> Optional[ AlarmLevel ]:
         if not self.should_create_alarm( transition ):
             return None
+        return self._natural_level_for_bad_status(
+            status    = transition.current_status,
+            max_level = max_level,
+        )
 
-        if transition.is_recovery:
-            natural = self.RECOVERY_NATURAL_LEVEL
-        else:
-            natural = self.NATURAL_LEVEL_FOR_NEW_STATUS.get( transition.current_status )
-        if natural is None:
+    def get_recovery_target_signature(
+            self,
+            transition  : HealthStatusTransition,
+            max_level   : AlarmLevel,
+    ) -> Optional[ AlarmSignature ]:
+        """For a recovery transition, return the ``AlarmSignature`` the
+        prior bad-state alarm was queued under. Caller hands this to
+        ``AlertManager.clear_alarms`` to drop that alert from the queue.
+
+        Returns ``None`` for:
+        - Non-recovery transitions (caller has nothing to clear).
+        - Recoveries from a state the mapper would have suppressed
+          (UNKNOWN, DISABLED) -- no prior alarm was issued, so nothing
+          to clear."""
+        if not transition.is_recovery:
             return None
-
-        # Clamp to the provider's declared ceiling.
-        if natural.priority > max_level.priority:
-            return max_level
-        return natural
+        previous_status = transition.previous_status
+        if previous_status in self._ALARM_SUPPRESSED_STATES:
+            return None
+        level = self._natural_level_for_bad_status(
+            status    = previous_status,
+            max_level = max_level,
+        )
+        if level is None:
+            return None
+        return AlarmSignature(
+            alarm_source = AlarmSource.HEALTH_STATUS,
+            alarm_type   = self._error_alarm_type( transition.provider_info.provider_id ),
+            alarm_level  = level,
+        )
 
     def get_alarm_lifetime_secs( self, transition : HealthStatusTransition ) -> int:
         return self.ALARM_LIFETIME_SECS
 
     def get_alarm_type( self, transition : HealthStatusTransition ) -> str:
-        # Distinct types so error and recovery produce separate alerts
-        # the user can see and acknowledge independently. Includes the
-        # provider id so signatures group sensibly when multiple
-        # providers are unhealthy at once.
-        provider_id = transition.provider_info.provider_id
-        if transition.is_recovery:
-            return f'health_status.{provider_id}.recovered'
-        return f'health_status.{provider_id}.error'
+        # Only called from ``create_alarm``, which short-circuits on
+        # recovery via ``should_create_alarm``. Always the error type.
+        return self._error_alarm_type( transition.provider_info.provider_id )
 
     def get_alarm_title( self, transition : HealthStatusTransition ) -> str:
-        provider_name = transition.provider_info.provider_name
-        if transition.is_recovery:
-            return f'{provider_name} recovered'
-        return f'{provider_name} unhealthy'
+        return f'{transition.provider_info.provider_name} unhealthy'
 
     def create_sensor_responses( self,
                                  transition : HealthStatusTransition ) -> List[ SensorResponse ]:

@@ -38,8 +38,36 @@ logger = logging.getLogger(__name__)
 class IntegrationSyncCheckMonitor( PeriodicMonitor ):
 
     MONITOR_ID = 'hi.integrations.sync_check_monitor'
-    INTERVAL_SECS = IntegrationSyncCheck.INTERVAL_SECS
 
+
+
+
+
+
+
+
+
+    # ZZZ DEBUG
+    #INTERVAL_SECS = IntegrationSyncCheck.INTERVAL_SECS
+    INTERVAL_SECS = 20
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    
     def __init__( self ):
         super().__init__( id = self.MONITOR_ID )
         return

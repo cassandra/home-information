@@ -5,34 +5,35 @@ Composes HealthStatus, the integration's is_paused flag, and the
 sync-check state into a single attention-grabbing glyph.
 
 Context:
-  health_status      : HealthStatus instance (required).
+  health_status      : HealthStatus instance or None (optional).
   is_paused          : bool -- integration's is_paused flag (required).
   sync_check_result  : SyncCheckResult or None (optional) -- sync-check
                        state for this integration.
 
 Visual priority (worst-of):
   ERROR > WARNING > paused > needs-sync
-HEALTHY-and-not-paused-and-in-sync renders nothing.
+HEALTHY-and-not-paused-and-in-sync renders nothing. Each branch reads
+its inputs independently so a missing ``health_status`` does not
+suppress paused or needs-sync indicators (Django silently resolves the
+absent attribute chain to a falsy value).
 
 DISABLED is intentionally not handled -- disabled integrations are
 excluded from the tab list upstream.
 
 UNKNOWN is intentionally not handled -- initialization edge, transient.
 {% endcomment %}
-{% if health_status %}
-{% with status=health_status.status %}
-{% if status.is_critical %}
+{% if health_status.status.is_critical %}
   <span class="hi-integration-indicator hi-integration-indicator-error"
         role="img"
-        aria-label="{{ status.label }}{% if health_status.last_message %}: {{ health_status.last_message }}{% endif %}"
-        title="{{ status.label }}{% if health_status.last_message %}: {{ health_status.last_message }}{% endif %}">
+        aria-label="{{ health_status.status.label }}{% if health_status.last_message %}: {{ health_status.last_message }}{% endif %}"
+        title="{{ health_status.status.label }}{% if health_status.last_message %}: {{ health_status.last_message }}{% endif %}">
     {% icon "warning" size="md" %}
   </span>
-{% elif status.is_warning %}
+{% elif health_status.status.is_warning %}
   <span class="hi-integration-indicator hi-integration-indicator-warning"
         role="img"
-        aria-label="{{ status.label }}{% if health_status.last_message %}: {{ health_status.last_message }}{% endif %}"
-        title="{{ status.label }}{% if health_status.last_message %}: {{ health_status.last_message }}{% endif %}">
+        aria-label="{{ health_status.status.label }}{% if health_status.last_message %}: {{ health_status.last_message }}{% endif %}"
+        title="{{ health_status.status.label }}{% if health_status.last_message %}: {{ health_status.last_message }}{% endif %}">
     {% icon "warning" size="sm" %}
   </span>
 {% elif is_paused %}
@@ -49,6 +50,4 @@ UNKNOWN is intentionally not handled -- initialization edge, transient.
         title="{{ sync_check_result.summary_message }}">
     {% icon "sync" size="sm" %}
   </span>
-{% endif %}
-{% endwith %}
 {% endif %}

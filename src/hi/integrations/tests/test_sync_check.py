@@ -453,7 +453,138 @@ class TransitionAlarmTests(TestCase):
         )
         # Per-integration unique signature so two integrations
         # drifting yield two distinct alerts.
-        self.assertIn(self.INTEGRATION_ID, alarm.signature)
+        self.assertIn(self.INTEGRATION_ID, alarm.signature.alarm_type)
+
+    # ---- resolution predicate ----
+
+    def test_should_clear_on_needs_sync_to_in_sync_transition(self):
+        """The resolution direction: drift was reported, current poll
+        is clean. ``_clear_needs_sync_alert`` will be called."""
+        self.assertTrue(IntegrationSyncCheck._should_clear_alarm(
+            prior=self._result(needs_sync=True),
+            current=self._result(needs_sync=False),
+        ))
+
+    def test_should_not_clear_when_no_prior(self):
+        """First-ever probe with no drift: nothing was queued, so
+        nothing to clear."""
+        self.assertFalse(IntegrationSyncCheck._should_clear_alarm(
+            prior=None,
+            current=self._result(needs_sync=False),
+        ))
+
+    def test_should_not_clear_when_drift_persists(self):
+        self.assertFalse(IntegrationSyncCheck._should_clear_alarm(
+            prior=self._result(needs_sync=True),
+            current=self._result(needs_sync=True),
+        ))
+
+    def test_should_not_clear_on_clean_to_drift_transition(self):
+        """A fresh drift detection is the FIRE direction, not the
+        clear direction."""
+        self.assertFalse(IntegrationSyncCheck._should_clear_alarm(
+            prior=self._result(needs_sync=False),
+            current=self._result(needs_sync=True),
+        ))
+
+    def test_should_not_clear_when_both_clean(self):
+        self.assertFalse(IntegrationSyncCheck._should_clear_alarm(
+            prior=self._result(needs_sync=False),
+            current=self._result(needs_sync=False),
+        ))
+
+    # ---- resolution wiring ----
+
+    def test_set_state_clears_alarm_on_drift_to_in_sync_transition(self):
+        """When the cached state shows drift and the new probe finds
+        no drift, ``set_state`` invokes ``_clear_needs_sync_alert``."""
+        # Pre-populate a needs-sync state.
+        IntegrationSyncCheck.set_state(
+            integration_id=self.INTEGRATION_ID,
+            result=self._result(needs_sync=True),
+        )
+        with patch.object(
+                IntegrationSyncCheck, '_clear_needs_sync_alert',
+        ) as mock_clear:
+            IntegrationSyncCheck.set_state(
+                integration_id=self.INTEGRATION_ID,
+                result=self._result(needs_sync=False),
+            )
+        mock_clear.assert_called_once()
+
+    def test_set_state_does_not_clear_on_sustained_in_sync(self):
+        """In-sync -> in-sync is the steady state; no alert was queued,
+        so no clear is needed."""
+        IntegrationSyncCheck.set_state(
+            integration_id=self.INTEGRATION_ID,
+            result=self._result(needs_sync=False),
+        )
+        with patch.object(
+                IntegrationSyncCheck, '_clear_needs_sync_alert',
+        ) as mock_clear:
+            IntegrationSyncCheck.set_state(
+                integration_id=self.INTEGRATION_ID,
+                result=self._result(needs_sync=False),
+            )
+        mock_clear.assert_not_called()
+
+    def test_set_state_does_not_clear_on_first_in_sync(self):
+        """First probe with no drift: nothing was queued, so the clear
+        path must not fire."""
+        with patch.object(
+                IntegrationSyncCheck, '_clear_needs_sync_alert',
+        ) as mock_clear:
+            IntegrationSyncCheck.set_state(
+                integration_id=self.INTEGRATION_ID,
+                result=self._result(needs_sync=False),
+            )
+        mock_clear.assert_not_called()
+
+    def test_clear_failure_does_not_break_set_state(self):
+        """Resolution-side alarm subsystem failure must not propagate;
+        the cache write should already have succeeded."""
+        # Pre-populate a needs-sync state so the next set_state takes
+        # the clear path.
+        IntegrationSyncCheck.set_state(
+            integration_id=self.INTEGRATION_ID,
+            result=self._result(needs_sync=True),
+        )
+        with patch.object(
+                IntegrationSyncCheck, '_clear_needs_sync_alert',
+                side_effect=RuntimeError('alert system down'),
+        ):
+            IntegrationSyncCheck.set_state(
+                integration_id=self.INTEGRATION_ID,
+                result=self._result(needs_sync=False),
+            )
+        # State is recorded despite the clear failure.
+        loaded = IntegrationSyncCheck.get_state(self.INTEGRATION_ID)
+        self.assertIsNotNone(loaded)
+        self.assertFalse(loaded.needs_sync)
+
+    # ---- signature contract ----
+
+    def test_clear_uses_same_signature_as_fire(self):
+        """End-to-end contract: the signature ``_clear_needs_sync_alert``
+        hands to ``AlertManager.clear_alarms`` MUST equal the signature
+        of the alarm ``_fire_needs_sync_alarm`` would have queued.
+        Otherwise the resolution path would silently miss its target."""
+        from hi.apps.alert.alert_manager import AlertManager
+        with patch.object(AlertManager, 'clear_alarms') as mock_clear, \
+                patch.object(AlertManager, 'upsert_alarm') as mock_upsert:
+            IntegrationSyncCheck._fire_needs_sync_alarm(
+                integration_id=self.INTEGRATION_ID,
+                result=self._result(needs_sync=True),
+            )
+            IntegrationSyncCheck._clear_needs_sync_alert(
+                integration_id=self.INTEGRATION_ID,
+            )
+
+        mock_upsert.assert_called_once()
+        mock_clear.assert_called_once()
+        queued_alarm = mock_upsert.call_args.args[0]
+        clear_signature = mock_clear.call_args.kwargs['signature']
+        self.assertEqual(queued_alarm.signature, clear_signature)
 
 
 class _StubIntegrationData:

@@ -9,6 +9,29 @@ from hi.apps.sense.transient_models import SensorResponse
 from .enums import AlarmLevel, AlarmSource
 
 
+@dataclass(frozen=True)
+class AlarmSignature:
+    """Domain identity for a class of alarms that dedupe together.
+
+    Two alarms with the same signature surface as one Alert in the
+    queue. Producers construct an ``AlarmSignature`` to target alerts
+    for clearing on state recovery (see ``AlertManager.clear_alarms``)
+    without having to know the alert module's internal storage
+    representation.
+
+    ``frozen=True`` gives structural equality and hashability for free,
+    which is what the queue uses to match alerts. ``__str__`` provides
+    the dotted form for diagnostics and logging.
+    """
+
+    alarm_source : AlarmSource
+    alarm_type   : str
+    alarm_level  : AlarmLevel
+
+    def __str__(self):
+        return f'{self.alarm_source}.{self.alarm_type}.{self.alarm_level}'
+
+
 @dataclass
 class Alarm:
 
@@ -49,8 +72,12 @@ class Alarm:
         return AudioSignal.from_alarm_attributes( self.alarm_level, self.alarm_source, self.alarm_type )
 
     @property
-    def signature(self):
-        return f'{self.alarm_source}.{self.alarm_type}.{self.alarm_level}'
+    def signature(self) -> AlarmSignature:
+        return AlarmSignature(
+            alarm_source = self.alarm_source,
+            alarm_type   = self.alarm_type,
+            alarm_level  = self.alarm_level,
+        )
     
     def get_view_url(self) -> str:
         """

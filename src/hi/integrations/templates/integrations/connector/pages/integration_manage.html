@@ -22,7 +22,7 @@
                style="max-height: 18px; width: auto; margin-right: 6px; flex-shrink: 0;">
           {{ item.integration_data.label }}
         </span>
-        {% with health_status=item.integration_data.integration_gateway.get_health_status_provider.health_status %}
+        {% with health_status=item.integration_data.integration_gateway.get_connector.get_health_status_provider.health_status %}
         {% include "integrations/connector/panes/integration_status_indicator.html" with health_status=health_status is_paused=item.integration_data.integration.is_paused sync_check_result=item.sync_check_result %}
         {% endwith %}
       </div>

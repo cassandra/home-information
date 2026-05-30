@@ -227,6 +227,21 @@ class IntegrationSyncCheck:
                     f'Failed to fire needs-sync alarm for '
                     f'{integration_id}: {e}'
                 )
+        elif cls._should_clear_alarm( prior = prior, current = result ):
+            # Resolution path: a previously-drifting integration has
+            # converged. Drop any pending needs-sync alert so the
+            # operator's queue returns to clean immediately, rather
+            # than waiting out the ``NAG_INTERVAL_SECS`` post-ack
+            # suppression window. Failure here is logged but never
+            # masks the cache write -- the next resolution event will
+            # try again.
+            try:
+                cls._clear_needs_sync_alert( integration_id = integration_id )
+            except Exception as e:
+                logger.warning(
+                    f'Failed to clear needs-sync alert for '
+                    f'{integration_id}: {e}'
+                )
 
     @staticmethod
     def _should_alarm( prior   : Optional[ SyncCheckResult ],
@@ -236,8 +251,8 @@ class IntegrationSyncCheck:
         in-sync, AND current reports needs-sync. Drift that persists
         across cycles (needs-sync -> needs-sync) does not re-alarm --
         the user has already been told. Refresh-induced
-        needs-sync -> in-sync transitions are not a notification
-        direction."""
+        needs-sync -> in-sync transitions are handled by
+        ``_should_clear_alarm``."""
         if not current.needs_sync:
             return False
         if prior is None:
@@ -245,23 +260,55 @@ class IntegrationSyncCheck:
         return not prior.needs_sync
 
     @staticmethod
-    def _fire_needs_sync_alarm( integration_id : str,
+    def _should_clear_alarm( prior   : Optional[ SyncCheckResult ],
+                             current : SyncCheckResult ) -> bool:
+        """Resolution gate. Fires only on the needs-sync -> in-sync
+        transition: prior reported needs-sync, AND current reports
+        in-sync. No-prior -> in-sync needs no clear (no alert was
+        queued). Sustained in-sync (in-sync -> in-sync) is a no-op,
+        as is any transition that ends in needs-sync."""
+        if current.needs_sync:
+            return False
+        if prior is None:
+            return False
+        return prior.needs_sync
+
+    @classmethod
+    def _needs_sync_alarm_signature( cls, integration_id : str ):
+        """Single source of truth for the (source, type, level) identity
+        of the needs-sync alarm. The fire path constructs an ``Alarm``
+        with these fields; the clear path hands this signature to
+        ``AlertManager.clear_alarms``. Keeping both paths funneled
+        through one definition guarantees the clear matches what was
+        queued."""
+        from hi.apps.alert.alarm import AlarmSignature
+        from hi.apps.alert.enums import AlarmLevel, AlarmSource
+        return AlarmSignature(
+            alarm_source = AlarmSource.INTEGRATION,
+            alarm_type   = f'integrations.needs_sync.{integration_id}',
+            alarm_level  = AlarmLevel.INFO,
+        )
+
+    @classmethod
+    def _fire_needs_sync_alarm( cls,
+                                integration_id : str,
                                 result         : SyncCheckResult ) -> None:
         """Construct and queue an INFO-level alarm for a transition
         into the needs-sync state. Per-integration unique signature
         (``integrations.needs_sync.<integration_id>``) so two
         integrations both reporting drift surface as two distinct
         alerts. Lifetime is ``NAG_INTERVAL_SECS`` -- the post-ack
-        suppression window before a still-out-of-sync integration is
-        allowed to re-pop another alert."""
+        suppression ceiling if the operator dismisses and the drift
+        persists; the resolution path (``_clear_needs_sync_alert``)
+        provides immediate removal when the integration converges."""
         from hi.apps.alert.alarm import Alarm
         from hi.apps.alert.alert_manager import AlertManager
-        from hi.apps.alert.enums import AlarmLevel, AlarmSource
         from hi.apps.security.enums import SecurityLevel
         from hi.apps.sense.transient_models import SensorResponse
 
         from hi.integrations.transient_models import IntegrationKey
 
+        signature = cls._needs_sync_alarm_signature( integration_id )
         alarm_integration_key = IntegrationKey(
             integration_id = 'integrations',
             integration_name = f'needs_sync.{integration_id}',
@@ -281,16 +328,26 @@ class IntegrationSyncCheck:
             has_event_video_clip = False,
         )
         alarm = Alarm(
-            alarm_source = AlarmSource.INTEGRATION,
-            alarm_type = f'integrations.needs_sync.{integration_id}',
-            alarm_level = AlarmLevel.INFO,
+            alarm_source = signature.alarm_source,
+            alarm_type = signature.alarm_type,
+            alarm_level = signature.alarm_level,
             title = result.summary_message,
             sensor_response_list = [ sensor_response ],
             security_level = SecurityLevel.OFF,
-            alarm_lifetime_secs = IntegrationSyncCheck.NAG_INTERVAL_SECS,
+            alarm_lifetime_secs = cls.NAG_INTERVAL_SECS,
             timestamp = datetimeproxy.now(),
         )
         AlertManager().upsert_alarm( alarm )
+
+    @classmethod
+    def _clear_needs_sync_alert( cls, integration_id : str ) -> None:
+        """Symmetric to ``_fire_needs_sync_alarm``: when the periodic
+        probe (or a successful Refresh) observes that a drifting
+        integration has converged, drop any pending needs-sync alert
+        so the operator's queue returns to clean immediately."""
+        from hi.apps.alert.alert_manager import AlertManager
+        signature = cls._needs_sync_alarm_signature( integration_id )
+        AlertManager().clear_alarms( signature = signature )
 
     @classmethod
     def clear_state( cls, integration_id : str ) -> None:

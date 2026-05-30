@@ -8,7 +8,7 @@ from hi.apps.notify.notify_mixins import NotificationMixin
 
 from .alert import Alert
 from .alert_queue import AlertQueue
-from .alarm import Alarm
+from .alarm import Alarm, AlarmSignature
 from .alert_status import AlertStatusData
 from .transient_models import AlertMaintenanceResult
 
@@ -81,6 +81,16 @@ class AlertManager( Singleton, NotificationMixin, SecurityMixin ):
     def acknowledge_alert( self, alert_id : str ):
         self._alert_queue.acknowledge_alert( alert_id = alert_id )
         return
+
+    def clear_alarms( self, signature : AlarmSignature ) -> int:
+        """Drop any alert in the queue whose signature matches, so the
+        next bad-state alarm with the same signature creates a fresh
+        alert. Producers call this at the transition-to-good point
+        they already detect (e.g., a health-status provider on
+        recovery to HEALTHY). Returns the number of alerts removed;
+        zero is a normal outcome -- producers may call speculatively
+        on every recovery transition."""
+        return self._alert_queue.clear_signature( signature = signature )
     
     async def upsert_alarm_async( self, alarm : Alarm ):
         notification_manager = await self.notification_manager_async()

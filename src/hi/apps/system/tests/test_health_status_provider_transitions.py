@@ -92,3 +92,103 @@ class HealthStatusProviderTransitionDispatchTest(SimpleTestCase):
 
         # Status was updated despite the alarm exception.
         self.assertEqual(provider.health_status.status, HealthStatusType.ERROR)
+
+
+class HealthStatusProviderRecoveryDispatchTest(SimpleTestCase):
+    """Recovery transitions clear the prior bad-state alert via
+    ``AlertManager.clear_alarms`` instead of producing a second
+    "recovered" alarm. End result: the operator returns to a clean
+    dashboard when the system has recovered while they were away.
+    """
+
+    def test_degrade_then_recover_leaves_no_alerts(self):
+        """Round-trip: HEALTHY -> ERROR -> HEALTHY. After the recovery
+        dispatch fires, the only effect on AlertManager is one
+        ``upsert_alarm`` (for the degrade) followed by one
+        ``clear_alarms`` (for the recovery) -- no second alert is
+        added."""
+        provider = _OptedInProvider()
+        provider.update_health_status(HealthStatusType.HEALTHY, 'init')
+
+        with patch('hi.apps.alert.alert_manager.AlertManager'
+                   ) as mock_alert_manager_cls:
+            mock_alert_manager = mock_alert_manager_cls.return_value
+            provider.update_health_status(HealthStatusType.ERROR, 'broken')
+            mock_alert_manager.upsert_alarm.assert_called_once()
+            mock_alert_manager.clear_alarms.assert_not_called()
+
+            mock_alert_manager.reset_mock()
+            mock_alert_manager_cls.reset_mock()
+            provider.update_health_status(HealthStatusType.HEALTHY, 'recovered')
+
+            # Recovery path takes clear_alarms, NOT upsert_alarm.
+            mock_alert_manager.upsert_alarm.assert_not_called()
+            mock_alert_manager.clear_alarms.assert_called_once()
+
+    def test_recovery_from_error_clears_critical_signature(self):
+        """Recovery from ERROR clears the CRITICAL-level error alarm
+        (matching the level the original degrade alarm was queued at)."""
+        provider = _OptedInProvider()
+        provider.update_health_status(HealthStatusType.ERROR, 'broken')
+
+        with patch('hi.apps.alert.alert_manager.AlertManager'
+                   ) as mock_alert_manager_cls:
+            mock_alert_manager = mock_alert_manager_cls.return_value
+            provider.update_health_status(HealthStatusType.HEALTHY, 'recovered')
+
+            mock_alert_manager.clear_alarms.assert_called_once()
+            kwargs = mock_alert_manager.clear_alarms.call_args.kwargs
+            self.assertEqual(kwargs['signature'].alarm_level, AlarmLevel.CRITICAL)
+
+    def test_recovery_from_warning_clears_warning_signature(self):
+        """Recovery from WARNING clears the WARNING-level alarm, not
+        the CRITICAL-level one. Distinct levels would queue distinct
+        signatures, so ``clear_alarms`` must target the right one."""
+        provider = _OptedInProvider()
+        provider.update_health_status(HealthStatusType.WARNING, 'flaky')
+
+        with patch('hi.apps.alert.alert_manager.AlertManager'
+                   ) as mock_alert_manager_cls:
+            mock_alert_manager = mock_alert_manager_cls.return_value
+            provider.update_health_status(HealthStatusType.HEALTHY, 'recovered')
+
+            mock_alert_manager.clear_alarms.assert_called_once()
+            kwargs = mock_alert_manager.clear_alarms.call_args.kwargs
+            self.assertEqual(kwargs['signature'].alarm_level, AlarmLevel.WARNING)
+
+    def test_recovery_from_suppressed_state_does_not_call_clear_alarms(self):
+        """Recoveries from UNKNOWN or DISABLED had no prior alarm
+        queued, so the dispatch path must be a no-op."""
+        for prev in (HealthStatusType.UNKNOWN, HealthStatusType.DISABLED):
+            provider = _OptedInProvider()
+            # Seed the prior status WITHOUT going through update_health_status
+            # so we don't dispatch the seed transition.
+            provider._ensure_health_status_provider_setup()
+            with provider._health_lock:
+                provider._health_status.status = prev
+
+            with patch('hi.apps.alert.alert_manager.AlertManager'
+                       ) as mock_alert_manager_cls:
+                mock_alert_manager = mock_alert_manager_cls.return_value
+                provider.update_health_status(
+                    HealthStatusType.HEALTHY, 'recovered',
+                )
+                self.assertFalse(
+                    mock_alert_manager.clear_alarms.called,
+                    f'recovery from {prev} should not clear anything',
+                )
+                self.assertFalse(
+                    mock_alert_manager.upsert_alarm.called,
+                    f'recovery from {prev} should not upsert anything',
+                )
+
+    def test_opted_out_provider_skips_clear_alarms_too(self):
+        """A provider with no alarm ceiling never queued an alarm to
+        begin with, so the recovery path must also short-circuit."""
+        provider = _OptedOutProvider()
+        provider.update_health_status(HealthStatusType.ERROR, 'broken')
+
+        with patch('hi.apps.alert.alert_manager.AlertManager'
+                   ) as mock_alert_manager:
+            provider.update_health_status(HealthStatusType.HEALTHY, 'recovered')
+            mock_alert_manager.assert_not_called()
