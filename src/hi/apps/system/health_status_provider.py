@@ -184,9 +184,7 @@ class HealthStatusProvider(ABC):
           re-degrade): mapper produces an Alarm; we ``upsert_alarm``.
         - Recovery (anything-bad -> HEALTHY): mapper produces the
           ``AlarmSignature`` of the prior bad-state alarm; we
-          ``clear_alarms`` so the operator's queue returns to clean
-          instead of accumulating a second "recovered" alert
-          alongside the original error alert.
+          ``clear_alarms`` to drop it from the queue.
 
         The framework calls into the alert subsystem directly -- the
         dependency direction (apps/system -> apps/alert) is acceptable

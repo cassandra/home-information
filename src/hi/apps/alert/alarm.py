@@ -15,13 +15,8 @@ class AlarmSignature:
 
     Two alarms with the same signature surface as one Alert in the
     queue. Producers construct an ``AlarmSignature`` to target alerts
-    for clearing on state recovery (see ``AlertManager.clear_alarms``)
-    without having to know the alert module's internal storage
-    representation.
-
-    ``frozen=True`` gives structural equality and hashability for free,
-    which is what the queue uses to match alerts. ``__str__`` provides
-    the dotted form for diagnostics and logging.
+    for clearing on state recovery without having to know the alert
+    module's internal storage representation.
     """
 
     alarm_source : AlarmSource

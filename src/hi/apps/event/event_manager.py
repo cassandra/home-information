@@ -32,18 +32,14 @@ class EventManager( Singleton, AlertMixin, ControllerMixin, SecurityMixin ):
     associated alarms / control actions on the transition-arrival
     hot path.
 
-    Note on alarm classes (#378). EventDefinition-driven alarms split
-    conceptually into *state-condition* (battery, smoke, connectivity --
-    persistent bad state, would ideally auto-clear on
-    rule-no-longer-matches) and *event-of-interest* (motion, presence,
-    open/close -- discrete occurrence the operator wants to see
-    regardless of subsequent state). Auto-clearing for the
-    state-condition class was considered and deferred:
-    ``HiModelHelper.NAG_INTERVAL_SECS`` (24h) already bounds the
-    worst-case post-acknowledgement suppression, and the engine
-    restructure required (a sibling current-state match pass plus
-    per-cycle matching-signature reconciliation) was judged not worth
-    the regression risk relative to a polish-tier UX improvement.
+    EventDefinition-driven alarms split conceptually into
+    *state-condition* (battery, smoke, connectivity -- persistent bad
+    state) and *event-of-interest* (motion, presence, open/close --
+    discrete occurrence the operator wants to see regardless of
+    subsequent state). The engine does not auto-clear the
+    state-condition class on rule-no-longer-matches;
+    ``HiModelHelper.NAG_INTERVAL_SECS`` (24h) bounds the worst-case
+    post-acknowledgement suppression.
     """
 
     RECENT_EVENT_CACHE_SIZE = 1000

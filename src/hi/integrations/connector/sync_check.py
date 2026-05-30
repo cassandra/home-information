@@ -109,16 +109,14 @@ class IntegrationSyncCheck:
     
     INTERVAL_SECS = 4 * 60 * 60
 
-    # Ceiling on the post-acknowledgement nag window (after the
-    # AlertQueue dedup-anchor refactor): once a user dismisses the
-    # needs-sync alert, suppression lasts at most this long before
-    # another needs-sync alarm can re-surface. The expected case is
-    # shorter -- when the integration syncs back to clean, the
-    # producer dispatches ``AlertManager.clear_alarms`` (see
-    # ``set_state``) and the dedup anchor drops immediately. Twenty-four
-    # hours strikes a balance between letting the operator defer
-    # within their workday and reminding them the next time they
-    # sit down at the console.
+    # Ceiling on the post-acknowledgement nag window: once a user
+    # dismisses the needs-sync alert, suppression lasts at most this
+    # long before another needs-sync alarm can re-surface. The
+    # expected case is shorter -- when the integration syncs back to
+    # clean, the producer dispatches ``AlertManager.clear_alarms`` and
+    # the dedup anchor drops immediately. Twenty-four hours balances
+    # letting the operator defer within their workday against
+    # reminding them the next time they sit down at the console.
     NAG_INTERVAL_SECS = 24 * 60 * 60
 
     _CACHE_TTL_SECS = INTERVAL_SECS * 2
@@ -231,13 +229,11 @@ class IntegrationSyncCheck:
                     f'{integration_id}: {e}'
                 )
         elif cls._should_clear_alarm( prior = prior, current = result ):
-            # Resolution path: a previously-drifting integration has
-            # converged. Drop any pending needs-sync alert so the
-            # operator's queue returns to clean immediately, rather
-            # than waiting out the ``NAG_INTERVAL_SECS`` post-ack
-            # suppression window. Failure here is logged but never
-            # masks the cache write -- the next resolution event will
-            # try again.
+            # Drop any pending needs-sync alert immediately on
+            # convergence rather than waiting out the
+            # ``NAG_INTERVAL_SECS`` post-ack suppression window.
+            # Failure here must not mask the cache write -- the next
+            # resolution event will retry.
             try:
                 cls._clear_needs_sync_alert( integration_id = integration_id )
             except Exception as e:
@@ -279,11 +275,8 @@ class IntegrationSyncCheck:
     @classmethod
     def _needs_sync_alarm_signature( cls, integration_id : str ):
         """Single source of truth for the (source, type, level) identity
-        of the needs-sync alarm. The fire path constructs an ``Alarm``
-        with these fields; the clear path hands this signature to
-        ``AlertManager.clear_alarms``. Keeping both paths funneled
-        through one definition guarantees the clear matches what was
-        queued."""
+        of the needs-sync alarm, shared by the fire and clear paths so
+        the clear is guaranteed to match what was queued."""
         from hi.apps.alert.alarm import AlarmSignature
         from hi.apps.alert.enums import AlarmLevel, AlarmSource
         return AlarmSignature(
@@ -297,13 +290,11 @@ class IntegrationSyncCheck:
                                 integration_id : str,
                                 result         : SyncCheckResult ) -> None:
         """Construct and queue an INFO-level alarm for a transition
-        into the needs-sync state. Per-integration unique signature
-        (``integrations.needs_sync.<integration_id>``) so two
-        integrations both reporting drift surface as two distinct
+        into the needs-sync state. Per-integration unique signature so
+        two integrations both reporting drift surface as two distinct
         alerts. Lifetime is ``NAG_INTERVAL_SECS`` -- the post-ack
         suppression ceiling if the operator dismisses and the drift
-        persists; the resolution path (``_clear_needs_sync_alert``)
-        provides immediate removal when the integration converges."""
+        persists."""
         from hi.apps.alert.alarm import Alarm
         from hi.apps.alert.alert_manager import AlertManager
         from hi.apps.security.enums import SecurityLevel
@@ -344,10 +335,9 @@ class IntegrationSyncCheck:
 
     @classmethod
     def _clear_needs_sync_alert( cls, integration_id : str ) -> None:
-        """Symmetric to ``_fire_needs_sync_alarm``: when the periodic
-        probe (or a successful Refresh) observes that a drifting
-        integration has converged, drop any pending needs-sync alert
-        so the operator's queue returns to clean immediately."""
+        """Drop any pending needs-sync alert for this integration so
+        the operator's queue returns to clean immediately on
+        convergence."""
         from hi.apps.alert.alert_manager import AlertManager
         signature = cls._needs_sync_alarm_signature( integration_id )
         AlertManager().clear_alarms( signature = signature )

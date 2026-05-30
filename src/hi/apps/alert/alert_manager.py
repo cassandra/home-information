@@ -85,11 +85,10 @@ class AlertManager( Singleton, NotificationMixin, SecurityMixin ):
     def clear_alarms( self, signature : AlarmSignature ) -> int:
         """Drop any alert in the queue whose signature matches, so the
         next bad-state alarm with the same signature creates a fresh
-        alert. Producers call this at the transition-to-good point
-        they already detect (e.g., a health-status provider on
-        recovery to HEALTHY). Returns the number of alerts removed;
-        zero is a normal outcome -- producers may call speculatively
-        on every recovery transition."""
+        alert rather than being absorbed by a stale dedup anchor.
+        Returns the number of alerts removed; zero is a normal
+        outcome -- producers may call speculatively on every
+        recovery transition."""
         return self._alert_queue.clear_signature( signature = signature )
     
     async def upsert_alarm_async( self, alarm : Alarm ):

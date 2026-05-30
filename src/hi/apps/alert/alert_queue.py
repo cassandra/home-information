@@ -177,18 +177,10 @@ class AlertQueue:
 
     def clear_signature( self, signature : AlarmSignature ) -> int:
         """Remove any alert -- acked or unacked -- whose signature
-        matches. Producer-callable: when a producer detects that the
-        upstream condition this signature represents has resolved
-        (e.g., a health-status provider transitions back to HEALTHY,
-        a sync drift is resolved by a successful refresh), calling
-        this drops the matching alert from the queue so the next
-        bad-state alarm with the same signature creates a fresh alert
-        and re-fires notification, rather than being absorbed by the
-        stale dedup anchor.
-
-        Returns the number of alerts removed. Zero is a normal
-        outcome (no matching alert in the queue) -- callers should
-        not treat zero as an error."""
+        matches, so the next bad-state alarm with the same signature
+        creates a fresh alert and re-fires notification rather than
+        being absorbed by the stale dedup anchor. Returns the number
+        of alerts removed; zero is a normal outcome."""
         with self._active_alerts_lock:
             if len( self._alert_list ) < 1:
                 return 0
