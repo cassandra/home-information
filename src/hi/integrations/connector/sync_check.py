@@ -109,10 +109,13 @@ class IntegrationSyncCheck:
     
     INTERVAL_SECS = 4 * 60 * 60
 
-    # Alarm lifetime governs the post-acknowledgement nag window
-    # (after the AlertQueue dedup-anchor refactor): after a user
-    # dismisses the needs-sync alert, the suppression lasts this long
-    # before another needs-sync alarm can re-surface. Twenty-four
+    # Ceiling on the post-acknowledgement nag window (after the
+    # AlertQueue dedup-anchor refactor): once a user dismisses the
+    # needs-sync alert, suppression lasts at most this long before
+    # another needs-sync alarm can re-surface. The expected case is
+    # shorter -- when the integration syncs back to clean, the
+    # producer dispatches ``AlertManager.clear_alarms`` (see
+    # ``set_state``) and the dedup anchor drops immediately. Twenty-four
     # hours strikes a balance between letting the operator defer
     # within their workday and reminding them the next time they
     # sit down at the console.
