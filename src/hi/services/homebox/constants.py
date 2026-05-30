@@ -1,9 +1,9 @@
 class HbTimeouts:
     """
     Centralized timeout and interval constants for HomeBox integration.
-    Mirrors ``ZmTimeouts`` / ``HassTimeouts`` so the manager / enums
-    layer can reference these without importing from the monitor
-    (which would invert the dependency direction).
+    Lives here so the manager / enums layer can reference these
+    without importing from the monitor (which would invert the
+    dependency direction).
     """
 
     # Default polling cadence. Used both as the manager's fallback and

@@ -176,10 +176,8 @@ class AlertQueue:
         alerts are kept until their natural expiry so they continue to
         suppress duplicate alarms (the queue is the dedup memory)."""
         expired_removed = 0
-        # Counts, among the removed (now strictly expired) alerts, how
-        # many had been acknowledged. Useful as a stat (e.g. measuring
-        # how often suppression "saved" the operator from a re-alert);
-        # no longer a removal trigger.
+        # Informational count of how many expired alerts had been
+        # acknowledged. Acknowledgement is not itself a removal trigger.
         acknowledged_removed = 0
 
         with self._active_alerts_lock:

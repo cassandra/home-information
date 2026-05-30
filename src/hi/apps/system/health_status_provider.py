@@ -65,7 +65,7 @@ class HealthStatusProvider(ABC):
         change takes effect on the next read without any explicit
         mutation. Periodic providers override this to return their
         live polling cadence; everything else inherits the ``None``
-        default and the modal's 'Expected every' row is suppressed."""
+        default and the expected-interval row is suppressed in the UI."""
         return None
 
     @property

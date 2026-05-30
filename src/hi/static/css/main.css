@@ -452,8 +452,7 @@ a.clickable-card:active {
 /* reserve their content width so the fixed app-nav controls are never   */
 /* pushed off-screen by a long list of user-defined view buttons. The    */
 /* left group takes the remaining width and scrolls horizontally on      */
-/* overflow as a stopgap; a future pass will replace the raw scroll      */
-/* with an edge-fade affordance and auto-scroll-to-active behavior.      */
+/* overflow.                                                             */
 .hi-button-bar {
     flex-wrap: nowrap;
     align-items: center;

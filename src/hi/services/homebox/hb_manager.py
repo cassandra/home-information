@@ -44,11 +44,6 @@ class HomeBoxManager( SingletonManager, AggregateHealthProvider, ApiHealthStatus
         self._hb_maintenances_list = list()
 
         self._change_listeners = set()
-
-        # Seeded from constants and refreshed on every reload(). Read
-        # by HomeBoxMonitor.get_polling_interval_secs at each tick;
-        # the framework picks up changes on the iteration following a
-        # settings save.
         self._polling_interval_secs = HbTimeouts.POLLING_INTERVAL_SECS
 
         self.add_api_health_status_provider(self)

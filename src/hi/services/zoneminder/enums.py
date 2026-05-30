@@ -65,7 +65,7 @@ class ZmAttributeType( IntegrationAttributeType ):
         'values are more responsive but increase API load on the '
         'ZoneMinder server.',
         AttributeValueType.INTEGER,
-        [ 1, 86400 ],   # value_range: 1 second to 24 hours
+        [ 1, 86400 ],   # 1 second to 24 hours
         True,
         True,
         str( ZmTimeouts.POLLING_INTERVAL_SECS ),

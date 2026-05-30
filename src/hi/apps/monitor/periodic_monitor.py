@@ -47,7 +47,7 @@ class PeriodicMonitor( HealthStatusProvider ):
     def get_expected_heartbeat_interval_secs(self):
         """A monitor's expected heartbeat is its polling cadence.
         Wires the ``HealthStatusProvider`` hook to the live polling
-        value so the modal's 'Expected every' and the dynamic
+        value so the expected-interval row in the UI and the dynamic
         staleness thresholds track configuration changes without any
         per-subclass involvement."""
         return self.get_polling_interval_secs()

@@ -55,10 +55,6 @@ class FrigateManager( SingletonManager, AggregateHealthProvider, ApiHealthStatus
         self._change_listeners = set()
         self._frigate_client : Optional[ FrigateClient ] = None
         self._attribute_map : Dict[ FrigateAttributeType, IntegrationAttribute ] = {}
-        # Seeded from constants and refreshed on every reload(). Read
-        # by FrigateMonitor.get_polling_interval_secs at each tick;
-        # the framework picks up changes on the iteration following a
-        # settings save.
         self._polling_interval_secs = FrigateTimeouts.POLLING_INTERVAL_SECS
         self.add_api_health_status_provider( self )
         return

@@ -1,12 +1,12 @@
 """
 Default sync-preview construction.
 
-Mirrors ``sync_check.py`` in role: the connector base class declares
-the interface (``sync_preview`` / ``_sync_preview_impl``) and the
-business logic of the framework-default preview lives here as a
-namespace class. Per-integration ``_sync_preview_impl`` overrides
-either bypass this module entirely (for higher-fidelity previews) or
-call ``build_from_check`` and post-process the result.
+The connector base class declares the interface (``sync_preview`` /
+``_sync_preview_impl``); the business logic of the framework-default
+preview lives here as a namespace class. Per-integration
+``_sync_preview_impl`` overrides either bypass this module entirely
+(for higher-fidelity previews) or call ``build_from_check`` and
+post-process the result.
 
 The default preview's fidelity is bounded by what ``check_needs_sync``
 (the periodic drift probe) can return -- a set of added and removed
@@ -32,7 +32,7 @@ logger = logging.getLogger(__name__)
 class IntegrationSyncPreviewer:
     """Namespace for the default preview construction. Class methods
     rather than module-level functions so call sites carry the
-    ``IntegrationSyncPreview.`` prefix and group naturally.
+    ``IntegrationSyncPreviewer.`` prefix and group naturally.
     """
 
     APPROXIMATION_MESSAGE = (

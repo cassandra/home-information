@@ -54,7 +54,7 @@ class HbAttributeType( IntegrationAttributeType ):
         'increase background API load; HomeBox is inventory data, so '
         'longer intervals are usually appropriate.',
         AttributeValueType.INTEGER,
-        [ 1, 86400 ],   # value_range: 1 second to 24 hours
+        [ 1, 86400 ],   # 1 second to 24 hours
         True,
         True,
         str( HbTimeouts.POLLING_INTERVAL_SECS ),

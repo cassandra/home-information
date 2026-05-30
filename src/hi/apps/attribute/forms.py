@@ -169,9 +169,8 @@ class AttributeForm( forms.ModelForm ):
 
     def _clean_float_value(self, cleaned_data, value):
         """Server-side enforcement for ``AttributeValueType.FLOAT``
-        attributes. Mirrors the INTEGER path but uses
-        ``value_range()`` (float-valued bounds) so float-typed
-        schemas can declare ``[0.0, 1.0]`` and similar."""
+        attributes. Uses ``value_range()`` (float-valued bounds) so
+        float-typed schemas can declare ``[0.0, 1.0]`` and similar."""
         try:
             float_value = float( value )
         except (ValueError, TypeError):

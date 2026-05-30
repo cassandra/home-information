@@ -47,11 +47,6 @@ class HassManager( SingletonManager, AggregateHealthProvider, ApiHealthStatusPro
         self._client_factory = HassClientFactory()
 
         self._change_listeners = set()
-
-        # Seeded from constants and refreshed on every reload(). Read
-        # by HassMonitor.get_polling_interval_secs at each tick; the
-        # framework picks up changes on the iteration following a
-        # settings save.
         self._polling_interval_secs = HassTimeouts.POLLING_INTERVAL_SECS
 
         # Selective-insert LRU cache (see update_latest_attrs_cache

@@ -125,16 +125,14 @@ class Alert:
         assert alarm.signature == self.first_alarm.signature
         # Refresh expiry only while unacknowledged. Once acknowledged,
         # the alert stays in the queue as a dedup anchor until its
-        # original ``end_datetime`` -- continually extending it on
-        # every poll would leave a chronic upstream condition
-        # suppressed for as long as the source keeps re-reporting it.
-        # Letting the original window expire restores the natural
-        # "re-alert me eventually" behavior.
+        # original ``end_datetime`` -- extending the window on every
+        # poll would suppress a chronic upstream condition for as long
+        # as the source keeps re-reporting it.
         if not self._is_acknowledged:
             self._end_datetime = datetimeproxy.now() + timedelta( seconds = alarm.alarm_lifetime_secs )
         # If the caller identified this as a specific incident and we
         # already have that incident in the deque, do not count it
-        # again — the alarm_count should reflect distinct occurrences,
+        # again -- the alarm_count should reflect distinct occurrences,
         # not how often the source re-reported the same one.
         if alarm.source_alarm_id is not None:
             for existing in self._latest_alarms:

@@ -69,11 +69,6 @@ class ZoneMinderManager( SingletonManager, AggregateHealthProvider, ApiHealthSta
         self._zm_monitor_timestamp = datetimeproxy.min()
 
         self._change_listeners = set()
-
-        # Seeded from constants and refreshed on every reload(). Read
-        # by ZmMonitor.get_polling_interval_secs at each tick; the
-        # framework picks up changes on the iteration following a
-        # settings save.
         self._polling_interval_secs = ZmTimeouts.POLLING_INTERVAL_SECS
 
         # Add self as the API health status provider to aggregate
