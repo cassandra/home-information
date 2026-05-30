@@ -182,6 +182,31 @@ class HealthStatusProviderRecoveryDispatchTest(SimpleTestCase):
                     f'recovery from {prev} should not upsert anything',
                 )
 
+    def test_degrade_to_degrade_transition_takes_upsert_path(self):
+        """``is_recovery`` requires ``current_status == HEALTHY``, so
+        any non-HEALTHY destination -- including degrade-to-degrade
+        moves like WARNING->ERROR or partial recovery ERROR->WARNING --
+        takes the upsert path and never the clear path. Operator
+        impact is intentional and accepted: the prior-level alert may
+        coexist with the new-level alert until natural expiry; the
+        operator drills into health-status detail to see the current
+        truth."""
+        for prev, current in [
+            (HealthStatusType.WARNING, HealthStatusType.ERROR),
+            (HealthStatusType.ERROR, HealthStatusType.WARNING),
+        ]:
+            with self.subTest(prev=prev, current=current):
+                provider = _OptedInProvider()
+                provider.update_health_status(prev, 'init-degraded')
+
+                with patch('hi.apps.alert.alert_manager.AlertManager'
+                           ) as mock_alert_manager_cls:
+                    mock_alert_manager = mock_alert_manager_cls.return_value
+                    provider.update_health_status(current, 'still-degraded')
+
+                    mock_alert_manager.upsert_alarm.assert_called_once()
+                    mock_alert_manager.clear_alarms.assert_not_called()
+
     def test_opted_out_provider_skips_clear_alarms_too(self):
         """A provider with no alarm ceiling never queued an alarm to
         begin with, so the recovery path must also short-circuit."""

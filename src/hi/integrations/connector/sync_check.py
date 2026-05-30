@@ -29,6 +29,8 @@ from typing import Optional, Set
 
 from django.core.cache import cache
 
+from hi.apps.alert.alarm import AlarmSignature
+from hi.apps.alert.enums import AlarmLevel, AlarmSource
 import hi.apps.common.datetimeproxy as datetimeproxy
 from hi.apps.common.enums import LabeledEnum
 
@@ -191,15 +193,22 @@ class IntegrationSyncCheck:
         a lock. The two writers (the framework monitor's probe cycle
         and ``record_sync_complete`` via the synchronizer's post-sync
         hook) can run concurrently if a user-triggered Refresh
-        overlaps a probe cycle. By inspection the interleavings are
-        benign: duplicate-direction races (both writers see
-        prior=clean and call ``_fire_needs_sync_alarm``) collapse to
-        a single alert via ``AlertManager``'s signature-based dedup,
-        and opposite-direction races worst case fire a stale alarm
-        for drift that was just cleared -- dismissable, rare, no
-        correctness impact. A Redis lock would prevent it but trades
-        real cache-backend portability risk (LocMemCache in tests)
-        for a marginal UX win, so we intentionally do not lock here."""
+        overlaps a probe cycle. Duplicate-direction races (both
+        writers see ``prior=clean`` and call ``_fire_needs_sync_alarm``)
+        collapse to a single alert via ``AlertManager``'s
+        signature-based dedup. Opposite-direction races have a small
+        bad window: probe reads ``prior=clean``, computes
+        needs_sync; Refresh writes in_sync and calls
+        ``_clear_needs_sync_alert``; probe then fires the (now-stale)
+        alarm. The resolution path will not re-fire (cache reads
+        in_sync), so the alert sits in the queue until
+        ``NAG_INTERVAL_SECS`` lifetime expiry -- the exact failure
+        mode the producer-side clear is meant to eliminate. The
+        window is small enough and the operator-visible impact (a
+        dismissable nuisance alert that resolves on its own within
+        24h) light enough that we accept it rather than add a Redis
+        lock that would trade real cache-backend portability risk
+        (LocMemCache in tests) for a marginal UX win."""
         if not integration_id:
             return
         prior = cls.get_state( integration_id )
@@ -277,8 +286,6 @@ class IntegrationSyncCheck:
         """Single source of truth for the (source, type, level) identity
         of the needs-sync alarm, shared by the fire and clear paths so
         the clear is guaranteed to match what was queued."""
-        from hi.apps.alert.alarm import AlarmSignature
-        from hi.apps.alert.enums import AlarmLevel, AlarmSource
         return AlarmSignature(
             alarm_source = AlarmSource.INTEGRATION,
             alarm_type   = f'integrations.needs_sync.{integration_id}',

@@ -36,10 +36,16 @@ class EventManager( Singleton, AlertMixin, ControllerMixin, SecurityMixin ):
     *state-condition* (battery, smoke, connectivity -- persistent bad
     state) and *event-of-interest* (motion, presence, open/close --
     discrete occurrence the operator wants to see regardless of
-    subsequent state). The engine does not auto-clear the
-    state-condition class on rule-no-longer-matches;
+    subsequent state). Another case exists by trigger shape but not
+    by operator semantics: security/intrusion alarms read as
+    state-condition but must persist in the queue regardless of
+    whether the door is now closed. The engine does not auto-clear
+    on rule-no-longer-matches for any class;
     ``HiModelHelper.NAG_INTERVAL_SECS`` (24h) bounds the worst-case
-    post-acknowledgement suppression.
+    post-acknowledgement suppression. Enabling auto-clear for any
+    subset of rules requires a per-EventDefinition opt-in flag so
+    intrusion-class rules can stay out of it -- that flag is not yet
+    modeled.
     """
 
     RECENT_EVENT_CACHE_SIZE = 1000

@@ -189,8 +189,13 @@ class Alert:
         return len(self.get_all_video_sources())
     
     def to_notification_item(self):
+        # NotificationItem.signature is the notify-side dedup key
+        # (string). AlarmSignature.__str__ produces a stable, unique
+        # encoding -- coerce at the boundary so the notify layer
+        # stays string-typed and does not depend on the alert domain
+        # type.
         return NotificationItem(
-            signature = self.signature,
+            signature = str( self.signature ),
             title = self.title,
             source_obj = self,
         )

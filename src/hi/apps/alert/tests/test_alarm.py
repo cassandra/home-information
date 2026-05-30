@@ -36,10 +36,10 @@ class TestAlarm(BaseTestCase):
         )
         self.assertEqual(alarm.signature, expected_signature)
         # Joined-string form (used in diagnostics) preserves the
-        # dotted ``source.type.level`` shape.
+        # dotted ``source.type.level`` shape using readable enum names.
         self.assertEqual(
             str(alarm.signature),
-            f'{AlarmSource.EVENT}.test_alarm.{AlarmLevel.WARNING}',
+            f'{AlarmSource.EVENT.name}.test_alarm.{AlarmLevel.WARNING.name}',
         )
 
         # Test with different values
@@ -113,6 +113,73 @@ class TestAlarm(BaseTestCase):
         
         # They should be different based on alarm level
         # (exact comparison depends on AudioSignal.from_alarm_level implementation)
+        return
+
+
+class TestAlarmSignature(BaseTestCase):
+
+    def test_signatures_with_same_components_are_equal_and_hash_equal(self):
+        """Frozen-dataclass structural equality / hashability is what
+        ``AlertQueue`` relies on for dedup and what producers rely on
+        when constructing a clear target from a different code path."""
+        from hi.apps.alert.alarm import AlarmSignature
+        a = AlarmSignature(
+            alarm_source=AlarmSource.EVENT,
+            alarm_type='shared',
+            alarm_level=AlarmLevel.WARNING,
+        )
+        b = AlarmSignature(
+            alarm_source=AlarmSource.EVENT,
+            alarm_type='shared',
+            alarm_level=AlarmLevel.WARNING,
+        )
+        self.assertEqual(a, b)
+        self.assertEqual(hash(a), hash(b))
+        # Usable as a dict / set key.
+        self.assertEqual(len({a, b}), 1)
+        return
+
+    def test_signatures_differing_in_any_component_are_unequal(self):
+        """All three components participate in identity; changing any
+        one must produce a distinct signature."""
+        from hi.apps.alert.alarm import AlarmSignature
+        base = AlarmSignature(
+            alarm_source=AlarmSource.EVENT,
+            alarm_type='t',
+            alarm_level=AlarmLevel.WARNING,
+        )
+        diff_source = AlarmSignature(
+            alarm_source=AlarmSource.WEATHER,
+            alarm_type='t',
+            alarm_level=AlarmLevel.WARNING,
+        )
+        diff_type = AlarmSignature(
+            alarm_source=AlarmSource.EVENT,
+            alarm_type='other',
+            alarm_level=AlarmLevel.WARNING,
+        )
+        diff_level = AlarmSignature(
+            alarm_source=AlarmSource.EVENT,
+            alarm_type='t',
+            alarm_level=AlarmLevel.CRITICAL,
+        )
+        self.assertNotEqual(base, diff_source)
+        self.assertNotEqual(base, diff_type)
+        self.assertNotEqual(base, diff_level)
+        return
+
+    def test_signature_str_uses_enum_names_for_readable_logs(self):
+        """``__str__`` is the form that surfaces in debug logs (see
+        ``AlertQueue.clear_signature``). It must use enum ``.name`` so
+        log lines read like ``EVENT.foo.CRITICAL`` rather than the
+        verbose default-repr form."""
+        from hi.apps.alert.alarm import AlarmSignature
+        sig = AlarmSignature(
+            alarm_source=AlarmSource.EVENT,
+            alarm_type='foo',
+            alarm_level=AlarmLevel.CRITICAL,
+        )
+        self.assertEqual(str(sig), 'EVENT.foo.CRITICAL')
         return
 
 

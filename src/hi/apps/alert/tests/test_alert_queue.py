@@ -635,6 +635,27 @@ class TestAlertQueue(BaseTestCase):
             datetimeproxy.reset()
         return
 
+    def test_clear_signature_removes_all_matching_alerts(self):
+        """``clear_signature`` walks the whole list and removes every
+        match. The normal ``add_alarm`` path aggregates same-signature
+        alarms into a single alert, so two distinct alerts with the
+        same signature don't arise from typical use -- but the method
+        contract is N-matches-N-removed, pinned here by seeding
+        ``_alert_list`` directly."""
+        a1 = self._make_alarm('multi_match')
+        a2 = self._make_alarm('multi_match')
+        alert1 = Alert(first_alarm=a1)
+        alert2 = Alert(first_alarm=a2)
+        with self.queue._active_alerts_lock:
+            self.queue._alert_list = [alert1, alert2]
+        self.assertEqual(alert1.signature, alert2.signature)
+
+        removed = self.queue.clear_signature(alert1.signature)
+
+        self.assertEqual(removed, 2)
+        self.assertEqual(len(self.queue), 0)
+        return
+
     def test_clear_signature_then_matching_alarm_creates_fresh_alert(self):
         """Regression check on the design goal: after ``clear_signature``,
         a subsequent matching alarm produces a NEW alert (not absorbed

@@ -24,7 +24,7 @@ class AlarmSignature:
     alarm_level  : AlarmLevel
 
     def __str__(self):
-        return f'{self.alarm_source}.{self.alarm_type}.{self.alarm_level}'
+        return f'{self.alarm_source.name}.{self.alarm_type}.{self.alarm_level.name}'
 
 
 @dataclass
@@ -49,14 +49,16 @@ class Alarm:
     source_alarm_id      : Optional[str] = None
 
     def __post_init__(self):
-        # The lifetime field drives ``Alert.end_datetime``; zero or
+        # ``Alert.end_datetime`` is derived from this field; zero or
         # negative values produce an already-expired alert (a
-        # historical bug with the previous "0 = until acknowledged"
-        # convention) and values above MAX exceed the practical
-        # "never expires" intent. Enforce the supported range here so
-        # mistakes show up at construction, not silently as
-        # vanished alarms.
-        assert self.alarm_lifetime_secs > 0
+        # historical failure mode of the previous "0 = until
+        # acknowledged" convention). Raise rather than assert so the
+        # check survives ``python -O``.
+        if self.alarm_lifetime_secs <= 0:
+            raise ValueError(
+                f'alarm_lifetime_secs must be positive, got '
+                f'{self.alarm_lifetime_secs}'
+            )
         return
 
     @property
