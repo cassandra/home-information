@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Immich Simulator — Photo {{ asset_id }}</title>
+  <style>
+    body { font-family: sans-serif; max-width: 40em; margin: 4em auto; color: #212529; }
+    .asset-id { font-size: 1.6em; color: #6c757d; word-break: break-all; }
+    .hint { color: #6c757d; margin-top: 2em; font-size: 0.9em; }
+  </style>
+</head>
+<body>
+  <div class="asset-id">Photo {{ asset_id }}</div>
+  <p>This is the Immich simulator's stand-in for the per-asset view. The real Immich web UI would show the photo, EXIF, albums, and tags here.</p>
+  <p class="hint">Source URLs from the ATTRIBUTE_REFERENCE picker link to pages like this one; close the tab to return to the picker modal.</p>
+</body>
+</html>

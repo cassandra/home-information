@@ -23,7 +23,7 @@ Translates each paperless documents-search hit into a single
                        persist or display the whole document text.
 """
 import logging
-from typing import List, Optional
+from typing import Optional
 
 from django.urls import reverse
 from requests import HTTPError
@@ -34,6 +34,7 @@ from hi.integrations.referencer.integration_referencer import (
 )
 from hi.integrations.referencer.transient_models import (
     AttributeReferenceResult,
+    AttributeReferenceSearchResult,
 )
 from hi.integrations.transient_models import (
     IntegrationMetaData,
@@ -73,17 +74,23 @@ class PaperlessAttributeReferencer( IntegrationAttributeReferencer ):
             self,
             query : str,
             limit : int = 20,
-    ) -> List[ AttributeReferenceResult ]:
+    ) -> AttributeReferenceSearchResult:
         if not query or not query.strip():
-            return []
+            return AttributeReferenceSearchResult( results = [] )
         try:
             client = build_client()
         except IntegrationAttributeError as e:
             logger.warning( f'Paperless search aborted: {e}' )
-            return []
+            return AttributeReferenceSearchResult(
+                results = [],
+                error_message = 'Paperless integration is not configured.',
+            )
         except Exception as e:
             logger.exception( f'Paperless client build failed: {e}' )
-            return []
+            return AttributeReferenceSearchResult(
+                results = [],
+                error_message = 'Paperless integration error — see server logs.',
+            )
 
         try:
             envelope = client.search_documents(
@@ -95,18 +102,35 @@ class PaperlessAttributeReferencer( IntegrationAttributeReferencer ):
                 f'Paperless search HTTP {status} for query '
                 f'{query!r}: {e}'
             )
-            return []
+            return AttributeReferenceSearchResult(
+                results = [],
+                error_message = self._http_error_message( status ),
+            )
         except Exception as e:
             logger.warning(
                 f'Paperless search failed for query {query!r}: {e}'
             )
-            return []
+            return AttributeReferenceSearchResult(
+                results = [],
+                error_message = 'Paperless search failed — see server logs.',
+            )
 
         documents = envelope.get( PaperlessApi.RESPONSE_RESULTS, [] ) or []
-        return [
-            self._translate( client = client, document = doc, query = query )
-            for doc in documents
-        ]
+        return AttributeReferenceSearchResult(
+            results = [
+                self._translate( client = client, document = doc, query = query )
+                for doc in documents
+            ],
+        )
+
+    @staticmethod
+    def _http_error_message( status : Optional[int] ) -> str:
+        if status in (401, 403):
+            return ( f'Paperless rejected the request (HTTP {status}). '
+                     f'Check the API token.' )
+        if status is None:
+            return 'Paperless returned an unexpected response.'
+        return f'Paperless returned HTTP {status}.'
 
     def _translate(
             self,

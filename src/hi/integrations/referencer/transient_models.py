@@ -9,14 +9,21 @@ selected by the operator, and discarded once the resulting
 ``title`` and ``source_url`` survive into persistent storage; the
 remaining fields exist solely for picker UX.
 
+``AttributeReferenceSearchResult`` is the wrapper returned by
+``IntegrationAttributeReferencer.search_references``. It carries the
+result list plus an optional ``error_message`` so the picker can
+distinguish a legitimately-empty search from an upstream failure
+(auth rejected, unreachable, etc.) and surface a banner instead of
+the "No results." string.
+
 Wire-format strings (form field names, JSON record keys) shared
 between the picker views, templates, and ``attr-picker.js`` live in
 ``hi.constants.DIVID`` (mirrored in ``static/js/main.js``). See the
 ``ATTR_PICKER_*`` entries there.
 """
 
-from dataclasses import dataclass
-from typing import Optional
+from dataclasses import dataclass, field
+from typing import List, Optional
 
 
 @dataclass(frozen=True)
@@ -32,3 +39,17 @@ class AttributeReferenceResult:
     thumbnail_url: Optional[str] = None
     mime_type: Optional[str] = None
     snippet: Optional[str] = None
+
+
+@dataclass(frozen=True)
+class AttributeReferenceSearchResult:
+    """Wrapper for one search invocation.
+
+    ``error_message`` is None on success (including the legitimate
+    empty-results case). When set, the picker renders it as a banner
+    and skips the "No results." message even when ``results`` is
+    empty -- so operators can tell an upstream failure apart from a
+    query that simply matched nothing.
+    """
+    results: List[AttributeReferenceResult] = field(default_factory=list)
+    error_message: Optional[str] = None

@@ -1,0 +1,69 @@
+{% comment %}
+  Operator-tuned knobs for the Immich simulator. Each control submits
+  the form on change (no submit button) so toggles take effect
+  immediately. Antinode swap-in-place via data-async.
+
+  Auth failures are driven by the framework-wide ServiceFaultMode
+  pane, not from this form.
+
+  Context:
+    settings              : ImmichSimSettings
+    result_count_choices  : tuple[int]
+{% endcomment %}
+<form id="hi-immich-settings-form"
+      method="post"
+      action="{% url 'immich_settings_set' %}"
+      class="mb-3"
+      data-async data-mode="replace">
+  {% csrf_token %}
+
+  <div class="form-row align-items-end">
+
+    <div class="form-group col-auto">
+      <label for="hi-immich-result-count" class="small text-muted mb-1">
+        Result count
+      </label>
+      <select id="hi-immich-result-count"
+              name="result_count"
+              class="form-control form-control-sm"
+              onchange="this.form.requestSubmit ? this.form.requestSubmit() : this.form.submit()">
+        {% for choice in result_count_choices %}
+        <option value="{{ choice }}"
+                {% if choice == settings.result_count %}selected{% endif %}>
+          {{ choice }}
+        </option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <div class="form-group col-auto">
+      <label for="hi-immich-latency" class="small text-muted mb-1">
+        Latency (ms)
+      </label>
+      <input type="number"
+             id="hi-immich-latency"
+             name="latency_ms"
+             value="{{ settings.latency_ms }}"
+             min="0" max="10000" step="50"
+             class="form-control form-control-sm"
+             style="width: 8em;"
+             onchange="this.form.requestSubmit ? this.form.requestSubmit() : this.form.submit()">
+    </div>
+
+    <div class="form-group col-auto mb-0">
+      <div class="form-check">
+        <input type="checkbox"
+               id="hi-immich-include-exif"
+               name="include_exif"
+               value="on"
+               class="form-check-input"
+               {% if settings.include_exif %}checked{% endif %}
+               onchange="this.form.requestSubmit ? this.form.requestSubmit() : this.form.submit()">
+        <label class="form-check-label small" for="hi-immich-include-exif">
+          Include EXIF city/country
+        </label>
+      </div>
+    </div>
+
+  </div>
+</form>

@@ -15,10 +15,10 @@ enter it.
 ## Enabling an integration
 
 Most integrations are configured from the **Connectors** tab on the
-Configure page. Paperless-ngx is configured from the **Content
-Sources** tab instead, because it contributes searchable document
-references rather than importing items — see its own page for the
-walkthrough.
+Configure page. Content-source integrations (Paperless-ngx and
+Immich) are configured from the **Content Sources** tab instead,
+because they contribute searchable references rather than importing
+items — see each integration's own page for the walkthrough.
 
 For a Connectors-tab integration:
 
@@ -47,6 +47,11 @@ For a Connectors-tab integration:
 - **[HomeBox](integrations/homebox.md)** — home inventory tracking.
   Imports HomeBox items as read-only HI items with custom fields and
   attached files (manuals, receipts, photos).
+- **[Immich](integrations/immich.md)** — self-hosted photo and video
+  library. Does not import items; instead lets you search Immich
+  from inside HI and attach matching assets (appliance photos, room
+  snapshots, serial-plate shots) as link references on items and
+  Locations you already have.
 - **[Paperless-ngx](integrations/paperless-ngx.md)** — document
   management. Does not import items; instead lets you search
   paperless from inside HI and attach matching documents (warranty
@@ -61,9 +66,10 @@ real-world fixes over time — start there if something is not working.
 
 Most integrations on this page are live: HI mirrors the upstream
 system continuously and changes flow in via the update action.
-Paperless-ngx is a different shape — it contributes attachable
-document references rather than importing items, and it talks to
-paperless only when the operator opens the picker.
+Content-source integrations (Paperless-ngx, Immich) are a different
+shape — they contribute attachable references rather than importing
+items, and they talk to the upstream service only when the operator
+opens the picker.
 
 A separate feature, [Data Import](DataImport.md), is a one-time
 copy with no ongoing upstream link. Some integrations (HomeBox

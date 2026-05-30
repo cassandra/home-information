@@ -64,7 +64,7 @@ from hi.integrations.integration_manager import IntegrationManager
 from hi.integrations.view_mixins import IntegrationViewMixin
 
 from .integration_referencer import IntegrationAttributeReferencer
-from .transient_models import AttributeReferenceResult
+from .transient_models import AttributeReferenceSearchResult
 
 
 logger = logging.getLogger(__name__)
@@ -167,14 +167,21 @@ def _search_upstream(
         referencer: IntegrationAttributeReferencer,
         query: str,
         limit: int,
-) -> List[ AttributeReferenceResult ]:
+) -> AttributeReferenceSearchResult:
     if not query:
-        return []
+        return AttributeReferenceSearchResult( results = [] )
     try:
-        return referencer.search_references( query=query, limit=limit )
+        return referencer.search_references( query = query, limit = limit )
     except Exception:
+        # The contract asks referencers to populate ``error_message``
+        # instead of raising, so reaching this branch means the
+        # referencer itself is broken. Surface a generic message so
+        # the picker stays usable; the stack lands in the server log.
         logger.exception( 'Attribute-reference search failed.' )
-        return []
+        return AttributeReferenceSearchResult(
+            results = [],
+            error_message = 'Search failed — see server logs.',
+        )
 
 
 def _parse_selections_json(raw: str) -> List[ Dict[str, str] ]:
@@ -263,12 +270,15 @@ class AttributeReferencePickerView( HiModalView ):
         # what they're already configuring.
         query = owner.name
         referencer = integration_data.integration_gateway.get_attribute_referencer()
-        results = _search_upstream(
-            referencer=referencer,
-            query=query,
-            limit=_DEFAULT_LIMIT,
-        ) if referencer is not None else []
-        
+        if referencer is not None:
+            search_result = _search_upstream(
+                referencer = referencer,
+                query = query,
+                limit = _DEFAULT_LIMIT,
+            )
+        else:
+            search_result = AttributeReferenceSearchResult( results = [] )
+
         context = {
             'integration_data_list': integration_data_list,
             'integration_data': integration_data,
@@ -277,7 +287,8 @@ class AttributeReferencePickerView( HiModalView ):
             'limit': _DEFAULT_LIMIT,
             'page_size_choices': _PAGE_SIZE_CHOICES,
             'query': query,
-            'results': results,
+            'results': search_result.results,
+            'error_message': search_result.error_message,
         }
         return self.modal_response( request, context=context )
 
@@ -310,16 +321,17 @@ class AttributeReferenceSearchView( View ):
         limit = _parse_limit(
             request.POST.get( DIVID['ATTR_PICKER_LIMIT_FIELD'] ),
         )
-        results = _search_upstream(
-            referencer=referencer, query=query, limit=limit,
+        search_result = _search_upstream(
+            referencer = referencer, query = query, limit = limit,
         )
         html = render_to_string(
             self.RESULTS_TEMPLATE_NAME,
             {
                 'query': query,
-                'results': results,
+                'results': search_result.results,
+                'error_message': search_result.error_message,
             },
-            request=request,
+            request = request,
         )
         return HttpResponse( html )
 

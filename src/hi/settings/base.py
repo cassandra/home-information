@@ -129,6 +129,7 @@ INSTALLED_APPS = [
     'hi.services.homebox',
     'hi.services.frigate',
     'hi.services.paperless',
+    'hi.services.immich',
     'hi.apps.profiles',
 ]
 

@@ -4,14 +4,13 @@
 
 ## Overview
 
-This integration lets **Home Information (HI)** search a
-**paperless-ngx (paperless)** server and attach documents from it as
-references on existing HI items and Locations. Unlike the other
-integrations on the integrations page, paperless does not import any
-items into HI — it contributes searchable references that get saved
-as link attributes (title + URL) on items you already have. Typical
-use case: link a dishwasher's warranty PDF, a thermostat's manual,
-or a property's deed to the matching HI item or Location.
+This integration lets **Home Information (HI)** search a **paperless-ngx
+(paperless)** server and attach documents from it as references on existing
+HI items and Locations. Unlike the other integrations on the integrations
+page, paperless does not import any items into HI — it contributes
+references that get saved as link on items you already have. Typical use
+case: link a dishwasher's warranty PDF, a thermostat's manual, or a
+property's deed to the matching HI item or Location.
 
 ## Prerequisites
 

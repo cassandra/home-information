@@ -36,6 +36,7 @@ from hi.integrations.referencer.integration_referencer import (
 from hi.constants import DIVID
 from hi.integrations.referencer.transient_models import (
     AttributeReferenceResult,
+    AttributeReferenceSearchResult,
 )
 from hi.integrations.transient_models import (
     ConnectionTestResult,
@@ -88,7 +89,9 @@ class _StubReferencer(IntegrationAttributeReferencer):
         self.last_limit = limit
         if self._raises is not None:
             raise self._raises
-        return list(self._results)
+        return AttributeReferenceSearchResult(
+            results=list(self._results),
+        )
 
 
 class _ReferencerCapableGateway(IntegrationGateway):
@@ -360,7 +363,10 @@ class TestAttributeReferenceSearchView(ViewTestBase):
         )
         self.assertEqual(response.status_code, 400)
 
-    def test_search_referencer_exception_yields_empty_results(self):
+    def test_search_referencer_exception_renders_error_banner(self):
+        # Raised exceptions are the "referencer is broken" path; the
+        # framework catches and surfaces a generic banner so the
+        # picker stays usable without misreporting "no results".
         self.referencer._raises = RuntimeError('upstream down')
         response = self.client.post(
             self._url(),
@@ -368,9 +374,32 @@ class TestAttributeReferenceSearchView(ViewTestBase):
             **self.async_http_headers,
         )
         self.assertEqual(response.status_code, 200)
-        # Failure path renders the no-results message rather than
-        # surfacing a 5xx — the picker stays usable.
-        self.assertIn('No results', response.content.decode())
+        body = response.content.decode()
+        self.assertIn('Search failed', body)
+        self.assertNotIn('No results', body)
+
+    def test_search_referencer_error_message_renders_banner(self):
+        # Referencers that populate ``error_message`` instead of
+        # raising should also surface as a banner, not "no results".
+        self.referencer._results = []
+        original = self.referencer.search_references
+
+        def _with_error(query, limit=20):
+            original(query=query, limit=limit)
+            return AttributeReferenceSearchResult(
+                results=[],
+                error_message='Upstream auth rejected.',
+            )
+
+        self.referencer.search_references = _with_error
+        response = self.client.post(
+            self._url(),
+            data=self._payload(query='q'),
+            **self.async_http_headers,
+        )
+        body = response.content.decode()
+        self.assertIn('Upstream auth rejected.', body)
+        self.assertNotIn('No results', body)
 
 
 # ---- attach endpoint ----------------------------------------------

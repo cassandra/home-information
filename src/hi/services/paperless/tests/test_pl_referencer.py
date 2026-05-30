@@ -113,13 +113,15 @@ class TestSearchReferences(TestCase):
         # Short-circuit so the picker can render a blank initial
         # modal without provoking an upstream call.
         result = self.referencer.search_references(query = '', limit = 20)
-        self.assertEqual(result, [])
+        self.assertEqual(result.results, [])
+        self.assertIsNone(result.error_message)
         mock_build.assert_not_called()
 
     @patch('hi.services.paperless.pl_referencer.build_client')
     def test_whitespace_query_returns_empty(self, mock_build):
         result = self.referencer.search_references(query = '   ', limit = 20)
-        self.assertEqual(result, [])
+        self.assertEqual(result.results, [])
+        self.assertIsNone(result.error_message)
         mock_build.assert_not_called()
 
     @patch('hi.services.paperless.pl_referencer.build_client')
@@ -136,23 +138,24 @@ class TestSearchReferences(TestCase):
         )
         mock_build.return_value = client
 
-        results = self.referencer.search_references(
+        result = self.referencer.search_references(
             query = 'warranty', limit = 20,
         )
 
-        self.assertEqual(len(results), 2)
-        self.assertEqual(results[0].title, 'Warranty')
+        self.assertIsNone(result.error_message)
+        self.assertEqual(len(result.results), 2)
+        self.assertEqual(result.results[0].title, 'Warranty')
         self.assertEqual(
-            results[0].source_url,
+            result.results[0].source_url,
             'https://p.example.com/documents/1/details/',
         )
         # Thumbnail is the HI proxy URL, NOT the upstream URL — the
         # browser fetches via HI's session and HI fetches upstream
         # with the configured token.
         self.assertIn('/integration/services/paperless/documents/1/thumb/',
-                      results[0].thumbnail_url)
-        self.assertEqual(results[0].mime_type, 'application/pdf')
-        self.assertIn('Warranty', results[0].snippet)
+                      result.results[0].thumbnail_url)
+        self.assertEqual(result.results[0].mime_type, 'application/pdf')
+        self.assertIn('Warranty', result.results[0].snippet)
 
     @patch('hi.services.paperless.pl_referencer.build_client')
     def test_limit_is_passed_through_as_page_size(self, mock_build):
@@ -178,44 +181,63 @@ class TestSearchReferences(TestCase):
             lambda id: f'https://p.example.com/documents/{id}/details/'
         )
         mock_build.return_value = client
-        self.assertEqual(
-            self.referencer.search_references(query = 'q', limit = 20),
-            [],
-        )
+        result = self.referencer.search_references(query = 'q', limit = 20)
+        self.assertEqual(result.results, [])
+        self.assertIsNone(result.error_message)
+
+
+class TestSearchReferencesErrorMessages(TestCase):
+    """Failure paths must surface ``error_message`` (not raise) so
+    the picker can render a distinct banner instead of falling back
+    to "no results."""
+
+    def setUp(self):
+        self.referencer = PaperlessAttributeReferencer()
 
     @patch('hi.services.paperless.pl_referencer.build_client',
            side_effect = IntegrationAttributeError('not configured'))
-    def test_unconfigured_integration_returns_empty(self, _mock_build):
-        # Operator opens the picker before configuring the
-        # integration — referencer must fail soft so the modal can
-        # render an empty result list rather than 500.
-        self.assertEqual(
-            self.referencer.search_references(query = 'q', limit = 20),
-            [],
-        )
+    def test_unconfigured_integration(self, _mock_build):
+        result = self.referencer.search_references(query = 'q', limit = 20)
+        self.assertEqual(result.results, [])
+        self.assertIn('not configured', result.error_message)
+
+    @patch('hi.services.paperless.pl_referencer.build_client',
+           side_effect = RuntimeError('boom in build'))
+    def test_unexpected_client_build_error(self, _mock_build):
+        result = self.referencer.search_references(query = 'q', limit = 20)
+        self.assertEqual(result.results, [])
+        self.assertIn('Paperless integration error', result.error_message)
 
     @patch('hi.services.paperless.pl_referencer.build_client')
-    def test_upstream_http_error_returns_empty(self, mock_build):
+    def test_http_401_names_token(self, mock_build):
         client = Mock()
         response = Mock()
         response.status_code = 401
-        error = HTTPError('401', response = response)
-        client.search_documents.side_effect = error
+        client.search_documents.side_effect = HTTPError('401', response = response)
         mock_build.return_value = client
-        self.assertEqual(
-            self.referencer.search_references(query = 'q', limit = 20),
-            [],
-        )
+        result = self.referencer.search_references(query = 'q', limit = 20)
+        self.assertEqual(result.results, [])
+        self.assertIn('401', result.error_message)
+        self.assertIn('token', result.error_message.lower())
 
     @patch('hi.services.paperless.pl_referencer.build_client')
-    def test_unexpected_exception_returns_empty(self, mock_build):
+    def test_http_500_surfaces_status_code(self, mock_build):
+        client = Mock()
+        response = Mock()
+        response.status_code = 500
+        client.search_documents.side_effect = HTTPError('500', response = response)
+        mock_build.return_value = client
+        result = self.referencer.search_references(query = 'q', limit = 20)
+        self.assertIn('500', result.error_message)
+
+    @patch('hi.services.paperless.pl_referencer.build_client')
+    def test_unexpected_search_exception(self, mock_build):
         client = Mock()
         client.search_documents.side_effect = RuntimeError('boom')
         mock_build.return_value = client
-        self.assertEqual(
-            self.referencer.search_references(query = 'q', limit = 20),
-            [],
-        )
+        result = self.referencer.search_references(query = 'q', limit = 20)
+        self.assertEqual(result.results, [])
+        self.assertIn('Paperless search failed', result.error_message)
 
 
 class TestValidateConfiguration(TestCase):
