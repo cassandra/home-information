@@ -420,7 +420,6 @@ class TransitionAlarmTests(TestCase):
     # ---- alarm shape ----
 
     def test_fire_needs_sync_alarm_constructs_expected_alarm(self):
-        from hi.apps.alert.alarm import Alarm
         from hi.apps.alert.enums import AlarmLevel, AlarmSource
         captured = []
 
@@ -444,12 +443,14 @@ class TransitionAlarmTests(TestCase):
             f'integrations.needs_sync.{self.INTEGRATION_ID}',
         )
         self.assertEqual(alarm.alarm_level, AlarmLevel.INFO)
-        # Drift alarms should persist until acknowledged, which is
-        # expressed in this codebase as ``Alarm.MAX_LIFETIME_SECS``
-        # (a sentinel "never expires" value — non-zero so
-        # ``end_datetime`` arithmetic remains uniform across all
-        # alarm types).
-        self.assertEqual(alarm.alarm_lifetime_secs, Alarm.MAX_LIFETIME_SECS)
+        # Drift alarms suppress re-alerts for the configured nag
+        # window after acknowledgement -- balances operator deferral
+        # within their workday against ensuring they're reminded if
+        # the issue still hasn't been addressed the next day.
+        self.assertEqual(
+            alarm.alarm_lifetime_secs,
+            IntegrationSyncCheck.NAG_INTERVAL_SECS,
+        )
         # Per-integration unique signature so two integrations
         # drifting yield two distinct alerts.
         self.assertIn(self.INTEGRATION_ID, alarm.signature)

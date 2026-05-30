@@ -108,7 +108,16 @@ class IntegrationSyncCheck:
     """
     
     INTERVAL_SECS = 4 * 60 * 60
-    
+
+    # Alarm lifetime governs the post-acknowledgement nag window
+    # (after the AlertQueue dedup-anchor refactor): after a user
+    # dismisses the needs-sync alert, the suppression lasts this long
+    # before another needs-sync alarm can re-surface. Twenty-four
+    # hours strikes a balance between letting the operator defer
+    # within their workday and reminding them the next time they
+    # sit down at the console.
+    NAG_INTERVAL_SECS = 24 * 60 * 60
+
     _CACHE_TTL_SECS = INTERVAL_SECS * 2
     _CACHE_KEY_PREFIX = 'integrations:sync_check:'
 
@@ -242,8 +251,9 @@ class IntegrationSyncCheck:
         into the needs-sync state. Per-integration unique signature
         (``integrations.needs_sync.<integration_id>``) so two
         integrations both reporting drift surface as two distinct
-        alerts. Lifetime is ``Alarm.MAX_LIFETIME_SECS`` -- the
-        canonical "until acknowledged" value."""
+        alerts. Lifetime is ``NAG_INTERVAL_SECS`` -- the post-ack
+        suppression window before a still-out-of-sync integration is
+        allowed to re-pop another alert."""
         from hi.apps.alert.alarm import Alarm
         from hi.apps.alert.alert_manager import AlertManager
         from hi.apps.alert.enums import AlarmLevel, AlarmSource
@@ -277,7 +287,7 @@ class IntegrationSyncCheck:
             title = result.summary_message,
             sensor_response_list = [ sensor_response ],
             security_level = SecurityLevel.OFF,
-            alarm_lifetime_secs = Alarm.MAX_LIFETIME_SECS,
+            alarm_lifetime_secs = IntegrationSyncCheck.NAG_INTERVAL_SECS,
             timestamp = datetimeproxy.now(),
         )
         AlertManager().upsert_alarm( alarm )

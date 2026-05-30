@@ -176,17 +176,9 @@ class AlarmAction( models.Model ):
         max_length = 32,
         null = False, blank = False,
     )
-
-    # How long will this alarm be relevant to the user. Alarms exist
-    # until they expire or are acknowledged. Use ``Alarm.MAX_LIFETIME_SECS``
-    # for an alarm that should remain visible until the user
-    # acknowledges it (zero would expire immediately and is rejected
-    # by ``Alarm.__post_init__``).
-    #
     alarm_lifetime_secs = models.PositiveIntegerField(
         'Lifetime Secs',
     )
-
     created_datetime = models.DateTimeField(
         'Created',
         auto_now_add = True,

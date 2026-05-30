@@ -1,7 +1,6 @@
 import json
 from typing import Dict
 
-from hi.apps.alert.alarm import Alarm
 from hi.apps.alert.enums import AlarmLevel
 from hi.apps.control.enums import ControllerType
 from hi.apps.control.models import Controller
@@ -32,9 +31,22 @@ class HiModelHelper:
         EntityStateType.MULTIVALUED,
     }
 
+    # Default alarm lifetime for persistent-state alarms (connectivity,
+    # battery, smoke, CO, gas, etc.). After the AlertQueue
+    # dedup-anchor refactor, this value governs the post-acknowledgement
+    # nag window -- after the operator dismisses, the suppression lasts
+    # this long before another bad-state alarm with the same signature
+    # can re-surface. Twenty-four hours balances same-day deferral
+    # against next-day reminder for the operator who didn't address the
+    # underlying condition. Tracked in #378 -- the longer-term answer
+    # is a producer-side ``clear_signature`` API that drops acked
+    # alerts on state-recovery, after which this constant can give way
+    # to per-source decisions.
+    NAG_INTERVAL_SECS = 24 * 60 * 60
+
     DEFAULT_CONNECTIVITY_EVENT_WINDOW_SECS = 180
     DEFAULT_CONNECTIVITY_DEDUPE_WINDOW_SECS = 300
-    DEFAULT_CONNECTIVITY_ALARM_LIFETIME_SECS = Alarm.MAX_LIFETIME_SECS
+    DEFAULT_CONNECTIVITY_ALARM_LIFETIME_SECS = NAG_INTERVAL_SECS
 
     DEFAULT_OPEN_CLOSE_EVENT_WINDOW_SECS = 180
     DEFAULT_OPEN_CLOSE_DEDUPE_WINDOW_SECS = 300
@@ -50,7 +62,7 @@ class HiModelHelper:
 
     DEFAULT_BATTERY_EVENT_WINDOW_SECS = 180
     DEFAULT_BATTERY_DEDUPE_WINDOW_SECS = 300
-    DEFAULT_BATTERY_ALARM_LIFETIME_SECS = Alarm.MAX_LIFETIME_SECS
+    DEFAULT_BATTERY_ALARM_LIFETIME_SECS = NAG_INTERVAL_SECS
 
     # Threshold-based low-battery alarm for continuous BATTERY_LEVEL
     # percentage sensors. Distinct from the discrete HIGH_LOW battery
@@ -60,23 +72,23 @@ class HiModelHelper:
     DEFAULT_BATTERY_LEVEL_THRESHOLD_PERCENT = 20
     DEFAULT_BATTERY_LEVEL_EVENT_WINDOW_SECS = 180
     DEFAULT_BATTERY_LEVEL_DEDUPE_WINDOW_SECS = 86400
-    DEFAULT_BATTERY_LEVEL_ALARM_LIFETIME_SECS = Alarm.MAX_LIFETIME_SECS
+    DEFAULT_BATTERY_LEVEL_ALARM_LIFETIME_SECS = NAG_INTERVAL_SECS
 
     DEFAULT_SMOKE_EVENT_WINDOW_SECS = 180
     DEFAULT_SMOKE_DEDUPE_WINDOW_SECS = 300
-    DEFAULT_SMOKE_ALARM_LIFETIME_SECS = Alarm.MAX_LIFETIME_SECS
+    DEFAULT_SMOKE_ALARM_LIFETIME_SECS = NAG_INTERVAL_SECS
 
     DEFAULT_MOISTURE_EVENT_WINDOW_SECS = 180
     DEFAULT_MOISTURE_DEDUPE_WINDOW_SECS = 300
-    DEFAULT_MOISTURE_ALARM_LIFETIME_SECS = Alarm.MAX_LIFETIME_SECS
+    DEFAULT_MOISTURE_ALARM_LIFETIME_SECS = NAG_INTERVAL_SECS
 
     DEFAULT_CO_EVENT_WINDOW_SECS = 180
     DEFAULT_CO_DEDUPE_WINDOW_SECS = 300
-    DEFAULT_CO_ALARM_LIFETIME_SECS = Alarm.MAX_LIFETIME_SECS
+    DEFAULT_CO_ALARM_LIFETIME_SECS = NAG_INTERVAL_SECS
 
     DEFAULT_GAS_EVENT_WINDOW_SECS = 180
     DEFAULT_GAS_DEDUPE_WINDOW_SECS = 300
-    DEFAULT_GAS_ALARM_LIFETIME_SECS = Alarm.MAX_LIFETIME_SECS
+    DEFAULT_GAS_ALARM_LIFETIME_SECS = NAG_INTERVAL_SECS
     
     @classmethod
     def create_blob_sensor( cls,
