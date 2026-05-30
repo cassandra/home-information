@@ -21,7 +21,8 @@ class TestAlertQueue(BaseTestCase):
         self.test_alarm = self._make_alarm('test_alarm')
         return
 
-    def _make_alarm(self, alarm_type: str, level=AlarmLevel.WARNING) -> Alarm:
+    def _make_alarm(self, alarm_type: str, level=AlarmLevel.WARNING,
+                    source_alarm_id=None) -> Alarm:
         return Alarm(
             alarm_source=AlarmSource.EVENT,
             alarm_type=alarm_type,
@@ -31,6 +32,7 @@ class TestAlertQueue(BaseTestCase):
             security_level=SecurityLevel.LOW,
             alarm_lifetime_secs=300,
             timestamp=datetimeproxy.now(),
+            source_alarm_id=source_alarm_id,
         )
 
     def test_alert_queue_initialization(self):
@@ -183,6 +185,30 @@ class TestAlertQueue(BaseTestCase):
             self.assertEqual(len(queue), 2)
             # No acked alerts to evict; queue should grow past the cap.
             queue.add_alarm(self._make_alarm('c'))
+            self.assertEqual(len(queue), 3)
+        finally:
+            AlertQueue.MAX_ALERT_LIST_SIZE = original_cap
+        return
+
+    def test_alert_queue_at_cap_with_no_acked_invokes_noop_eviction(self):
+        """At the cap with zero acked alerts, ``_evict_oldest_acknowledged_alert``
+        is still invoked (it's a no-op in this case) and the new alert
+        is appended despite the cap. Pins the no-op eviction call path
+        explicitly, separate from the queue-growth assertion."""
+        from unittest.mock import patch
+        original_cap = AlertQueue.MAX_ALERT_LIST_SIZE
+        AlertQueue.MAX_ALERT_LIST_SIZE = 2
+        try:
+            queue = AlertQueue()
+            queue.add_alarm(self._make_alarm('a'))
+            queue.add_alarm(self._make_alarm('b'))
+            with patch.object(
+                queue, '_evict_oldest_acknowledged_alert',
+                wraps=queue._evict_oldest_acknowledged_alert,
+            ) as evict_spy:
+                queue.add_alarm(self._make_alarm('c'))
+                evict_spy.assert_called_once()
+            # Eviction was a no-op; new alert appended.
             self.assertEqual(len(queue), 3)
         finally:
             AlertQueue.MAX_ALERT_LIST_SIZE = original_cap
@@ -442,6 +468,27 @@ class TestAlertQueue(BaseTestCase):
         returned_alert = self.queue.add_alarm(duplicate_alarm)
         self.assertEqual(returned_alert.id, alert.id)
         self.assertEqual(len(self.queue), before_count)
+        self.assertEqual(len(self.queue.unacknowledged_alert_list), 0)
+        return
+
+    def test_alert_queue_acknowledged_alert_distinct_incident_appends(self):
+        """A new incident with the same signature but a distinct
+        ``source_alarm_id`` should still append to the acked alert's
+        occurrence deque, even though it doesn't re-surface. Captures
+        the "new tornado warning during an acked one" path that the
+        ``source_alarm_id=None`` dedup-anchor test doesn't exercise."""
+        first_alarm = self._make_alarm('test_alarm', source_alarm_id='incident-1')
+        alert = self.queue.add_alarm(first_alarm)
+        self.queue.acknowledge_alert(alert.id)
+        self.assertEqual(alert.alarm_count, 1)
+
+        # Same signature, distinct upstream incident id.
+        second_alarm = self._make_alarm('test_alarm', source_alarm_id='incident-2')
+        returned_alert = self.queue.add_alarm(second_alarm)
+
+        self.assertEqual(returned_alert.id, alert.id)
+        self.assertEqual(alert.alarm_count, 2)
+        # Alert stays hidden from the operator.
         self.assertEqual(len(self.queue.unacknowledged_alert_list), 0)
         return
 

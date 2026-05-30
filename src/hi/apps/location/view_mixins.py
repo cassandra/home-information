@@ -54,8 +54,8 @@ class LocationViewMixin:
         )
         return antinode.redirect_response( redirect_url )
 
-    def get_entity_svg_update_reponse( self, entity : Entity ) -> HttpResponse:
-        """ For updating a single entity in the location view vis antinode reponse """
+    def get_entity_svg_update_response( self, entity : Entity ) -> HttpResponse:
+        """ For updating a single entity in the location view via antinode response """
 
         entity_status_data = StatusDisplayManager().get_entity_status_data(
             entity = entity,
@@ -70,14 +70,18 @@ class LocationViewMixin:
                 continue
             state_id = status_display_data.entity_state.id
             # Mirror the polling-refresh dispatch contract documented
-            # in ``entity_state_status.js``: icon wrappers
-            # (``data-status``) get only the ``status`` attribute so
-            # the parent <g>'s ``fill`` / ``fill-opacity`` / ``stroke``
-            # don't cascade into child paths that depend on browser-
-            # default ``fill: black`` or on full opacity. Path
-            # elements (``data-svg-style``) live on the element being
-            # styled, so the full presentation attribute set is the
-            # right payload there.
+            # in ``entity_state_status.js``: elements opt into the
+            # ``data-status`` hint (icon wrappers; see
+            # ``location/panes/svg_icon_item.html``) for status-only
+            # updates, or ``data-svg-style`` (path elements; see
+            # ``location/panes/svg_path_item_*.html``) for the full
+            # presentation attribute set. Icon wrappers get only the
+            # ``status`` attribute so the parent <g>'s ``fill`` /
+            # ``fill-opacity`` / ``stroke`` don't cascade into child
+            # paths that depend on browser-default ``fill: black`` or
+            # on full opacity. Path elements live on the element
+            # being styled, so the full attribute set is the right
+            # payload there.
             icon_selector = f'[data-state-id="{state_id}"][data-status]'
             path_selector = f'[data-state-id="{state_id}"][data-svg-style]'
             if 'status' in attribute_dict:

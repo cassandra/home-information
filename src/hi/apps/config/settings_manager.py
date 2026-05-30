@@ -45,6 +45,11 @@ class SettingsManager( Singleton ):
         # mutating the live map in place would briefly expose an empty
         # or partially-populated view to any concurrent reader -- which
         # caused spurious ``None`` returns during settings saves.
+        # CPython GIL dependency: lock-free reads work because the
+        # name rebind ``self._attribute_value_map = ...`` is a single
+        # ``STORE_ATTR`` bytecode, atomic against concurrent readers.
+        # Do NOT convert ``_attribute_value_map`` to a property or
+        # descriptor; that would break the atomicity guarantee.
         with self._attributes_lock:
             self._subsystem_list = sorted(self._subsystem_list, key=lambda s: s.name)
             new_attribute_value_map = dict()

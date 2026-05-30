@@ -674,6 +674,81 @@ class TestLocationItemStatusView(SyncViewTestCase):
         data = response.json()
         self.assertIn('setAttributes', data)
 
+    def test_long_press_bypasses_one_click_in_automation_view(self):
+        """Long-press gesture (``?long_press=1``) in an AUTOMATION view
+        must bypass the one-click control branch and redirect to the
+        entity status modal — the gesture's whole purpose is reaching
+        status when a tap would otherwise toggle the device."""
+        from hi.enums import ItemType
+        session = self.client.session
+        session['view_type'] = str(ViewType.LOCATION_VIEW)
+        session['location_view_id'] = self.automation_view.id
+        session.save()
+
+        html_id = ItemType.ENTITY.html_id(self.entity.id)
+        url = reverse('location_item_status', kwargs={'html_id': html_id})
+
+        response = self.client.get(url + '?long_press=1')
+
+        self.assertEqual(response.status_code, 302)
+        expected_url = reverse('entity_status', kwargs={'entity_id': self.entity.id})
+        self.assertEqual(response.url, expected_url)
+
+    def test_long_press_no_op_in_non_automation_view(self):
+        """In a non-AUTOMATION view, a tap already routes to status, so
+        ``?long_press=1`` should be a harmless no-op (same response)."""
+        from hi.enums import ItemType
+        session = self.client.session
+        session['view_type'] = str(ViewType.LOCATION_VIEW)
+        session['location_view_id'] = self.default_view.id
+        session.save()
+
+        html_id = ItemType.ENTITY.html_id(self.entity.id)
+        url = reverse('location_item_status', kwargs={'html_id': html_id})
+
+        response = self.client.get(url + '?long_press=1')
+
+        self.assertEqual(response.status_code, 302)
+        expected_url = reverse('entity_status', kwargs={'entity_id': self.entity.id})
+        self.assertEqual(response.url, expected_url)
+
+    @patch('hi.apps.control.one_click_control_service.ControllerManager')
+    def test_long_press_param_truthy_variants_all_bypass(self, mock_controller_manager):
+        """The view consumes ``long_press`` via ``str_to_bool``, so any
+        truthy variant (``true``, ``yes``, ``on``) bypasses one-click;
+        falsy variants (``false``, missing) keep the one-click path."""
+        from hi.enums import ItemType
+        from hi.apps.control.transient_models import ControllerOutcome
+        mock_manager = Mock()
+        mock_controller_manager.return_value = mock_manager
+        mock_manager.do_control.return_value = ControllerOutcome(
+            controller=self.controller,
+            new_value='ON',
+            error_list=[]
+        )
+
+        session = self.client.session
+        session['view_type'] = str(ViewType.LOCATION_VIEW)
+        session['location_view_id'] = self.automation_view.id
+        session.save()
+
+        html_id = ItemType.ENTITY.html_id(self.entity.id)
+        url = reverse('location_item_status', kwargs={'html_id': html_id})
+
+        for truthy in ['1', 'true', 'yes', 'on']:
+            response = self.client.get(url + f'?long_press={truthy}')
+            self.assertEqual(
+                response.status_code, 302,
+                f'long_press={truthy!r} should bypass one-click',
+            )
+
+        # ``false`` is the canonical falsy variant; verify one-click path runs.
+        response = self.client.get(url + '?long_press=false')
+        self.assertEqual(
+            response.status_code, 200,
+            'long_press=false should NOT bypass one-click',
+        )
+
     @patch('hi.apps.location.views.OneClickControlService')
     def test_automation_view_handles_unsupported_exception(self, mock_service_class):
         """Test that OneClickNotSupported falls back to status modal."""

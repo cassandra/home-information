@@ -120,6 +120,17 @@ class SettingsInitializer:
             if attribute.order_id != order_id:
                 attribute.order_id = order_id
                 update_fields.append( 'order_id' )
+            # Reconcile ``value_range_str`` so long-lived installs pick
+            # up format corrections to a SettingDefinition's range --
+            # without this, rows written under a legacy format (e.g.
+            # the old dash-separated ``'5-86400'`` form) silently
+            # bypass the framework's JSON-only range validation.
+            expected_value_range_str = self._coerce_value_range_str(
+                setting_definition.value_range,
+            )
+            if attribute.value_range_str != expected_value_range_str:
+                attribute.value_range_str = expected_value_range_str
+                update_fields.append( 'value_range_str' )
             if update_fields:
                 attribute.save(
                     update_fields = update_fields,
@@ -132,9 +143,16 @@ class SettingsInitializer:
         # column. Strings pass through untouched; lists/dicts get
         # JSON-encoded; ``None`` becomes empty so the model's
         # ``not self.value_range_str`` early-out fires (rather than
-        # storing the literal string ``'null'``).
+        # storing the literal string ``'null'``). Other types are
+        # rejected loudly so a miswritten SettingDefinition fails at
+        # app boot rather than corrupting the DB.
         if value_range is None:
             return ''
         if isinstance( value_range, str ):
             return value_range
-        return json.dumps( value_range )
+        if isinstance( value_range, ( list, dict )):
+            return json.dumps( value_range )
+        raise TypeError(
+            f'SettingDefinition.value_range must be None, str,'
+            f' list, or dict; got {type(value_range).__name__}.'
+        )

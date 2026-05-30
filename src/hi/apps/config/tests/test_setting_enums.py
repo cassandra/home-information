@@ -57,24 +57,28 @@ class NestedModuleTestSetting(SettingEnum):
 class TestSettingDefinition(BaseTestCase):
 
     def test_setting_definition_creation(self):
-        """Test SettingDefinition dataclass creation."""
+        """Test SettingDefinition dataclass creation. The ``str`` form
+        of ``value_range`` is the canonical PredefinedValueRanges
+        identifier shape -- the dataclass passes it through verbatim
+        and the framework dispatches on it at choices()-lookup time."""
+        from hi.apps.attribute.value_ranges import PredefinedValueRanges
         definition = SettingDefinition(
             label='Test Setting',
             description='A test setting for testing',
-            value_type=AttributeValueType.TEXT,
-            value_range='[a-z]+',
+            value_type=AttributeValueType.ENUM,
+            value_range=PredefinedValueRanges.TIMEZONE_CHOICES_ID,
             is_editable=True,
             is_required=False,
-            initial_value='default',
+            initial_value='America/Chicago',
         )
 
         self.assertEqual(definition.label, 'Test Setting')
         self.assertEqual(definition.description, 'A test setting for testing')
-        self.assertEqual(definition.value_type, AttributeValueType.TEXT)
-        self.assertEqual(definition.value_range, '[a-z]+')
+        self.assertEqual(definition.value_type, AttributeValueType.ENUM)
+        self.assertEqual(definition.value_range, PredefinedValueRanges.TIMEZONE_CHOICES_ID)
         self.assertTrue(definition.is_editable)
         self.assertFalse(definition.is_required)
-        self.assertEqual(definition.initial_value, 'default')
+        self.assertEqual(definition.initial_value, 'America/Chicago')
         return
 
     def test_setting_definition_all_value_types(self):

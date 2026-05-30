@@ -109,10 +109,70 @@ class TestAlertManager(BaseTestCase):
         self.assertIsInstance(manager, Singleton)
         return
 
+    def test_notification_suppressed_for_absorbed_alarm_into_acked_alert(self):
+        """When an alarm is absorbed into an already-acknowledged alert
+        with a distinct ``source_alarm_id``, the alert's occurrence
+        deque grows -- ``has_single_alarm`` becomes False -- and
+        ``add_notification_item`` is NOT invoked. Pins the
+        AlertManager-level suppression of re-notification on absorb
+        for the new dedup-anchor semantics."""
+        manager = AlertManager()
+        # Fresh queue per test so prior tests don't bleed in.
+        manager._alert_queue._alert_list.clear()
+
+        mock_notification_manager = patch.object(
+            manager, 'notification_manager'
+        ).start()
+        self.addCleanup(patch.stopall)
+        mock_security_manager = patch.object(
+            manager, 'security_manager'
+        ).start()
+        mock_security_manager.return_value.security_state.uses_notifications = True
+
+        first_alarm = Alarm(
+            alarm_source=AlarmSource.EVENT,
+            alarm_type='absorb_test',
+            alarm_level=AlarmLevel.WARNING,
+            title='First incident',
+            sensor_response_list=[],
+            security_level=SecurityLevel.LOW,
+            alarm_lifetime_secs=300,
+            timestamp=datetimeproxy.now(),
+            source_alarm_id='incident-1',
+        )
+        manager.upsert_alarm(first_alarm)
+        first_alert = manager.unacknowledged_alert_list[0]
+        # First alarm produces one notification call (single-alarm).
+        self.assertEqual(
+            mock_notification_manager.return_value.add_notification_item.call_count, 1
+        )
+
+        manager.acknowledge_alert(first_alert.id)
+
+        # Distinct new incident, same signature, arrives after ack.
+        second_alarm = Alarm(
+            alarm_source=AlarmSource.EVENT,
+            alarm_type='absorb_test',
+            alarm_level=AlarmLevel.WARNING,
+            title='Second incident',
+            sensor_response_list=[],
+            security_level=SecurityLevel.LOW,
+            alarm_lifetime_secs=300,
+            timestamp=datetimeproxy.now(),
+            source_alarm_id='incident-2',
+        )
+        manager.upsert_alarm(second_alarm)
+
+        # No new notification: alert now has 2 alarms in its deque.
+        self.assertEqual(
+            mock_notification_manager.return_value.add_notification_item.call_count, 1
+        )
+        return
+
     def test_alert_manager_alert_queue_integration(self):
         """Test AlertManager integration with AlertQueue - critical system interaction."""
         manager = AlertManager()
-        
+
         # Should have working alert queue
         self.assertIsNotNone(manager._alert_queue)
         

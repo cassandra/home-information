@@ -885,6 +885,14 @@ svg .highlighted {
 g.hi-icon {
     pointer-events: all;
     touch-action: manipulation;
+    /* Suppress iOS Safari's callout (Copy/Define popup) and
+       text-selection behaviors on the 750ms touch-hold the
+       long-press gesture uses. ``touch-action: manipulation``
+       governs gesture interpretation but not callouts/selection. */
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    user-select: none;
 }
 
 /* Hide background rectangles used for click targets */

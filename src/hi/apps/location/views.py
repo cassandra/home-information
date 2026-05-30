@@ -6,7 +6,7 @@ from django.http import HttpRequest, HttpResponse, HttpResponseRedirect
 from django.shortcuts import reverse
 from django.views.generic import View
 
-from hi.apps.common.utils import is_ajax
+from hi.apps.common.utils import is_ajax, str_to_bool
 import hi.apps.common.antinode as antinode
 
 from hi.apps.attribute.view_mixins import AttributeEditViewMixin
@@ -134,7 +134,9 @@ class LocationItemStatusView( View, LocationViewMixin, EntityViewMixin ):
         # status / history / edit for a controllable entity in that
         # view. The JS doesn't dictate which view to surface -- it
         # just reports the gesture -- and the server picks the route.
-        long_press = ( request.GET.get( 'long_press' ) == '1' )
+        # ``str_to_bool`` tolerates ``1``/``true``/``yes``/``on``/etc.
+        # and returns False for a missing param.
+        long_press = str_to_bool( request.GET.get( 'long_press' ) )
         if ( long_press
              or location_view.location_view_type not in [ LocationViewType.AUTOMATION ] ):
             return self._entity_status_response(
@@ -157,7 +159,7 @@ class LocationItemStatusView( View, LocationViewMixin, EntityViewMixin ):
                 entity_state = controller_outcome.controller.entity_state,
                 override_value = override_sensor_value,
             )
-            return self.get_entity_svg_update_reponse( entity = entity )
+            return self.get_entity_svg_update_response( entity = entity )
 
         except OneClickNotSupported:
             return self._entity_status_response(

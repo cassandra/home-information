@@ -105,6 +105,16 @@ class PeriodicMonitor( HealthStatusProvider ):
         # effect within one chunk rather than waiting out the original
         # interval. An increased interval finishes the current cycle
         # and governs the next one.
+        #
+        # Operator-visible side effect after a dramatic shrink: the
+        # ``HealthStatusProvider``'s expected-heartbeat threshold is
+        # now derived live from ``get_polling_interval_secs()``, so
+        # immediately after dropping 300s -> 5s the most recent
+        # heartbeat (taken under the old cadence, perhaps 200s ago)
+        # appears stale against the new threshold and the monitor
+        # may briefly read "Dead." The next successful poll
+        # (within the new shorter interval) clears it. Not a fault
+        # condition; just transient visibility.
         interval_secs = self.get_polling_interval_secs()
         remaining = interval_secs
         while self._is_running:

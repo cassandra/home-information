@@ -790,9 +790,14 @@ function handleSetAttributes( attributesMap ) {
                     targetObj.attr( attrName, attrValue );
                     handleNewContentAdded( targetObj );
                 }
-            } else {
-                console.warn(`setAttributes: No elements found for selector '${selector}'`);
-            }
+            } 
+
+            // Zero-match is a legitimate outcome for callers that
+            // emit a compound selector pair (e.g., paired
+            // ``[data-status]`` / ``[data-svg-style]`` selectors
+            // where one side intentionally targets a class of
+            // element the current entity does not render).
+
         } catch (e) {
             console.error(`setAttributes: Invalid selector '${selector}': ${e.message}`);
             // Continue processing other selectors instead of failing completely

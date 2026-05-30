@@ -170,6 +170,10 @@
     }
     
     function startLongPressTracking( event ) {
+	// Defensive: clear any prior state whose pointerup never
+	// arrived (e.g., a missed event from ``setPointerCapture``
+	// edge cases) so its ``setTimeout`` handle isn't leaked.
+	cancelLongPress();
 	gLongPressState = {
 	    pointerId: event.pointerId,
 	    startEvent: event,
@@ -200,13 +204,23 @@
 	if ( ! gLongPressState ) { return; }
 	const startEvent = gLongPressState.startEvent;
 	gLongPressState = null;
-	// Suppress the trailing click so the consumer's default tap
-	// action isn't also invoked when the pointer is released.
-	gSuppressNextClick = true;
-	if ( navigator.vibrate ) {
-	    navigator.vibrate( 50 );
+	// Side effects (suppress the trailing click, tactile feedback)
+	// only apply when a consumer actually claimed the gesture.
+	// Without this gate, edit-mode interactions silently lose their
+	// trailing click to ``gSuppressNextClick`` even though no
+	// consumer ran (edit mode's icon handler returns ``false``).
+	const handled = dispatchLongPress( startEvent );
+	if ( handled ) {
+	    gSuppressNextClick = true;
+	    // Stale-flag safety: if the expected trailing click never
+	    // arrives (pointer leaves the document, scroll preempt,
+	    // etc.) auto-clear so we don't silently eat the next
+	    // unrelated click many seconds later.
+	    setTimeout( function() { gSuppressNextClick = false; }, 1000 );
+	    if ( navigator.vibrate ) {
+		navigator.vibrate( 50 );
+	    }
 	}
-	dispatchLongPress( startEvent );
     }
 
     function dispatchLongPress( startEvent ) {
@@ -215,8 +229,9 @@
 	    handled = Hi.edit.path.handleLongPress( startEvent );
 	}
 	if ( ! handled ) {
-	    Hi.location.handleLongPress( startEvent );
+	    handled = Hi.location.handleLongPress( startEvent );
 	}
+	return handled;
     }
 
     function handlePointerDownEvent( event ) {
@@ -362,6 +377,11 @@
     }
 
     function handlePointerCancelEvent( event ) {
+	// Browser-initiated cancellation (scroll start, gesture
+	// preempt) may target a pointer ID that ``handlePointerUp``'s
+	// active-pointer check rejects, leaving a pending long-press
+	// timer alive. Kill it unconditionally before falling through.
+	cancelLongPress();
 	// Treat the same as an "up" event for now.
 	handlePointerUpEvent(event);
     }

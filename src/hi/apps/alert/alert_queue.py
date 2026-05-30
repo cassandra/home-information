@@ -142,15 +142,19 @@ class AlertQueue:
         return
 
     def _evict_oldest_acknowledged_alert(self):
+        # ``add_alarm`` always sets ``queue_insertion_datetime`` before
+        # appending, so the field is non-None in practice. Treat a
+        # missing value as the epoch so a stray ``None`` doesn't
+        # silently freeze the eviction candidate on the first acked
+        # entry encountered.
         oldest_index = None
         oldest_insertion_dt = None
         for index, alert in enumerate( self._alert_list ):
             if not alert.is_acknowledged:
                 continue
-            insertion_dt = alert.queue_insertion_datetime
-            if oldest_insertion_dt is None or (
-                    insertion_dt is not None
-                    and insertion_dt < oldest_insertion_dt ):
+            insertion_dt = alert.queue_insertion_datetime or datetimeproxy.min()
+            if ( oldest_insertion_dt is None
+                 or ( insertion_dt < oldest_insertion_dt )):
                 oldest_insertion_dt = insertion_dt
                 oldest_index = index
             continue
