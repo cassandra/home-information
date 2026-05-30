@@ -492,14 +492,11 @@ a.clickable-card:active {
     z-index: 20;
     background-color: var(--edit-mode-primary-bg);
 }
-.hi-screen[hi-edit="True"] #hi-side-content:has(.entity-picker-container) .hi-edit-sidebar-tabs {
-    background-color: var(--white);
-}
 .hi-edit-sidebar-tab {
     flex: 1 1 0;
     text-align: center;
     padding: 0.5rem 0.25rem;
-    font-size: 0.85rem;
+    font-size: 1.15rem;
     font-weight: 600;
     color: var(--primary-color);
     text-decoration: none;
