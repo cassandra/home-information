@@ -1,18 +1,17 @@
 """Immich simulator: parametric smart-search responses.
 
-Like the paperless simulator, Immich contributes only the
-ATTRIBUTE_REFERENCE capability — TEXT attributes on existing
-Entity / Location records, no SimEntities of its own. Search results
-are generated on the fly, shaped by a small set of operator-tuned
-knobs on the singleton.
+Contributes only the ATTRIBUTE_REFERENCE capability -- TEXT
+attributes on existing Entity / Location records, no SimEntities of
+its own. Search results are generated on the fly, shaped by
+operator-tuned knobs on the singleton.
 
 Auth-failure simulation is handled framework-wide via
-``ServiceFaultMode`` (see ``hi/simulator/services/middleware.py``);
-this simulator does not enforce API keys of its own.
+``ServiceFaultMode``; this simulator does not enforce API keys of
+its own.
 
 Knobs:
   - result_count : how many assets each smart search returns
-                   (0/1/3/10/50 — exercises empty / single / multi
+                   (0/1/3/10/50 -- exercises empty / single / multi
                    picker rendering paths).
   - include_exif : whether generated assets carry EXIF city /
                    country (drives the snippet on / off path in the
@@ -28,8 +27,8 @@ from hi.simulator.services.base_models import SimEntityDefinition
 from hi.simulator.services.service_simulator import ServiceSimulator
 
 
-# Discrete result counts the operator can pick. Same set as the
-# paperless simulator — exercises distinct picker rendering paths.
+# Discrete result counts the operator can pick; exercises distinct
+# picker rendering paths.
 RESULT_COUNT_CHOICES = ( 0, 1, 3, 10, 50 )
 
 
@@ -47,8 +46,7 @@ class ImmichSimulator( ServiceSimulator ):
 
     def __init_singleton__( self ):
         # Set BEFORE initialize() so a SimProfile switch does NOT
-        # reset operator-tuned settings (same lifecycle as
-        # ``_fault_mode`` on the base class).
+        # reset operator-tuned settings.
         self._settings = ImmichSimSettings()
         super().__init_singleton__()
         return
@@ -75,8 +73,6 @@ class ImmichSimulator( ServiceSimulator ):
 
     @property
     def sim_entity_definition_list(self) -> List[ SimEntityDefinition ]:
-        # Immich contributes only via ATTRIBUTE_REFERENCE — no
-        # SimEntity rows. The extras pane carries the operator UI.
         return []
 
     @property

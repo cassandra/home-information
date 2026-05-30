@@ -2,24 +2,23 @@
 
 Endpoint families:
 
-  - ``SmartSearchView``     — ``POST /api/search/smart``: the smart
+  - ``SmartSearchView``     -- ``POST /api/search/smart``: the smart
                               CLIP endpoint the integration's
                               referencer hits for every search. Body:
                               ``{"query": ..., "size": N}``.
-  - ``MetadataSearchView``  — ``POST /api/search/metadata``: the
+  - ``MetadataSearchView``  -- ``POST /api/search/metadata``: the
                               probe-only endpoint hit by the
                               integration's ``validate_access``.
                               Returns a minimal envelope.
-  - ``ThumbnailView``       — ``GET /api/assets/<id>/thumbnail``:
+  - ``ThumbnailView``       -- ``GET /api/assets/<id>/thumbnail``:
                               serves an SVG placeholder.
-  - ``SetSettingsView``     — POST target for the extras form;
+  - ``SetSettingsView``     -- POST target for the extras form;
                               mutates the singleton's
                               ``ImmichSimSettings`` and re-renders the
                               form fragment.
 
-Auth failures are simulated framework-wide via ``ServiceFaultMode``
-(see ``hi/simulator/services/middleware.py``); these views do not
-inspect the ``x-api-key`` header themselves.
+Auth failures are simulated framework-wide via ``ServiceFaultMode``;
+these views do not inspect the ``x-api-key`` header themselves.
 """
 import hashlib
 import json
@@ -55,7 +54,7 @@ _CITY_COUNTRY_CYCLE = (
 
 def _stable_asset_id( query : str, index : int ) -> str:
     """Map (query, index) to a stable UUID-shaped string. Different
-    queries produce distinct ids; same query → same ids."""
+    queries produce distinct ids; same query -> same ids."""
     digest = hashlib.sha256( f'{query}\x00{index}'.encode() ).hexdigest()
     # UUID v4 layout: 8-4-4-4-12 hex. Borrow the first 32 digest chars.
     return (
@@ -68,7 +67,7 @@ def _generate_assets(
         settings : ImmichSimSettings, query : str,
 ) -> List[dict]:
     """Build ``settings.result_count`` synthetic Immich assets for the
-    given query. (query, index) → asset_id is stable so the picker
+    given query. (query, index) -> asset_id is stable so the picker
     sees the same asset on repeat searches."""
     now_iso = datetime.now(timezone.utc).isoformat()
     assets = []
@@ -171,7 +170,7 @@ class ThumbnailView( View ):
 
 
 class PhotoPreviewView( View ):
-    """``GET /photos/<id>`` — minimal preview page representing the
+    """``GET /photos/<id>`` -- minimal preview page representing the
     per-asset view in Immich's web UI. The picker links here as the
     result's persisted source URL."""
 

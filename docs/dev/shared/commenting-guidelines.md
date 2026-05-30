@@ -102,6 +102,7 @@ Remove comments that fall into any of these categories. These are the patterns o
 - "Previously we Z, but we changed it because…"
 - "This fixes the bug where…" (the fix is the code; the bug story is the commit).
 - "Mirrors how X does it" / "Same pattern as Y."
+- **Parallel-integration archeology**: "Like the paperless simulator…" / "Same shape as the homebox integration…" / "(same lifecycle as `_fault_mode` on the base class)" / "Same approach HomeBox uses for Z." Recurs heavily when a new integration is written by mirroring a sister integration — the parallel is real *for the author*, but the cold reader only needs the current file's contract, not a pointer to chase the sister file. Strip the cross-reference; keep any standalone substance the surrounding sentence carries.
 - "Without this, Z happens" / "We use A rather than B because of bug C."
 
 These narrate the path to the current code. The reader only needs the current code.

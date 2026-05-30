@@ -45,7 +45,7 @@ class ImmichClient:
             query : str,
             size  : int,
     ) -> Dict[str, Any]:
-        """``POST /api/search/smart`` — Immich's CLIP semantic search,
+        """``POST /api/search/smart`` -- Immich's CLIP semantic search,
         the same endpoint Immich's own web UI search bar drives. The
         sister ``/api/search/metadata`` endpoint accepts only
         structured filters (filename, EXIF, dates) and is intentionally
@@ -63,8 +63,7 @@ class ImmichClient:
 
     def download_thumbnail( self, asset_id : str ) -> Dict[str, Any]:
         """Fetch the per-asset thumbnail bytes. Returns
-        ``{'content': bytes, 'mime_type': str}`` — the shape the proxy
-        view streams back to the browser."""
+        ``{'content': bytes, 'mime_type': str}``."""
         path = ImmichApi.ASSET_THUMBNAIL_PATH.format( id = asset_id )
         url = urljoin( self.api_url, path )
         response = self._session.get(
@@ -94,8 +93,8 @@ def build_client( timeout_secs : Optional[float] = None ) -> ImmichClient:
     Integration row.
 
     Raises:
-      Integration.DoesNotExist  — Immich integration never configured.
-      IntegrationAttributeError — required attribute missing or empty,
+      Integration.DoesNotExist  -- Immich integration never configured.
+      IntegrationAttributeError -- required attribute missing or empty,
                                   or integration disabled.
     """
     integration = Integration.objects.get(

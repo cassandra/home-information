@@ -10,7 +10,7 @@ class ImmichApi:
     # endpoint that's cheap to call (no CLIP embedding) and exercises
     # the same ``asset.read`` scope as the smart endpoint used at
     # search time. We don't expose this as a search mode because it
-    # has no free-text query field — see issue #381.
+    # has no free-text query field.
     SEARCH_METADATA_PROBE_PATH = 'api/search/metadata'
     ASSET_THUMBNAIL_PATH = 'api/assets/{id}/thumbnail'
     SERVER_PING_PATH     = 'api/server/ping'

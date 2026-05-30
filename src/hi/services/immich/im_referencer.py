@@ -134,7 +134,7 @@ class ImmichAttributeReferencer( IntegrationAttributeReferencer ):
     def _build_secondary_text( asset : dict ) -> Optional[str]:
         """Compose a short secondary-text line from the asset's
         created-date and EXIF city/country. Returns None when neither
-        signal is present — the picker template omits the snippet row
+        signal is present -- the picker template omits the snippet row
         entirely on None. Photos have no full-text content, so the
         snippet exists to give the operator something to disambiguate
         otherwise-identical filenames."""
@@ -142,7 +142,7 @@ class ImmichAttributeReferencer( IntegrationAttributeReferencer ):
         created_at = asset.get( ImmichApi.ASSET_FILE_CREATED_AT )
         if created_at:
             # Immich emits ISO 8601; keep just the date portion. We
-            # avoid datetime parsing — defensiveness against shape
+            # avoid datetime parsing -- defensiveness against shape
             # drift matters more than perfect formatting here.
             parts.append( str(created_at)[:10] )
 

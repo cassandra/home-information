@@ -43,13 +43,8 @@ class AttributeReferenceResult:
 
 @dataclass(frozen=True)
 class AttributeReferenceSearchResult:
-    """Wrapper for one search invocation.
-
-    ``error_message`` is None on success (including the legitimate
-    empty-results case). When set, the picker renders it as a banner
-    and skips the "No results." message even when ``results`` is
-    empty -- so operators can tell an upstream failure apart from a
-    query that simply matched nothing.
-    """
+    """``error_message`` is None on success, including the legitimate
+    empty-results case. A non-None value signals upstream failure
+    even when ``results`` is empty."""
     results: List[AttributeReferenceResult] = field(default_factory=list)
     error_message: Optional[str] = None
