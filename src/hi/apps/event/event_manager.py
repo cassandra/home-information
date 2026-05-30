@@ -26,6 +26,25 @@ logger = logging.getLogger(__name__)
 
 
 class EventManager( Singleton, AlertMixin, ControllerMixin, SecurityMixin ):
+    """
+    Routes EntityState transitions through EventDefinition rules,
+    persists matching events to ``EventHistory``, and fires the
+    associated alarms / control actions on the transition-arrival
+    hot path.
+
+    Note on alarm classes (#378). EventDefinition-driven alarms split
+    conceptually into *state-condition* (battery, smoke, connectivity --
+    persistent bad state, would ideally auto-clear on
+    rule-no-longer-matches) and *event-of-interest* (motion, presence,
+    open/close -- discrete occurrence the operator wants to see
+    regardless of subsequent state). Auto-clearing for the
+    state-condition class was considered and deferred:
+    ``HiModelHelper.NAG_INTERVAL_SECS`` (24h) already bounds the
+    worst-case post-acknowledgement suppression, and the engine
+    restructure required (a sibling current-state match pass plus
+    per-cycle matching-signature reconciliation) was judged not worth
+    the regression risk relative to a polish-tier UX improvement.
+    """
 
     RECENT_EVENT_CACHE_SIZE = 1000
     RECENT_EVENT_CACHE_TTL_SECS = 3600
