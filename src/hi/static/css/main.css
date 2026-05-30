@@ -2201,6 +2201,19 @@ g[hover] {
     margin-bottom: 0.25rem;
     line-height: 1.2;
 }
+/* Marker for fields whose value differs from the server-rendered
+   initial value. Paired with ``button[disabled]`` on the form's
+   UPDATE button to make "unsaved changes" obvious at the field
+   level as well as the action level. Set on the label by the
+   ``Hi.updateFormDirtyState`` helper via ``oninput`` on the form. */
+.sidebar-form-label.dirty::after {
+    content: " \25CF";    /* small filled circle */
+    /* Reuse the edit-mode emphasis color (dark brick red) so the
+       indicator contrasts strongly against the peach
+       ``--edit-mode-primary-bg`` panel and tracks any future
+       edit-mode palette retheme. */
+    color: var(--edit-mode-dash-color);
+}
 
 .sidebar-form-input {
     width: 100%;

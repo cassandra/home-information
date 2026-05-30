@@ -50,6 +50,9 @@
         submitForm: function( formElement ) {
             return _submitForm( formElement );
         },
+        updateFormDirtyState: function( formElement ) {
+            return _updateFormDirtyState( formElement );
+        },
         togglePasswordField: function( toggleCheckbox ) {
             return _togglePasswordField( toggleCheckbox );
         },
@@ -227,7 +230,53 @@
         if ( Hi.DEBUG ) { console.debug( 'Submitting form:', formElement, form ); }
         $(form).submit();
     }
-    
+
+    function _updateFormDirtyState( formElement ) {
+        // Compares each field's current value to its server-rendered
+        // initial (``defaultValue`` / ``defaultChecked`` /
+        // ``defaultSelected``), toggles ``.dirty`` on the field's
+        // label, and enables/disables the form's submit button(s).
+        // ``defaultValue`` etc. survive value mutations but are reset
+        // by any re-render of the form HTML, so a successful save's
+        // returned markup naturally re-baselines without explicit
+        // state-reset code.
+        let anyDirty = false;
+        const fields = formElement.querySelectorAll( 'input, select, textarea' );
+        fields.forEach( function( field ) {
+            // Skip hidden CSRF tokens, submit buttons, and unnamed
+            // controls that aren't part of the form's data payload.
+            if ( ! field.name ) { return; }
+            if ( field.type === 'hidden' ) { return; }
+            if ( field.type === 'submit' || field.type === 'button' ) { return; }
+            let fieldDirty = false;
+            if ( field.type === 'checkbox' || field.type === 'radio' ) {
+                fieldDirty = ( field.checked !== field.defaultChecked );
+            } else if ( field.tagName === 'SELECT' ) {
+                for ( const option of field.options ) {
+                    if ( option.selected !== option.defaultSelected ) {
+                        fieldDirty = true;
+                        break;
+                    }
+                }
+            } else {
+                fieldDirty = ( field.value !== field.defaultValue );
+            }
+            if ( field.id ) {
+                const label = formElement.querySelector(
+                    'label[for="' + field.id + '"]'
+                );
+                if ( label ) {
+                    label.classList.toggle( 'dirty', fieldDirty );
+                }
+            }
+            if ( fieldDirty ) { anyDirty = true; }
+        });
+        const submitButtons = formElement.querySelectorAll( 'button[type="submit"]' );
+        submitButtons.forEach( function( button ) {
+            button.disabled = ! anyDirty;
+        });
+    }
+
     function _togglePasswordField( toggleCheckbox ) {
 
         let passwordField = $(toggleCheckbox).closest(Hi.FORM_FIELD_CONTAINER_SELECTOR).find('input[type="password"], input[type="text"]');
