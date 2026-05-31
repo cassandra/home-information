@@ -34,8 +34,7 @@ clicked a chip's remove button.
 
 import json
 import logging
-from collections import defaultdict
-from typing import Dict, List
+from typing import List
 
 from django.core.exceptions import BadRequest
 from django.http import Http404, HttpResponse
@@ -67,6 +66,8 @@ from hi.integrations.view_mixins import IntegrationViewMixin
 
 from .integration_referencer import IntegrationExternalReferencer
 from .transient_models import (
+    ExternalReferenceAttachBatchOutcome,
+    ExternalReferenceAttachOutcome,
     ExternalReferenceResult,
     ExternalReferenceSearchResult,
 )
@@ -203,11 +204,18 @@ def _safe_label( referencer: IntegrationExternalReferencer ) -> str:
         return 'Integration'
 
 
-def _parse_selections_json(raw: str) -> List[ ExternalReferenceResult ]:
-    """Parse the JS-built ``selections_json`` payload submitted on
-    attach into ``ExternalReferenceResult`` instances. Skips records
-    with missing title / source_url / integration_id / integration_name
-    and falls back to an empty list on any decode error."""
+def _parse_selections_json(
+        raw : str,
+        integration_id : str,
+) -> List[ ExternalReferenceResult ]:
+    """Parse the JS-built ``selections_json`` payload into
+    ``ExternalReferenceResult`` instances. All selections in one
+    submission share the same ``integration_id`` (taken from the
+    form-level hidden field) because the picker resets its
+    selection state on source-switch; the per-record JSON carries
+    only the upstream identifier. Skips records with missing
+    title / source_url / integration_name and falls back to an
+    empty list on any decode error."""
     if not raw:
         return []
     try:
@@ -226,16 +234,13 @@ def _parse_selections_json(raw: str) -> List[ ExternalReferenceResult ]:
         url = ( item.get(
             DIVID['ATTR_PICKER_SELECTION_URL_KEY']
         ) or '' ).strip()
-        integration_id = ( item.get(
-            DIVID['ATTR_PICKER_SELECTION_INTEGRATION_ID_KEY']
-        ) or '' ).strip()
         integration_name = ( item.get(
             DIVID['ATTR_PICKER_SELECTION_INTEGRATION_NAME_KEY']
         ) or '' ).strip()
         mime_type = ( item.get(
             DIVID['ATTR_PICKER_SELECTION_MIME_TYPE_KEY']
         ) or '' ).strip()
-        if not title or not url or not integration_id or not integration_name:
+        if not title or not url or not integration_name:
             continue
         parsed.append( ExternalReferenceResult(
             integration_key = IntegrationKey(
@@ -251,27 +256,40 @@ def _parse_selections_json(raw: str) -> List[ ExternalReferenceResult ]:
 
 def _dispatch_attach(
         owner,
-        selections : List[ ExternalReferenceResult ],
-) -> None:
-    """Group selections by ``integration_key.integration_id`` and call
-    each integration's ``attach_references``. Unknown integration ids
-    (referencer disabled, never installed, etc.) are skipped with a
-    warning so the rest of the batch still attaches."""
+        integration_id : str,
+        selections     : List[ ExternalReferenceResult ],
+) -> ExternalReferenceAttachBatchOutcome:
+    """Call the named integration's ``attach_references`` for all
+    selections in one submission. The picker resets selection state
+    on source-switch (see ``attr-picker.js``), so one submission
+    always carries items from a single integration -- no grouping
+    needed.
+
+    Returns the integration's ``ExternalReferenceAttachBatchOutcome``
+    directly, or a synthesized all-failure batch when the integration
+    has no enabled referencer (every input selection still
+    contributes exactly one outcome)."""
     if not selections:
-        return
-    by_integration : Dict[ str, List[ ExternalReferenceResult ] ] = defaultdict(list)
-    for selection in selections:
-        by_integration[ selection.integration_key.integration_id ].append( selection )
-    for integration_id, group in by_integration.items():
-        referencer = _resolve_referencer_by_id( integration_id )
-        if referencer is None:
-            logger.warning(
-                f'External reference attach skipped {len(group)} '
-                f'selections: integration {integration_id!r} has no '
-                f'enabled referencer.'
-            )
-            continue
-        referencer.attach_references( owner, group )
+        return ExternalReferenceAttachBatchOutcome()
+    referencer = _resolve_referencer_by_id( integration_id )
+    if referencer is None:
+        logger.warning(
+            f'External reference attach skipped {len(selections)} '
+            f'selections: integration {integration_id!r} has no '
+            f'enabled referencer.'
+        )
+        return ExternalReferenceAttachBatchOutcome(
+            outcomes = [
+                ExternalReferenceAttachOutcome(
+                    success = False,
+                    error_message = (
+                        f'Integration {integration_id!r} is not available.'
+                    ),
+                )
+                for _ in selections
+            ],
+        )
+    return referencer.attach_references( owner, selections )
 
 
 def _resolve_referencer_by_id(
@@ -331,7 +349,7 @@ class ExternalReferencePickerView( HiModalView ):
         context = {
             'integration_data_list': integration_data_list,
             'integration_data': integration_data,
-            'item_type_value': str( item_type ),
+            'item_type': item_type,
             'item_id': owner.id,
             'limit': _DEFAULT_LIMIT,
             'page_size_choices': _PAGE_SIZE_CHOICES,
@@ -387,29 +405,100 @@ class ExternalReferenceSearchView( View ):
 
 class ExternalReferenceAttachView( View ):
     """POST endpoint that dispatches the operator's selected
-    references to each source integration for attach. The JS module
-    serializes its in-memory selection set into ``selections_json``
-    just before the form submits; selections may span multiple
-    integrations (the operator can switch sources mid-session), so
-    the dispatcher groups by integration_id and calls each
-    referencer's ``attach_references`` once per group.
+    references to the source integration for attach. The picker
+    resets selection state on source-switch, so one submission
+    always carries items from one integration; the form-level
+    ``integration_id`` hidden field is the single source of truth
+    for routing.
 
-    Returns ``antinode.refresh_response()`` so the parent page
-    reloads and the modal closes naturally."""
+    Response branches on whether any selection failed:
+      * all-success -- delegate to the owner's edit view's GET so
+                       the operator sees the edit modal with the
+                       new cards already in the grid.
+      * any-failure -- render the error modal with the per-failure
+                       messages plus LINK MORE / EDIT / DISMISS
+                       actions. Modals swap one-at-a-time via the
+                       antinode ``modal`` response key.
+    """
+
+    ERRORS_MODAL_TEMPLATE_NAME = (
+        'integrations/modals/external_reference_attach_errors.html'
+    )
 
     def post(self, request, *args, **kwargs):
+        integration_data_list = _get_referencer_integration_data_list()
+        if not integration_data_list:
+            raise Http404( request )
+        integration_data = _resolve_integration_data(
+            integration_data_list = integration_data_list,
+            integration_id = request.POST.get(
+                DIVID['ATTR_PICKER_INTEGRATION_ID_FIELD'],
+            ),
+        )
         item_type = _parse_item_type(
             request.POST.get( DIVID['ATTR_PICKER_ITEM_TYPE_FIELD'] ),
         )
         item_id = _parse_item_id(
             request.POST.get( DIVID['ATTR_PICKER_ITEM_ID_FIELD'] ),
         )
-        owner = _resolve_owner( item_type=item_type, item_id=item_id )
+        owner = _resolve_owner( item_type = item_type, item_id = item_id )
         selections = _parse_selections_json(
-            request.POST.get( DIVID['ATTR_PICKER_SELECTIONS_JSON_FIELD'] ) or '',
+            raw = request.POST.get(
+                DIVID['ATTR_PICKER_SELECTIONS_JSON_FIELD'],
+            ) or '',
+            integration_id = integration_data.integration_id,
         )
-        _dispatch_attach( owner = owner, selections = selections )
-        return antinode.refresh_response()
+        batch = _dispatch_attach(
+            owner = owner,
+            integration_id = integration_data.integration_id,
+            selections = selections,
+        )
+        if batch.has_failures:
+            return self._render_errors_modal(
+                request, item_type, owner, batch,
+            )
+        return self._render_owner_edit_modal( request, item_type, owner )
+
+    @staticmethod
+    def _render_owner_edit_modal(request, item_type: ItemType, owner):
+        """Delegate to the owner's existing edit view so we don't
+        duplicate its context-building logic. CBVs are designed to
+        be called this way once you have the request in hand."""
+        from hi.apps.entity.views import EntityEditView
+        from hi.apps.location.views import LocationEditView
+        if item_type == ItemType.ENTITY:
+            return EntityEditView().get( request, entity_id = owner.id )
+        return LocationEditView().get( request, location_id = owner.id )
+
+    def _render_errors_modal(
+            self, request, item_type: ItemType, owner, batch,
+    ):
+        picker_url = (
+            reverse( 'integrations_attribute_reference_picker' )
+            + f'?{DIVID["ATTR_PICKER_ITEM_TYPE_FIELD"]}={item_type}'
+            + f'&{DIVID["ATTR_PICKER_ITEM_ID_FIELD"]}={owner.id}'
+        )
+        if item_type == ItemType.ENTITY:
+            owner_edit_url = reverse(
+                'entity_edit', kwargs = { 'entity_id': owner.id },
+            )
+        else:
+            owner_edit_url = reverse(
+                'location_edit_location_edit',
+                kwargs = { 'location_id': owner.id },
+            )
+        modal_html = render_to_string(
+            self.ERRORS_MODAL_TEMPLATE_NAME,
+            {
+                'batch'          : batch,
+                'item_type'      : item_type,
+                'item_id'        : owner.id,
+                'picker_url'     : picker_url,
+                'owner_edit_url' : owner_edit_url,
+            },
+            request = request,
+        )
+        return antinode.response( modal_content = modal_html )
 
 
 # The operator-facing tab label is "Content Sources"; code-side

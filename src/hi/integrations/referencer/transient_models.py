@@ -55,3 +55,48 @@ class ExternalReferenceSearchResult:
     even when ``results`` is empty."""
     results: List[ExternalReferenceResult] = field(default_factory=list)
     error_message: Optional[str] = None
+
+
+@dataclass(frozen=True)
+class ExternalReferenceAttachOutcome:
+    """One operator-selection's attach outcome.
+
+    ``success=False`` means the row did not persist; the operator's
+    intent for this selection was not fulfilled. ``error_message``
+    explains why. Identity fields (integration_key, title) aren't
+    carried -- the error modal shows aggregate counts and per-failure
+    messages only, not per-item identification.
+    """
+    success: bool
+    error_message: Optional[str] = None
+
+
+@dataclass(frozen=True)
+class ExternalReferenceAttachBatchOutcome:
+    """Composite result of one attach submission: every selection
+    contributes exactly one outcome, regardless of which integration
+    processed it. Returned from ``attach_references`` for a single
+    integration, and from the dispatcher's merged result across all
+    integrations in one operator submission."""
+    outcomes: List[ExternalReferenceAttachOutcome] = field(default_factory=list)
+
+    @property
+    def total(self) -> int:
+        return len(self.outcomes)
+
+    @property
+    def success_count(self) -> int:
+        return sum(1 for o in self.outcomes if o.success)
+
+    @property
+    def failure_count(self) -> int:
+        return self.total - self.success_count
+
+    @property
+    def has_failures(self) -> bool:
+        return self.failure_count > 0
+
+    @property
+    def error_messages(self) -> List[str]:
+        return [o.error_message for o in self.outcomes
+                if not o.success and o.error_message]

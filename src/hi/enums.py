@@ -63,6 +63,22 @@ class ItemType(LabeledEnum):
     LOCATION       = ( 'Location', '' )
     LOCATION_VIEW  = ( 'Location View', '' )
 
+    @property
+    def is_entity(self) -> bool:
+        return self == ItemType.ENTITY
+
+    @property
+    def is_collection(self) -> bool:
+        return self == ItemType.COLLECTION
+
+    @property
+    def is_location(self) -> bool:
+        return self == ItemType.LOCATION
+
+    @property
+    def is_location_view(self) -> bool:
+        return self == ItemType.LOCATION_VIEW
+
     @classmethod
     def HTML_ID_ARG(cls):
         return 'html_id'

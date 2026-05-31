@@ -296,6 +296,7 @@ PIPELINE = {
                 'js/attr.js',
                 'js/attr-dirty-tracking.js',
                 'js/attr-picker.js',
+                'js/external-references.js',
             ),
             'output_filename': 'js/js_hi_grid_header_content.js',
         },

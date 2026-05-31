@@ -69,7 +69,6 @@
         const record = {};
         record[Hi.ATTR_PICKER_SELECTION_TITLE_KEY] = fields.title;
         record[Hi.ATTR_PICKER_SELECTION_URL_KEY] = fields.sourceUrl;
-        record[Hi.ATTR_PICKER_SELECTION_INTEGRATION_ID_KEY] = fields.integrationId;
         record[Hi.ATTR_PICKER_SELECTION_INTEGRATION_NAME_KEY] = fields.integrationName;
         record[Hi.ATTR_PICKER_SELECTION_MIME_TYPE_KEY] = fields.mimeType || '';
         state.attrSelections.push(record);
@@ -169,7 +168,6 @@
                 _addSelection(state, {
                     title:           $cb.attr(Hi.ATTR_PICKER_TITLE_ATTR),
                     sourceUrl:       sourceUrl,
-                    integrationId:   $cb.attr(Hi.ATTR_PICKER_INTEGRATION_ID_ATTR),
                     integrationName: $cb.attr(Hi.ATTR_PICKER_INTEGRATION_NAME_ATTR),
                     mimeType:        $cb.attr(Hi.ATTR_PICKER_MIME_TYPE_ATTR),
                 });
@@ -266,11 +264,11 @@
         'click' + EventNs,
         _classSelector(Hi.ATTR_PICKER_SOURCE_OPTION_CLASS),
         function(e) {
-            // Switch the active source: update the banner face, set
-            // the hidden integration_id input, and re-issue the
-            // current search against the new source. Selections
-            // already in state stay put — they're keyed by URL, not
-            // by source.
+            // Switch the active source. Selections are CLEARED --
+            // each submission carries items from one integration
+            // only, matching the typical "pick from this source"
+            // workflow. Operators who want a mix submit one batch
+            // per source.
             e.preventDefault();
             const $option = $(this);
             const $pickerRoot = $option.closest(
@@ -281,6 +279,9 @@
             const sourceLogo = $option.attr(Hi.ATTR_PICKER_SOURCE_LOGO_ATTR);
             const sourceLabel = $option.attr(Hi.ATTR_PICKER_SOURCE_LABEL_ATTR);
             if (sourceId == null) return;
+            const state = _state($pickerRoot[0]);
+            state.attrSelections = [];
+            _renderAll($pickerRoot, state);
             $pickerRoot
                 .find(_classSelector(Hi.ATTR_PICKER_SOURCE_BANNER_LOGO_CLASS))
                 .attr('src', sourceLogo);

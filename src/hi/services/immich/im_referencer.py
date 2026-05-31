@@ -9,6 +9,8 @@ from hi.integrations.referencer.integration_referencer import (
     IntegrationExternalReferencer,
 )
 from hi.integrations.referencer.transient_models import (
+    ExternalReferenceAttachBatchOutcome,
+    ExternalReferenceAttachOutcome,
     ExternalReferenceResult,
     ExternalReferenceSearchResult,
 )
@@ -116,33 +118,60 @@ class ImmichExternalReferencer( IntegrationExternalReferencer ):
             self,
             owner,
             selections : List[ ExternalReferenceResult ],
-    ) -> None:
+    ) -> ExternalReferenceAttachBatchOutcome:
         """Attach each selected Immich asset as a framework
         external-reference row. The defensive thumbnail chain is:
-        upstream thumbnail → original-bytes + HI generator
-        (image mime types only; videos skip the original-fetch) →
+        upstream thumbnail -> original-bytes + HI generator
+        (image mime types only; videos skip the original-fetch) ->
         no thumbnail. The row attaches regardless of which link
-        produced bytes; linking is the primary user goal."""
+        produced bytes; linking is the primary user goal. Missing
+        thumbnails are NOT failure outcomes -- the placeholder
+        render covers them.
+
+        Per-selection failures are isolated: the loop catches and
+        records a failure outcome so one bad selection doesn't abort
+        the rest. Batch-level atomicity is deliberately NOT used --
+        it would defeat the per-selection isolation. Per-row
+        consistency is owned by ``create_or_update``."""
+        outcomes : List[ ExternalReferenceAttachOutcome ] = []
+
         try:
             client = build_client()
         except IntegrationAttributeError as e:
             logger.warning( f'Immich attach aborted: {e}' )
-            return
+            for _ in selections:
+                outcomes.append( ExternalReferenceAttachOutcome(
+                    success = False,
+                    error_message = 'Immich integration is not configured.',
+                ) )
+            return ExternalReferenceAttachBatchOutcome( outcomes = outcomes )
         except Exception as e:
             logger.exception( f'Immich client build failed: {e}' )
-            return
+            for _ in selections:
+                outcomes.append( ExternalReferenceAttachOutcome(
+                    success = False,
+                    error_message = 'Immich integration error -- see server logs.',
+                ) )
+            return ExternalReferenceAttachBatchOutcome( outcomes = outcomes )
 
         manager = self._manager_for_owner( owner )
         for selection in selections:
             try:
                 self._attach_one( client, manager, owner, selection )
+                outcomes.append( ExternalReferenceAttachOutcome( success = True ) )
             except Exception as e:
-                # Per-selection failure must not abort the rest of
-                # the batch -- linking is the primary user goal.
                 logger.warning(
                     f'Immich attach failed for '
                     f'{selection.integration_key.integration_name}: {e}'
                 )
+                outcomes.append( ExternalReferenceAttachOutcome(
+                    success = False,
+                    error_message = (
+                        f'Immich could not attach '
+                        f'{selection.title!r} -- see server logs.'
+                    ),
+                ) )
+        return ExternalReferenceAttachBatchOutcome( outcomes = outcomes )
 
     def _attach_one(
             self, client, manager, owner,

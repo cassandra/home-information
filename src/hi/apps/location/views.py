@@ -204,6 +204,7 @@ class LocationEditView( HiModalView, LocationViewMixin, AttributeEditViewMixin )
         template_context = self.create_initial_template_context(
             attr_item_context= attr_item_context,
         )
+        template_context['external_references'] = location.external_references.all()
         return self.modal_response( request, template_context )
     
     def post( self, request,*args, **kwargs ):

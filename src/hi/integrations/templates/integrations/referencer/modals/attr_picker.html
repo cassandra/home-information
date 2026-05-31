@@ -25,7 +25,7 @@ Layout:
 Context:
   integration_data_list : list[IntegrationData]
   integration_data      : IntegrationData      (initially-selected source)
-  item_type_value       : str(ItemType.ENTITY) or str(ItemType.LOCATION)
+  item_type             : ItemType (ENTITY or LOCATION)
   item_id               : int (host record id)
   limit                 : int  (initial page size)
   page_size_choices     : tuple[int]
@@ -58,8 +58,15 @@ Link Content
 
   {# ----- Cancel + Add row ----- #}
   <div class="d-flex justify-content-between align-items-center">
+    {% if item_type.is_entity %}
+      {% url 'entity_edit' entity_id=item_id as owner_edit_url %}
+    {% else %}
+      {% url 'location_edit_location_edit' location_id=item_id as owner_edit_url %}
+    {% endif %}
     <a id="hi-modal-cancel" role="button"
-       class="btn btn-outline-tertiary" href="#" data-dismiss="modal">
+       class="btn btn-outline-tertiary"
+       href="{{ owner_edit_url }}"
+       data-async="modal">
       {% icon "cancel" size="sm" css_class="hi-icon-left" %}CANCEL
     </a>
     {% comment %}
@@ -74,8 +81,12 @@ Link Content
           method="post"
           action="{% url 'integrations_attribute_reference_attach' %}">
       {% csrf_token %}
-      <input type="hidden" name="{{ DIVID.ATTR_PICKER_ITEM_TYPE_FIELD }}" value="{{ item_type_value }}">
+      <input type="hidden" name="{{ DIVID.ATTR_PICKER_ITEM_TYPE_FIELD }}" value="{{ item_type }}">
       <input type="hidden" name="{{ DIVID.ATTR_PICKER_ITEM_ID_FIELD }}" value="{{ item_id }}">
+      {# Kept in sync with the search-form copy by attr-picker.js on source switch. #}
+      <input type="hidden"
+             name="{{ DIVID.ATTR_PICKER_INTEGRATION_ID_FIELD }}"
+             value="{{ integration_data.integration_id }}">
       <input type="hidden" name="{{ DIVID.ATTR_PICKER_SELECTIONS_JSON_FIELD }}" value="">
       <button type="submit"
               class="btn btn-primary {{ DIVID.ATTR_PICKER_ATTACH_BTN_CLASS }}"

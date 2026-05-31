@@ -2,7 +2,7 @@ import logging
 from typing import Optional, Sequence
 
 from django.core.files.base import ContentFile
-from django.db import models
+from django.db import models, transaction
 from django.db.models import Q
 
 from .transient_models import IntegrationKey
@@ -66,18 +66,26 @@ class ExternalReferenceManagerBase( models.Manager ):
         existing = self.filter( **lookup ).first()
 
         if existing is None:
-            instance = self.model(
-                **lookup,
-                title      = title,
-                source_url = source_url,
-                mime_type  = mime_type or '',
-            )
-            instance.save()
-            if thumbnail_bytes:
-                self._write_thumbnail(
-                    instance, integration_key.integration_name, thumbnail_bytes,
+            # Insert path is two saves separated by a file write
+            # (FileField.save() doesn't bind the new path until we
+            # save the model row again). Wrap in atomic so the row
+            # state is consistent even if the second save fails;
+            # the file itself isn't rolled back by atomic, but
+            # orphan media files are the existing best-effort
+            # tradeoff (see AttributeModel.delete()).
+            with transaction.atomic():
+                instance = self.model(
+                    **lookup,
+                    title      = title,
+                    source_url = source_url,
+                    mime_type  = mime_type or '',
                 )
-                instance.save( update_fields = [ 'thumbnail', 'updated_datetime' ] )
+                instance.save()
+                if thumbnail_bytes:
+                    self._write_thumbnail(
+                        instance, integration_key.integration_name, thumbnail_bytes,
+                    )
+                    instance.save( update_fields = [ 'thumbnail', 'updated_datetime' ] )
             return instance
 
         existing.source_url = source_url

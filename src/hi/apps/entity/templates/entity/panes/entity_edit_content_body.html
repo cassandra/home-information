@@ -17,6 +17,10 @@ Extends the generic attribute edit content body with entity-specific field layou
 {% endif %}
 {% endblock %}
 
+{% block external_references_section %}
+{% include "integrations/panes/external_reference_grid.html" with external_references=external_references owner_type='entity' owner_id=attr_item_context.owner.id %}
+{% endblock %}
+
 {% block owner_fields %}
 <!-- Entity-specific fields: Name and Type fields for modal editing -->
 <div class="row">

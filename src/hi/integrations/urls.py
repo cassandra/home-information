@@ -24,6 +24,16 @@ urlpatterns = [
     path( 'attribute/restore/<int:integration_id>/<int:attribute_id>/<int:history_id>/',
           views.IntegrationAttributeRestoreInlineView.as_view(),
           name='integration_attribute_restore_inline' ),
+
+    path( 'external-references/<str:owner_type>/<int:reference_id>/rename/',
+          views.ExternalReferenceRenameView.as_view(),
+          name='external_reference_rename' ),
+    path( 'external-references/<str:owner_type>/<int:reference_id>/delete/',
+          views.ExternalReferenceDeleteView.as_view(),
+          name='external_reference_delete' ),
+    path( 'external-references/<str:owner_type>/<int:reference_id>/reorder/',
+          views.ExternalReferenceReorderView.as_view(),
+          name='external_reference_reorder' ),
 ]
 
 

@@ -29,7 +29,6 @@ Context:
            class="{{ DIVID.ATTR_PICKER_RESULT_CHECKBOX_CLASS }} mt-1 mr-3"
            {{ DIVID.ATTR_PICKER_TITLE_ATTR }}="{{ r.title }}"
            {{ DIVID.ATTR_PICKER_SOURCE_URL_ATTR }}="{{ r.source_url }}"
-           {{ DIVID.ATTR_PICKER_INTEGRATION_ID_ATTR }}="{{ r.integration_key.integration_id }}"
            {{ DIVID.ATTR_PICKER_INTEGRATION_NAME_ATTR }}="{{ r.integration_key.integration_name }}"
            {{ DIVID.ATTR_PICKER_MIME_TYPE_ATTR }}="{{ r.mime_type|default:'' }}">
     {% if r.thumbnail_url %}

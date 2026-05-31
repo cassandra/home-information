@@ -176,6 +176,7 @@ class EntityEditView( HiModalView, EntityViewMixin, AttributeEditViewMixin ):
             attr_item_context= attr_item_context,
         )
         template_context['external_view_data'] = self._get_external_view_data( entity )
+        template_context['external_references'] = entity.external_references.all()
         return self.modal_response( request, template_context )
 
     def _get_external_view_data( self, entity ):

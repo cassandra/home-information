@@ -17,6 +17,10 @@ Extends the generic attribute edit content body with location-specific field lay
 {% endif %}
 {% endblock %}
 
+{% block external_references_section %}
+{% include "integrations/panes/external_reference_grid.html" with external_references=external_references owner_type='location' owner_id=attr_item_context.owner.id %}
+{% endblock %}
+
 {% block owner_fields %}
 <!-- Location-specific fields: Only name field for modal editing -->
 <div class="row">

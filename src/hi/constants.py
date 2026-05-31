@@ -178,7 +178,6 @@ DIVID = {
     'ATTR_PICKER_SEARCH_URL_ATTR': 'data-attr-picker-search-url',
     'ATTR_PICKER_TITLE_ATTR': 'data-attr-picker-title',
     'ATTR_PICKER_SOURCE_URL_ATTR': 'data-attr-picker-source-url',
-    'ATTR_PICKER_INTEGRATION_ID_ATTR': 'data-attr-picker-integration-id',
     'ATTR_PICKER_INTEGRATION_NAME_ATTR': 'data-attr-picker-integration-name',
     'ATTR_PICKER_MIME_TYPE_ATTR': 'data-attr-picker-mime-type',
     'ATTR_PICKER_QUERY_FIELD': 'query',
@@ -189,7 +188,6 @@ DIVID = {
     'ATTR_PICKER_SELECTIONS_JSON_FIELD': 'selections_json',
     'ATTR_PICKER_SELECTION_TITLE_KEY': 'title',
     'ATTR_PICKER_SELECTION_URL_KEY': 'source_url',
-    'ATTR_PICKER_SELECTION_INTEGRATION_ID_KEY': 'integration_id',
     'ATTR_PICKER_SELECTION_INTEGRATION_NAME_KEY': 'integration_name',
     'ATTR_PICKER_SELECTION_MIME_TYPE_KEY': 'mime_type',
     'ATTR_PICKER_SOURCE_BANNER_CLASS': 'hi-attr-picker-source-banner',
@@ -199,6 +197,24 @@ DIVID = {
     'ATTR_PICKER_SOURCE_ID_ATTR': 'data-attr-picker-source-id',
     'ATTR_PICKER_SOURCE_LOGO_ATTR': 'data-attr-picker-source-logo',
     'ATTR_PICKER_SOURCE_LABEL_ATTR': 'data-attr-picker-source-label',
+
+    # External-reference grid -- DOM classes, data attributes, and
+    # action endpoint URL names for the framework-rendered card grid
+    # on the entity/location edit pages. Mirror in
+    # ``src/hi/static/js/main.js`` (``Hi.EXT_REF_*``).
+    'EXT_REF_GRID_CLASS': 'hi-ext-ref-grid',
+    'EXT_REF_CARD_CLASS': 'hi-ext-ref-card',
+    'EXT_REF_TITLE_INPUT_CLASS': 'hi-ext-ref-title-input',
+    'EXT_REF_DELETE_BTN_CLASS': 'hi-ext-ref-delete-btn',
+    'EXT_REF_REORDER_LEFT_CLASS': 'hi-ext-ref-reorder-left',
+    'EXT_REF_REORDER_RIGHT_CLASS': 'hi-ext-ref-reorder-right',
+    'EXT_REF_REFERENCE_ID_ATTR': 'data-ext-ref-id',
+    'EXT_REF_OWNER_TYPE_ATTR': 'data-ext-ref-owner-type',
+    'EXT_REF_OWNER_ID_ATTR': 'data-ext-ref-owner-id',
+    'EXT_REF_TITLE_FIELD': 'title',
+    'EXT_REF_DIRECTION_FIELD': 'direction',
+    'EXT_REF_DIRECTION_LEFT': 'left',
+    'EXT_REF_DIRECTION_RIGHT': 'right',
 
     # Location SVG Editor Grid Structure
     'LOCATION_SVG_EDIT_TOP': 'hi-location-svg-editor-top',

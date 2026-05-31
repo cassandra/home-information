@@ -1,0 +1,102 @@
+{% load icons integration_tags static %}
+{% comment %}
+External-reference card. Visually mirrors the internal file card
+(same overlay reorder controls, title input, action-button row)
+with two intentional differences:
+
+  - View affordance is the integration's logo (not the eye icon),
+    so source attribution doubles as the click-to-open control.
+  - Delete affordance is an unlink icon (times-circle), signaling
+    the row is a pointer being severed -- not HI-owned content
+    being removed.
+
+Per-card actions (rename / unlink / reorder) post to integration
+framework endpoints; the cards are not part of the surrounding
+attribute formset.
+
+Context:
+  reference  : EntityExternalReference or LocationExternalReference
+  owner_type : 'entity' or 'location'
+{% endcomment %}
+{% integration_logo_path reference as integration_logo %}
+{% integration_display_name reference as integration_label %}
+
+<div class="{{ DIVID.EXT_REF_CARD_CLASS }} attr-v2-file-card"
+     {{ DIVID.EXT_REF_REFERENCE_ID_ATTR }}="{{ reference.id }}"
+     {{ DIVID.EXT_REF_OWNER_TYPE_ATTR }}="{{ owner_type }}"
+     data-order-index="{{ forloop.counter }}">
+
+  <div class="attr-v2-file-thumbnail{% if reference.thumbnail %} has-thumbnail{% endif %}"
+       onclick="window.open('{{ reference.source_url }}', '_blank');"
+       title="Open on {{ integration_label|default:'external source' }}">
+    {% if reference.thumbnail %}
+      <img src="{{ reference.thumbnail.url }}"
+           alt="Preview for {{ reference.title }}"
+           class="attr-v2-file-thumbnail-image"
+           loading="lazy"
+           decoding="async">
+    {% else %}
+      {% if reference.mime_type|slice:':5' == 'image' %}
+        {% icon "camera" size="lg" %}
+        <div class="attr-v2-file-type-label">IMAGE</div>
+      {% elif reference.mime_type == 'application/pdf' %}
+        {% icon "upload" size="lg" %}
+        <div class="attr-v2-file-type-label">PDF</div>
+      {% elif reference.mime_type|slice:':5' == 'video' %}
+        {% icon "video" size="lg" %}
+        <div class="attr-v2-file-type-label">VIDEO</div>
+      {% else %}
+        {% icon "link" size="lg" %}
+        <div class="attr-v2-file-type-label">LINK</div>
+      {% endif %}
+    {% endif %}
+
+    <div class="attr-v2-reorder-controls"
+         onclick="event.stopPropagation();"
+         onmouseenter="this.parentElement.classList.add('reorder-hover');"
+         onmouseleave="this.parentElement.classList.remove('reorder-hover');">
+      <button type="button"
+              class="btn btn-sm btn-outline-secondary {{ DIVID.EXT_REF_REORDER_LEFT_CLASS }}"
+              title="Move left">
+        {% icon "chevron-left" size="sm" %}
+      </button>
+      <button type="button"
+              class="btn btn-sm btn-outline-secondary {{ DIVID.EXT_REF_REORDER_RIGHT_CLASS }}"
+              title="Move right">
+        {% icon "chevron-right" size="sm" %}
+      </button>
+    </div>
+  </div>
+
+  <div class="attr-v2-file-info">
+    <input type="text"
+           value="{{ reference.title }}"
+           class="{{ DIVID.EXT_REF_TITLE_INPUT_CLASS }} attr-v2-file-title-input"
+           placeholder="Reference title"
+           maxlength="255">
+    <div class="attr-v2-file-name">
+      {{ integration_label|default:reference.integration_id }}
+    </div>
+
+    <div class="attr-v2-file-actions">
+      <a href="{{ reference.source_url }}"
+         target="_blank"
+         rel="noopener"
+         class="btn btn-sm btn-outline-primary"
+         title="Open on {{ integration_label|default:'external source' }}">
+        {% if integration_logo %}
+          <img src="{% static integration_logo %}"
+               alt=""
+               style="width: 16px; height: 16px; vertical-align: middle;">
+        {% else %}
+          {% icon "eye" size="sm" %}
+        {% endif %}
+      </a>
+      <button type="button"
+              class="btn btn-sm btn-outline-danger {{ DIVID.EXT_REF_DELETE_BTN_CLASS }}"
+              title="Unlink this reference">
+        {% icon "times-circle" size="sm" %}
+      </button>
+    </div>
+  </div>
+</div>

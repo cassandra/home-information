@@ -122,6 +122,17 @@ by using the AttributeItemEditContext pattern.
   {% include "attribute/components/file_grid.html" with file_attributes=file_attributes %}
   {% endblock %}
 
+  {% comment %}
+  External-content extension slot. Per-owner-type templates (Entity,
+  Location) override this block to inject framework-rendered content
+  contributed by integrations (e.g., the external-reference grid).
+  The attribute framework knows nothing about what's slotted in --
+  it just owns the position relative to internal files and row
+  attributes.
+  {% endcomment %}
+  {% block external_references_section %}
+  {% endblock %}
+
   <!-- Properties Section -->
   {% block properties_section %}
   {% include "attribute/components/regular_attribute_list.html" with regular_attributes_formset=regular_attributes_formset %}

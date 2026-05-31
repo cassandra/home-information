@@ -1,0 +1,64 @@
+{% extends "modals/action_2.html" %}
+{% load icons %}
+{% comment %}
+Shown after the Link Content picker submits with one or more
+attach failures. Modal swaps in place of the picker (one modal at
+a time -- the edit modal that the picker opened from was already
+removed when the picker opened).
+
+Two action buttons, both data-async links:
+  LINK MORE -- re-open the picker on the same owner. Empty search;
+              no carryover of previously-selected items.
+  DISMISS   -- open the owner's edit modal. Successful attachments
+              from the same submission are visible in the grid.
+              The header 'X' close is the only path that leaves
+              the screen with no modal open.
+
+Context:
+  batch                : ExternalReferenceAttachBatchOutcome
+  item_type            : ItemType (ENTITY or LOCATION)
+  item_id              : owner pk
+  picker_url           : URL for the picker re-open (LINK MORE)
+  owner_edit_url       : URL for the owner's edit modal (DISMISS)
+{% endcomment %}
+
+{% block modal_dialog_class %}modal-md{% endblock %}
+{% block header_class %}bg-secondary{% endblock %}
+
+{% block title_text %}
+  Some links could not be attached
+{% endblock %}
+
+{% block body %}
+<p class="mb-3">
+  Linked
+  <strong>{{ batch.success_count }}</strong>
+  of
+  <strong>{{ batch.total }}</strong>
+  selected item{{ batch.total|pluralize }}.
+  {{ batch.failure_count }} could not be attached:
+</p>
+<ul class="mb-0">
+  {% for message in batch.error_messages %}
+  <li>{{ message }}</li>
+  {% endfor %}
+</ul>
+{% endblock %}
+
+{% block action_left %}
+<a role="button"
+   class="btn btn-outline-primary"
+   href="{{ picker_url }}"
+   data-async="modal">
+  {% icon "link" size="sm" css_class="hi-icon-left" %}LINK MORE
+</a>
+{% endblock %}
+
+{% block action_right %}
+<a role="button"
+   class="btn btn-outline-tertiary"
+   href="{{ owner_edit_url }}"
+   data-async="modal">
+  {% icon "close" size="sm" css_class="hi-icon-left" %}DISMISS
+</a>
+{% endblock %}
