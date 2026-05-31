@@ -2,10 +2,10 @@
 
 ## Capability shape
 
-Paperless declares only the `ATTRIBUTE_REFERENCE` capability — no
+Paperless declares only the `EXTERNAL_REFERENCE` capability — no
 connector, no importer, no manager singleton, no monitors. The
 gateway returns a referencer, and the referencer translates
-paperless's documents-search response into `AttributeReferenceResult`
+paperless's documents-search response into `ExternalReferenceResult`
 rows. Per-search HTTP happens inline; there is no cached client.
 
 ## Key design decisions
@@ -20,7 +20,7 @@ rows. Per-search HTTP happens inline; there is no cached client.
   paperless's own per-document web URL. Operators authenticate with
   paperless's own session when they click — same UX as cut-and-paste.
   Proxying would couple the link's lifetime to HI's session.
-- **No manager singleton**. ATTRIBUTE_REFERENCE has no monitors and
+- **No manager singleton**. EXTERNAL_REFERENCE has no monitors and
   no cached state, so there is no `pl_manager.py`. The client is
   built per-call from the stored attributes; `build_client` is the
   entry point to refactor through if a reason to cache emerges.

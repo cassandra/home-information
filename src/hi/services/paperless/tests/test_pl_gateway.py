@@ -18,7 +18,7 @@ from hi.integrations.transient_models import IntegrationKey
 from hi.services.paperless.enums import PlAttributeType
 from hi.services.paperless.integration import PaperlessGateway
 from hi.services.paperless.pl_metadata import PaperlessMetaData
-from hi.services.paperless.pl_referencer import PaperlessAttributeReferencer
+from hi.services.paperless.pl_referencer import PaperlessExternalReferencer
 
 
 logging.disable(logging.CRITICAL)
@@ -41,16 +41,16 @@ def _make_attr(integration, attr_type, value):
 
 class TestPaperlessGatewayWiring(TestCase):
 
-    def test_metadata_declares_attribute_reference(self):
+    def test_metadata_declares_external_reference(self):
         meta = PaperlessGateway().get_metadata()
         self.assertEqual(meta.integration_id, 'paperless')
         self.assertEqual(meta.label, 'Paperless-ngx')
-        self.assertIn(IntegrationCapability.ATTRIBUTE_REFERENCE,
+        self.assertIn(IntegrationCapability.EXTERNAL_REFERENCE,
                       meta.capabilities)
 
     def test_returns_referencer(self):
-        referencer = PaperlessGateway().get_attribute_referencer()
-        self.assertIsInstance(referencer, PaperlessAttributeReferencer)
+        referencer = PaperlessGateway().get_external_referencer()
+        self.assertIsInstance(referencer, PaperlessExternalReferencer)
 
 
 class TestValidateAccess(TestCase):

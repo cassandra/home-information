@@ -12,6 +12,6 @@ ImmichMetaData = IntegrationMetaData(
     allow_internal_attributes = False,
     logo_static_path = 'img/integrations/immich.png',
     capabilities = frozenset({
-        IntegrationCapability.ATTRIBUTE_REFERENCE,
+        IntegrationCapability.EXTERNAL_REFERENCE,
     }),
 )

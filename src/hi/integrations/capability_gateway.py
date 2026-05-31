@@ -1,7 +1,7 @@
 """Common base for the per-capability gateway peers.
 
 ``IntegrationConnector``, ``IntegrationImporter``, and
-``IntegrationAttributeReferencer`` are the three per-capability
+``IntegrationExternalReferencer`` are the three per-capability
 gateway classes today: each is the framework-facing surface for a
 specific ``IntegrationCapability``.
 

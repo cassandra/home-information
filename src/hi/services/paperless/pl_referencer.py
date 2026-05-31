@@ -1,7 +1,7 @@
-"""ATTRIBUTE_REFERENCE implementation for paperless-ngx.
+"""EXTERNAL_REFERENCE implementation for paperless-ngx.
 
 Translates each paperless documents-search hit into a single
-``AttributeReferenceResult``:
+``ExternalReferenceResult``:
 
   - ``title``        → document title (verbatim)
   - ``source_url``   → upstream per-document URL on the configured
@@ -30,11 +30,11 @@ from requests import HTTPError
 
 from hi.integrations.exceptions import IntegrationAttributeError
 from hi.integrations.referencer.integration_referencer import (
-    IntegrationAttributeReferencer,
+    IntegrationExternalReferencer,
 )
 from hi.integrations.referencer.transient_models import (
-    AttributeReferenceResult,
-    AttributeReferenceSearchResult,
+    ExternalReferenceResult,
+    ExternalReferenceSearchResult,
 )
 from hi.integrations.transient_models import (
     IntegrationMetaData,
@@ -50,7 +50,7 @@ from .pl_validation import validate_attributes
 logger = logging.getLogger(__name__)
 
 
-class PaperlessAttributeReferencer( IntegrationAttributeReferencer ):
+class PaperlessExternalReferencer( IntegrationExternalReferencer ):
 
     # Window cap matches the picker's snippet rendering — long
     # enough to carry useful context, short enough to keep cards
@@ -74,20 +74,20 @@ class PaperlessAttributeReferencer( IntegrationAttributeReferencer ):
             self,
             query : str,
             limit : int = 20,
-    ) -> AttributeReferenceSearchResult:
+    ) -> ExternalReferenceSearchResult:
         if not query or not query.strip():
-            return AttributeReferenceSearchResult( results = [] )
+            return ExternalReferenceSearchResult( results = [] )
         try:
             client = build_client()
         except IntegrationAttributeError as e:
             logger.warning( f'Paperless search aborted: {e}' )
-            return AttributeReferenceSearchResult(
+            return ExternalReferenceSearchResult(
                 results = [],
                 error_message = 'Paperless integration is not configured.',
             )
         except Exception as e:
             logger.exception( f'Paperless client build failed: {e}' )
-            return AttributeReferenceSearchResult(
+            return ExternalReferenceSearchResult(
                 results = [],
                 error_message = 'Paperless integration error — see server logs.',
             )
@@ -102,7 +102,7 @@ class PaperlessAttributeReferencer( IntegrationAttributeReferencer ):
                 f'Paperless search HTTP {status} for query '
                 f'{query!r}: {e}'
             )
-            return AttributeReferenceSearchResult(
+            return ExternalReferenceSearchResult(
                 results = [],
                 error_message = self._http_error_message( status ),
             )
@@ -110,13 +110,13 @@ class PaperlessAttributeReferencer( IntegrationAttributeReferencer ):
             logger.warning(
                 f'Paperless search failed for query {query!r}: {e}'
             )
-            return AttributeReferenceSearchResult(
+            return ExternalReferenceSearchResult(
                 results = [],
                 error_message = 'Paperless search failed — see server logs.',
             )
 
         documents = envelope.get( PaperlessApi.RESPONSE_RESULTS, [] ) or []
-        return AttributeReferenceSearchResult(
+        return ExternalReferenceSearchResult(
             results = [
                 self._translate( client = client, document = doc, query = query )
                 for doc in documents
@@ -137,12 +137,12 @@ class PaperlessAttributeReferencer( IntegrationAttributeReferencer ):
             client   : PaperlessClient,
             document : dict,
             query    : str,
-    ) -> AttributeReferenceResult:
+    ) -> ExternalReferenceResult:
         document_id = document.get( PaperlessApi.DOC_ID )
         title = document.get( PaperlessApi.DOC_TITLE ) or ''
         content = document.get( PaperlessApi.DOC_CONTENT ) or ''
         mime_type = document.get( PaperlessApi.DOC_MIME_TYPE )
-        return AttributeReferenceResult(
+        return ExternalReferenceResult(
             title = title,
             source_url = client.build_document_details_url( document_id ),
             thumbnail_url = self._proxy_thumbnail_url( document_id ),

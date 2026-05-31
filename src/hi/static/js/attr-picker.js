@@ -1,7 +1,7 @@
 /*
- * Home Information - Attribute-reference picker UI state
+ * Home Information - External-reference picker UI state
  *
- * Multi-select picker for ATTRIBUTE_REFERENCE integrations (e.g.,
+ * Multi-select picker for EXTERNAL_REFERENCE integrations (e.g.,
  * paperless-ngx). The picker lets the operator search an upstream
  * source and accumulate a set of references (title + URL) across
  * multiple searches, then commit the whole set as TEXT attributes

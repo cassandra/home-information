@@ -2,10 +2,10 @@
 
 ## Overview
 
-Immich declares only the `ATTRIBUTE_REFERENCE` capability — no
+Immich declares only the `EXTERNAL_REFERENCE` capability — no
 connector, no importer, no manager singleton, no monitors. The
 gateway returns a referencer, and the referencer translates Immich's
-smart-search response into `AttributeReferenceResult` rows. Per-search
+smart-search response into `ExternalReferenceResult` rows. Per-search
 HTTP happens inline; there is no cached client. The integration
 mirrors the paperless-ngx shape almost exactly — same file layout,
 same lifecycle, same thumbnail-proxy pattern — with the differences
@@ -16,7 +16,7 @@ documented under [Implementation notes](#implementation-notes).
 - `src/hi/services/immich/integration.py` — `ImmichGateway`. Gateway
   entry point; `validate_access` lives here.
 - `src/hi/services/immich/im_referencer.py` —
-  `ImmichAttributeReferencer`. Smart-search dispatch + asset
+  `ImmichExternalReferencer`. Smart-search dispatch + asset
   translation + secondary-text builder.
 - `src/hi/services/immich/im_client.py` — `ImmichClient` and
   `build_client`. Thin `requests.Session` wrapper.
@@ -71,7 +71,7 @@ makes one search call per picker query, no background loop.
   composes a short blurb from `fileCreatedAt` + `exifInfo.city` /
   `country` instead; returns `None` when neither is present so the
   picker template omits the snippet row entirely.
-- **Error channel via `AttributeReferenceSearchResult.error_message`.**
+- **Error channel via `ExternalReferenceSearchResult.error_message`.**
   Each failure path (no config, HTTP 401, HTTP 403, generic HTTP
   failure, connectivity, unexpected) returns the dataclass with a
   named user-facing message instead of raising or returning an empty

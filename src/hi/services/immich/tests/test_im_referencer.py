@@ -6,7 +6,7 @@ from requests import HTTPError
 
 from hi.integrations.exceptions import IntegrationAttributeError
 
-from hi.services.immich.im_referencer import ImmichAttributeReferencer
+from hi.services.immich.im_referencer import ImmichExternalReferencer
 
 
 logging.disable(logging.CRITICAL)
@@ -51,7 +51,7 @@ class TestSearchReferencesShortCircuits(TestCase):
 
     @patch('hi.services.immich.im_referencer.build_client')
     def test_empty_query_returns_empty(self, mock_build):
-        result = ImmichAttributeReferencer().search_references(
+        result = ImmichExternalReferencer().search_references(
             query = '', limit = 20,
         )
         self.assertEqual(result.results, [])
@@ -60,7 +60,7 @@ class TestSearchReferencesShortCircuits(TestCase):
 
     @patch('hi.services.immich.im_referencer.build_client')
     def test_whitespace_query_returns_empty(self, mock_build):
-        result = ImmichAttributeReferencer().search_references(
+        result = ImmichExternalReferencer().search_references(
             query = '   ', limit = 20,
         )
         self.assertEqual(result.results, [])
@@ -75,7 +75,7 @@ class TestSearchReferences(TestCase):
         client = _make_client(_envelope(_asset('a1')))
         mock_build.return_value = client
 
-        ImmichAttributeReferencer().search_references(
+        ImmichExternalReferencer().search_references(
             query = '  dishwasher  ', limit = 10,
         )
 
@@ -92,7 +92,7 @@ class TestSearchReferences(TestCase):
         ))
         mock_build.return_value = client
 
-        result = ImmichAttributeReferencer().search_references(
+        result = ImmichExternalReferencer().search_references(
             query = 'q', limit = 20,
         )
 
@@ -118,7 +118,7 @@ class TestSearchReferences(TestCase):
         ))
         mock_build.return_value = client
 
-        result = ImmichAttributeReferencer().search_references(
+        result = ImmichExternalReferencer().search_references(
             query = 'q', limit = 20,
         )
         self.assertEqual(result.results[0].title, 'a1')
@@ -128,7 +128,7 @@ class TestSearchReferences(TestCase):
         client = _make_client(_envelope())
         mock_build.return_value = client
 
-        ImmichAttributeReferencer().search_references(query = 'q', limit = 50)
+        ImmichExternalReferencer().search_references(query = 'q', limit = 50)
         client.search_smart.assert_called_once_with(query = 'q', size = 50)
 
     @patch('hi.services.immich.im_referencer.build_client')
@@ -137,7 +137,7 @@ class TestSearchReferences(TestCase):
         # assets wrapper.
         client = _make_client({'albums': {}})
         mock_build.return_value = client
-        result = ImmichAttributeReferencer().search_references(
+        result = ImmichExternalReferencer().search_references(
             query = 'q', limit = 20,
         )
         self.assertEqual(result.results, [])
@@ -147,7 +147,7 @@ class TestSearchReferences(TestCase):
     def test_missing_items_inside_assets_yields_empty(self, mock_build):
         client = _make_client({'assets': {}, 'albums': {}})
         mock_build.return_value = client
-        result = ImmichAttributeReferencer().search_references(
+        result = ImmichExternalReferencer().search_references(
             query = 'q', limit = 20,
         )
         self.assertEqual(result.results, [])
@@ -162,7 +162,7 @@ class TestSearchReferencesErrorMessages(TestCase):
     @patch('hi.services.immich.im_referencer.build_client',
            side_effect = IntegrationAttributeError('not configured'))
     def test_unconfigured_integration(self, _mock_build):
-        result = ImmichAttributeReferencer().search_references(
+        result = ImmichExternalReferencer().search_references(
             query = 'q', limit = 20,
         )
         self.assertEqual(result.results, [])
@@ -171,7 +171,7 @@ class TestSearchReferencesErrorMessages(TestCase):
     @patch('hi.services.immich.im_referencer.build_client',
            side_effect = RuntimeError('boom in build'))
     def test_unexpected_client_build_error(self, _mock_build):
-        result = ImmichAttributeReferencer().search_references(
+        result = ImmichExternalReferencer().search_references(
             query = 'q', limit = 20,
         )
         self.assertEqual(result.results, [])
@@ -184,7 +184,7 @@ class TestSearchReferencesErrorMessages(TestCase):
         response.status_code = 401
         client.search_smart.side_effect = HTTPError('401', response = response)
         mock_build.return_value = client
-        result = ImmichAttributeReferencer().search_references(
+        result = ImmichExternalReferencer().search_references(
             query = 'q', limit = 20,
         )
         self.assertEqual(result.results, [])
@@ -197,7 +197,7 @@ class TestSearchReferencesErrorMessages(TestCase):
         response.status_code = 403
         client.search_smart.side_effect = HTTPError('403', response = response)
         mock_build.return_value = client
-        result = ImmichAttributeReferencer().search_references(
+        result = ImmichExternalReferencer().search_references(
             query = 'q', limit = 20,
         )
         self.assertIn('asset.read', result.error_message)
@@ -209,7 +209,7 @@ class TestSearchReferencesErrorMessages(TestCase):
         response.status_code = 500
         client.search_smart.side_effect = HTTPError('500', response = response)
         mock_build.return_value = client
-        result = ImmichAttributeReferencer().search_references(
+        result = ImmichExternalReferencer().search_references(
             query = 'q', limit = 20,
         )
         self.assertIn('500', result.error_message)
@@ -219,7 +219,7 @@ class TestSearchReferencesErrorMessages(TestCase):
         client = _make_client(_envelope())
         client.search_smart.side_effect = RuntimeError('boom')
         mock_build.return_value = client
-        result = ImmichAttributeReferencer().search_references(
+        result = ImmichExternalReferencer().search_references(
             query = 'q', limit = 20,
         )
         self.assertEqual(result.results, [])
@@ -233,7 +233,7 @@ class TestSearchReferencesErrorMessages(TestCase):
         # the exception escape to the framework's generic fallback.
         client = _make_client(_envelope('not-a-dict'))
         mock_build.return_value = client
-        result = ImmichAttributeReferencer().search_references(
+        result = ImmichExternalReferencer().search_references(
             query = 'q', limit = 20,
         )
         self.assertEqual(result.results, [])
@@ -247,42 +247,42 @@ class TestBuildSecondaryText(TestCase):
 
     def test_returns_none_when_no_date_no_exif(self):
         self.assertIsNone(
-            ImmichAttributeReferencer._build_secondary_text({})
+            ImmichExternalReferencer._build_secondary_text({})
         )
 
     def test_date_only(self):
-        result = ImmichAttributeReferencer._build_secondary_text({
+        result = ImmichExternalReferencer._build_secondary_text({
             'fileCreatedAt': '2025-08-14T10:32:00.000Z',
         })
         self.assertEqual(result, '2025-08-14')
 
     def test_city_and_country(self):
-        result = ImmichAttributeReferencer._build_secondary_text({
+        result = ImmichExternalReferencer._build_secondary_text({
             'exifInfo': {'city': 'Portland', 'country': 'USA'},
         })
         self.assertEqual(result, 'Portland, USA')
 
     def test_city_only(self):
-        result = ImmichAttributeReferencer._build_secondary_text({
+        result = ImmichExternalReferencer._build_secondary_text({
             'exifInfo': {'city': 'Portland'},
         })
         self.assertEqual(result, 'Portland')
 
     def test_country_only(self):
-        result = ImmichAttributeReferencer._build_secondary_text({
+        result = ImmichExternalReferencer._build_secondary_text({
             'exifInfo': {'country': 'USA'},
         })
         self.assertEqual(result, 'USA')
 
     def test_date_and_place(self):
-        result = ImmichAttributeReferencer._build_secondary_text({
+        result = ImmichExternalReferencer._build_secondary_text({
             'fileCreatedAt': '2025-08-14T10:32:00.000Z',
             'exifInfo': {'city': 'Portland', 'country': 'USA'},
         })
         self.assertEqual(result, '2025-08-14 · Portland, USA')
 
     def test_null_exif_treated_as_empty(self):
-        result = ImmichAttributeReferencer._build_secondary_text({
+        result = ImmichExternalReferencer._build_secondary_text({
             'fileCreatedAt': '2025-08-14T10:32:00.000Z',
             'exifInfo': None,
         })

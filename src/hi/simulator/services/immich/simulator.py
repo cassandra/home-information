@@ -1,6 +1,6 @@
 """Immich simulator: parametric smart-search responses.
 
-Contributes only the ATTRIBUTE_REFERENCE capability -- TEXT
+Contributes only the EXTERNAL_REFERENCE capability -- TEXT
 attributes on existing Entity / Location records, no SimEntities of
 its own. Search results are generated on the fly, shaped by
 operator-tuned knobs on the singleton.

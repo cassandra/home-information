@@ -2,7 +2,7 @@
 
 Mounts under ``services/paperless/`` via the framework's
 auto-discovery (see hi/integrations/urls.py). One route: a thumbnail
-proxy used by the ATTRIBUTE_REFERENCE picker so browser-rendered
+proxy used by the EXTERNAL_REFERENCE picker so browser-rendered
 <img> tags can fetch paperless thumbnails through HI's session
 instead of requiring the upstream paperless API token.
 """

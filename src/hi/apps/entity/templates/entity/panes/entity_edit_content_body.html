@@ -7,7 +7,7 @@ Extends the generic attribute edit content body with entity-specific field layou
 {% endcomment %}
 
 {% block additional_actions %}
-{% has_attribute_referencers as has_referencers %}
+{% has_external_referencers as has_referencers %}
 {% if has_referencers and attr_page_context.allow_internal_attributes %}
 <a href="{% url 'integrations_attribute_reference_picker' %}?item_type=ENTITY&item_id={{ attr_item_context.owner.id }}"
    data-async="modal"

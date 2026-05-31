@@ -5,15 +5,15 @@ from . import views
 
 urlpatterns = [
     path( 'picker/',
-          views.AttributeReferencePickerView.as_view(),
+          views.ExternalReferencePickerView.as_view(),
           name='integrations_attribute_reference_picker' ),
 
     path( 'picker/search/',
-          views.AttributeReferenceSearchView.as_view(),
+          views.ExternalReferenceSearchView.as_view(),
           name='integrations_attribute_reference_search' ),
 
     path( 'picker/attach/',
-          views.AttributeReferenceAttachView.as_view(),
+          views.ExternalReferenceAttachView.as_view(),
           name='integrations_attribute_reference_attach' ),
 
     path( 'home/',

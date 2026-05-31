@@ -7,7 +7,7 @@ from hi.apps.entity.entity_placement import (
 from hi.apps.entity.models import Entity
 
 from hi.integrations.referencer.integration_referencer import (
-    IntegrationAttributeReferencer,
+    IntegrationExternalReferencer,
 )
 from hi.integrations.connector.integration_connector import IntegrationConnector
 from hi.integrations.importer.integration_importer import IntegrationImporter
@@ -49,9 +49,9 @@ class IntegrationGateway:
         ingest, and discard operations."""
         return None
 
-    def get_attribute_referencer(self) -> Optional[IntegrationAttributeReferencer]:
-        """Return the integration's attribute-referencer when it supports the
-        ATTRIBUTE_REFERENCE capability; None otherwise. The framework owns
+    def get_external_referencer(self) -> Optional[IntegrationExternalReferencer]:
+        """Return the integration's external-referencer when it supports the
+        EXTERNAL_REFERENCE capability; None otherwise. The framework owns
         the picker and the TEXT-attribute attach lifecycle; the referencer
         supplies the integration-specific search-against-upstream operation."""
         return None

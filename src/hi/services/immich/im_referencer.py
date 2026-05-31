@@ -6,11 +6,11 @@ from requests import HTTPError
 
 from hi.integrations.exceptions import IntegrationAttributeError
 from hi.integrations.referencer.integration_referencer import (
-    IntegrationAttributeReferencer,
+    IntegrationExternalReferencer,
 )
 from hi.integrations.referencer.transient_models import (
-    AttributeReferenceResult,
-    AttributeReferenceSearchResult,
+    ExternalReferenceResult,
+    ExternalReferenceSearchResult,
 )
 from hi.integrations.transient_models import (
     IntegrationMetaData,
@@ -26,7 +26,7 @@ from .im_validation import validate_attributes
 logger = logging.getLogger(__name__)
 
 
-class ImmichAttributeReferencer( IntegrationAttributeReferencer ):
+class ImmichExternalReferencer( IntegrationExternalReferencer ):
 
     def get_metadata( self ) -> IntegrationMetaData:
         return ImmichMetaData
@@ -41,20 +41,20 @@ class ImmichAttributeReferencer( IntegrationAttributeReferencer ):
             self,
             query : str,
             limit : int = 20,
-    ) -> AttributeReferenceSearchResult:
+    ) -> ExternalReferenceSearchResult:
         if not query or not query.strip():
-            return AttributeReferenceSearchResult( results = [] )
+            return ExternalReferenceSearchResult( results = [] )
         try:
             client = build_client()
         except IntegrationAttributeError as e:
             logger.warning( f'Immich search aborted: {e}' )
-            return AttributeReferenceSearchResult(
+            return ExternalReferenceSearchResult(
                 results = [],
                 error_message = 'Immich integration is not configured.',
             )
         except Exception as e:
             logger.exception( f'Immich client build failed: {e}' )
-            return AttributeReferenceSearchResult(
+            return ExternalReferenceSearchResult(
                 results = [],
                 error_message = 'Immich integration error — see server logs.',
             )
@@ -69,7 +69,7 @@ class ImmichAttributeReferencer( IntegrationAttributeReferencer ):
                 f'Immich search HTTP {status} for query '
                 f'{query!r}: {e}'
             )
-            return AttributeReferenceSearchResult(
+            return ExternalReferenceSearchResult(
                 results = [],
                 error_message = self._http_error_message( status ),
             )
@@ -77,7 +77,7 @@ class ImmichAttributeReferencer( IntegrationAttributeReferencer ):
             logger.warning(
                 f'Immich search failed for query {query!r}: {e}'
             )
-            return AttributeReferenceSearchResult(
+            return ExternalReferenceSearchResult(
                 results = [],
                 error_message = 'Immich search failed — see server logs.',
             )
@@ -101,11 +101,11 @@ class ImmichAttributeReferencer( IntegrationAttributeReferencer ):
                 f'Immich asset translation failed for query '
                 f'{query!r}: {e}'
             )
-            return AttributeReferenceSearchResult(
+            return ExternalReferenceSearchResult(
                 results = [],
                 error_message = self._http_error_message( None ),
             )
-        return AttributeReferenceSearchResult( results = results )
+        return ExternalReferenceSearchResult( results = results )
 
     @staticmethod
     def _http_error_message( status : Optional[int] ) -> str:
@@ -122,14 +122,14 @@ class ImmichAttributeReferencer( IntegrationAttributeReferencer ):
             self,
             client : ImmichClient,
             asset  : dict,
-    ) -> AttributeReferenceResult:
+    ) -> ExternalReferenceResult:
         asset_id = asset.get( ImmichApi.ASSET_ID )
         title = (
             asset.get( ImmichApi.ASSET_ORIGINAL_FILE_NAME )
             or asset_id
             or ''
         )
-        return AttributeReferenceResult(
+        return ExternalReferenceResult(
             title = title,
             source_url = client.build_asset_web_url( asset_id ),
             thumbnail_url = self._proxy_thumbnail_url( asset_id ),

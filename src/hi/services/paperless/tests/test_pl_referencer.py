@@ -1,9 +1,9 @@
-"""Tests for the ATTRIBUTE_REFERENCE referencer.
+"""Tests for the EXTERNAL_REFERENCE referencer.
 
 Covers the two surfaces that matter for picker UX: snippet
 extraction (window around the matched query, with paperless-style
 fallbacks when no match) and the end-to-end translation of a
-paperless documents-search response into AttributeReferenceResult
+paperless documents-search response into ExternalReferenceResult
 rows the framework can hand to the picker.
 """
 import logging
@@ -19,7 +19,7 @@ from hi.integrations.transient_models import IntegrationKey
 
 from hi.services.paperless.enums import PlAttributeType
 from hi.services.paperless.pl_metadata import PaperlessMetaData
-from hi.services.paperless.pl_referencer import PaperlessAttributeReferencer
+from hi.services.paperless.pl_referencer import PaperlessExternalReferencer
 
 
 logging.disable(logging.CRITICAL)
@@ -47,21 +47,21 @@ class TestSnippetExtraction(TestCase):
         # Empty content => omit the snippet row entirely in the
         # picker rather than render an empty placeholder.
         self.assertIsNone(
-            PaperlessAttributeReferencer._extract_snippet(
+            PaperlessExternalReferencer._extract_snippet(
                 content = '', query = 'q',
             )
         )
 
     def test_short_content_returned_verbatim(self):
         self.assertEqual(
-            PaperlessAttributeReferencer._extract_snippet(
+            PaperlessExternalReferencer._extract_snippet(
                 content = 'Short doc text.', query = 'missing',
             ),
             'Short doc text.',
         )
 
     def test_long_content_without_match_truncates(self):
-        result = PaperlessAttributeReferencer._extract_snippet(
+        result = PaperlessExternalReferencer._extract_snippet(
             content = 'A' * 500, query = 'missing',
         )
         self.assertLessEqual(len(result), 161)  # 160 + the ellipsis
@@ -69,7 +69,7 @@ class TestSnippetExtraction(TestCase):
 
     def test_match_in_middle_emits_leading_and_trailing_ellipses(self):
         content = 'x' * 200 + ' DISHWASHER ' + 'y' * 200
-        result = PaperlessAttributeReferencer._extract_snippet(
+        result = PaperlessExternalReferencer._extract_snippet(
             content = content, query = 'dishwasher',
         )
         self.assertIn('DISHWASHER', result)
@@ -77,13 +77,13 @@ class TestSnippetExtraction(TestCase):
         self.assertTrue(result.endswith('…'))
 
     def test_match_at_start_no_leading_ellipsis(self):
-        result = PaperlessAttributeReferencer._extract_snippet(
+        result = PaperlessExternalReferencer._extract_snippet(
             content = 'Warranty info follows.', query = 'warranty',
         )
         self.assertFalse(result.startswith('…'))
 
     def test_case_insensitive_match(self):
-        result = PaperlessAttributeReferencer._extract_snippet(
+        result = PaperlessExternalReferencer._extract_snippet(
             content = 'The DISHWASHER manual.', query = 'dishwasher',
         )
         self.assertIn('DISHWASHER', result)
@@ -93,7 +93,7 @@ class TestSearchReferences(TestCase):
     """End-to-end search via a mocked PaperlessClient."""
 
     def setUp(self):
-        self.referencer = PaperlessAttributeReferencer()
+        self.referencer = PaperlessExternalReferencer()
 
     def _envelope(self, *docs):
         return {'count': len(docs), 'results': list(docs)}
@@ -192,7 +192,7 @@ class TestSearchReferencesErrorMessages(TestCase):
     to "no results."""
 
     def setUp(self):
-        self.referencer = PaperlessAttributeReferencer()
+        self.referencer = PaperlessExternalReferencer()
 
     @patch('hi.services.paperless.pl_referencer.build_client',
            side_effect = IntegrationAttributeError('not configured'))
@@ -257,7 +257,7 @@ class TestValidateConfiguration(TestCase):
                        'https://paperless.example.com/'),
             _make_attr(self.integration, PlAttributeType.API_TOKEN, 'token'),
         ]
-        result = PaperlessAttributeReferencer().validate_configuration(attrs)
+        result = PaperlessExternalReferencer().validate_configuration(attrs)
         self.assertTrue(result.is_valid)
 
     def test_error_when_token_missing(self):
@@ -265,5 +265,5 @@ class TestValidateConfiguration(TestCase):
             _make_attr(self.integration, PlAttributeType.API_URL,
                        'https://paperless.example.com/'),
         ]
-        result = PaperlessAttributeReferencer().validate_configuration(attrs)
+        result = PaperlessExternalReferencer().validate_configuration(attrs)
         self.assertFalse(result.is_valid)

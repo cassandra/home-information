@@ -12,7 +12,7 @@ PaperlessMetaData = IntegrationMetaData(
     label = 'Paperless-ngx',
     attribute_type = PlAttributeType,
     # Paperless documents become TEXT attributes on existing
-    # Entity / Location records via ATTRIBUTE_REFERENCE; the
+    # Entity / Location records via EXTERNAL_REFERENCE; the
     # integration never creates HI Entities of its own, so deletion
     # behavior is moot. Internal attributes (those created by HI
     # outside the integration's settings) are not supported here.
@@ -20,6 +20,6 @@ PaperlessMetaData = IntegrationMetaData(
     allow_internal_attributes = False,
     logo_static_path = 'img/integrations/paperless.png',
     capabilities = frozenset({
-        IntegrationCapability.ATTRIBUTE_REFERENCE,
+        IntegrationCapability.EXTERNAL_REFERENCE,
     }),
 )

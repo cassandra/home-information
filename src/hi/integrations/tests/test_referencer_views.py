@@ -1,4 +1,4 @@
-"""View tests for the ATTRIBUTE_REFERENCE picker.
+"""View tests for the EXTERNAL_REFERENCE picker.
 
 The picker is split into three endpoints:
 
@@ -31,12 +31,12 @@ from hi.integrations.integration_gateway import IntegrationGateway
 from hi.integrations.integration_manager import IntegrationManager
 from hi.integrations.models import Integration
 from hi.integrations.referencer.integration_referencer import (
-    IntegrationAttributeReferencer,
+    IntegrationExternalReferencer,
 )
 from hi.constants import DIVID
 from hi.integrations.referencer.transient_models import (
-    AttributeReferenceResult,
-    AttributeReferenceSearchResult,
+    ExternalReferenceResult,
+    ExternalReferenceSearchResult,
 )
 from hi.integrations.transient_models import (
     ConnectionTestResult,
@@ -59,7 +59,7 @@ class _RefAttributeType(IntegrationAttributeType):
     )
 
 
-class _StubReferencer(IntegrationAttributeReferencer):
+class _StubReferencer(IntegrationExternalReferencer):
     """In-memory referencer the tests inject via the gateway.
     Captures search args so tests can assert dispatch shape."""
 
@@ -79,7 +79,7 @@ class _StubReferencer(IntegrationAttributeReferencer):
             label=self._label,
             attribute_type=_RefAttributeType,
             allow_entity_deletion=True,
-            capabilities=frozenset({IntegrationCapability.ATTRIBUTE_REFERENCE}),
+            capabilities=frozenset({IntegrationCapability.EXTERNAL_REFERENCE}),
         )
 
     def validate_configuration(self, integration_attributes):
@@ -90,15 +90,15 @@ class _StubReferencer(IntegrationAttributeReferencer):
         self.last_limit = limit
         if self._raises is not None:
             raise self._raises
-        return AttributeReferenceSearchResult(
+        return ExternalReferenceSearchResult(
             results=list(self._results),
             error_message=self._error_message,
         )
 
 
 class _ReferencerCapableGateway(IntegrationGateway):
-    """Gateway that advertises ATTRIBUTE_REFERENCE and returns the
-    test's stub referencer from ``get_attribute_referencer``."""
+    """Gateway that advertises EXTERNAL_REFERENCE and returns the
+    test's stub referencer from ``get_external_referencer``."""
 
     def __init__(self, integration_id='ref', label='Ref Test', referencer=None):
         self.integration_id = integration_id
@@ -111,7 +111,7 @@ class _ReferencerCapableGateway(IntegrationGateway):
             label=self.label,
             attribute_type=_RefAttributeType,
             allow_entity_deletion=True,
-            capabilities=frozenset({IntegrationCapability.ATTRIBUTE_REFERENCE}),
+            capabilities=frozenset({IntegrationCapability.EXTERNAL_REFERENCE}),
         )
 
     def validate_configuration(self, integration_attributes):
@@ -120,7 +120,7 @@ class _ReferencerCapableGateway(IntegrationGateway):
     def validate_access(self, integration_attributes, timeout_secs):
         return ConnectionTestResult.success()
 
-    def get_attribute_referencer(self):
+    def get_external_referencer(self):
         return self._referencer
 
 
@@ -146,7 +146,7 @@ def _populate_manager(pairs, enabled=True):
 
 def _result(title='Doc', source_url='https://example.com/doc/1',
             thumbnail_url=None, mime_type=None, snippet=None):
-    return AttributeReferenceResult(
+    return ExternalReferenceResult(
         title=title,
         source_url=source_url,
         thumbnail_url=thumbnail_url,
@@ -158,18 +158,18 @@ def _result(title='Doc', source_url='https://example.com/doc/1',
 # ---- gateway default --------------------------------------------
 
 
-class TestIntegrationGatewayAttributeReferencerDefault(ViewTestBase):
-    """Default ``IntegrationGateway`` advertises no ATTRIBUTE_REFERENCE
+class TestIntegrationGatewayExternalReferencerDefault(ViewTestBase):
+    """Default ``IntegrationGateway`` advertises no EXTERNAL_REFERENCE
     referencer — only integrations that explicitly opt in do."""
 
     def test_default_returns_none(self):
-        self.assertIsNone(IntegrationGateway().get_attribute_referencer())
+        self.assertIsNone(IntegrationGateway().get_external_referencer())
 
 
 # ---- picker GET ----------------------------------------------------
 
 
-class TestAttributeReferencePickerView(ViewTestBase):
+class TestExternalReferencePickerView(ViewTestBase):
     """GET renders the initial empty modal. Search and attach are
     sibling endpoints (tested separately below)."""
 
@@ -271,7 +271,7 @@ class TestAttributeReferencePickerView(ViewTestBase):
 # ---- search endpoint ----------------------------------------------
 
 
-class TestAttributeReferenceSearchView(ViewTestBase):
+class TestExternalReferenceSearchView(ViewTestBase):
     """POST returns the result-cards partial. The picker JS swaps
     the returned HTML into the results container."""
 
@@ -398,7 +398,7 @@ class TestAttributeReferenceSearchView(ViewTestBase):
 # ---- attach endpoint ----------------------------------------------
 
 
-class TestAttributeReferenceAttachView(ViewTestBase):
+class TestExternalReferenceAttachView(ViewTestBase):
     """POST reads the JS-built ``selections_json`` payload and
     creates one TEXT attribute per record on the named owner."""
 

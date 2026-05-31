@@ -1,16 +1,16 @@
 """
-Transient (non-persisted) models for the ATTRIBUTE_REFERENCE
+Transient (non-persisted) models for the EXTERNAL_REFERENCE
 capability.
 
-``AttributeReferenceResult`` is the picker-only view of an upstream
+``ExternalReferenceResult`` is the picker-only view of an upstream
 document or other linkable resource: shown in the search modal,
 selected by the operator, and discarded once the resulting
 ``EntityAttribute`` / ``LocationAttribute`` row is created. Only
 ``title`` and ``source_url`` survive into persistent storage; the
 remaining fields exist solely for picker UX.
 
-``AttributeReferenceSearchResult`` is the wrapper returned by
-``IntegrationAttributeReferencer.search_references``. It carries the
+``ExternalReferenceSearchResult`` is the wrapper returned by
+``IntegrationExternalReferencer.search_references``. It carries the
 result list plus an optional ``error_message`` so the picker can
 distinguish a legitimately-empty search from an upstream failure
 (auth rejected, unreachable, etc.) and surface a banner instead of
@@ -27,7 +27,7 @@ from typing import List, Optional
 
 
 @dataclass(frozen=True)
-class AttributeReferenceResult:
+class ExternalReferenceResult:
     """One row in the picker's result list.
 
     ``title`` and ``source_url`` are the only fields that survive
@@ -42,9 +42,9 @@ class AttributeReferenceResult:
 
 
 @dataclass(frozen=True)
-class AttributeReferenceSearchResult:
+class ExternalReferenceSearchResult:
     """``error_message`` is None on success, including the legitimate
     empty-results case. A non-None value signals upstream failure
     even when ``results`` is empty."""
-    results: List[AttributeReferenceResult] = field(default_factory=list)
+    results: List[ExternalReferenceResult] = field(default_factory=list)
     error_message: Optional[str] = None

@@ -1,12 +1,12 @@
 """
-ATTRIBUTE_REFERENCE picker -- one HiModal view backed by antinode
+EXTERNAL_REFERENCE picker -- one HiModal view backed by antinode
 partial swaps.
 
 Workflow:
 
   - GET ``/integrations/referencer/picker/`` with ``item_type`` +
     ``item_id`` query params renders the full picker modal. The
-    view discovers all currently-enabled ATTRIBUTE_REFERENCE
+    view discovers all currently-enabled EXTERNAL_REFERENCE
     integrations and lets the operator choose between them via an
     in-modal selector when more than one is configured.
 
@@ -63,8 +63,8 @@ from hi.integrations.integration_data import IntegrationData
 from hi.integrations.integration_manager import IntegrationManager
 from hi.integrations.view_mixins import IntegrationViewMixin
 
-from .integration_referencer import IntegrationAttributeReferencer
-from .transient_models import AttributeReferenceSearchResult
+from .integration_referencer import IntegrationExternalReferencer
+from .transient_models import ExternalReferenceSearchResult
 
 
 logger = logging.getLogger(__name__)
@@ -83,11 +83,11 @@ _ATTRIBUTE_OWNER_MODELS = {
 
 def _get_referencer_integration_data_list() -> List[ IntegrationData ]:
     """All currently-enabled integrations that advertise the
-    ATTRIBUTE_REFERENCE capability. Returned in label order
+    EXTERNAL_REFERENCE capability. Returned in label order
     (the manager already sorts by label)."""
     return IntegrationManager().get_integration_data_list(
         enabled_only=True,
-        capabilities=frozenset({ IntegrationCapability.ATTRIBUTE_REFERENCE }),
+        capabilities=frozenset({ IntegrationCapability.EXTERNAL_REFERENCE }),
     )
 
 
@@ -115,8 +115,8 @@ def _resolve_integration_data(
 def _require_referencer(
         integration_data: IntegrationData,
         request,
-) -> IntegrationAttributeReferencer:
-    referencer = integration_data.integration_gateway.get_attribute_referencer()
+) -> IntegrationExternalReferencer:
+    referencer = integration_data.integration_gateway.get_external_referencer()
     if referencer is None:
         raise Http404( request )
     return referencer
@@ -164,12 +164,12 @@ def _resolve_owner(item_type: ItemType, item_id: int):
 
 
 def _search_upstream(
-        referencer: IntegrationAttributeReferencer,
+        referencer: IntegrationExternalReferencer,
         query: str,
         limit: int,
-) -> AttributeReferenceSearchResult:
+) -> ExternalReferenceSearchResult:
     if not query:
-        return AttributeReferenceSearchResult( results = [] )
+        return ExternalReferenceSearchResult( results = [] )
     try:
         return referencer.search_references( query = query, limit = limit )
     except Exception:
@@ -180,13 +180,13 @@ def _search_upstream(
         # at; the stack lands in the server log.
         logger.exception( 'Attribute-reference search failed.' )
         label = _safe_label( referencer )
-        return AttributeReferenceSearchResult(
+        return ExternalReferenceSearchResult(
             results = [],
             error_message = f'{label} search failed — see server logs.',
         )
 
 
-def _safe_label( referencer: IntegrationAttributeReferencer ) -> str:
+def _safe_label( referencer: IntegrationExternalReferencer ) -> str:
     # Defensive: a referencer broken enough to raise from search may
     # also raise from get_metadata. Fall back to a generic label so
     # the banner never compounds the failure.
@@ -247,7 +247,7 @@ def _create_attributes(
     return created_ids
 
 
-class AttributeReferencePickerView( HiModalView ):
+class ExternalReferencePickerView( HiModalView ):
     """GET the picker modal. Initial render seeds the result list
     by searching on the owner's name; selection state then lives in
     JS. Subsequent search results arrive via async POST to
@@ -281,7 +281,7 @@ class AttributeReferencePickerView( HiModalView ):
         # the operator opens to relevant results without retyping
         # what they're already configuring.
         query = owner.name
-        referencer = integration_data.integration_gateway.get_attribute_referencer()
+        referencer = integration_data.integration_gateway.get_external_referencer()
         if referencer is not None:
             search_result = _search_upstream(
                 referencer = referencer,
@@ -289,7 +289,7 @@ class AttributeReferencePickerView( HiModalView ):
                 limit = _DEFAULT_LIMIT,
             )
         else:
-            search_result = AttributeReferenceSearchResult( results = [] )
+            search_result = ExternalReferenceSearchResult( results = [] )
 
         context = {
             'integration_data_list': integration_data_list,
@@ -305,7 +305,7 @@ class AttributeReferencePickerView( HiModalView ):
         return self.modal_response( request, context=context )
 
 
-class AttributeReferenceSearchView( View ):
+class ExternalReferenceSearchView( View ):
     """POST endpoint that runs an upstream search and returns only
     the result-cards HTML partial. The attr-picker JS swaps the
     returned markup into the picker's results container, then
@@ -348,7 +348,7 @@ class AttributeReferenceSearchView( View ):
         return HttpResponse( html )
 
 
-class AttributeReferenceAttachView( View ):
+class ExternalReferenceAttachView( View ):
     """POST endpoint that creates TEXT attributes for the operator's
     selected references. The JS module serializes its in-memory
     selection set into ``selections_json`` just before the form
@@ -381,7 +381,7 @@ class AttributeReferenceAttachView( View ):
 
 class ReferenceHomeView( ConfigPageView, IntegrationViewMixin ):
     """Landing route for the reference-management page. Picks the
-    first ATTRIBUTE_REFERENCE integration (enabled or not) and
+    first EXTERNAL_REFERENCE integration (enabled or not) and
     redirects to its manage URL. Returns the empty-state template
     when none are discovered."""
 
@@ -393,7 +393,7 @@ class ReferenceHomeView( ConfigPageView, IntegrationViewMixin ):
 
     def get_main_template_context( self, request, *args, **kwargs ):
         integration_data_list = IntegrationManager().get_integration_data_list(
-            capabilities = frozenset({ IntegrationCapability.ATTRIBUTE_REFERENCE }),
+            capabilities = frozenset({ IntegrationCapability.EXTERNAL_REFERENCE }),
         )
         if not integration_data_list:
             return dict()
@@ -405,13 +405,13 @@ class ReferenceHomeView( ConfigPageView, IntegrationViewMixin ):
 
 
 class ReferenceManageView( ConfigPageView, IntegrationViewMixin, AttributeEditViewMixin ):
-    """Per-integration attribute-form page for ATTRIBUTE_REFERENCE
+    """Per-integration attribute-form page for EXTERNAL_REFERENCE
     integrations.
 
-    ATTRIBUTE_REFERENCE has no monitors and no sync cycle, so the
+    EXTERNAL_REFERENCE has no monitors and no sync cycle, so the
     page does not surface health status, sync-check state, or
     has_entities. The attribute queryset is filtered to attributes
-    the ATTRIBUTE_REFERENCE capability declares. ``is_enabled =
+    the EXTERNAL_REFERENCE capability declares. ``is_enabled =
     False`` integrations are tolerated so the operator can configure
     credentials here before the integration is enabled.
     """
@@ -536,7 +536,7 @@ class ReferenceManageView( ConfigPageView, IntegrationViewMixin, AttributeEditVi
 
     def _resolve( self, integration_id ):
         integration_data_list = IntegrationManager().get_integration_data_list(
-            capabilities = frozenset({ IntegrationCapability.ATTRIBUTE_REFERENCE }),
+            capabilities = frozenset({ IntegrationCapability.EXTERNAL_REFERENCE }),
         )
         if not integration_data_list:
             raise Http404( 'No reference integrations are installed.' )
@@ -562,7 +562,7 @@ class ReferenceManageView( ConfigPageView, IntegrationViewMixin, AttributeEditVi
         )
         return IntegrationAttributeItemEditContext(
             integration_data = integration_data,
-            capability_gateway = integration_data.integration_gateway.get_attribute_referencer(),
+            capability_gateway = integration_data.integration_gateway.get_external_referencer(),
             health_status = None,
             update_button_label = update_label,
         )

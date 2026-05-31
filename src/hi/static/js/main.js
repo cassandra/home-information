@@ -165,7 +165,7 @@
         // Entity Picker - Filter values
         ENTITY_PICKER_FILTER_ALL: 'all',
 
-        // ATTRIBUTE_REFERENCE picker — DOM classes / data attributes
+        // EXTERNAL_REFERENCE picker — DOM classes / data attributes
         // / wire-format field names shared with the server. Mirror
         // of the ``ATTR_PICKER_*`` entries in
         // ``src/hi/constants.py:DIVID``.

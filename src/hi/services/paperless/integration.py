@@ -1,6 +1,6 @@
 """Gateway registration entry point for the paperless integration.
 
-ATTRIBUTE_REFERENCE-only: no Connector, no Importer, no monitors.
+EXTERNAL_REFERENCE-only: no Connector, no Importer, no monitors.
 The gateway returns the referencer and answers configuration /
 access validation; the referencer carries the actual search logic.
 """
@@ -22,7 +22,7 @@ from hi.integrations.transient_models import (
 from .enums import PlAttributeType
 from .pl_metadata import PaperlessMetaData
 from .pl_models import PaperlessApi
-from .pl_referencer import PaperlessAttributeReferencer
+from .pl_referencer import PaperlessExternalReferencer
 from .pl_validation import validate_attributes
 
 
@@ -34,8 +34,8 @@ class PaperlessGateway( IntegrationGateway ):
     def get_metadata( self ) -> IntegrationMetaData:
         return PaperlessMetaData
 
-    def get_attribute_referencer( self ) -> PaperlessAttributeReferencer:
-        return PaperlessAttributeReferencer()
+    def get_external_referencer( self ) -> PaperlessExternalReferencer:
+        return PaperlessExternalReferencer()
 
     def validate_configuration(
             self,

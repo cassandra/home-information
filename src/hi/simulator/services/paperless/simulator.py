@@ -2,7 +2,7 @@
 
 Unlike the entity-shaped simulators (HASS, HomeBox, ZoneMinder),
 paperless-ngx has no 1-to-1 mapping onto HI Entities — its
-contribution is the ATTRIBUTE_REFERENCE capability, which produces
+contribution is the EXTERNAL_REFERENCE capability, which produces
 TEXT attributes on existing Entity / Location records, not new
 entities. So this simulator has no SimEntities and no persistent
 corpus. Instead it generates synthetic search results on the fly,
@@ -108,7 +108,7 @@ class PaperlessSimulator( ServiceSimulator ):
 
     @property
     def sim_entity_definition_list(self) -> List[ SimEntityDefinition ]:
-        # Paperless contributes only via ATTRIBUTE_REFERENCE — no
+        # Paperless contributes only via EXTERNAL_REFERENCE — no
         # SimEntity rows ever, so the service page's entity-list
         # area renders empty. The extras pane carries the operator
         # UI.

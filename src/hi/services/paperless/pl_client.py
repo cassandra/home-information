@@ -1,9 +1,9 @@
-"""HTTP client for the paperless-ngx ATTRIBUTE_REFERENCE integration.
+"""HTTP client for the paperless-ngx EXTERNAL_REFERENCE integration.
 
 The client is intentionally small: a single thin wrapper over
 ``requests.Session`` plus a factory that constructs one from the
 stored ``Integration`` attributes. There is no manager singleton —
-ATTRIBUTE_REFERENCE has no monitors and no cached state to own, so
+EXTERNAL_REFERENCE has no monitors and no cached state to own, so
 each call builds a fresh client from current DB state.
 
 The browser-facing thumbnail URL is built by the *referencer*, not

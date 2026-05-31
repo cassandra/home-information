@@ -7,7 +7,7 @@ import requests
 from hi.integrations.integration_gateway import IntegrationGateway
 from hi.integrations.models import IntegrationAttribute
 from hi.integrations.referencer.integration_referencer import (
-    IntegrationAttributeReferencer,
+    IntegrationExternalReferencer,
 )
 from hi.integrations.transient_models import (
     ConnectionTestResult,
@@ -19,7 +19,7 @@ from hi.integrations.transient_models import (
 from .enums import ImAttributeType
 from .im_metadata import ImmichMetaData
 from .im_models import ImmichApi
-from .im_referencer import ImmichAttributeReferencer
+from .im_referencer import ImmichExternalReferencer
 from .im_validation import validate_attributes
 
 
@@ -31,8 +31,8 @@ class ImmichGateway( IntegrationGateway ):
     def get_metadata( self ) -> IntegrationMetaData:
         return ImmichMetaData
 
-    def get_attribute_referencer( self ) -> IntegrationAttributeReferencer:
-        return ImmichAttributeReferencer()
+    def get_external_referencer( self ) -> IntegrationExternalReferencer:
+        return ImmichExternalReferencer()
 
     def validate_configuration(
             self,
