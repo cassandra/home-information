@@ -20,7 +20,6 @@ Three endpoint families:
 """
 import hashlib
 import random
-import time
 from dataclasses import replace
 from datetime import datetime, timezone
 from typing import List, Optional
@@ -144,8 +143,6 @@ class DocumentsListView( View ):
     def get( self, request, *args, **kwargs ):
         simulator = PaperlessSimulator()
         settings = simulator.settings
-        if settings.latency_ms > 0:
-            time.sleep( settings.latency_ms / 1000.0 )
         query = request.GET.get( 'query', '' ).strip()
         results = _generate_results( settings, query )
         # Mirrors the DRF pagination envelope the real paperless
@@ -233,9 +230,6 @@ class SetSettingsView( View ):
             snippets = self._parse_bool(
                 request.POST.get( 'snippets' ),
             ),
-            latency_ms = self._parse_latency_ms(
-                request.POST.get( 'latency_ms' ), current.latency_ms,
-            ),
         )
         simulator.set_settings( new_settings )
         return render(
@@ -271,13 +265,3 @@ class SetSettingsView( View ):
         # mere presence of the field name (with any truthy value) is
         # the signal.
         return bool( raw )
-
-    @staticmethod
-    def _parse_latency_ms( raw : Optional[str], fallback : int ) -> int:
-        try:
-            value = int( raw )
-        except (TypeError, ValueError):
-            return fallback
-        if value < 0 or value > 10000:
-            raise BadRequest( f'latency_ms out of range: {raw!r}' )
-        return value

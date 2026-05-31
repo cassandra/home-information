@@ -22,7 +22,6 @@ these views do not inspect the ``x-api-key`` header themselves.
 """
 import hashlib
 import json
-import time
 from dataclasses import replace
 from datetime import datetime, timezone
 from typing import List, Optional
@@ -37,6 +36,7 @@ from django.views.decorators.csrf import csrf_exempt
 from .simulator import (
     ImmichSimSettings,
     ImmichSimulator,
+    MimeMix,
     RESULT_COUNT_CHOICES,
 )
 
@@ -51,6 +51,25 @@ _CITY_COUNTRY_CYCLE = (
     ( None, None ),  # exercise the no-EXIF row
 )
 
+# Per-mime-mix palette of (mime_type, asset_type, file_extension).
+# IMAGE assets cycle through real-world Immich image formats; VIDEO
+# assets are mp4 (the most common). MIXED alternates per index so a
+# single result page surfaces both card types.
+_MIME_PALETTE = {
+    MimeMix.IMAGE_ONLY: (
+        ( 'image/jpeg', 'IMAGE', 'jpg' ),
+        ( 'image/png', 'IMAGE', 'png' ),
+    ),
+    MimeMix.VIDEO_ONLY: (
+        ( 'video/mp4', 'VIDEO', 'mp4' ),
+    ),
+    MimeMix.MIXED: (
+        ( 'image/jpeg', 'IMAGE', 'jpg' ),
+        ( 'video/mp4', 'VIDEO', 'mp4' ),
+        ( 'image/png', 'IMAGE', 'png' ),
+    ),
+}
+
 
 def _stable_asset_id( query : str, index : int ) -> str:
     """Map (query, index) to a stable UUID-shaped string. Different
@@ -63,6 +82,14 @@ def _stable_asset_id( query : str, index : int ) -> str:
     )
 
 
+def _pick_mime( mix : MimeMix, index : int ):
+    """Deterministic per-index palette pick. Cycles through the
+    palette so a multi-result page rendered with MIXED visits each
+    type. Returns ``(mime_type, asset_type, file_extension)``."""
+    palette = _MIME_PALETTE[ mix ]
+    return palette[ index % len(palette) ]
+
+
 def _generate_assets(
         settings : ImmichSimSettings, query : str,
 ) -> List[dict]:
@@ -73,14 +100,18 @@ def _generate_assets(
     assets = []
     for index in range( settings.result_count ):
         asset_id = _stable_asset_id( query or '', index )
+        mime_type, asset_type, extension = _pick_mime(
+            settings.mime_mix, index,
+        )
         # Filename bakes in the query so operators can visually trace
         # what was searched.
-        filename = f'{(query or "asset").strip().replace(" ", "-")}-{index + 1}.jpg'
+        stem = (query or "asset").strip().replace(" ", "-")
+        filename = f'{stem}-{index + 1}.{extension}'
         asset = {
             'id'                : asset_id,
             'originalFileName'  : filename,
-            'originalMimeType'  : 'image/jpeg',
-            'type'              : 'IMAGE',
+            'originalMimeType'  : mime_type,
+            'type'              : asset_type,
             'fileCreatedAt'     : now_iso,
         }
         if settings.include_exif:
@@ -121,8 +152,6 @@ class SmartSearchView( View ):
     def post( self, request, *args, **kwargs ):
         simulator = ImmichSimulator()
         settings = simulator.settings
-        if settings.latency_ms > 0:
-            time.sleep( settings.latency_ms / 1000.0 )
         # Body is JSON: {"query": "...", "size": N}. Query is read for
         # stable id generation and filename baking only; size isn't
         # honored because the operator-chosen result_count is the
@@ -160,8 +189,14 @@ def _thumbnail_svg( asset_id : str ) -> bytes:
 
 
 class ThumbnailView( View ):
+    """``GET /api/assets/<id>/thumbnail`` -- serves an SVG placeholder
+    when thumbnails are enabled; 404s otherwise so HI's no-thumbnail
+    fallback can be exercised."""
 
     def get( self, request, *args, **kwargs ):
+        simulator = ImmichSimulator()
+        if not simulator.settings.thumbnails:
+            return HttpResponse( status = 404 )
         asset_id = kwargs.get( 'asset_id' ) or ''
         return HttpResponse(
             _thumbnail_svg( asset_id ),
@@ -199,11 +234,14 @@ class SetSettingsView( View ):
             result_count = self._parse_result_count(
                 request.POST.get( 'result_count' ), current.result_count,
             ),
+            mime_mix = self._parse_mime_mix(
+                request.POST.get( 'mime_mix' ),
+            ),
             include_exif = self._parse_bool(
                 request.POST.get( 'include_exif' ),
             ),
-            latency_ms = self._parse_latency_ms(
-                request.POST.get( 'latency_ms' ), current.latency_ms,
+            thumbnails = self._parse_bool(
+                request.POST.get( 'thumbnails' ),
             ),
         )
         simulator.set_settings( new_settings )
@@ -213,6 +251,7 @@ class SetSettingsView( View ):
             {
                 'settings'             : new_settings,
                 'result_count_choices' : RESULT_COUNT_CHOICES,
+                'mime_mix_choices'     : list( MimeMix ),
             },
         )
 
@@ -227,21 +266,18 @@ class SetSettingsView( View ):
         return value
 
     @staticmethod
+    def _parse_mime_mix( raw : Optional[str] ) -> MimeMix:
+        try:
+            return MimeMix[ raw ]
+        except (KeyError, TypeError):
+            raise BadRequest( f'Invalid mime_mix: {raw!r}' )
+
+    @staticmethod
     def _parse_bool( raw : Optional[str] ) -> bool:
         # An unchecked checkbox is absent from the POST body, so the
         # mere presence of the field name (with any truthy value) is
         # the signal.
         return bool( raw )
-
-    @staticmethod
-    def _parse_latency_ms( raw : Optional[str], fallback : int ) -> int:
-        try:
-            value = int( raw )
-        except (TypeError, ValueError):
-            return fallback
-        if value < 0 or value > 10000:
-            raise BadRequest( f'latency_ms out of range: {raw!r}' )
-        return value
 
 
 # ---- helpers ----------------------------------------------------

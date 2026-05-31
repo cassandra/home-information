@@ -20,9 +20,10 @@ singleton:
                      the picker falls back to its icon)
   - snippets       : whether each result carries a content snippet
                      (exercises picker layout with / without it)
-  - latency_ms     : artificial latency on the documents-list
-                     endpoint, for surfacing any debounce or
-                     loading-state issues in the picker
+
+Artificial latency is intentionally NOT a knob here -- the
+framework ``ServiceFaultMode`` already exposes a ``SLOW`` mode that
+covers the same operator need without per-simulator duplication.
 
 Settings live in memory on the singleton (same lifecycle as
 HomeBox's ``_api_version``) — lost on server restart, survives
@@ -70,7 +71,6 @@ class PaperlessSimSettings:
     mime_mix     : MimeMix = MimeMix.MIXED
     thumbnails   : bool    = True
     snippets     : bool    = True
-    latency_ms   : int     = 0
 
 
 class PaperlessSimulator( ServiceSimulator ):

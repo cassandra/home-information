@@ -13,18 +13,52 @@ Knobs:
   - result_count : how many assets each smart search returns
                    (0/1/3/10/50 -- exercises empty / single / multi
                    picker rendering paths).
+  - mime_mix     : which mime-type mix populates result rows
+                   (images only, videos only, mixed). Drives the
+                   ``_try_generate_from_original`` branch in the
+                   referencer -- only image mimes pull original
+                   bytes; video mimes skip that fetch.
   - include_exif : whether generated assets carry EXIF city /
                    country (drives the snippet on / off path in the
                    referencer's ``_build_secondary_text``).
-  - latency_ms   : artificial latency on the smart-search endpoint,
-                   for surfacing debounce or loading issues in the
-                   picker.
+  - thumbnails   : whether ``/api/assets/<id>/thumbnail`` serves an
+                   SVG placeholder (when off the endpoint 404s).
+                   Combined with the simulator's absent
+                   ``/api/assets/<id>/original`` endpoint this
+                   exercises HI's full no-thumbnail fallback:
+                   ``attach`` records the row with no thumbnail
+                   and the grid card renders the mime fallback
+                   icon; the picker preview shows the browser's
+                   broken-image glyph.
+
+Artificial latency is intentionally NOT a knob here -- the
+framework ``ServiceFaultMode`` already exposes a ``SLOW`` mode that
+covers the same operator need without per-simulator duplication.
 """
 from dataclasses import dataclass
+from enum import Enum
 from typing import Dict, List
 
 from hi.simulator.services.base_models import SimEntityDefinition
 from hi.simulator.services.service_simulator import ServiceSimulator
+
+
+class MimeMix( Enum ):
+    """Which mime types populate generated search results. Drives
+    the referencer's image-vs-video gating in
+    ``_try_generate_from_original`` through different code branches."""
+
+    IMAGE_ONLY = 'Images only'
+    VIDEO_ONLY = 'Videos only'
+    MIXED      = 'Mixed'
+
+    @classmethod
+    def default(cls) -> 'MimeMix':
+        return cls.MIXED
+
+    @property
+    def label(self) -> str:
+        return self.value
 
 
 # Discrete result counts the operator can pick; exercises distinct
@@ -37,9 +71,10 @@ class ImmichSimSettings:
     """Knobs that parametrize every response. Held on the
     ImmichSimulator singleton; ephemeral."""
 
-    result_count : int  = 3
-    include_exif : bool = True
-    latency_ms   : int  = 0
+    result_count : int     = 3
+    mime_mix     : MimeMix = MimeMix.MIXED
+    include_exif : bool    = True
+    thumbnails   : bool    = True
 
 
 class ImmichSimulator( ServiceSimulator ):
@@ -84,4 +119,5 @@ class ImmichSimulator( ServiceSimulator ):
         return {
             'settings'             : self._settings,
             'result_count_choices' : RESULT_COUNT_CHOICES,
+            'mime_mix_choices'     : list( MimeMix ),
         }
