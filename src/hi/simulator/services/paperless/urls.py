@@ -13,6 +13,10 @@ urlpatterns = [
           views.ThumbnailView.as_view(),
           name = 'paperless_document_thumbnail' ),
 
+    path( 'api/documents/<int:document_id>/download/',
+          views.DownloadView.as_view(),
+          name = 'paperless_document_download' ),
+
     path( 'documents/<int:document_id>/details/',
           views.PreviewView.as_view(),
           name = 'paperless_document_preview' ),

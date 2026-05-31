@@ -150,6 +150,27 @@
     margin-bottom: 2rem;
 }
 
+/* External-reference card: integration logo inside the open-link
+   action button. Sized 24px so it reads as an icon at typical
+   button height. */
+.hi-ext-ref-integration-logo {
+    width: 24px;
+    height: 24px;
+    vertical-align: middle;
+}
+
+/* Action buttons in any file-card actions row (native attribute
+   file cards and the external-reference card both use
+   ``attr-v2-file-actions``). inline-flex centers tall children
+   (24px icons / integration logos) inside btn-sm's padded box;
+   without this an img > line-height defaults to baseline-ish
+   vertical alignment and visually sits high in the button. */
+.attr-v2-file-actions .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
 .attr-v2-file-grid {
     display: grid;
     grid-template-columns: repeat(3, 1fr);

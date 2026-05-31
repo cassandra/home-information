@@ -17,6 +17,10 @@ urlpatterns = [
           views.ThumbnailView.as_view(),
           name = 'immich_asset_thumbnail' ),
 
+    path( 'api/assets/<str:asset_id>/original',
+          views.OriginalView.as_view(),
+          name = 'immich_asset_original' ),
+
     path( 'photos/<str:asset_id>',
           views.PhotoPreviewView.as_view(),
           name = 'immich_photo_preview' ),

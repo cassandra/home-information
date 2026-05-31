@@ -93,19 +93,19 @@ tag in attribute_extras.py.
     
     <!-- File Actions -->
   <div class="attr-v2-file-actions">
-    <button type="button" 
+    <button type="button"
             class="btn btn-sm btn-outline-primary"
             onclick="window.open('{{ attribute.file_value.url }}', '_blank');"
             title="View file">
-      {% icon "eye" size="sm" %}
+      {% icon "eye" size="xl" %}
     </button>
-    
+
     {% if attribute.attribute_type.can_delete %}
-      <button type="button" 
+      <button type="button"
               class="btn btn-sm btn-outline-danger {{ DIVID.ATTR_V2_DELETE_BTN_CLASS }}"
               onclick="markFileForDeletion('{{ attribute.id }}', '#{{ attr_page_context.container_html_id }}')"
               title="Delete file">
-        {% icon "delete" size="sm" %}
+        {% icon "delete" size="xl" %}
       </button>
       <button type="button" 
               class="btn btn-sm btn-outline-secondary {{ DIVID.ATTR_V2_UNDO_BTN_CLASS }}"

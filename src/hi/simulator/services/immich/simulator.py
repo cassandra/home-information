@@ -21,15 +21,16 @@ Knobs:
   - include_exif : whether generated assets carry EXIF city /
                    country (drives the snippet on / off path in the
                    referencer's ``_build_secondary_text``).
-  - thumbnails   : whether ``/api/assets/<id>/thumbnail`` serves an
-                   SVG placeholder (when off the endpoint 404s).
-                   Combined with the simulator's absent
-                   ``/api/assets/<id>/original`` endpoint this
-                   exercises HI's full no-thumbnail fallback:
-                   ``attach`` records the row with no thumbnail
-                   and the grid card renders the mime fallback
-                   icon; the picker preview shows the browser's
-                   broken-image glyph.
+  - thumbnails   : whether ``/api/assets/<id>/thumbnail`` serves a
+                   PNG placeholder (when off the endpoint 404s and
+                   HI falls back to the ``/api/assets/<id>/original``
+                   bytes-to-thumbnail-png pipeline -- which produces
+                   a HI-generated thumbnail with a different visual
+                   so the operator can tell which path produced the
+                   saved card's image). To exercise the full
+                   no-thumbnail path (mime fallback icon on the
+                   card), force a ``ServiceFaultMode.SERVER_ERROR``
+                   so all endpoints fail.
 
 Artificial latency is intentionally NOT a knob here -- the
 framework ``ServiceFaultMode`` already exposes a ``SLOW`` mode that

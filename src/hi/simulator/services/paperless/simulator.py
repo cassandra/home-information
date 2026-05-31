@@ -14,10 +14,16 @@ singleton:
                      rendering paths)
   - mime_mix       : which mime-type mix populates result rows (PDF
                      only, images only, plain text only, or mixed)
-  - thumbnails     : whether the simulator's
-                     ``/api/documents/<id>/thumb/`` endpoint serves
-                     a thumbnail (when off, the endpoint 404s and
-                     the picker falls back to its icon)
+  - thumbnails     : whether ``/api/documents/<id>/thumb/`` serves
+                     a thumbnail (when off the endpoint 404s and HI
+                     falls back to the ``/api/documents/<id>/download/``
+                     original-bytes -> pdf2image -> thumbnail
+                     pipeline -- which produces a HI-generated
+                     thumbnail visually distinguishable from the
+                     upstream placeholder). To exercise the full
+                     no-thumbnail path (mime fallback icon on the
+                     card), force a ``ServiceFaultMode.SERVER_ERROR``
+                     so all endpoints fail.
   - snippets       : whether each result carries a content snippet
                      (exercises picker layout with / without it)
 

@@ -26,7 +26,7 @@ import logging
 from typing import Optional
 
 from django.urls import reverse
-from requests import HTTPError, RequestException
+from requests import HTTPError
 
 from hi.integrations.exceptions import IntegrationAttributeError
 from hi.integrations.referencer.integration_referencer import (
@@ -143,7 +143,10 @@ class PaperlessExternalReferencer( IntegrationExternalReferencer ):
             return None
         try:
             downloaded = client.download_thumbnail( document_id = document_id )
-        except (HTTPError, RequestException) as e:
+        except Exception as e:
+            # Broad catch: this is a best-effort thumbnail fetch.
+            # Any failure here (HTTP, network, code bug) should mean
+            # "no thumbnail", never "the whole attach failed".
             logger.warning(
                 f'Paperless thumbnail unavailable for document '
                 f'{integration_name}: {e}'
@@ -170,7 +173,11 @@ class PaperlessExternalReferencer( IntegrationExternalReferencer ):
             return None
         try:
             downloaded = client.download_original( document_id = document_id )
-        except (HTTPError, RequestException) as e:
+        except Exception as e:
+            # Broad catch: same rationale as ``_try_upstream_thumbnail``
+            # -- the original-bytes fallback is best-effort; any
+            # failure here means "no thumbnail", never per-selection
+            # attach failure.
             logger.warning(
                 f'Paperless original-bytes fetch failed for document '
                 f'{integration_name}: {e}'

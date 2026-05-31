@@ -51,9 +51,11 @@ Context:
       {% endif %}
     {% endif %}
 
-    {# The parent thumbnail's onclick filters out clicks originating
-       inside this wrapper, so reorder-button clicks bubble normally
-       to the document-delegated handlers in external-references.js. #}
+    {% comment %}
+    The parent thumbnail's onclick filters out clicks originating
+    inside this wrapper, so reorder-button clicks bubble normally
+    to the document-delegated handlers in external-references.js.
+    {% endcomment %}
     <div class="attr-v2-reorder-controls"
          onmouseenter="this.parentElement.classList.add('reorder-hover');"
          onmouseleave="this.parentElement.classList.remove('reorder-hover');">
@@ -89,15 +91,15 @@ Context:
         {% if integration_logo %}
           <img src="{% static integration_logo %}"
                alt=""
-               style="width: 16px; height: 16px; vertical-align: middle;">
+               class="hi-ext-ref-integration-logo">
         {% else %}
-          {% icon "eye" size="sm" %}
+          {% icon "eye" size="xl" %}
         {% endif %}
       </a>
       <button type="button"
               class="btn btn-sm btn-outline-danger {{ DIVID.EXT_REF_DELETE_BTN_CLASS }}"
               title="Unlink this reference">
-        {% icon "times-circle" size="sm" %}
+        {% icon "unlink" size="xl" %}
       </button>
     </div>
   </div>

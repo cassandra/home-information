@@ -19,7 +19,7 @@ Context:
                         with owner_type to compose the grid id.
 {% endcomment %}
 <div id="hi-ext-ref-grid-{{ owner_type }}-{{ owner_id }}"
-     class="{{ DIVID.EXT_REF_GRID_CLASS }}">
+     class="{{ DIVID.EXT_REF_GRID_CLASS }} attr-v2-file-grid">
   {% for reference in external_references %}
     {% include "integrations/panes/external_reference_card.html" with reference=reference owner_type=owner_type owner_id=owner_id %}
   {% endfor %}

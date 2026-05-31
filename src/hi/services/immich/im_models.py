@@ -13,6 +13,11 @@ class ImmichApi:
     # has no free-text query field.
     SEARCH_METADATA_PROBE_PATH = 'api/search/metadata'
     ASSET_THUMBNAIL_PATH = 'api/assets/{id}/thumbnail'
+    # Original-bytes endpoint -- used by the referencer's defensive
+    # thumbnail fallback (HI-side generator from original) when the
+    # upstream thumbnail endpoint is unavailable. Gated upstream on
+    # image mime types so we don't pull whole videos.
+    ASSET_ORIGINAL_PATH  = 'api/assets/{id}/original'
     # Per-asset web UI route. Used unchanged as the persisted attribute
     # value; operators clicking the saved link land on Immich's own
     # page (authenticated by their Immich session, not by HI).

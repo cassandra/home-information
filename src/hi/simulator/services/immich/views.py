@@ -24,6 +24,7 @@ import hashlib
 import json
 from dataclasses import replace
 from datetime import datetime, timezone
+from io import BytesIO
 from typing import List, Optional
 
 from django.core.exceptions import BadRequest
@@ -32,6 +33,7 @@ from django.shortcuts import render
 from django.utils.decorators import method_decorator
 from django.views import View
 from django.views.decorators.csrf import csrf_exempt
+from PIL import Image, ImageDraw
 
 from .simulator import (
     ImmichSimSettings,
@@ -176,20 +178,29 @@ class MetadataSearchView( View ):
         return JsonResponse( _search_envelope( assets = [] ))
 
 
-def _thumbnail_svg( asset_id : str ) -> bytes:
-    short = asset_id.split('-')[0]
-    return (
-        f'<svg xmlns="http://www.w3.org/2000/svg" width="160" height="160" '
-        f'viewBox="0 0 160 160">'
-        f'<rect width="160" height="160" fill="#cfe2ff" stroke="#0d6efd"/>'
-        f'<text x="80" y="86" text-anchor="middle" font-family="sans-serif" '
-        f'font-size="18" fill="#084298">{short}</text>'
-        f'</svg>'
-    ).encode('utf-8')
+def _thumbnail_png( asset_id : str ) -> bytes:
+    """Tiny PNG placeholder generated with Pillow. Real Immich
+    returns a raster image from this endpoint; matching that lets
+    the framework's attach-time bytes-to-file write produce a file
+    the browser can later decode (the manager hard-codes the saved
+    filename's extension to ``.png``)."""
+    short = asset_id.split('-')[0] if asset_id else 'asset'
+    img = Image.new( 'RGB', ( 160, 160 ), ( 207, 226, 255 ))
+    draw = ImageDraw.Draw( img )
+    text_box = draw.textbbox( ( 0, 0 ), short )
+    text_w = text_box[2] - text_box[0]
+    text_h = text_box[3] - text_box[1]
+    draw.text(
+        ( (160 - text_w) // 2, (160 - text_h) // 2 ),
+        short, fill = ( 8, 66, 152 ),
+    )
+    buf = BytesIO()
+    img.save( buf, format = 'PNG' )
+    return buf.getvalue()
 
 
 class ThumbnailView( View ):
-    """``GET /api/assets/<id>/thumbnail`` -- serves an SVG placeholder
+    """``GET /api/assets/<id>/thumbnail`` -- serves a PNG placeholder
     when thumbnails are enabled; 404s otherwise so HI's no-thumbnail
     fallback can be exercised."""
 
@@ -199,8 +210,46 @@ class ThumbnailView( View ):
             return HttpResponse( status = 404 )
         asset_id = kwargs.get( 'asset_id' ) or ''
         return HttpResponse(
-            _thumbnail_svg( asset_id ),
-            content_type = 'image/svg+xml',
+            _thumbnail_png( asset_id ),
+            content_type = 'image/png',
+        )
+
+
+def _original_png( asset_id : str ) -> bytes:
+    """Real PNG bytes for the original-asset endpoint. Larger than
+    the thumbnail placeholder and orange-tinted so a HI-generated
+    thumbnail produced from these bytes is visually distinguishable
+    from the blue upstream thumbnail when the operator toggles
+    ``thumbnails`` off to exercise the fallback path."""
+    short = asset_id.split('-')[0] if asset_id else 'asset'
+    img = Image.new( 'RGB', ( 640, 480 ), ( 255, 224, 178 ))
+    draw = ImageDraw.Draw( img )
+    label = f'original\n{short}'
+    text_box = draw.multiline_textbbox( ( 0, 0 ), label )
+    text_w = text_box[2] - text_box[0]
+    text_h = text_box[3] - text_box[1]
+    draw.multiline_text(
+        ( (640 - text_w) // 2, (480 - text_h) // 2 ),
+        label, fill = ( 230, 81, 0 ), align = 'center',
+    )
+    buf = BytesIO()
+    img.save( buf, format = 'PNG' )
+    return buf.getvalue()
+
+
+class OriginalView( View ):
+    """``GET /api/assets/<id>/original`` -- always-on PNG. HI's
+    referencer hits this as the defensive fallback when the
+    thumbnail endpoint is unavailable; serving real bytes here lets
+    operators exercise the HI-generated thumbnail path (turn
+    ``thumbnails`` off, attach an image asset, see a HI-generated
+    thumbnail on the saved card)."""
+
+    def get( self, request, *args, **kwargs ):
+        asset_id = kwargs.get( 'asset_id' ) or ''
+        return HttpResponse(
+            _original_png( asset_id ),
+            content_type = 'image/png',
         )
 
 
