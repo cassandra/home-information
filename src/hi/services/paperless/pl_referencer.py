@@ -36,6 +36,10 @@ from hi.integrations.referencer.transient_models import (
     ExternalReferenceResult,
     ExternalReferenceSearchResult,
 )
+from hi.integrations.thumbnails import (
+    THUMBNAIL_SUPPORTED_MIME_TYPES,
+    generate as generate_thumbnail,
+)
 from hi.integrations.transient_models import (
     IntegrationKey,
     IntegrationMetaData,
@@ -131,11 +135,11 @@ class PaperlessExternalReferencer( IntegrationExternalReferencer ):
     ) -> None:
         """Attach each selected paperless document as a framework
         external-reference row. Best-effort thumbnail fetch per
-        document; on failure the row still attaches (placeholder
-        rendering covers the missing-thumbnail case). Paperless does
-        not expose a distinct original-bytes endpoint useful for
-        HI-generated fallbacks in v1, so the chain ends at the
-        upstream thumbnail attempt."""
+        document: upstream thumbnail -> original-bytes + HI generator
+        (only for mime types the generator supports; office docs,
+        text, etc. skip the fetch) -> no thumbnail. The row attaches
+        regardless of which link produced bytes; linking is the
+        primary user goal."""
         try:
             client = build_client()
         except IntegrationAttributeError as e:
@@ -161,15 +165,21 @@ class PaperlessExternalReferencer( IntegrationExternalReferencer ):
             self, client, manager, owner,
             selection : ExternalReferenceResult,
     ) -> None:
+        integration_name = selection.integration_key.integration_name
+        mime_type = selection.mime_type or ''
         thumbnail_bytes = self._try_upstream_thumbnail(
-            client, selection.integration_key.integration_name,
+            client, integration_name,
         )
+        if thumbnail_bytes is None:
+            thumbnail_bytes = self._try_generate_from_original(
+                client, integration_name, mime_type,
+            )
         manager.create_or_update(
             owner           = owner,
             integration_key = selection.integration_key,
             title           = selection.title,
             source_url      = selection.source_url,
-            mime_type       = selection.mime_type or '',
+            mime_type       = mime_type,
             thumbnail_bytes = thumbnail_bytes,
         )
 
@@ -194,6 +204,36 @@ class PaperlessExternalReferencer( IntegrationExternalReferencer ):
             )
             return None
         return downloaded.get( 'content' )
+
+    @staticmethod
+    def _try_generate_from_original(
+            client : PaperlessClient,
+            integration_name : str,
+            mime_type : str,
+    ) -> Optional[bytes]:
+        """Pull the original document bytes and ask the framework
+        generator for a thumbnail. Gated on mime type to skip
+        formats the generator can't handle (office docs, text)
+        rather than waste bandwidth on bytes the generator will
+        reject."""
+        if mime_type not in THUMBNAIL_SUPPORTED_MIME_TYPES:
+            return None
+        try:
+            document_id = int( integration_name )
+        except (TypeError, ValueError):
+            return None
+        try:
+            downloaded = client.download_original( document_id = document_id )
+        except (HTTPError, RequestException) as e:
+            logger.warning(
+                f'Paperless original-bytes fetch failed for document '
+                f'{integration_name}: {e}'
+            )
+            return None
+        original_bytes = downloaded.get( 'content' )
+        if not original_bytes:
+            return None
+        return generate_thumbnail( original_bytes, mime_type )
 
     @staticmethod
     def _http_error_message( status : Optional[int] ) -> str:

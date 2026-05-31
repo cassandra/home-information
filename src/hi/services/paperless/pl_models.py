@@ -16,6 +16,12 @@ class PaperlessApi:
 
     DOCUMENTS_PATH       = 'api/documents/'
     DOCUMENT_THUMB_PATH  = 'api/documents/{id}/thumb/'
+    # Original-bytes endpoint. Used by attach_references as the
+    # fallback when the upstream thumbnail endpoint fails -- the
+    # framework's thumbnail generator then makes a small PNG from
+    # the original. Only fetched for mime types the generator
+    # supports (image + PDF); other document types skip the fetch.
+    DOCUMENT_DOWNLOAD_PATH = 'api/documents/{id}/download/'
     # Per-document web UI route. Used unchanged as the persisted
     # attribute value; operators clicking the saved link land on
     # paperless's own page (authenticated by their paperless session,

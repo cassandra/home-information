@@ -326,10 +326,12 @@ class TestAttachReferences(TestCase):
         self.assertTrue(row.thumbnail.name)
 
     @patch('hi.services.paperless.pl_referencer.build_client')
-    def test_upstream_thumbnail_failure_still_attaches_row(self, mock_build):
+    def test_thumbnail_fail_original_fail_attaches_without_thumbnail(
+            self, mock_build):
         from hi.integrations.models import EntityExternalReference
         client = Mock()
-        client.download_thumbnail.side_effect = HTTPError('boom')
+        client.download_thumbnail.side_effect = HTTPError('500')
+        client.download_original.side_effect = HTTPError('502')
         mock_build.return_value = client
 
         self.referencer.attach_references(
@@ -340,6 +342,73 @@ class TestAttachReferences(TestCase):
             entity=self.entity, integration_name='99',
         )
         self.assertFalse(row.thumbnail)
+
+    @patch('hi.services.paperless.pl_referencer.generate_thumbnail',
+           return_value=b'GENERATED-PNG')
+    @patch('hi.services.paperless.pl_referencer.build_client')
+    def test_thumbnail_fail_original_succeed_generate_succeed(
+            self, mock_build, mock_generate):
+        from hi.integrations.models import EntityExternalReference
+        client = Mock()
+        client.download_thumbnail.side_effect = HTTPError('500')
+        client.download_original.return_value = {
+            'content': b'PDF-RAW', 'mime_type': 'application/pdf',
+        }
+        mock_build.return_value = client
+
+        self.referencer.attach_references(
+            self.entity, [self._selection(doc_id='99')],
+        )
+
+        row = EntityExternalReference.objects.get(
+            entity=self.entity, integration_name='99',
+        )
+        self.assertTrue(row.thumbnail.name)
+        mock_generate.assert_called_once_with(b'PDF-RAW', 'application/pdf')
+
+    @patch('hi.services.paperless.pl_referencer.generate_thumbnail',
+           return_value=None)
+    @patch('hi.services.paperless.pl_referencer.build_client')
+    def test_thumbnail_fail_original_succeed_generate_fail(
+            self, mock_build, _mock_generate):
+        from hi.integrations.models import EntityExternalReference
+        client = Mock()
+        client.download_thumbnail.side_effect = HTTPError('500')
+        client.download_original.return_value = {
+            'content': b'PDF-RAW', 'mime_type': 'application/pdf',
+        }
+        mock_build.return_value = client
+
+        self.referencer.attach_references(
+            self.entity, [self._selection(doc_id='99')],
+        )
+
+        row = EntityExternalReference.objects.get(
+            entity=self.entity, integration_name='99',
+        )
+        self.assertFalse(row.thumbnail)
+
+    @patch('hi.services.paperless.pl_referencer.build_client')
+    def test_unsupported_mime_skips_original_fetch(self, mock_build):
+        # Office docs / text / etc. the generator can't handle should
+        # not trigger an original-bytes download just to discover the
+        # generator will reject the bytes.
+        from hi.integrations.models import EntityExternalReference
+        client = Mock()
+        client.download_thumbnail.side_effect = HTTPError('500')
+        mock_build.return_value = client
+
+        self.referencer.attach_references(
+            self.entity,
+            [self._selection(doc_id='99',
+                             mime_type='application/vnd.oasis.opendocument.text')],
+        )
+
+        row = EntityExternalReference.objects.get(
+            entity=self.entity, integration_name='99',
+        )
+        self.assertFalse(row.thumbnail)
+        client.download_original.assert_not_called()
 
     @patch('hi.services.paperless.pl_referencer.build_client',
            side_effect=IntegrationAttributeError('not configured'))
