@@ -200,7 +200,23 @@
         ATTR_PICKER_SOURCE_OPTION_CLASS:     'hi-attr-picker-source-option',
         ATTR_PICKER_SOURCE_ID_ATTR:          'data-attr-picker-source-id',
         ATTR_PICKER_SOURCE_LOGO_ATTR:        'data-attr-picker-source-logo',
-        ATTR_PICKER_SOURCE_LABEL_ATTR:       'data-attr-picker-source-label'
+        ATTR_PICKER_SOURCE_LABEL_ATTR:       'data-attr-picker-source-label',
+
+        // External-reference card grid -- mirrors EXT_REF_* keys in
+        // hi.constants.DIVID.
+        EXT_REF_GRID_CLASS:                  'hi-ext-ref-grid',
+        EXT_REF_CARD_CLASS:                  'hi-ext-ref-card',
+        EXT_REF_TITLE_INPUT_CLASS:           'hi-ext-ref-title-input',
+        EXT_REF_DELETE_BTN_CLASS:            'hi-ext-ref-delete-btn',
+        EXT_REF_REORDER_LEFT_CLASS:          'hi-ext-ref-reorder-left',
+        EXT_REF_REORDER_RIGHT_CLASS:         'hi-ext-ref-reorder-right',
+        EXT_REF_REFERENCE_ID_ATTR:           'data-ext-ref-id',
+        EXT_REF_OWNER_TYPE_ATTR:             'data-ext-ref-owner-type',
+        EXT_REF_OWNER_ID_ATTR:               'data-ext-ref-owner-id',
+        EXT_REF_TITLE_FIELD:                 'title',
+        EXT_REF_DIRECTION_FIELD:             'direction',
+        EXT_REF_DIRECTION_LEFT:              'left',
+        EXT_REF_DIRECTION_RIGHT:             'right'
     };
     
     window.Hi = Hi;

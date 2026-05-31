@@ -27,7 +27,7 @@ Context:
      data-order-index="{{ forloop.counter }}">
 
   <div class="attr-v2-file-thumbnail{% if reference.thumbnail %} has-thumbnail{% endif %}"
-       onclick="window.open('{{ reference.source_url }}', '_blank');"
+       onclick="if (!event.target.closest('.attr-v2-reorder-controls')) window.open('{{ reference.source_url }}', '_blank');"
        title="Open on {{ integration_label|default:'external source' }}">
     {% if reference.thumbnail %}
       <img src="{{ reference.thumbnail.url }}"
@@ -51,8 +51,10 @@ Context:
       {% endif %}
     {% endif %}
 
+    {# The parent thumbnail's onclick filters out clicks originating
+       inside this wrapper, so reorder-button clicks bubble normally
+       to the document-delegated handlers in external-references.js. #}
     <div class="attr-v2-reorder-controls"
-         onclick="event.stopPropagation();"
          onmouseenter="this.parentElement.classList.add('reorder-hover');"
          onmouseleave="this.parentElement.classList.remove('reorder-hover');">
       <button type="button"

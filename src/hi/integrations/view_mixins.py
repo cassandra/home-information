@@ -3,6 +3,7 @@ from typing import FrozenSet, Optional
 from django.core.exceptions import BadRequest
 from django.db.models import Count
 from django.http import Http404
+from django.shortcuts import render
 from django.urls import reverse
 
 from hi.apps.collection.collection_manager import CollectionManager
@@ -14,6 +15,10 @@ from hi.apps.location.models import Location, LocationView
 
 from hi.integrations.enums import IntegrationCapability
 from hi.integrations.integration_manager import IntegrationManager
+from hi.integrations.models import (
+    EntityExternalReference,
+    LocationExternalReference,
+)
 
 from hi.integrations.placement_request import PlacementUrlParams
 
@@ -68,6 +73,57 @@ class CapabilityBlockViewMixin:
                 'link_label': 'GO TO CONNECTORS',
             },
             template_name = 'integrations/modals/capability_blocked.html',
+        )
+
+
+class ExternalReferenceCardViewMixin:
+    """Helpers for the per-card external-reference action views
+    (rename, delete, reorder). Centralizes the owner_type-to-model
+    binding and the post-mutation grid-replace render. The
+    owner_type URL segment doubles as the foreign-key attribute
+    name on the row, so the binding is a flat string -> model
+    dict."""
+
+    EXTERNAL_REFERENCE_MODELS = {
+        'entity'  : EntityExternalReference,
+        'location': LocationExternalReference,
+    }
+    GRID_TEMPLATE = 'integrations/panes/external_reference_grid.html'
+
+    def get_external_reference_or_404( self, owner_type : str, reference_id : int ):
+        """Resolve a row by (owner_type, id). Raises Http404 on an
+        unknown owner type or a missing row -- the same response
+        either way so probing the wrong path never reveals whether a
+        row exists under the other type."""
+        model = self.EXTERNAL_REFERENCE_MODELS.get( owner_type )
+        if model is None:
+            raise Http404
+        try:
+            return model.objects.get( pk = reference_id )
+        except model.DoesNotExist:
+            raise Http404
+
+    def render_grid_replace( self, request, owner_type : str, owner ):
+        """Re-render the grid as plain HTML. The action source
+        elements (per-card inputs / buttons) carry
+        ``data-async="#<grid_id>"`` and ``data-mode="replace"``, so
+        antinode's ``replaceWith`` swaps the targeted grid element
+        with this response. View and template never duplicate the
+        target id -- the template owns it. Owner is passed
+        explicitly so the delete view (whose row is gone
+        post-mutation) can use the same path."""
+        model = self.EXTERNAL_REFERENCE_MODELS[ owner_type ]
+        external_references = model.objects.filter(
+            **{ owner_type: owner },
+        ).order_by( 'order_id', '-created_datetime' )
+        return render(
+            request,
+            self.GRID_TEMPLATE,
+            {
+                'external_references': external_references,
+                'owner_type'         : owner_type,
+                'owner_id'           : owner.id,
+            },
         )
 
 

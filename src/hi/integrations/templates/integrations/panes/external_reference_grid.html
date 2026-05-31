@@ -4,9 +4,11 @@ agnostic -- any integration's references render the same way once
 they're attached. Mirrors the internal-file grid's container
 structure so the two grids feel identical to operators.
 
-The grid's DOM id is stable per (owner_type, owner_id) so per-card
-action endpoints can target it via antinode replace-map and swap
-fresh grid HTML in place without closing the surrounding modal.
+Per-card action endpoints return this same template freshly
+rendered; external-references.js finds the surrounding grid via
+``closest()`` from the clicked card and replaces it in place, so
+the surrounding modal stays open without any JS/template magic-
+string id agreement.
 
 Context:
   external_references : queryset of EntityExternalReference or
@@ -16,11 +18,9 @@ Context:
   owner_id            : pk of the owning Entity / Location -- pairs
                         with owner_type to compose the grid id.
 {% endcomment %}
-<div class="hi-ext-ref-section">
-  <div id="hi-ext-ref-grid-{{ owner_type }}-{{ owner_id }}"
-       class="{{ DIVID.EXT_REF_GRID_CLASS }}">
-    {% for reference in external_references %}
-      {% include "integrations/panes/external_reference_card.html" with reference=reference owner_type=owner_type %}
-    {% endfor %}
-  </div>
+<div id="hi-ext-ref-grid-{{ owner_type }}-{{ owner_id }}"
+     class="{{ DIVID.EXT_REF_GRID_CLASS }}">
+  {% for reference in external_references %}
+    {% include "integrations/panes/external_reference_card.html" with reference=reference owner_type=owner_type owner_id=owner_id %}
+  {% endfor %}
 </div>

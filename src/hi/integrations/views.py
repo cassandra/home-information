@@ -6,12 +6,10 @@ import logging
 from django.core.exceptions import BadRequest
 from django.http import Http404
 from django.shortcuts import redirect
-from django.template.loader import render_to_string
 from django.urls import reverse
 from django.views.generic import View
 
 from hi.apps.attribute.view_mixins import AttributeEditViewMixin
-from hi.apps.common import antinode
 from hi.apps.entity.entity_placement import EntityPlacementService
 from hi.apps.location.models import LocationView
 from hi.constants import DIVID
@@ -25,14 +23,11 @@ from hi.integrations.integration_attribute_edit_context import (
     IntegrationAttributeItemEditContext,
 )
 from hi.integrations.integration_manager import IntegrationManager
-from hi.integrations.models import (
-    EntityExternalReference,
-    IntegrationAttribute,
-    LocationExternalReference,
-)
+from hi.integrations.models import IntegrationAttribute
 from hi.integrations.placement_request import PlacementFormParser, PlacementUrlParams
 from hi.integrations.view_mixins import (
     CapabilityBlockViewMixin,
+    ExternalReferenceCardViewMixin,
     IntegrationPlacementViewMixin,
     IntegrationViewMixin,
 )
@@ -41,63 +36,15 @@ from hi.integrations.view_mixins import (
 logger = logging.getLogger(__name__)
 
 
-# Per-owner-type external-reference model + owner-FK field name.
-# Used by the per-card action views to look up the right table and
-# to filter siblings during reorder.
-_EXTERNAL_REFERENCE_MODELS = {
-    'entity'  : ( EntityExternalReference, 'entity' ),
-    'location': ( LocationExternalReference, 'location' ),
-}
-
-
-def _get_external_reference_or_404( owner_type : str, reference_id : int ):
-    """Resolve an external-reference row by (owner_type, id). Raises
-    Http404 on an unknown owner type or a missing row -- the same
-    response either way so probing the wrong path never reveals
-    whether a row exists under the other type."""
-    bound = _EXTERNAL_REFERENCE_MODELS.get( owner_type )
-    if bound is None:
-        raise Http404
-    model, _owner_field = bound
-    try:
-        return model.objects.get( pk = reference_id )
-    except model.DoesNotExist:
-        raise Http404
-
-
-def _render_grid_replace( request, reference, owner_type : str ):
-    """Build the antinode replace-map response that swaps the fresh
-    grid HTML into the page in place. Computes the grid's stable DOM
-    id from owner_type + owner_id so the modal stays open while the
-    grid mutates."""
-    model, owner_field = _EXTERNAL_REFERENCE_MODELS[ owner_type ]
-    owner = getattr( reference, owner_field )
-    external_references = model.objects.filter(
-        **{ owner_field: owner },
-    ).order_by( 'order_id', '-created_datetime' )
-    grid_html = render_to_string(
-        'integrations/panes/external_reference_grid.html',
-        {
-            'external_references': external_references,
-            'owner_type'         : owner_type,
-            'owner_id'           : owner.id,
-        },
-        request = request,
-    )
-    return antinode.response(
-        replace_map = {
-            f'hi-ext-ref-grid-{owner_type}-{owner.id}': grid_html,
-        },
-    )
-
-
-class ExternalReferenceRenameView( View ):
+class ExternalReferenceRenameView( View, ExternalReferenceCardViewMixin ):
     """POST endpoint: rename a single external-reference card. The
     title is operator-controlled and persists across upserts on
     re-attach."""
 
     def post( self, request, owner_type, reference_id, *args, **kwargs ):
-        reference = _get_external_reference_or_404( owner_type, reference_id )
+        reference = self.get_external_reference_or_404(
+            owner_type = owner_type, reference_id = reference_id,
+        )
         new_title = ( request.POST.get(
             DIVID['EXT_REF_TITLE_FIELD']
         ) or '' ).strip()
@@ -105,50 +52,37 @@ class ExternalReferenceRenameView( View ):
             raise BadRequest( 'Title must be non-empty.' )
         reference.title = new_title[:255]
         reference.save( update_fields = [ 'title', 'updated_datetime' ] )
-        return _render_grid_replace( request, reference, owner_type )
+        return self.render_grid_replace(
+            request, owner_type, getattr( reference, owner_type ),
+        )
 
 
-class ExternalReferenceDeleteView( View ):
+class ExternalReferenceDeleteView( View, ExternalReferenceCardViewMixin ):
     """POST endpoint: unlink (delete) a single external-reference
     card. Best-effort thumbnail-file cleanup is the model's
     responsibility."""
 
     def post( self, request, owner_type, reference_id, *args, **kwargs ):
-        reference = _get_external_reference_or_404( owner_type, reference_id )
-        model, owner_field = _EXTERNAL_REFERENCE_MODELS[ owner_type ]
-        owner = getattr( reference, owner_field )
+        reference = self.get_external_reference_or_404(
+            owner_type = owner_type, reference_id = reference_id,
+        )
+        # Capture the owner before delete; the row's FK accessor is
+        # unreliable after delete().
+        owner = getattr( reference, owner_type )
         reference.delete()
-        # The deleted row is gone; rebuild the grid from a fresh
-        # sibling queryset rather than via _render_grid_replace
-        # (which expects a still-existing reference to derive the
-        # owner from).
-        external_references = model.objects.filter(
-            **{ owner_field: owner },
-        ).order_by( 'order_id', '-created_datetime' )
-        grid_html = render_to_string(
-            'integrations/panes/external_reference_grid.html',
-            {
-                'external_references': external_references,
-                'owner_type'         : owner_type,
-                'owner_id'           : owner.id,
-            },
-            request = request,
-        )
-        return antinode.response(
-            replace_map = {
-                f'hi-ext-ref-grid-{owner_type}-{owner.id}': grid_html,
-            },
-        )
+        return self.render_grid_replace( request, owner_type, owner )
 
 
-class ExternalReferenceReorderView( View ):
+class ExternalReferenceReorderView( View, ExternalReferenceCardViewMixin ):
     """POST endpoint: move a single external-reference card one slot
     left or right. Re-normalizes order_ids of the affected siblings
     so the new ordering survives subsequent reorders without
     accumulating gaps."""
 
     def post( self, request, owner_type, reference_id, *args, **kwargs ):
-        reference = _get_external_reference_or_404( owner_type, reference_id )
+        reference = self.get_external_reference_or_404(
+            owner_type = owner_type, reference_id = reference_id,
+        )
         direction = request.POST.get( DIVID['EXT_REF_DIRECTION_FIELD'] )
         if direction not in (
                 DIVID['EXT_REF_DIRECTION_LEFT'],
@@ -156,11 +90,11 @@ class ExternalReferenceReorderView( View ):
         ):
             raise BadRequest( 'Invalid direction.' )
 
-        model, owner_field = _EXTERNAL_REFERENCE_MODELS[ owner_type ]
-        owner = getattr( reference, owner_field )
+        model = self.EXTERNAL_REFERENCE_MODELS[ owner_type ]
+        owner = getattr( reference, owner_type )
         siblings = list(
             model.objects.filter(
-                **{ owner_field: owner },
+                **{ owner_type: owner },
             ).order_by( 'order_id', '-created_datetime' )
         )
         try:
@@ -190,7 +124,7 @@ class ExternalReferenceReorderView( View ):
                 sibling.order_id = new_index
                 sibling.save( update_fields = [ 'order_id', 'updated_datetime' ] )
 
-        return _render_grid_replace( request, reference, owner_type )
+        return self.render_grid_replace( request, owner_type, owner )
 
 
 class CapabilityConfigureView( HiModalView,

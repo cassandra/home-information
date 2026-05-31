@@ -3,14 +3,21 @@
  *
  * Per-card rename / unlink / reorder for the framework-rendered
  * external-reference grid on Entity / Location edit modals. Each
- * action posts to its own endpoint and swaps the grid HTML in
- * place via antinode's replace-map -- the surrounding modal stays
- * open.
+ * action POSTs to its own endpoint; the response is the freshly-
+ * rendered grid HTML, which replaces the existing grid in place so
+ * the surrounding modal stays open.
  *
- * Handlers are delegated at the document level so antinode-loaded
- * modal content wires up automatically -- no per-modal init step.
- * Mirrors the attr-picker.js shape; CSS reuse is via the existing
- * ``attr-v2-file-*`` classes on the card template itself.
+ * The action endpoints already require custom JS (we extract the
+ * reference id from the card, fire on input blur for rename, etc.),
+ * so antinode's declarative wiring doesn't pull weight here -- we
+ * just $.ajax + replaceWith directly. The grid is located by
+ * closest() traversal from the clicked card, so no template ->
+ * JS magic-string id agreement is required.
+ *
+ * Handlers are delegated at the document level so dynamically-
+ * inserted modal content wires up automatically -- no per-modal
+ * init step. CSS reuse is via the existing ``attr-v2-file-*``
+ * classes on the card template itself.
  *
  * DOM classes, data attributes, and JSON field names come from
  * ``Hi.EXT_REF_*`` in main.js, mirrored server-side in
@@ -44,17 +51,23 @@
         };
     }
 
-    function _postAction(url, fields) {
-        // Use the antinode AJAX entry point so the response's
-        // replace-map is applied to the page. Falls back to a plain
-        // jQuery post if antinode is missing (defensive only;
-        // antinode is in the base bundle).
+    function _postAction(url, fields, $card) {
+        // The grid is the card's nearest ancestor with the grid
+        // class -- no id agreement between JS and template needed.
+        const $grid = $card.closest(_classSelector(Hi.EXT_REF_GRID_CLASS));
         const payload = Object.assign({ csrfmiddlewaretoken: _csrfToken() }, fields);
-        if (window.AN) {
-            window.AN.post(url, $.param(payload));
-            return;
-        }
-        $.post(url, payload);
+        // No .fail() handler: server-side BadRequest / 404 responses
+        // are dropped client-side and the grid simply doesn't refresh.
+        // This matches the prior AN.post baseline -- the server logs
+        // the error, the operator can retry or refresh the modal.
+        $.ajax({
+            url: url,
+            method: 'POST',
+            data: payload,
+            headers: { 'X-Requested-With': 'XMLHttpRequest' },
+        }).done(function(html) {
+            $grid.replaceWith(html);
+        });
     }
 
     function _actionUrl(viewName, ownerType, referenceId) {
@@ -95,6 +108,7 @@
             _postAction(
                 _actionUrl('rename', ctx.ownerType, ctx.referenceId),
                 fields,
+                $card,
             );
         }
     );
@@ -123,6 +137,7 @@
             _postAction(
                 _actionUrl('delete', ctx.ownerType, ctx.referenceId),
                 {},
+                $card,
             );
         }
     );
@@ -139,6 +154,7 @@
         _postAction(
             _actionUrl('reorder', ctx.ownerType, ctx.referenceId),
             fields,
+            $card,
         );
     }
 

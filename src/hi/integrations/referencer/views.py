@@ -10,33 +10,23 @@ Workflow:
     integrations and lets the operator choose between them via an
     in-modal selector when more than one is configured.
 
-  - POST to the same URL re-renders the picker body. The form
-    carries ``integration_id`` as a hidden field so the view knows
-    which referencer to drive the search against. The form's
-    ``data-async="#picker-body-<uuid>"`` + ``data-stay-in-modal``
-    keeps the modal open while the body partial swaps in.
+  - POST to ``/integrations/referencer/picker/search/`` re-renders
+    the result-cards partial. The form carries ``integration_id``
+    as a hidden field so the view knows which referencer to drive
+    the search against. The picker JS swaps the partial into the
+    modal's results container.
 
-  - When the operator submits with ``action=attach``, the view
-    parses ``selections_json``, groups selections by integration_id,
-    and dispatches each group to the integration's
-    ``attach_references(owner, selections)``. Each integration is
-    responsible for the per-item upsert (including thumbnail fetch
-    + media write) via the framework's ExternalReference managers.
-
-Multi-select state is server-driven via three form fields:
-``selections_json`` (canonical existing list, hidden), ``visible_url``
-(hidden per result; identifies what was rendered), and ``result_url``
-(checkbox value per result; only submitted when checked). The view
-computes the new selection list each POST: existing + newly checked
-- unchecked visibles +/- an explicit ``remove_url`` if the operator
-clicked a chip's remove button.
+  - POST to ``/integrations/referencer/picker/attach/`` commits the
+    operator's selection set. The picker resets selections on
+    source-switch, so one submission carries items from one
+    integration only; the form-level ``integration_id`` is the
+    single source of truth for routing.
 """
 
 import json
 import logging
 from typing import List
 
-from django.core.exceptions import BadRequest
 from django.http import Http404, HttpResponse
 from django.template.loader import render_to_string
 from django.urls import reverse
@@ -48,8 +38,6 @@ from hi.apps.attribute.view_mixins import AttributeEditViewMixin
 from hi.apps.common import antinode
 from hi.apps.config.enums import ConfigPageType
 from hi.apps.config.views import ConfigPageView
-from hi.apps.entity.models import Entity
-from hi.apps.location.models import Location
 from hi.constants import DIVID
 from hi.enums import ItemType
 from hi.exceptions import ForceRedirectException
@@ -60,249 +48,26 @@ from hi.integrations.integration_attribute_edit_context import (
     IntegrationAttributeItemEditContext,
 )
 from hi.integrations.integration_data import IntegrationData
-from hi.integrations.integration_manager import IntegrationManager
 from hi.integrations.transient_models import IntegrationKey
 from hi.integrations.view_mixins import IntegrationViewMixin
 
-from .integration_referencer import IntegrationExternalReferencer
 from .transient_models import (
     ExternalReferenceAttachBatchOutcome,
     ExternalReferenceAttachOutcome,
     ExternalReferenceResult,
     ExternalReferenceSearchResult,
 )
+from .view_mixins import ExternalReferenceViewMixin
 
 
 logger = logging.getLogger(__name__)
 
 
-_PAGE_SIZE_CHOICES = (20, 50, 100)
-_DEFAULT_LIMIT = 20
-_MAX_LIMIT = 100
-
-# ItemType -> owner model. The attach dispatcher resolves the per-
-# integration referencer for each selection's integration_id and
-# delegates the row creation; framework owns only owner resolution.
-_OWNER_MODELS = {
-    ItemType.ENTITY: Entity,
-    ItemType.LOCATION: Location,
-}
+_REFERENCER_CAPABILITIES = frozenset({ IntegrationCapability.EXTERNAL_REFERENCE })
 
 
-def _get_referencer_integration_data_list() -> List[ IntegrationData ]:
-    """All currently-enabled integrations that advertise the
-    EXTERNAL_REFERENCE capability. Returned in label order
-    (the manager already sorts by label)."""
-    return IntegrationManager().get_integration_data_list(
-        enabled_only=True,
-        capabilities=frozenset({ IntegrationCapability.EXTERNAL_REFERENCE }),
-    )
-
-
-def _resolve_integration_data(
-        integration_data_list: List[ IntegrationData ],
-        integration_id: str,
-) -> IntegrationData:
-    """Map the form's posted integration_id to one of the
-    currently-enabled referencer integrations. Rejects unknown
-    or now-disabled ids so a stale modal can't drive a search
-    against an integration the operator has turned off."""
-    if not integration_id:
-        raise BadRequest(
-            f'Missing {DIVID["ATTR_PICKER_INTEGRATION_ID_FIELD"]}.',
-        )
-    for candidate in integration_data_list:
-        if candidate.integration_id == integration_id:
-            return candidate
-    raise BadRequest(
-        f'Unknown {DIVID["ATTR_PICKER_INTEGRATION_ID_FIELD"]}: '
-        f'{integration_id!r}',
-    )
-
-
-def _require_referencer(
-        integration_data: IntegrationData,
-        request,
-) -> IntegrationExternalReferencer:
-    referencer = integration_data.integration_gateway.get_external_referencer()
-    if referencer is None:
-        raise Http404( request )
-    return referencer
-
-
-def _parse_item_type(raw_value: str) -> ItemType:
-    try:
-        item_type = ItemType.from_name( raw_value )
-    except ValueError:
-        raise BadRequest(
-            f'Unsupported {DIVID["ATTR_PICKER_ITEM_TYPE_FIELD"]}: {raw_value!r}',
-        )
-    if item_type not in _OWNER_MODELS:
-        raise BadRequest(
-            f'Unsupported {DIVID["ATTR_PICKER_ITEM_TYPE_FIELD"]}: {raw_value!r}',
-        )
-    return item_type
-
-
-def _parse_item_id(raw_value) -> int:
-    try:
-        return int( raw_value )
-    except (TypeError, ValueError):
-        raise BadRequest(
-            f'Invalid {DIVID["ATTR_PICKER_ITEM_ID_FIELD"]}.',
-        )
-
-
-def _parse_limit(raw_limit) -> int:
-    try:
-        limit = int( raw_limit )
-    except (TypeError, ValueError):
-        return _DEFAULT_LIMIT
-    if limit not in _PAGE_SIZE_CHOICES:
-        return _DEFAULT_LIMIT
-    return min( limit, _MAX_LIMIT )
-
-
-def _resolve_owner(item_type: ItemType, item_id: int):
-    owner_model = _OWNER_MODELS[ item_type ]
-    try:
-        return owner_model.objects.get( id=item_id )
-    except owner_model.DoesNotExist:
-        raise Http404( f'{item_type.label} not found.' )
-
-
-def _search_upstream(
-        referencer: IntegrationExternalReferencer,
-        query: str,
-        limit: int,
-) -> ExternalReferenceSearchResult:
-    if not query:
-        return ExternalReferenceSearchResult( results = [] )
-    try:
-        return referencer.search_references( query = query, limit = limit )
-    except Exception:
-        # The contract asks referencers to populate ``error_message``
-        # instead of raising, so reaching this branch means the
-        # referencer itself is broken. Surface a labeled message so
-        # operators with multiple referencers know which one to look
-        # at; the stack lands in the server log.
-        logger.exception( 'Attribute-reference search failed.' )
-        label = _safe_label( referencer )
-        return ExternalReferenceSearchResult(
-            results = [],
-            error_message = f'{label} search failed — see server logs.',
-        )
-
-
-def _safe_label( referencer: IntegrationExternalReferencer ) -> str:
-    # Defensive: a referencer broken enough to raise from search may
-    # also raise from get_metadata. Fall back to a generic label so
-    # the banner never compounds the failure.
-    try:
-        return referencer.get_metadata().label
-    except Exception:
-        return 'Integration'
-
-
-def _parse_selections_json(
-        raw : str,
-        integration_id : str,
-) -> List[ ExternalReferenceResult ]:
-    """Parse the JS-built ``selections_json`` payload into
-    ``ExternalReferenceResult`` instances. All selections in one
-    submission share the same ``integration_id`` (taken from the
-    form-level hidden field) because the picker resets its
-    selection state on source-switch; the per-record JSON carries
-    only the upstream identifier. Skips records with missing
-    title / source_url / integration_name and falls back to an
-    empty list on any decode error."""
-    if not raw:
-        return []
-    try:
-        decoded = json.loads( raw )
-    except json.JSONDecodeError:
-        return []
-    if not isinstance( decoded, list ):
-        return []
-    parsed: List[ ExternalReferenceResult ] = []
-    for item in decoded:
-        if not isinstance( item, dict ):
-            continue
-        title = ( item.get(
-            DIVID['ATTR_PICKER_SELECTION_TITLE_KEY']
-        ) or '' ).strip()
-        url = ( item.get(
-            DIVID['ATTR_PICKER_SELECTION_URL_KEY']
-        ) or '' ).strip()
-        integration_name = ( item.get(
-            DIVID['ATTR_PICKER_SELECTION_INTEGRATION_NAME_KEY']
-        ) or '' ).strip()
-        mime_type = ( item.get(
-            DIVID['ATTR_PICKER_SELECTION_MIME_TYPE_KEY']
-        ) or '' ).strip()
-        if not title or not url or not integration_name:
-            continue
-        parsed.append( ExternalReferenceResult(
-            integration_key = IntegrationKey(
-                integration_id = integration_id,
-                integration_name = integration_name,
-            ),
-            title = title,
-            source_url = url,
-            mime_type = mime_type or None,
-        ) )
-    return parsed
-
-
-def _dispatch_attach(
-        owner,
-        integration_id : str,
-        selections     : List[ ExternalReferenceResult ],
-) -> ExternalReferenceAttachBatchOutcome:
-    """Call the named integration's ``attach_references`` for all
-    selections in one submission. The picker resets selection state
-    on source-switch (see ``attr-picker.js``), so one submission
-    always carries items from a single integration -- no grouping
-    needed.
-
-    Returns the integration's ``ExternalReferenceAttachBatchOutcome``
-    directly, or a synthesized all-failure batch when the integration
-    has no enabled referencer (every input selection still
-    contributes exactly one outcome)."""
-    if not selections:
-        return ExternalReferenceAttachBatchOutcome()
-    referencer = _resolve_referencer_by_id( integration_id )
-    if referencer is None:
-        logger.warning(
-            f'External reference attach skipped {len(selections)} '
-            f'selections: integration {integration_id!r} has no '
-            f'enabled referencer.'
-        )
-        return ExternalReferenceAttachBatchOutcome(
-            outcomes = [
-                ExternalReferenceAttachOutcome(
-                    success = False,
-                    error_message = (
-                        f'Integration {integration_id!r} is not available.'
-                    ),
-                )
-                for _ in selections
-            ],
-        )
-    return referencer.attach_references( owner, selections )
-
-
-def _resolve_referencer_by_id(
-        integration_id : str,
-) -> 'IntegrationExternalReferencer | None':
-    for candidate in _get_referencer_integration_data_list():
-        if candidate.integration_id != integration_id:
-            continue
-        return candidate.integration_gateway.get_external_referencer()
-    return None
-
-
-class ExternalReferencePickerView( HiModalView ):
+class ExternalReferencePickerView(
+        HiModalView, IntegrationViewMixin, ExternalReferenceViewMixin ):
     """GET the picker modal. Initial render seeds the result list
     by searching on the owner's name; selection state then lives in
     JS. Subsequent search results arrive via async POST to
@@ -315,17 +80,17 @@ class ExternalReferencePickerView( HiModalView ):
         return self.MODAL_TEMPLATE_NAME
 
     def get(self, request, *args, **kwargs):
-        integration_data_list = _get_referencer_integration_data_list()
+        integration_data_list = self.get_integration_data_list(
+            enabled_only = True,
+            capabilities = _REFERENCER_CAPABILITIES,
+        )
         if not integration_data_list:
             raise Http404( request )
 
-        item_type = _parse_item_type(
-            request.GET.get( DIVID['ATTR_PICKER_ITEM_TYPE_FIELD'] ),
+        item_type, owner = self.resolve_owner_from_form(
+            raw_item_type = request.GET.get( DIVID['ATTR_PICKER_ITEM_TYPE_FIELD'] ),
+            raw_item_id   = request.GET.get( DIVID['ATTR_PICKER_ITEM_ID_FIELD'] ),
         )
-        item_id = _parse_item_id(
-            request.GET.get( DIVID['ATTR_PICKER_ITEM_ID_FIELD'] ),
-        )
-        owner = _resolve_owner( item_type=item_type, item_id=item_id )
 
         # Default to the first configured referencer. The operator
         # can switch via the picker's integration <select> when more
@@ -338,10 +103,10 @@ class ExternalReferencePickerView( HiModalView ):
         query = owner.name
         referencer = integration_data.integration_gateway.get_external_referencer()
         if referencer is not None:
-            search_result = _search_upstream(
+            search_result = self.search_upstream(
                 referencer = referencer,
                 query = query,
-                limit = _DEFAULT_LIMIT,
+                limit = self.DEFAULT_LIMIT,
             )
         else:
             search_result = ExternalReferenceSearchResult( results = [] )
@@ -351,16 +116,17 @@ class ExternalReferencePickerView( HiModalView ):
             'integration_data': integration_data,
             'item_type': item_type,
             'item_id': owner.id,
-            'limit': _DEFAULT_LIMIT,
-            'page_size_choices': _PAGE_SIZE_CHOICES,
+            'limit': self.DEFAULT_LIMIT,
+            'page_size_choices': self.PAGE_SIZE_CHOICES,
             'query': query,
             'results': search_result.results,
             'error_message': search_result.error_message,
         }
-        return self.modal_response( request, context=context )
+        return self.modal_response( request, context = context )
 
 
-class ExternalReferenceSearchView( View ):
+class ExternalReferenceSearchView(
+        View, IntegrationViewMixin, ExternalReferenceViewMixin ):
     """POST endpoint that runs an upstream search and returns only
     the result-cards HTML partial. The attr-picker JS swaps the
     returned markup into the picker's results container, then
@@ -370,25 +136,31 @@ class ExternalReferenceSearchView( View ):
     partial (no upstream call)."""
 
     RESULTS_TEMPLATE_NAME = 'integrations/referencer/panes/attr_picker_results.html'
+    MAX_LIMIT = 100
 
     def post(self, request, *args, **kwargs):
-        integration_data_list = _get_referencer_integration_data_list()
+        integration_data_list = self.get_integration_data_list(
+            enabled_only = True,
+            capabilities = _REFERENCER_CAPABILITIES,
+        )
         if not integration_data_list:
             raise Http404( request )
-        integration_data = _resolve_integration_data(
-            integration_data_list=integration_data_list,
-            integration_id=request.POST.get(
+        integration_data = self.resolve_integration_data(
+            integration_data_list = integration_data_list,
+            integration_id = request.POST.get(
                 DIVID['ATTR_PICKER_INTEGRATION_ID_FIELD'],
             ),
         )
-        referencer = _require_referencer( integration_data, request )
+        referencer = integration_data.integration_gateway.get_external_referencer()
+        if referencer is None:
+            raise Http404( request )
         query = (
             request.POST.get( DIVID['ATTR_PICKER_QUERY_FIELD'] ) or ''
         ).strip()
-        limit = _parse_limit(
+        limit = self._parse_limit(
             request.POST.get( DIVID['ATTR_PICKER_LIMIT_FIELD'] ),
         )
-        search_result = _search_upstream(
+        search_result = self.search_upstream(
             referencer = referencer, query = query, limit = limit,
         )
         html = render_to_string(
@@ -402,8 +174,18 @@ class ExternalReferenceSearchView( View ):
         )
         return HttpResponse( html )
 
+    def _parse_limit(self, raw_limit) -> int:
+        try:
+            limit = int( raw_limit )
+        except (TypeError, ValueError):
+            return self.DEFAULT_LIMIT
+        if limit not in self.PAGE_SIZE_CHOICES:
+            return self.DEFAULT_LIMIT
+        return min( limit, self.MAX_LIMIT )
 
-class ExternalReferenceAttachView( View ):
+
+class ExternalReferenceAttachView(
+        View, IntegrationViewMixin, ExternalReferenceViewMixin ):
     """POST endpoint that dispatches the operator's selected
     references to the source integration for attach. The picker
     resets selection state on source-switch, so one submission
@@ -416,9 +198,9 @@ class ExternalReferenceAttachView( View ):
                        the operator sees the edit modal with the
                        new cards already in the grid.
       * any-failure -- render the error modal with the per-failure
-                       messages plus LINK MORE / EDIT / DISMISS
-                       actions. Modals swap one-at-a-time via the
-                       antinode ``modal`` response key.
+                       messages plus LINK MORE / DISMISS actions.
+                       Modals swap one-at-a-time via the antinode
+                       ``modal`` response key.
     """
 
     ERRORS_MODAL_TEMPLATE_NAME = (
@@ -426,31 +208,31 @@ class ExternalReferenceAttachView( View ):
     )
 
     def post(self, request, *args, **kwargs):
-        integration_data_list = _get_referencer_integration_data_list()
+        integration_data_list = self.get_integration_data_list(
+            enabled_only = True,
+            capabilities = _REFERENCER_CAPABILITIES,
+        )
         if not integration_data_list:
             raise Http404( request )
-        integration_data = _resolve_integration_data(
+        integration_data = self.resolve_integration_data(
             integration_data_list = integration_data_list,
             integration_id = request.POST.get(
                 DIVID['ATTR_PICKER_INTEGRATION_ID_FIELD'],
             ),
         )
-        item_type = _parse_item_type(
-            request.POST.get( DIVID['ATTR_PICKER_ITEM_TYPE_FIELD'] ),
+        item_type, owner = self.resolve_owner_from_form(
+            raw_item_type = request.POST.get( DIVID['ATTR_PICKER_ITEM_TYPE_FIELD'] ),
+            raw_item_id   = request.POST.get( DIVID['ATTR_PICKER_ITEM_ID_FIELD'] ),
         )
-        item_id = _parse_item_id(
-            request.POST.get( DIVID['ATTR_PICKER_ITEM_ID_FIELD'] ),
-        )
-        owner = _resolve_owner( item_type = item_type, item_id = item_id )
-        selections = _parse_selections_json(
+        selections = self._parse_selections_json(
             raw = request.POST.get(
                 DIVID['ATTR_PICKER_SELECTIONS_JSON_FIELD'],
             ) or '',
             integration_id = integration_data.integration_id,
         )
-        batch = _dispatch_attach(
+        batch = self._dispatch_attach(
             owner = owner,
-            integration_id = integration_data.integration_id,
+            integration_data = integration_data,
             selections = selections,
         )
         if batch.has_failures:
@@ -459,26 +241,118 @@ class ExternalReferenceAttachView( View ):
             )
         return self._render_owner_edit_modal( request, item_type, owner )
 
+    def _parse_selections_json(
+            self,
+            raw            : str,
+            integration_id : str,
+    ) -> List[ExternalReferenceResult]:
+        """Parse the JS-built ``selections_json`` payload into
+        ``ExternalReferenceResult`` instances. All selections in
+        one submission share the same ``integration_id`` (taken
+        from the form-level hidden field) because the picker
+        resets its selection state on source-switch; the per-record
+        JSON carries only the upstream identifier. Skips records
+        with missing title / source_url / integration_name and
+        falls back to an empty list on any decode error."""
+        if not raw:
+            return []
+        try:
+            decoded = json.loads( raw )
+        except json.JSONDecodeError:
+            return []
+        if not isinstance( decoded, list ):
+            return []
+        parsed: List[ExternalReferenceResult] = []
+        for item in decoded:
+            if not isinstance( item, dict ):
+                continue
+            title = ( item.get(
+                DIVID['ATTR_PICKER_SELECTION_TITLE_KEY']
+            ) or '' ).strip()
+            url = ( item.get(
+                DIVID['ATTR_PICKER_SELECTION_URL_KEY']
+            ) or '' ).strip()
+            integration_name = ( item.get(
+                DIVID['ATTR_PICKER_SELECTION_INTEGRATION_NAME_KEY']
+            ) or '' ).strip()
+            mime_type = ( item.get(
+                DIVID['ATTR_PICKER_SELECTION_MIME_TYPE_KEY']
+            ) or '' ).strip()
+            if not title or not url or not integration_name:
+                continue
+            parsed.append( ExternalReferenceResult(
+                integration_key = IntegrationKey(
+                    integration_id = integration_id,
+                    integration_name = integration_name,
+                ),
+                title = title,
+                source_url = url,
+                mime_type = mime_type or None,
+            ) )
+        return parsed
+
+    def _dispatch_attach(
+            self,
+            owner,
+            integration_data : IntegrationData,
+            selections       : List[ExternalReferenceResult],
+    ) -> ExternalReferenceAttachBatchOutcome:
+        """Call the integration's ``attach_references`` for all
+        selections in one submission. The picker resets selection
+        state on source-switch (see ``attr-picker.js``), so one
+        submission always carries items from a single integration
+        -- no grouping needed.
+
+        Returns the integration's
+        ``ExternalReferenceAttachBatchOutcome`` directly, or a
+        synthesized all-failure batch when the integration has no
+        enabled referencer (every input selection still contributes
+        exactly one outcome)."""
+        if not selections:
+            return ExternalReferenceAttachBatchOutcome()
+        referencer = integration_data.integration_gateway.get_external_referencer()
+        if referencer is None:
+            logger.warning(
+                f'External reference attach skipped {len(selections)} '
+                f'selections: integration '
+                f'{integration_data.integration_id!r} has no enabled '
+                f'referencer.'
+            )
+            return ExternalReferenceAttachBatchOutcome(
+                outcomes = [
+                    ExternalReferenceAttachOutcome(
+                        success = False,
+                        error_message = (
+                            f'Integration '
+                            f'{integration_data.integration_id!r} '
+                            f'is not available.'
+                        ),
+                    )
+                    for _ in selections
+                ],
+            )
+        return referencer.attach_references( owner, selections )
+
     @staticmethod
-    def _render_owner_edit_modal(request, item_type: ItemType, owner):
+    def _render_owner_edit_modal(request, item_type : ItemType, owner):
         """Delegate to the owner's existing edit view so we don't
         duplicate its context-building logic. CBVs are designed to
         be called this way once you have the request in hand."""
         from hi.apps.entity.views import EntityEditView
         from hi.apps.location.views import LocationEditView
-        if item_type == ItemType.ENTITY:
+        if item_type.is_entity:
             return EntityEditView().get( request, entity_id = owner.id )
         return LocationEditView().get( request, location_id = owner.id )
 
     def _render_errors_modal(
-            self, request, item_type: ItemType, owner, batch,
+            self, request, item_type : ItemType, owner, batch,
     ):
         picker_url = (
             reverse( 'integrations_attribute_reference_picker' )
             + f'?{DIVID["ATTR_PICKER_ITEM_TYPE_FIELD"]}={item_type}'
             + f'&{DIVID["ATTR_PICKER_ITEM_ID_FIELD"]}={owner.id}'
         )
-        if item_type == ItemType.ENTITY:
+        if item_type.is_entity:
             owner_edit_url = reverse(
                 'entity_edit', kwargs = { 'entity_id': owner.id },
             )
@@ -519,8 +393,8 @@ class ReferenceHomeView( ConfigPageView, IntegrationViewMixin ):
         return 'integrations/referencer/pages/no_integrations.html'
 
     def get_main_template_context( self, request, *args, **kwargs ):
-        integration_data_list = IntegrationManager().get_integration_data_list(
-            capabilities = frozenset({ IntegrationCapability.EXTERNAL_REFERENCE }),
+        integration_data_list = self.get_integration_data_list(
+            capabilities = _REFERENCER_CAPABILITIES,
         )
         if not integration_data_list:
             return dict()
@@ -662,8 +536,8 @@ class ReferenceManageView( ConfigPageView, IntegrationViewMixin, AttributeEditVi
         return
 
     def _resolve( self, integration_id ):
-        integration_data_list = IntegrationManager().get_integration_data_list(
-            capabilities = frozenset({ IntegrationCapability.EXTERNAL_REFERENCE }),
+        integration_data_list = self.get_integration_data_list(
+            capabilities = _REFERENCER_CAPABILITIES,
         )
         if not integration_data_list:
             raise Http404( 'No reference integrations are installed.' )
@@ -696,12 +570,10 @@ class ReferenceManageView( ConfigPageView, IntegrationViewMixin, AttributeEditVi
 
     @staticmethod
     def _find_integration_data(
-            integration_data_list: List[ IntegrationData ],
+            integration_data_list: List[IntegrationData],
             integration_id: str,
     ) -> IntegrationData:
         for candidate in integration_data_list:
             if candidate.integration_id == integration_id:
                 return candidate
         return None
-
-
