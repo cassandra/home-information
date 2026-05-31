@@ -1440,26 +1440,48 @@
 
         if (!parent) return;
 
+        let other = null;
         switch (direction) {
             case "up":
-                const prev = card.previousElementSibling;
-                if (prev) parent.insertBefore(card, prev);
+                other = card.previousElementSibling;
+                if (other) parent.insertBefore(card, other);
                 break;
 
             case "down":
-                const next = card.nextElementSibling;
-                if (next) parent.insertBefore(next, card);
+                other = card.nextElementSibling;
+                if (other) parent.insertBefore(other, card);
                 break;
 
             default:
                 console.error(`Invalid direction: ${direction}`);
                 return;
         }
+        if (!other) return;  // already at boundary; nothing to persist.
+
+        // File cards don't ride the regular formset, so the global
+        // renumber path doesn't reach them. Renumber just the file
+        // section in DOM order via the ad-hoc hidden inputs
+        // (mirrors the file_title_* submission pattern). A pure
+        // swap is wrong here -- files default to order_id=0 on
+        // upload, so two equal values would no-op the swap and the
+        // ordering never differentiates. Renumbering 0..N-1 inside
+        // the file grid bootstraps from the all-zero state and
+        // stays correct through subsequent reorders without
+        // touching any non-file attribute's order_id.
+        // Regular attribute cards: keep the existing renumber path
+        // -- their formset save handles per-row order_id and the
+        // UI partitions display by type, so the renumber's numeric
+        // overlap with file order_ids is benign.
+        const isFileCard = $(card).is(Hi.ATTR_V2_FILE_CARD_SELECTOR);
+        if (isFileCard) {
+            _renumberFileCardOrderIds(parent);
+        }
 
         const $container = $(card).closest(Hi.ATTR_V2_CONTAINER_SELECTOR);
         if ($container.length > 0) {
-            _updateOrderIndexes($container);
-
+            if (!isFileCard) {
+                _updateOrderIndexes($container);
+            }
             if (window.Hi.attr.dirtyTracking) {
                 const containerId = $container.attr('id');
                 if (containerId) {
@@ -1470,6 +1492,23 @@
                 }
             }
         }
+    }
+
+    function _renumberFileCardOrderIds(fileGridParent) {
+        // Walk file-card siblings in DOM order and write 0..N-1 to
+        // each card's ``file_order_id_*`` hidden input. Server
+        // processes the changes via ``process_file_order_updates``.
+        const $cards = $(fileGridParent).find(
+            Hi.ATTR_V2_FILE_CARD_SELECTOR
+        );
+        $cards.each(function(index) {
+            const $input = $(this).find(
+                'input[type="hidden"][name^="file_order_id_"]'
+            ).first();
+            if ($input.length) {
+                $input.val(String(index));
+            }
+        });
     }
 
     function _restoreDefaultValue(attributeId, containerSelector = null) {
@@ -1589,7 +1628,15 @@
 
     function _updateOrderIndexes($container) {
         let order = 1;
-        
+
+        // Regular attribute cards only. File cards are intentionally
+        // excluded -- file ordering uses a surgical swap (only the
+        // two affected cards' order_id values change) via
+        // ``_swapFileCardOrderIds`` in the reorder handler. A global
+        // renumber would clobber every file's order_id, which is
+        // wrong when files share the order_id namespace with
+        // hundreds of regular attributes (see ``process_file_order_updates``
+        // server-side).
         const $cards = $container.find(Hi.ATTR_V2_ATTRIBUTE_CARD_SELECTOR);
 
         $cards.each(function() {

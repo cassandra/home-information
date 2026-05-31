@@ -84,6 +84,15 @@
                 this.captureFieldValue(field);
             });
 
+            // File cards aren't in the formset and use the
+            // ``file_order_id_*`` naming (see file_card.html). Pick
+            // them up alongside the formset order fields so file
+            // reorder is dirty-tracked the same way.
+            const fileOrderFields = form.querySelectorAll('input[type="hidden"][name^="file_order_id_"]');
+            fileOrderFields.forEach(field => {
+                this.captureFieldValue(field);
+            });
+
             const fileTitleFields = form.querySelectorAll(Hi.ATTR_V2_FILE_TITLE_INPUT_SELECTOR);
             fileTitleFields.forEach(field => {
                 this.captureFieldValue(field);
@@ -226,6 +235,17 @@
                 }
             }
 
+            // File order_id is a hidden input, so the field itself
+            // isn't a visible target. Point the dirty indicator at
+            // the file info area (title + filename) -- visible and
+            // mirrors where file title's dirty cue appears.
+            if (field.name && field.name.indexOf('file_order_id_') === 0) {
+                const fileCard = field.closest(Hi.ATTR_V2_FILE_CARD_SELECTOR);
+                if (fileCard) {
+                    return fileCard.querySelector(Hi.ATTR_V2_FILE_INFO_SELECTOR) || fileCard;
+                }
+            }
+
             const attributeCard = field.closest(Hi.ATTR_V2_ATTRIBUTE_CARD_SELECTOR);
             if (attributeCard) {
                 return attributeCard.querySelector(Hi.ATTR_V2_ATTRIBUTE_NAME_SELECTOR);
@@ -335,6 +355,14 @@
 
             const orderFields = form.querySelectorAll(`${Hi.ATTR_V2_ATTRIBUTE_CARD_SELECTOR} input[type="hidden"][name$="-order_id"]`);
             orderFields.forEach(field => {
+                this.handleFieldChange(field);
+            });
+
+            // File cards have ad-hoc ``file_order_id_*`` hidden
+            // inputs (not formset-prefixed); re-evaluate them so the
+            // file-grid reorder path lights up dirty-tracking too.
+            const fileOrderFields = form.querySelectorAll('input[type="hidden"][name^="file_order_id_"]');
+            fileOrderFields.forEach(field => {
                 this.handleFieldChange(field);
             });
         },

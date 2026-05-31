@@ -27,7 +27,7 @@ Context:
      data-order-index="{{ forloop.counter }}">
 
   <div class="attr-v2-file-thumbnail{% if reference.thumbnail %} has-thumbnail{% endif %}"
-       onclick="if (!event.target.closest('.attr-v2-reorder-controls')) window.open('{{ reference.source_url }}', '_blank');"
+       onclick="window.open('{{ reference.source_url }}', '_blank');"
        title="Open on {{ integration_label|default:'external source' }}">
     {% if reference.thumbnail %}
       <img src="{{ reference.thumbnail.url }}"
@@ -50,26 +50,6 @@ Context:
         <div class="attr-v2-file-type-label">LINK</div>
       {% endif %}
     {% endif %}
-
-    {% comment %}
-    The parent thumbnail's onclick filters out clicks originating
-    inside this wrapper, so reorder-button clicks bubble normally
-    to the document-delegated handlers in external-references.js.
-    {% endcomment %}
-    <div class="attr-v2-reorder-controls"
-         onmouseenter="this.parentElement.classList.add('reorder-hover');"
-         onmouseleave="this.parentElement.classList.remove('reorder-hover');">
-      <button type="button"
-              class="btn btn-sm btn-outline-secondary {{ DIVID.EXT_REF_REORDER_LEFT_CLASS }}"
-              title="Move left">
-        {% icon "chevron-left" size="sm" %}
-      </button>
-      <button type="button"
-              class="btn btn-sm btn-outline-secondary {{ DIVID.EXT_REF_REORDER_RIGHT_CLASS }}"
-              title="Move right">
-        {% icon "chevron-right" size="sm" %}
-      </button>
-    </div>
   </div>
 
   <div class="attr-v2-file-info">
@@ -83,6 +63,20 @@ Context:
     </div>
 
     <div class="attr-v2-file-actions">
+      {% comment %}
+      Reorder buttons live in the action row -- not a thumbnail
+      overlay -- so they're touch-visible without hover, off the
+      image so contrast is never an issue, and use the action
+      row's touch-friendly 44px minimum. ``mr-auto`` / ``ml-auto``
+      pushes them to the edges; view + unlink cluster in the
+      middle. Smaller icon (size="md") distinguishes them from
+      the primary actions.
+      {% endcomment %}
+      <button type="button"
+              class="btn btn-sm btn-outline-secondary mr-auto {{ DIVID.EXT_REF_REORDER_LEFT_CLASS }}"
+              title="Move left">
+        {% icon "chevron-left" size="md" %}
+      </button>
       <a href="{{ reference.source_url }}"
          target="_blank"
          rel="noopener"
@@ -100,6 +94,11 @@ Context:
               class="btn btn-sm btn-outline-danger {{ DIVID.EXT_REF_DELETE_BTN_CLASS }}"
               title="Unlink this reference">
         {% icon "unlink" size="xl" %}
+      </button>
+      <button type="button"
+              class="btn btn-sm btn-outline-secondary ml-auto {{ DIVID.EXT_REF_REORDER_RIGHT_CLASS }}"
+              title="Move right">
+        {% icon "chevron-right" size="md" %}
       </button>
     </div>
   </div>

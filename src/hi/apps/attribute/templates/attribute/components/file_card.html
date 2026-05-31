@@ -22,10 +22,21 @@ tag in attribute_extras.py.
      data-file-size="{{ attribute.file_value.size|default:0 }}">
   
   <!-- Hidden field for deletion marking -->
-  <input type="hidden" 
-         name="{{ DIVID.ATTR_V2_DELETE_FILE_ATTR }}" 
-         value="" 
+  <input type="hidden"
+         name="{{ DIVID.ATTR_V2_DELETE_FILE_ATTR }}"
+         value=""
          data-attribute-id="{{ attribute.id }}">
+
+  {% comment %}
+  Per-file order_id. File attributes aren't in the regular formset,
+  so they need ad-hoc named inputs (same pattern as file_title_*).
+  The JS reorder handler swaps two cards' values in place; the
+  server processes file_order_id_* keys in process_file_order_updates.
+  {% endcomment %}
+  <input type="hidden"
+         id="file_order_id_{{ attr_item_context.owner.id }}_{{ attribute.id }}"
+         name="file_order_id_{{ attr_item_context.owner.id }}_{{ attribute.id }}"
+         value="{{ attribute.order_id }}">
   
   <!-- File Preview/Thumbnail Area -->
   <div class="attr-v2-file-thumbnail{% if attribute.has_thumbnail %} has-thumbnail{% endif %}{% if attribute.file_mime_type == 'application/pdf' %} is-document{% endif %}" 
@@ -57,26 +68,6 @@ tag in attribute_extras.py.
       {% endif %}
     {% endif %}
     
-    <!-- Reorder Controls (overlay in upper right) -->
-    <div class="attr-v2-reorder-controls" 
-         onclick="event.stopPropagation();"
-         onmouseenter="this.parentElement.classList.add('reorder-hover');"
-         onmouseleave="this.parentElement.classList.remove('reorder-hover');">
-      <button type="button" 
-              class="btn btn-sm btn-outline-secondary"
-              disabled
-              title="Reordering available in future update"
-              data-reorder-action="left">
-        {% icon "chevron-left" size="sm" %}
-      </button>
-      <button type="button" 
-              class="btn btn-sm btn-outline-secondary"
-              disabled
-              title="Reordering available in future update"
-              data-reorder-action="right">
-        {% icon "chevron-right" size="sm" %}
-      </button>
-    </div>
   </div>
   
   <!-- File Info -->
@@ -93,6 +84,22 @@ tag in attribute_extras.py.
     
     <!-- File Actions -->
   <div class="attr-v2-file-actions">
+    {% comment %}
+    Reorder buttons live in the action row (not as a thumbnail
+    overlay) so they're touch-visible without hover, off the image
+    so no contrast concerns, and use the action row's
+    touch-friendly 44px minimum. ``mr-auto`` / ``ml-auto`` pushes
+    them to the edges of the row, leaving view/delete clustered in
+    the middle. Smaller icon (size="md") differentiates them
+    visually from the primary view/delete actions.
+    {% endcomment %}
+    <button type="button"
+            class="btn btn-sm btn-outline-secondary mr-auto"
+            onclick="Hi.attr.reorderAttributeCard(this, 'up')"
+            title="Move left"
+            data-reorder-action="left">
+      {% icon "chevron-left" size="md" %}
+    </button>
     <button type="button"
             class="btn btn-sm btn-outline-primary"
             onclick="window.open('{{ attribute.file_value.url }}', '_blank');"
@@ -107,7 +114,7 @@ tag in attribute_extras.py.
               title="Delete file">
         {% icon "delete" size="xl" %}
       </button>
-      <button type="button" 
+      <button type="button"
               class="btn btn-sm btn-outline-secondary {{ DIVID.ATTR_V2_UNDO_BTN_CLASS }}"
               onclick="undoFileDeletion('{{ attribute.id }}', '#{{ attr_page_context.container_html_id }}')"
               title="Undo deletion"
@@ -115,6 +122,13 @@ tag in attribute_extras.py.
         Undo
       </button>
     {% endif %}
+    <button type="button"
+            class="btn btn-sm btn-outline-secondary ml-auto"
+            onclick="Hi.attr.reorderAttributeCard(this, 'down')"
+            title="Move right"
+            data-reorder-action="right">
+      {% icon "chevron-right" size="md" %}
+    </button>
     </div>
   </div>
 </div>

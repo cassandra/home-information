@@ -32,9 +32,13 @@ class AttributeEditFormHandler:
         owner_form = attr_item_context.create_owner_form( form_data )
 
         # Get file attributes for display (not a formset, just for template rendering)
+        # Display order: manual reorder (order_id ASC) wins; ties
+        # break recency-first so newly-uploaded files (default
+        # order_id=0) appear at the top of the unsorted block until
+        # the operator manually positions them.
         file_attributes: QuerySet[AttributeModel] = attr_item_context.attributes_queryset().filter(
             value_type_str = str( AttributeValueType.FILE )
-        ).order_by('id')
+        ).order_by( 'order_id', '-created_datetime' )
 
         deleted_attributes = attr_item_context.soft_deleted_attributes_queryset().order_by(
             '-updated_datetime',
@@ -75,7 +79,11 @@ class AttributeEditFormHandler:
                 edit_form_data.owner_form.save()
             edit_form_data.regular_attributes_formset.save()
             
-            self.process_file_title_updates( 
+            self.process_file_title_updates(
+                attr_item_context = attr_item_context,
+                request = request,
+            )
+            self.process_file_order_updates(
                 attr_item_context = attr_item_context,
                 request = request,
             )
@@ -154,6 +162,52 @@ class AttributeEditFormHandler:
                 logger.warning(f'Invalid file title field {field_name}: {e}')
             except (AttributeModelClass.DoesNotExist) as e:
                 logger.warning(f'File attribute not found {field_name}: {e}')
+
+    def process_file_order_updates( self,
+                                    attr_item_context : AttributeItemEditContext,
+                                    request           : HttpRequest      ) -> None:
+        """Process file_order_id_* fields from POST data to update
+        each file attribute's ``order_id``. Mirrors the
+        ``process_file_title_updates`` pattern -- file attributes
+        don't ride the regular formset, so they need ad-hoc named
+        inputs the client populates on reorder."""
+        file_order_pattern = re.compile(r'^file_order_id_(\d+)_(\d+)$')
+
+        AttributeModelClass = attr_item_context.attribute_model_subclass
+
+        for field_name, new_order_str in request.POST.items():
+            match = file_order_pattern.match(field_name)
+            if not match:
+                continue
+
+            owner_id_str: str
+            attribute_id_str: str
+            owner_id_str, attribute_id_str = match.groups()
+
+            if int(owner_id_str) != attr_item_context.owner.id:
+                logger.warning(
+                    f'File order field {field_name} has mismatched owner ID'
+                )
+                continue
+
+            try:
+                attribute_id: int = int(attribute_id_str)
+                new_order: int = int(new_order_str)
+                attribute = AttributeModelClass.objects.get(
+                    id = attribute_id,
+                    value_type_str = str( AttributeValueType.FILE ),
+                )
+                if attribute.order_id != new_order:
+                    attribute.order_id = new_order
+                    attribute.save( update_fields = [ 'order_id' ] )
+            except (ValueError) as e:
+                logger.warning(
+                    f'Invalid file order field {field_name}: {e}'
+                )
+            except (AttributeModelClass.DoesNotExist) as e:
+                logger.warning(
+                    f'File attribute not found {field_name}: {e}'
+                )
 
     def collect_form_errors(self, edit_form_data: AttributeEditFormData) -> List[str]:
         """
