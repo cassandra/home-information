@@ -2,12 +2,12 @@
 
 The picker is split into three endpoints:
 
-  - ``integrations_attribute_reference_picker`` — GET, renders the
+  - ``integrations_external_reference_picker`` — GET, renders the
     initial empty modal.
-  - ``integrations_attribute_reference_search`` — POST, returns the
-    result-cards partial. The attr-picker.js module swaps the
+  - ``integrations_external_reference_search`` — POST, returns the
+    result-cards partial. The external-reference-picker.js module swaps the
     returned HTML into the picker's results container.
-  - ``integrations_attribute_reference_attach`` — POST, reads the
+  - ``integrations_external_reference_attach`` — POST, reads the
     JS-built ``selections_json`` payload, creates one TEXT
     attribute per record, returns ``antinode.refresh_response()``.
 
@@ -221,15 +221,15 @@ class TestExternalReferencePickerView(ViewTestBase):
         )
 
     def _url(self):
-        return reverse('integrations_attribute_reference_picker')
+        return reverse('integrations_external_reference_picker')
 
     def test_get_renders_modal_with_integration_label(self):
         entity = self._entity()
         response = self.client.get(
             self._url(),
             data={
-                DIVID['ATTR_PICKER_ITEM_TYPE_FIELD']: str(ItemType.ENTITY),
-                DIVID['ATTR_PICKER_ITEM_ID_FIELD']: entity.id,
+                DIVID['REF_PICKER_ITEM_TYPE_FIELD']: str(ItemType.ENTITY),
+                DIVID['REF_PICKER_ITEM_ID_FIELD']: entity.id,
             },
             **self.async_http_headers,
         )
@@ -242,8 +242,8 @@ class TestExternalReferencePickerView(ViewTestBase):
         response = self.client.get(
             self._url(),
             data={
-                DIVID['ATTR_PICKER_ITEM_TYPE_FIELD']: str(ItemType.ENTITY),
-                DIVID['ATTR_PICKER_ITEM_ID_FIELD']: entity.id,
+                DIVID['REF_PICKER_ITEM_TYPE_FIELD']: str(ItemType.ENTITY),
+                DIVID['REF_PICKER_ITEM_ID_FIELD']: entity.id,
             },
             **self.async_http_headers,
         )
@@ -253,8 +253,8 @@ class TestExternalReferencePickerView(ViewTestBase):
         response = self.client.get(
             self._url(),
             data={
-                DIVID['ATTR_PICKER_ITEM_TYPE_FIELD']: 'banana',
-                DIVID['ATTR_PICKER_ITEM_ID_FIELD']: 1,
+                DIVID['REF_PICKER_ITEM_TYPE_FIELD']: 'banana',
+                DIVID['REF_PICKER_ITEM_ID_FIELD']: 1,
             },
             **self.async_http_headers,
         )
@@ -264,8 +264,8 @@ class TestExternalReferencePickerView(ViewTestBase):
         response = self.client.get(
             self._url(),
             data={
-                DIVID['ATTR_PICKER_ITEM_TYPE_FIELD']: str(ItemType.ENTITY),
-                DIVID['ATTR_PICKER_ITEM_ID_FIELD']: 99999,
+                DIVID['REF_PICKER_ITEM_TYPE_FIELD']: str(ItemType.ENTITY),
+                DIVID['REF_PICKER_ITEM_ID_FIELD']: 99999,
             },
             **self.async_http_headers,
         )
@@ -284,8 +284,8 @@ class TestExternalReferencePickerView(ViewTestBase):
         response = self.client.get(
             self._url(),
             data={
-                DIVID['ATTR_PICKER_ITEM_TYPE_FIELD']: str(ItemType.ENTITY),
-                DIVID['ATTR_PICKER_ITEM_ID_FIELD']: entity.id,
+                DIVID['REF_PICKER_ITEM_TYPE_FIELD']: str(ItemType.ENTITY),
+                DIVID['REF_PICKER_ITEM_ID_FIELD']: entity.id,
             },
             **self.async_http_headers,
         )
@@ -317,13 +317,13 @@ class TestExternalReferenceSearchView(ViewTestBase):
         _populate_manager([(self.INTEGRATION_ID, self.gateway)])
 
     def _url(self):
-        return reverse('integrations_attribute_reference_search')
+        return reverse('integrations_external_reference_search')
 
     def _payload(self, query='', limit=20, integration_id=None):
         return {
-            DIVID['ATTR_PICKER_QUERY_FIELD']: query,
-            DIVID['ATTR_PICKER_LIMIT_FIELD']: str(limit),
-            DIVID['ATTR_PICKER_INTEGRATION_ID_FIELD']: integration_id or self.INTEGRATION_ID,
+            DIVID['REF_PICKER_QUERY_FIELD']: query,
+            DIVID['REF_PICKER_LIMIT_FIELD']: str(limit),
+            DIVID['REF_PICKER_INTEGRATION_ID_FIELD']: integration_id or self.INTEGRATION_ID,
         }
 
     def test_empty_query_does_not_call_referencer(self):
@@ -362,8 +362,8 @@ class TestExternalReferenceSearchView(ViewTestBase):
         self.assertIn('https://p/doc/1', body)
         # Cards carry data attributes so JS can read title + URL on
         # checkbox change without parsing the DOM.
-        self.assertIn('data-attr-picker-source-url', body)
-        self.assertIn('data-attr-picker-title', body)
+        self.assertIn('data-ref-picker-source-url', body)
+        self.assertIn('data-ref-picker-title', body)
 
     def test_search_with_no_results_returns_empty_message(self):
         self.referencer._results = []
@@ -378,7 +378,7 @@ class TestExternalReferenceSearchView(ViewTestBase):
     def test_search_invalid_limit_falls_back_to_default(self):
         self.referencer._results = [_result()]
         payload = self._payload(query='q')
-        payload[DIVID['ATTR_PICKER_LIMIT_FIELD']] = 'not-a-number'
+        payload[DIVID['REF_PICKER_LIMIT_FIELD']] = 'not-a-number'
         self.client.post(
             self._url(), data=payload, **self.async_http_headers,
         )
@@ -446,7 +446,7 @@ class TestExternalReferenceAttachView(ViewTestBase):
         self.setSessionViewMode(ViewMode.EDIT)
 
     def _url(self):
-        return reverse('integrations_attribute_reference_attach')
+        return reverse('integrations_external_reference_attach')
 
     @staticmethod
     def _entity(name='Dishwasher'):
@@ -468,19 +468,19 @@ class TestExternalReferenceAttachView(ViewTestBase):
                         title='Title', source_url='https://example.com/1',
                         mime_type='application/pdf'):
         return {
-            DIVID['ATTR_PICKER_SELECTION_TITLE_KEY']: title,
-            DIVID['ATTR_PICKER_SELECTION_URL_KEY']: source_url,
-            DIVID['ATTR_PICKER_SELECTION_INTEGRATION_NAME_KEY']: integration_name,
-            DIVID['ATTR_PICKER_SELECTION_MIME_TYPE_KEY']: mime_type,
+            DIVID['REF_PICKER_SELECTION_TITLE_KEY']: title,
+            DIVID['REF_PICKER_SELECTION_URL_KEY']: source_url,
+            DIVID['REF_PICKER_SELECTION_INTEGRATION_NAME_KEY']: integration_name,
+            DIVID['REF_PICKER_SELECTION_MIME_TYPE_KEY']: mime_type,
         }
 
     def _payload(self, owner, integration_id, selections):
         item_type = ItemType.ENTITY if isinstance(owner, Entity) else ItemType.LOCATION
         return {
-            DIVID['ATTR_PICKER_ITEM_TYPE_FIELD']: str(item_type),
-            DIVID['ATTR_PICKER_ITEM_ID_FIELD']: owner.id,
-            DIVID['ATTR_PICKER_INTEGRATION_ID_FIELD']: integration_id,
-            DIVID['ATTR_PICKER_SELECTIONS_JSON_FIELD']: json.dumps(selections),
+            DIVID['REF_PICKER_ITEM_TYPE_FIELD']: str(item_type),
+            DIVID['REF_PICKER_ITEM_ID_FIELD']: owner.id,
+            DIVID['REF_PICKER_INTEGRATION_ID_FIELD']: integration_id,
+            DIVID['REF_PICKER_SELECTIONS_JSON_FIELD']: json.dumps(selections),
         }
 
     def test_attach_dispatches_to_referencer_for_form_integration_id(self):
@@ -612,7 +612,7 @@ class TestExternalReferenceAttachView(ViewTestBase):
             integration_id='paperless', referencer=ref,
         ))])
         payload = self._payload(entity, 'paperless', [])
-        payload[DIVID['ATTR_PICKER_SELECTIONS_JSON_FIELD']] = 'not-json'
+        payload[DIVID['REF_PICKER_SELECTIONS_JSON_FIELD']] = 'not-json'
         response = self.client.post(
             self._url(), data=payload, **self.async_http_headers,
         )
@@ -663,7 +663,7 @@ class TestExternalReferenceAttachView(ViewTestBase):
         payload = self._payload(entity, 'paperless', [
             self._selection_dict(integration_name='1'),
         ])
-        del payload[DIVID['ATTR_PICKER_INTEGRATION_ID_FIELD']]
+        del payload[DIVID['REF_PICKER_INTEGRATION_ID_FIELD']]
         response = self.client.post(
             self._url(), data=payload, **self.async_http_headers,
         )
@@ -677,10 +677,10 @@ class TestExternalReferenceAttachView(ViewTestBase):
         response = self.client.post(
             self._url(),
             data={
-                DIVID['ATTR_PICKER_ITEM_TYPE_FIELD']: str(ItemType.COLLECTION),
-                DIVID['ATTR_PICKER_ITEM_ID_FIELD']: 1,
-                DIVID['ATTR_PICKER_INTEGRATION_ID_FIELD']: 'paperless',
-                DIVID['ATTR_PICKER_SELECTIONS_JSON_FIELD']: json.dumps(
+                DIVID['REF_PICKER_ITEM_TYPE_FIELD']: str(ItemType.COLLECTION),
+                DIVID['REF_PICKER_ITEM_ID_FIELD']: 1,
+                DIVID['REF_PICKER_INTEGRATION_ID_FIELD']: 'paperless',
+                DIVID['REF_PICKER_SELECTIONS_JSON_FIELD']: json.dumps(
                     [self._selection_dict()]),
             },
             **self.async_http_headers,
@@ -695,10 +695,10 @@ class TestExternalReferenceAttachView(ViewTestBase):
         response = self.client.post(
             self._url(),
             data={
-                DIVID['ATTR_PICKER_ITEM_TYPE_FIELD']: str(ItemType.ENTITY),
-                DIVID['ATTR_PICKER_ITEM_ID_FIELD']: 99999,
-                DIVID['ATTR_PICKER_INTEGRATION_ID_FIELD']: 'paperless',
-                DIVID['ATTR_PICKER_SELECTIONS_JSON_FIELD']: json.dumps(
+                DIVID['REF_PICKER_ITEM_TYPE_FIELD']: str(ItemType.ENTITY),
+                DIVID['REF_PICKER_ITEM_ID_FIELD']: 99999,
+                DIVID['REF_PICKER_INTEGRATION_ID_FIELD']: 'paperless',
+                DIVID['REF_PICKER_SELECTIONS_JSON_FIELD']: json.dumps(
                     [self._selection_dict()]),
             },
             **self.async_http_headers,

@@ -32,13 +32,13 @@
  * modal is removed.
  *
  * DOM classes, data-attribute names, and wire-format field names
- * all come from ``Hi.ATTR_PICKER_*`` in ``main.js``, mirrored
+ * all come from ``Hi.REF_PICKER_*`` in ``main.js``, mirrored
  * server-side in ``hi.constants.DIVID``.
  */
 (function() {
     'use strict';
 
-    const EventNs = '.attr-picker';
+    const EventNs = '.external-reference-picker';
 
     // Per-picker selection state, keyed by the picker-root DOM node
     // so multiple open modals would not collide. State is lazily
@@ -60,22 +60,22 @@
     }
 
     function _hasSelection(state, sourceUrl) {
-        const key = Hi.ATTR_PICKER_SELECTION_URL_KEY;
+        const key = Hi.REF_PICKER_SELECTION_URL_KEY;
         return state.attrSelections.some(s => s[key] === sourceUrl);
     }
 
     function _addSelection(state, fields) {
         if (_hasSelection(state, fields.sourceUrl)) return;
         const record = {};
-        record[Hi.ATTR_PICKER_SELECTION_TITLE_KEY] = fields.title;
-        record[Hi.ATTR_PICKER_SELECTION_URL_KEY] = fields.sourceUrl;
-        record[Hi.ATTR_PICKER_SELECTION_INTEGRATION_NAME_KEY] = fields.integrationName;
-        record[Hi.ATTR_PICKER_SELECTION_MIME_TYPE_KEY] = fields.mimeType || '';
+        record[Hi.REF_PICKER_SELECTION_TITLE_KEY] = fields.title;
+        record[Hi.REF_PICKER_SELECTION_URL_KEY] = fields.sourceUrl;
+        record[Hi.REF_PICKER_SELECTION_INTEGRATION_NAME_KEY] = fields.integrationName;
+        record[Hi.REF_PICKER_SELECTION_MIME_TYPE_KEY] = fields.mimeType || '';
         state.attrSelections.push(record);
     }
 
     function _removeSelection(state, sourceUrl) {
-        const key = Hi.ATTR_PICKER_SELECTION_URL_KEY;
+        const key = Hi.REF_PICKER_SELECTION_URL_KEY;
         state.attrSelections = state.attrSelections.filter(
             s => s[key] !== sourceUrl
         );
@@ -83,10 +83,10 @@
 
     function _renderChips($pickerRoot, state) {
         const $chipsContainer = $pickerRoot.find(
-            _classSelector(Hi.ATTR_PICKER_CHIPS_CLASS)
+            _classSelector(Hi.REF_PICKER_CHIPS_CLASS)
         );
         const $emptyHint = $pickerRoot.find(
-            _classSelector(Hi.ATTR_PICKER_CHIPS_EMPTY_CLASS)
+            _classSelector(Hi.REF_PICKER_CHIPS_EMPTY_CLASS)
         );
         $chipsContainer.empty();
         if (state.attrSelections.length === 0) {
@@ -94,8 +94,8 @@
             return;
         }
         $emptyHint.addClass('d-none');
-        const titleKey = Hi.ATTR_PICKER_SELECTION_TITLE_KEY;
-        const urlKey = Hi.ATTR_PICKER_SELECTION_URL_KEY;
+        const titleKey = Hi.REF_PICKER_SELECTION_TITLE_KEY;
+        const urlKey = Hi.REF_PICKER_SELECTION_URL_KEY;
         state.attrSelections.forEach(function(sel) {
             const $chip = $('<span>')
                 .addClass('badge badge-secondary mr-2 mb-2 d-inline-flex align-items-center');
@@ -107,9 +107,9 @@
                 .appendTo($chip);
             $('<button type="button">')
                 .addClass('btn btn-link btn-sm p-0 text-white ml-1')
-                .addClass(Hi.ATTR_PICKER_CHIP_REMOVE_CLASS)
+                .addClass(Hi.REF_PICKER_CHIP_REMOVE_CLASS)
                 .attr('title', 'Remove from selection')
-                .attr(Hi.ATTR_PICKER_SOURCE_URL_ATTR, sel[urlKey])
+                .attr(Hi.REF_PICKER_SOURCE_URL_ATTR, sel[urlKey])
                 .text('×')   // ×
                 .appendTo($chip);
             $chipsContainer.append($chip);
@@ -119,11 +119,11 @@
     function _renderAttachButton($pickerRoot, state) {
         const count = state.attrSelections.length;
         const $btn = $pickerRoot.find(
-            _classSelector(Hi.ATTR_PICKER_ATTACH_BTN_CLASS)
+            _classSelector(Hi.REF_PICKER_ATTACH_BTN_CLASS)
         );
         const noun = count === 1 ? 'Link' : 'Links';
         const $label = $btn.find(
-            _classSelector(Hi.ATTR_PICKER_ATTACH_LABEL_CLASS)
+            _classSelector(Hi.REF_PICKER_ATTACH_LABEL_CLASS)
         );
         const text = 'Add ' + count + ' ' + noun;
         if ($label.length) {
@@ -141,10 +141,10 @@
 
     function _syncCheckboxesToState($pickerRoot, state) {
         $pickerRoot.find(
-            _classSelector(Hi.ATTR_PICKER_RESULT_CHECKBOX_CLASS)
+            _classSelector(Hi.REF_PICKER_RESULT_CHECKBOX_CLASS)
         ).each(function() {
             const $cb = $(this);
-            const sourceUrl = $cb.attr(Hi.ATTR_PICKER_SOURCE_URL_ATTR);
+            const sourceUrl = $cb.attr(Hi.REF_PICKER_SOURCE_URL_ATTR);
             if (sourceUrl == null) return;
             $cb.prop('checked', _hasSelection(state, sourceUrl));
         });
@@ -154,22 +154,22 @@
 
     $(document).on(
         'change' + EventNs,
-        _classSelector(Hi.ATTR_PICKER_RESULT_CHECKBOX_CLASS),
+        _classSelector(Hi.REF_PICKER_RESULT_CHECKBOX_CLASS),
         function() {
             const $cb = $(this);
             const $pickerRoot = $cb.closest(
-                _classSelector(Hi.ATTR_PICKER_ROOT_CLASS)
+                _classSelector(Hi.REF_PICKER_ROOT_CLASS)
             );
             if ($pickerRoot.length === 0) return;
             const state = _state($pickerRoot[0]);
-            const sourceUrl = $cb.attr(Hi.ATTR_PICKER_SOURCE_URL_ATTR);
+            const sourceUrl = $cb.attr(Hi.REF_PICKER_SOURCE_URL_ATTR);
             if (sourceUrl == null) return;
             if ($cb.is(':checked')) {
                 _addSelection(state, {
-                    title:           $cb.attr(Hi.ATTR_PICKER_TITLE_ATTR),
+                    title:           $cb.attr(Hi.REF_PICKER_TITLE_ATTR),
                     sourceUrl:       sourceUrl,
-                    integrationName: $cb.attr(Hi.ATTR_PICKER_INTEGRATION_NAME_ATTR),
-                    mimeType:        $cb.attr(Hi.ATTR_PICKER_MIME_TYPE_ATTR),
+                    integrationName: $cb.attr(Hi.REF_PICKER_INTEGRATION_NAME_ATTR),
+                    mimeType:        $cb.attr(Hi.REF_PICKER_MIME_TYPE_ATTR),
                 });
             } else {
                 _removeSelection(state, sourceUrl);
@@ -180,22 +180,22 @@
 
     $(document).on(
         'click' + EventNs,
-        _classSelector(Hi.ATTR_PICKER_CHIP_REMOVE_CLASS),
+        _classSelector(Hi.REF_PICKER_CHIP_REMOVE_CLASS),
         function() {
             const $btn = $(this);
             const $pickerRoot = $btn.closest(
-                _classSelector(Hi.ATTR_PICKER_ROOT_CLASS)
+                _classSelector(Hi.REF_PICKER_ROOT_CLASS)
             );
             if ($pickerRoot.length === 0) return;
-            const sourceUrl = $btn.attr(Hi.ATTR_PICKER_SOURCE_URL_ATTR);
+            const sourceUrl = $btn.attr(Hi.REF_PICKER_SOURCE_URL_ATTR);
             if (sourceUrl == null) return;
             const state = _state($pickerRoot[0]);
             _removeSelection(state, sourceUrl);
             // Uncheck any visible result card whose URL matches.
             $pickerRoot
-                .find(_classSelector(Hi.ATTR_PICKER_RESULT_CHECKBOX_CLASS))
+                .find(_classSelector(Hi.REF_PICKER_RESULT_CHECKBOX_CLASS))
                 .filter(function() {
-                    return $(this).attr(Hi.ATTR_PICKER_SOURCE_URL_ATTR) === sourceUrl;
+                    return $(this).attr(Hi.REF_PICKER_SOURCE_URL_ATTR) === sourceUrl;
                 })
                 .prop('checked', false);
             _renderAll($pickerRoot, state);
@@ -204,15 +204,15 @@
 
     $(document).on(
         'submit' + EventNs,
-        _classSelector(Hi.ATTR_PICKER_SEARCH_FORM_CLASS),
+        _classSelector(Hi.REF_PICKER_SEARCH_FORM_CLASS),
         function(e) {
             e.preventDefault();
             const $form = $(this);
             const $pickerRoot = $form.closest(
-                _classSelector(Hi.ATTR_PICKER_ROOT_CLASS)
+                _classSelector(Hi.REF_PICKER_ROOT_CLASS)
             );
             if ($pickerRoot.length === 0) return;
-            const searchUrl = $form.attr(Hi.ATTR_PICKER_SEARCH_URL_ATTR);
+            const searchUrl = $form.attr(Hi.REF_PICKER_SEARCH_URL_ATTR);
             $.ajax({
                 url: searchUrl,
                 method: 'POST',
@@ -220,7 +220,7 @@
                 headers: { 'X-Requested-With': 'XMLHttpRequest' }
             }).done(function(html) {
                 $pickerRoot.find(
-                    _classSelector(Hi.ATTR_PICKER_RESULTS_CLASS)
+                    _classSelector(Hi.REF_PICKER_RESULTS_CLASS)
                 ).html(html);
                 _syncCheckboxesToState($pickerRoot, _state($pickerRoot[0]));
             });
@@ -229,7 +229,7 @@
 
     $(document).on(
         'submit' + EventNs,
-        _classSelector(Hi.ATTR_PICKER_ATTACH_FORM_CLASS),
+        _classSelector(Hi.REF_PICKER_ATTACH_FORM_CLASS),
         function(e) {
             // Own the submit lifecycle so the in-memory selection set
             // is populated into the hidden input BEFORE the form is
@@ -241,11 +241,11 @@
             e.preventDefault();
             const $form = $(this);
             const $pickerRoot = $form.closest(
-                _classSelector(Hi.ATTR_PICKER_ROOT_CLASS)
+                _classSelector(Hi.REF_PICKER_ROOT_CLASS)
             );
             if ($pickerRoot.length === 0) return;
             const state = _state($pickerRoot[0]);
-            const fieldName = Hi.ATTR_PICKER_SELECTIONS_JSON_FIELD;
+            const fieldName = Hi.REF_PICKER_SELECTIONS_JSON_FIELD;
             $form.find('input[name="' + fieldName + '"]')
                 .val(JSON.stringify(state.attrSelections));
             if (!window.AN) {
@@ -262,7 +262,7 @@
 
     $(document).on(
         'click' + EventNs,
-        _classSelector(Hi.ATTR_PICKER_SOURCE_OPTION_CLASS),
+        _classSelector(Hi.REF_PICKER_SOURCE_OPTION_CLASS),
         function(e) {
             // Switch the active source. Selections are CLEARED --
             // each submission carries items from one integration
@@ -272,28 +272,28 @@
             e.preventDefault();
             const $option = $(this);
             const $pickerRoot = $option.closest(
-                _classSelector(Hi.ATTR_PICKER_ROOT_CLASS)
+                _classSelector(Hi.REF_PICKER_ROOT_CLASS)
             );
             if ($pickerRoot.length === 0) return;
-            const sourceId = $option.attr(Hi.ATTR_PICKER_SOURCE_ID_ATTR);
-            const sourceLogo = $option.attr(Hi.ATTR_PICKER_SOURCE_LOGO_ATTR);
-            const sourceLabel = $option.attr(Hi.ATTR_PICKER_SOURCE_LABEL_ATTR);
+            const sourceId = $option.attr(Hi.REF_PICKER_SOURCE_ID_ATTR);
+            const sourceLogo = $option.attr(Hi.REF_PICKER_SOURCE_LOGO_ATTR);
+            const sourceLabel = $option.attr(Hi.REF_PICKER_SOURCE_LABEL_ATTR);
             if (sourceId == null) return;
             const state = _state($pickerRoot[0]);
             state.attrSelections = [];
             _renderAll($pickerRoot, state);
             $pickerRoot
-                .find(_classSelector(Hi.ATTR_PICKER_SOURCE_BANNER_LOGO_CLASS))
+                .find(_classSelector(Hi.REF_PICKER_SOURCE_BANNER_LOGO_CLASS))
                 .attr('src', sourceLogo);
             $pickerRoot
-                .find(_classSelector(Hi.ATTR_PICKER_SOURCE_BANNER_LABEL_CLASS))
+                .find(_classSelector(Hi.REF_PICKER_SOURCE_BANNER_LABEL_CLASS))
                 .text(sourceLabel);
-            const fieldName = Hi.ATTR_PICKER_INTEGRATION_ID_FIELD;
+            const fieldName = Hi.REF_PICKER_INTEGRATION_ID_FIELD;
             $pickerRoot
                 .find('input[name="' + fieldName + '"]')
                 .val(sourceId);
             $pickerRoot
-                .find(_classSelector(Hi.ATTR_PICKER_SEARCH_FORM_CLASS))
+                .find(_classSelector(Hi.REF_PICKER_SEARCH_FORM_CLASS))
                 .trigger('submit');
         }
     );

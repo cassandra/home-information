@@ -1,12 +1,12 @@
 {% load icons %}
 {% comment %}
 Result-cards partial returned by the search endpoint and swapped
-into the picker's results container by attr-picker.js. Each card
+into the picker's results container by external-reference-picker.js. Each card
 carries the source title and URL as data attributes so the JS can
 read them on checkbox change without parsing the DOM.
 
 DOM classes / data-attribute names come from ``hi.constants.DIVID``
-(mirrored in ``static/js/main.js`` under ``Hi.ATTR_PICKER_*``).
+(mirrored in ``static/js/main.js`` under ``Hi.REF_PICKER_*``).
 
 Context:
   query         : str  (the search query that produced these results;
@@ -26,11 +26,11 @@ Context:
   {% for r in results %}
   <label class="list-group-item d-flex align-items-start mb-0">
     <input type="checkbox"
-           class="{{ DIVID.ATTR_PICKER_RESULT_CHECKBOX_CLASS }} mt-1 mr-3"
-           {{ DIVID.ATTR_PICKER_TITLE_ATTR }}="{{ r.title }}"
-           {{ DIVID.ATTR_PICKER_SOURCE_URL_ATTR }}="{{ r.source_url }}"
-           {{ DIVID.ATTR_PICKER_INTEGRATION_NAME_ATTR }}="{{ r.integration_key.integration_name }}"
-           {{ DIVID.ATTR_PICKER_MIME_TYPE_ATTR }}="{{ r.mime_type|default:'' }}">
+           class="{{ DIVID.REF_PICKER_RESULT_CHECKBOX_CLASS }} mt-1 mr-3"
+           {{ DIVID.REF_PICKER_TITLE_ATTR }}="{{ r.title }}"
+           {{ DIVID.REF_PICKER_SOURCE_URL_ATTR }}="{{ r.source_url }}"
+           {{ DIVID.REF_PICKER_INTEGRATION_NAME_ATTR }}="{{ r.integration_key.integration_name }}"
+           {{ DIVID.REF_PICKER_MIME_TYPE_ATTR }}="{{ r.mime_type|default:'' }}">
     {% if r.thumbnail_url %}
     <img src="{{ r.thumbnail_url }}"
          alt=""

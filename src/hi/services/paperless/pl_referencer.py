@@ -23,7 +23,7 @@ Translates each paperless documents-search hit into a single
                        persist or display the whole document text.
 """
 import logging
-from typing import List, Optional
+from typing import Optional
 
 from django.urls import reverse
 from requests import HTTPError, RequestException
@@ -33,15 +33,10 @@ from hi.integrations.referencer.integration_referencer import (
     IntegrationExternalReferencer,
 )
 from hi.integrations.referencer.transient_models import (
-    ExternalReferenceAttachBatchOutcome,
-    ExternalReferenceAttachOutcome,
     ExternalReferenceResult,
     ExternalReferenceSearchResult,
 )
-from hi.integrations.thumbnails import (
-    THUMBNAIL_SUPPORTED_MIME_TYPES,
-    generate as generate_thumbnail,
-)
+from hi.apps.attribute.thumbnail import ThumbnailHelpers
 from hi.integrations.transient_models import (
     IntegrationKey,
     IntegrationMetaData,
@@ -130,86 +125,9 @@ class PaperlessExternalReferencer( IntegrationExternalReferencer ):
             ],
         )
 
-    def attach_references(
-            self,
-            owner,
-            selections : List[ ExternalReferenceResult ],
-    ) -> ExternalReferenceAttachBatchOutcome:
-        """Attach each selected paperless document as a framework
-        external-reference row. Best-effort thumbnail fetch per
-        document: upstream thumbnail -> original-bytes + HI generator
-        (only for mime types the generator supports; office docs,
-        text, etc. skip the fetch) -> no thumbnail. The row attaches
-        regardless of which link produced bytes; linking is the
-        primary user goal. Missing thumbnails are NOT failure
-        outcomes -- the placeholder render covers them.
-
-        Per-selection failures are isolated: the loop catches and
-        records a failure outcome so one bad selection doesn't abort
-        the rest. Batch-level atomicity is deliberately NOT used --
-        it would defeat the per-selection isolation. Per-row
-        consistency is owned by ``create_or_update``."""
-        outcomes : List[ ExternalReferenceAttachOutcome ] = []
-
-        try:
-            client = build_client()
-        except IntegrationAttributeError as e:
-            logger.warning( f'Paperless attach aborted: {e}' )
-            for _ in selections:
-                outcomes.append( ExternalReferenceAttachOutcome(
-                    success = False,
-                    error_message = 'Paperless integration is not configured.',
-                ) )
-            return ExternalReferenceAttachBatchOutcome( outcomes = outcomes )
-        except Exception as e:
-            logger.exception( f'Paperless client build failed: {e}' )
-            for _ in selections:
-                outcomes.append( ExternalReferenceAttachOutcome(
-                    success = False,
-                    error_message = 'Paperless integration error -- see server logs.',
-                ) )
-            return ExternalReferenceAttachBatchOutcome( outcomes = outcomes )
-
-        manager = self._manager_for_owner( owner )
-        for selection in selections:
-            try:
-                self._attach_one( client, manager, owner, selection )
-                outcomes.append( ExternalReferenceAttachOutcome( success = True ) )
-            except Exception as e:
-                logger.warning(
-                    f'Paperless attach failed for '
-                    f'{selection.integration_key.integration_name}: {e}'
-                )
-                outcomes.append( ExternalReferenceAttachOutcome(
-                    success = False,
-                    error_message = (
-                        f'Paperless could not attach '
-                        f'{selection.title!r} -- see server logs.'
-                    ),
-                ) )
-        return ExternalReferenceAttachBatchOutcome( outcomes = outcomes )
-
-    def _attach_one(
-            self, client, manager, owner,
-            selection : ExternalReferenceResult,
-    ) -> None:
-        integration_name = selection.integration_key.integration_name
-        mime_type = selection.mime_type or ''
-        thumbnail_bytes = self._try_upstream_thumbnail(
-            client, integration_name,
-        )
-        if thumbnail_bytes is None:
-            thumbnail_bytes = self._try_generate_from_original(
-                client, integration_name, mime_type,
-            )
-        manager.create_or_update(
-            owner           = owner,
-            integration_key = selection.integration_key,
-            title           = selection.title,
-            source_url      = selection.source_url,
-            mime_type       = mime_type,
-            thumbnail_bytes = thumbnail_bytes,
-        )
+    # The module-level client factory satisfies the base's
+    # ``build_client`` interface directly -- no wrapper method.
+    build_client = staticmethod( build_client )
 
     @staticmethod
     def _try_upstream_thumbnail(
@@ -244,7 +162,7 @@ class PaperlessExternalReferencer( IntegrationExternalReferencer ):
         formats the generator can't handle (office docs, text)
         rather than waste bandwidth on bytes the generator will
         reject."""
-        if mime_type not in THUMBNAIL_SUPPORTED_MIME_TYPES:
+        if mime_type not in ThumbnailHelpers.THUMBNAIL_SUPPORTED_MIME_TYPES:
             return None
         try:
             document_id = int( integration_name )
@@ -261,7 +179,9 @@ class PaperlessExternalReferencer( IntegrationExternalReferencer ):
         original_bytes = downloaded.get( 'content' )
         if not original_bytes:
             return None
-        return generate_thumbnail( original_bytes, mime_type )
+        return ThumbnailHelpers.bytes_to_thumbnail_png(
+            original_bytes, mime_type,
+        )
 
     @staticmethod
     def _http_error_message( status : Optional[int] ) -> str:

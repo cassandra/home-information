@@ -52,13 +52,13 @@ class ExternalReferenceViewMixin:
         against an integration the operator has turned off."""
         if not integration_id:
             raise BadRequest(
-                f'Missing {DIVID["ATTR_PICKER_INTEGRATION_ID_FIELD"]}.',
+                f'Missing {DIVID["REF_PICKER_INTEGRATION_ID_FIELD"]}.',
             )
         for candidate in integration_data_list:
             if candidate.integration_id == integration_id:
                 return candidate
         raise BadRequest(
-            f'Unknown {DIVID["ATTR_PICKER_INTEGRATION_ID_FIELD"]}: '
+            f'Unknown {DIVID["REF_PICKER_INTEGRATION_ID_FIELD"]}: '
             f'{integration_id!r}',
         )
 
@@ -75,19 +75,19 @@ class ExternalReferenceViewMixin:
             item_type = ItemType.from_name( raw_item_type )
         except ValueError:
             raise BadRequest(
-                f'Unsupported {DIVID["ATTR_PICKER_ITEM_TYPE_FIELD"]}: '
+                f'Unsupported {DIVID["REF_PICKER_ITEM_TYPE_FIELD"]}: '
                 f'{raw_item_type!r}',
             )
         if item_type not in self.OWNER_MODELS:
             raise BadRequest(
-                f'Unsupported {DIVID["ATTR_PICKER_ITEM_TYPE_FIELD"]}: '
+                f'Unsupported {DIVID["REF_PICKER_ITEM_TYPE_FIELD"]}: '
                 f'{raw_item_type!r}',
             )
         try:
             item_id = int( raw_item_id )
         except (TypeError, ValueError):
             raise BadRequest(
-                f'Invalid {DIVID["ATTR_PICKER_ITEM_ID_FIELD"]}.',
+                f'Invalid {DIVID["REF_PICKER_ITEM_ID_FIELD"]}.',
             )
         owner_model = self.OWNER_MODELS[ item_type ]
         try:

@@ -4,9 +4,9 @@
 {% comment %}
 EXTERNAL_REFERENCE picker modal.
 
-Selection state lives in attr-picker.js (one selection set per open
+Selection state lives in external-reference-picker.js (one selection set per open
 modal instance, keyed by the picker-root DOM node -- i.e., this
-modal-dialog). attr-picker.js attaches its handlers as delegated
+modal-dialog). external-reference-picker.js attaches its handlers as delegated
 listeners at document level, so antinode-injected modal content
 wires up automatically -- no init step in this template.
 
@@ -32,17 +32,17 @@ Context:
 
 Wire-format strings (DOM class names, data-attribute names, form
 field names) come from ``hi.constants.DIVID`` (mirrored in
-``static/js/main.js`` under ``Hi.ATTR_PICKER_*``).
+``static/js/main.js`` under ``Hi.REF_PICKER_*``).
 {% endcomment %}
 
-{% block modal_dialog_class %}modal-dialog-scrollable hi-modal-dialog-700 {{ DIVID.ATTR_PICKER_ROOT_CLASS }}{% endblock %}
+{% block modal_dialog_class %}modal-dialog-scrollable hi-modal-dialog-700 {{ DIVID.REF_PICKER_ROOT_CLASS }}{% endblock %}
 
 {% block title_text %}
 Link Content
 {% endblock %}
 
 {% block body %}
-{% include "integrations/referencer/panes/attr_picker_body.html" %}
+{% include "integrations/referencer/panes/external_reference_picker_body.html" %}
 {% endblock %}
 
 {% block footer %}
@@ -50,10 +50,10 @@ Link Content
 
   {# ----- Chip row + empty-state hint ----- #}
   <div class="d-flex flex-wrap align-items-center mb-2 mt-1">
-    <div class="{{ DIVID.ATTR_PICKER_CHIPS_EMPTY_CLASS }} small text-muted">
+    <div class="{{ DIVID.REF_PICKER_CHIPS_EMPTY_CLASS }} small text-muted">
       No content selected yet.
     </div>
-    <div class="{{ DIVID.ATTR_PICKER_CHIPS_CLASS }} d-flex flex-wrap"></div>
+    <div class="{{ DIVID.REF_PICKER_CHIPS_CLASS }} d-flex flex-wrap"></div>
   </div>
 
   {# ----- Cancel + Add row ----- #}
@@ -70,28 +70,28 @@ Link Content
       {% icon "cancel" size="sm" css_class="hi-icon-left" %}CANCEL
     </a>
     {% comment %}
-    No ``data-async`` here: attr-picker.js owns the submit so it can
+    No ``data-async`` here: external-reference-picker.js owns the submit so it can
     populate ``selections_json`` and POST through antinode's public
     API (``AN.hideModalIfNeeded`` + ``AN.post``). Letting antinode
     also bind via ``data-async`` would race the field-population --
-    antinode reads the form at the <body> level before attr-picker's
+    antinode reads the form at the <body> level before external-reference-picker's
     document-level submit handler fires.
     {% endcomment %}
-    <form class="{{ DIVID.ATTR_PICKER_ATTACH_FORM_CLASS }} m-0"
+    <form class="{{ DIVID.REF_PICKER_ATTACH_FORM_CLASS }} m-0"
           method="post"
-          action="{% url 'integrations_attribute_reference_attach' %}">
+          action="{% url 'integrations_external_reference_attach' %}">
       {% csrf_token %}
-      <input type="hidden" name="{{ DIVID.ATTR_PICKER_ITEM_TYPE_FIELD }}" value="{{ item_type }}">
-      <input type="hidden" name="{{ DIVID.ATTR_PICKER_ITEM_ID_FIELD }}" value="{{ item_id }}">
-      {# Kept in sync with the search-form copy by attr-picker.js on source switch. #}
+      <input type="hidden" name="{{ DIVID.REF_PICKER_ITEM_TYPE_FIELD }}" value="{{ item_type }}">
+      <input type="hidden" name="{{ DIVID.REF_PICKER_ITEM_ID_FIELD }}" value="{{ item_id }}">
+      {# Kept in sync with the search-form copy by external-reference-picker.js on source switch. #}
       <input type="hidden"
-             name="{{ DIVID.ATTR_PICKER_INTEGRATION_ID_FIELD }}"
+             name="{{ DIVID.REF_PICKER_INTEGRATION_ID_FIELD }}"
              value="{{ integration_data.integration_id }}">
-      <input type="hidden" name="{{ DIVID.ATTR_PICKER_SELECTIONS_JSON_FIELD }}" value="">
+      <input type="hidden" name="{{ DIVID.REF_PICKER_SELECTIONS_JSON_FIELD }}" value="">
       <button type="submit"
-              class="btn btn-primary {{ DIVID.ATTR_PICKER_ATTACH_BTN_CLASS }}"
+              class="btn btn-primary {{ DIVID.REF_PICKER_ATTACH_BTN_CLASS }}"
               disabled>
-        {% icon "check-circle" size="sm" css_class="hi-icon-left" %}<span class="{{ DIVID.ATTR_PICKER_ATTACH_LABEL_CLASS }}">Add 0 Links</span>
+        {% icon "check-circle" size="sm" css_class="hi-icon-left" %}<span class="{{ DIVID.REF_PICKER_ATTACH_LABEL_CLASS }}">Add 0 Links</span>
       </button>
     </form>
   </div>

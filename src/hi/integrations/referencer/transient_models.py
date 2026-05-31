@@ -17,9 +17,9 @@ distinguish a legitimately-empty search from an upstream failure
 the "No results." string.
 
 Wire-format strings (form field names, JSON record keys) shared
-between the picker views, templates, and ``attr-picker.js`` live in
+between the picker views, templates, and ``external-reference-picker.js`` live in
 ``hi.constants.DIVID`` (mirrored in ``static/js/main.js``). See the
-``ATTR_PICKER_*`` entries there.
+``REF_PICKER_*`` entries there.
 """
 
 from dataclasses import dataclass, field

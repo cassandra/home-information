@@ -71,10 +71,10 @@ class ExternalReferencePickerView(
     """GET the picker modal. Initial render seeds the result list
     by searching on the owner's name; selection state then lives in
     JS. Subsequent search results arrive via async POST to
-    ``integrations_attribute_reference_search``, and the final
-    commit posts to ``integrations_attribute_reference_attach``."""
+    ``integrations_external_reference_search``, and the final
+    commit posts to ``integrations_external_reference_attach``."""
 
-    MODAL_TEMPLATE_NAME = 'integrations/referencer/modals/attr_picker.html'
+    MODAL_TEMPLATE_NAME = 'integrations/referencer/modals/external_reference_picker.html'
 
     def get_template_name(self) -> str:
         return self.MODAL_TEMPLATE_NAME
@@ -88,8 +88,8 @@ class ExternalReferencePickerView(
             raise Http404( request )
 
         item_type, owner = self.resolve_owner_from_form(
-            raw_item_type = request.GET.get( DIVID['ATTR_PICKER_ITEM_TYPE_FIELD'] ),
-            raw_item_id   = request.GET.get( DIVID['ATTR_PICKER_ITEM_ID_FIELD'] ),
+            raw_item_type = request.GET.get( DIVID['REF_PICKER_ITEM_TYPE_FIELD'] ),
+            raw_item_id   = request.GET.get( DIVID['REF_PICKER_ITEM_ID_FIELD'] ),
         )
 
         # Default to the first configured referencer. The operator
@@ -128,14 +128,14 @@ class ExternalReferencePickerView(
 class ExternalReferenceSearchView(
         View, IntegrationViewMixin, ExternalReferenceViewMixin ):
     """POST endpoint that runs an upstream search and returns only
-    the result-cards HTML partial. The attr-picker JS swaps the
+    the result-cards HTML partial. The external-reference-picker JS swaps the
     returned markup into the picker's results container, then
     re-applies checkbox state from its in-memory selection set.
 
     Empty / whitespace queries short-circuit to an empty result
     partial (no upstream call)."""
 
-    RESULTS_TEMPLATE_NAME = 'integrations/referencer/panes/attr_picker_results.html'
+    RESULTS_TEMPLATE_NAME = 'integrations/referencer/panes/external_reference_picker_results.html'
     MAX_LIMIT = 100
 
     def post(self, request, *args, **kwargs):
@@ -148,17 +148,17 @@ class ExternalReferenceSearchView(
         integration_data = self.resolve_integration_data(
             integration_data_list = integration_data_list,
             integration_id = request.POST.get(
-                DIVID['ATTR_PICKER_INTEGRATION_ID_FIELD'],
+                DIVID['REF_PICKER_INTEGRATION_ID_FIELD'],
             ),
         )
         referencer = integration_data.integration_gateway.get_external_referencer()
         if referencer is None:
             raise Http404( request )
         query = (
-            request.POST.get( DIVID['ATTR_PICKER_QUERY_FIELD'] ) or ''
+            request.POST.get( DIVID['REF_PICKER_QUERY_FIELD'] ) or ''
         ).strip()
         limit = self._parse_limit(
-            request.POST.get( DIVID['ATTR_PICKER_LIMIT_FIELD'] ),
+            request.POST.get( DIVID['REF_PICKER_LIMIT_FIELD'] ),
         )
         search_result = self.search_upstream(
             referencer = referencer, query = query, limit = limit,
@@ -217,16 +217,16 @@ class ExternalReferenceAttachView(
         integration_data = self.resolve_integration_data(
             integration_data_list = integration_data_list,
             integration_id = request.POST.get(
-                DIVID['ATTR_PICKER_INTEGRATION_ID_FIELD'],
+                DIVID['REF_PICKER_INTEGRATION_ID_FIELD'],
             ),
         )
         item_type, owner = self.resolve_owner_from_form(
-            raw_item_type = request.POST.get( DIVID['ATTR_PICKER_ITEM_TYPE_FIELD'] ),
-            raw_item_id   = request.POST.get( DIVID['ATTR_PICKER_ITEM_ID_FIELD'] ),
+            raw_item_type = request.POST.get( DIVID['REF_PICKER_ITEM_TYPE_FIELD'] ),
+            raw_item_id   = request.POST.get( DIVID['REF_PICKER_ITEM_ID_FIELD'] ),
         )
         selections = self._parse_selections_json(
             raw = request.POST.get(
-                DIVID['ATTR_PICKER_SELECTIONS_JSON_FIELD'],
+                DIVID['REF_PICKER_SELECTIONS_JSON_FIELD'],
             ) or '',
             integration_id = integration_data.integration_id,
         )
@@ -267,16 +267,16 @@ class ExternalReferenceAttachView(
             if not isinstance( item, dict ):
                 continue
             title = ( item.get(
-                DIVID['ATTR_PICKER_SELECTION_TITLE_KEY']
+                DIVID['REF_PICKER_SELECTION_TITLE_KEY']
             ) or '' ).strip()
             url = ( item.get(
-                DIVID['ATTR_PICKER_SELECTION_URL_KEY']
+                DIVID['REF_PICKER_SELECTION_URL_KEY']
             ) or '' ).strip()
             integration_name = ( item.get(
-                DIVID['ATTR_PICKER_SELECTION_INTEGRATION_NAME_KEY']
+                DIVID['REF_PICKER_SELECTION_INTEGRATION_NAME_KEY']
             ) or '' ).strip()
             mime_type = ( item.get(
-                DIVID['ATTR_PICKER_SELECTION_MIME_TYPE_KEY']
+                DIVID['REF_PICKER_SELECTION_MIME_TYPE_KEY']
             ) or '' ).strip()
             if not title or not url or not integration_name:
                 continue
@@ -299,7 +299,7 @@ class ExternalReferenceAttachView(
     ) -> ExternalReferenceAttachBatchOutcome:
         """Call the integration's ``attach_references`` for all
         selections in one submission. The picker resets selection
-        state on source-switch (see ``attr-picker.js``), so one
+        state on source-switch (see ``external-reference-picker.js``), so one
         submission always carries items from a single integration
         -- no grouping needed.
 
@@ -348,9 +348,9 @@ class ExternalReferenceAttachView(
             self, request, item_type : ItemType, owner, batch,
     ):
         picker_url = (
-            reverse( 'integrations_attribute_reference_picker' )
-            + f'?{DIVID["ATTR_PICKER_ITEM_TYPE_FIELD"]}={item_type}'
-            + f'&{DIVID["ATTR_PICKER_ITEM_ID_FIELD"]}={owner.id}'
+            reverse( 'integrations_external_reference_picker' )
+            + f'?{DIVID["REF_PICKER_ITEM_TYPE_FIELD"]}={item_type}'
+            + f'&{DIVID["REF_PICKER_ITEM_ID_FIELD"]}={owner.id}'
         )
         if item_type.is_entity:
             owner_edit_url = reverse(

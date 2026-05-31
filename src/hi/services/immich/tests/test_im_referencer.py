@@ -6,6 +6,7 @@ from requests import HTTPError
 
 from hi.integrations.exceptions import IntegrationAttributeError
 
+from hi.apps.attribute.thumbnail import ThumbnailHelpers
 from hi.services.immich.im_referencer import ImmichExternalReferencer
 
 
@@ -330,7 +331,7 @@ class TestAttachReferences(TestCase):
             mime_type=mime_type,
         )
 
-    @patch('hi.services.immich.im_referencer.build_client')
+    @patch.object(ImmichExternalReferencer, 'build_client')
     def test_upstream_thumbnail_success_attaches_with_upstream_bytes(
             self, mock_build):
         from hi.integrations.models import EntityExternalReference
@@ -350,9 +351,9 @@ class TestAttachReferences(TestCase):
         # thumbnail succeeded.
         client.download_original.assert_not_called()
 
-    @patch('hi.services.immich.im_referencer.generate_thumbnail',
-           return_value=b'GENERATED-PNG')
-    @patch('hi.services.immich.im_referencer.build_client')
+    @patch.object(ThumbnailHelpers, 'bytes_to_thumbnail_png',
+                  return_value=b'GENERATED-PNG')
+    @patch.object(ImmichExternalReferencer, 'build_client')
     def test_thumbnail_fail_original_succeed_generate_succeed(
             self, mock_build, mock_generate):
         from hi.integrations.models import EntityExternalReference
@@ -371,9 +372,9 @@ class TestAttachReferences(TestCase):
         self.assertTrue(row.thumbnail.name)
         mock_generate.assert_called_once_with(b'JPEG-RAW', 'image/jpeg')
 
-    @patch('hi.services.immich.im_referencer.generate_thumbnail',
-           return_value=None)
-    @patch('hi.services.immich.im_referencer.build_client')
+    @patch.object(ThumbnailHelpers, 'bytes_to_thumbnail_png',
+                  return_value=None)
+    @patch.object(ImmichExternalReferencer, 'build_client')
     def test_thumbnail_fail_original_succeed_generate_fail(
             self, mock_build, _mock_generate):
         from hi.integrations.models import EntityExternalReference
@@ -391,7 +392,7 @@ class TestAttachReferences(TestCase):
         )
         self.assertFalse(row.thumbnail)
 
-    @patch('hi.services.immich.im_referencer.build_client')
+    @patch.object(ImmichExternalReferencer, 'build_client')
     def test_thumbnail_fail_original_fail_attaches_without_thumbnail(
             self, mock_build):
         from hi.integrations.models import EntityExternalReference
@@ -407,7 +408,7 @@ class TestAttachReferences(TestCase):
         )
         self.assertFalse(row.thumbnail)
 
-    @patch('hi.services.immich.im_referencer.build_client')
+    @patch.object(ImmichExternalReferencer, 'build_client')
     def test_video_mime_type_skips_original_fetch(self, mock_build):
         # Downloading an entire video just to discover the generator
         # can't make a poster is wasteful. The chain should skip
@@ -428,8 +429,8 @@ class TestAttachReferences(TestCase):
         self.assertFalse(row.thumbnail)
         client.download_original.assert_not_called()
 
-    @patch('hi.services.immich.im_referencer.build_client',
-           side_effect=IntegrationAttributeError('not configured'))
+    @patch.object(ImmichExternalReferencer, 'build_client',
+                  side_effect=IntegrationAttributeError('not configured'))
     def test_client_build_failure_aborts_silently(self, _mock_build):
         from hi.integrations.models import EntityExternalReference
         self.referencer.attach_references(self.entity, [self._selection()])

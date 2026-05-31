@@ -2,10 +2,10 @@
 {% comment %}
 Picker modal body. Holds the search controls and a placeholder
 container for result cards (server-rendered partial swapped in on
-each search by attr-picker.js).
+each search by external-reference-picker.js).
 
 The chip row, Cancel button, and Add button live in the modal
-footer (see attr_picker.html). The footer stays anchored when the
+footer (see external_reference_picker.html). The footer stays anchored when the
 body scrolls because the modal opts into Bootstrap's
 ``modal-dialog-scrollable`` behavior.
 
@@ -15,7 +15,7 @@ same picker instance.
 
 DOM classes, data-attribute names, and wire-format field names
 come from ``hi.constants.DIVID`` (mirrored in ``static/js/main.js``
-under ``Hi.ATTR_PICKER_*``).
+under ``Hi.REF_PICKER_*``).
 
 Context:
   integration_data_list : list[IntegrationData]
@@ -27,8 +27,8 @@ Context:
 {% endcomment %}
 
 {# ----- Search form ----- #}
-<form class="{{ DIVID.ATTR_PICKER_SEARCH_FORM_CLASS }}"
-      {{ DIVID.ATTR_PICKER_SEARCH_URL_ATTR }}="{% url 'integrations_attribute_reference_search' %}">
+<form class="{{ DIVID.REF_PICKER_SEARCH_FORM_CLASS }}"
+      {{ DIVID.REF_PICKER_SEARCH_URL_ATTR }}="{% url 'integrations_external_reference_search' %}">
   {% csrf_token %}
 
   {% comment %}
@@ -36,31 +36,31 @@ Context:
   whether one source or many. Bootstrap dropdown shows
   ``[logo] [name] [caret]``; the caret + dropdown are disabled
   via CSS when only one source is configured. The current source
-  is carried in a sibling hidden input that attr-picker.js
+  is carried in a sibling hidden input that external-reference-picker.js
   updates on dropdown selection.
   {% endcomment %}
   <div class="dropdown mb-3
-              {% if integration_data_list|length == 1 %}hi-attr-picker-source-banner-single{% endif %}">
+              {% if integration_data_list|length == 1 %}hi-ref-picker-source-banner-single{% endif %}">
     <button type="button"
-            class="btn btn-light btn-block dropdown-toggle text-left d-flex align-items-center {{ DIVID.ATTR_PICKER_SOURCE_BANNER_CLASS }}"
+            class="btn btn-light btn-block dropdown-toggle text-left d-flex align-items-center {{ DIVID.REF_PICKER_SOURCE_BANNER_CLASS }}"
             data-toggle="dropdown"
             aria-haspopup="true"
             aria-expanded="false"
             {% if integration_data_list|length == 1 %}disabled{% endif %}>
-      <img class="mr-2 {{ DIVID.ATTR_PICKER_SOURCE_BANNER_LOGO_CLASS }}"
+      <img class="mr-2 {{ DIVID.REF_PICKER_SOURCE_BANNER_LOGO_CLASS }}"
            src="{% static integration_data.integration_metadata.logo_static_path %}"
            alt="">
-      <span class="flex-grow-1 {{ DIVID.ATTR_PICKER_SOURCE_BANNER_LABEL_CLASS }}">
+      <span class="flex-grow-1 {{ DIVID.REF_PICKER_SOURCE_BANNER_LABEL_CLASS }}">
         {{ integration_data.label }}
       </span>
     </button>
     <div class="dropdown-menu w-100">
       {% for option in integration_data_list %}
       <a href="#"
-         class="dropdown-item d-flex align-items-center {{ DIVID.ATTR_PICKER_SOURCE_OPTION_CLASS }}"
-         {{ DIVID.ATTR_PICKER_SOURCE_ID_ATTR }}="{{ option.integration_id }}"
-         {{ DIVID.ATTR_PICKER_SOURCE_LOGO_ATTR }}="{% static option.integration_metadata.logo_static_path %}"
-         {{ DIVID.ATTR_PICKER_SOURCE_LABEL_ATTR }}="{{ option.label }}">
+         class="dropdown-item d-flex align-items-center {{ DIVID.REF_PICKER_SOURCE_OPTION_CLASS }}"
+         {{ DIVID.REF_PICKER_SOURCE_ID_ATTR }}="{{ option.integration_id }}"
+         {{ DIVID.REF_PICKER_SOURCE_LOGO_ATTR }}="{% static option.integration_metadata.logo_static_path %}"
+         {{ DIVID.REF_PICKER_SOURCE_LABEL_ATTR }}="{{ option.label }}">
         <img class="mr-2" src="{% static option.integration_metadata.logo_static_path %}" alt="">
         <span>{{ option.label }}</span>
       </a>
@@ -68,28 +68,28 @@ Context:
     </div>
   </div>
   <input type="hidden"
-         name="{{ DIVID.ATTR_PICKER_INTEGRATION_ID_FIELD }}"
+         name="{{ DIVID.REF_PICKER_INTEGRATION_ID_FIELD }}"
          value="{{ integration_data.integration_id }}">
 
   <div class="form-row align-items-end mb-3">
     <div class="col">
-      <label for="hi-attr-picker-query" class="small text-muted mb-1">
+      <label for="hi-ref-picker-query" class="small text-muted mb-1">
         Search
       </label>
       <input type="text"
-             id="hi-attr-picker-query"
-             name="{{ DIVID.ATTR_PICKER_QUERY_FIELD }}"
+             id="hi-ref-picker-query"
+             name="{{ DIVID.REF_PICKER_QUERY_FIELD }}"
              value="{{ query }}"
              placeholder="Type to search and press Enter"
              class="form-control form-control-sm"
              autofocus>
     </div>
     <div class="col-auto">
-      <label for="hi-attr-picker-limit" class="small text-muted mb-1">
+      <label for="hi-ref-picker-limit" class="small text-muted mb-1">
         Page size
       </label>
-      <select id="hi-attr-picker-limit"
-              name="{{ DIVID.ATTR_PICKER_LIMIT_FIELD }}"
+      <select id="hi-ref-picker-limit"
+              name="{{ DIVID.REF_PICKER_LIMIT_FIELD }}"
               class="form-control form-control-sm">
         {% for choice in page_size_choices %}
         <option value="{{ choice }}" {% if choice == limit %}selected{% endif %}>{{ choice }}</option>
@@ -107,9 +107,9 @@ Context:
 {# ----- Results container ----- #}
 {% comment %}
 The initial render uses the same partial the search endpoint
-returns; attr-picker.js swaps the container's contents on each
+returns; external-reference-picker.js swaps the container's contents on each
 subsequent search.
 {% endcomment %}
-<div class="{{ DIVID.ATTR_PICKER_RESULTS_CLASS }}">
-  {% include "integrations/referencer/panes/attr_picker_results.html" %}
+<div class="{{ DIVID.REF_PICKER_RESULTS_CLASS }}">
+  {% include "integrations/referencer/panes/external_reference_picker_results.html" %}
 </div>
