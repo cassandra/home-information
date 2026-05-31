@@ -1,11 +1,20 @@
-from typing import Dict
+import logging
+from typing import Dict, Optional
 
+from django.core.files.storage import default_storage
 from django.db import models
 
 from hi.apps.attribute.models import AttributeModel, AttributeValueHistoryModel
 
 from .transient_models import IntegrationKey, IntegrationDetails
-from .managers import IntegrationDetailsModelManager
+from .managers import (
+    EntityExternalReferenceManager,
+    IntegrationDetailsModelManager,
+    LocationExternalReferenceManager,
+)
+
+
+logger = logging.getLogger(__name__)
 
 
 class Integration( models.Model ):
@@ -213,3 +222,158 @@ class IntegrationAttributeHistory(AttributeValueHistoryModel):
         indexes = [
             models.Index(fields=['attribute', '-changed_datetime']),
         ]
+
+
+def _external_reference_upload_to( instance, filename ):
+    """Per-owner-type, per-integration thumbnail path. Concrete
+    subclasses set ``_owner_type_path_segment`` so this resolves
+    without per-subclass duplication."""
+    return (
+        f'{instance._owner_type_path_segment}/external/'
+        f'{instance.integration_id}/thumbnails/{filename}'
+    )
+
+
+class ExternalReferenceBase( models.Model ):
+    """Abstract base for the per-owner external-reference tables.
+
+    Each row represents an upstream item (Paperless document, Immich
+    asset, etc.) attached to an HI Entity or Location. Field naming
+    follows IntegrationKey -- ``(integration_id, integration_name)``
+    -- so the existing IntegrationKey machinery rounds-trips through
+    the property/setter below. ``integration_name`` holds the
+    upstream's opaque identifier (Immich UUID, Paperless document
+    id, etc.).
+
+    Thumbnail bytes are persisted under MEDIA_ROOT; ``delete()``
+    cleans up the file on a best-effort basis, mirroring
+    ``AttributeModel.delete()``.
+    """
+
+    integration_id = models.CharField(
+        'Integration Id',
+        max_length = 32,
+        db_index = True,
+    )
+    integration_name = models.CharField(
+        'Integration Name',
+        max_length = 255,
+    )
+    title = models.CharField(
+        'Title',
+        max_length = 255,
+    )
+    source_url = models.URLField(
+        'Source URL',
+        max_length = 2048,
+    )
+    mime_type = models.CharField(
+        'MIME Type',
+        max_length = 128,
+        blank = True,
+        default = '',
+    )
+    thumbnail = models.FileField(
+        'Thumbnail',
+        upload_to = _external_reference_upload_to,
+        blank = True,
+        null = True,
+    )
+    order_id = models.PositiveIntegerField(
+        'Order',
+        default = 0,
+    )
+    created_datetime = models.DateTimeField(
+        'Created',
+        auto_now_add = True,
+        blank = True,
+    )
+    updated_datetime = models.DateTimeField(
+        'Updated',
+        auto_now = True,
+        blank = True,
+    )
+
+    # Concrete subclasses set this to the path segment used in
+    # ``_external_reference_upload_to``: ``'entity'`` or ``'location'``.
+    _owner_type_path_segment: str = ''
+
+    class Meta:
+        abstract = True
+        ordering = [ 'order_id', '-created_datetime' ]
+
+    @property
+    def integration_key(self) -> Optional[IntegrationKey]:
+        # Mirrors IntegrationDetailsModel. Returns None when fields
+        # are unset (shouldn't happen on a saved row; defensive).
+        if self.integration_id is None or self.integration_name is None:
+            return None
+        return IntegrationKey(
+            integration_id = self.integration_id,
+            integration_name = self.integration_name,
+        )
+
+    @integration_key.setter
+    def integration_key(self, integration_key: Optional[IntegrationKey]):
+        if not integration_key:
+            self.integration_id = None
+            self.integration_name = None
+            return
+        self.integration_id = integration_key.integration_id
+        self.integration_name = integration_key.integration_name
+
+    def delete(self, *args, **kwargs):
+        """Best-effort thumbnail file cleanup; matches
+        ``AttributeModel.delete()`` conventions."""
+        thumbnail_name = self.thumbnail.name if self.thumbnail else None
+        if thumbnail_name:
+            try:
+                if default_storage.exists( thumbnail_name ):
+                    default_storage.delete( thumbnail_name )
+                    logger.debug(
+                        f'Deleted external-reference thumbnail: {thumbnail_name}'
+                    )
+            except Exception as e:
+                logger.warning(
+                    f'Error deleting external-reference thumbnail '
+                    f'{thumbnail_name}: {e}'
+                )
+        return super().delete( *args, **kwargs )
+
+
+class EntityExternalReference( ExternalReferenceBase ):
+
+    entity = models.ForeignKey(
+        'entity.Entity',
+        related_name = 'external_references',
+        verbose_name = 'Entity',
+        on_delete    = models.CASCADE,
+    )
+
+    _owner_type_path_segment = 'entity'
+
+    objects = EntityExternalReferenceManager()
+
+    class Meta( ExternalReferenceBase.Meta ):
+        verbose_name = 'Entity External Reference'
+        verbose_name_plural = 'Entity External References'
+        unique_together = [ ( 'entity', 'integration_id', 'integration_name' ) ]
+
+
+class LocationExternalReference( ExternalReferenceBase ):
+
+    location = models.ForeignKey(
+        'location.Location',
+        related_name = 'external_references',
+        verbose_name = 'Location',
+        on_delete    = models.CASCADE,
+    )
+
+    _owner_type_path_segment = 'location'
+
+    objects = LocationExternalReferenceManager()
+
+    class Meta( ExternalReferenceBase.Meta ):
+        verbose_name = 'Location External Reference'
+        verbose_name_plural = 'Location External References'
+        unique_together = [ ( 'location', 'integration_id', 'integration_name' ) ]
