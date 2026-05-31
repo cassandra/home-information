@@ -64,11 +64,14 @@
         return state.attrSelections.some(s => s[key] === sourceUrl);
     }
 
-    function _addSelection(state, title, sourceUrl) {
-        if (_hasSelection(state, sourceUrl)) return;
+    function _addSelection(state, fields) {
+        if (_hasSelection(state, fields.sourceUrl)) return;
         const record = {};
-        record[Hi.ATTR_PICKER_SELECTION_TITLE_KEY] = title;
-        record[Hi.ATTR_PICKER_SELECTION_URL_KEY] = sourceUrl;
+        record[Hi.ATTR_PICKER_SELECTION_TITLE_KEY] = fields.title;
+        record[Hi.ATTR_PICKER_SELECTION_URL_KEY] = fields.sourceUrl;
+        record[Hi.ATTR_PICKER_SELECTION_INTEGRATION_ID_KEY] = fields.integrationId;
+        record[Hi.ATTR_PICKER_SELECTION_INTEGRATION_NAME_KEY] = fields.integrationName;
+        record[Hi.ATTR_PICKER_SELECTION_MIME_TYPE_KEY] = fields.mimeType || '';
         state.attrSelections.push(record);
     }
 
@@ -160,11 +163,16 @@
             );
             if ($pickerRoot.length === 0) return;
             const state = _state($pickerRoot[0]);
-            const title = $cb.attr(Hi.ATTR_PICKER_TITLE_ATTR);
             const sourceUrl = $cb.attr(Hi.ATTR_PICKER_SOURCE_URL_ATTR);
             if (sourceUrl == null) return;
             if ($cb.is(':checked')) {
-                _addSelection(state, title, sourceUrl);
+                _addSelection(state, {
+                    title:           $cb.attr(Hi.ATTR_PICKER_TITLE_ATTR),
+                    sourceUrl:       sourceUrl,
+                    integrationId:   $cb.attr(Hi.ATTR_PICKER_INTEGRATION_ID_ATTR),
+                    integrationName: $cb.attr(Hi.ATTR_PICKER_INTEGRATION_NAME_ATTR),
+                    mimeType:        $cb.attr(Hi.ATTR_PICKER_MIME_TYPE_ATTR),
+                });
             } else {
                 _removeSelection(state, sourceUrl);
             }

@@ -17,9 +17,11 @@ Workflow:
     keeps the modal open while the body partial swaps in.
 
   - When the operator submits with ``action=attach``, the view
-    creates one TEXT attribute per current selection on the host
-    Entity / Location and returns ``antinode.refresh_response()`` to
-    reload the parent page (modal closes via page reload).
+    parses ``selections_json``, groups selections by integration_id,
+    and dispatches each group to the integration's
+    ``attach_references(owner, selections)``. Each integration is
+    responsible for the per-item upsert (including thumbnail fetch
+    + media write) via the framework's ExternalReference managers.
 
 Multi-select state is server-driven via three form fields:
 ``selections_json`` (canonical existing list, hidden), ``visible_url``
@@ -32,10 +34,10 @@ clicked a chip's remove button.
 
 import json
 import logging
+from collections import defaultdict
 from typing import Dict, List
 
 from django.core.exceptions import BadRequest
-from django.db import transaction
 from django.http import Http404, HttpResponse
 from django.template.loader import render_to_string
 from django.urls import reverse
@@ -43,13 +45,12 @@ from django.views.generic import View
 
 from hi.apps.attribute.edit_form_handler import AttributeEditFormHandler
 from hi.apps.attribute.edit_response_renderer import AttributeEditResponseRenderer
-from hi.apps.attribute.enums import AttributeType, AttributeValueType
 from hi.apps.attribute.view_mixins import AttributeEditViewMixin
 from hi.apps.common import antinode
 from hi.apps.config.enums import ConfigPageType
 from hi.apps.config.views import ConfigPageView
-from hi.apps.entity.models import Entity, EntityAttribute
-from hi.apps.location.models import Location, LocationAttribute
+from hi.apps.entity.models import Entity
+from hi.apps.location.models import Location
 from hi.constants import DIVID
 from hi.enums import ItemType
 from hi.exceptions import ForceRedirectException
@@ -61,10 +62,14 @@ from hi.integrations.integration_attribute_edit_context import (
 )
 from hi.integrations.integration_data import IntegrationData
 from hi.integrations.integration_manager import IntegrationManager
+from hi.integrations.transient_models import IntegrationKey
 from hi.integrations.view_mixins import IntegrationViewMixin
 
 from .integration_referencer import IntegrationExternalReferencer
-from .transient_models import ExternalReferenceSearchResult
+from .transient_models import (
+    ExternalReferenceResult,
+    ExternalReferenceSearchResult,
+)
 
 
 logger = logging.getLogger(__name__)
@@ -74,10 +79,12 @@ _PAGE_SIZE_CHOICES = (20, 50, 100)
 _DEFAULT_LIMIT = 20
 _MAX_LIMIT = 100
 
-# ItemType -> (owner model, attribute model, owner FK field name).
-_ATTRIBUTE_OWNER_MODELS = {
-    ItemType.ENTITY: (Entity, EntityAttribute, 'entity'),
-    ItemType.LOCATION: (Location, LocationAttribute, 'location'),
+# ItemType -> owner model. The attach dispatcher resolves the per-
+# integration referencer for each selection's integration_id and
+# delegates the row creation; framework owns only owner resolution.
+_OWNER_MODELS = {
+    ItemType.ENTITY: Entity,
+    ItemType.LOCATION: Location,
 }
 
 
@@ -129,7 +136,7 @@ def _parse_item_type(raw_value: str) -> ItemType:
         raise BadRequest(
             f'Unsupported {DIVID["ATTR_PICKER_ITEM_TYPE_FIELD"]}: {raw_value!r}',
         )
-    if item_type not in _ATTRIBUTE_OWNER_MODELS:
+    if item_type not in _OWNER_MODELS:
         raise BadRequest(
             f'Unsupported {DIVID["ATTR_PICKER_ITEM_TYPE_FIELD"]}: {raw_value!r}',
         )
@@ -156,7 +163,7 @@ def _parse_limit(raw_limit) -> int:
 
 
 def _resolve_owner(item_type: ItemType, item_id: int):
-    owner_model, _attribute_model, _owner_field = _ATTRIBUTE_OWNER_MODELS[ item_type ]
+    owner_model = _OWNER_MODELS[ item_type ]
     try:
         return owner_model.objects.get( id=item_id )
     except owner_model.DoesNotExist:
@@ -196,10 +203,11 @@ def _safe_label( referencer: IntegrationExternalReferencer ) -> str:
         return 'Integration'
 
 
-def _parse_selections_json(raw: str) -> List[ Dict[str, str] ]:
+def _parse_selections_json(raw: str) -> List[ ExternalReferenceResult ]:
     """Parse the JS-built ``selections_json`` payload submitted on
-    attach. Skips records with missing title or source_url and
-    falls back to an empty list on any decode error."""
+    attach into ``ExternalReferenceResult`` instances. Skips records
+    with missing title / source_url / integration_id / integration_name
+    and falls back to an empty list on any decode error."""
     if not raw:
         return []
     try:
@@ -208,43 +216,72 @@ def _parse_selections_json(raw: str) -> List[ Dict[str, str] ]:
         return []
     if not isinstance( decoded, list ):
         return []
-    parsed: List[ Dict[str, str] ] = []
+    parsed: List[ ExternalReferenceResult ] = []
     for item in decoded:
         if not isinstance( item, dict ):
             continue
-        title = ( item.get( DIVID['ATTR_PICKER_SELECTION_TITLE_KEY'] ) or '' ).strip()
-        url = ( item.get( DIVID['ATTR_PICKER_SELECTION_URL_KEY'] ) or '' ).strip()
-        if not title or not url:
+        title = ( item.get(
+            DIVID['ATTR_PICKER_SELECTION_TITLE_KEY']
+        ) or '' ).strip()
+        url = ( item.get(
+            DIVID['ATTR_PICKER_SELECTION_URL_KEY']
+        ) or '' ).strip()
+        integration_id = ( item.get(
+            DIVID['ATTR_PICKER_SELECTION_INTEGRATION_ID_KEY']
+        ) or '' ).strip()
+        integration_name = ( item.get(
+            DIVID['ATTR_PICKER_SELECTION_INTEGRATION_NAME_KEY']
+        ) or '' ).strip()
+        mime_type = ( item.get(
+            DIVID['ATTR_PICKER_SELECTION_MIME_TYPE_KEY']
+        ) or '' ).strip()
+        if not title or not url or not integration_id or not integration_name:
             continue
-        parsed.append( {
-            DIVID['ATTR_PICKER_SELECTION_TITLE_KEY']: title,
-            DIVID['ATTR_PICKER_SELECTION_URL_KEY']: url,
-        } )
+        parsed.append( ExternalReferenceResult(
+            integration_key = IntegrationKey(
+                integration_id = integration_id,
+                integration_name = integration_name,
+            ),
+            title = title,
+            source_url = url,
+            mime_type = mime_type or None,
+        ) )
     return parsed
 
 
-def _create_attributes(
-        item_type: ItemType,
+def _dispatch_attach(
         owner,
-        selections: List[ Dict[str, str] ],
-) -> List[ int ]:
+        selections : List[ ExternalReferenceResult ],
+) -> None:
+    """Group selections by ``integration_key.integration_id`` and call
+    each integration's ``attach_references``. Unknown integration ids
+    (referencer disabled, never installed, etc.) are skipped with a
+    warning so the rest of the batch still attaches."""
     if not selections:
-        return []
-    _owner_model, attribute_model, owner_field = _ATTRIBUTE_OWNER_MODELS[ item_type ]
-    created_ids: List[ int ] = []
-    with transaction.atomic():
-        for selection in selections:
-            attr = attribute_model.objects.create( **{
-                owner_field: owner,
-                'name': selection[ DIVID['ATTR_PICKER_SELECTION_TITLE_KEY'] ][:64],
-                'value': selection[ DIVID['ATTR_PICKER_SELECTION_URL_KEY'] ],
-                'value_type_str': str( AttributeValueType.TEXT ),
-                'attribute_type_str': str( AttributeType.CUSTOM ),
-                'is_editable': True,
-                'is_required': False,
-            } )
-            created_ids.append( attr.id )
-    return created_ids
+        return
+    by_integration : Dict[ str, List[ ExternalReferenceResult ] ] = defaultdict(list)
+    for selection in selections:
+        by_integration[ selection.integration_key.integration_id ].append( selection )
+    for integration_id, group in by_integration.items():
+        referencer = _resolve_referencer_by_id( integration_id )
+        if referencer is None:
+            logger.warning(
+                f'External reference attach skipped {len(group)} '
+                f'selections: integration {integration_id!r} has no '
+                f'enabled referencer.'
+            )
+            continue
+        referencer.attach_references( owner, group )
+
+
+def _resolve_referencer_by_id(
+        integration_id : str,
+) -> 'IntegrationExternalReferencer | None':
+    for candidate in _get_referencer_integration_data_list():
+        if candidate.integration_id != integration_id:
+            continue
+        return candidate.integration_gateway.get_external_referencer()
+    return None
 
 
 class ExternalReferencePickerView( HiModalView ):
@@ -349,10 +386,13 @@ class ExternalReferenceSearchView( View ):
 
 
 class ExternalReferenceAttachView( View ):
-    """POST endpoint that creates TEXT attributes for the operator's
-    selected references. The JS module serializes its in-memory
-    selection set into ``selections_json`` just before the form
-    submits.
+    """POST endpoint that dispatches the operator's selected
+    references to each source integration for attach. The JS module
+    serializes its in-memory selection set into ``selections_json``
+    just before the form submits; selections may span multiple
+    integrations (the operator can switch sources mid-session), so
+    the dispatcher groups by integration_id and calls each
+    referencer's ``attach_references`` once per group.
 
     Returns ``antinode.refresh_response()`` so the parent page
     reloads and the modal closes naturally."""
@@ -368,9 +408,7 @@ class ExternalReferenceAttachView( View ):
         selections = _parse_selections_json(
             request.POST.get( DIVID['ATTR_PICKER_SELECTIONS_JSON_FIELD'] ) or '',
         )
-        _create_attributes(
-            item_type=item_type, owner=owner, selections=selections,
-        )
+        _dispatch_attach( owner = owner, selections = selections )
         return antinode.refresh_response()
 
 

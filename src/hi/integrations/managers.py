@@ -39,14 +39,13 @@ class ExternalReferenceManagerBase( models.Manager ):
     def create_or_update(
             self, *,
             owner,
-            integration_id   : str,
-            integration_name : str,
+            integration_key  : IntegrationKey,
             title            : str,
             source_url       : str,
             mime_type        : str             = '',
             thumbnail_bytes  : Optional[bytes] = None,
     ):
-        """Upsert by ``(owner, integration_id, integration_name)``.
+        """Upsert by ``(owner, integration_key)``.
 
         On insert all fields are set; the thumbnail file is written
         when ``thumbnail_bytes`` is provided. On update,
@@ -61,8 +60,8 @@ class ExternalReferenceManagerBase( models.Manager ):
         """
         lookup = {
             self._owner_field_name : owner,
-            'integration_id'       : integration_id,
-            'integration_name'     : integration_name,
+            'integration_id'       : integration_key.integration_id,
+            'integration_name'     : integration_key.integration_name,
         }
         existing = self.filter( **lookup ).first()
 
@@ -76,7 +75,7 @@ class ExternalReferenceManagerBase( models.Manager ):
             instance.save()
             if thumbnail_bytes:
                 self._write_thumbnail(
-                    instance, integration_name, thumbnail_bytes,
+                    instance, integration_key.integration_name, thumbnail_bytes,
                 )
                 instance.save( update_fields = [ 'thumbnail', 'updated_datetime' ] )
             return instance
@@ -86,7 +85,7 @@ class ExternalReferenceManagerBase( models.Manager ):
         update_fields = [ 'source_url', 'mime_type', 'updated_datetime' ]
         if thumbnail_bytes:
             self._write_thumbnail(
-                existing, integration_name, thumbnail_bytes,
+                existing, integration_key.integration_name, thumbnail_bytes,
             )
             update_fields.append( 'thumbnail' )
         existing.save( update_fields = update_fields )

@@ -5,9 +5,12 @@ Each integration that advertises
 ``IntegrationCapability.EXTERNAL_REFERENCE`` provides a concrete
 subclass and returns an instance from
 ``IntegrationGateway.get_external_referencer()``. The framework
-owns the picker UI, attach lifecycle, and TEXT-attribute creation;
-the integration participates by translating a search query into a
-list of ``ExternalReferenceResult`` candidates.
+owns the picker UI, attach dispatcher, and the
+EntityExternalReference / LocationExternalReference tables; the
+integration participates by (a) translating a search query into
+``ExternalReferenceResult`` candidates and (b) attaching selected
+candidates as rows on those tables, fetching thumbnail bytes from
+upstream as part of attach.
 """
 
 from typing import List, Optional
@@ -17,7 +20,10 @@ from hi.integrations.enums import IntegrationCapability
 from hi.integrations.models import IntegrationAttribute
 from hi.integrations.transient_models import IntegrationValidationResult
 
-from .transient_models import ExternalReferenceSearchResult
+from .transient_models import (
+    ExternalReferenceResult,
+    ExternalReferenceSearchResult,
+)
 
 
 class IntegrationExternalReferencer( CapabilityGateway ):
@@ -48,8 +54,8 @@ class IntegrationExternalReferencer( CapabilityGateway ):
         ``ExternalReferenceSearchResult``. Operators see the
         returned list rendered as cards (thumbnail/mime-icon +
         title + snippet + clickable source URL); multi-selecting
-        any subset attaches them as TEXT attributes on the host
-        Entity or Location.
+        any subset attaches them via ``attach_references`` on the
+        host Entity or Location.
 
         Implementations should:
           - Return ``ExternalReferenceSearchResult(results=[])``
@@ -66,6 +72,47 @@ class IntegrationExternalReferencer( CapabilityGateway ):
             ``ExternalReferenceSearchResult(results=[])``.
         """
         raise NotImplementedError('Subclasses must override this method')
+
+    def attach_references(
+            self,
+            owner,
+            selections: List[ExternalReferenceResult],
+    ) -> None:
+        """Attach the operator-selected upstream items as
+        ExternalReference rows on the given owner (Entity or
+        Location). Each ``selection`` carries an ``integration_key``
+        identifying the upstream item, plus the title / source_url /
+        mime_type needed for the row.
+
+        Implementations should:
+          - Fetch thumbnail bytes from upstream where available;
+            on failure fall through to an HI-generated thumbnail
+            from upstream original bytes (when the integration can
+            expose them and the mime type is supported); on full
+            failure, attach the row anyway with no thumbnail. The
+            row attach is the primary user goal -- placeholder
+            rendering covers the no-thumbnail case.
+          - Use ``self._manager_for_owner(owner).create_or_update(...)``
+            to perform the per-row upsert via the framework manager.
+          - Tolerate individual selection failures: per-selection
+            exceptions should not abort the rest of the batch.
+        """
+        raise NotImplementedError('Subclasses must override this method')
+
+    @staticmethod
+    def _manager_for_owner(owner):
+        """Resolve the framework external-reference manager for the
+        given owner type. Imported lazily to avoid pulling the
+        Entity / Location models into framework module-load order
+        prematurely."""
+        from hi.apps.entity.models import Entity
+        from hi.integrations.models import (
+            EntityExternalReference,
+            LocationExternalReference,
+        )
+        if isinstance(owner, Entity):
+            return EntityExternalReference.objects
+        return LocationExternalReference.objects
 
     def get_attribute_actions_template_name(self) -> Optional[str]:
         """Per-capability template fragment to render in the

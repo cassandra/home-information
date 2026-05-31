@@ -287,3 +287,153 @@ class TestBuildSecondaryText(TestCase):
             'exifInfo': None,
         })
         self.assertEqual(result, '2025-08-14')
+
+
+class TestAttachReferences(TestCase):
+    """Cover each branch of the defensive thumbnail chain:
+      1. upstream thumbnail succeeds
+      2. upstream thumbnail fails → original succeeds → generate succeeds
+      3. upstream thumbnail fails → original succeeds → generate fails
+      4. upstream thumbnail fails → original fails
+      5. video mime type → skip original fetch entirely
+    Plus client-build failure aborts the batch silently.
+    """
+
+    def setUp(self):
+        from hi.apps.entity.enums import EntityType
+        from hi.apps.entity.models import Entity
+        self.entity = Entity.objects.create(
+            name='Fridge', entity_type_str=str(EntityType.APPLIANCE),
+        )
+        self.referencer = ImmichExternalReferencer()
+
+    def tearDown(self):
+        from hi.integrations.models import EntityExternalReference
+        for row in EntityExternalReference.objects.filter(entity=self.entity):
+            row.delete()
+
+    def _selection(self, asset_id='uuid-1', title='Fridge plate',
+                   source_url='https://im.example.com/photos/uuid-1',
+                   mime_type='image/jpeg'):
+        from hi.integrations.referencer.transient_models import (
+            ExternalReferenceResult,
+        )
+        from hi.integrations.transient_models import IntegrationKey
+        from hi.services.immich.im_metadata import ImmichMetaData
+        return ExternalReferenceResult(
+            integration_key=IntegrationKey(
+                integration_id=ImmichMetaData.integration_id,
+                integration_name=asset_id,
+            ),
+            title=title,
+            source_url=source_url,
+            mime_type=mime_type,
+        )
+
+    @patch('hi.services.immich.im_referencer.build_client')
+    def test_upstream_thumbnail_success_attaches_with_upstream_bytes(
+            self, mock_build):
+        from hi.integrations.models import EntityExternalReference
+        client = Mock()
+        client.download_thumbnail.return_value = {
+            'content': b'UPSTREAM-PNG', 'mime_type': 'image/png',
+        }
+        mock_build.return_value = client
+
+        self.referencer.attach_references(self.entity, [self._selection()])
+
+        row = EntityExternalReference.objects.get(
+            entity=self.entity, integration_name='uuid-1',
+        )
+        self.assertTrue(row.thumbnail.name)
+        # Original fetch shouldn't have been attempted — upstream
+        # thumbnail succeeded.
+        client.download_original.assert_not_called()
+
+    @patch('hi.services.immich.im_referencer.generate_thumbnail',
+           return_value=b'GENERATED-PNG')
+    @patch('hi.services.immich.im_referencer.build_client')
+    def test_thumbnail_fail_original_succeed_generate_succeed(
+            self, mock_build, mock_generate):
+        from hi.integrations.models import EntityExternalReference
+        client = Mock()
+        client.download_thumbnail.side_effect = HTTPError('500')
+        client.download_original.return_value = {
+            'content': b'JPEG-RAW', 'mime_type': 'image/jpeg',
+        }
+        mock_build.return_value = client
+
+        self.referencer.attach_references(self.entity, [self._selection()])
+
+        row = EntityExternalReference.objects.get(
+            entity=self.entity, integration_name='uuid-1',
+        )
+        self.assertTrue(row.thumbnail.name)
+        mock_generate.assert_called_once_with(b'JPEG-RAW', 'image/jpeg')
+
+    @patch('hi.services.immich.im_referencer.generate_thumbnail',
+           return_value=None)
+    @patch('hi.services.immich.im_referencer.build_client')
+    def test_thumbnail_fail_original_succeed_generate_fail(
+            self, mock_build, _mock_generate):
+        from hi.integrations.models import EntityExternalReference
+        client = Mock()
+        client.download_thumbnail.side_effect = HTTPError('500')
+        client.download_original.return_value = {
+            'content': b'JPEG-RAW', 'mime_type': 'image/jpeg',
+        }
+        mock_build.return_value = client
+
+        self.referencer.attach_references(self.entity, [self._selection()])
+
+        row = EntityExternalReference.objects.get(
+            entity=self.entity, integration_name='uuid-1',
+        )
+        self.assertFalse(row.thumbnail)
+
+    @patch('hi.services.immich.im_referencer.build_client')
+    def test_thumbnail_fail_original_fail_attaches_without_thumbnail(
+            self, mock_build):
+        from hi.integrations.models import EntityExternalReference
+        client = Mock()
+        client.download_thumbnail.side_effect = HTTPError('500')
+        client.download_original.side_effect = HTTPError('502')
+        mock_build.return_value = client
+
+        self.referencer.attach_references(self.entity, [self._selection()])
+
+        row = EntityExternalReference.objects.get(
+            entity=self.entity, integration_name='uuid-1',
+        )
+        self.assertFalse(row.thumbnail)
+
+    @patch('hi.services.immich.im_referencer.build_client')
+    def test_video_mime_type_skips_original_fetch(self, mock_build):
+        # Downloading an entire video just to discover the generator
+        # can't make a poster is wasteful. The chain should skip
+        # original-fetch for non-image mime types.
+        from hi.integrations.models import EntityExternalReference
+        client = Mock()
+        client.download_thumbnail.side_effect = HTTPError('500')
+        mock_build.return_value = client
+
+        self.referencer.attach_references(
+            self.entity,
+            [self._selection(mime_type='video/mp4')],
+        )
+
+        row = EntityExternalReference.objects.get(
+            entity=self.entity, integration_name='uuid-1',
+        )
+        self.assertFalse(row.thumbnail)
+        client.download_original.assert_not_called()
+
+    @patch('hi.services.immich.im_referencer.build_client',
+           side_effect=IntegrationAttributeError('not configured'))
+    def test_client_build_failure_aborts_silently(self, _mock_build):
+        from hi.integrations.models import EntityExternalReference
+        self.referencer.attach_references(self.entity, [self._selection()])
+        self.assertEqual(
+            EntityExternalReference.objects.filter(entity=self.entity).count(),
+            0,
+        )

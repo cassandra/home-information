@@ -267,3 +267,112 @@ class TestValidateConfiguration(TestCase):
         ]
         result = PaperlessExternalReferencer().validate_configuration(attrs)
         self.assertFalse(result.is_valid)
+
+
+class TestAttachReferences(TestCase):
+    """End-to-end attach via a mocked PaperlessClient and a real
+    Entity. Verifies the framework row is created and that the
+    defensive thumbnail-fetch chain handles each failure mode
+    gracefully (linking is the primary user goal)."""
+
+    def setUp(self):
+        from hi.apps.entity.enums import EntityType
+        from hi.apps.entity.models import Entity
+        self.entity = Entity.objects.create(
+            name='Fridge', entity_type_str=str(EntityType.APPLIANCE),
+        )
+        self.referencer = PaperlessExternalReferencer()
+
+    def tearDown(self):
+        from hi.integrations.models import EntityExternalReference
+        for row in EntityExternalReference.objects.filter(entity=self.entity):
+            row.delete()
+
+    def _selection(self, doc_id='42', title='Warranty',
+                   source_url='https://p.example.com/documents/42/details/',
+                   mime_type='application/pdf'):
+        from hi.integrations.referencer.transient_models import (
+            ExternalReferenceResult,
+        )
+        return ExternalReferenceResult(
+            integration_key=IntegrationKey(
+                integration_id=PaperlessMetaData.integration_id,
+                integration_name=doc_id,
+            ),
+            title=title,
+            source_url=source_url,
+            mime_type=mime_type,
+        )
+
+    @patch('hi.services.paperless.pl_referencer.build_client')
+    def test_happy_path_creates_row_with_thumbnail(self, mock_build):
+        from hi.integrations.models import EntityExternalReference
+        client = Mock()
+        client.download_thumbnail.return_value = {
+            'content': b'PNG-BYTES', 'mime_type': 'image/png',
+        }
+        mock_build.return_value = client
+
+        self.referencer.attach_references(
+            self.entity, [self._selection(doc_id='42')],
+        )
+
+        row = EntityExternalReference.objects.get(
+            entity=self.entity,
+            integration_id='paperless',
+            integration_name='42',
+        )
+        self.assertEqual(row.title, 'Warranty')
+        self.assertTrue(row.thumbnail.name)
+
+    @patch('hi.services.paperless.pl_referencer.build_client')
+    def test_upstream_thumbnail_failure_still_attaches_row(self, mock_build):
+        from hi.integrations.models import EntityExternalReference
+        client = Mock()
+        client.download_thumbnail.side_effect = HTTPError('boom')
+        mock_build.return_value = client
+
+        self.referencer.attach_references(
+            self.entity, [self._selection(doc_id='99')],
+        )
+
+        row = EntityExternalReference.objects.get(
+            entity=self.entity, integration_name='99',
+        )
+        self.assertFalse(row.thumbnail)
+
+    @patch('hi.services.paperless.pl_referencer.build_client',
+           side_effect=IntegrationAttributeError('not configured'))
+    def test_client_build_failure_aborts_silently(self, _mock_build):
+        from hi.integrations.models import EntityExternalReference
+        self.referencer.attach_references(
+            self.entity, [self._selection()],
+        )
+        self.assertEqual(
+            EntityExternalReference.objects.filter(entity=self.entity).count(),
+            0,
+        )
+
+    @patch('hi.services.paperless.pl_referencer.build_client')
+    def test_per_selection_exception_does_not_abort_batch(self, mock_build):
+        from hi.integrations.models import EntityExternalReference
+        # First selection has a non-numeric doc id; _try_upstream_thumbnail
+        # returns None on the int cast, so the row still attaches. The
+        # second selection succeeds normally. Verifies both end up
+        # persisted.
+        client = Mock()
+        client.download_thumbnail.return_value = {
+            'content': b'PNG', 'mime_type': 'image/png',
+        }
+        mock_build.return_value = client
+
+        self.referencer.attach_references(
+            self.entity, [
+                self._selection(doc_id='not-numeric'),
+                self._selection(doc_id='7'),
+            ],
+        )
+        self.assertEqual(
+            EntityExternalReference.objects.filter(entity=self.entity).count(),
+            2,
+        )

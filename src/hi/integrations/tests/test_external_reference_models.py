@@ -18,6 +18,14 @@ from hi.integrations.models import (
     EntityExternalReference,
     LocationExternalReference,
 )
+from hi.integrations.transient_models import IntegrationKey
+
+
+def _key(integration_id, integration_name):
+    return IntegrationKey(
+        integration_id=integration_id,
+        integration_name=integration_name,
+    )
 
 
 logging.disable(logging.CRITICAL)
@@ -40,8 +48,7 @@ class TestCreateOrUpdateInsert(TestCase):
     def test_insert_with_all_fields_writes_thumbnail_under_per_integration_path(self):
         instance = EntityExternalReference.objects.create_or_update(
             owner=self.entity,
-            integration_id='immich',
-            integration_name='asset-uuid-1',
+            integration_key=_key('immich', 'asset-uuid-1'),
             title='Fridge serial plate',
             source_url='https://im.example.com/photos/asset-uuid-1',
             mime_type='image/jpeg',
@@ -57,8 +64,7 @@ class TestCreateOrUpdateInsert(TestCase):
     def test_insert_without_thumbnail_bytes_leaves_thumbnail_empty(self):
         instance = EntityExternalReference.objects.create_or_update(
             owner=self.entity,
-            integration_id='paperless',
-            integration_name='42',
+            integration_key=_key('paperless', '42'),
             title='Warranty',
             source_url='https://p.example.com/documents/42/details/',
         )
@@ -73,8 +79,7 @@ class TestCreateOrUpdateUpsert(TestCase):
         )
         self.original = EntityExternalReference.objects.create_or_update(
             owner=self.entity,
-            integration_id='immich',
-            integration_name='uuid-1',
+            integration_key=_key('immich', 'uuid-1'),
             title='Original title',
             source_url='https://im.example.com/photos/uuid-1',
             mime_type='image/jpeg',
@@ -93,8 +98,7 @@ class TestCreateOrUpdateUpsert(TestCase):
     def test_upsert_overwrites_source_url_and_mime_type(self):
         updated = EntityExternalReference.objects.create_or_update(
             owner=self.entity,
-            integration_id='immich',
-            integration_name='uuid-1',
+            integration_key=_key('immich', 'uuid-1'),
             title='Upstream title (ignored)',
             source_url='https://im.example.com/photos/uuid-1?v=2',
             mime_type='image/png',
@@ -107,8 +111,7 @@ class TestCreateOrUpdateUpsert(TestCase):
     def test_upsert_preserves_operator_title_order_id_created_datetime(self):
         updated = EntityExternalReference.objects.create_or_update(
             owner=self.entity,
-            integration_id='immich',
-            integration_name='uuid-1',
+            integration_key=_key('immich', 'uuid-1'),
             title='Upstream title (should be ignored)',
             source_url='https://im.example.com/photos/uuid-1',
             mime_type='image/jpeg',
@@ -123,8 +126,7 @@ class TestCreateOrUpdateUpsert(TestCase):
         self.assertTrue(default_storage.exists(original_thumbnail_name))
         updated = EntityExternalReference.objects.create_or_update(
             owner=self.entity,
-            integration_id='immich',
-            integration_name='uuid-1',
+            integration_key=_key('immich', 'uuid-1'),
             title='x',
             source_url='https://im.example.com/photos/uuid-1',
             mime_type='image/jpeg',
@@ -138,8 +140,7 @@ class TestCreateOrUpdateUpsert(TestCase):
         self.assertTrue(default_storage.exists(original_thumbnail_name))
         updated = EntityExternalReference.objects.create_or_update(
             owner=self.entity,
-            integration_id='immich',
-            integration_name='uuid-1',
+            integration_key=_key('immich', 'uuid-1'),
             title='x',
             source_url='https://im.example.com/photos/uuid-1',
             mime_type='image/jpeg',
@@ -161,8 +162,7 @@ class TestExternalReferenceDelete(TestCase):
     def test_delete_removes_thumbnail_file(self):
         instance = EntityExternalReference.objects.create_or_update(
             owner=self.entity,
-            integration_id='immich',
-            integration_name='uuid-1',
+            integration_key=_key('immich', 'uuid-1'),
             title='X',
             source_url='https://im.example.com/photos/uuid-1',
             mime_type='image/jpeg',
@@ -176,8 +176,7 @@ class TestExternalReferenceDelete(TestCase):
     def test_delete_without_thumbnail_does_not_raise(self):
         instance = EntityExternalReference.objects.create_or_update(
             owner=self.entity,
-            integration_id='paperless',
-            integration_name='42',
+            integration_key=_key('paperless', '42'),
             title='X',
             source_url='https://p.example.com/documents/42/details/',
         )
@@ -188,8 +187,7 @@ class TestExternalReferenceDelete(TestCase):
     def test_delete_swallows_storage_errors_best_effort(self, _mock_delete):
         instance = EntityExternalReference.objects.create_or_update(
             owner=self.entity,
-            integration_id='immich',
-            integration_name='uuid-1',
+            integration_key=_key('immich', 'uuid-1'),
             title='X',
             source_url='https://im.example.com/photos/uuid-1',
             mime_type='image/jpeg',
@@ -213,8 +211,7 @@ class TestLocationExternalReference(TestCase):
         )
         instance = LocationExternalReference.objects.create_or_update(
             owner=location,
-            integration_id='immich',
-            integration_name='uuid-1',
+            integration_key=_key('immich', 'uuid-1'),
             title='X',
             source_url='https://im.example.com/photos/uuid-1',
             mime_type='image/jpeg',

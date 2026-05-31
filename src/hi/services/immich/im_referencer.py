@@ -1,8 +1,8 @@
 import logging
-from typing import Optional
+from typing import List, Optional
 
 from django.urls import reverse
-from requests import HTTPError
+from requests import HTTPError, RequestException
 
 from hi.integrations.exceptions import IntegrationAttributeError
 from hi.integrations.referencer.integration_referencer import (
@@ -12,7 +12,12 @@ from hi.integrations.referencer.transient_models import (
     ExternalReferenceResult,
     ExternalReferenceSearchResult,
 )
+from hi.integrations.thumbnails import (
+    THUMBNAIL_IMAGE_MIME_TYPES,
+    generate as generate_thumbnail,
+)
 from hi.integrations.transient_models import (
+    IntegrationKey,
     IntegrationMetaData,
     IntegrationValidationResult,
 )
@@ -107,6 +112,99 @@ class ImmichExternalReferencer( IntegrationExternalReferencer ):
             )
         return ExternalReferenceSearchResult( results = results )
 
+    def attach_references(
+            self,
+            owner,
+            selections : List[ ExternalReferenceResult ],
+    ) -> None:
+        """Attach each selected Immich asset as a framework
+        external-reference row. The defensive thumbnail chain is:
+        upstream thumbnail → original-bytes + HI generator
+        (image mime types only; videos skip the original-fetch) →
+        no thumbnail. The row attaches regardless of which link
+        produced bytes; linking is the primary user goal."""
+        try:
+            client = build_client()
+        except IntegrationAttributeError as e:
+            logger.warning( f'Immich attach aborted: {e}' )
+            return
+        except Exception as e:
+            logger.exception( f'Immich client build failed: {e}' )
+            return
+
+        manager = self._manager_for_owner( owner )
+        for selection in selections:
+            try:
+                self._attach_one( client, manager, owner, selection )
+            except Exception as e:
+                # Per-selection failure must not abort the rest of
+                # the batch -- linking is the primary user goal.
+                logger.warning(
+                    f'Immich attach failed for '
+                    f'{selection.integration_key.integration_name}: {e}'
+                )
+
+    def _attach_one(
+            self, client, manager, owner,
+            selection : ExternalReferenceResult,
+    ) -> None:
+        integration_name = selection.integration_key.integration_name
+        mime_type = selection.mime_type or ''
+        thumbnail_bytes = self._try_upstream_thumbnail(
+            client, integration_name,
+        )
+        if thumbnail_bytes is None:
+            thumbnail_bytes = self._try_generate_from_original(
+                client, integration_name, mime_type,
+            )
+        manager.create_or_update(
+            owner           = owner,
+            integration_key = selection.integration_key,
+            title           = selection.title,
+            source_url      = selection.source_url,
+            mime_type       = mime_type,
+            thumbnail_bytes = thumbnail_bytes,
+        )
+
+    @staticmethod
+    def _try_upstream_thumbnail(
+            client : ImmichClient, integration_name : str,
+    ) -> Optional[bytes]:
+        try:
+            downloaded = client.download_thumbnail( asset_id = integration_name )
+        except (HTTPError, RequestException) as e:
+            logger.warning(
+                f'Immich thumbnail unavailable for asset '
+                f'{integration_name}: {e}'
+            )
+            return None
+        return downloaded.get( 'content' )
+
+    @staticmethod
+    def _try_generate_from_original(
+            client : ImmichClient,
+            integration_name : str,
+            mime_type : str,
+    ) -> Optional[bytes]:
+        """Pull the original bytes and ask the framework generator
+        for a thumbnail. Gated on mime type to avoid downloading
+        videos just to discover the generator can't make a poster
+        for them."""
+        if mime_type not in THUMBNAIL_IMAGE_MIME_TYPES:
+            return None
+        try:
+            downloaded = client.download_original( asset_id = integration_name )
+        except (HTTPError, RequestException) as e:
+            logger.warning(
+                f'Immich original-bytes fetch failed for asset '
+                f'{integration_name}: {e}'
+            )
+            return None
+        original_bytes = downloaded.get( 'content' )
+        if not original_bytes:
+            return None
+        return generate_thumbnail( original_bytes, mime_type )
+
     @staticmethod
     def _http_error_message( status : Optional[int] ) -> str:
         if status == 401:
@@ -130,6 +228,10 @@ class ImmichExternalReferencer( IntegrationExternalReferencer ):
             or ''
         )
         return ExternalReferenceResult(
+            integration_key = IntegrationKey(
+                integration_id   = ImmichMetaData.integration_id,
+                integration_name = asset_id or '',
+            ),
             title = title,
             source_url = client.build_asset_web_url( asset_id ),
             thumbnail_url = self._proxy_thumbnail_url( asset_id ),

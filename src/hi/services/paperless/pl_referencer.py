@@ -23,10 +23,10 @@ Translates each paperless documents-search hit into a single
                        persist or display the whole document text.
 """
 import logging
-from typing import Optional
+from typing import List, Optional
 
 from django.urls import reverse
-from requests import HTTPError
+from requests import HTTPError, RequestException
 
 from hi.integrations.exceptions import IntegrationAttributeError
 from hi.integrations.referencer.integration_referencer import (
@@ -37,6 +37,7 @@ from hi.integrations.referencer.transient_models import (
     ExternalReferenceSearchResult,
 )
 from hi.integrations.transient_models import (
+    IntegrationKey,
     IntegrationMetaData,
     IntegrationValidationResult,
 )
@@ -123,6 +124,77 @@ class PaperlessExternalReferencer( IntegrationExternalReferencer ):
             ],
         )
 
+    def attach_references(
+            self,
+            owner,
+            selections : List[ ExternalReferenceResult ],
+    ) -> None:
+        """Attach each selected paperless document as a framework
+        external-reference row. Best-effort thumbnail fetch per
+        document; on failure the row still attaches (placeholder
+        rendering covers the missing-thumbnail case). Paperless does
+        not expose a distinct original-bytes endpoint useful for
+        HI-generated fallbacks in v1, so the chain ends at the
+        upstream thumbnail attempt."""
+        try:
+            client = build_client()
+        except IntegrationAttributeError as e:
+            logger.warning( f'Paperless attach aborted: {e}' )
+            return
+        except Exception as e:
+            logger.exception( f'Paperless client build failed: {e}' )
+            return
+
+        manager = self._manager_for_owner( owner )
+        for selection in selections:
+            try:
+                self._attach_one( client, manager, owner, selection )
+            except Exception as e:
+                # Per-selection failure must not abort the rest of
+                # the batch -- linking is the primary user goal.
+                logger.warning(
+                    f'Paperless attach failed for '
+                    f'{selection.integration_key.integration_name}: {e}'
+                )
+
+    def _attach_one(
+            self, client, manager, owner,
+            selection : ExternalReferenceResult,
+    ) -> None:
+        thumbnail_bytes = self._try_upstream_thumbnail(
+            client, selection.integration_key.integration_name,
+        )
+        manager.create_or_update(
+            owner           = owner,
+            integration_key = selection.integration_key,
+            title           = selection.title,
+            source_url      = selection.source_url,
+            mime_type       = selection.mime_type or '',
+            thumbnail_bytes = thumbnail_bytes,
+        )
+
+    @staticmethod
+    def _try_upstream_thumbnail(
+            client : PaperlessClient,
+            integration_name : str,
+    ) -> Optional[bytes]:
+        """Fetch upstream thumbnail bytes; return None on any
+        failure. Paperless document ids are integers on the wire but
+        are carried as strings through the IntegrationKey."""
+        try:
+            document_id = int( integration_name )
+        except (TypeError, ValueError):
+            return None
+        try:
+            downloaded = client.download_thumbnail( document_id = document_id )
+        except (HTTPError, RequestException) as e:
+            logger.warning(
+                f'Paperless thumbnail unavailable for document '
+                f'{integration_name}: {e}'
+            )
+            return None
+        return downloaded.get( 'content' )
+
     @staticmethod
     def _http_error_message( status : Optional[int] ) -> str:
         if status in (401, 403):
@@ -143,6 +215,10 @@ class PaperlessExternalReferencer( IntegrationExternalReferencer ):
         content = document.get( PaperlessApi.DOC_CONTENT ) or ''
         mime_type = document.get( PaperlessApi.DOC_MIME_TYPE )
         return ExternalReferenceResult(
+            integration_key = IntegrationKey(
+                integration_id   = PaperlessMetaData.integration_id,
+                integration_name = str( document_id ),
+            ),
             title = title,
             source_url = client.build_document_details_url( document_id ),
             thumbnail_url = self._proxy_thumbnail_url( document_id ),

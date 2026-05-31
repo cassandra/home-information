@@ -20,10 +20,10 @@ import logging
 
 from django.urls import reverse
 
-from hi.apps.attribute.enums import AttributeType, AttributeValueType
+from hi.apps.attribute.enums import AttributeValueType
 from hi.apps.entity.enums import EntityType
-from hi.apps.entity.models import Entity, EntityAttribute
-from hi.apps.location.models import Location, LocationAttribute
+from hi.apps.entity.models import Entity
+from hi.apps.location.models import Location
 from hi.enums import ItemType, ViewMode
 from hi.integrations.enums import IntegrationAttributeType, IntegrationCapability
 from hi.integrations.integration_data import IntegrationData
@@ -40,6 +40,7 @@ from hi.integrations.referencer.transient_models import (
 )
 from hi.integrations.transient_models import (
     ConnectionTestResult,
+    IntegrationKey,
     IntegrationMetaData,
     IntegrationValidationResult,
 )
@@ -72,6 +73,7 @@ class _StubReferencer(IntegrationExternalReferencer):
         self._error_message = error_message
         self.last_query = None
         self.last_limit = None
+        self.attach_calls = []
 
     def get_metadata(self):
         return IntegrationMetaData(
@@ -94,6 +96,11 @@ class _StubReferencer(IntegrationExternalReferencer):
             results=list(self._results),
             error_message=self._error_message,
         )
+
+    def attach_references(self, owner, selections):
+        # Capture (owner, selections-list) so dispatcher tests can
+        # assert grouping and per-call shape.
+        self.attach_calls.append((owner, list(selections)))
 
 
 class _ReferencerCapableGateway(IntegrationGateway):
@@ -145,8 +152,13 @@ def _populate_manager(pairs, enabled=True):
 
 
 def _result(title='Doc', source_url='https://example.com/doc/1',
+            integration_id='ref', integration_name='doc-1',
             thumbnail_url=None, mime_type=None, snippet=None):
     return ExternalReferenceResult(
+        integration_key=IntegrationKey(
+            integration_id=integration_id,
+            integration_name=integration_name,
+        ),
         title=title,
         source_url=source_url,
         thumbnail_url=thumbnail_url,
@@ -399,8 +411,13 @@ class TestExternalReferenceSearchView(ViewTestBase):
 
 
 class TestExternalReferenceAttachView(ViewTestBase):
-    """POST reads the JS-built ``selections_json`` payload and
-    creates one TEXT attribute per record on the named owner."""
+    """POST parses the JS-built ``selections_json`` payload, groups
+    selections by integration_id, and dispatches each group to the
+    integration's ``attach_references``. Per-row persistence is owned
+    by the integration (which writes to the framework's
+    EntityExternalReference / LocationExternalReference tables);
+    these tests assert the dispatcher's grouping + owner resolution
+    + payload-shape contract, not the per-row write."""
 
     def setUp(self):
         super().setUp()
@@ -428,108 +445,197 @@ class TestExternalReferenceAttachView(ViewTestBase):
         )
 
     @staticmethod
-    def _selections_json(*pairs):
-        return json.dumps([
-            {DIVID['ATTR_PICKER_SELECTION_TITLE_KEY']: title, DIVID['ATTR_PICKER_SELECTION_URL_KEY']: url}
-            for title, url in pairs
-        ])
+    def _selection_dict(*, integration_id='ref', integration_name='item-1',
+                        title='Title', source_url='https://example.com/1',
+                        mime_type='application/pdf'):
+        return {
+            DIVID['ATTR_PICKER_SELECTION_TITLE_KEY']: title,
+            DIVID['ATTR_PICKER_SELECTION_URL_KEY']: source_url,
+            DIVID['ATTR_PICKER_SELECTION_INTEGRATION_ID_KEY']: integration_id,
+            DIVID['ATTR_PICKER_SELECTION_INTEGRATION_NAME_KEY']: integration_name,
+            DIVID['ATTR_PICKER_SELECTION_MIME_TYPE_KEY']: mime_type,
+        }
 
-    def _payload(self, owner, selections_json):
+    def _payload(self, owner, selections):
         item_type = ItemType.ENTITY if isinstance(owner, Entity) else ItemType.LOCATION
         return {
             DIVID['ATTR_PICKER_ITEM_TYPE_FIELD']: str(item_type),
             DIVID['ATTR_PICKER_ITEM_ID_FIELD']: owner.id,
-            DIVID['ATTR_PICKER_SELECTIONS_JSON_FIELD']: selections_json,
+            DIVID['ATTR_PICKER_SELECTIONS_JSON_FIELD']: json.dumps(selections),
         }
 
-    def test_attach_creates_text_attributes_on_entity(self):
+    def test_attach_dispatches_single_integration_selections(self):
         entity = self._entity()
+        ref = _StubReferencer(integration_id='paperless')
+        _populate_manager([('paperless', _ReferencerCapableGateway(
+            integration_id='paperless', referencer=ref,
+        ))])
+
         response = self.client.post(
             self._url(),
-            data=self._payload(entity, self._selections_json(
-                ('Warranty', 'https://p/doc/1'),
-                ('Manual', 'https://p/doc/2'),
-            )),
+            data=self._payload(entity, [
+                self._selection_dict(
+                    integration_id='paperless',
+                    integration_name='42',
+                    title='Warranty',
+                    source_url='https://p/doc/42',
+                ),
+                self._selection_dict(
+                    integration_id='paperless',
+                    integration_name='99',
+                    title='Manual',
+                    source_url='https://p/doc/99',
+                ),
+            ]),
             **self.async_http_headers,
         )
         self.assertEqual(response.status_code, 200)
-        body = json.loads(response.content)
-        self.assertTrue(body.get('refresh'))
+        self.assertTrue(json.loads(response.content).get('refresh'))
+        # One attach call with both selections — grouped by
+        # integration_id, the dispatcher hands the whole group at
+        # once.
+        self.assertEqual(len(ref.attach_calls), 1)
+        owner_arg, selections = ref.attach_calls[0]
+        self.assertEqual(owner_arg, entity)
+        self.assertEqual([s.integration_key.integration_name for s in selections],
+                         ['42', '99'])
+        self.assertEqual([s.title for s in selections], ['Warranty', 'Manual'])
 
-        attrs = list(EntityAttribute.objects.filter(entity=entity).order_by('id'))
-        self.assertEqual(len(attrs), 2)
-        self.assertEqual(attrs[0].name, 'Warranty')
-        self.assertEqual(attrs[0].value, 'https://p/doc/1')
-        self.assertEqual(attrs[0].value_type, AttributeValueType.TEXT)
-        self.assertEqual(attrs[0].attribute_type, AttributeType.CUSTOM)
-        self.assertEqual(attrs[1].name, 'Manual')
+    def test_attach_groups_by_integration_id(self):
+        entity = self._entity()
+        ref_a = _StubReferencer(integration_id='paperless', label='Paperless')
+        ref_b = _StubReferencer(integration_id='immich', label='Immich')
+        _populate_manager([
+            ('paperless', _ReferencerCapableGateway(
+                integration_id='paperless', label='Paperless', referencer=ref_a,
+            )),
+            ('immich', _ReferencerCapableGateway(
+                integration_id='immich', label='Immich', referencer=ref_b,
+            )),
+        ])
 
-    def test_attach_creates_text_attribute_on_location(self):
+        self.client.post(
+            self._url(),
+            data=self._payload(entity, [
+                self._selection_dict(
+                    integration_id='paperless', integration_name='42'),
+                self._selection_dict(
+                    integration_id='immich', integration_name='uuid-1'),
+                self._selection_dict(
+                    integration_id='paperless', integration_name='99'),
+            ]),
+            **self.async_http_headers,
+        )
+        # Each integration gets one call with its own selections.
+        self.assertEqual(len(ref_a.attach_calls), 1)
+        self.assertEqual(len(ref_b.attach_calls), 1)
+        self.assertEqual(
+            [s.integration_key.integration_name for s in ref_a.attach_calls[0][1]],
+            ['42', '99'],
+        )
+        self.assertEqual(
+            [s.integration_key.integration_name for s in ref_b.attach_calls[0][1]],
+            ['uuid-1'],
+        )
+
+    def test_attach_dispatches_to_location_owner(self):
         location = self._location()
-        response = self.client.post(
+        ref = _StubReferencer(integration_id='paperless')
+        _populate_manager([('paperless', _ReferencerCapableGateway(
+            integration_id='paperless', referencer=ref,
+        ))])
+
+        self.client.post(
             self._url(),
-            data=self._payload(location, self._selections_json(
-                ('Floor Plan', 'https://p/doc/floor-plan'),
-            )),
+            data=self._payload(location, [
+                self._selection_dict(
+                    integration_id='paperless', integration_name='42'),
+            ]),
             **self.async_http_headers,
         )
-        self.assertEqual(response.status_code, 200)
-        attrs = list(LocationAttribute.objects.filter(location=location))
-        self.assertEqual(len(attrs), 1)
-        self.assertEqual(attrs[0].name, 'Floor Plan')
+        self.assertEqual(len(ref.attach_calls), 1)
+        self.assertEqual(ref.attach_calls[0][0], location)
 
-    def test_attach_with_empty_selections_creates_nothing(self):
+    def test_attach_with_empty_selections_calls_nothing(self):
         entity = self._entity()
-        response = self.client.post(
+        ref = _StubReferencer(integration_id='paperless')
+        _populate_manager([('paperless', _ReferencerCapableGateway(
+            integration_id='paperless', referencer=ref,
+        ))])
+        self.client.post(
             self._url(),
-            data=self._payload(entity, json.dumps([])),
+            data=self._payload(entity, []),
             **self.async_http_headers,
         )
-        self.assertEqual(response.status_code, 200)
-        self.assertEqual(
-            EntityAttribute.objects.filter(entity=entity).count(), 0,
-        )
+        self.assertEqual(ref.attach_calls, [])
 
-    def test_attach_with_malformed_json_creates_nothing(self):
-        # Defensive: malformed JSON yields no attributes rather than
-        # a 500. The JS contract submits valid JSON; this guards
-        # against a manual replay.
+    def test_attach_with_malformed_json_calls_nothing(self):
+        # Defensive: malformed JSON yields zero dispatches rather
+        # than a 500. The JS contract submits valid JSON; this
+        # guards against a manual replay.
         entity = self._entity()
-        response = self.client.post(
-            self._url(),
-            data=self._payload(entity, 'not-json'),
-            **self.async_http_headers,
-        )
-        self.assertEqual(response.status_code, 200)
-        self.assertEqual(
-            EntityAttribute.objects.filter(entity=entity).count(), 0,
-        )
-
-    def test_attach_skips_records_with_missing_fields(self):
-        entity = self._entity()
-        payload = self._payload(entity, json.dumps([
-            {DIVID['ATTR_PICKER_SELECTION_TITLE_KEY']: '', DIVID['ATTR_PICKER_SELECTION_URL_KEY']: 'https://p/1'},
-            {DIVID['ATTR_PICKER_SELECTION_TITLE_KEY']: 'Good', DIVID['ATTR_PICKER_SELECTION_URL_KEY']: 'https://p/2'},
-            {DIVID['ATTR_PICKER_SELECTION_TITLE_KEY']: 'No URL', DIVID['ATTR_PICKER_SELECTION_URL_KEY']: ''},
-        ]))
-        self.client.post(self._url(), data=payload, **self.async_http_headers)
-        attrs = list(EntityAttribute.objects.filter(entity=entity).order_by('id'))
-        self.assertEqual(len(attrs), 1)
-        self.assertEqual(attrs[0].name, 'Good')
-
-    def test_attach_long_title_truncated_to_max_length(self):
-        entity = self._entity()
-        long_title = 'X' * 100
-        payload = self._payload(entity, json.dumps([{
-            DIVID['ATTR_PICKER_SELECTION_TITLE_KEY']: long_title,
-            DIVID['ATTR_PICKER_SELECTION_URL_KEY']: 'https://p/1',
-        }]))
+        ref = _StubReferencer(integration_id='paperless')
+        _populate_manager([('paperless', _ReferencerCapableGateway(
+            integration_id='paperless', referencer=ref,
+        ))])
+        payload = self._payload(entity, [])
+        payload[DIVID['ATTR_PICKER_SELECTIONS_JSON_FIELD']] = 'not-json'
         response = self.client.post(
             self._url(), data=payload, **self.async_http_headers,
         )
         self.assertEqual(response.status_code, 200)
-        attr = EntityAttribute.objects.get(entity=entity)
-        self.assertEqual(len(attr.name), 64)
+        self.assertEqual(ref.attach_calls, [])
+
+    def test_attach_skips_selections_with_missing_fields(self):
+        entity = self._entity()
+        ref = _StubReferencer(integration_id='paperless')
+        _populate_manager([('paperless', _ReferencerCapableGateway(
+            integration_id='paperless', referencer=ref,
+        ))])
+        # Three records: missing title, missing url, missing integration_name.
+        # All should be skipped; nothing dispatches.
+        self.client.post(
+            self._url(),
+            data=self._payload(entity, [
+                self._selection_dict(
+                    integration_id='paperless', integration_name='1',
+                    title=''),
+                self._selection_dict(
+                    integration_id='paperless', integration_name='2',
+                    source_url=''),
+                self._selection_dict(
+                    integration_id='paperless', integration_name=''),
+            ]),
+            **self.async_http_headers,
+        )
+        self.assertEqual(ref.attach_calls, [])
+
+    def test_attach_unknown_integration_id_skips_silently(self):
+        # Selection references an integration that has no enabled
+        # referencer. Dispatcher logs + skips; no exception bubbles
+        # up so the operator's other selections still attach.
+        entity = self._entity()
+        ref = _StubReferencer(integration_id='paperless')
+        _populate_manager([('paperless', _ReferencerCapableGateway(
+            integration_id='paperless', referencer=ref,
+        ))])
+        self.client.post(
+            self._url(),
+            data=self._payload(entity, [
+                self._selection_dict(
+                    integration_id='paperless', integration_name='42'),
+                self._selection_dict(
+                    integration_id='unknown-integration',
+                    integration_name='x'),
+            ]),
+            **self.async_http_headers,
+        )
+        # The known integration still receives its selection.
+        self.assertEqual(len(ref.attach_calls), 1)
+        self.assertEqual(
+            ref.attach_calls[0][1][0].integration_key.integration_id,
+            'paperless',
+        )
 
     def test_attach_unsupported_item_type_returns_400(self):
         response = self.client.post(
@@ -537,7 +643,8 @@ class TestExternalReferenceAttachView(ViewTestBase):
             data={
                 DIVID['ATTR_PICKER_ITEM_TYPE_FIELD']: str(ItemType.COLLECTION),
                 DIVID['ATTR_PICKER_ITEM_ID_FIELD']: 1,
-                DIVID['ATTR_PICKER_SELECTIONS_JSON_FIELD']: self._selections_json(('A', 'https://p/1')),
+                DIVID['ATTR_PICKER_SELECTIONS_JSON_FIELD']: json.dumps(
+                    [self._selection_dict()]),
             },
             **self.async_http_headers,
         )
@@ -549,7 +656,8 @@ class TestExternalReferenceAttachView(ViewTestBase):
             data={
                 DIVID['ATTR_PICKER_ITEM_TYPE_FIELD']: str(ItemType.ENTITY),
                 DIVID['ATTR_PICKER_ITEM_ID_FIELD']: 99999,
-                DIVID['ATTR_PICKER_SELECTIONS_JSON_FIELD']: self._selections_json(('A', 'https://p/1')),
+                DIVID['ATTR_PICKER_SELECTIONS_JSON_FIELD']: json.dumps(
+                    [self._selection_dict()]),
             },
             **self.async_http_headers,
         )

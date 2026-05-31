@@ -25,15 +25,22 @@ between the picker views, templates, and ``attr-picker.js`` live in
 from dataclasses import dataclass, field
 from typing import List, Optional
 
+from hi.integrations.transient_models import IntegrationKey
+
 
 @dataclass(frozen=True)
 class ExternalReferenceResult:
-    """One row in the picker's result list.
+    """One upstream item, carried from search through attach.
 
-    ``title`` and ``source_url`` are the only fields that survive
-    the attach step -- they become the attribute's ``name`` and
-    ``value`` respectively. Everything else is picker chrome.
+    Surfaces in the picker's result list (rendered as a card with
+    ``thumbnail_url`` + ``title`` + ``snippet`` + clickable
+    ``source_url``); operator selection turns it into the input to
+    the integration's ``attach_references``, which persists a row
+    using ``integration_key``, ``title``, ``source_url``, and
+    ``mime_type``. ``thumbnail_url`` and ``snippet`` are picker
+    chrome and unused at attach time.
     """
+    integration_key: IntegrationKey
     title: str
     source_url: str
     thumbnail_url: Optional[str] = None
