@@ -1845,3 +1845,46 @@
     width: auto;
 }
 
+/* Hover-zoom for picker result thumbnails. Pure CSS: the wrapper
+   carries a hidden native-size sibling image; ``:hover`` reveals
+   it. ``pointer-events: none`` keeps the zoom from intercepting
+   clicks on the row text it overlaps. ``z-index`` puts it above
+   sibling rows but stays inside the modal body's scroll area;
+   tall rows near the bottom can clip. */
+.hi-ref-picker-thumb {
+    position: relative;
+    display: inline-block;
+    flex-shrink: 0;
+}
+.hi-ref-picker-thumb-small {
+    display: block;
+    width: 56px;
+    height: 56px;
+    object-fit: cover;
+}
+.hi-ref-picker-thumb-zoom {
+    display: none;
+    position: absolute;
+    left: 64px;
+    top: 0;
+    max-width: 320px;
+    max-height: 320px;
+    background: #fff;
+    border: 1px solid #6c757d;
+    box-shadow: 0 0.25rem 0.5rem rgba(0, 0, 0, 0.2);
+    z-index: 10;
+    pointer-events: none;
+}
+.hi-ref-picker-thumb:hover .hi-ref-picker-thumb-zoom {
+    display: block;
+}
+
+/* Second hover trigger: the source-URL link in the row's text area
+   also reveals the same zoom. ``:has()`` lets a sibling-of-thumb
+   trigger (the link is in a deeper subtree) bubble back up and
+   match the row, so a single zoom element serves both triggers. */
+.hi-ref-picker-row:has(.hi-ref-picker-source-link:hover)
+        .hi-ref-picker-thumb-zoom {
+    display: block;
+}
+

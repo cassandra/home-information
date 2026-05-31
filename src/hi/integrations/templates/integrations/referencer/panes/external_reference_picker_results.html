@@ -24,7 +24,7 @@ Context:
 {% if results %}
 <div class="list-group">
   {% for r in results %}
-  <label class="list-group-item d-flex align-items-start mb-0">
+  <label class="list-group-item d-flex align-items-start mb-0 hi-ref-picker-row">
     <input type="checkbox"
            class="{{ DIVID.REF_PICKER_RESULT_CHECKBOX_CLASS }} mt-1 mr-3"
            {{ DIVID.REF_PICKER_TITLE_ATTR }}="{{ r.title }}"
@@ -32,10 +32,21 @@ Context:
            {{ DIVID.REF_PICKER_INTEGRATION_NAME_ATTR }}="{{ r.integration_key.integration_name }}"
            {{ DIVID.REF_PICKER_MIME_TYPE_ATTR }}="{{ r.mime_type|default:'' }}">
     {% if r.thumbnail_url %}
-    <img src="{{ r.thumbnail_url }}"
-         alt=""
-         class="mr-3 rounded"
-         style="width: 56px; height: 56px; object-fit: cover;">
+    {% comment %}
+    Hover-zoom: pure CSS. The small img is the 56-square shown in
+    the row; the zoom img is a sibling positioned absolutely and
+    revealed on hover of the wrapper. Both <img> elements use the
+    same upstream URL so the zoom is the native-size source (no
+    extra request).
+    {% endcomment %}
+    <span class="hi-ref-picker-thumb mr-3">
+      <img src="{{ r.thumbnail_url }}"
+           alt=""
+           class="hi-ref-picker-thumb-small rounded">
+      <img src="{{ r.thumbnail_url }}"
+           alt=""
+           class="hi-ref-picker-thumb-zoom rounded">
+    </span>
     {% else %}
     <div class="mr-3 d-flex align-items-center justify-content-center bg-light rounded text-muted"
          style="width: 56px; height: 56px;">
@@ -48,7 +59,7 @@ Context:
       <div class="small text-muted text-truncate">{{ r.snippet }}</div>
       {% endif %}
       <a href="{{ r.source_url }}" target="_blank" rel="noopener"
-         class="small text-truncate d-block"
+         class="small text-truncate d-block hi-ref-picker-source-link"
          onclick="event.stopPropagation();">
         {{ r.source_url }}
       </a>
