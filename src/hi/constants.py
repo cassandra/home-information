@@ -210,7 +210,7 @@ DIVID = {
     'EXT_REF_REORDER_RIGHT_CLASS': 'hi-ext-ref-reorder-right',
     'EXT_REF_REFERENCE_ID_ATTR': 'data-ext-ref-id',
     'EXT_REF_OWNER_TYPE_ATTR': 'data-ext-ref-owner-type',
-    'EXT_REF_OWNER_ID_ATTR': 'data-ext-ref-owner-id',
+    'EXT_REF_SOURCE_URL_ATTR': 'data-ext-ref-source-url',
     'EXT_REF_TITLE_FIELD': 'title',
     'EXT_REF_DIRECTION_FIELD': 'direction',
     'EXT_REF_DIRECTION_LEFT': 'left',

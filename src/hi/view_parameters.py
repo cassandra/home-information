@@ -150,7 +150,7 @@ class ViewParameters:
 
         ref_picker_integration_id = request.session.get(
             'ref_picker_integration_id',
-        ) or None
+        )
 
         return ViewParameters(
             view_type = view_type,

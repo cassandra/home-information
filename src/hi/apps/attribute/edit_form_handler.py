@@ -169,44 +169,51 @@ class AttributeEditFormHandler:
         """Process file_order_id_* fields from POST data to update
         each file attribute's ``order_id``. File attributes don't
         ride the regular formset, so they need ad-hoc named inputs
-        the client populates on reorder."""
+        the client populates on reorder.
+
+        The per-row saves run inside one transaction so a mid-batch
+        failure can't leave a partially-renumbered ordering. The
+        per-row ``ValueError`` / ``DoesNotExist`` paths are
+        per-field validation and don't propagate; only unhandled
+        exceptions (DB errors) roll back."""
         file_order_pattern = re.compile(r'^file_order_id_(\d+)_(\d+)$')
 
         AttributeModelClass = attr_item_context.attribute_model_subclass
 
-        for field_name, new_order_str in request.POST.items():
-            match = file_order_pattern.match(field_name)
-            if not match:
-                continue
+        with transaction.atomic():
+            for field_name, new_order_str in request.POST.items():
+                match = file_order_pattern.match(field_name)
+                if not match:
+                    continue
 
-            owner_id_str: str
-            attribute_id_str: str
-            owner_id_str, attribute_id_str = match.groups()
+                owner_id_str: str
+                attribute_id_str: str
+                owner_id_str, attribute_id_str = match.groups()
 
-            if int(owner_id_str) != attr_item_context.owner.id:
-                logger.warning(
-                    f'File order field {field_name} has mismatched owner ID'
-                )
-                continue
+                if int(owner_id_str) != attr_item_context.owner.id:
+                    logger.warning(
+                        f'File order field {field_name} has mismatched owner ID'
+                    )
+                    continue
 
-            try:
-                attribute_id: int = int(attribute_id_str)
-                new_order: int = int(new_order_str)
-                attribute = AttributeModelClass.objects.get(
-                    id = attribute_id,
-                    value_type_str = str( AttributeValueType.FILE ),
-                )
-                if attribute.order_id != new_order:
-                    attribute.order_id = new_order
-                    attribute.save( update_fields = [ 'order_id' ] )
-            except (ValueError) as e:
-                logger.warning(
-                    f'Invalid file order field {field_name}: {e}'
-                )
-            except (AttributeModelClass.DoesNotExist) as e:
-                logger.warning(
-                    f'File attribute not found {field_name}: {e}'
-                )
+                try:
+                    attribute_id: int = int(attribute_id_str)
+                    new_order: int = int(new_order_str)
+                    attribute = AttributeModelClass.objects.get(
+                        id = attribute_id,
+                        value_type_str = str( AttributeValueType.FILE ),
+                    )
+                    if attribute.order_id != new_order:
+                        attribute.order_id = new_order
+                        attribute.save( update_fields = [ 'order_id' ] )
+                except (ValueError) as e:
+                    logger.warning(
+                        f'Invalid file order field {field_name}: {e}'
+                    )
+                except (AttributeModelClass.DoesNotExist) as e:
+                    logger.warning(
+                        f'File attribute not found {field_name}: {e}'
+                    )
 
     def collect_form_errors(self, edit_form_data: AttributeEditFormData) -> List[str]:
         """

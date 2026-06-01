@@ -169,4 +169,21 @@
         function(e) { _reorder.call(this, e, Hi.EXT_REF_DIRECTION_RIGHT); }
     );
 
+    // ---- Open upstream (thumbnail click) -----------------------
+
+    // The thumbnail click is wired here (rather than inline on the
+    // template) because ``source_url`` is upstream-supplied; an
+    // inline ``onclick="window.open('{{ url }}', ...)"`` lets a
+    // crafted URL break out of the JS string literal even after
+    // Django's attribute escaping. Reading the URL via .attr()
+    // round-trips safely.
+    $(document).on(
+        'click' + EventNs,
+        '[' + Hi.EXT_REF_SOURCE_URL_ATTR + ']',
+        function() {
+            const url = $(this).attr(Hi.EXT_REF_SOURCE_URL_ATTR);
+            if (url) window.open(url, '_blank', 'noopener');
+        }
+    );
+
 })();

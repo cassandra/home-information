@@ -26,8 +26,13 @@ Context:
      {{ DIVID.EXT_REF_OWNER_TYPE_ATTR }}="{{ owner_type }}"
      data-order-index="{{ forloop.counter }}">
 
+  {# ``source_url`` is upstream-supplied; passing it through a #}
+  {# ``data-`` attribute and opening via a delegated JS handler #}
+  {# avoids the inline-onclick escape-context pitfall where #}
+  {# Django's attribute escaping decodes back into a JS string #}
+  {# literal and a crafted URL can break out of the quotes. #}
   <div class="attr-v2-file-thumbnail{% if reference.thumbnail %} has-thumbnail{% endif %}"
-       onclick="window.open('{{ reference.source_url }}', '_blank');"
+       {{ DIVID.EXT_REF_SOURCE_URL_ATTR }}="{{ reference.source_url }}"
        title="Open on {{ integration_label|default:'external source' }}">
     {% if reference.thumbnail %}
       <img src="{{ reference.thumbnail.url }}"
