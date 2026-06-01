@@ -424,6 +424,22 @@
     border-radius: 0.25rem;
 }
 
+/* Hide the "previous" reorder chevron on the first card and the
+   "next" chevron on the last card. ``visibility: hidden`` (not
+   ``display: none``) preserves the grid slot so the action row's
+   ``mr-auto`` / ``ml-auto`` spacing for the middle cluster stays
+   consistent across first / middle / last cards. The DOM-swap
+   reorder path (``insertBefore``) retriggers ``:first-child`` /
+   ``:last-child`` automatically -- no JS state to maintain. */
+.attr-v2-file-grid > .attr-v2-file-card:first-child [data-reorder-action="left"],
+.attr-v2-file-grid > .hi-ext-ref-card:first-child .hi-ext-ref-reorder-left {
+    visibility: hidden;
+}
+.attr-v2-file-grid > .attr-v2-file-card:last-child [data-reorder-action="right"],
+.attr-v2-file-grid > .hi-ext-ref-card:last-child .hi-ext-ref-reorder-right {
+    visibility: hidden;
+}
+
 /* Reorder Controls - Overlay in upper right of thumbnail */
 .attr-v2-reorder-controls {
     position: absolute;

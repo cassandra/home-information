@@ -92,10 +92,17 @@ class ExternalReferencePickerView(
             raw_item_id   = request.GET.get( DIVID['REF_PICKER_ITEM_ID_FIELD'] ),
         )
 
-        # Default to the first configured referencer. The operator
-        # can switch via the picker's integration <select> when more
-        # than one referencer is configured.
-        integration_data = integration_data_list[0]
+        # Default to the operator's last successfully-used referencer
+        # if it's still enabled; otherwise fall back to the first
+        # configured one. The session-stored id is set by the attach
+        # view on successful link, so the picker re-opens to the
+        # source most likely to match what they're working on. The
+        # operator can still switch via the picker's integration
+        # <select> when more than one referencer is configured.
+        integration_data = self._default_integration_data(
+            integration_data_list = integration_data_list,
+            request = request,
+        )
 
         # Seed the picker with a query based on the owner's name so
         # the operator opens to relevant results without retyping
@@ -123,6 +130,19 @@ class ExternalReferencePickerView(
             'error_message': search_result.error_message,
         }
         return self.modal_response( request, context = context )
+
+    @staticmethod
+    def _default_integration_data( integration_data_list, request ):
+        """Pick the initial source for the picker dropdown. Honors
+        the session-stored last-successful integration when it's
+        still in the enabled list; otherwise falls back to the first
+        entry."""
+        saved_id = request.view_parameters.ref_picker_integration_id
+        if saved_id:
+            for candidate in integration_data_list:
+                if candidate.integration_id == saved_id:
+                    return candidate
+        return integration_data_list[0]
 
 
 class ExternalReferenceSearchView(
@@ -235,6 +255,15 @@ class ExternalReferenceAttachView(
             integration_data = integration_data,
             selections = selections,
         )
+        # Remember the chosen referencer on any successful link so
+        # the next picker open defaults to the same source. Partial-
+        # failure batches still count -- the operator picked this
+        # integration and at least some items attached.
+        if batch.success_count > 0:
+            request.view_parameters.ref_picker_integration_id = (
+                integration_data.integration_id
+            )
+            request.view_parameters.to_session( request )
         if batch.has_failures:
             return self._render_errors_modal(
                 request, item_type, owner, batch,

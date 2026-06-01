@@ -17,10 +17,11 @@ class ViewParameters:
     # requires additional event registrations to handle mouse and gesture
     # events..
     
-    view_type         : ViewType  = None
-    view_mode         : ViewMode  = None
-    location_view_id  : int       = None  # Last LocationView viewed
-    collection_id     : int       = None  # Last Collection viewed
+    view_type                   : ViewType  = None
+    view_mode                   : ViewMode  = None
+    location_view_id            : int       = None  # Last LocationView viewed
+    collection_id               : int       = None  # Last Collection viewed
+    ref_picker_integration_id   : str       = None  # Last referencer the operator successfully linked from
     
     def __post_init__(self):
         if self.view_type is None:
@@ -125,6 +126,7 @@ class ViewParameters:
         request.session['view_mode'] = str(self.view_mode)
         request.session['location_view_id'] = self.location_view_id
         request.session['collection_id'] = self.collection_id
+        request.session['ref_picker_integration_id'] = self.ref_picker_integration_id
         return
 
     @staticmethod
@@ -146,10 +148,15 @@ class ViewParameters:
         except ( TypeError, ValueError ):
             collection_id = None
 
+        ref_picker_integration_id = request.session.get(
+            'ref_picker_integration_id',
+        ) or None
+
         return ViewParameters(
             view_type = view_type,
             view_mode = view_mode,
             location_view_id = location_view_id,
             collection_id = collection_id,
+            ref_picker_integration_id = ref_picker_integration_id,
         )
     
