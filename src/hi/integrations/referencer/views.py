@@ -39,7 +39,7 @@ from hi.apps.common import antinode
 from hi.apps.config.enums import ConfigPageType
 from hi.apps.config.views import ConfigPageView
 from hi.constants import DIVID
-from hi.enums import ItemType
+from hi.enums import ItemType, ViewDataPriority
 from hi.exceptions import ForceRedirectException
 from hi.hi_async_view import HiModalView
 
@@ -337,12 +337,23 @@ class ExternalReferenceAttachView(
     def _render_owner_edit_modal(request, item_type : ItemType, owner):
         """Delegate to the owner's existing edit view so we don't
         duplicate its context-building logic. CBVs are designed to
-        be called this way once you have the request in hand."""
+        be called this way once you have the request in hand. The
+        ``data_priority`` override lands the operator on Tab 3
+        (Linked Content) so the just-attached references are
+        immediately visible regardless of what the data-derived
+        default would have picked."""
         from hi.apps.entity.views import EntityEditView
         from hi.apps.location.views import LocationEditView
+        priority_kwarg = ViewDataPriority.REFERENCE.name
         if item_type.is_entity:
-            return EntityEditView().get( request, entity_id = owner.id )
-        return LocationEditView().get( request, location_id = owner.id )
+            return EntityEditView().get(
+                request, entity_id = owner.id,
+                data_priority = priority_kwarg,
+            )
+        return LocationEditView().get(
+            request, location_id = owner.id,
+            data_priority = priority_kwarg,
+        )
 
     def _render_errors_modal(
             self, request, item_type : ItemType, owner, batch,

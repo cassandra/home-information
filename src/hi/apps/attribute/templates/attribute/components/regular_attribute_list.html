@@ -1,6 +1,10 @@
 {% load static %}
 {% if regular_attributes_formset %}
-{{ regular_attributes_formset.management_form }}
+{% comment %}
+``regular_attributes_formset.management_form`` is rendered by the
+parent (``edit_content_body.html``) above the tab structure so it
+survives ``tab1_pane`` overrides. Do not duplicate it here.
+{% endcomment %}
 <div class="attr-v2-attribute-section">
   {% if title %}
   <h6 class="attr-v2-section-title">{{ title }}</h6>

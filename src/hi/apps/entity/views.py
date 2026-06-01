@@ -14,6 +14,7 @@ from hi.apps.entity.state_panel_dispatch import StatePanelDispatcher
 from hi.apps.monitor.display_data import EntityDisplayData
 from hi.apps.monitor.status_display_manager import StatusDisplayManager
 
+from hi.enums import ViewDataPriority
 from hi.integrations.integration_manager import IntegrationManager
 from hi.views import page_not_found_response
 from hi.hi_async_view import HiModalView
@@ -170,14 +171,81 @@ class EntityEditView( HiModalView, EntityViewMixin, AttributeEditViewMixin ):
         return 'entity/modals/entity_edit.html'
     
     def get( self, request,*args, **kwargs ):
+        priority_override = kwargs.pop( 'data_priority', None ) \
+            or request.GET.get( 'data_priority' )
         entity = self.get_entity(request, *args, **kwargs)
-        attr_item_context = EntityAttributeItemEditContext( entity = entity )
+        attr_item_context = EntityAttributeItemEditContext(
+            entity = entity,
+            extra_template_context = self._build_extra_template_context(
+                entity,
+                priority_override = priority_override,
+            ),
+        )
         template_context = self.create_initial_template_context(
             attr_item_context= attr_item_context,
         )
-        template_context['external_view_data'] = self._get_external_view_data( entity )
-        template_context['external_references'] = entity.external_references.all()
         return self.modal_response( request, template_context )
+
+    def _build_extra_template_context(
+            self, entity, priority_override : Optional[str] = None ) -> Dict[str, Any]:
+        """Compute the entity-specific template variables (external
+        view data, linked references, data priority) once. The
+        result is stored on the AttributeItemEditContext and
+        re-emitted by both the initial GET render and the async
+        POST success render -- so the post-save modal refresh
+        carries the same context as the initial open. (Active-tab
+        persistence across the round-trip is handled client-side
+        in attr.js, not via this initial data-priority value.)"""
+        external_view_data = self._get_external_view_data( entity )
+        external_references = entity.external_references.all()
+        data_priority = self._resolve_data_priority(
+            entity = entity,
+            external_view_data = external_view_data,
+            external_references = external_references,
+            priority_override = priority_override,
+        )
+        return {
+            'external_view_data': external_view_data,
+            'external_references': external_references,
+            'data_priority': data_priority,
+        }
+
+    @staticmethod
+    def _resolve_data_priority( entity, external_view_data,
+                                external_references,
+                                priority_override : Optional[str] = None
+                                ) -> ViewDataPriority:
+        """Precedence: caller override (e.g., post-picker landing on
+        Linked Content), then INTERNAL > EXTERNAL > REFERENCE. Falls
+        back to INTERNAL when no category has content. An invalid
+        override name silently falls through to the data-derived
+        computation rather than erroring -- the override is an
+        optional UX hint, not a contract."""
+        if priority_override:
+            override_value = ViewDataPriority.from_name_safe( priority_override )
+            if override_value is not None:
+                return override_value
+        from hi.apps.attribute.enums import AttributeValueType
+        file_type = str( AttributeValueType.FILE )
+        has_files = entity.attributes.filter(
+            value_type_str = file_type,
+        ).exists()
+        has_regulars = entity.attributes.exclude(
+            value_type_str = file_type,
+        ).exists()
+        has_deleted = (
+            EntityAttribute.deleted_objects.filter( entity = entity ).exists()
+            if getattr( EntityAttribute, 'supports_soft_delete', False )
+            else False
+        )
+        has_internal = has_files or has_regulars or has_deleted
+        if has_internal:
+            return ViewDataPriority.INTERNAL
+        if external_view_data and external_view_data.has_content:
+            return ViewDataPriority.EXTERNAL
+        if external_references:
+            return ViewDataPriority.REFERENCE
+        return ViewDataPriority.default()
 
     def _get_external_view_data( self, entity ):
         if not entity.integration_id:
@@ -198,7 +266,10 @@ class EntityEditView( HiModalView, EntityViewMixin, AttributeEditViewMixin ):
     def post( self, request,*args, **kwargs ):
         entity = self.get_entity(request, *args, **kwargs)
         original_entity_type = entity.entity_type
-        attr_item_context = EntityAttributeItemEditContext( entity = entity )
+        attr_item_context = EntityAttributeItemEditContext(
+            entity = entity,
+            extra_template_context = self._build_extra_template_context( entity ),
+        )
         response = self.post_attribute_form(
             request = request,
             attr_item_context = attr_item_context,

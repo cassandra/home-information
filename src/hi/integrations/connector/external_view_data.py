@@ -46,6 +46,13 @@ class ExternalViewData:
     template_name: str = ''
     deep_link_url: Optional[str] = None
 
+    @property
+    def has_content(self) -> bool:
+        """True when the rendered partial would produce visible
+        content. The tabbed UI consults this to decide whether to
+        show the integration's data tab at all."""
+        return False
+
 
 @dataclass
 class StructuredViewData(ExternalViewData):
@@ -54,6 +61,10 @@ class StructuredViewData(ExternalViewData):
     template_name: str = 'integrations/external_data/entity/structured.html'
     attributes: List[NameValuePair] = field(default_factory=list)
     attachments: List[AttachmentRef] = field(default_factory=list)
+
+    @property
+    def has_content(self) -> bool:
+        return bool(self.attachments or self.attributes)
 
 
 @dataclass
@@ -72,6 +83,12 @@ class CustomTemplateViewData(ExternalViewData):
                 'CustomTemplateViewData requires a non-empty template_name.'
             )
 
+    @property
+    def has_content(self) -> bool:
+        # Custom template implies the integration knows what it
+        # wants; assume the partial produces something.
+        return True
+
 
 @dataclass
 class MinimalViewData(ExternalViewData):
@@ -80,3 +97,11 @@ class MinimalViewData(ExternalViewData):
 
     template_name: str = 'integrations/external_data/entity/minimal.html'
     error_message: Optional[str] = None
+
+    @property
+    def has_content(self) -> bool:
+        # Renders the alert when error_message is set, and the
+        # "External data unavailable" hint when deep_link_url is
+        # absent. With only a deep_link, the partial body is empty
+        # (the link is surfaced elsewhere).
+        return bool(self.error_message) or not self.deep_link_url

@@ -26,14 +26,25 @@ class LocationAttributeItemEditContext( AttributeItemEditContext ):
     the generic interface expected by attribute editing templates.
     """
     
-    def __init__(self, location: Location ) -> None:
+    def __init__(self,
+                 location               : Location,
+                 extra_template_context : Optional[Dict[str, Any]] = None ) -> None:
         """
         Initialize context for Location attribute editing.
-        
+
         Args:
             location: The Location instance that owns the attributes
+            extra_template_context: View-supplied template variables
+                (external_references, data_priority, etc.). The view
+                computes them once and threads them through the
+                context so the framework's GET and async-POST
+                renderers both see them.
         """
-        super().__init__( owner_type = 'location', owner = location)
+        super().__init__(
+            owner_type = 'location',
+            owner = location,
+            extra_template_context = extra_template_context,
+        )
         return
     
     @property

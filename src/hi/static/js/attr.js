@@ -103,6 +103,10 @@
         showAddAttribute: function(containerSelector = null) {
             return _showAddAttribute(containerSelector);
         },
+
+        showAddFile: function(button, fileInputId) {
+            return _showAddFile(button, fileInputId);
+        },
         
         toggleSecretField: function(button) {
             return _toggleSecretField(button);
@@ -359,6 +363,13 @@
             
             // Process DOM updates first (works for both success and error)
             const lastAppendTarget = this.processDOMUpdates(data, options);
+
+            // After the swap, restore the operator's active tab so
+            // that an UPDATE round-trip doesn't drop them back to
+            // the server's data-derived default.
+            if (window.Hi.attr.restoreActiveTabs) {
+                window.Hi.attr.restoreActiveTabs();
+            }
             
             // Handle scroll-to-new-content if requested by caller
             if (options.scrollToNewContent && lastAppendTarget) {
@@ -779,16 +790,41 @@
         });
     }
 
+    // The Add Info / Add File buttons live in the sticky panel above
+    // the tabs and target content that lives inside Tab 1. When the
+    // operator triggers them from an inactive tab, reveal Tab 1
+    // first so the newly exposed form/picker is actually visible.
+    // Tab 1 is located by the framework's id convention
+    // ("hi-attr-tab1-<owner_id>"), which the attribute framework
+    // owns end-to-end.
+    function _ensureAttributeTabActive(elementInForm) {
+        const $form = elementInForm
+            ? $(elementInForm).closest('form')
+            : $();
+        const $scope = $form.length > 0 ? $form : $(document);
+        const $pane = $scope.find('[id^="hi-attr-tab1-"]').first();
+        if ($pane.length === 0) return;
+        const paneId = $pane.attr('id');
+        const $nav = $scope.find(
+            'a[data-toggle="tab"][href="#' + paneId + '"]'
+        );
+        if ($nav.length > 0 && !$nav.hasClass('active')) {
+            $nav.tab('show');
+        }
+    }
+
     // Simple add attribute - just show the last (empty) formset form
     function _showAddAttribute(containerSelector = null) {
         // Find the last attribute card (should be the empty extra form)
         const scope = containerSelector ? $(containerSelector) : $(document);
         const attributeCards = scope.find(Hi.ATTR_V2_ATTRIBUTE_CARD_SELECTOR);
-        
+
         if (attributeCards.length > 0) {
             const lastCard = attributeCards[attributeCards.length - 1];
             const $lastCard = $(lastCard);
-            
+
+            _ensureAttributeTabActive(lastCard);
+
             // Show the card if hidden
             $lastCard.show();
             
@@ -809,7 +845,13 @@
             lastCard.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
         }
     };
-    
+
+    function _showAddFile(button, fileInputId) {
+        _ensureAttributeTabActive(button);
+        const input = document.getElementById(fileInputId);
+        if (input) input.click();
+    }
+
     // Removed dedicated add attribute form functions - using Django formset approach only
     
     
@@ -1659,5 +1701,42 @@
             order += 1;
         });
     }
-    
+
+    // Persist the operator's active-tab choice across async form
+    // submissions. The form element survives the response swap
+    // (it wraps the replaced content body), so its data attribute
+    // is a stable carrier for the active tab's href. Generic: no
+    // knowledge of how many tabs exist or what they mean.
+    //
+    // Stash on tab change.
+    $(document).on(
+        'shown.bs.tab',
+        'a[data-toggle="tab"]',
+        function() {
+            const $form = $(this).closest('form');
+            if ($form.length === 0) return;
+            $form.attr('data-active-tab', $(this).attr('href'));
+        }
+    );
+
+    // Restore is invoked from ``handleResponse`` after the response
+    // has swapped fresh content into the form (see _ajax above).
+    // Exposed on Hi.attr so the response handler can call it
+    // without reaching into module internals.
+    function _restoreActiveTabs() {
+        $('form[data-active-tab]').each(function() {
+            const $form = $(this);
+            const targetHref = $form.attr('data-active-tab');
+            if (!targetHref) return;
+            const $tab = $form.find(
+                'a[data-toggle="tab"][href="' + targetHref + '"]'
+            );
+            if ($tab.length === 0) return;
+            if (!$tab.hasClass('active')) {
+                $tab.tab('show');
+            }
+        });
+    }
+    window.Hi.attr.restoreActiveTabs = _restoreActiveTabs;
+
 })();

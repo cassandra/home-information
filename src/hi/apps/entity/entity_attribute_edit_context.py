@@ -26,14 +26,25 @@ class EntityAttributeItemEditContext(AttributeItemEditContext):
     the generic interface expected by attribute editing templates.
     """
     
-    def __init__(self, entity: Entity) -> None:
+    def __init__(self,
+                 entity                 : Entity,
+                 extra_template_context : Optional[Dict[str, Any]] = None ) -> None:
         """
         Initialize context for Entity attribute editing.
-        
+
         Args:
             entity: The Entity instance that owns the attributes
+            extra_template_context: View-supplied template variables
+                (external_view_data, external_references, data_priority,
+                etc.). The view computes them once and threads them
+                through the context so the framework's GET and async-
+                POST renderers both see them.
         """
-        super().__init__( owner_type = 'entity', owner = entity )
+        super().__init__(
+            owner_type = 'entity',
+            owner = entity,
+            extra_template_context = extra_template_context,
+        )
         return
     
     @property

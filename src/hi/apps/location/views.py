@@ -19,7 +19,7 @@ from hi.apps.control.one_click_control_service import (
 from hi.apps.entity.models import Entity
 from hi.apps.entity.view_mixins import EntityViewMixin
 from hi.apps.monitor.status_display_manager import StatusDisplayManager
-from hi.enums import ItemType, ViewType
+from hi.enums import ItemType, ViewDataPriority, ViewType
 from hi.exceptions import ForceSynchronousException
 from hi.hi_async_view import HiModalView
 from hi.hi_grid_view import HiGridView
@@ -199,23 +199,77 @@ class LocationEditView( HiModalView, LocationViewMixin, AttributeEditViewMixin )
         return 'location/modals/location_edit.html'
     
     def get( self, request,*args, **kwargs ):
+        priority_override = kwargs.pop( 'data_priority', None ) \
+            or request.GET.get( 'data_priority' )
         location = self.get_location(request, *args, **kwargs)
-        attr_item_context = LocationAttributeItemEditContext( location = location )
+        attr_item_context = LocationAttributeItemEditContext(
+            location = location,
+            extra_template_context = self._build_extra_template_context(
+                location,
+                priority_override = priority_override,
+            ),
+        )
         template_context = self.create_initial_template_context(
             attr_item_context= attr_item_context,
         )
-        template_context['external_references'] = location.external_references.all()
         return self.modal_response( request, template_context )
+
+    def _build_extra_template_context( self, location, priority_override = None ):
+        external_references = location.external_references.all()
+        data_priority = self._resolve_data_priority(
+            location = location,
+            external_references = external_references,
+            priority_override = priority_override,
+        )
+        return {
+            'external_references': external_references,
+            'data_priority': data_priority,
+        }
+
+    @staticmethod
+    def _resolve_data_priority( location, external_references,
+                                priority_override = None ) -> ViewDataPriority:
+        """Precedence: caller override (e.g., post-picker landing on
+        Linked Content), then INTERNAL > REFERENCE. Locations have no
+        EXTERNAL view-data category. An invalid override name
+        silently falls through to the data-derived computation."""
+        if priority_override:
+            override_value = ViewDataPriority.from_name_safe( priority_override )
+            if override_value is not None:
+                return override_value
+        from hi.apps.attribute.enums import AttributeValueType
+        from hi.apps.location.models import LocationAttribute
+        file_type = str( AttributeValueType.FILE )
+        has_files = location.attributes.filter(
+            value_type_str = file_type,
+        ).exists()
+        has_regulars = location.attributes.exclude(
+            value_type_str = file_type,
+        ).exists()
+        has_deleted = (
+            LocationAttribute.deleted_objects.filter( location = location ).exists()
+            if getattr( LocationAttribute, 'supports_soft_delete', False )
+            else False
+        )
+        has_internal = has_files or has_regulars or has_deleted
+        if has_internal:
+            return ViewDataPriority.INTERNAL
+        if external_references:
+            return ViewDataPriority.REFERENCE
+        return ViewDataPriority.default()
     
     def post( self, request,*args, **kwargs ):
         location = self.get_location(request, *args, **kwargs)
-        attr_item_context = LocationAttributeItemEditContext( location = location )
+        attr_item_context = LocationAttributeItemEditContext(
+            location = location,
+            extra_template_context = self._build_extra_template_context( location ),
+        )
         return self.post_attribute_form(
             request = request,
             attr_item_context = attr_item_context,
         )
 
-    
+
 class LocationAttributeUploadView( View, LocationViewMixin, AttributeEditViewMixin ):
 
     def post( self, request,*args, **kwargs ):

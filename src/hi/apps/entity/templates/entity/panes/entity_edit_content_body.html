@@ -8,17 +8,98 @@ Extends the generic attribute edit content body with entity-specific field layou
 
 {% block additional_actions %}
 {% has_external_referencers as has_referencers %}
-{% if has_referencers and attr_page_context.allow_internal_attributes %}
+{% if has_referencers %}
 <a href="{% url 'integrations_external_reference_picker' %}?item_type=ENTITY&item_id={{ attr_item_context.owner.id }}"
    data-async="modal"
    class="btn btn-sm btn-outline-primary mb-0">
   {% icon "link" size="sm" css_class="hi-icon-left" %}Link Content
 </a>
 {% endif %}
+{% if external_view_data and external_view_data.deep_link_url %}
+{% integration_display_name attr_item_context.owner as deep_link_label %}
+<a href="{{ external_view_data.deep_link_url }}"
+   target="_blank"
+   rel="noopener noreferrer"
+   class="btn btn-sm btn-outline-primary mb-0">
+  Open in {{ deep_link_label|default:"source" }} &rarr;
+</a>
+{% endif %}
 {% endblock %}
 
-{% block external_references_section %}
-{% include "integrations/panes/external_reference_grid.html" with external_references=external_references owner_type='entity' owner_id=attr_item_context.owner.id %}
+{% load static %}
+
+{% block tab1_nav_active %}{% if data_priority.is_internal %}active{% endif %}{% endblock %}
+{% block tab1_pane_active %}{% if data_priority.is_internal %}show active{% endif %}{% endblock %}
+
+{% block tab1_pane %}
+{% if attr_item_context.owner.integration_id and not attr_page_context.allow_internal_attributes %}
+<div class="p-3">
+  {% comment %}
+  Integration-bound entity with internal editing suppressed:
+  show the same "From [integration]" header used in the
+  external_view_data partials (gives the operator an immediate
+  "this isn't HI-owned, here's where to go edit it" affordance).
+  Both conditions must be true -- a hybrid integration-bound
+  entity that still allows internal attribute editing falls
+  through to the framework default to keep its attribute UI.
+  {% endcomment %}
+  {% include "integrations/external_data/entity/header.html" with view_data=external_view_data %}
+</div>
+{% else %}
+  {{ block.super }}
+{% endif %}
+{% endblock %}
+
+{% block tab2_nav %}
+{% if external_view_data and external_view_data.has_content %}
+{% integration_logo_path attr_item_context.owner as tab2_logo %}
+{% integration_display_name attr_item_context.owner as tab2_label %}
+<li class="nav-item">
+  <a class="nav-link {% if data_priority.is_external %}active{% endif %}"
+     data-toggle="tab"
+     href="#hi-attr-tab2-{{ attr_item_context.owner_id }}"
+     role="tab">
+    {% if tab2_logo %}
+    <img class="mr-1" style="width: 16px; height: 16px; vertical-align: middle;"
+         src="{% static tab2_logo %}" alt="">
+    {% endif %}
+    {{ tab2_label|default:"External" }}
+  </a>
+</li>
+{% endif %}
+{% endblock %}
+
+{% block tab2_pane %}
+{% if external_view_data and external_view_data.has_content %}
+<div class="tab-pane {% if data_priority.is_external %}show active{% endif %}"
+     id="hi-attr-tab2-{{ attr_item_context.owner_id }}"
+     role="tabpanel">
+  {% include external_view_data.template_name with view_data=external_view_data %}
+</div>
+{% endif %}
+{% endblock %}
+
+{% block tab3_nav %}
+{% if external_references %}
+<li class="nav-item">
+  <a class="nav-link {% if data_priority.is_reference %}active{% endif %}"
+     data-toggle="tab"
+     href="#hi-attr-tab3-{{ attr_item_context.owner_id }}"
+     role="tab">
+    {% icon "link" size="sm" css_class="hi-icon-left" %}Linked Content
+  </a>
+</li>
+{% endif %}
+{% endblock %}
+
+{% block tab3_pane %}
+{% if external_references %}
+<div class="tab-pane {% if data_priority.is_reference %}show active{% endif %}"
+     id="hi-attr-tab3-{{ attr_item_context.owner_id }}"
+     role="tabpanel">
+  {% include "integrations/panes/external_reference_grid.html" with external_references=external_references owner_type='entity' owner_id=attr_item_context.owner.id %}
+</div>
+{% endif %}
 {% endblock %}
 
 {% block owner_fields %}

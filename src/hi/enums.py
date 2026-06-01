@@ -48,7 +48,35 @@ class ViewMode(LabeledEnum):
     def is_editing(self):
         return bool( self == ViewMode.EDIT )
 
-    
+
+class ViewDataPriority(LabeledEnum):
+    """Which category of owner-detail data the edit modal should
+    foreground when multiple categories are present. Views compute
+    this from the available data; templates map each value onto
+    whichever tab holds that category. Decouples view-layer
+    precedence decisions from template-layer tab ordering."""
+
+    INTERNAL  = ('Internal', '')   # HI-owned files / regular attributes
+    EXTERNAL  = ('External', '')   # integration-supplied view data
+    REFERENCE = ('Reference', '')  # cross-source linked content
+
+    @classmethod
+    def default(cls):
+        return cls.INTERNAL
+
+    @property
+    def is_internal(self) -> bool:
+        return self == ViewDataPriority.INTERNAL
+
+    @property
+    def is_external(self) -> bool:
+        return self == ViewDataPriority.EXTERNAL
+
+    @property
+    def is_reference(self) -> bool:
+        return self == ViewDataPriority.REFERENCE
+
+
 class ItemType(LabeledEnum):
     # Many class have polymorpic behavior along different dimensions with
     # the dimensions being overlapping between subsets.  This is mostly

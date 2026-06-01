@@ -36,10 +36,19 @@ from .models import AttributeModel, SoftDeleteAttributeModel
 
 
 class AttributePageEditContext:
-    
-    def __init__(self, owner_type: str, owner: Model = None ) -> None:
+
+    def __init__(self,
+                 owner_type             : str,
+                 owner                  : Model           = None,
+                 extra_template_context : Optional[Dict]  = None ) -> None:
         self.owner_type = owner_type.lower()
         self.owner = owner
+        # View-supplied extras that the framework's template-context
+        # builders merge in via ``to_template_context()``. Stored as
+        # data only; the view owns the business logic that built it.
+        # Both the initial-GET and async-POST response paths pick
+        # the extras up because both call ``to_template_context()``.
+        self._extra_template_context = dict( extra_template_context or {} )
         return
 
     @property
@@ -179,9 +188,11 @@ class AttributePageEditContext:
         return ''
 
     def to_template_context(self) -> Dict[str, Any]:
-        return {
+        ctx: Dict[str, Any] = {
             "attr_page_context": self,
         }
+        ctx.update( self._extra_template_context )
+        return ctx
 
     
 class AttributeItemEditContext( AttributePageEditContext ):
@@ -193,8 +204,15 @@ class AttributeItemEditContext( AttributePageEditContext ):
     type-safe access to owner information, URLs, and DOM identifiers.
     """
     
-    def __init__(self, owner: Model, owner_type: str) -> None:
-        super().__init__( owner_type = owner_type, owner = owner )
+    def __init__(self,
+                 owner                  : Model,
+                 owner_type             : str,
+                 extra_template_context : Optional[Dict]  = None ) -> None:
+        super().__init__(
+            owner_type = owner_type,
+            owner = owner,
+            extra_template_context = extra_template_context,
+        )
         return
         
     @property

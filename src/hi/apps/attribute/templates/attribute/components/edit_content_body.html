@@ -1,4 +1,4 @@
-{% load icons %}
+{% load icons static %}
 {% comment %}
 Generic V2 Content Body Fragment
 Contains the main content area - used by both initial load and updates
@@ -94,7 +94,7 @@ by using the AttributeItemEditContext pattern.
         {% block file_upload_button %}
         <button type="button"
                 class="btn btn-sm btn-outline-primary mb-0"
-                onclick="document.getElementById('{{ attr_item_context.file_input_html_id }}').click();">
+                onclick="window.Hi.attr.showAddFile(this, '{{ attr_item_context.file_input_html_id }}');">
           {% icon "upload" size="sm" css_class="hi-icon-left" %}Add File
         </button>
         {% endblock %}
@@ -115,43 +115,90 @@ by using the AttributeItemEditContext pattern.
 <div id="{{ attr_page_context.scrollable_content_html_id }}"
      class="{{ DIVID.ATTR_V2_SCROLLABLE_CONTENT_CLASS }}">
 
-  {% if attr_page_context.allow_internal_attributes %}
-
-  <!-- Files Section -->
-  {% block files_section %}
-  {% include "attribute/components/file_grid.html" with file_attributes=file_attributes %}
-  {% endblock %}
+  {% comment %}
+  Regular-attributes formset management form is hoisted above the
+  tabs so it survives ``tab1_pane`` overrides (e.g., the
+  integration-bound entity that swaps Tab 1 content for a "From
+  [integration]" panel). Without it the surrounding form would
+  POST without TOTAL_FORMS / INITIAL_FORMS / MIN / MAX, and
+  Django would reject the submission even for non-attribute
+  fields like the entity's name and type.
+  {% endcomment %}
+  {% if regular_attributes_formset %}
+  {{ regular_attributes_formset.management_form }}
+  {% endif %}
 
   {% comment %}
-  External-content extension slot. Per-owner-type templates (Entity,
-  Location) override this block to inject framework-rendered content
-  contributed by integrations (e.g., the external-reference grid).
-  The attribute framework knows nothing about what's slotted in --
-  it just owns the position relative to internal files and row
-  attributes.
+  Tabbed content region. The attribute framework owns Tab 1 (Home
+  Information -- files + regulars + deleted) and provides empty
+  slots for two additional tabs. Subclass templates (entity,
+  location, etc.) fill those slots based on their own context;
+  this template does not reference any integration-specific
+  variables or concepts.
+
+  Sticky-panel chrome (UPDATE button, dirty messaging, action
+  buttons) sits above this region and is intentionally not inside
+  any tab -- UPDATE applies to Tab 1 content only but stays
+  visible regardless of active tab.
   {% endcomment %}
-  {% block external_references_section %}
-  {% endblock %}
+  <ul class="nav nav-tabs" role="tablist">
+    <li class="nav-item">
+      <a class="nav-link {% block tab1_nav_active %}active{% endblock %}"
+         data-toggle="tab"
+         href="#hi-attr-tab1-{{ attr_item_context.owner_id }}"
+         role="tab">
+        <img class="mr-1" style="width: 16px; height: 16px; vertical-align: middle;"
+             src="{% static 'img/hi-icon-16x16.png' %}" alt="">Home Information
+      </a>
+    </li>
+    {% block tab2_nav %}{% endblock %}
+    {% block tab3_nav %}{% endblock %}
+  </ul>
 
-  <!-- Properties Section -->
-  {% block properties_section %}
-  {% include "attribute/components/regular_attribute_list.html" with regular_attributes_formset=regular_attributes_formset %}
-  {% endblock %}
+  <div class="tab-content">
+    <div class="tab-pane {% block tab1_pane_active %}show active{% endblock %}"
+         id="hi-attr-tab1-{{ attr_item_context.owner_id }}"
+         role="tabpanel">
+      {% block tab1_pane %}
+        {% if attr_page_context.allow_internal_attributes %}
+          {% block files_section %}
+          {% include "attribute/components/file_grid.html" with file_attributes=file_attributes %}
+          {% endblock %}
 
-  <!-- Additional Sections -->
-  {% block additional_sections %}
-  {% include "attribute/components/deleted_attribute_list.html" with deleted_attributes=deleted_attributes %}
-  {% endblock %}
+          {% block properties_section %}
+          {% include "attribute/components/regular_attribute_list.html" with regular_attributes_formset=regular_attributes_formset %}
+          {% endblock %}
 
-  {% endif %}
+          {% block additional_sections %}
+          {% include "attribute/components/deleted_attribute_list.html" with deleted_attributes=deleted_attributes %}
+          {% endblock %}
 
-  {% block external_view_data %}
-  {% if external_view_data %}
-  <div class="attr-v2-external-view-data">
-    {% include external_view_data.template_name with view_data=external_view_data %}
+          {% block tab1_empty_state %}
+          {% with has_files=file_attributes|length has_regulars=regular_attributes_formset.queryset|length has_deleted=deleted_attributes|length %}
+          {% if not has_files and not has_regulars and not has_deleted %}
+          <div class="text-muted small p-3">
+            No data yet. Use the action buttons above to
+            <em>Add File</em>, <em>Add Info</em>, or <em>Link Content</em>
+            (if enabled).
+          </div>
+          {% endif %}
+          {% endwith %}
+          {% endblock %}
+        {% else %}
+          {% comment %}
+          Internal-attribute editing is suppressed for this owner
+          (typically integration-bound entities). Subclass templates
+          override ``tab1_pane`` to render a richer "From [integration]"
+          panel instead; this default fires only if no override is
+          provided.
+          {% endcomment %}
+          <div class="text-muted small p-3">No data.</div>
+        {% endif %}
+      {% endblock %}
+    </div>
+    {% block tab2_pane %}{% endblock %}
+    {% block tab3_pane %}{% endblock %}
   </div>
-  {% endif %}
-  {% endblock %}
 
 </div>
 

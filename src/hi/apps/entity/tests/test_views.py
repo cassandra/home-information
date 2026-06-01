@@ -471,7 +471,7 @@ class TestEntityEditViewExternalViewData(DualModeViewTestCase):
         self.assertSuccessResponse(response)
         self.assertIsNone(response.context['external_view_data'])
         mock_lookup.assert_not_called()
-        self.assertNotIn('attr-v2-external-view-data', response.content.decode('utf-8'))
+        self.assertNotIn('hi-attr-tab2-', response.content.decode('utf-8'))
 
     def test_integration_entity_hook_returns_none_omits_section(self):
         """Integration entity whose gateway hook returns None: the
@@ -496,7 +496,7 @@ class TestEntityEditViewExternalViewData(DualModeViewTestCase):
         # view for an entity with no state data), so we don't pin the
         # exact call count.
         mock_gateway.get_connector.return_value.get_external_view_data.assert_called_with(self.integration_entity)
-        self.assertNotIn('attr-v2-external-view-data', response.content.decode('utf-8'))
+        self.assertNotIn('hi-attr-tab2-', response.content.decode('utf-8'))
 
     def test_integration_entity_structured_view_data_renders_section(self):
         """``StructuredViewData`` renders the structured partial with
@@ -515,7 +515,7 @@ class TestEntityEditViewExternalViewData(DualModeViewTestCase):
 
         self.assertSuccessResponse(response)
         content = response.content.decode('utf-8')
-        self.assertIn('attr-v2-external-view-data', content)
+        self.assertIn('hi-attr-tab2-', content)
         self.assertIn('attr-v2-external-structured', content)
         self.assertIn('Manufacturer', content)
         self.assertIn('Acme', content)
@@ -524,8 +524,10 @@ class TestEntityEditViewExternalViewData(DualModeViewTestCase):
         self.assertIn('https://upstream.example/items/42', content)
 
     def test_integration_entity_minimal_view_data_renders_deep_link_only(self):
-        """``MinimalViewData`` renders only the deep link placeholder
-        — no structured-partial markers."""
+        """``MinimalViewData`` with only a deep link has no in-tab
+        content (its ``has_content`` returns False), so no External
+        tab is rendered. The deep link still reaches the operator
+        via the sticky-panel "Open in [integration]" action button."""
         url = reverse('entity_edit', kwargs={'entity_id': self.integration_entity.id})
 
         minimal = self._make_minimal_view_data()
@@ -540,10 +542,10 @@ class TestEntityEditViewExternalViewData(DualModeViewTestCase):
 
         self.assertSuccessResponse(response)
         content = response.content.decode('utf-8')
-        self.assertIn('attr-v2-external-view-data', content)
-        self.assertIn('attr-v2-external-minimal', content)
+        self.assertNotIn('hi-attr-tab2-', content)
+        self.assertNotIn('attr-v2-external-minimal', content)
+        # Deep link surfaces via the additional-actions button.
         self.assertIn('https://upstream.example/items/99', content)
-        self.assertNotIn('attr-v2-external-structured', content)
 
     def test_integration_entity_minimal_view_data_surfaces_error_message(self):
         """``MinimalViewData.error_message`` renders in the modal so
@@ -629,7 +631,7 @@ class TestEntityEditViewExternalViewData(DualModeViewTestCase):
 
         self.assertSuccessResponse(response)
         content = response.content.decode('utf-8')
-        self.assertIn('attr-v2-external-view-data', content)
+        self.assertIn('hi-attr-tab2-', content)
         self.assertIn('attr-v2-external-structured', content)
         self.assertNotIn('orphan_internal_prop', content)
         self.assertNotIn('>Add File<', content)
@@ -651,7 +653,7 @@ class TestEntityEditViewExternalViewData(DualModeViewTestCase):
 
         self.assertSuccessResponse(response)
         self.assertIsNone(response.context['external_view_data'])
-        self.assertNotIn('attr-v2-external-view-data', response.content.decode('utf-8'))
+        self.assertNotIn('hi-attr-tab2-', response.content.decode('utf-8'))
 
     def test_custom_template_view_data_uses_instance_template_name(self):
         """``CustomTemplateViewData`` is the escape hatch: the

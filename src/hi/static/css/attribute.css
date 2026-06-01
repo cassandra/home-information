@@ -150,6 +150,16 @@
     margin-bottom: 2rem;
 }
 
+/* Collapse the file section when it has no cards. The wrapper
+   stays in the DOM (file_grid_html_id is the target for "Add
+   File" insertions) but takes zero vertical space. */
+.attr-v2-file-section:not(:has(.attr-v2-file-card)) {
+    margin-bottom: 0;
+}
+.attr-v2-file-section:not(:has(.attr-v2-file-card)) .attr-v2-file-grid {
+    margin-top: 0;
+}
+
 /* External-reference card: integration logo inside the open-link
    action button. Sized 24px so it reads as an icon at typical
    button height. */
@@ -490,6 +500,16 @@
 /* Attribute List Layout */
 .attr-v2-attribute-section {
     margin-bottom: 2rem;
+}
+
+/* Collapse the attribute section when no saved-instance cards are
+   present (only Django formset extras would render an
+   ``attr-v2-new-attribute`` card; that card stays hidden until
+   "Add Info" reveals it). The wrapper stays in the DOM so the
+   formset's management form remains intact and "Add Info"'s
+   reveal still finds its target. */
+.attr-v2-attribute-section:not(:has(.attr-v2-attribute-card:not(.attr-v2-new-attribute))) {
+    margin-bottom: 0;
 }
 
 .attr-v2-attribute-list {
