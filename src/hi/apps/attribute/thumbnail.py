@@ -72,8 +72,6 @@ class ThumbnailHelpers:
 
     @classmethod
     def max_bytes_for_mime(cls, mime_type : str) -> int:
-        """Per-mime-type input size cap. PDFs get the tighter
-        ceiling; everything else gets the image cap."""
         if mime_type in cls.THUMBNAIL_PDF_MIME_TYPES:
             return cls.MAX_PDF_SOURCE_BYTES
         return cls.MAX_SOURCE_BYTES

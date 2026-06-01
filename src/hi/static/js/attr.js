@@ -1502,8 +1502,7 @@
 
         // File cards don't ride the regular formset, so the global
         // renumber path doesn't reach them. Renumber just the file
-        // section in DOM order via the ad-hoc hidden inputs
-        // (mirrors the file_title_* submission pattern). A pure
+        // section in DOM order via the ad-hoc hidden inputs. A pure
         // swap is wrong here -- files default to order_id=0 on
         // upload, so two equal values would no-op the swap and the
         // ordering never differentiates. Renumbering 0..N-1 inside
@@ -1672,13 +1671,10 @@
         let order = 1;
 
         // Regular attribute cards only. File cards are intentionally
-        // excluded -- file ordering uses a surgical swap (only the
-        // two affected cards' order_id values change) via
-        // ``_swapFileCardOrderIds`` in the reorder handler. A global
-        // renumber would clobber every file's order_id, which is
-        // wrong when files share the order_id namespace with
-        // hundreds of regular attributes (see ``process_file_order_updates``
-        // server-side).
+        // excluded -- file ordering uses a scoped renumber over the
+        // file grid alone (``_renumberFileCardOrderIds``) so it
+        // can't clobber non-file order_ids when files share the
+        // order_id namespace with hundreds of regular attributes.
         const $cards = $container.find(Hi.ATTR_V2_ATTRIBUTE_CARD_SELECTOR);
 
         $cards.each(function() {
@@ -1719,10 +1715,9 @@
         }
     );
 
-    // Restore is invoked from ``handleResponse`` after the response
-    // has swapped fresh content into the form (see _ajax above).
-    // Exposed on Hi.attr so the response handler can call it
-    // without reaching into module internals.
+    // Exposed on Hi.attr so the response handler can invoke it
+    // after swapping fresh content into the form, without reaching
+    // into module internals.
     function _restoreActiveTabs() {
         $('form[data-active-tab]').each(function() {
             const $form = $(this);

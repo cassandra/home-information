@@ -81,11 +81,9 @@ class ImmichClient:
 
     def download_original( self, asset_id : str ) -> Dict[str, Any]:
         """Fetch the per-asset original bytes. Returns
-        ``{'content': bytes, 'mime_type': str}``. Used by
-        ``attach_references`` as the fallback input to the
-        framework's thumbnail generator when the upstream thumbnail
-        endpoint is unavailable -- callers should gate this on the
-        mime type (image only) to avoid pulling whole videos."""
+        ``{'content': bytes, 'mime_type': str}``. Callers should
+        gate this on the mime type (image only) to avoid pulling
+        whole videos."""
         path = ImmichApi.ASSET_ORIGINAL_PATH.format( id = asset_id )
         url = urljoin( self.api_url, path )
         response = self._session.get( url, timeout = self._timeout_secs )

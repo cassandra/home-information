@@ -167,10 +167,9 @@ class AttributeEditFormHandler:
                                     attr_item_context : AttributeItemEditContext,
                                     request           : HttpRequest      ) -> None:
         """Process file_order_id_* fields from POST data to update
-        each file attribute's ``order_id``. Mirrors the
-        ``process_file_title_updates`` pattern -- file attributes
-        don't ride the regular formset, so they need ad-hoc named
-        inputs the client populates on reorder."""
+        each file attribute's ``order_id``. File attributes don't
+        ride the regular formset, so they need ad-hoc named inputs
+        the client populates on reorder."""
         file_order_pattern = re.compile(r'^file_order_id_(\d+)_(\d+)$')
 
         AttributeModelClass = attr_item_context.attribute_model_subclass

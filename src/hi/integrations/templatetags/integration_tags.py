@@ -69,8 +69,7 @@ def previous_integration_logo_path( model : IntegrationDetailsModel ) -> str:
 @register.simple_tag
 def has_external_referencers() -> bool:
     """True iff at least one currently-enabled integration advertises
-    the EXTERNAL_REFERENCE capability. Used by Entity/Location edit
-    surfaces to decide whether to show the "LINK" action-bar button."""
+    the EXTERNAL_REFERENCE capability."""
     return bool( IntegrationManager().get_integration_data_list(
         enabled_only = True,
         capabilities = frozenset({ IntegrationCapability.EXTERNAL_REFERENCE }),

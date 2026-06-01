@@ -246,8 +246,7 @@ class ExternalReferenceBase( models.Model ):
     id, etc.).
 
     Thumbnail bytes are persisted under MEDIA_ROOT; ``delete()``
-    cleans up the file on a best-effort basis, mirroring
-    ``AttributeModel.delete()``.
+    cleans up the file on a best-effort basis.
     """
 
     integration_id = models.CharField(
@@ -304,8 +303,8 @@ class ExternalReferenceBase( models.Model ):
 
     @property
     def integration_key(self) -> Optional[IntegrationKey]:
-        # Mirrors IntegrationDetailsModel. Returns None when fields
-        # are unset (shouldn't happen on a saved row; defensive).
+        # Returns None when fields are unset (shouldn't happen on a
+        # saved row; defensive).
         if self.integration_id is None or self.integration_name is None:
             return None
         return IntegrationKey(
@@ -323,8 +322,7 @@ class ExternalReferenceBase( models.Model ):
         self.integration_name = integration_key.integration_name
 
     def delete(self, *args, **kwargs):
-        """Best-effort thumbnail file cleanup; matches
-        ``AttributeModel.delete()`` conventions."""
+        """Best-effort thumbnail file cleanup."""
         thumbnail_name = self.thumbnail.name if self.thumbnail else None
         if thumbnail_name:
             try:

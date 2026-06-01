@@ -57,9 +57,9 @@
         const $grid = $card.closest(_classSelector(Hi.EXT_REF_GRID_CLASS));
         const payload = Object.assign({ csrfmiddlewaretoken: _csrfToken() }, fields);
         // No .fail() handler: server-side BadRequest / 404 responses
-        // are dropped client-side and the grid simply doesn't refresh.
-        // This matches the prior AN.post baseline -- the server logs
-        // the error, the operator can retry or refresh the modal.
+        // are dropped client-side and the grid simply doesn't
+        // refresh. The server logs the error; the operator can
+        // retry or refresh the modal.
         $.ajax({
             url: url,
             method: 'POST',

@@ -85,9 +85,9 @@
             });
 
             // File cards aren't in the formset and use the
-            // ``file_order_id_*`` naming (see file_card.html). Pick
-            // them up alongside the formset order fields so file
-            // reorder is dirty-tracked the same way.
+            // ``file_order_id_*`` naming. Pick them up alongside
+            // the formset order fields so file reorder is dirty-
+            // tracked the same way.
             const fileOrderFields = form.querySelectorAll('input[type="hidden"][name^="file_order_id_"]');
             fileOrderFields.forEach(field => {
                 this.captureFieldValue(field);

@@ -46,8 +46,8 @@ from hi.simulator.services.service_simulator import ServiceSimulator
 
 class MimeMix( Enum ):
     """Which mime types populate generated search results. Drives
-    the referencer's image-vs-video gating in
-    ``_try_generate_from_original`` through different code branches."""
+    the referencer's image-vs-video gating through different code
+    branches."""
 
     IMAGE_ONLY = 'Images only'
     VIDEO_ONLY = 'Videos only'

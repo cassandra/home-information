@@ -94,11 +94,9 @@ class PaperlessClient:
     def download_original( self, document_id : int ) -> Dict[str, Any]:
         """Fetch the per-document original bytes from
         ``/api/documents/<id>/download/``. Returns
-        ``{'content': bytes, 'mime_type': str}``. Used by
-        ``attach_references`` as the fallback input to the
-        framework's thumbnail generator when the upstream thumbnail
-        endpoint is unavailable -- callers should gate this on the
-        mime type to skip formats the generator can't handle."""
+        ``{'content': bytes, 'mime_type': str}``. Callers should
+        gate this on the mime type to skip formats the framework's
+        thumbnail generator can't handle."""
         path = PaperlessApi.DOCUMENT_DOWNLOAD_PATH.format( id = document_id )
         url = urljoin( self.api_url, path )
         response = self._session.get( url, timeout = self._timeout_secs )
