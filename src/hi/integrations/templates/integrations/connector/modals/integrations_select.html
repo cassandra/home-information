@@ -20,15 +20,15 @@ All Connectors
   <div class="col-3">
     {% if not integration_data.integration.is_enabled %}
     <span class="text-muted">
-      {% icon "disabled" size="sm" css_class="hi-icon-left" %}Not configured
+      {% icon "disabled" css_class="hi-icon-left" %}Not configured
     </span>
     {% elif integration_data.integration.is_paused %}
     <span class="font-weight-bold text-secondary">
-      {% icon "pause" size="sm" css_class="hi-icon-left" %}Paused
+      {% icon "pause" css_class="hi-icon-left" %}Paused
     </span>
     {% else %}
     <span class="font-weight-bold text-primary">
-      {% icon "check-circle" size="sm" css_class="hi-icon-left" %}Running
+      {% icon "check-circle" css_class="hi-icon-left" %}Running
     </span>
     {% endif %}
   </div>
@@ -37,12 +37,12 @@ All Connectors
     {% if integration_data.integration.is_enabled %}
     <a href="{% url 'integrations_connect_disable' integration_id=integration_data.integration.integration_id %}"
        role="button" class="btn btn-danger btn-control" data-async="modal">
-      {% icon "delete" size="sm" css_class="hi-icon-left" %}DISABLE
+      {% icon "delete" css_class="hi-icon-left" %}DISABLE
     </a>
     {% else %}
     <a href="{% url 'integrations_connect_configure' integration_id=integration_data.integration.integration_id %}"
        class="btn btn-primary btn-control" role="button" data-async="modal">
-      {% icon "settings" size="sm" css_class="hi-icon-left" %}CONFIGURE
+      {% icon "settings" css_class="hi-icon-left" %}CONFIGURE
     </a>
     {% endif %}
   </div>

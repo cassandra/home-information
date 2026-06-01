@@ -34,20 +34,20 @@ UNKNOWN is intentionally not handled -- initialization edge, transient.
         role="img"
         aria-label="{{ health_status.status.label }}{% if health_status.last_message %}: {{ health_status.last_message }}{% endif %}"
         title="{{ health_status.status.label }}{% if health_status.last_message %}: {{ health_status.last_message }}{% endif %}">
-    {% icon "warning" size="sm" %}
+    {% icon "warning" %}
   </span>
 {% elif is_paused %}
   <span class="hi-integration-indicator hi-integration-indicator-paused"
         role="img"
         aria-label="Paused — background monitor is suspended"
         title="Paused — background monitor is suspended">
-    {% icon "pause" size="sm" %}
+    {% icon "pause" %}
   </span>
 {% elif sync_check_result.needs_sync %}
   <span class="hi-integration-indicator hi-integration-indicator-needs-sync"
         role="img"
         aria-label="{{ sync_check_result.summary_message }}"
         title="{{ sync_check_result.summary_message }}">
-    {% icon "sync" size="sm" %}
+    {% icon "sync" %}
   </span>
 {% endif %}

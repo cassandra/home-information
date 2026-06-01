@@ -6,7 +6,7 @@
       <a href="{% url 'collection_add' %}"
          class="btn btn-add btn-control" role="button"
          data-async="modal" >
-        {% icon "plus" size="sm" css_class="hi-icon-left" %}ADD COLLECTION
+        {% icon "plus" css_class="hi-icon-left" %}ADD COLLECTION
       </a>
     </div>
     {% endif %}
@@ -24,7 +24,7 @@
         <a href="{% url 'profiles_edit_reference_help' %}"
            class="btn btn-tertiary btn-control" role="button"
            data-async="true" >
-          {% icon "question-circle" size="sm" css_class="hi-icon-left" %}EDIT HELP
+          {% icon "question-circle" css_class="hi-icon-left" %}EDIT HELP
         </a>
       </div>
       {% else %}
@@ -41,7 +41,7 @@
         <a href="{% url 'config_home' %}"
            class="btn btn-tertiary btn-control" role="button"
            data-async="true" >
-          {% icon "settings" size="sm" css_class="hi-icon-left" %}CONFIGURE
+          {% icon "settings" css_class="hi-icon-left" %}CONFIGURE
         </a>
       </div>
       {% endif %}

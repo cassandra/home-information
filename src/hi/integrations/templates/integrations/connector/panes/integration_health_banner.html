@@ -20,7 +20,7 @@ of the health-status UI.
 {% if health_status and not health_status.is_healthy %}
 <div class="alert {{ health_status.status_alert_class }} d-flex align-items-start mb-3 py-2"
      role="alert">
-  {% icon health_status.status_icon size="sm" css_class="mr-2 mt-1" %}
+  {% icon health_status.status_icon css_class="mr-2 mt-1" %}
   <div>
     <strong>{{ integration_label }}: {{ health_status.status_display }}</strong>
     {% if context_message %}

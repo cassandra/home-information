@@ -7,7 +7,7 @@
       <a href="{% url 'location_edit_location_view_add' %}"
          class="btn btn-add btn-control" role="button"
          data-async="modal" >
-        {% icon "plus" size="sm" css_class="hi-icon-left" %}ADD VIEW
+        {% icon "plus" css_class="hi-icon-left" %}ADD VIEW
       </a>
     </div>
     {% endif %}
@@ -22,14 +22,14 @@
         <a class="btn btn-primary btn-control" role="button"
            href="{% url 'location_edit_mode' location_id=request.view_parameters.location.id %}"
            data-async="true" >
-          {% icon "edit" size="sm" css_class="" %}
+          {% icon "edit" css_class="" %}
           {{ request.view_parameters.location.name|truncatechars:18 }}
         </a>
         {% else %}
         <a class="btn btn-primary btn-control" role="button"
            href="{% url 'location_edit_location_edit' location_id=request.view_parameters.location.id %}"
              data-async="true" >
-          {% icon "info-circle" size="sm" css_class="hi-icon-left" %}{{ request.view_parameters.location.name|truncatechars:18 }}
+          {% icon "info-circle" css_class="hi-icon-left" %}{{ request.view_parameters.location.name|truncatechars:18 }}
         </a>
         {% endif %}
       </div>
@@ -41,12 +41,12 @@
         {% if request.view_parameters.is_editing %}
         <a href="{% url 'edit_end' %}"
            class="btn btn-tertiary btn-control" role="button" >
-          {% icon "close" size="sm" css_class="hi-icon-left" %}EXIT EDIT
+          {% icon "close" css_class="hi-icon-left" %}EXIT EDIT
         </a>
         {% else %}
         <a href="{% url 'edit_start' %}"
            class="btn btn-tertiary btn-control" role="button" >
-          {% icon "edit" size="sm" css_class="hi-icon-left" %}EDIT
+          {% icon "edit" css_class="hi-icon-left" %}EDIT
         </a>
         {% endif %}
       </div>

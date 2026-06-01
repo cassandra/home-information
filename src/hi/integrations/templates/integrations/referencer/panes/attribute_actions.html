@@ -11,7 +11,7 @@ Context (inherited from the surrounding edit body):
 {% endcomment %}
 {% if integration_data.integration.is_enabled %}
 <span class="badge badge-success ml-3 px-2 py-1 align-self-center">
-  {% icon "check-circle" size="sm" css_class="hi-icon-left" %}ENABLED
+  {% icon "check-circle" css_class="hi-icon-left" %}ENABLED
 </span>
 {% comment %}
 DISABLE shares the surrounding attribute form (HTML forbids nested
@@ -24,10 +24,10 @@ ignores ``formaction``). Dispatch is via the ``action`` POST field
         value="disable"
         formnovalidate
         class="btn btn-outline-danger ml-2">
-  {% icon "close" size="sm" css_class="hi-icon-left" %}DISABLE
+  {% icon "close" css_class="hi-icon-left" %}DISABLE
 </button>
 {% else %}
 <span class="badge badge-secondary ml-3 px-2 py-1 align-self-center">
-  {% icon "info-circle" size="sm" css_class="hi-icon-left" %}DISABLED
+  {% icon "info-circle" css_class="hi-icon-left" %}DISABLED
 </span>
 {% endif %}

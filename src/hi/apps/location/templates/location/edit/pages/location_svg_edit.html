@@ -18,12 +18,12 @@
       <a href="{% url 'location_svg_edit_cancel' location_id=location.id %}"
          id="hi-location-svg-edit-cancel-link" class="btn btn-outline-tertiary mx-1" role="button"
          data-async="true">
-        {% icon "delete" size="sm" css_class="hi-icon-left" %}DISCARD
+        {% icon "delete" css_class="hi-icon-left" %}DISCARD
       </a>
       <a href="{% url 'location_svg_edit_exit' location_id=location.id %}"
          id="hi-location-svg-edit-exit-link" class="btn btn-primary mx-1" role="button"
          data-async="true">
-        {% icon "save" size="sm" css_class="hi-icon-left" %}DONE
+        {% icon "save" css_class="hi-icon-left" %}DONE
       </a>
     </div>
   </div>
@@ -70,7 +70,7 @@
       <a href="{% url 'location_svg_edit_help' %}"
          class="btn btn-tertiary text-nowrap mx-1" role="button"
          data-async="true">
-        {% icon "question-circle" size="sm" css_class="hi-icon-left" %}HELP
+        {% icon "question-circle" css_class="hi-icon-left" %}HELP
       </a>
     </div>
   </div>
@@ -80,13 +80,13 @@
      style="margin-top: var(--svg-editor-top-height);">
   {% if draft_resumed %}
   <div class="alert alert-info alert-dismissible fade show m-0 py-1 px-3 rounded-0" role="alert" style="font-size: 0.85rem;">
-    {% icon "info-circle" size="sm" css_class="hi-icon-left" %}
+    {% icon "info-circle" css_class="hi-icon-left" %}
     Resumed draft from previous session. Use CANCEL to discard.
     <button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>
   </div>
   {% endif %}
   <div id="{{ DIVID.LOCATION_SVG_EDIT_CONFORMANCE_WARNING }}" class="alert alert-warning alert-dismissible fade show m-0 py-1 px-3 rounded-0" role="alert" style="font-size: 0.85rem; display: none;">
-    {% icon "warning" size="sm" css_class="hi-icon-left" %}
+    {% icon "warning" css_class="hi-icon-left" %}
     Not all elements in this background are editable. It contains some imported content. Only elements added in this editor are editable.
     <button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>
   </div>

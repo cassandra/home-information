@@ -75,7 +75,7 @@
 <a id="hi-modal-cancel" role="button"
    class="btn btn-outline-tertiary"
    href="#"
-   onclick="location.reload(); return false;">{% icon "close" size="sm" css_class="hi-icon-left" %}Place Later</a>
+   onclick="location.reload(); return false;">{% icon "close" css_class="hi-icon-left" %}Place Later</a>
 {% endif %}
 {% endblock %}
 
@@ -91,6 +91,6 @@
 {% block action_right %}
 {% if sync_result.created_list and placement_url %}
 <a class="btn btn-primary" role="button"
-   href="{{ placement_url }}" data-async="modal">Place new items {% icon "chevron-right" size="sm" css_class="hi-icon-right" %}</a>
+   href="{{ placement_url }}" data-async="modal">Place new items {% icon "chevron-right" css_class="hi-icon-right" %}</a>
 {% endif %}
 {% endblock %}

@@ -27,11 +27,11 @@
           <div class="col-sm-9">
             {% if task_info.thread.is_alive %}
             <span class="text-success">
-              {% icon "check-circle" size="sm" css_class="mr-1" %}{{ task_info.thread_name }}
+              {% icon "check-circle" css_class="mr-1" %}{{ task_info.thread_name }}
             </span>
             {% else %}
             <span class="text-danger">
-              {% icon "warning" size="sm" css_class="mr-1" %}Dead
+              {% icon "warning" css_class="mr-1" %}Dead
             </span>
             {% endif %}
           </div>
@@ -42,15 +42,15 @@
           <div class="col-sm-9">
             {% if task_info.event_loop.exists and task_info.event_loop.is_running %}
             <span class="text-success">
-              {% icon "check-circle" size="sm" css_class="mr-1" %}Running ({{ task_info.event_loop.active_tasks }} active tasks)
+              {% icon "check-circle" css_class="mr-1" %}Running ({{ task_info.event_loop.active_tasks }} active tasks)
             </span>
             {% elif task_info.event_loop.exists %}
             <span class="text-warning">
-              {% icon "warning" size="sm" css_class="mr-1" %}Stopped
+              {% icon "warning" css_class="mr-1" %}Stopped
             </span>
             {% else %}
             <span class="text-danger">
-              {% icon "warning" size="sm" css_class="mr-1" %}Dead
+              {% icon "warning" css_class="mr-1" %}Dead
             </span>
             {% endif %}
           </div>

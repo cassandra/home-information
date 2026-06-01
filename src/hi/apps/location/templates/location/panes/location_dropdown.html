@@ -4,7 +4,7 @@
   <div class="dropdown">
     <button class="btn btn-outline-primary btn-control dropdown-toggle" type="button"
             id="hi-location-menu" data-toggle="dropdown">
-      {% icon "layers" size="sm" css_class="hi-icon-left" %}ALL SPACES
+      {% icon "layers" css_class="hi-icon-left" %}ALL SPACES
       <span class="caret"></span>
     </button>
     <div class="dropdown-menu"
@@ -14,7 +14,7 @@
          class="dropdown-item plain{% if location == request.view_parameters.location %} active{% endif %}"
          href="{% url 'location_switch' location_id=location.id %}">
         {% if location == request.view_parameters.location %}
-        {% icon "check-circle" size="sm" css_class="hi-icon-left" %}
+        {% icon "check-circle" css_class="hi-icon-left" %}
         {% endif %}
         {{ location.name }}
       </a>
@@ -28,7 +28,7 @@
       <a role="menuitem" class="dropdown-item dropdown-item-add"
          href="{% url 'location_edit_location_add' %}"
          data-async="modal">
-        {% icon "plus" size="sm" css_class="hi-icon-left" %}ADD NEW SPACE
+        {% icon "plus" css_class="hi-icon-left" %}ADD NEW SPACE
       </a>
       {% endif %}
     </div>

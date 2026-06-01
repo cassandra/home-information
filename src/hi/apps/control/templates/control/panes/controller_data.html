@@ -11,7 +11,7 @@
     {% if controller_data.error_list %}
     <div class="alert alert-danger d-flex align-items-start mt-2 py-2 small"
          role="alert">
-      {% icon "warning" size="sm" css_class="mr-2 mt-1" %}
+      {% icon "warning" css_class="mr-2 mt-1" %}
       <div>
         {% for msg in controller_data.error_list %}
         <div>{{ msg }}</div>

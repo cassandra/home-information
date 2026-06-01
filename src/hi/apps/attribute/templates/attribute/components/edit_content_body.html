@@ -51,12 +51,12 @@ by using the AttributeItemEditContext pattern.
                 class="btn btn-outline-primary d-inline-flex align-items-center {{ DIVID.ATTR_V2_UPDATE_BTN_CLASS }}"
                 name="action"
                 value="update">
-          {% icon "save" size="sm" css_class="hi-icon-left" %}
+          {% icon "save" css_class="hi-icon-left" %}
           {{ attr_page_context.update_button_label }}
         </button>
         {% elif attr_page_context.externally_managed_message %}
         <div class="attr-v2-externally-managed text-muted small d-inline-flex align-items-center">
-          {% icon "info-circle" size="sm" css_class="hi-icon-left" %}
+          {% icon "info-circle" css_class="hi-icon-left" %}
           {{ attr_page_context.externally_managed_message }}
         </div>
         {% endif %}

@@ -39,7 +39,7 @@
 <a class="btn btn-primary"
    href="{% url 'entity_edit' entity_id=entity_state.entity.id %}"
    data-async="modal">
-  {% icon "edit" size="sm" css_class="hi-icon-left" %}EDIT
+  {% icon "edit" css_class="hi-icon-left" %}EDIT
 </a>
 {% endblock %}
 
@@ -47,7 +47,7 @@
 <a class="btn btn-primary"
    href="{% url 'entity_status' entity_id=entity_state.entity.id %}"
    data-async="modal">
-  {% icon "info-circle" size="sm" css_class="hi-icon-left" %}STATUS
+  {% icon "info-circle" css_class="hi-icon-left" %}STATUS
 </a>
 {% endblock %}
 

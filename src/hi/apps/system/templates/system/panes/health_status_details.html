@@ -11,7 +11,7 @@
     <div class="col-12">
       <div class="d-flex align-items-center mb-3">
         <span class="badge monitor-status-badge {{ health_status.status_badge_class }} mr-3">
-          {% icon health_status.status_icon size="sm" css_class="mr-2" %}
+          {% icon health_status.status_icon css_class="mr-2" %}
           {{ health_status.status_display }}
         </span>
       </div>
@@ -77,7 +77,7 @@
     <div class="col-12">
       <div class="alert {{ health_status.status_alert_class }}">
         <p class="mb-0">
-          {% icon health_status.status_icon size="sm" css_class="mr-2" %}
+          {% icon health_status.status_icon css_class="mr-2" %}
           {{ health_status.status_summary_message }}
         </p>
       </div>
@@ -89,7 +89,7 @@
   <div class="row">
     <div class="col-12">
       <h6 class="mb-3">
-        {% icon "plug" size="sm" css_class="mr-2" %}
+        {% icon "plug" css_class="mr-2" %}
         API Sources
       </h6>
 
@@ -106,7 +106,7 @@
   <div class="row mt-4">
     <div class="col-12">
       <h6 class="mb-3">
-        {% icon "tasks" size="sm" css_class="mr-2" %}
+        {% icon "tasks" css_class="mr-2" %}
         Components
       </h6>
 

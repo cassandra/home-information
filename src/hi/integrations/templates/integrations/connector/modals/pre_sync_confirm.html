@@ -94,13 +94,13 @@ Check {{ integration_data.label }} for updates?
 <a class="btn btn-outline-primary"
    href="{% url 'integrations_connect_sync_preview' integration_id=integration_data.integration_id %}"
    role="button" data-async="modal">
-  {% icon "eye" size="sm" css_class="hi-icon-left" %}PREVIEW CHANGES
+  {% icon "eye" css_class="hi-icon-left" %}PREVIEW CHANGES
 </a>
 {% endif %}
 {% if removal_summary.has_mixed_state %}
 <button type="submit" class="btn btn-outline-danger ml-2"
         name="preserve_user_data" value="false">
-  {% icon "warning" size="sm" css_class="hi-icon-left" %}REMOVE MISSING
+  {% icon "warning" css_class="hi-icon-left" %}REMOVE MISSING
 </button>
 {% endif %}
 {% endblock %}
@@ -113,7 +113,7 @@ Check {{ integration_data.label }} for updates?
 {% elif removal_summary.has_mixed_state %}
 <button type="submit" class="btn btn-primary"
         name="preserve_user_data" value="true">
-  {% icon "shield" size="sm" css_class="hi-icon-left" %}RETAIN MISSING
+  {% icon "shield" css_class="hi-icon-left" %}RETAIN MISSING
 </button>
 {% else %}
 <button type="submit" class="btn btn-primary">

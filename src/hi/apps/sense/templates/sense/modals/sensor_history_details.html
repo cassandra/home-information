@@ -57,7 +57,7 @@ Sensor Response Details
 <a class="btn btn-primary"
    href="{% url 'entity_status' entity_id=sensor_history.sensor.entity_state.entity.id %}"
    data-async="modal">
-  {% icon "info-circle" size="sm" css_class="hi-icon-left" %}STATUS
+  {% icon "info-circle" css_class="hi-icon-left" %}STATUS
 </a>
 {% endblock %}
 
@@ -65,7 +65,7 @@ Sensor Response Details
 <a class="btn btn-primary"
    href="{% url 'entity_history' entity_id=sensor_history.sensor.entity_state.entity.id %}"
    data-async="modal">
-  {% icon "history" size="sm" css_class="hi-icon-left" %}HISTORY
+  {% icon "history" css_class="hi-icon-left" %}HISTORY
 </a>
 {% endblock %}
 

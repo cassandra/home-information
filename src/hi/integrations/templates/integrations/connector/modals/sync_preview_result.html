@@ -86,7 +86,7 @@ Preview: {{ sync_result.title }}
 {% if sync_result.detached_list %}
 <button type="submit" class="btn btn-outline-danger"
         name="preserve_user_data" value="false">
-  {% icon "warning" size="sm" css_class="hi-icon-left" %}REMOVE MISSING
+  {% icon "warning" css_class="hi-icon-left" %}REMOVE MISSING
 </button>
 {% endif %}
 {% endblock %}
@@ -95,7 +95,7 @@ Preview: {{ sync_result.title }}
 {% if sync_result.detached_list %}
 <button type="submit" class="btn btn-primary"
         name="preserve_user_data" value="true">
-  {% icon "shield" size="sm" css_class="hi-icon-left" %}RETAIN MISSING
+  {% icon "shield" css_class="hi-icon-left" %}RETAIN MISSING
 </button>
 {% else %}
 <button type="submit" class="btn btn-primary"

@@ -57,7 +57,7 @@ Individual attribute attribute card with value editing and actions
       
     {% else %}
       <h6 class="{{ DIVID.ATTR_V2_ATTRIBUTE_NAME_CLASS }}">
-        {% icon "plus" size="sm" css_class="hi-icon-left" %}Add New
+        {% icon "plus" css_class="hi-icon-left" %}Add New
       </h6>
     {% endif %}
 
@@ -116,7 +116,7 @@ Individual attribute attribute card with value editing and actions
                 class="{{ DIVID.ATTR_V2_DELETE_BTN_CLASS }}"
                 title="Delete attribute"
                 onclick="markAttributeForDeletion('{{ attribute_form.instance.pk }}', '#{{ attr_page_context.container_html_id }}')" >
-          {% icon "delete" size="sm" %}
+          {% icon "delete" %}
         </button>
         <button type="button" 
                 class="btn btn-sm btn-outline-warning {{ DIVID.ATTR_V2_UNDO_BTN_CLASS }}"

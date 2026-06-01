@@ -1,5 +1,5 @@
 {% load icons %}
-<div id="{{ DIVID.WEATHER_OVERVIEW }}">
+<div id="{{ DIVID.WEATHER_OVERVIEW }}" class="mx-2">
   <a class="clickable-card" href="{% url 'weather_current_conditions_details' %}" data-async="modal">
     {% include "weather/panes/conditions.html" with conditions=weather_overview_data.current_conditions_data weather_stats=weather_overview_data.todays_weather_stats %}
   </a>

@@ -10,7 +10,7 @@
             <div class="video-nav-tabs" role="tablist">
                 {% if entity.has_live_view %}
                 <span class="video-nav-tab active" role="tab">
-                    {% icon "video" size="sm" css_class="hi-icon-left" %}{% if entity.has_live_feed %}Live Stream{% else %}Snapshot{% endif %}
+                    {% icon "video" css_class="hi-icon-left" %}{% if entity.has_live_feed %}Live Stream{% else %}Snapshot{% endif %}
                 </span>
                 {% endif %}
                 {% if video_sensor %}
@@ -19,7 +19,7 @@
                    data-async="#main-content"
                    onclick="sessionStorage.setItem('navigatingFromLiveStream', 'true');"
                    role="tab">
-                    {% icon "history" size="sm" css_class="hi-icon-left" %}Event History
+                    {% icon "history" css_class="hi-icon-left" %}Event History
                 </a>
                 {% endif %}
             </div>

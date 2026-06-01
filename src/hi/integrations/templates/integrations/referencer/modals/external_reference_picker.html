@@ -67,7 +67,7 @@ Link Content
        class="btn btn-outline-tertiary"
        href="{{ owner_edit_url }}"
        data-async="modal">
-      {% icon "cancel" size="sm" css_class="hi-icon-left" %}CANCEL
+      {% icon "cancel" css_class="hi-icon-left" %}CANCEL
     </a>
     {% comment %}
     No ``data-async`` here: external-reference-picker.js owns the submit so it can
@@ -91,7 +91,7 @@ Link Content
       <button type="submit"
               class="btn btn-primary {{ DIVID.REF_PICKER_ATTACH_BTN_CLASS }}"
               disabled>
-        {% icon "check-circle" size="sm" css_class="hi-icon-left" %}<span class="{{ DIVID.REF_PICKER_ATTACH_LABEL_CLASS }}">Add 0 Links</span>
+        {% icon "check-circle" css_class="hi-icon-left" %}<span class="{{ DIVID.REF_PICKER_ATTACH_LABEL_CLASS }}">Add 0 Links</span>
       </button>
     </form>
   </div>

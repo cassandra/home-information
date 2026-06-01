@@ -116,9 +116,9 @@ Update check complete
 {% if primary_action %}
 <a class="btn btn-primary" href="{{ primary_action.1 }}">
   {% if primary_action.0.is_view %}
-  {% icon "edit" size="sm" css_class="hi-icon-left" %}REFINE
+  {% icon "edit" css_class="hi-icon-left" %}REFINE
   {% else %}
-  {% icon "view" size="sm" css_class="hi-icon-left" %}REVIEW
+  {% icon "view" css_class="hi-icon-left" %}REVIEW
   {% endif %}
   {{ primary_action.0.target_name }}
 </a>
