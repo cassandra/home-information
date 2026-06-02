@@ -22,6 +22,7 @@ This project has extensive custom commands for workflow automation. Use them pro
 
 ### Quality & Maintenance Commands
 - **`/commit "message"`** - Smart commits following project standards
+- **`/comments`** - Pre-PR comment analysis and rewrites
 - **`/review`** - Pre-PR quality preparation with expert analysis
 - **`/pr "title"`** - Pull request creation with proper template
 - **`/respond 112`** - Systematic PR feedback response
@@ -58,7 +59,7 @@ This project has extensive custom commands for workflow automation. Use them pro
 - **When in doubt:** Check `docs/dev/workflow/workflow-guidelines.md` for process questions
 
 ### AI Behavior Patterns
-- **Quality over speed** - use well-factored solutions, not first working code
+- **Quality over speed** - use well-factored solutions, not fastest working code
 - **Reference documentation** - commands point to authoritative sources
 - **Escalate when stuck** - pause after 3 attempts on difficult problems
 - **No Claude attribution** - keep commit messages and PR descriptions project-focused
@@ -66,7 +67,6 @@ This project has extensive custom commands for workflow automation. Use them pro
 ## Core Development Standards
 
 ### Essential Technical Requirements
-- **All files must end with newline** (prevents W391 linting failures)
 - **All imports at file top** (never inside functions/methods)
 - **Use `/bin/rm` not `rm`** (avoid interactive prompts)
 
@@ -83,18 +83,18 @@ This project has extensive custom commands for workflow automation. Use them pro
 - **Trust the process** - commands implement project best practices
 
 ## Tone and Behavior
-- **Criticism is welcome** Please tell me when I am wrong or mistaken, or even when you think I might be wrong or mistaken.
-- **Correct** Please tell me if there is a better approach than the one I am taking.
-- **Be concise** I will let you know when I need longer explanations.
-- **Do not flatter** Do not give compliments unless I am specifically asking for your judgement.
-- **Ask**  Feel free to ask many questions. If you are in doubt of my intent, don't guess. Ask.
+- **Criticism is welcome** - Please tell me when I am wrong or mistaken, or even when you think I might be wrong or mistaken.
+- **Correct** - Please tell me if there is a better approach than the one I am taking.
+- **Be concise** - I will let you know when I need longer explanations.
+- **Do not flatter** - Do not give compliments unless I am specifically asking for your judgement.
+- **Ask** -  Feel free to ask many questions. If you are in doubt of my intent, don't guess. Ask.
 
 ## Key Project References
 
-- **Project Structure** `docs/dev/shared/project-structure.md`
-- **Workflows:** `docs/dev/workflow/workflow-guidelines.md`
-- **Testing:** `docs/dev/testing/testing-guidelines.md`
-- **Coding Standards:** `docs/dev/shared/coding-standards.md`
-- **Architecture:** `docs/dev/shared/architecture-overview.md`
+- **Project Structure** - `docs/dev/shared/project-structure.md`
+- **Workflows:** - `docs/dev/workflow/workflow-guidelines.md`
+- **Testing:** - `docs/dev/testing/testing-guidelines.md`
+- **Coding Standards:** - `docs/dev/shared/coding-standards.md`
+- **Architecture:** - `docs/dev/shared/architecture-overview.md`
 
 Commands automatically reference these documents - no need to read them manually unless working outside command workflows.

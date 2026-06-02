@@ -16,7 +16,7 @@ You may use, modify, and distribute the software **only** if you comply with the
 
 The MIT License text is included below:
 ``` text
-Copyright 2025, Anthony R. Cassandra
+Copyright 2025, 2026, Anthony R. Cassandra
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of
 this software and associated documentation files (the "Software"), to deal in
@@ -40,7 +40,7 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 Any **commercial use** of this software **requires a separate license** from:
 
-POMDP, Inc.
+POMDP, LLC
 
 Commercial use includes, but is not limited to:
 - Using the software in a proprietary product

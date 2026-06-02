@@ -45,6 +45,7 @@ The install script automatically handles everything: Docker setup verification, 
 - Upload and organize manuals, warranties, and documents by location
 - Store notes and specifications for every item in your home
 - Track maintenance histories and repair records
+- Link to information stored in other apps like [Paperless-ngx, HomeBox and Immich](docs/Integrations.md)
 
 **Visual Organization:**
 - Position items exactly where they belong on floor plans or property maps
@@ -54,10 +55,10 @@ The install script automatically handles everything: Docker setup verification, 
 **Home Automation Integration:**
 - Control lights, switches, and devices through [Home Assistant](docs/Integrations.md)
 - Monitor device states and histories
-- Set up automated alerts, rules and triggers
+- Set up automated alerting rules
 
 **Security & Monitoring:**
-- Integrate with [ZoneMinder](docs/Integrations.md) for camera management
+- Integrate with [Frigate or ZoneMinder](docs/Integrations.md) for camera management
 - Visual security zone monitoring with color-coded status
 - Email alerts and customizable alarm sounds
 - Browse video event histories
@@ -70,8 +71,9 @@ See the complete [Features List](docs/Features.md) for details.
 
 **What's Working:**
 - Full information management and visual organization
-- Home Assistant and ZoneMinder integrations
-- Security monitoring and alerts
+- Floor plan editor
+- Home Assistant, Frigate, Paperless-ngx, HomeBox, Immich and ZoneMinder integrations
+- Security modes, monitoring and alerts
 - Multi-location and multi-view support
 
 **What's Evolving:**

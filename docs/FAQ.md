@@ -5,7 +5,7 @@
 ## Getting Started
 
 ### Q: How long does it take to set up?
-**A:** Basic installation takes 5-10 minutes if you have Docker installed. Setting up your first location and adding a few items takes another 15-30 minutes. You can start simple and build up your information over time - there's no need to do everything at once.
+**A:** Basic installation takes just a few minutes if you have Docker installed. Setting up your first location and adding a few items takes another 15-30 minutes. You can start simple and build up your information over time - there's no need to do everything at once.
 
 ### Q: Do I need to be technical to use this?
 **A:** The installation requires basic command line usage and Docker, but once it's running, the interface is point-and-click. If you're comfortable installing apps on your computer, you can handle the setup. We're working on making installation even simpler for future versions.
@@ -58,17 +58,20 @@ We also provide some helper scripts [Helper Scripts README](../scripts/README.md
 
 ## Integrations & Compatibility
 
-### Q: Do I need Home Assistant, ZoneMinder, or HomeBox to use this?
+### Q: Do I need Home Assistant, Frigate, HomeBox, etc. to use this?
 **A:** No, integrations are completely optional. Home Information provides value as a standalone information management system. Integrations add device control, monitoring, and inventory management capabilities when you want them.
 
 ### Q: Will it work with my existing smart home setup?
-**A:** If your devices work with Home Assistant, they'll integrate well. Home Assistant supports hundreds of device types and protocols. For security cameras, ZoneMinder integration works with most IP cameras and many older CCTV systems. For home inventory tracking, HomeBox items can be imported and displayed on your home layout.
+**A:** If your devices work with Home Assistant, they'll integrate well. Home Assistant supports hundreds of device types and protocols. For security cameras, Frigate and ZoneMinder integrations work with most IP cameras and many older CCTV systems. 
+
+### Q: What if I already have a lot of data in Paperless-ngx, HomeBox, etc.?
+**A:** For home inventory tracking, HomeBox items can be connected and displayed on your home layout. Documents from Paperless-ngx and images from Immich can be linked to any item in the Home Information views.
 
 ### Q: What if my devices aren't supported?
 **A:** You can still use Home Information for documentation and information management about those devices. As the project grows, we'll add more integrations based on user demand.
 
 ### Q: Can I use it with cloud-based home automation?
-**A:** The philosophy of Home Information aligns best with local-control systems, but you can still use it to organize information about cloud-based devices. Direct integration would require additional development.
+**A:** The philosophy of Home Information aligns best with local-control systems and we have focused on integrations with similar philsophies. Cloud-based integrations may be added if there is demand, but would require additional development.
 
 ## Comparison with Alternatives
 
@@ -79,12 +82,12 @@ We also provide some helper scripts [Helper Scripts README](../scripts/README.md
 **A:** Home Assistant is excellent for device control but wasn't designed for information management. Home Information complements Home Assistant by providing the spatial organization and document management that makes device control more meaningful.
 
 ### Q: How does this compare to property management software?
-**A:** Most property management tools are designed for landlords managing multiple properties, not homeowners managing their own home. Home Information focuses on the day-to-day information needs of people living in their space.
+**A:** Most property management tools are designed for landlords managing multiple properties, not homeowners managing their own home. Home Information focuses on the day-to-day information needs of people living in their space with s special focus on spatial organization of that data.
 
 ## Future Development
 
 ### Q: What integrations are planned next?
-**A:** We're guided by user demand. Popular requests include SmartThings, Hubitat, Blue Iris (cameras), and various IoT sensors. The integration architecture makes adding new systems straightforward.
+**A:** We're guided by user demand and we have a few candidates on our roadmap. The integration architecture makes adding new systems straightforward.
 
 ### Q: Will there be a mobile app?
 **A:** The web interface works well on mobile devices, but we're considering a dedicated mobile app for quick access and notifications when away from home.
@@ -118,4 +121,4 @@ We also provide some helper scripts [Helper Scripts README](../scripts/README.md
 **A:** To create the missing piece that makes home technology actually useful for managing daily life. We want to bridge the gap between device-centric automation and people-centric information management.
 
 ### Q: Is it really free?
-**A:** Yes, Home Information is open source software released under the MIT license. You can use it freely, modify it, and even redistribute it. There are no subscription fees or premium tiers.
+**A:** Yes, Home Information is open source software released under the MIT license for personal use. You can use it freely, modify it, and even redistribute it. There are no subscription fees or premium tiers.

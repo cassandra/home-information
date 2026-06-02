@@ -21,7 +21,7 @@ After clicking the add button, you will see an icon for the refrigerator in the 
 
 <img src="img/editing/first-item-center-1024x768.png" alt="Home Information Initial Item" width="350">  <img src="img/editing/first-item-moved-scaled-1024x768.png" alt="Home Information Moved Item" width="350"> 
 
-When selecting an item, the right side of the screen changes to show the layout details of that item. Clicking the "X" in the upper right of that area returns the side view to allow adding more items.
+When selecting an item, the right side of the screen changes to show the layout details of that item. Clicking the "Items tab returns the side view to allow adding more items.
 
 There are many options for adjusting the layout of an item. See the "EDIT HELP" button on the bottom right of the screen for more information.
 
@@ -45,7 +45,7 @@ You are not limited to square shapes either. With a dot or line selected, press 
 
 ### Line Items
 
-Another type of item is like an area, but for representing linear items. For example, suppose you have underground electric service and would like to show where the underground line runs. 
+Another type of item is like an area, but for representing linear items. For example, suppose you have underground electric service and would like to show where the underground line runs on sopme utilities view. 
 
 Click "ADD NEW ITEM", give it the name "Electric Service Line", choose the "Electric Wire Line" type and click the "ADD" button. 
 
@@ -60,14 +60,14 @@ As with the area items, clicking it will give you the ability to edit by moving 
 
 Not every item you may want to keep information about will make sense to have a specific location. For example, power tools and small appliances are items that you may have user manuals, replacement part info, etc.  Though you could add them as we have been doing, sometimes you just want to keep a list of these "movable" items.
 
-A "collection" can be used to put items into meaningful groups, like "Small Appliances" or "Power Tools".  The bottom left of the screen will show all the defined collections, though we need to add some first by clicking the "ADD" button which brings up a dialog.
+A "collection" can be used to put items into meaningful groups, like "Small Appliances" or "Power Tools".  The bottom left of the screen will show all the defined collections, though we need to add some first by clicking the "ADD COLLECTION" button on the bottom left which brings up a dialog.
 
 <img src="img/editing/new-collection-button-1024x768.png" alt="Home Information Adding Collection" width="250"> 
 <img src="img/editing/add-collection-modal-1024x768.png" alt="Home Information Adding Collection" width="300">
 
 A few notes about this dialog:
-- The "Display" can be a List or Grid view, depending on your preferences.
-- The "Order Id" just defines the order they will appear at the bottom of the screen.
+- The "Display" can be a List, Grid, etc. view, depending on your preferences.
+- The "Order Id" just defines the order their buttons will appear at the bottom of the screen.
 - You can optionally represent the entire collection as one item in the graphical view if you want.
 
 After adding, you will now see a button for the new collection at the bottom left. Clicking the button will change the main center view from the graphical view to the collection view.  Here we could add existing items by clicking the checkboxes on the right panel.  Note that any items you add can appear in the graphical view, the collection or both and you can easily toggle them on and off with a click of those checkboxes on the right.
@@ -82,7 +82,7 @@ However, since we have not added any small appliances yet, we can go and do this
 
 So far, we have seen just the one "view".  As more and more items are added, a single screen can get cluttered, often with a mix of concerns that would be better separated.  We can add as many different views as we need to do this.  Each view can define which items do an do not appear in the view and you can switch between views with the top left buttons.  An item can appear in just one or multiple views and/or multiple collections.
 
-By default, you will see there is just one view created called "All".  In editing mode you will also see the "ADD" button to create new views.  Let's suppose we want to have a view that just focuses on the items in the Kitchen area. Click the "ADD" button, given it a name in the dialog and then you will see a new button and a new, but empty view.
+By default, you will see there is just one view created called "All".  In editing mode you will also see the "ADD VIEW" button on the top left to create new views.  Let's suppose we want to have a view that just focuses on the items in the Kitchen area. Click the "ADD VIEW" button, given it a name in the dialog and then you will see a new button and a new, but empty view.
 
  <img src="img/editing/new-location-view-button-1024x768.png" alt="Home Information New Space View" width="350"> &nbsp; <img src="img/editing/add-location-view-modal-1024x768.png" alt="Home Information New Space View" width="350">
 
@@ -96,7 +96,7 @@ This is a good start, but we'd also like to zoom in to focus just on that kitche
 
 However, most of the time, zooming and moving the view is done on a temporary basis as you move around the view. For the Kitchen view, we want to have this change permanent, so we need to enter the view editing pane in order for changes to be saved.
 
-Near the top right, there is the "View: Kitchen" label and a "EDIT" button to its right.  That is how to enter the editing mode for this view to make any zooming and moving permanent. 
+Click the **View** tab on the side panel to edit the view.  You need to be in editing mode for this view to make any zooming and moving permanent. 
 
 <img src="img/editing/new-location-view-edit-zoomed-1024x768.png" alt="Home Information Space View Edit" width="350">
 
@@ -108,17 +108,17 @@ The views we've seen so far are all defined with respect to a single "Space", wh
 
 However, if you have a two-story house, an attic or basement, you may want to define two or three spaces, so you can place items in a more logical place.  For example, if your Air Conditioner's Air Handler is in your attic and you want to keep information about it, it would make sense to define an "Attic" space and represent it there instead of placing it on the floor below.
 
-When in editing mode, there is a space drop-down on the top right that allows you to add a new space.  This opens a dialog and you give it a name and an optional SVG background image and from then on can change to that space with the drop-down.
+When in editing mode, click the **ALL SPACES** drop-down near the top right  and select the **ADD NEW SPACE** item. This opens a dialog where you can you give it a name. From then on can change to that new space with the **ALL SPACES** drop-down.
 
 <img src="img/editing/new-location-drop-down-1024x768.png" alt="Home Information New Space" width="250"> &nbsp; <img src="img/editing/add-location-modal-1024x768.png" alt="Home Information Space Dialog" width="250"> &nbsp; <img src="img/editing/new-location-added-drop-down-1024x768.png" alt="Home Information Space Menu" width="250">
 
-Below is the Attic space's view after using a custom SVG background and adding the A/C Air Handler, some control wire routes, exhaust fans and a skylight.
+Below is the Attic space's view after using one of the predefined template SVG backgrounds and adding the A/C Air Handler, some control wire routes, exhaust fans and a skylight.
 
 <img src="img/editing/new-location-alt-svg-1024x768.png" alt="Home Information Attic Space" width="350">
 
 ## Custom Background Images
 
-When creating a new space, you get a blank floor plan background to start. You can then customize this by using the Background Editor, choosing from a list of predefined templates or even upload your own SVG background image.
+When creating a new space, you get a blank floor plan background to start. You can then customize this by using the Floor Plan Editor, choosing from a list of predefined templates or even upload your own SVG background image.
 
 <img src="img/editing/location-layout-edit-button-1024x768.png" alt="location-layout-edit-button-1024x768.png" width="250" /> &nbsp; <img src="img/editing/location-layout-edit-1024x768.png" alt="location-layout-edit-1024x768.png" width="400" />
 

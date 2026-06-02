@@ -16,7 +16,7 @@ We welcome all kinds of contributions! Whether you want to use the software and 
 ### 2. Join the Community (2 minutes)  
 - Star the repository on GitHub
 - Watch the repository for updates on issues and discussions
-- Check out our [Roadmap](https://github.com/users/cassandra/projects/1/views/3?sliceBy%5Bvalue%5D=Todo&sortedBy%5Bdirection%5D=asc&sortedBy%5BcolumnId%5D=168748500&visibleFields=%5B%22Title%22%2C168748500%2C%22Assignees%22%2C168599747%2C168599748%2C168599745%2C168599746%2C168599744%2C168603197%5D) to see where we're heading
+- Check out our [Roadmap](https://github.com/users/cassandra/projects/1/views/3?visibleFields=%5B%22Title%22%2C168603197%2C168748500%2C%22Assignees%22%2C%22Labels%22%2C%22Status%22%5D) to see where we're heading
 
 ### 3. Make Your First Contribution
 Choose what appeals to you:

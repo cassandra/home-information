@@ -1,4 +1,4 @@
-<img src="../../src/hi/static/img/hi-logo-w-tagline-197x96.png" alt="Home Information Logo" width="128">
+<img src="../src/hi/static/img/hi-logo-w-tagline-197x96.png" alt="Home Information Logo" width="128">
 
 # Features
 
@@ -13,7 +13,7 @@ Home Information provides comprehensive tools for organizing, monitoring, and co
 ### Spatial Data Organization
 - **Position items visually** on floor plans or property maps
 - **Multiple location support** - separate views for different floors, attic, basement, or outdoor areas
-- **Custom background images** - upload floor plans, property surveys, or photos of your actual spaces
+- **Custom background images** - edit your floor plans, upload property surveys/photos of your actual spaces
 - **Flexible item types** - individual items (appliances, fixtures), areas (pool, garden), or linear features (electrical lines, plumbing)
 
 **Real-world benefit:** Instead of searching through folders for "kitchen appliance info," you click on your kitchen and see all relevant information right where you'd expect it.
@@ -31,13 +31,16 @@ Home Information provides comprehensive tools for organizing, monitoring, and co
 - **Collections** - organize portable items like tools, small appliances, or seasonal decorations
 - **Zoom and focus** - save specific view settings for easy navigation to areas of interest
 
-**Perfect for:** Managing complex properties where a single view becomes cluttered, or focusing on specific systems (like showing only HVAC-related items).
+**Perfect for:** Managing complex properties where a single view becomes cluttered, or focusing on specific systems (like showing only HVAC-related items, utilties, irrigation system).
+
+### Content Linking
+- **Paperless-ngx** - Link documents and images to any items on your floor plan
+- **Immich** - Link images and videos to any items on your floor plan
 
 ### HomeBox Inventory Integration
-- **Item synchronization** - automatically import items from HomeBox into your home layout
+- **Item synchronization** - automatically link items from HomeBox into your home layout
 - **Attribute display** - view item details, warranties, purchase info, and custom fields
 - **Attachment support** - access documents and photos attached to HomeBox items
-- **Managed attributes** - HomeBox-sourced attributes are read-only to avoid conflicting edits
 
 **Use case example:** You track all your appliances and tools in HomeBox. Home Information pulls them in so you can position them on your floor plan alongside your smart home devices, giving you a complete view of everything in your home.
 
@@ -51,7 +54,7 @@ Home Information provides comprehensive tools for organizing, monitoring, and co
 - **Historical data** - device state change histories and usage patterns
 - **Automated rules** - create rules that raise alerts or run actions when entity states match defined conditions
 
-**Real-world benefit:** Instead of opening a separate app and navigating device lists, you see device status right on your home map and control them in context.
+**Real-world benefit:** Instead of opening a separate app and navigating device lists, you see device status right on your home map and control them in context with a single tap.
 
 <img src="img/screenshots/automation-view-1024x768.png" alt="Automation View Example" width="400">
 
@@ -65,7 +68,7 @@ Home Information provides comprehensive tools for organizing, monitoring, and co
 ### Weather & Environmental Data
 - **Local weather integration** - current conditions and forecasts using your exact coordinates
 - **Astronomical data** - sunrise/sunset, moon phases for outdoor lighting and security planning
-- **Integration with local sensors** - if you have weather stations or environmental monitoring
+- **Integration with local sensors** - if you have weather stations or environmental monitoring (future)
 
 ## Security & Monitoring
 
@@ -76,12 +79,12 @@ Home Information provides comprehensive tools for organizing, monitoring, and co
 - **Multi-mode support** - different security profiles (Home, Away, Sleep) with different zone configurations
 - **Historical security data** - track arm/disarm events, sensor triggers, and security system activity
 
-**Real-world benefit:** At a glance, see which areas of your home are secured and quickly identify any issues without navigating through security system menus.
+**Real-world benefit:** At a glance, see which areas of your home are secured and quickly identify any issues without navigating through security system menus. Set up different alerting rules for when you are home, away or at night.
 
-### ZoneMinder Camera Integration
+### Frigate and ZoneMinder Camera Integration
 - **Camera positioning** - place camera icons exactly where cameras are located and define the areas they cover
 - **Live stream access** - click on camera icons to view live feeds
-- **Event browsing** - review motion detection events and recordings
+- **Event browsing** - review object and motion detection events and recordings
 - **Auto-viewing** - automatically display relevant camera feeds when alarms trigger
 
 **Use case example:** Motion sensor triggers in the backyard. The system automatically shows you the backyard camera feed while logging the event and can send email alerts with relevant information.
@@ -117,6 +120,7 @@ Home Information provides comprehensive tools for organizing, monitoring, and co
 
 ### Editing & Administration
 - **Visual editing mode** - drag and drop items, resize, and reshape areas
+- **Floor Plan Editor** - integrated editor for creating custom floor plans to match your home
 - **Bulk operations** - efficiently manage multiple items or data imports
 - **User management** - multiple user accounts with different access levels (optional)
 - **Backup & restore** - keeps history of all information changes and one-click restoring
@@ -131,14 +135,17 @@ Home Information provides comprehensive tools for organizing, monitoring, and co
 
 ### Current Integrations
 - **Home Assistant** - Complete integration with the popular open-source home automation platform
-- **ZoneMinder** - Full-featured security camera management
+- **Frigate** - Full-featured security camera management with object detection
+- **Paperless-ngx** - Full featured document management, OCR, search.
 - **HomeBox** - Home inventory management and item tracking
+- **Immich** - Rich image and photo album management
+- **ZoneMinder** - Full-featured security camera management with motion detection
 - **Weather APIs** - National Weather Service and OpenMeteo for local conditions
 
 ### Integration Architecture
 - **API-based** - clean interfaces for adding new integrations
 - **Local-first** - integrations work within your network, no cloud dependencies required
-- **Modular design** - enable only the integrations you need
+- **Modular design** - enable only the integrations you need (or none at all)
 
 ### Data Management
 - **Local storage** - all data stays on your devices using SQLite

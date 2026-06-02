@@ -40,4 +40,4 @@ bring the items back you would need to re-import.
   HomeBox inventory into HI as locally-owned items, with custom
   fields and attached files preserved.
 
-More integrations will offer Data Import as the framework matures.
+More integrations will offer Data Import based on user feedback.

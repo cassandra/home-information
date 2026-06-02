@@ -14,8 +14,7 @@ If you'd rather not draw your own, you can pick from a set of predefined templat
 The floor plan is the background image for each Space (Location) in the app. To create or change it:
 
 1. Enter **Edit Mode** using the Edit button
-2. Select the Space you want to edit in the header dropdown
-3. Click to edit the Space (next to header dropdown)
+2. Switch to the **Space** tab in the sidebar
 4. Click the **BACKGROUND IMAGE** button in the Space properties panel sidebar
 5. Choose **Edit Current** to open the floor plan editor from modal selection
 
