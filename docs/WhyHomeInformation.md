@@ -23,41 +23,34 @@ Modern homes are more complex than ever. Between smart devices, security systems
 
 ## The Home Information Approach
 
-**Spatial Organization:** We organize information the way you think about your home - by location and context. Click on your kitchen, see everything kitchen-related. Click on your HVAC unit, see its manual, service history, and current status all in one place.
+**Spatial Organization:** We organize information the way you think about your home - by location and context. Draw your floor plan right in the app or upload one you already have, then click your kitchen to see everything kitchen-related, or click your HVAC unit to see its manual, service history, and current status all in one place.
 
 **Information-First Design:** Instead of starting with devices and adding information as an afterthought, we start with information and integrate device control where it makes sense.
 
-**Single Pane of Glass:** One interface that brings together documents, maintenance records, device controls, security monitoring, and any other home-related information you need to track.
+**Single Pane of Glass:** One interface for your documents, maintenance records, device controls, and security monitoring. Home Information works fully on its own - and if you already run other self-hosted apps, it brings them into the same spatial view instead of replacing them.
 
 ## Real-World Use Cases
 
 ### The Organized Homeowner
 *Sarah wants to maintain her home proactively but struggles with scattered information.*
 
-**Before:** Maintenance schedules in a phone app, manuals in a filing cabinet, warranty info in email, service company contacts in an address book, and no systematic way to track what's been done when.
+**Before:** Maintenance schedules in a phone app, manuals in a filing cabinet, warranty info in email, service contacts in an address book - and no systematic way to track what's been done when.
 
-**After:** Click on the HVAC unit in her Home Information view to see the manual, service history, warranty expiration, scheduled maintenance reminders, and the HVAC company's contact info. Everything needed to maintain that system in one logical place.
+**After:** She clicks the HVAC unit to see its manual, service history, warranty expiration, and the installer's contact - everything needed to maintain that system in one logical place. It all lives in Home Information; no other apps required.
 
-### The Tech-Savvy Family
-*The Johnsons have invested in home automation and security but find managing it overwhelming.*
+### The Tech-Savvy Household
+*The Johnsons already run several self-hosted apps but find managing them overwhelming.*
 
-**Before:** Home Assistant app for device control, ZoneMinder for cameras, separate apps for different smart devices, paperwork scattered everywhere, and no unified view of what's happening in their home.
+**Before:** Home Assistant for devices, Frigate for cameras, Paperless-ngx for documents, Immich for photos, HomeBox for inventory - great apps, but five separate windows and nothing tied to where things actually are.
 
-**After:** Their Home Information interface shows their home layout with all devices positioned where they actually are. Click on any room to see device status, control options, and relevant documentation. Security events and camera feeds integrate naturally with the spatial layout.
+**After:** One floor plan shows it all in context. Click a room to control devices, review camera events, and open the right manual or photo - pulled live from the apps they already run. Home Information ties them together rather than replacing them.
 
-### The New Homeowner
-*Mike just bought his first house and feels overwhelmed by everything he needs to track.*
+### The Remote Owner
+*Lisa owns a mountain cabin she visits monthly and needs to monitor it remotely.*
 
-**Before:** A box of random paperwork from the previous owner, phone photos of model numbers, scattered bookmarks for online manuals, and no systematic way to understand what he actually owns.
+**Before:** Worrying about what might go wrong while away, difficult to check on systems remotely, and awkward handoffs to caretakers or repair services.
 
-**After:** Systematically builds his Home Information database by adding items room by room, uploading manuals and warranty info as he discovers it, and creating a comprehensive record he can reference and build upon.
-
-### The Vacation Home Owner
-*Lisa owns a mountain cabin she visits monthly and needs to monitor remotely.*
-
-**Before:** Worrying about what might go wrong while away, difficult to check on systems remotely, and complicated handoff of information to caretakers or repair services.
-
-**After:** Integrated monitoring through security cameras and home automation, with all system information and service contacts readily available. Can quickly check status, review historical data, and provide comprehensive information to service providers when needed.
+**After:** She checks system status and camera events from anywhere, with every service contact and manual a click away when something needs attention.
 
 ## Key Differentiators
 
@@ -69,7 +62,7 @@ Modern homes are more complex than ever. Between smart devices, security systems
 ### vs. Generic Information Management Tools
 - **Spatial organization matches how you think about your home**
 - **Purpose-built for home management use cases**
-- **Integrates monitoring and control capabilities**
+- **Optional integrations bring your other apps into the same view**
 
 ### vs. Maintenance Tracking Apps
 - **Visual, contextual interface rather than lists and forms**
@@ -82,7 +75,7 @@ We believe home technology should make life simpler, not more complex. That mean
 
 **Starting with your mental model** - How do you think about your home? By rooms, by systems, by priorities. Not by manufacturers or device categories.
 
-**Progressive enhancement** - Start simple with just information management. Add integration and automation as it provides value, not because the technology exists.
+**Progressive enhancement** - Start with information management alone. Layer in device control, security, and connections to apps like Paperless-ngx or Frigate only as they add value. Integrations are always optional - Home Information works fully without any of them.
 
 **Ownership and control** - Your home information stays in your home, under your control. No cloud dependencies for core functionality.
 

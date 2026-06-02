@@ -1,16 +1,13 @@
 <img src="../../src/hi/static/img/hi-logo-w-tagline-197x96.png" alt="Home Information Logo" width="128">
 
-# HomeBox
+# <img src="../../src/hi/static/img/integrations/homebox.svg" alt="HomeBox Logo" width="36"> HomeBox
 
 ## Overview
 
 HomeBox is an open-source home inventory system for tracking
 household items, warranties, and documentation. The HomeBox
-integration imports each HomeBox item into Home Information (HI) as
-an HI item with the metadata and custom fields exposed as read-only
-attributes; attached files (manuals, receipts, photos) are
-downloaded alongside. HomeBox is an inventory source — items are
-not controllable, and there are no sensors or events.
+integration connects or imports each HomeBox item into Home Information (HI) as
+an HI item with the metadata, custom fields and attached files (manuals, receipts, photos). When used as a **Connector**, HomeBox items are shown as read-only and track to HomeBox as the source of truth. When used as a **Data Importer**, HomeBox items are copied into HI and become editable, but do not track to the original HomeBox items (HI becomes the source of truth).
 
 ## Prerequisites
 
@@ -48,6 +45,7 @@ HomeBox web interface — there is no separate API token to obtain.
 
 To pick up changes from HomeBox later (new items, renames,
 removals), click **UPDATE** on the integration's manage page.
+
 
 ## Troubleshooting
 

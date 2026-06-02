@@ -1,13 +1,13 @@
 <img src="../../src/hi/static/img/hi-logo-w-tagline-197x96.png" alt="Home Information Logo" width="128">
 
-# Frigate
+# <img src="../../src/hi/static/img/integrations/frigate.png" alt="Frigate Logo" width="36"> Frigate
 
 ## Overview
 
 [Frigate](https://frigate.video/) is an open-source NVR with built-in
 object detection. The Frigate integration imports each Frigate camera
 into **Home Information (HI)** as a camera item with an
-object-presence sensor. **HI** consumes Frigate's HTTP API only (no
+object-presence sensor and alerting area. **HI** consumes Frigate's HTTP API only (no
 MQTT). It best serves users who want their security-camera events to
 participate in HI's spatial display and rule-based alarms alongside
 other integrations.

@@ -3,12 +3,12 @@
 # Integrations
 
 Home Information (HI) can optionally connect to external systems to
-import items from them — alongside your own items and items from any
+connect items from them — alongside your own items and items from any
 other integrations you enable. Integrations are not required; HI
 works without any of them. Each integration has its own setup steps,
 credentials, and caveats — see the per-integration page for details.
 
-You will need credentials for the upstream service before starting;
+You will usually need credentials for the upstream service before starting;
 the per-integration pages below cover what to obtain and where to
 enter it.
 
@@ -16,9 +16,9 @@ enter it.
 
 Most integrations are configured from the **Connectors** tab on the
 Configure page. Content-source integrations (Paperless-ngx and
-Immich) are configured from the **Content Sources** tab instead,
-because they contribute searchable references rather than importing
-items — see each integration's own page for the walkthrough.
+Immich) are configured from the **Content Sources** tab ,
+because they link external documents/images to existing items rather than creating new
+connected items — see each integration's own page for the walkthrough.
 
 For a Connectors-tab integration:
 
@@ -38,12 +38,14 @@ For a Connectors-tab integration:
   home automation platform. Imports HA entities (lights, switches,
   sensors, cameras, climate devices, and more) and dispatches control
   actions back to HA.
-- **[ZoneMinder](integrations/zoneminder.md)** — open-source video
-  surveillance. Imports ZM monitors as cameras with motion sensors and
-  function controllers; provides live stream playback in HI.
 - **[Frigate](integrations/frigate.md)** — open-source NVR with
   object detection. Imports Frigate cameras with an object-presence
   sensor that drives event playback in HI.
+- **[Paperless-ngx](integrations/paperless-ngx.md)** — document
+  management. Does not import items; instead lets you search
+  paperless from inside HI and attach matching documents (warranty
+  PDFs, manuals, receipts) as link references on items and
+  Locations you already have.
 - **[HomeBox](integrations/homebox.md)** — home inventory tracking.
   Imports HomeBox items as read-only HI items with custom fields and
   attached files (manuals, receipts, photos).
@@ -52,11 +54,9 @@ For a Connectors-tab integration:
   from inside HI and attach matching assets (appliance photos, room
   snapshots, serial-plate shots) as link references on items and
   Locations you already have.
-- **[Paperless-ngx](integrations/paperless-ngx.md)** — document
-  management. Does not import items; instead lets you search
-  paperless from inside HI and attach matching documents (warranty
-  PDFs, manuals, receipts) as link references on items and
-  Locations you already have.
+- **[ZoneMinder](integrations/zoneminder.md)** — open-source video
+  surveillance. Imports ZM monitors as cameras with motion sensors and
+  function controllers; provides live stream playback in HI.
 
 More integrations will be added as demand arises. The per-integration
 pages each carry their own troubleshooting section that accretes

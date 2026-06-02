@@ -1,6 +1,6 @@
 <img src="../../src/hi/static/img/hi-logo-w-tagline-197x96.png" alt="Home Information Logo" width="128">
 
-# ZoneMinder
+# <img src="../../src/hi/static/img/integrations/zoneminder.png" alt="ZoneMinder Logo" width="36"> ZoneMinder
 
 ## Overview
 

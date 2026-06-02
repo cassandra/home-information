@@ -1,6 +1,6 @@
 <img src="../../src/hi/static/img/hi-logo-w-tagline-197x96.png" alt="Home Information Logo" width="128">
 
-# Paperless-ngx
+# <img src="../../src/hi/static/img/integrations/paperless.png" alt="Paperless-ngx Logo" width="36"> Paperless-ngx
 
 ## Overview
 

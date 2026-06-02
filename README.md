@@ -114,7 +114,7 @@ For technical details, see our [Development Documentation](docs/Development.md).
 - [Features](docs/Features.md) - Complete feature overview
 - [Getting Started](docs/GettingStarted.md) - First-time user walkthrough
 - [Layout Editor](docs/Editing.md) - Show how to use the layout editor
-- [Integrations](docs/Integrations.md) - Home Assistant and ZoneMinder setup
+- [Integrations](docs/Integrations.md) - Home Assistant, Frigate, Paperless-ngx, Immich, HomeBox and ZoneMinder setup
 - [Deployment Options](docs/Deployment.md) - Network access, custom compose stacks, production configuration
 - [FAQ](docs/FAQ.md) - Common questions and answers
 

@@ -1,6 +1,6 @@
 <img src="../../src/hi/static/img/hi-logo-w-tagline-197x96.png" alt="Home Information Logo" width="128">
 
-# Home Assistant
+# <img src="../../src/hi/static/img/integrations/home-assistant.png" alt="Home Assistant Logo" width="36"> Home Assistant
 
 ## Overview
 
@@ -12,7 +12,7 @@ actions back to HA.
 
 In practice, the integration has been exercised end-to-end with
 switches, outlets, open/close sensors, and motion sensors. The
-default allowlist also requests other HA domains (lights, cameras,
+default **Allow Item Types** list also requests other HA domains (lights, cameras,
 climate, covers, locks, fans, media players) — the code attempts to
 map them, but those types have not been verified against real
 devices. See [Known limitations](#known-limitations).
@@ -88,11 +88,11 @@ serve HA over plain HTTP on a trusted local network.
 
 ## Known limitations
 
-- **Verified device coverage is narrower than the allowlist
+- **Verified device coverage is narrower than the allowable list
   suggests.** Switches, outlets, open/close sensors, and motion
   sensors have been tested end-to-end. The other defaults (lights,
   cameras, climate, covers, locks, fans, media players) have code
-  paths but have not been exercised against real devices — capability
+  paths tested through API simulation, but have not been exercised against real devices — capability
   detection or control may not work as expected. If you rely on one
   of those types, expect to file issues and iterate.
 - Capability detection is heuristic. HA's API does not always
@@ -103,5 +103,4 @@ serve HA over plain HTTP on a trusted local network.
 - Multi-state HA devices (e.g., a single physical light exposed as
   both a `light.` and a `switch.` entity) are deduplicated where
   possible, but the heuristics are not perfect.
-- Polling cadence is fixed; there is no push-notification path from
-  HA into HI yet.
+
