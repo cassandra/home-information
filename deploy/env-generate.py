@@ -217,17 +217,17 @@ class HiEnvironmentGenerator:
         # validate_settings() catches both undeclared additions and missed
         # assignments.
         self._settings_map = { name: None for name in self._declared_var_names() }
-        self._settings_map.update({
+        self._settings_map.update( {
             'DJANGO_SETTINGS_MODULE': f'hi.settings.{self._env_name}',
             'DJANGO_SERVER_PORT': self._env_config.django_server_port,
-            'HI_SUPPRESS_AUTHENTICATION':'true',
+            'HI_SUPPRESS_AUTHENTICATION': 'true',
             'HI_REDIS_HOST': '127.0.0.1',
             'HI_REDIS_PORT': '6379',
             'HI_REDIS_KEY_PREFIX': self._env_config.redis_key_prefix,
             'HI_EMAIL_SUBJECT_PREFIX': self._env_config.redis_subject_prefix,
             'HI_EXTRA_HOST_URLS': '',  # To be filled in manually if/when running beyond localhost
             'HI_EXTRA_CSP_URLS': '',  # To be filled in manually if/when running beyond localhost
-        })
+        } )
         self._destination_filename = os.path.join(
             self._env_config.secrets_directory,
             f'{self._env_name}.{self._env_config.secrets_suffix}',
@@ -242,15 +242,17 @@ class HiEnvironmentGenerator:
         if extra:
             raise RuntimeError(
                 f'Internal drift: settings_map contains keys not declared in '
-                f'SETTING_SECTIONS: {sorted(extra)}. Add them to SETTING_SECTIONS.'
+                f'SETTING_SECTIONS: {sorted( extra )}. Either add them to '
+                f'SETTING_SECTIONS or fix the key name (a typo in the __init__ '
+                f'overlay or in generate_env_file() can also surface here).'
             )
 
         missing = declared - actual
         if missing:
             raise RuntimeError(
                 f'Internal drift: SETTING_SECTIONS declares keys not present in '
-                f'settings_map: {sorted(missing)}. Either remove from SETTING_SECTIONS '
-                f'or assign a value in generate_env_file().'
+                f'settings_map: {sorted( missing )}. Either remove from '
+                f'SETTING_SECTIONS or assign a value in generate_env_file().'
             )
 
         unset = sorted( k for k, v in self._settings_map.items() if v is None )
@@ -309,7 +311,6 @@ class HiEnvironmentGenerator:
         self._settings_map['HI_EMAIL_USE_TLS'] = str(email_settings.smtp_settings.use_tls)
         self._settings_map['HI_EMAIL_USE_SSL'] = str(email_settings.smtp_settings.use_ssl)
 
-        self.validate_settings()
         self._write_file()
 
         self.print_important( f'Review your settings file: {self._destination_filename}' )
@@ -542,6 +543,11 @@ class HiEnvironmentGenerator:
         return password
 
     def _write_file( self ):
+
+        # Validate at the act of writing so any code path that produces a file
+        # (current or future) is guarded against internal drift between
+        # SETTING_SECTIONS and the populated settings_map.
+        self.validate_settings()
 
         is_sh_file = self._destination_filename.endswith( self.SH_FILE_SUFFIX )
         

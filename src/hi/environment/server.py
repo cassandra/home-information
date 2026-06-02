@@ -11,6 +11,10 @@ from django.core.exceptions import ImproperlyConfigured
 class EnvironmentSettings:
     """
     Encapsulates the parsing of the environment variables that are needed.
+
+    Adding, removing, or renaming a field here also requires changes to
+    deploy/env-generate.py, install.sh, and local.env.example. See
+    docs/dev/shared/environment-variables.md for the full ritual.
     """
 
     # If the default value is "None" then the variable is required and its
