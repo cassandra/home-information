@@ -2,6 +2,7 @@ import logging
 from threading import local, Timer
 from typing import Callable
 
+from django.conf import settings
 from django.db import transaction
 
 logger = logging.getLogger(__name__)
@@ -55,6 +56,14 @@ class DelayedSignalProcessor:
             self._thread_local.processing_registered = True
             transaction.on_commit(self._queue_delayed_processing)
     
+    def _run_synchronously(self) -> bool:
+        """Whether to run the callback inline rather than on a background
+        Timer thread. True under unit tests so the processor never opens a
+        second DB connection that would race the in-memory shared-cache
+        SQLite test database -> intermittent "database table is locked".
+        (Tests of the asynchronous mechanics override this per instance.)"""
+        return settings.UNIT_TESTING
+
     def _queue_delayed_processing(self):
         # Cancel any existing timer to avoid duplicate processing
         if self._timer and self._timer.is_alive():
@@ -63,6 +72,12 @@ class DelayedSignalProcessor:
         # Reset the flag immediately since we're about to schedule processing
         # This allows new signals to schedule additional processing if needed
         self._thread_local.processing_registered = False
+
+        if self._run_synchronously():
+            # Run on this (the committing) thread/connection instead of a
+            # background thread; see _run_synchronously().
+            self._execute_processing_background()
+            return
 
         # Schedule the processing to run in a background thread after delay
         # The delay ensures the current transaction can complete first

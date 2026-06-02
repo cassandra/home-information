@@ -3,25 +3,43 @@ Tests for DelayedSignalProcessor functionality.
 Focuses on high-value testing: threading, transaction coordination, and state management.
 """
 
+import logging
 import threading
 import time
 from unittest.mock import Mock, patch
-from django.test import TransactionTestCase
+from django.test import TransactionTestCase, override_settings
 from django.db import transaction
 
 from hi.apps.common.delayed_signal_processor import DelayedSignalProcessor
 
+logging.disable(logging.CRITICAL)
+
+
+def _force_async(processor):
+    """Force a processor onto the background-Timer path for tests that
+    exercise the asynchronous mechanics. Patches the instance only, so the
+    global UNIT_TESTING flag (and the unrelated processors that honor it)
+    is left alone."""
+    processor._run_synchronously = lambda: False
+    return processor
+
 
 class TestDelayedSignalProcessor(TransactionTestCase):
-    """Test DelayedSignalProcessor threading and transaction coordination."""
+    """Test DelayedSignalProcessor threading and transaction coordination.
+
+    These exercise the asynchronous production path (Timer thread,
+    debouncing, background execution); under UNIT_TESTING the processor
+    runs synchronously instead, so each processor here is forced async via
+    ``_force_async``. The synchronous test-mode path has its own test class
+    below."""
 
     def setUp(self):
         self.callback_mock = Mock()
-        self.processor = DelayedSignalProcessor(
+        self.processor = _force_async( DelayedSignalProcessor(
             name="test_processor",
             callback_func=self.callback_mock,
             delay_seconds=0.01  # Short delay for testing
-        )
+        ) )
 
     def test_single_execution_within_transaction(self):
         """HIGH-VALUE: Test deduplication within transactions."""
@@ -133,11 +151,11 @@ class TestDelayedSignalProcessor(TransactionTestCase):
         """HIGH-VALUE: Test error handling doesn't break future calls."""
         # Create processor with callback that raises exception
         error_callback = Mock(side_effect=Exception("Test error"))
-        error_processor = DelayedSignalProcessor(
+        error_processor = _force_async( DelayedSignalProcessor(
             name="error_processor",
             callback_func=error_callback,
             delay_seconds=0.01
-        )
+        ) )
 
         # First call should handle exception gracefully
         with transaction.atomic():
@@ -160,11 +178,11 @@ class TestDelayedSignalProcessor(TransactionTestCase):
             execution_details['thread_name'] = threading.current_thread().name
             execution_details['called'] = True
 
-        processor = DelayedSignalProcessor(
+        processor = _force_async( DelayedSignalProcessor(
             name="context_processor",
             callback_func=context_callback,
             delay_seconds=0.01
-        )
+        ) )
 
         main_thread_name = threading.current_thread().name
 
@@ -209,11 +227,11 @@ class TestDelayedSignalProcessor(TransactionTestCase):
     def test_multiple_processors_independence(self):
         """Test that multiple processor instances don't interfere."""
         callback2 = Mock()
-        processor2 = DelayedSignalProcessor(
+        processor2 = _force_async( DelayedSignalProcessor(
             name="processor2",
             callback_func=callback2,
             delay_seconds=0.01
-        )
+        ) )
 
         # Schedule on both processors
         with transaction.atomic():
@@ -270,4 +288,28 @@ class TestDelayedSignalProcessor(TransactionTestCase):
         log_calls = [call.args[0] for call in mock_logger.debug.call_args_list]
         processor_name_in_logs = any('test_processor' in msg for msg in log_calls)
         self.assertTrue(processor_name_in_logs)
-        
+
+
+@override_settings(UNIT_TESTING=True)
+class TestDelayedSignalProcessorUnitTestingSynchronous(TransactionTestCase):
+    """Under UNIT_TESTING the processor must run synchronously (no Timer
+    thread) so it never opens a second DB connection that would race the
+    in-memory shared-cache SQLite test database ("database table is locked")."""
+
+    def setUp(self):
+        self.callback_mock = Mock()
+        self.processor = DelayedSignalProcessor(
+            name="sync_processor",
+            callback_func=self.callback_mock,
+            delay_seconds=0.01,
+        )
+
+    def test_runs_synchronously_on_commit_without_timer(self):
+        with transaction.atomic():
+            self.processor.schedule_processing()
+
+        # No sleep: the callback ran synchronously when the transaction
+        # committed, and no background Timer was created.
+        self.assertEqual(self.callback_mock.call_count, 1)
+        self.assertIsNone(self.processor._timer)
+

@@ -205,12 +205,17 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
+# True when invoked as ``manage.py test`` (WSGI / gunicorn / runserver /
+# migrate / shell do not match, so production processes are unaffected).
+# Drives test-only behavior: the fast password hasher below, plus the
+# synchronous-in-test guards in email_utils, metrics, and
+# DelayedSignalProcessor.
+UNIT_TESTING = ( sys.argv[1:2] == ['test'] )
+
 # Default PBKDF2 hashing is hundreds of ms per call by design; for tests
 # (where many setUps create a user) it dominates wall time. Swap to a
-# fast hasher only when the process is invoked as ``manage.py test``.
-# WSGI / gunicorn / runserver / migrate / shell do not match, so
-# production processes are unaffected.
-if sys.argv[1:2] == ['test']:
+# fast hasher under test.
+if UNIT_TESTING:
     PASSWORD_HASHERS = [
         'django.contrib.auth.hashers.MD5PasswordHasher',
     ]
@@ -403,8 +408,6 @@ BASE_URL_FOR_EMAIL_LINKS = f'http://{SITE_DOMAIN}'
 # Development-related Settings
 # (override in development.py, not here)
 
-# When tests functionality requires knowing if in unit test context.
-UNIT_TESTING = False
 
 # In development and debugging, because the background javascript is
 # polling frequently, this clutters up the console with log messages which
