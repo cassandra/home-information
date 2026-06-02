@@ -116,17 +116,25 @@ by using the AttributeItemEditContext pattern.
      class="{{ DIVID.ATTR_V2_SCROLLABLE_CONTENT_CLASS }}">
 
   {% comment %}
-  Regular-attributes formset management form is hoisted above the
-  tabs so it survives ``tab1_pane`` overrides (e.g., the
-  integration-bound entity that swaps Tab 1 content for a "From
-  [integration]" panel). Without it the surrounding form would
-  POST without TOTAL_FORMS / INITIAL_FORMS / MIN / MAX, and
-  Django would reject the submission even for non-attribute
-  fields like the entity's name and type.
+  Formset scaffolding (the management form) is rendered here, above
+  and outside the tab structure, so it always reaches the POSTed form
+  even when a subclass replaces ``tab1_pane`` (e.g. the
+  integration-bound entity that swaps Tab 1 for a "From [integration]"
+  panel). Without each bound formset's management form, Django rejects
+  the whole submission — even non-attribute fields like the entity's
+  name and type — for want of TOTAL_FORMS / INITIAL_FORMS / MIN / MAX.
+
+  This is form scaffolding, not display: the visible attribute cards
+  live in ``regular_attribute_list.html``. The default covers the
+  single-formset owners (entity, location). The config "multi" surface
+  binds several formsets and overrides this block to render each one's
+  management form.
   {% endcomment %}
+  {% block formset_scaffolding %}
   {% if regular_attributes_formset %}
   {{ regular_attributes_formset.management_form }}
   {% endif %}
+  {% endblock %}
 
   {% comment %}
   Tabbed content region. The attribute framework owns Tab 1 (Home
@@ -174,15 +182,13 @@ by using the AttributeItemEditContext pattern.
           {% endblock %}
 
           {% block tab1_empty_state %}
-          {% with has_files=file_attributes|length has_regulars=regular_attributes_formset.queryset|length has_deleted=deleted_attributes|length %}
-          {% if not has_files and not has_regulars and not has_deleted %}
+          {% if all_attributes_empty %}
           <div class="text-muted small p-3">
             No data yet. Use the action buttons above to
             <em>Add File</em>, <em>Add Info</em>, or <em>Link Content</em>
             (if enabled).
           </div>
           {% endif %}
-          {% endwith %}
           {% endblock %}
         {% else %}
           {% comment %}

@@ -1,9 +1,10 @@
 {% load static %}
 {% if regular_attributes_formset %}
 {% comment %}
-``regular_attributes_formset.management_form`` is rendered by the
-parent (``edit_content_body.html``) above the tab structure so it
-survives ``tab1_pane`` overrides. Do not duplicate it here.
+Display only. The formset's ``management_form`` is rendered by the
+``formset_scaffolding`` block in ``edit_content_body.html`` (above and
+outside the tabs) so it survives ``tab1_pane`` overrides and works for
+multi-formset surfaces. Do not render it here.
 {% endcomment %}
 <div class="attr-v2-attribute-section">
   {% if title %}

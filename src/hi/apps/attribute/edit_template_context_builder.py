@@ -27,6 +27,7 @@ class AttributeEditTemplateContextBuilder:
             'file_attributes': edit_form_data.file_attributes,
             'deleted_attributes': edit_form_data.deleted_attributes,
             'regular_attributes_formset': edit_form_data.regular_attributes_formset,
+            'all_attributes_empty': edit_form_data.is_empty,
 
             # Duplicate with explicit naming for convenience.
             f'{attr_item_context.owner_type}_form': edit_form_data.owner_form,
@@ -57,6 +58,7 @@ class AttributeEditTemplateContextBuilder:
             'file_attributes': edit_form_data.file_attributes,
             'deleted_attributes': edit_form_data.deleted_attributes,
             'regular_attributes_formset': edit_form_data.regular_attributes_formset,
+            'all_attributes_empty': edit_form_data.is_empty,
             'success_message': success_message,
             'error_message': error_message,
             'has_errors': has_errors,

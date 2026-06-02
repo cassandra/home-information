@@ -9,6 +9,18 @@ This is what gets replaced on form submission
 
 {% block basic_info %}{% endblock %}
 
+{% block formset_scaffolding %}
+{% comment %}
+This surface binds one formset per subsystem, so render each one's
+management form (the single-formset default in the base only covers
+``regular_attributes_formset``). Kept above the tabs, separate from the
+per-subsystem display in ``properties_section``.
+{% endcomment %}
+{% for multi_edit_form_data in multi_edit_form_data_list %}
+{{ multi_edit_form_data.formset.management_form }}
+{% endfor %}
+{% endblock %}
+
 {% block additional_buttons %}
 {% endblock %}
 
@@ -29,8 +41,6 @@ This is what gets replaced on form submission
 {% block add_attribute_button %}{% endblock %}
 
 {% block files_section %}{% endblock %}
-
-{% block tab1_empty_state %}{% endblock %}
 
 {% block left_column %}
 <nav class="nav flex-column hi-vertical-nav mr-3" id="subsystemTabs" role="tablist">
@@ -77,6 +87,7 @@ This is what gets replaced on form submission
         </button>
       </div>
       {% endif %}
+
       {% include "attribute/components/regular_attribute_list.html" with regular_attributes_formset=multi_edit_form_data.formset attr_item_context=multi_edit_form_data.context %}
       <div class="mt-4 pt-3 border-top text-right">
           <small class="text-muted mr-1">Problems with these settings?</small>

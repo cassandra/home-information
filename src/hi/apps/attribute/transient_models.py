@@ -16,6 +16,16 @@ class AttributeEditFormData:
     regular_attributes_formset : BaseInlineFormSet
     error_count                : int               = 0
 
+    @property
+    def is_empty(self) -> bool:
+        """True when this owner has no files, no regular attributes, and no
+        soft-deleted attributes — i.e. the default view has nothing to
+        show. Computed here so the empty-state isn't derived by poking
+        formset internals in the template."""
+        formset = self.regular_attributes_formset
+        has_regulars = bool( formset and formset.queryset )
+        return not ( self.file_attributes or has_regulars or self.deleted_attributes )
+
 
 @dataclass
 class AttributeMultiEditFormData:
