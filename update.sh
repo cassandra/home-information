@@ -14,6 +14,8 @@ HI_HOME="${HOME}/.hi"
 ENV_FILE="${HI_HOME}/env/local.env"
 DATABASE_DIR="${HI_HOME}/database"
 MEDIA_DIR="${HI_HOME}/media"
+COMPOSE_FILE="${HI_HOME}/docker-compose.yml"
+HAS_COMPOSE=0  # Set by check_docker_compose; 1 if `docker compose` is available.
 
 # Colors for output
 GREEN='\033[0;32m'
@@ -64,6 +66,32 @@ check_prerequisites() {
     fi
     
     print_success "Prerequisites verified"
+}
+
+# Probe for `docker compose` (v2 plugin). Sets HAS_COMPOSE=1 when present.
+check_docker_compose() {
+    if docker compose version &> /dev/null; then
+        HAS_COMPOSE=1
+    else
+        HAS_COMPOSE=0
+    fi
+}
+
+# Update via docker compose. Used when both compose is available AND the
+# install.sh-generated compose file exists at ~/.hi/docker-compose.yml.
+# `pull` fetches the latest image; `up -d` recreates the container with it.
+update_via_compose() {
+    print_info "Pulling latest image via docker compose..."
+    if ! docker compose -f "${COMPOSE_FILE}" pull; then
+        print_error "Failed to pull latest image. Please check your internet connection."
+    fi
+    print_success "Latest image pulled successfully"
+
+    print_info "Recreating container..."
+    if ! docker compose -f "${COMPOSE_FILE}" up -d; then
+        print_error "docker compose up -d failed."
+    fi
+    print_success "Container recreated"
 }
 
 # Pull latest Docker image
@@ -145,11 +173,22 @@ show_success() {
 # Main update function
 main() {
     print_header
-    
+
     check_prerequisites
-    pull_latest_image
-    stop_old_container
-    start_new_container
+    check_docker_compose
+
+    # Use the compose path only when both compose is available AND the
+    # install.sh-generated compose file exists. A pre-Phase-2 install has no
+    # compose file even on a host where compose is installed; those users
+    # continue managing via the legacy `docker run` recreation flow.
+    if (( HAS_COMPOSE == 1 )) && [[ -f "${COMPOSE_FILE}" ]]; then
+        update_via_compose
+    else
+        pull_latest_image
+        stop_old_container
+        start_new_container
+    fi
+
     wait_for_app
     show_success
 }
