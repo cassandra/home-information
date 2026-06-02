@@ -1,0 +1,15 @@
+{
+    "properties": {
+        "@type": "wx:ObservationStation",
+        "timestamp": {{ timestamp }},
+        "textDescription": {{ text_description }},
+        "temperature": { "unitCode": "wmoUnit:degC", "value": {{ temperature }}, "qualityControl": "V" },
+        "dewpoint": { "unitCode": "wmoUnit:degC", "value": {{ dewpoint }}, "qualityControl": "V" },
+        "windDirection": { "unitCode": "wmoUnit:degree_(angle)", "value": {{ wind_direction }}, "qualityControl": "V" },
+        "windSpeed": { "unitCode": "wmoUnit:km_h-1", "value": {{ wind_speed }}, "qualityControl": "V" },
+        "barometricPressure": { "unitCode": "wmoUnit:Pa", "value": {{ barometric_pressure }}, "qualityControl": "V" },
+        "relativeHumidity": { "unitCode": "wmoUnit:percent", "value": {{ relative_humidity }}, "qualityControl": "V" },
+        "cloudLayers": {{ cloud_layers }},
+        "presentWeather": []
+    }
+}

@@ -1,0 +1,30 @@
+{
+    "apiversion": "4.0.1",
+    "geometry": {
+        "coordinates": [ {{ longitude }}, {{ latitude }} ],
+        "type": "Point"
+    },
+    "properties": {
+        "data": {
+            "curphase": "{{ curphase }}",
+            "day": {{ day }},
+            "day_of_week": "{{ day_of_week }}",
+            "fracillum": "{{ fracillum }}%",
+            "isdst": false,
+            "label": null,
+            "month": {{ month }},
+            "moondata": [
+                { "phen": "Rise", "time": "{{ moonrise }}" },
+                { "phen": "Set", "time": "{{ moonset }}" }
+            ],
+            "sundata": [
+                { "phen": "Rise", "time": "{{ sunrise }}" },
+                { "phen": "Upper Transit", "time": "{{ solar_noon }}" },
+                { "phen": "Set", "time": "{{ sunset }}" }
+            ],
+            "tz": {{ tz }},
+            "year": {{ year }}
+        }
+    },
+    "type": "Feature"
+}

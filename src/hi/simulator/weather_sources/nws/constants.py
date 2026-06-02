@@ -87,3 +87,13 @@ EVENT_CODE_CHOICES = [
     ( 'LAE', 'LAE — Local Area Emergency' ),
     ( 'TST', 'TST — Test Message' ),
 ]
+
+# METAR sky-cover codes for the observation ``cloudLayers`` amount. The
+# main app maps these to a cloud-cover percentage.
+CLOUD_AMOUNT_CHOICES = [
+    ( 'CLR', 'CLR — Clear' ),
+    ( 'FEW', 'FEW — Few' ),
+    ( 'SCT', 'SCT — Scattered' ),
+    ( 'BKN', 'BKN — Broken' ),
+    ( 'OVC', 'OVC — Overcast' ),
+]

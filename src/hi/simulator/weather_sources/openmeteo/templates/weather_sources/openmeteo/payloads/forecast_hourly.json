@@ -1,0 +1,23 @@
+{
+    "latitude": {{ latitude }},
+    "longitude": {{ longitude }},
+    "elevation": {{ elevation }},
+    "hourly_units": {
+        "time": "iso8601",
+        "temperature_2m": "°C",
+        "relativehumidity_2m": "%",
+        "windspeed_10m": "km/h",
+        "winddirection_10m": "°",
+        "precipitation": "mm",
+        "weathercode": "wmo code"
+    },
+    "hourly": {
+        "time": {{ hourly_time }},
+        "temperature_2m": {{ hourly_temperature }},
+        "relativehumidity_2m": {{ hourly_humidity }},
+        "windspeed_10m": {{ hourly_windspeed }},
+        "winddirection_10m": {{ hourly_winddirection }},
+        "precipitation": {{ hourly_precip }},
+        "weathercode": {{ hourly_weathercode }}
+    }
+}

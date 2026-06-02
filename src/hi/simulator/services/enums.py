@@ -1,4 +1,5 @@
 from hi.apps.common.enums import LabeledEnum
+from hi.simulator.fault_injection import FaultMode
 
 
 class SimStateType(LabeledEnum):
@@ -40,25 +41,12 @@ class SimStateType(LabeledEnum):
         return f'services/panes/sim_control_{self.name.lower()}.html'
 
 
-class ServiceFaultMode(LabeledEnum):
-    """
-    Fault-injection state for a simulated service. Set per-simulator from
-    the simulator UI; consumed by ServiceFaultInjectionMiddleware to
-    short-circuit API responses so the main app's integration
-    validate_access probe paths can be exercised without standing up real
-    misbehaving servers.
-    """
-
-    HEALTHY       = ( 'Healthy'      , 'Pass requests through normally (default).' )
-    AUTH_FAIL     = ( 'Auth Fail'    , 'Return 401 from every API request.' )
-    FORBIDDEN     = ( 'Forbidden'    , 'Return 403 from every API request (credentials recognized, action forbidden — e.g., scope or role missing).' )
-    SERVER_ERROR  = ( 'Server Error' , 'Return 500 from every API request.' )
-    SLOW          = ( 'Slow'         , 'Sleep past the integration probe timeout, then pass through.' )
-    NON_JSON      = ( 'Non-JSON'     , 'Return 200 with text/html body (simulates wrong base URL / proxy).' )
-
-    @classmethod
-    def default(cls):
-        return cls.HEALTHY
+# Fault injection is a generic simulator concept (identical HTTP/network
+# failures whether the upstream is a service or a weather source), so the
+# enum lives in the shared ``hi.simulator.fault_injection`` module. Kept
+# under the historical name here so existing services code (views,
+# middleware, service_simulator) is unchanged.
+ServiceFaultMode = FaultMode
 
 
 class SimEntityType(LabeledEnum):

@@ -815,11 +815,26 @@ class OpenMeteo(WeatherDataSource, WeatherMixin):
                                   ex = self.HISTORICAL_DATA_CACHE_EXPIRY_SECS)
         return historical_data
 
+    def _get_archive_base_url( self ) -> str:
+        """Effective base URL for archive/historical calls.
+
+        Mirrors ``_get_base_url`` but for the separate archive host:
+        consults the ``OPENMETEO_ARCHIVE_BASE_URL`` setting (lets an
+        operator point historical fetches at a simulator/mirror) and
+        falls back to the canonical ``ARCHIVE_BASE_URL`` constant.
+        """
+        helper = self._get_weather_settings_helper()
+        if helper:
+            override = helper.get_weather_source_archive_base_url( self.weather_source_id() )
+            if override:
+                return override
+        return self.ARCHIVE_BASE_URL
+
     def _get_historical_weather_data_from_api( self,
                                                geographic_location  : GeographicLocation,
                                                start_date           : date,
                                                end_date             : date ) -> Dict[str, Any]:
-        url = (f"{self.ARCHIVE_BASE_URL}?"
+        url = (f"{self._get_archive_base_url()}?"
                f"latitude={geographic_location.latitude}&"
                f"longitude={geographic_location.longitude}&"
                f"start_date={start_date}&"

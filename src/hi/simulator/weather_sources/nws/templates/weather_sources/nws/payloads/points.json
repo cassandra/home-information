@@ -1,0 +1,13 @@
+{
+    "id": "simulator",
+    "type": "Feature",
+    "geometry": {{ geometry }},
+    "properties": {
+        "@type": "wx:Point",
+        "gridId": {{ grid_id }},
+        "forecastOffice": {{ forecast_office }},
+        "forecast": {{ forecast_url }},
+        "forecastHourly": {{ forecast_hourly_url }},
+        "observationStations": {{ observation_stations_url }}
+    }
+}

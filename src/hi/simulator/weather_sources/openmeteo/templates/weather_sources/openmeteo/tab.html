@@ -1,0 +1,13 @@
+{% load openmeteo_sim_tags %}
+
+<div class="openmeteo-sim-tab">
+  {% include "weather_sources/panes/source_header.html" with url1_label="Base" url1_path="/weather/openmeteo/api/v1/" url2_label="Archive" url2_path="/weather/openmeteo/api/archive" %}
+
+  {% openmeteo_sim_form as form %}
+  {% include "weather_sources/openmeteo/panes/state_form.html" %}
+
+  <div class="text-muted small mt-2">
+    One value set drives current conditions, the hourly/daily forecasts, and the
+    archive endpoint; time axes are generated automatically anchored to now.
+  </div>
+</div>

@@ -1,0 +1,37 @@
+{
+    "latitude": {{ latitude }},
+    "longitude": {{ longitude }},
+    "elevation": {{ elevation }},
+    "current_weather_units": {
+        "time": "iso8601",
+        "temperature": "°C",
+        "windspeed": "km/h",
+        "winddirection": "°",
+        "is_day": "",
+        "weathercode": "wmo code"
+    },
+    "current_weather": {
+        "time": {{ current_time }},
+        "temperature": {{ temperature }},
+        "windspeed": {{ windspeed }},
+        "winddirection": {{ winddirection }},
+        "is_day": {{ is_day }},
+        "weathercode": {{ weathercode }}
+    },
+    "hourly_units": {
+        "time": "iso8601",
+        "temperature_2m": "°C",
+        "relativehumidity_2m": "%",
+        "dewpoint_2m": "°C",
+        "precipitation": "mm",
+        "pressure_msl": "hPa"
+    },
+    "hourly": {
+        "time": {{ hourly_time }},
+        "temperature_2m": {{ hourly_temperature }},
+        "relativehumidity_2m": {{ hourly_humidity }},
+        "dewpoint_2m": {{ hourly_dewpoint }},
+        "precipitation": {{ hourly_precip }},
+        "pressure_msl": {{ hourly_pressure }}
+    }
+}

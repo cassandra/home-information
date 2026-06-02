@@ -145,13 +145,19 @@ class ProfileManager( Singleton ):
         """Profile rows referencing source via FK get duplicates pointing
         at target. Each owning sub-app is responsible for handling its
         own clone via on_profile_cloned callback (future). For now,
-        copy DbSimEntity (services) and NwsSimAlert (nws) by import."""
+        copy DbSimEntity (services), NwsSimAlert (nws), and the
+        single-row astronomical state models by import."""
         # Imports kept local — these are cross-sub-app references and
         # we want lazy resolution so the profile sub-app remains
         # importable in isolation (e.g. management commands that touch
         # only profiles).
         from hi.simulator.services.models import DbSimEntity
-        from hi.simulator.weather_sources.nws.models import NwsSimAlert
+        from hi.simulator.weather_sources.nws.models import NwsSimAlert, NwsSimConditions
+        from hi.simulator.weather_sources.openmeteo.models import OpenMeteoSimState
+        from hi.simulator.weather_sources.sunrise_sunset_org.models import (
+            SunriseSunsetSimState,
+        )
+        from hi.simulator.weather_sources.usno.models import UsnoSimState
 
         DbSimEntity.objects.bulk_create([
             DbSimEntity(
@@ -160,7 +166,7 @@ class ProfileManager( Singleton ):
                 sim_entity_type_str = row.sim_entity_type_str,
                 sim_entity_fields_json = row.sim_entity_fields_json,
             )
-            for row in source_profile.dbsimentity_set.all()
+            for row in source_profile.db_sim_entities.all()
         ])
         NwsSimAlert.objects.bulk_create([
             NwsSimAlert(
@@ -180,6 +186,63 @@ class ProfileManager( Singleton ):
                 effective_offset_secs = row.effective_offset_secs,
                 expires_offset_secs = row.expires_offset_secs,
             )
-            for row in source_profile.nwssimalert_set.all()
+            for row in source_profile.nws_sim_alerts.all()
         ])
+
+        # OneToOne single-row state models: copy if the source profile
+        # has one. ``hasattr`` guards the RelatedObjectDoesNotExist that
+        # the reverse accessor raises when no row exists yet.
+        if hasattr( source_profile, 'sunrise_sunset_sim_state' ):
+            src = source_profile.sunrise_sunset_sim_state
+            SunriseSunsetSimState.objects.create(
+                sim_profile = target_profile,
+                sunrise = src.sunrise,
+                sunset = src.sunset,
+                solar_noon = src.solar_noon,
+                utc_offset_hours = src.utc_offset_hours,
+                status_str = src.status_str,
+            )
+        if hasattr( source_profile, 'usno_sim_state' ):
+            src = source_profile.usno_sim_state
+            UsnoSimState.objects.create(
+                sim_profile = target_profile,
+                sunrise = src.sunrise,
+                sunset = src.sunset,
+                solar_noon = src.solar_noon,
+                moonrise = src.moonrise,
+                moonset = src.moonset,
+                fracillum_percent = src.fracillum_percent,
+                curphase_str = src.curphase_str,
+                tz_offset_hours = src.tz_offset_hours,
+            )
+        if hasattr( source_profile, 'nws_sim_conditions' ):
+            src = source_profile.nws_sim_conditions
+            NwsSimConditions.objects.create(
+                sim_profile = target_profile,
+                text_description = src.text_description,
+                temperature_c = src.temperature_c,
+                dewpoint_c = src.dewpoint_c,
+                relative_humidity_pct = src.relative_humidity_pct,
+                wind_speed_kmh = src.wind_speed_kmh,
+                wind_direction_deg = src.wind_direction_deg,
+                barometric_pressure_hpa = src.barometric_pressure_hpa,
+                cloud_amount = src.cloud_amount,
+                precip_probability_pct = src.precip_probability_pct,
+                is_daytime = src.is_daytime,
+            )
+        if hasattr( source_profile, 'openmeteo_sim_state' ):
+            src = source_profile.openmeteo_sim_state
+            OpenMeteoSimState.objects.create(
+                sim_profile = target_profile,
+                temperature_c = src.temperature_c,
+                temperature_min_c = src.temperature_min_c,
+                relative_humidity_pct = src.relative_humidity_pct,
+                dewpoint_c = src.dewpoint_c,
+                precipitation_mm = src.precipitation_mm,
+                pressure_msl_hpa = src.pressure_msl_hpa,
+                windspeed_kmh = src.windspeed_kmh,
+                winddirection_deg = src.winddirection_deg,
+                weathercode = src.weathercode,
+                is_day = src.is_day,
+            )
         return

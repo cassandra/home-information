@@ -1,8 +1,6 @@
 {% extends "pages/tabbed.html" %}
 
 {% block tab_body %}
-<div class="d-flex align-items-center mb-2">
-  {% include "profile/panes/profile_selector.html" with module=module profile_list=profile_list current_profile=current_profile %}
-</div>
+{# Each source's tab builds its own one-row header (see panes/source_header.html). #}
 {% include source_data.tab_template %}
 {% endblock %}

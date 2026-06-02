@@ -1,0 +1,13 @@
+{% load usno_sim_tags %}
+
+<div class="usno-sim-tab">
+  {% include "weather_sources/panes/source_header.html" with url1_label="Base" url1_path="/weather/usno/api/oneday" %}
+
+  {% usno_sim_form as form %}
+  {% include "weather_sources/usno/panes/state_form.html" %}
+
+  <div class="text-muted small mt-2">
+    Times are emitted as local wall-clock, matching what USNO returns when the
+    main app sends its timezone offset.
+  </div>
+</div>

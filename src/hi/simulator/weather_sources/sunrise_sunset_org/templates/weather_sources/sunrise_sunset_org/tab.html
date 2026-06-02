@@ -1,0 +1,13 @@
+{% load sunrise_sunset_sim_tags %}
+
+<div class="sunrise-sunset-sim-tab">
+  {% include "weather_sources/panes/source_header.html" with url1_label="Base" url1_path="/weather/sunrise_sunset_org/api/json" %}
+
+  {% sunrise_sunset_sim_form as form %}
+  {% include "weather_sources/sunrise_sunset_org/panes/state_form.html" %}
+
+  <div class="text-muted small mt-2">
+    Civil / nautical / astronomical twilight are derived automatically from
+    sunrise and sunset.
+  </div>
+</div>

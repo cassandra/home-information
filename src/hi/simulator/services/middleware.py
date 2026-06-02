@@ -1,11 +1,8 @@
 import logging
-import os
 import re
-import time
 
-from django.http import HttpResponse, JsonResponse
+from hi.simulator.fault_injection import apply_fault_mode
 
-from .enums import ServiceFaultMode
 from .service_simulator_manager import ServiceSimulatorManager
 
 logger = logging.getLogger(__name__)
@@ -24,14 +21,12 @@ class ServiceFaultInjectionMiddleware:
     setter lives at a top-level simulator URL (/fault-mode/set/...) and
     therefore never matches this prefix.
 
-    SLOW mode sleeps and then lets the real view run, so the failure that
-    surfaces upstream is the integration's read timeout — not a 5xx —
-    which is exactly the bucket we want to exercise.
+    The mode→response mapping (including SLOW's sleep-then-passthrough) is
+    shared with the weather-sources middleware via
+    ``hi.simulator.fault_injection.apply_fault_mode``.
     """
 
     _SERVICE_PATH_RE = re.compile( r'^/services/(?P<short_name>[^/]+)/' )
-
-    SLOW_FAULT_SECS = float( os.environ.get( 'HI_SIM_SLOW_FAULT_SECS', '10.0' ))
 
     def __init__(self, get_response):
         self.get_response = get_response
@@ -46,41 +41,7 @@ class ServiceFaultInjectionMiddleware:
         if simulator is None:
             return self.get_response( request )
 
-        fault_mode = simulator.fault_mode
-        if fault_mode == ServiceFaultMode.HEALTHY:
-            return self.get_response( request )
-
-        if fault_mode == ServiceFaultMode.AUTH_FAIL:
-            return JsonResponse(
-                { 'message': 'Unauthorized' },
-                status = 401,
-            )
-
-        if fault_mode == ServiceFaultMode.FORBIDDEN:
-            return JsonResponse(
-                { 'message': 'Forbidden' },
-                status = 403,
-            )
-
-        if fault_mode == ServiceFaultMode.SERVER_ERROR:
-            return JsonResponse(
-                { 'message': 'Internal server error' },
-                status = 500,
-            )
-
-        if fault_mode == ServiceFaultMode.SLOW:
-            logger.debug( f'Fault injection: sleeping {self.SLOW_FAULT_SECS}s for {request.path}' )
-            time.sleep( self.SLOW_FAULT_SECS )
-            return self.get_response( request )
-
-        if fault_mode == ServiceFaultMode.NON_JSON:
-            return HttpResponse(
-                b'<html><body>simulated non-JSON response</body></html>',
-                content_type = 'text/html',
-                status = 200,
-            )
-
-        return self.get_response( request )
+        return apply_fault_mode( simulator.fault_mode, request, self.get_response )
 
     def _resolve_simulator(self, short_name):
         # No cache — the lookup is cheap (small list, dict comprehension)

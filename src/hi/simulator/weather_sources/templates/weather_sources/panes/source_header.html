@@ -1,0 +1,40 @@
+{% comment %}
+One-row weather-source tab header, matching the services layout:
+  left   — profile selector + actions, then the optional Add button
+  center — base URL(s) to paste into the main app's Weather settings
+  right  — fault-mode control
+Params (via include ``with``):
+  url1_label / url1_path            (required)
+  url2_label / url2_path            (optional — stacked under the first)
+  add_url / add_label               (optional — extra left-group button)
+Profile context (module / profile_list / current_profile) and source_data
+come from the enclosing tab context.
+{% endcomment %}
+{% load icons %}
+{% load weather_fault_tags %}
+<div class="d-flex align-items-center justify-content-between mb-2">
+
+  <div class="d-flex align-items-center">
+    {% include "profile/panes/profile_selector.html" with module=module profile_list=profile_list current_profile=current_profile %}
+    {% if add_url %}
+    <a class="btn btn-sm btn-outline-primary ml-2" data-async="modal" href="{{ add_url }}">
+      {% icon "plus" size="sm" css_class="hi-icon-left" %}{{ add_label }}
+    </a>
+    {% endif %}
+  </div>
+
+  <div class="text-muted small mx-3 flex-grow-1 text-center">
+    <div>
+      <strong>{{ url1_label }}:</strong>
+      <code>{{ request.scheme }}://{{ request.get_host }}{{ url1_path }}</code>
+    </div>
+    {% if url2_path %}
+    <div>
+      <strong>{{ url2_label }}:</strong>
+      <code>{{ request.scheme }}://{{ request.get_host }}{{ url2_path }}</code>
+    </div>
+    {% endif %}
+  </div>
+
+  {% weather_fault_mode_form source_data.short_name %}
+</div>

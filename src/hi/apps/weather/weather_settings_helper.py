@@ -54,6 +54,21 @@ class WeatherSettingsHelper( SettingsMixin ):
         value_str = str(value).strip()
         return value_str if value_str else None
 
+    def get_weather_source_archive_base_url(self, source_id: str) -> Optional[str]:
+        """Configured archive/historical base URL for this source.
+        Returns ``None`` if unset / empty so the caller can fall back to
+        the source's canonical ``ARCHIVE_BASE_URL`` constant."""
+        setting_name = f"{self._source_setting_prefix(source_id)}_ARCHIVE_BASE_URL"
+        try:
+            setting_enum = getattr(WeatherSetting, setting_name)
+        except AttributeError:
+            return None
+        value = self.settings_manager().get_setting_value(setting_enum)
+        if value is None:
+            return None
+        value_str = str(value).strip()
+        return value_str if value_str else None
+
     def get_weather_source_api_key(self, source_id: str) -> str:
         api_key_setting_name = f"{self._source_setting_prefix(source_id)}_API_KEY"
         try:

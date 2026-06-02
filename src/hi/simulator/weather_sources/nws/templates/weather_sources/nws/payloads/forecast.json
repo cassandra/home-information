@@ -1,0 +1,6 @@
+{
+    "properties": {
+        "generatedAt": {{ generated_at }},
+        "periods": {{ periods }}
+    }
+}

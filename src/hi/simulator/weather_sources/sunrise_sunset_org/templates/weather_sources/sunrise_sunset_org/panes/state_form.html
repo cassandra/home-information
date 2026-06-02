@@ -1,0 +1,30 @@
+{% comment %}
+Inline state editor. Each control auto-submits (onchange-async) to the
+set endpoint, which re-renders and swaps this fragment in place.
+Compact layout: label / input / description on one row.
+Context: form (SunriseSunsetSimStateForm bound to the current state).
+{% endcomment %}
+<form id="hi-sunrise-sunset-sim-form"
+      data-async="#hi-sunrise-sunset-sim-form" data-mode="replace"
+      method="post" action="{% url 'simulator_weather_sunrise_sunset_state_set' %}"
+      class="form sim-state-form">
+  {% csrf_token %}
+  {% if form.non_field_errors %}
+  <div class="non-field-errors">
+    {% for err in form.non_field_errors %}
+    <p class="form-error text-danger">ERROR: {{ err }}</p>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  {% for field in form %}
+  <div class="form-row align-items-center mb-1">
+    <label for="{{ field.id_for_label }}" class="col-4 col-md-3 mb-0 small">{{ field.label }}</label>
+    <div class="col-4 col-md-3">{{ field }}</div>
+    <div class="col small">
+      {% if field.errors %}<span class="form-error text-danger">{{ field.errors|join:", " }}</span>
+      {% elif field.help_text %}<span class="text-muted">{{ field.help_text }}</span>{% endif %}
+    </div>
+  </div>
+  {% endfor %}
+</form>

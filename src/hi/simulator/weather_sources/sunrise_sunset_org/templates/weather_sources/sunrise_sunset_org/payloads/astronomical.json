@@ -1,0 +1,16 @@
+{
+    "results": {
+        "sunrise": "{{ sunrise }}",
+        "sunset": "{{ sunset }}",
+        "solar_noon": "{{ solar_noon }}",
+        "day_length": 0,
+        "civil_twilight_begin": "{{ civil_begin }}",
+        "civil_twilight_end": "{{ civil_end }}",
+        "nautical_twilight_begin": "{{ nautical_begin }}",
+        "nautical_twilight_end": "{{ nautical_end }}",
+        "astronomical_twilight_begin": "{{ astronomical_begin }}",
+        "astronomical_twilight_end": "{{ astronomical_end }}"
+    },
+    "status": "{{ status }}",
+    "tzid": "UTC"
+}

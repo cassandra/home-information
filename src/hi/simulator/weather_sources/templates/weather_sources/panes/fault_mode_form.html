@@ -1,0 +1,21 @@
+{% comment %}
+Inline per-source fault-mode dropdown. Auto-submits on change to the set
+endpoint, which re-renders and swaps this fragment in place.
+Context: short_name, current (FaultMode), choices (list of FaultMode).
+{% endcomment %}
+<div id="hi-weather-fault-mode-{{ short_name }}" class="hi-fault-mode-form-wrap">
+  <form action="{% url 'simulator_weather_fault_mode_set' short_name=short_name %}"
+        method="post" class="form-inline hi-fault-mode-form"
+        data-async="#hi-weather-fault-mode-{{ short_name }}" data-mode="replace">
+    {% csrf_token %}
+    <label class="mr-2 mb-0" for="weather-fault-mode-{{ short_name }}">Fault mode:</label>
+    <select id="weather-fault-mode-{{ short_name }}" name="fault_mode"
+            class="form-control form-control-sm" onchange-async="true">
+      {% for mode in choices %}
+      <option value="{{ mode.name }}" {% if current == mode %}selected{% endif %}>
+        {{ mode.label }}
+      </option>
+      {% endfor %}
+    </select>
+  </form>
+</div>

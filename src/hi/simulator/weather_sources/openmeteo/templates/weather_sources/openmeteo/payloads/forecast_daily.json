@@ -1,0 +1,19 @@
+{
+    "latitude": {{ latitude }},
+    "longitude": {{ longitude }},
+    "elevation": {{ elevation }},
+    "daily_units": {
+        "time": "iso8601",
+        "weathercode": "wmo code",
+        "temperature_2m_max": "°C",
+        "temperature_2m_min": "°C",
+        "precipitation_sum": "mm"
+    },
+    "daily": {
+        "time": {{ daily_time }},
+        "weathercode": {{ daily_weathercode }},
+        "temperature_2m_max": {{ daily_tmax }},
+        "temperature_2m_min": {{ daily_tmin }},
+        "precipitation_sum": {{ daily_precip }}
+    }
+}

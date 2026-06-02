@@ -18,6 +18,10 @@ urlpatterns = [
     path( 'tab/<slug:short_name>/',
           views.WeatherSourceView.as_view(),
           name = 'simulator_weather_source' ),
+
+    path( 'fault-mode/<slug:short_name>/set',
+          views.WeatherFaultModeSetView.as_view(),
+          name = 'simulator_weather_fault_mode_set' ),
 ]
 
 

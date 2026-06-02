@@ -25,6 +25,9 @@ INSTALLED_APPS = [
     'hi.simulator.services.immich',
     'hi.simulator.services.zoneminder',
     'hi.simulator.weather_sources.nws',
+    'hi.simulator.weather_sources.openmeteo',
+    'hi.simulator.weather_sources.sunrise_sunset_org',
+    'hi.simulator.weather_sources.usno',
 ]
 
 MIDDLEWARE = [
@@ -39,6 +42,7 @@ MIDDLEWARE = [
 
     'hi.simulator.middleware.NoStoreMiddleware',
     'hi.simulator.services.middleware.ServiceFaultInjectionMiddleware',
+    'hi.simulator.weather_sources.middleware.WeatherFaultInjectionMiddleware',
 ]
 
 ROOT_URLCONF = 'hi.simulator.urls'

@@ -45,6 +45,26 @@ def _create_dynamic_weather_settings() -> Dict[str, SettingDefinition]:
             initial_value=canonical_base_url,
         )
 
+        # Sources with a distinct archive/historical host (e.g.
+        # Open-Meteo) expose ``ARCHIVE_BASE_URL`` as a class constant.
+        # Give it its own override setting so the archive endpoint can
+        # also be pointed at a simulator/mirror independently.
+        archive_base_url = getattr( source, 'ARCHIVE_BASE_URL', None )
+        if archive_base_url:
+            archive_base_url_key = f"{source_key_prefix}_ARCHIVE_BASE_URL"
+            settings_dict[archive_base_url_key] = SettingDefinition(
+                label=f'{source.label} Archive Base URL',
+                description=(
+                    f'Base URL for {source.label} historical/archive HTTP requests. '
+                    f'Usually: {archive_base_url}'
+                ),
+                value_type=AttributeValueType.TEXT,
+                value_range=None,
+                is_editable=True,
+                is_required=False,
+                initial_value=archive_base_url,
+            )
+
         if source.requires_api_key():
             api_key_key = f"{source_key_prefix}_API_KEY"
             settings_dict[api_key_key] = SettingDefinition(

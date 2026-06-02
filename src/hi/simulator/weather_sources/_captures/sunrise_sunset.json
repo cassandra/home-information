@@ -1,0 +1,16 @@
+{
+    "results": {
+        "sunrise": "2026-06-02T09:42:37+00:00",
+        "sunset": "2026-06-03T00:29:47+00:00",
+        "solar_noon": "2026-06-02T17:06:12+00:00",
+        "day_length": 53230,
+        "civil_twilight_begin": "2026-06-02T09:12:42+00:00",
+        "civil_twilight_end": "2026-06-03T00:59:41+00:00",
+        "nautical_twilight_begin": "2026-06-02T08:33:18+00:00",
+        "nautical_twilight_end": "2026-06-03T01:39:06+00:00",
+        "astronomical_twilight_begin": "2026-06-02T07:48:39+00:00",
+        "astronomical_twilight_end": "2026-06-03T02:23:44+00:00"
+    },
+    "status": "OK",
+    "tzid": "UTC"
+}
