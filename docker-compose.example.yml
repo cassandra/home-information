@@ -1,0 +1,36 @@
+# Home Information — example docker-compose file
+#
+# This is a TEMPLATE, not a live config. It is named `.example.yml` so that
+# `docker compose` does not auto-discover it. To use:
+#
+#   1. Copy this file to where you want to manage the app from
+#      (e.g. `cp docker-compose.example.yml docker-compose.yml`)
+#   2. Copy `local.env.example` to `local.env` and fill in the placeholders
+#      (or generate values via `deploy/env-generate.py` or `install.sh`)
+#   3. Adjust the volume host paths to your data directory
+#   4. `docker compose up -d`
+#
+# If you ran install.sh, your live config is at `~/.hi/docker-compose.yml` —
+# edit that, not this. This file is here only as a reference for users who want
+# to integrate Home Information into their own compose stack.
+#
+# No `healthcheck:` stanza is declared — the Dockerfile already defines one
+# (HEALTHCHECK on /health) and a compose-level stanza would override it,
+# creating drift. `docker compose ps` shows the container's health using the
+# Dockerfile's healthcheck.
+
+services:
+  hi:
+    image: ghcr.io/cassandra/home-information:latest
+    container_name: hi
+    restart: unless-stopped
+    ports:
+      - "9411:8000"
+    env_file:
+      - ./local.env
+    volumes:
+      # Edit these paths to point at where you want HI's data stored.
+      # Defaults match install.sh's location (~/.hi/) for consistency, using
+      # $HOME because tilde (~) does not reliably expand in compose volume paths.
+      - $HOME/.hi/database:/data/database
+      - $HOME/.hi/media:/data/media

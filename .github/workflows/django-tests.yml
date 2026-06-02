@@ -57,3 +57,7 @@ jobs:
         working-directory: ./src
         run: |
           flake8 . --config=.flake8-ci
+
+      - name: Check Env-Var Drift
+        run: |
+          bash deploy/env-drift-check.sh

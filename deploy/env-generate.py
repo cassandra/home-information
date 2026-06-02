@@ -118,6 +118,88 @@ class HiEnvironmentGenerator:
     MEDIA_SUBDIR = 'media'
     SH_FILE_SUFFIX = 'sh'
 
+    # Canonical declaration of every env var this script writes. Seeds
+    # `self._settings_map`, drives `--example` output, and is the reference
+    # set validate_settings() compares against. Any new var must be added here
+    # AND assigned a value during generate_env_file() — otherwise the run
+    # fails. Entries are
+    # ( section_heading, requirement_note, [ ( var_name, placeholder ) ] ).
+    SETTING_SECTIONS = [
+        ( 'Core Django', 'required', [
+            ( 'DJANGO_SETTINGS_MODULE', 'hi.settings.local' ),
+            ( 'DJANGO_SERVER_PORT', '8000' ),
+            ( 'DJANGO_SECRET_KEY', '<replace-with-50-char-random-string>' ),
+        ] ),
+        ( 'Admin user', 'required', [
+            ( 'DJANGO_SUPERUSER_EMAIL', 'admin@example.com' ),
+            ( 'DJANGO_SUPERUSER_PASSWORD', '<replace-with-strong-password>' ),
+        ] ),
+        ( 'Data paths inside the container',
+          'required; leave at defaults for the standard install', [
+              ( 'HI_DB_PATH', '/data/database' ),
+              ( 'HI_MEDIA_PATH', '/data/media' ),
+          ] ),
+        ( 'Redis', 'required; defaults are correct for the bundled in-container Redis', [
+            ( 'HI_REDIS_HOST', '127.0.0.1' ),
+            ( 'HI_REDIS_PORT', '6379' ),
+            ( 'HI_REDIS_KEY_PREFIX', '' ),
+        ] ),
+        ( 'Authentication',
+          'optional; "true" disables login for simple single-user setups', [
+              ( 'HI_SUPPRESS_AUTHENTICATION', 'true' ),
+          ] ),
+        ( 'Email / alerts',
+          'optional; leave HI_EMAIL_HOST empty to disable email notifications', [
+              ( 'HI_EMAIL_SUBJECT_PREFIX', '' ),
+              ( 'HI_DEFAULT_FROM_EMAIL', '' ),
+              ( 'HI_SERVER_EMAIL', '' ),
+              ( 'HI_EMAIL_HOST', '' ),
+              ( 'HI_EMAIL_PORT', '587' ),
+              ( 'HI_EMAIL_HOST_USER', '' ),
+              ( 'HI_EMAIL_HOST_PASSWORD', '' ),
+              ( 'HI_EMAIL_USE_TLS', 'false' ),
+              ( 'HI_EMAIL_USE_SSL', 'false' ),
+          ] ),
+        ( 'Network', 'optional; needed when accessing beyond localhost', [
+            ( 'HI_EXTRA_HOST_URLS', '' ),
+            ( 'HI_EXTRA_CSP_URLS', '' ),
+        ] ),
+    ]
+
+    EXAMPLE_HEADER = (
+        '# Home Information environment configuration — EXAMPLE\n'
+        '#\n'
+        '# Format: docker-compose env_file (KEY=value). No `export`, no shell quoting,\n'
+        '# no ${VAR} interpolation. For developer shell-sourced env, run:\n'
+        '#   ./deploy/env-generate.py --env-name development\n'
+        '#\n'
+        '# If you are installing via install.sh, you do NOT need this file —\n'
+        '# install.sh creates `~/.hi/env/local.env` for you with real values filled\n'
+        '# in. Do not manually place this file at `~/.hi/env/local.env`; install.sh\n'
+        '# will then treat your system as already-installed and refuse to proceed.\n'
+        '# This file exists as a reference for the variables that real env file\n'
+        '# will contain.\n'
+        '#\n'
+        '# If you are integrating Home Information into your own docker-compose stack\n'
+        '# (bypassing install.sh), copy this file alongside your compose file, fill\n'
+        '# in the placeholder values, and start the app.\n'
+        '#\n'
+        '# Required vs. optional is noted per section.\n'
+    )
+
+    @classmethod
+    def _declared_var_names( cls ):
+        return [ name for _h, _r, entries in cls.SETTING_SECTIONS for name, _v in entries ]
+
+    @classmethod
+    def print_example_env_file( cls ):
+        sys.stdout.write( cls.EXAMPLE_HEADER )
+        for heading, requirement, entries in cls.SETTING_SECTIONS:
+            sys.stdout.write( f'\n# --- {heading} ({requirement}) ---\n' )
+            for name, value in entries:
+                sys.stdout.write( f'{name}={value}\n' )
+        return
+
     def __init__( self,
                   env_name  : str = 'local',
                   verbose   : bool = False ):
@@ -125,12 +207,17 @@ class HiEnvironmentGenerator:
         if env_name not in [ 'development', 'local', 'staging', 'production' ]:
             self.print_warning( f'Non-standard environment name "{env_name}".'
                                 f' Ensure that the file "hi/settings/{env_name}.py" exists.' )
-        
+
         self._env_name = env_name
         self._env_config = EnvironmentConfig.get( self._env_name )
         self._verbose = verbose
-        
-        self._settings_map = {
+
+        # Seed every declared var with None. The defaults below and the
+        # interactive flow in generate_env_file() fill in real values;
+        # validate_settings() catches both undeclared additions and missed
+        # assignments.
+        self._settings_map = { name: None for name in self._declared_var_names() }
+        self._settings_map.update({
             'DJANGO_SETTINGS_MODULE': f'hi.settings.{self._env_name}',
             'DJANGO_SERVER_PORT': self._env_config.django_server_port,
             'HI_SUPPRESS_AUTHENTICATION':'true',
@@ -140,11 +227,39 @@ class HiEnvironmentGenerator:
             'HI_EMAIL_SUBJECT_PREFIX': self._env_config.redis_subject_prefix,
             'HI_EXTRA_HOST_URLS': '',  # To be filled in manually if/when running beyond localhost
             'HI_EXTRA_CSP_URLS': '',  # To be filled in manually if/when running beyond localhost
-        }
+        })
         self._destination_filename = os.path.join(
             self._env_config.secrets_directory,
             f'{self._env_name}.{self._env_config.secrets_suffix}',
         )
+        return
+
+    def validate_settings( self ):
+        declared = set( self._declared_var_names() )
+        actual = set( self._settings_map.keys() )
+
+        extra = actual - declared
+        if extra:
+            raise RuntimeError(
+                f'Internal drift: settings_map contains keys not declared in '
+                f'SETTING_SECTIONS: {sorted(extra)}. Add them to SETTING_SECTIONS.'
+            )
+
+        missing = declared - actual
+        if missing:
+            raise RuntimeError(
+                f'Internal drift: SETTING_SECTIONS declares keys not present in '
+                f'settings_map: {sorted(missing)}. Either remove from SETTING_SECTIONS '
+                f'or assign a value in generate_env_file().'
+            )
+
+        unset = sorted( k for k, v in self._settings_map.items() if v is None )
+        if unset:
+            raise RuntimeError(
+                f'Internal drift: settings_map has unset (None) values: {unset}. '
+                f'These keys are declared in SETTING_SECTIONS but never assigned '
+                f'during generate_env_file().'
+            )
         return
     
     def generate_env_file( self ):
@@ -193,7 +308,8 @@ class HiEnvironmentGenerator:
         self._settings_map['HI_EMAIL_PORT'] = str(email_settings.smtp_settings.port)
         self._settings_map['HI_EMAIL_USE_TLS'] = str(email_settings.smtp_settings.use_tls)
         self._settings_map['HI_EMAIL_USE_SSL'] = str(email_settings.smtp_settings.use_ssl)
-        
+
+        self.validate_settings()
         self._write_file()
 
         self.print_important( f'Review your settings file: {self._destination_filename}' )
@@ -639,6 +755,11 @@ def parse_command_line_args():
         action = 'store_true',
         help = 'Enable verbose output for debugging purposes.',
     )
+    parser.add_argument(
+        '--example',
+        action = 'store_true',
+        help = 'Print an example env file (compose env_file format) to stdout and exit.',
+    )
 
     args, unknown = parser.parse_known_args()
 
@@ -657,9 +778,12 @@ def parse_command_line_args():
 if __name__ == '__main__':
 
     args = parse_command_line_args()
+    if args.example:
+        HiEnvironmentGenerator.print_example_env_file()
+        sys.exit( 0 )
     generator = HiEnvironmentGenerator(
         env_name = args.env_name,
         verbose = args.verbose,
     )
     generator.generate_env_file()
-    
+
