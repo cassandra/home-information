@@ -3,6 +3,16 @@
 
 {% block space_tab_active %} active{% endblock %}
 
+{% block tab_header %}
+<div class="m-2">
+  <a href="{% url 'location_edit_location_add' %}"
+     class="btn btn-add btn-control" role="button"
+     data-async="modal">
+    {% icon "plus" css_class="hi-icon-left" %}ADD NEW SPACE
+  </a>
+</div>
+{% endblock %}
+
 {% block tab_content %}
 <div id="{{ DIVID.LOCATION_PROPERTIES_PANE }}">
   {% include "location/edit/panes/location_properties_edit.html" %}

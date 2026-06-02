@@ -3,6 +3,16 @@
 
 {% block view_tab_active %} active{% endblock %}
 
+{% block tab_header %}
+<div class="m-2">
+  <a href="{% url 'collection_add' %}"
+     class="btn btn-add btn-control" role="button"
+     data-async="modal" >
+    {% icon "plus" css_class="hi-icon-left" %}ADD NEW COLLECTION
+  </a>
+</div>
+{% endblock %}
+
 {% block tab_content %}
 <div id="{{ DIVID.COLLECTION_EDIT_PANE }}">
   {% include "collection/edit/panes/collection_properties_edit.html" %}
