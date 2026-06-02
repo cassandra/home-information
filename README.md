@@ -37,7 +37,7 @@ The install script automatically handles everything: Docker setup verification, 
 
 **New to the interface?** Follow the [Getting Started Guide](docs/GettingStarted.md) for a walkthrough.
 
-**Need more control?** See [Installation Guide](docs/Installation.md) for manual installation, deployment options, and troubleshooting.
+**Need more control?** See the [Installation Guide](docs/Installation.md) and [Deployment Options](docs/Deployment.md) for more options.
 
 ## What You Can Do
 
@@ -108,12 +108,13 @@ For technical details, see our [Development Documentation](docs/Development.md).
 ## Resources
 
 ### Users
-- [Installation](docs/Installation.md) - Complete setup instructions
+- [Installation](docs/Installation.md) - Setup, day-to-day management, updates, troubleshooting
 - [Features](docs/Features.md) - Complete feature overview
-- [FAQ](docs/FAQ.md) - Common questions and answers
-- [Getting Started](docs/GettingStarted.md) - First-time user walkthrough  
+- [Getting Started](docs/GettingStarted.md) - First-time user walkthrough
 - [Layout Editor](docs/Editing.md) - Show how to use the layout editor
 - [Integrations](docs/Integrations.md) - Home Assistant and ZoneMinder setup
+- [Deployment Options](docs/Deployment.md) - Network access, custom compose stacks, production configuration
+- [FAQ](docs/FAQ.md) - Common questions and answers
 
 ### Contributors  
 - [Contributing](CONTRIBUTING.md) - How to get involved

@@ -2,7 +2,7 @@
 
 # Installation Guide
 
-Complete installation instructions for Home Information, from quick setup to advanced deployment.
+How to install Home Information and manage your installation day-to-day. For deployment beyond localhost (network access, custom compose stacks, production configuration), see [Deployment Options](Deployment.md).
 
 ## Prerequisites
 
@@ -30,189 +30,61 @@ curl -fsSL https://raw.githubusercontent.com/cassandra/home-information/master/i
 - Database: `~/.hi/database/`
 - Files: `~/.hi/media/`
 
-### Updates
-
-```shell
-curl -fsSL https://raw.githubusercontent.com/cassandra/home-information/master/update.sh | bash
-```
-
-This preserves all your data while updating to the latest version.
-
-### Environment Variable Changes
-
-If you used the one-liner `install.sh` script and need to change your environment variables, you'll need to re-run in docker to pick up the changes.  The install script runs docker with this command:
-```
-docker run -d \
-       --name "${CONTAINER_NAME}" \
-       --restart unless-stopped \
-       --env-file "${ENV_FILE}" \
-       -v "${DATABASE_DIR}:/data/database" \
-       -v "${MEDIA_DIR}:/data/media" \
-       -p "${EXTERNAL_PORT}:8000" \
-       "${DOCKER_IMAGE}:${DOCKER_TAG}"
-```
-Where the environment variables you need are:
-```
-CONTAINER_NAME="hi"
-HI_HOME="${HOME}/.hi"
-ENV_DIR="${HI_HOME}/env"
-ENV_FILE="${ENV_DIR}/local.env"
-DATABASE_DIR="${HI_HOME}/database"
-MEDIA_DIR="${HI_HOME}/media"
-EXTERNAL_PORT="9411"
-DOCKER_IMAGE="ghcr.io/cassandra/home-information"
-DOCKER_TAG="${1:-latest}"
-```
-
-## Manual Installation
-
-For users who want full control over the installation process or need to customize the setup.
-
-### Before You Start
-
-**Default configuration** is designed for simplicity - no user authentication, no email alerts. You can enable these later by modifying the environment file.
-
-**Optional features to consider:**
-- **Email alerts** - Get notifications when away from home (requires email provider configuration)
-- **User authentication** - Require login via emailed "magic codes" (requires email configuration)
-
-Both can be configured during manual setup or added later by editing `~/.hi/env/local.env`.
-
-### Step-by-Step Manual Installation
-
-#### 1. Download and Extract
-
-Choose your project directory:
-```shell
-PROJ_DIR="proj"
-mkdir -p $PROJ_DIR && cd $PROJ_DIR
-```
-
-Download latest release from: https://github.com/cassandra/home-information/releases/latest
-
-Extract the code:
-```shell
-# Download method depends on your preference
-curl -L https://github.com/cassandra/home-information/releases/latest/download/home-information.zip -o home-information.zip
-unzip home-information.zip && cd home-information*
-
-# Alternative: tarball
-# tar zxvf ~/Downloads/home-information-*.tar.gz && cd home-information*
-```
-
-#### 2. Configure Environment
-
-Generate environment configuration (includes secure admin credentials):
-```shell
-make env-build
-```
-
-This creates: `$HOME/.hi/env/local.env` with all necessary settings and credentials.
-
-#### 3. Build and Run
-
-Build the Docker image:
-```shell
-make docker-build
-```
-
-Start the application:
-```shell
-# Foreground (recommended for first run - shows errors)
-make docker-run-fg
-
-# OR background
-make docker-run
-```
-
-Stop when needed:
-```shell
-make docker-stop
-```
-
-#### 4. Access Your Installation
-
-**URL:** [http://localhost:9411](http://localhost:9411)
-
-**Credentials:** Found in `$HOME/.hi/env/local.env`
-
-**Data location:**
-- Database: `$HOME/.hi/database/hi.sqlite3`
-- Files: `$HOME/.hi/media`
-
-### Manual Installation Updates
-
-**Easiest:** Use the update script (works for any installation type):
-```shell
-curl -fsSL https://raw.githubusercontent.com/cassandra/home-information/master/update.sh | bash
-```
-
-**Manual steps:**
-```shell
-cd $PROJ_DIR/home-information*
-
-# Get latest code (download new release)
-# Then rebuild and restart:
-make docker-build
-make docker-stop && make docker-run
-```
-
-## Production Deployment
-
-Ready to deploy beyond localhost? Here's what you need to configure.
-
-### Network Access Configuration
-
-Edit `$HOME/.hi/env/local.env` to add your deployment URLs:
-```shell
-# Example: accessing via IP address and hostname
-HI_EXTRA_HOST_URLS="http://192.168.1.100:9411 http://home-server:9411"
-```
-
-### Auto-Start on Reboot
-
-The Docker container is configured to restart automatically, but Docker itself needs to start on boot:
-
-**macOS (Docker Desktop):**
-```
-Docker Desktop → Settings → General → "Start Docker Desktop when you log in"
-```
-
-**Linux (Ubuntu/systemd):**
-```shell
-# Check if enabled
-systemctl is-enabled docker
-
-# Enable if needed
-sudo systemctl enable docker
-```
-
-### User Management (Optional)
-
-If you enabled user authentication, you'll need to create user accounts manually via the Django admin interface:
-
-1. Sign in at [http://localhost:9411/admin/](http://localhost:9411/admin/) using:
-   - Email: `DJANGO_SUPERUSER_EMAIL` (from your env file)
-   - Password: `DJANGO_SUPERUSER_PASSWORD` (from your env file)
-
-2. Add users at: [http://localhost:9411/admin/custom/customuser/add/](http://localhost:9411/admin/custom/customuser/add/)
-
-**Requirements:** Email configuration must be working (users receive "magic code" login links)
-
-### Integrations
-
-Connect Home Information with your existing home automation and security systems. See the [Integrations Guide](Integrations.md) for setup instructions:
-- **Home Assistant** - Device control and monitoring
-- **ZoneMinder** - Security camera management
-- **HomeBox** - Home inventory management
-
 ## Next Steps
 
-### First-Time Setup
-With your installation running, see the [Getting Started Guide](GettingStarted.md) for:
-- Creating your first home layout
-- Adding devices and information
-- Setting up monitoring and alerts
+With your installation running, see the [Getting Started Guide](GettingStarted.md) to:
+- Create your first home layout
+- Add devices and information
+- Set up monitoring and alerts
+
+## Managing your installation
+
+Manage the running app with standard Docker commands:
+
+```shell
+docker logs hi          # view logs (add -f to follow)
+docker stop hi          # stop the app
+docker start hi         # start it again
+docker restart hi       # restart (e.g. after changing the env file)
+docker ps | grep hi     # status / health
+```
+
+**Your files:**
+
+- Configuration: `~/.hi/env/local.env`
+- Database: `~/.hi/database/`
+- Uploaded media: `~/.hi/media/`
+
+## Updates
+
+Run the update script — it pulls the latest image and recreates the container, preserving your data:
+
+```shell
+curl -fsSL https://raw.githubusercontent.com/cassandra/home-information/master/update.sh | bash
+```
+
+## Environment Variable Changes
+
+Edit your configuration file at `~/.hi/env/local.env`, then restart the app to pick up the changes:
+
+```shell
+docker restart hi
+```
+
+If you changed network settings such as `HI_EXTRA_HOST_URLS`, see the [Deployment Options](Deployment.md) guide for related configuration.
+
+## Removing your installation
+
+```shell
+docker stop hi
+docker rm hi
+```
+
+To also remove your data and configuration (this is permanent):
+
+```shell
+rm -rf ~/.hi/
+```
 
 ## Troubleshooting
 
@@ -225,7 +97,7 @@ By default, the app only accepts requests to `localhost`. To access it from othe
 - Set `HI_EXTRA_HOST_URLS` to the URL(s) you'll use to access the app, including the scheme and port
 - Example: `HI_EXTRA_HOST_URLS="http://192.168.1.100:9411"` (use your server's actual IP)
 - Multiple URLs can be space-separated: `HI_EXTRA_HOST_URLS="http://192.168.1.100:9411 http://myserver.local:9411"`
-- For standalone Docker: edit `$HOME/.hi/env/local.env` and restart with `make docker-stop && make docker-run`
+- For standalone Docker: edit `$HOME/.hi/env/local.env` and run `docker restart hi`
 - For unRAID: set the "Extra Host URLs" field under "Show more settings"
 
 If you see `Invalid HTTP_HOST header` errors in the logs, this is the setting you need.
@@ -246,5 +118,6 @@ HI_EMAIL_USE_TLS=true
 
 ### More Help
 
+- **Deployment beyond localhost** (network access, auto-start, custom compose stack, user management): [Deployment Options](Deployment.md)
 - **Detailed troubleshooting:** [FAQ](FAQ.md)
 - **Feature questions:** [Features](Features.md)
