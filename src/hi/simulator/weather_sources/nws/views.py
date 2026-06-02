@@ -61,7 +61,6 @@ def _build_periods( state : NwsSimConditions, count : int, hours_each : int,
     time axis anchored to now. 12h periods get day/night names and
     alternate ``isDaytime``; hourly periods derive it from the hour."""
     start = payload_utils.now_hour()
-    mnemonic = _deg_to_compass( state.wind_direction_deg )
     first_is_day = state.is_daytime
     periods = []
     for index in range( count ):
@@ -74,20 +73,29 @@ def _build_periods( state : NwsSimConditions, count : int, hours_each : int,
         else:
             is_daytime = ( 6 <= period_start.hour < 18 )
             name = ''
+        # Light per-period jitter around the operator's values so the
+        # forecast isn't a flat line; deterministic per index (stable
+        # across polls). Condition text is left as set.
+        temperature = round( payload_utils.jitter( state.temperature_c, 2.0, index, 1 ), 1 )
+        dewpoint = round( payload_utils.jitter( state.dewpoint_c, 1.5, index, 2 ), 1 )
+        humidity = int( payload_utils.clamp(
+            payload_utils.jitter( state.relative_humidity_pct, 8, index, 3 ), 0, 100 ) )
+        wind_speed = round( max( 0.0, payload_utils.jitter( state.wind_speed_kmh, 4.0, index, 4 ) ), 1 )
+        precip = int( payload_utils.clamp(
+            payload_utils.jitter( state.precip_probability_pct, 15, index, 5 ), 0, 100 ) )
+        wind_deg = int( payload_utils.jitter( state.wind_direction_deg, 25, index, 6 ) ) % 360
         periods.append({
             'number': index + 1,
             'name': name,
             'startTime': _iso( period_start ),
             'endTime': _iso( period_end ),
             'isDaytime': is_daytime,
-            'temperature': { 'unitCode': 'wmoUnit:degC', 'value': state.temperature_c },
-            'probabilityOfPrecipitation': {
-                'unitCode': 'wmoUnit:percent', 'value': state.precip_probability_pct },
-            'dewpoint': { 'unitCode': 'wmoUnit:degC', 'value': state.dewpoint_c },
-            'relativeHumidity': {
-                'unitCode': 'wmoUnit:percent', 'value': state.relative_humidity_pct },
-            'windSpeed': { 'unitCode': 'wmoUnit:km_h-1', 'value': state.wind_speed_kmh },
-            'windDirection': mnemonic,
+            'temperature': { 'unitCode': 'wmoUnit:degC', 'value': temperature },
+            'probabilityOfPrecipitation': { 'unitCode': 'wmoUnit:percent', 'value': precip },
+            'dewpoint': { 'unitCode': 'wmoUnit:degC', 'value': dewpoint },
+            'relativeHumidity': { 'unitCode': 'wmoUnit:percent', 'value': humidity },
+            'windSpeed': { 'unitCode': 'wmoUnit:km_h-1', 'value': wind_speed },
+            'windDirection': _deg_to_compass( wind_deg ),
             'shortForecast': state.text_description,
             'detailedForecast': state.text_description if named else '',
         })
@@ -155,7 +163,11 @@ class NwsObservationsView( View ):
             'amount': state.cloud_amount,
         } ]
         context = {
-            'timestamp': _iso( payload_utils.now_hour() ),
+            # Stamp the actual current time (not the top of the hour) so each
+            # poll presents a strictly newer source_datetime; otherwise the
+            # main app's same-source freshness gate keeps the prior value and
+            # operator edits don't surface until the hour rolls over.
+            'timestamp': _iso( datetimeproxy.now() ),
             'text_description': state.text_description,
             'temperature': state.temperature_c,
             'dewpoint': state.dewpoint_c,
@@ -176,7 +188,7 @@ class NwsForecastView( View ):
     def get( self, request, office, grid, *args, **kwargs ):
         periods = _build_periods(
             get_current_conditions(), TWELVE_HOUR_PERIODS, hours_each = 12, named = True )
-        context = { 'generated_at': _iso( payload_utils.now_hour() ), 'periods': periods }
+        context = { 'generated_at': _iso( datetimeproxy.now() ), 'periods': periods }
         return JsonResponse(
             payload_utils.render_json_payload( FORECAST_TEMPLATE, context, encode = True ) )
 
@@ -187,7 +199,7 @@ class NwsForecastHourlyView( View ):
     def get( self, request, office, grid, *args, **kwargs ):
         periods = _build_periods(
             get_current_conditions(), HOURLY_PERIODS, hours_each = 1, named = False )
-        context = { 'generated_at': _iso( payload_utils.now_hour() ), 'periods': periods }
+        context = { 'generated_at': _iso( datetimeproxy.now() ), 'periods': periods }
         return JsonResponse(
             payload_utils.render_json_payload( FORECAST_TEMPLATE, context, encode = True ) )
 

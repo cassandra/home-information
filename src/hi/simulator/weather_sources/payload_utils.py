@@ -11,11 +11,28 @@ the ``<SOURCE>_BASE_URL`` setting the operator points at us.
 """
 from datetime import date, datetime, timedelta
 import json
+import random
 
 from django.template.loader import render_to_string
 from django.utils.safestring import mark_safe
 
 import hi.apps.common.datetimeproxy as datetimeproxy
+
+
+def jitter( base, amount, index, salt = 0 ):
+    """Deterministic pseudo-random offset of ±``amount`` around ``base``.
+
+    Seeded only by ``index`` (plus a per-field ``salt`` so different fields
+    don't move in lockstep) — never by time. So forecast series look like
+    believable noise that varies period-to-period, stay stable across polls
+    (no 20s flicker), and simply recenter when the operator edits the base.
+    """
+    rng = random.Random( ( ( index + 1 ) * 2654435761 ) ^ ( ( salt + 1 ) * 40503 ) )
+    return base + rng.uniform( -amount, amount )
+
+
+def clamp( value, low, high ):
+    return max( low, min( high, value ) )
 
 
 def render_json_payload( template_name : str, context : dict, encode : bool = False ) -> dict:
