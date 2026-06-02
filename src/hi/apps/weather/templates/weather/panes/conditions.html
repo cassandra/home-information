@@ -14,7 +14,7 @@
 
 <div class="row">
   <div class="col-6" >
-    <div class="h2">
+    <div class="h2 text-primary text-center">
       {% if conditions.temperature is not None %}
       {{ conditions.temperature.quantity|format_magnitude:1 }}
       <small>{{ conditions.temperature.quantity|format_units }}</small>
@@ -30,7 +30,7 @@
       {% with conditions.sky_condition as sky_condition %}
       <img height="32" src="{% static sky_condition.icon_filename %}"
            alt="{{ sky_condition.label }}" />
-
+      <br />
       {{ conditions.cloud_cover.quantity|format_magnitude:1 }}
       <small>{{ conditions.cloud_cover.quantity|format_units }}</small>
       {% endwith %}
@@ -41,7 +41,7 @@
   </div>
 </div>
 <div>
-  <div class="d-flex justify-content-left">
+  <div class="d-flex justify-content-between">
     <div>
       Min:
       {% if weather_stats.temperature is not None %}
@@ -61,7 +61,7 @@
       {% endif %}
     </div>
   </div>
-  <div>
+  <div class="text-center">
     Humidity:
     {% if conditions.relative_humidity %}
     {{ conditions.relative_humidity.quantity|format_magnitude:1 }}
@@ -73,7 +73,7 @@
 
 </div>
 
-<div class="weather-pane-status mt-2">
+<div class="weather-pane-status my-2 text-center">
   {% if weather_pane_status.caption_text %}
   <a href="{% url 'system_health_status' provider_id='hi.apps.weather.monitor' %}"
      class="alert {{ weather_pane_status.caption_alert_class }} py-1 px-2 mb-0 d-flex align-items-center small"
