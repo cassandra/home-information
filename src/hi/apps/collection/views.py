@@ -1,6 +1,5 @@
 import logging
 
-from django.core.exceptions import BadRequest
 from django.http import HttpResponseRedirect
 from django.urls import reverse
 from django.views.generic import View

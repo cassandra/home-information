@@ -36,6 +36,7 @@ class ProfileLoadNotAllowedError( ProfileError ):
     than ALLOWS_PROFILE (i.e. entities or locations already exist)."""
     pass
 
+
 logger = logging.getLogger(__name__)
 
 
