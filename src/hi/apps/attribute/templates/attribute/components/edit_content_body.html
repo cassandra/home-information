@@ -149,6 +149,8 @@ by using the AttributeItemEditContext pattern.
   any tab -- UPDATE applies to Tab 1 content only but stays
   visible regardless of active tab.
   {% endcomment %}
+
+  {% block tabs_nav_pane %}
   <ul class="nav nav-tabs" role="tablist">
     <li class="nav-item">
       <a class="nav-link {% block tab1_nav_active %}active{% endblock %}"
@@ -162,7 +164,8 @@ by using the AttributeItemEditContext pattern.
     {% block tab2_nav %}{% endblock %}
     {% block tab3_nav %}{% endblock %}
   </ul>
-
+  {% endblock %}
+  
   <div class="tab-content">
     <div class="tab-pane {% block tab1_pane_active %}show active{% endblock %}"
          id="hi-attr-tab1-{{ attr_item_context.owner_id }}"
