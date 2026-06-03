@@ -51,10 +51,9 @@ For a Connectors integration:
 4. Choose the integration you want to add and follow the
    configuration steps on its per-integration page below.
 
-<img src="img/getting-started/integrations-page-empty-1024x768.png" alt="Configure button" width="400"> &nbsp; <img src="img/getting-started/integrations-enable-modal-1024x768.png" alt="All connector integrations" width="400">
+<img src="img/getting-started/integrations-page-empty-1024x768.png" alt="Configure button" width="350"> &nbsp; <img src="img/getting-started/integrations-enable-modal-1024x768.png" alt="All connector integrations" width="350">
 
-<img src="img/getting-started/integrations-sync-result-1024x768.png" alt="Connector result dialog" width="400"> &nbsp; 
-<img src="img/getting-started/integrations-place-items-1024x768.png" alt="Connector place items dialog" width="400">
+<img src="img/getting-started/integrations-sync-result-1024x768.png" alt="Connector result dialog" width="350"> &nbsp; <img src="img/getting-started/integrations-place-items-1024x768.png" alt="Connector place items dialog" width="350">
 
 ### Content Sources
 
@@ -69,7 +68,7 @@ For a Content Source integration:
 
 Once enabled, you will see an extra **Link Content** button when you are editing items. Clicking that brings up a search dialog that searches the external source where you can select the content to link to the item. Once linked, when you open the item, that content will show up.
 
-<img src="img/screenshots/link-content-button-1024x768.png" alt="Link content button" width="400"> &nbsp; <img src="img/screenshots/reference-picker-1024x768.png" alt="Content picker dialog" width="400"> &nbsp; <img src="img/screenshots/link-content-tab-1024x768.png" alt="Linked content tab" width="400">
+<img src="img/screenshots/link-content-button-1024x768.png" alt="Link content button" width="300"> &nbsp; <img src="img/screenshots/reference-picker-1024x768.png" alt="Content picker dialog" width="300"> &nbsp; <img src="img/screenshots/link-content-tab-1024x768.png" alt="Linked content tab" width="300">
 
 ### Data Import
 

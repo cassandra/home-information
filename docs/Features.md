@@ -8,7 +8,7 @@ Home Information provides comprehensive tools for organizing, monitoring, and co
 
 **What it does:** Store, organize, and access all your home-related documents, notes, and data using a visual, location-based approach.
 
-<img src="img/screenshots/spatial-data-org-1024x768.png" alt="Kitchen Example" width="400"> &nbsp; <img src="img/screenshots/attribute-info-files-1024x768.png" alt="Info View/Edit Example" width="400">
+<img src="img/screenshots/spatial-data-org-1024x768.png" alt="Kitchen Example" width="350"> &nbsp; <img src="img/screenshots/attribute-info-files-1024x768.png" alt="Info View/Edit Example" width="350">
 
 ### Spatial Data Organization
 - **Position items visually** on floor plans or property maps
@@ -36,6 +36,8 @@ Home Information provides comprehensive tools for organizing, monitoring, and co
 ### Content Linking
 - **Paperless-ngx** - Link documents and images to any items on your floor plan
 - **Immich** - Link images and videos to any items on your floor plan
+
+<img src="img/screenshots/reference-picker-1024x768.png" alt="Linking content" width="400">
 
 ### HomeBox Inventory Integration
 - **Item synchronization** - automatically link items from HomeBox into your home layout

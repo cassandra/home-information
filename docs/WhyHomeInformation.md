@@ -2,7 +2,7 @@
 
 # Why Home Information?
 
-<img src="img/screenshots/spatial-data-org-1024x768.png" alt="Kitchen Example" width="400"> &nbsp; <img src="img/screenshots/attribute-info-files-1024x768.png" alt="Info View/Edit Example" width="400">
+<img src="img/screenshots/spatial-data-org-1024x768.png" alt="Kitchen Example" width="350"> &nbsp; <img src="img/screenshots/attribute-info-files-1024x768.png" alt="Info View/Edit Example" width="350">
 
 ## The Home Information Problem
 
