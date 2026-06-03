@@ -60,7 +60,7 @@ Common Mistakes to Avoid:
 Using GitHub CLI (preferred for automation):
 
 ```bash
-gh release create vX.X.X --title "vX.X.X" --generate-notes --latest
+gh release create vX.X.X --title "vX.X.X" --generate-notes
 ```
 
 Or via GitHub web interface:
@@ -107,7 +107,7 @@ This is where the automated release process ends.
 ### Refine Release
 
 - Read and refine the release notes on the github page.
-- Attach an image to the release
+- Attach image(s) to the release using permalinks from GitHub UI.
 
 ### Validate Install Script Works
 

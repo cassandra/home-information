@@ -1,7 +1,7 @@
 ---
 allowed-tools: Bash, Read, Edit, TodoWrite, Grep, Glob
 description: Execute the complete release process from staging to master
-argument-hint: [version] (e.g., 1.2.3)
+argument-hint: [version] (e.g., v1.2.3)
 ---
 
 Execute our complete release process following `docs/dev/workflow/release-process.md`:

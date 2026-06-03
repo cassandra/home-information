@@ -25,7 +25,7 @@ See [Why Home Information?](docs/WhyHomeInformation.md) for more details on our 
 
 **Requirements:** [Docker](https://docs.docker.com/get-docker/) installed and running.
 
-**Get running in 30 seconds:**
+**Get running in only minutes:**
 
 ```shell
 curl -fsSL https://raw.githubusercontent.com/cassandra/home-information/master/install.sh | bash
