@@ -489,7 +489,12 @@
 	addPointerListener( 'pointerup', Hi.LOCATION_VIEW_AREA_SELECTOR, handlePointerUpEvent, false );
 	addPointerListener( 'pointercancel', Hi.LOCATION_VIEW_AREA_SELECTOR, handlePointerCancelEvent );
 	
-	$(document).on('wheel', Hi.LOCATION_VIEW_AREA_SELECTOR, function( event ) {
+	// N.B. Registered natively with "passive: false" so preventDefault()
+	// works. Chrome treats wheel listeners on document as passive by
+	// default, which silently ignores preventDefault() (jQuery also has
+	// no way to set the passive option). See addPointerListener above.
+	document.addEventListener( 'wheel', function( event ) {
+	    if ( ! event.target.closest( Hi.LOCATION_VIEW_AREA_SELECTOR )) { return; }
 	    let handled = Hi.edit.icon.handleMouseWheel( event );
 	    if ( ! handled ) {
 		handled = Hi.location.handleMouseWheel( event );
@@ -498,7 +503,7 @@
 		event.preventDefault();
 		event.stopImmediatePropagation();
    	    }
-	});
+	}, { passive: false });
 
 	$(document).on('click', Hi.LOCATION_VIEW_AREA_SELECTOR, function( event ) {
 	    if ( shouldIgnoreEvent( event )) { return; }
