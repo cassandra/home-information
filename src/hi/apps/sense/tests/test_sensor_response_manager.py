@@ -2,7 +2,7 @@ import logging
 from datetime import datetime, timedelta
 from unittest.mock import AsyncMock, Mock, patch
 from django.utils import timezone
-from hi.testing.async_task_utils import AsyncTaskFastTestCase, AsyncTaskTestCase
+from hi.testing.async_task_utils import AsyncTaskFastTestCase
 
 from hi.apps.entity.models import Entity, EntityState
 from hi.apps.sense.models import Sensor, SensorHistory
@@ -322,13 +322,15 @@ class AsyncSensorResponseManagerTestCase(AsyncTaskFastTestCase):
             self.assertEqual(response_list[0].sensor, self.sensor)
 
 
-class AsyncSensorResponseManagerCrossConnectionTestCase(AsyncTaskTestCase):
-    """Tests that exercise ``_add_latest_sensor_responses`` end-to-end.
-    The method fans out through ``sync_to_async`` to multiple DB
-    reads/writes; under TestCase the worker thread can't see setUp's
-    uncommitted Sensor row, so SQLite returns ``database table is
-    locked``. TransactionTestCase commits between methods, which is
-    the visibility this fan-out needs."""
+class AsyncSensorResponseManagerDirtyFlagTestCase(AsyncTaskFastTestCase):
+    """Verifies the cache-poisoning guard in
+    ``_add_latest_sensor_responses``: the in-memory-map dirty flag must be
+    set only AFTER the Redis pipeline executes. The DB fan-out (sensor
+    lookup + history ``bulk_create``) runs before the Redis write and never
+    touches the flag, so it is mocked here. Doing it for real fanned out a
+    cross-connection ``sync_to_async`` write whose visibility was
+    test-order dependent — the source of this test's flakiness — and that
+    write path is covered separately by the sensor-history manager tests."""
 
     def setUp(self):
         super().setUp()
@@ -370,6 +372,8 @@ class AsyncSensorResponseManagerCrossConnectionTestCase(AsyncTaskTestCase):
                 value='on',
                 timestamp=timezone.now(),
             )
+            # Pre-resolve the sensor so _add_sensors skips its DB read.
+            sensor_response.sensor = self.sensor
 
             mock_pipeline = Mock()
 
@@ -381,13 +385,23 @@ class AsyncSensorResponseManagerCrossConnectionTestCase(AsyncTaskTestCase):
 
             mock_pipeline.execute.side_effect = capture_dirty_state
 
-            with patch.object( self.manager, '_redis_client' ) as mock_redis:
+            # Mock the history-manager write: it runs before the Redis
+            # pipeline and is irrelevant to the dirty flag this test pins.
+            mock_history_manager = Mock()
+            mock_history_manager.add_to_sensor_history = AsyncMock( return_value = [] )
+
+            with patch.object( self.manager, '_redis_client' ) as mock_redis, \
+                 patch.object( self.manager, 'sensor_history_manager_async',
+                               new = AsyncMock( return_value = mock_history_manager )):
                 mock_redis.pipeline.return_value = mock_pipeline
                 self.manager._latest_sensor_data_dirty = False
                 await self.manager._add_latest_sensor_responses( [ sensor_response ] )
 
-        import asyncio
-        asyncio.get_event_loop().run_until_complete( run() )
+        # Use the class-managed event loop. asyncio.get_event_loop() would
+        # return whatever loop is currently set, which another test class's
+        # teardown may have already closed — the source of cross-test
+        # flakiness under the parallel runner.
+        self.run_async( run() )
 
         self.assertEqual(
             observed_dirty_at_execute, [ False ],
