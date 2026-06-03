@@ -284,7 +284,23 @@ class LocationManager(Singleton):
             raise LocationView.DoesNotExist()
 
         return location_view
-    
+
+    def get_or_create_default_location_view( self, location : Location ) -> LocationView:
+        """Return the Location's first view, creating a fresh default
+        'All' view if it has none. This is the single point that enforces
+        the invariant that every Location always has at least one
+        LocationView: LocationViewDeleteView uses it so deleting the last
+        view resets to a clean 'All' view, and LocationSwitchView uses it
+        to recover a Location left view-less by legacy data or out-of-band
+        deletes."""
+        location_view = location.views.order_by( 'order_id' ).first()
+        if location_view is None:
+            location_view = self.create_location_view(
+                location = location,
+                name = self.INITIAL_LOCATION_VIEW_NAME,
+            )
+        return location_view
+
     def get_location_view_data( self,
                                 location_view                : LocationView,
                                 include_status_display_data  : bool ):

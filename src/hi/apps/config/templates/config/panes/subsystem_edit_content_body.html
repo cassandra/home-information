@@ -110,8 +110,8 @@ per-subsystem display in ``properties_section``.
   {% if attr_page_context.can_restore_default %}
     {% for multi_edit_form_data in multi_edit_form_data_list %}
       {% if selected_subsystem_id == multi_edit_form_data.owner.id|stringformat:'s' %}
-        <div class="row mt-5 mb-4">
-            <div class="col-12 text-center">
+        <div class="row my-3">
+            <div class="col-12 text-right">
                  <small class="text-muted mr-1">Need to start over?</small>
                  <a href="{% url 'subsystem_attribute_restore_all_confirm_modal' subsystem_id=multi_edit_form_data.owner.id %}"
                     role="button"

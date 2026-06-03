@@ -321,8 +321,16 @@ class TestLocationDeleteView(DualModeViewTestCase):
             svg_view_box_str='0 0 100 100'
         )
 
+    def _create_second_location(self):
+        return LocationSyntheticData.create_test_location(
+            name='Second Location',
+            svg_fragment_filename='second.svg',
+            svg_view_box_str='0 0 100 100',
+        )
+
     def test_get_location_delete_confirmation(self):
-        """Test getting location delete confirmation."""
+        """Test getting location delete confirmation (not the last location)."""
+        self._create_second_location()
         url = reverse('location_edit_location_delete', kwargs={'location_id': self.location.id})
         response = self.client.get(url)
 
@@ -331,14 +339,25 @@ class TestLocationDeleteView(DualModeViewTestCase):
         self.assertTemplateRendered(response, 'location/edit/modals/location_delete.html')
         self.assertEqual(response.context['location'], self.location)
 
+    def test_get_delete_last_location_blocked(self):
+        """Opening the delete modal for the only location is rejected up
+        front rather than offering a delete that can't proceed."""
+        self.assertEqual(Location.objects.count(), 1)
+
+        url = reverse('location_edit_location_delete', kwargs={'location_id': self.location.id})
+        response = self.client.get(url)
+
+        self.assertEqual(response.status_code, 400)
+
     def test_get_location_delete_async(self):
         """Test getting location delete confirmation with AJAX request."""
+        self._create_second_location()
         url = reverse('location_edit_location_delete', kwargs={'location_id': self.location.id})
         response = self.async_get(url)
 
         self.assertSuccessResponse(response)
         self.assertJsonResponse(response)
-        
+
         # HiModalView returns JSON with modal content for AJAX requests
         data = response.json()
         self.assertIn('modal', data)
@@ -358,7 +377,13 @@ class TestLocationDeleteView(DualModeViewTestCase):
         self.assertEqual(response.status_code, 400)
 
     def test_post_delete_with_confirmation(self):
-        """Test POST request with proper confirmation."""
+        """Test POST request with proper confirmation (not the last location)."""
+        # A second location so the target is not the only one.
+        LocationSyntheticData.create_test_location(
+            name='Second Location',
+            svg_fragment_filename='second.svg',
+            svg_view_box_str='0 0 100 100',
+        )
         url = reverse('location_edit_location_delete', kwargs={'location_id': self.location.id})
         response = self.client.post(url, {'action': 'confirm'})
 
@@ -368,10 +393,21 @@ class TestLocationDeleteView(DualModeViewTestCase):
         response_data = response.json()
         expected_url = reverse('home')
         self.assertEqual(response_data['location'], expected_url)
-        
+
         # Location should be deleted
         with self.assertRaises(Location.DoesNotExist):
             Location.objects.get(id=self.location.id)
+
+    def test_post_delete_last_location_blocked(self):
+        """The only location cannot be deleted (the app requires at least
+        one); the request is rejected and the location remains."""
+        self.assertEqual(Location.objects.count(), 1)
+
+        url = reverse('location_edit_location_delete', kwargs={'location_id': self.location.id})
+        response = self.client.post(url, {'action': 'confirm'})
+
+        self.assertEqual(response.status_code, 400)
+        self.assertTrue( Location.objects.filter(id=self.location.id).exists() )
 
     def test_post_invalid_location_id(self):
         """Test POST request with invalid location ID."""
@@ -514,6 +550,25 @@ class TestLocationViewDeleteView(DualModeViewTestCase):
         self.assertHtmlResponse(response)
         self.assertTemplateRendered(response, 'location/edit/modals/location_view_delete.html')
         self.assertEqual(response.context['location_view'], self.location_view)
+        # Only view for the location -> confirmation flags the reset.
+        self.assertTrue(response.context['is_last_view'])
+
+    def test_get_delete_confirmation_not_last_view(self):
+        """With more than one view, the confirmation is not flagged as a
+        reset of the last view."""
+        LocationView.objects.create(
+            location=self.location,
+            name='Second View',
+            location_view_type_str='DETAIL',
+            svg_view_box_str='0 0 100 100',
+            svg_rotate=0.0,
+            order_id=1,
+        )
+        url = reverse('location_edit_location_view_delete', kwargs={'location_view_id': self.location_view.id})
+        response = self.client.get(url)
+
+        self.assertSuccessResponse(response)
+        self.assertFalse(response.context['is_last_view'])
 
     def test_post_delete_without_confirmation(self):
         """Test POST request without confirmation."""
@@ -534,10 +589,49 @@ class TestLocationViewDeleteView(DualModeViewTestCase):
         response_data = response.json()
         expected_url = reverse('home')
         self.assertEqual(response_data['location'], expected_url)
-        
+
         # Location view should be deleted
         with self.assertRaises(LocationView.DoesNotExist):
             LocationView.objects.get(id=self.location_view.id)
+
+    def test_delete_last_view_resets_to_default_all_view(self):
+        """Deleting a Location's only view enforces the invariant by
+        minting a fresh default 'All' view (delete last view == reset)."""
+        self.assertEqual(self.location.views.count(), 1)
+
+        url = reverse('location_edit_location_view_delete',
+                      kwargs={'location_view_id': self.location_view.id})
+        response = self.client.post(url, {'action': 'confirm'})
+
+        self.assertEqual(response.status_code, 200)
+        # Original view gone, but the Location is not left view-less.
+        remaining_views = self.location.views.all()
+        self.assertEqual(remaining_views.count(), 1)
+        replacement = remaining_views.first()
+        self.assertNotEqual(replacement.id, self.location_view.id)
+        self.assertEqual(replacement.name, LocationManager.INITIAL_LOCATION_VIEW_NAME)
+
+    def test_delete_non_last_view_does_not_auto_create(self):
+        """Deleting a non-last view just removes it; no replacement is
+        created since the invariant is not threatened."""
+        second_view = LocationView.objects.create(
+            location=self.location,
+            name='Second View',
+            location_view_type_str='DETAIL',
+            svg_view_box_str='0 0 100 100',
+            svg_rotate=0.0,
+            order_id=1,
+        )
+        self.assertEqual(self.location.views.count(), 2)
+
+        url = reverse('location_edit_location_view_delete',
+                      kwargs={'location_view_id': self.location_view.id})
+        response = self.client.post(url, {'action': 'confirm'})
+
+        self.assertEqual(response.status_code, 200)
+        remaining_views = self.location.views.all()
+        self.assertEqual(remaining_views.count(), 1)
+        self.assertEqual(remaining_views.first().id, second_view.id)
 
     def test_nonexistent_location_view_returns_404(self):
         """Test that accessing nonexistent location view returns 404."""

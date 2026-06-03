@@ -1,8 +1,9 @@
 import logging
 from pathlib import Path
 
-from hi.apps.profiles.profile_manager import ProfileManager
+from hi.apps.profiles.profile_manager import ProfileManager, ProfileLoadNotAllowedError
 from hi.apps.profiles.enums import ProfileType
+from hi.enums import ProvisioningState
 from hi.apps.entity.models import Entity, EntityPosition
 from hi.apps.location.models import Location, LocationView
 from hi.apps.collection.models import Collection, CollectionEntity
@@ -169,14 +170,38 @@ class TestProfileManager(BaseTestCase):
         with self.in_memory_media_storage():
             self._test_profile_loading(ProfileType.APARTMENT)
 
-    def test_profile_requires_empty_database(self):
-        """Test that profile loading fails when database is not empty."""
-        # Create an entity to make database non-empty
+    def test_profile_load_not_allowed_when_entities_exist(self):
+        """Profile loading is only allowed in ProvisioningState.ALLOWS_PROFILE
+        (no entities or locations); an existing entity blocks it."""
+        # An entity with no location -> REQUIRES_LOCATION
         Entity.objects.create(name='Existing Entity', entity_type_str='light')
-        
-        # Try to load a profile - should raise ValueError
-        with self.assertRaises(ValueError):
+        self.assertEqual(
+            self.profile_manager.get_provisioning_state(),
+            ProvisioningState.REQUIRES_LOCATION,
+        )
+
+        with self.assertRaises(ProfileLoadNotAllowedError):
             self.profile_manager.load_profile(ProfileType.SINGLE_STORY)
+        return
+
+    def test_get_provisioning_state(self):
+        """ProvisioningState reflects entity/location presence."""
+        self.assertEqual(
+            self.profile_manager.get_provisioning_state(),
+            ProvisioningState.ALLOWS_PROFILE,
+        )
+        Entity.objects.create(name='E', entity_type_str='light')
+        self.assertEqual(
+            self.profile_manager.get_provisioning_state(),
+            ProvisioningState.REQUIRES_LOCATION,
+        )
+        Location.objects.create(
+            name='L', svg_fragment_filename='l.svg', svg_view_box_str='0 0 10 10',
+        )
+        self.assertEqual(
+            self.profile_manager.get_provisioning_state(),
+            ProvisioningState.PROVISIONED,
+        )
         return
     
     def test_profile_json_filename_generation(self):

@@ -28,7 +28,7 @@ from hi.views import page_not_found_response
 from .enums import LocationViewType
 from .location_attribute_edit_context import LocationAttributeItemEditContext
 from .location_manager import LocationManager
-from .models import LocationView, LocationAttribute
+from .models import Location, LocationView, LocationAttribute
 from hi.apps.location.view_mixins import LocationViewMixin
 
 logger = logging.getLogger(__name__)
@@ -37,8 +37,32 @@ logger = logging.getLogger(__name__)
 class LocationViewDefaultView( View ):
 
     def get(self, request, *args, **kwargs):
+        # Hot path: resolve the default location's view in a single query
+        # (get_default_location_view fetches the view joined with its
+        # location). Only the rare failures do extra work:
+        #
+        #   - Location.DoesNotExist: no location exists, so this view cannot
+        #     render anything. Defer to StartView, the canonical authority
+        #     on provisioning state, to decide where to go. (This also fixes
+        #     the previously uncaught Location.DoesNotExist 500.)
+        #
+        #   - LocationView.DoesNotExist: a location exists but its default
+        #     view is missing. Switch to any other existing view; if none
+        #     exist anywhere, self-heal by creating a default 'All' view.
+        location_view = None
         try:
             location_view = LocationManager().get_default_location_view( request = request )
+        except Location.DoesNotExist:
+            redirect_url = reverse( 'start' )
+        except LocationView.DoesNotExist:
+            location_view = LocationView.objects.order_by(
+                'location__order_id', 'order_id',
+            ).first()
+            if location_view is None:
+                location = LocationManager().get_default_location( request = request )
+                location_view = LocationManager().get_or_create_default_location_view( location )
+
+        if location_view is not None:
             request.view_parameters.view_type = ViewType.LOCATION_VIEW
             request.view_parameters.update_location_view( location_view )
             request.view_parameters.to_session( request )
@@ -46,8 +70,6 @@ class LocationViewDefaultView( View ):
                 'location_view',
                 kwargs = { 'location_view_id': location_view.id }
             )
-        except LocationView.DoesNotExist:
-            redirect_url = reverse( 'start' )
 
         query_string = request.META.get( 'QUERY_STRING', '' )
         if query_string:
@@ -89,10 +111,11 @@ class LocationSwitchView( View, LocationViewMixin ):
 
     def get(self, request, *args, **kwargs):
         location = self.get_location( request, *args, **kwargs )
-        
-        location_view = location.views.order_by( 'order_id' ).first()
-        if not location_view:
-            raise BadRequest( 'No views defined for this location.' )
+
+        # Invariant: every Location has at least one LocationView. If this
+        # one was left view-less (legacy data / out-of-band deletes), mint
+        # a default 'All' view rather than dead-ending on a BadRequest.
+        location_view = LocationManager().get_or_create_default_location_view( location )
 
         request.view_parameters.view_type = ViewType.LOCATION_VIEW
         request.view_parameters.update_location_view( location_view = location_view )

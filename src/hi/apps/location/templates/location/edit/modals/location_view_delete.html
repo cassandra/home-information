@@ -14,9 +14,17 @@ Delete View?
     <span class="h4 text-primary">{{ location_view.name }}</span>
   </ul>
 </p>
+{% if is_last_view %}
+<p>
+  This is the only view for this location. Deleting it will reset it to a
+  new empty <b>{{ default_view_name }}</b> view; its current contents and
+  layout will be cleared.
+</p>
+{% else %}
 <p>
   This action cannot be undone.
 </p>
+{% endif %}
 {% endblock %}
 
 {% block action_right %}

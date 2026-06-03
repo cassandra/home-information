@@ -58,15 +58,16 @@ class TestCollectionViewDefaultView(SyncViewTestCase):
         self.assertEqual(session.get('collection_id'), self.collection.id)
 
     @patch.object(CollectionManager, 'get_default_collection')
-    def test_raises_bad_request_when_no_collections(self, mock_get_default):
-        """Test that BadRequest is raised when no collections exist."""
+    def test_falls_back_to_location_view_when_no_collections(self, mock_get_default):
+        """When no collection exists, fall back to the default location
+        view rather than dead-ending on a BadRequest."""
         mock_get_default.side_effect = Collection.DoesNotExist()
 
         url = reverse('collection_view_default')
         response = self.client.get(url)
 
-        # BadRequest should result in 400 status
-        self.assertEqual(response.status_code, 400)
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response.url, reverse('location_view_default'))
 
 
 class TestCollectionViewView(DualModeViewTestCase):

@@ -80,7 +80,7 @@ class CollectionAddView( HiModalView ):
             }
             return self.modal_response( request, context )
 
-        cleaneds_data = collection_add_form.clean()
+        cleaned_data = collection_add_form.clean()
         with transaction.atomic():
             collection = collection_add_form.save( commit = False )
             last_collection = Collection.objects.order_by( '-order_id' ).first()
@@ -90,13 +90,14 @@ class CollectionAddView( HiModalView ):
                 collection.order_id = 0
             collection.save()
             
-            if cleaneds_data['include_in_location_view']:
+            if cleaned_data['include_in_location_view']:
                 self._add_to_location_view(
                     request = request,
                     collection = collection,
                 )
 
-        if request.view_parameters.view_type == ViewType.COLLECTION:
+        if not cleaned_data['include_in_location_view']:
+            request.view_parameters.view_type = ViewType.COLLECTION
             request.view_parameters.update_collection( collection = collection )
             request.view_parameters.to_session( request )
 

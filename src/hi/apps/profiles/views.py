@@ -9,7 +9,7 @@ from hi.hi_async_view import HiModalView
 import hi.apps.common.antinode as antinode
 from hi.apps.location.edit.views import LocationAddFirstView
 
-from .profile_manager import ProfileManager
+from .profile_manager import ProfileManager, ProfileLoadNotAllowedError
 from .enums import ProfileType
 from .session_helpers import (
     mark_profile_initialized,
@@ -55,15 +55,23 @@ class InitializePredefinedView(View):
 
             request.view_parameters.view_mode = ViewMode.MONITOR
             request.view_parameters.to_session( request )
-            
-            redirect_url = reverse('home')
-            return antinode.redirect_response( redirect_url )
-        
+
+            return antinode.redirect_response( reverse('home') )
+
+        except ProfileLoadNotAllowedError:
+            # Entities or locations already exist (e.g. a direct POST that
+            # bypassed the start gate). Don't build a profile on top of
+            # existing data; defer to StartView, the canonical authority on
+            # provisioning state, to route appropriately.
+            logger.warning( 'Profile load attempted when not allowed; deferring to start.' )
+            return antinode.redirect_response( reverse('start') )
+
         except Exception as e:
-            logger.error(f'Failed to load profile {profile_enum}: {e}')
-            # Fall back to manual setup flow - user can't fix system issues
-            redirect_url = reverse('profiles_initialize_custom')
-            return antinode.redirect_response( redirect_url )
+            # Genuine load failure on a loadable system (e.g. bad profile
+            # JSON). The user can't fix a system issue, so fall back to the
+            # manual setup flow.
+            logger.error( f'Failed to load profile {profile_enum}: {e}' )
+            return antinode.redirect_response( reverse('profiles_initialize_custom') )
 
 
 class ViewReferenceHelpView( HiModalView ):

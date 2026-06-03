@@ -20,8 +20,21 @@ from hi.apps.collection.models import (
 )
 from hi.apps.collection.enums import CollectionType, CollectionViewType
 
+from hi.enums import ProvisioningState
+
 from .enums import ProfileType
 import hi.apps.profiles.constants as PC
+
+
+class ProfileError( Exception ):
+    """Base class for profile-loading errors."""
+    pass
+
+
+class ProfileLoadNotAllowedError( ProfileError ):
+    """Raised when a profile load is attempted in a ProvisioningState other
+    than ALLOWS_PROFILE (i.e. entities or locations already exist)."""
+    pass
 
 logger = logging.getLogger(__name__)
 
@@ -123,13 +136,14 @@ class ProfileManager:
             ProfileLoadingStats: Detailed statistics about what succeeded and failed during loading
         
         Raises:
-            ValueError: If database is not empty, fundamental validation fails, 
-                       or minimum requirements not met (at least 1 Location and 1 Entity)
+            ProfileLoadNotAllowedError: If entities or locations already exist
+            ValueError: If fundamental validation fails, or minimum requirements
+                       not met (at least 1 Location and 1 Entity)
             FileNotFoundError: If profile JSON file is missing
             json.JSONDecodeError: If profile JSON is invalid
             Exception: For other fundamental errors during profile loading
         """
-        self._validate_empty_database()
+        self._require_profile_loadable_state()
 
         json_file_path = self._get_profile_json_path(profile_type)
         profile_data = self._load_json_file( json_file_path )
@@ -197,16 +211,29 @@ class ProfileManager:
         
         return
         
-    def _validate_empty_database(self) -> None:
-        """Validate that database is empty before loading profile.
-        
+    def get_provisioning_state(self) -> ProvisioningState:
+        """Resolve the system's ProvisioningState from core-data presence.
+        This is the single source of truth for first-run / recovery routing
+        (HomeView, StartView, LocationViewDefaultView) and the profile-load
+        precondition."""
+        if Location.objects.exists():
+            return ProvisioningState.PROVISIONED
+        if Entity.objects.exists():
+            return ProvisioningState.REQUIRES_LOCATION
+        return ProvisioningState.ALLOWS_PROFILE
+
+    def _require_profile_loadable_state(self) -> None:
+        """A profile can only be loaded into a system with no entities or
+        locations.
+
         Raises:
-            ValueError: If database contains existing entities or locations
+            ProfileLoadNotAllowedError: If the ProvisioningState is not
+                ALLOWS_PROFILE (entities or locations already exist).
         """
-        entity_count = Entity.objects.count()
-        location_count = Location.objects.count()
-        if ( entity_count > 0 ) or ( location_count > 0 ):
-            raise ValueError( 'Database must be empty to load profile.' )
+        if self.get_provisioning_state() != ProvisioningState.ALLOWS_PROFILE:
+            raise ProfileLoadNotAllowedError(
+                'A profile can only be loaded when no entities or locations exist.'
+            )
         return
     
     def _get_profile_json_path(self, profile_type: ProfileType) -> str:

@@ -15,9 +15,10 @@ from django.views.generic import View
 import hi.apps.common.antinode as antinode
 from hi.apps.common.healthcheck import do_healthcheck
 from hi.apps.common.utils import is_ajax
-from hi.apps.location.models import LocationView
+from hi.apps.profiles.profile_manager import ProfileManager
 
 from hi.apps.profiles.enums import ProfileType
+from hi.enums import ProvisioningState
 
 
 def error_response( request             : HttpRequest,
@@ -169,10 +170,11 @@ class HomeView( View ):
 
     def get(self, request, *args, **kwargs):
 
-        if not LocationView.objects.all().exists():
-            redirect_url = reverse( 'start' )
-            return HttpResponseRedirect( redirect_url )
-
+        # Hot path: assume the system is provisioned and route straight to
+        # the relevant default view, adding no provisioning queries here.
+        # The rare non-provisioned states (no location) are detected and
+        # handled downstream by LocationViewDefaultView, which resolves the
+        # provisioning state only when it actually finds nothing to show.
         if request.view_parameters.view_type.is_collection:
             redirect_url = reverse( 'collection_view_default' )
         else:
@@ -187,10 +189,18 @@ class StartView( View ):
 
     def get(self, request, *args, **kwargs):
 
-        # This view only for first time users (when no LocationViews exist)
-        if LocationView.objects.all().exists():
-            redirect_url = reverse( 'home' )
-            return HttpResponseRedirect( redirect_url )
+        # StartView is the canonical place that defines policy for the
+        # ProvisioningState. Any view that requires a particular state but
+        # finds it unmet (e.g. LocationViewDefaultView with no location)
+        # simply redirects here and lets this view decide what to do:
+        #   PROVISIONED       -> nothing to set up; go home.
+        #   REQUIRES_LOCATION -> data exists but no location; add one.
+        #   ALLOWS_PROFILE    -> render the profile picker (below).
+        state = ProfileManager().get_provisioning_state()
+        if state == ProvisioningState.PROVISIONED:
+            return HttpResponseRedirect( reverse( 'home' ) )
+        if state == ProvisioningState.REQUIRES_LOCATION:
+            return HttpResponseRedirect( reverse( 'profiles_initialize_custom' ) )
 
         # Define which profiles to show and in what order
         # This allows us to control which profiles appear on the start page

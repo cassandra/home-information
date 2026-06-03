@@ -70,16 +70,13 @@ class TestHomeView(SyncViewTestCase):
     This view redirects based on existing data and view parameters.
     """
 
-    def test_home_view_redirects_to_start_when_no_locations(self):
-        """Test that HomeView redirects to start page when no locations exist."""
-        # Ensure no locations exist
+    def test_home_view_routes_to_start_when_no_data(self):
+        """With no entities or locations (ALLOWS_PROFILE), home routes (via
+        location_view_default) through to the start/profile-picker page."""
+        # Ensure no locations exist (and the base DB has no entities).
         Location.objects.all().delete()
-        
-        url = reverse('home')
-        response = self.client.get(url)
-        
-        start_url = reverse('start')
-        self.assertRedirects(response, start_url)
+
+        self.assertRedirectsToTemplates(reverse('home'), ['pages/start.html'])
 
     def test_home_view_redirects_to_location_view_when_locations_exist(self):
         """Test that HomeView redirects and renders location view template."""
@@ -103,29 +100,21 @@ class TestHomeView(SyncViewTestCase):
         # Use assertRedirectsToTemplates to follow redirects and verify final template
         self.assertRedirectsToTemplates(url, ['location/panes/location_view.html'])
 
-    def test_home_view_handles_inconsistent_database_state(self):
-        """Test that HomeView redirects to start when Location exists but no LocationView exists.
-        
-        This test covers the edge case where a Location object exists but no associated
-        LocationView exists. This shouldn't happen in normal operation since Location
-        creation atomically creates a default LocationView, but we test the fallback
-        behavior for safety.
+    def test_home_view_self_heals_when_location_has_no_view(self):
+        """A Location with no LocationView is an inconsistent state that
+        shouldn't occur normally (location creation makes a default view).
+        Rather than dead-ending, it is repaired with a default view and
+        rendered.
         """
-        # Create an orphaned Location without a LocationView
-        # (This shouldn't happen in normal operation but we test the fallback)
+        # Create an orphaned Location without a LocationView.
         Location.objects.create(
             name='Orphaned Location',
             svg_fragment_filename='orphaned.svg',
             svg_view_box_str='0 0 100 100'
         )
-        # Ensure no LocationView objects exist
         LocationView.objects.all().delete()
-        
-        url = reverse('home')
-        response = self.client.get(url)
-        
-        start_url = reverse('start')
-        self.assertRedirects(response, start_url, fetch_redirect_response=False)
+
+        self.assertRedirectsToTemplates(reverse('home'), ['location/panes/location_view.html'])
 
     def test_home_view_redirects_to_collection_view_when_collection_type(self):
         """Test that HomeView redirects to collection_view_default when view_type is collection."""

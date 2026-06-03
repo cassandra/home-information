@@ -22,19 +22,19 @@ class CollectionViewDefaultView( View ):
 
     def get(self, request, *args, **kwargs):
 
-        collection = self._get_default_collection( request )
-        redirect_url = reverse(
-            'collection_view',
-            kwargs = { 'collection_id': collection.id }
-        )
+        try:
+            collection = self._get_default_collection( request )
+            redirect_url = reverse(
+                'collection_view',
+                kwargs = { 'collection_id': collection.id }
+            )
+        except Collection.DoesNotExist:
+            redirect_url = reverse( 'location_view_default' )
+
         return HttpResponseRedirect( redirect_url )
 
     def _get_default_collection( self, request ):
-        try:
-            collection = CollectionManager().get_default_collection( request = request )
-        except Collection.DoesNotExist:
-            raise BadRequest( 'No collections defined.' )
-
+        collection = CollectionManager().get_default_collection( request = request )
         request.view_parameters.view_type = ViewType.COLLECTION
         request.view_parameters.update_collection( collection )
         request.view_parameters.to_session( request )

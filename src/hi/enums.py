@@ -49,6 +49,27 @@ class ViewMode(LabeledEnum):
         return bool( self == ViewMode.EDIT )
 
 
+class ProvisioningState(LabeledEnum):
+    """The system's setup state with respect to core data — Entities and
+    Locations — used to route first-run and recovery navigation. The three
+    states are mutually exclusive and derived purely from whether any
+    Locations and/or Entities exist:
+
+      ALLOWS_PROFILE     no entities and no locations; a predefined profile
+                         can be loaded (the start page is valid).
+      REQUIRES_LOCATION  entities exist but no location does, so there is
+                         nothing to render; the user must add a location.
+      PROVISIONED        at least one location exists; normal operation.
+
+    (Note: this is deliberately NOT called "empty database" — other tables
+    may hold data; only entities and locations are relevant here.)
+    """
+
+    ALLOWS_PROFILE     = ( 'Allows Profile', '' )
+    REQUIRES_LOCATION  = ( 'Requires Location', '' )
+    PROVISIONED        = ( 'Provisioned', '' )
+
+
 class ViewDataPriority(LabeledEnum):
     """Which category of owner-detail data the edit modal should
     foreground when multiple categories are present. Views compute

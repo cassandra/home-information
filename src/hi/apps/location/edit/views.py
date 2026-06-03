@@ -261,17 +261,24 @@ class LocationPropertiesEditView( View, LocationViewMixin, LocationEditViewMixin
 @method_decorator( edit_required, name='dispatch' )
 class LocationDeleteView( HiModalView, LocationViewMixin ):
 
+    LAST_LOCATION_ERROR_MSG = (
+        'This is the only space, and the app requires at least one, so it cannot be deleted.'
+    )
+    
     def get_template_name( self ) -> str:
         return 'location/edit/modals/location_delete.html'
 
     def get(self, request, *args, **kwargs):
         location = self.get_location( request, *args, **kwargs )
 
+        if Location.objects.count() <= 1:
+            raise BadRequest( self.LAST_LOCATION_ERROR_MSG )
+        
         context = {
             'location': location,
         }
         return self.modal_response( request, context )
-    
+
     def post( self, request, *args, **kwargs ):
         try:
             location_id = int( kwargs.get('location_id'))
@@ -288,6 +295,13 @@ class LocationDeleteView( HiModalView, LocationViewMixin ):
         action = request.POST.get( 'action' )
         if action != 'confirm':
             raise BadRequest( 'Missing confirmation value.' )
+
+        # Invariant: at least one location must always exist (much of the
+        # app assumes it, and deleting the last one would strand any
+        # entities with nowhere to render). Deleting all data is an
+        # out-of-band operation, not a UI action.
+        if Location.objects.count() <= 1:
+            raise BadRequest( self.LAST_LOCATION_ERROR_MSG )
 
         location.delete()
 
@@ -359,9 +373,13 @@ class LocationViewDeleteView( HiModalView, LocationViewMixin ):
 
         context = {
             'location_view': location_view,
+            # Deleting a Location's only view resets it to a fresh default
+            # view rather than removing it (see post()); message that.
+            'is_last_view': bool( location_view.location.views.count() <= 1 ),
+            'default_view_name': LocationManager.INITIAL_LOCATION_VIEW_NAME,
         }
         return self.modal_response( request, context )
-    
+
     def post( self, request, *args, **kwargs ):
         location_view = self.get_location_view( request, *args, **kwargs )
 
@@ -369,12 +387,21 @@ class LocationViewDeleteView( HiModalView, LocationViewMixin ):
         if action != 'confirm':
             raise BadRequest( 'Missing confirmation value.' )
 
+        location = location_view.location
+        deleted_view_id = location_view.id
         location_view.delete()
 
-        if request.view_parameters.location_view_id == location_view.id:
-            request.view_parameters.update_location_view( location_view = None )
+        # Invariant: every Location keeps at least one LocationView.
+        # get_or_create_default_location_view() mints a fresh default 'All'
+        # view when this was the Location's last one, so deleting the last
+        # view acts as a reset/start-over rather than stranding the
+        # Location with nothing to display.
+        replacement_view = LocationManager().get_or_create_default_location_view( location )
+
+        if request.view_parameters.location_view_id == deleted_view_id:
+            request.view_parameters.update_location_view( location_view = replacement_view )
             request.view_parameters.to_session( request )
-        
+
         redirect_url = reverse('home')
         return self.redirect_response( request, redirect_url )
 
