@@ -27,6 +27,10 @@ after the import completes.
 You can re-run the same workflow later to bring in any new upstream
 items; existing imports are skipped by upstream identifier.
 
+<img src="img/screenshots/data-import-config-1024x768.png" alt="Data Import config page" width="300"> &nbsp; <img src="img/screenshots/data-import-modal-1024x768.png" alt="Data Import config dialog" width="300">
+
+<img src="img/screenshots/data-import-confirm-1024x768.png" alt="Data Import confirm dialog" width="300"> &nbsp; <img src="img/screenshots/data-import-result-1024x768.png" alt="Data Import result dialog" width="300"> &nbsp; <img src="img/screenshots/data-import-placement-1024x768.png" alt="Data Import placent dialog" width="300">
+
 ## Discarding imported data
 
 To remove imported items along with their custom data and attached

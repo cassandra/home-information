@@ -2,7 +2,7 @@
 
 # Integrations
 
-Home Information (HI) can optionally connect to external systems to
+Home Information (HI) can optionally integrate with external systems to
 connect items from them — alongside your own items and items from any
 other integrations you enable. Integrations are not required; HI
 works without any of them. Each integration has its own setup steps,
@@ -12,15 +12,34 @@ You will usually need credentials for the upstream service before starting;
 the per-integration pages below cover what to obtain and where to
 enter it.
 
+## Types of Integrations
+
+- **Connectors** — Adds new items to Home Information and connects their data to the external system.  Home Information provides the spatial display, but the external remains the source of truth for the item.
+- **Content Sources** — Allows linking documents, files and images in external systems to existing Home Information items.  These can be items you created in Home Information, or items you connected from other systems.
+- **Data Import** — Add new items to Home Information from external sources.  Unlike connectors, this copies all the data and Home Information becomes the source of truth for the data.  Any changes in the external source will not be reflected in Home Information.
+
+All integrations can be enabled and managed on the config page using the lower right **CONFIGURE**. Each integration type has their own configuration tab.
+
+<img src="img/getting-started/bottom-right-buttons-1024x768.png" alt="Configure button" width="400">
+
+## Connectors and Content Sources vs. Data Import
+
+Most integrations are live: HI mirrors the upstream
+system continuously and changes flow in via the update action.
+Content-source integrations (Paperless-ngx, Immich) are a different
+shape — they contribute attachable references rather than importing
+items, and they talk to the upstream service only when the operator
+opens the picker.
+
+A separate feature, [Data Import](DataImport.md), is a one-time
+copy with no ongoing upstream link. Some integrations (HomeBox
+today) offer both options.
+
 ## Enabling an integration
 
-Most integrations are configured from the **Connectors** tab on the
-Configure page. Content-source integrations (Paperless-ngx and
-Immich) are configured from the **Content Sources** tab ,
-because they link external documents/images to existing items rather than creating new
-connected items — see each integration's own page for the walkthrough.
+### Connectors
 
-For a Connectors-tab integration:
+For a Connectors integration:
 
 1. In HI, click **CONFIGURE** at the bottom of the screen.
 2. Select the **Connectors** tab.
@@ -31,6 +50,30 @@ For a Connectors-tab integration:
      **INTEGRATIONS** at the top of the sidebar.
 4. Choose the integration you want to add and follow the
    configuration steps on its per-integration page below.
+
+<img src="img/getting-started/integrations-page-empty-1024x768.png" alt="Configure button" width="400"> &nbsp; <img src="img/getting-started/integrations-enable-modal-1024x768.png" alt="All connector integrations" width="400">
+
+<img src="img/getting-started/integrations-sync-result-1024x768.png" alt="Connector result dialog" width="400"> &nbsp; 
+<img src="img/getting-started/integrations-place-items-1024x768.png" alt="Connector place items dialog" width="400">
+
+### Content Sources
+
+For a Content Source integration:
+
+1. In HI, click **CONFIGURE** at the bottom of the screen.
+2. Select the **Content Sources** tab.
+3. Select the tab for the content source to configure
+4. Fill in the URL and credentials, then click **ENABLE**
+
+<img src="img/screenshots/content-sources-config-1024x768.png" alt="Content source config page" width="400">
+
+Once enabled, you will see an extra **Link Content** button when you are editing items. Clicking that brings up a search dialog that searches the external source where you can select the content to link to the item. Once linked, when you open the item, that content will show up.
+
+<img src="img/screenshots/link-content-button-1024x768.png" alt="Link content button" width="400"> &nbsp; <img src="img/screenshots/reference-picker-1024x768.png" alt="Content picker dialog" width="400"> &nbsp; <img src="img/screenshots/link-content-tab-1024x768.png" alt="Linked content tab" width="400">
+
+### Data Import
+
+See [Data Import](DataImport.md)
 
 ## Available integrations
 
@@ -61,16 +104,3 @@ For a Connectors-tab integration:
 More integrations will be added as demand arises. The per-integration
 pages each carry their own troubleshooting section that accretes
 real-world fixes over time — start there if something is not working.
-
-## Integrations vs. Data Import
-
-Most integrations on this page are live: HI mirrors the upstream
-system continuously and changes flow in via the update action.
-Content-source integrations (Paperless-ngx, Immich) are a different
-shape — they contribute attachable references rather than importing
-items, and they talk to the upstream service only when the operator
-opens the picker.
-
-A separate feature, [Data Import](DataImport.md), is a one-time
-copy with no ongoing upstream link. Some integrations (HomeBox
-today) offer both options.

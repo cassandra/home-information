@@ -30,7 +30,7 @@
     min-width: 0;
 }
 .state-compact__label {
-    font-size: 10px;
+    font-size: 0.85rem;
     text-transform: uppercase;
     letter-spacing: 0.04em;
     color: var(--text-muted, #6c757d);
@@ -40,7 +40,7 @@
     text-overflow: ellipsis;
 }
 .state-compact__value {
-    font-size: 13px;
+    font-size: 1rem;
     line-height: 1.2;
     overflow: hidden;
 }
@@ -67,7 +67,7 @@
 .hi-state-panel-fallback--row .hi-state-panel-fallback__name {
     flex: 0 1 auto;
     min-width: 0;
-    font-size: 14px;
+    font-size: 1rem;
 }
 .hi-state-panel-fallback--row .state-compact {
     flex: 1 1 0;
@@ -89,7 +89,7 @@
     height: 48px;
 }
 .hi-state-panel-fallback--tile .hi-state-panel-fallback__name {
-    font-size: 13px;
+    font-size: 1rem;
     line-height: 1.2;
 }
 .hi-state-panel-fallback--tile .state-compact {

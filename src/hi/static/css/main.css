@@ -132,7 +132,7 @@ a.clickable-card:active {
 .profile-selection-container {
   display: flex;
   justify-content: center;
-  gap: clamp(1rem, 3vw, 2rem);
+  gap: clamp(1rem, 3vw, 4rem);
   margin: clamp(1rem, 3vh, 2rem) 0;
   flex-wrap: wrap;
 }
@@ -141,14 +141,14 @@ a.clickable-card:active {
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: clamp(1rem, 2vh, 1.5rem) clamp(1.5rem, 3vw, 2rem) clamp(0.5rem, 1vh, 1rem);
+  padding: clamp(1rem, 2vh, 2.5rem) clamp(1.5rem, 3vw, 3rem) clamp(0.5rem, 1vh, 1.5rem);
   border: 2px solid var(--line-color);
   border-radius: 8px;
   text-decoration: none;
   color: inherit;
   transition: all 0.3s ease;
   background: white;
-  min-width: clamp(120px, 15vw, 140px);
+  min-width: clamp(120px, 15vw, 220px);
   flex: 0 1 auto;
 }
 
@@ -161,8 +161,8 @@ a.clickable-card:active {
 }
 
 .profile-icon {
-  width: clamp(60px, 8vw, 100px);
-  height: clamp(60px, 8vw, 100px);
+  width: clamp(60px, 8vw, 160px);
+  height: clamp(60px, 8vw, 160px);
   max-width: 100%;
   margin-bottom: clamp(0.5rem, 1vh, 0.75rem);
 }
@@ -401,7 +401,7 @@ a.clickable-card:active {
 .interstitial-page {
     display: flex;
     flex-direction: column;
-    justify-content: flex-start;
+    justify-content: center;
     align-items: center;
     min-height: 100vh;
     max-width: 1200px;

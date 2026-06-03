@@ -24,9 +24,7 @@ Use the "Add Info" button to add some information about the item. Or use the "Ad
 
 Some information may not be associated with an individual item, but the overall home itself. For that, use the top-right button to add the information to the home itself.
 
-<img src="img/getting-started/location-info-button.png" alt="location-edit-modal-1024x768" width="200" />
-
-<img src="img/getting-started/location-edit-modal-1024x768.png" alt="location-edit-modal-1024x768" width="400" />
+<img src="img/getting-started/location-info-button.png" alt="location-edit-modal-1024x768" width="200" /> &nbsp; <img src="img/getting-started/location-edit-modal-1024x768.png" alt="location-edit-modal-1024x768" width="400" />
 
 ## Multiple Spaces
 
@@ -38,9 +36,7 @@ If you have a multi-story house, basement, attic or even another vacation home o
 
 Not everything in your home has a well defined location or needs a spatial position. For these items you can use the "collections" bottom buttons which offer different list and grid layouts.
 
-<img src="img/getting-started/collections-buttons.png" alt="collections-buttons" width="200" />
-
-<img src="img/getting-started/collections-grid-1024x768.png" alt="collections-grid-1024x768" width="350" /> & nbsp; <img src="img/getting-started/collections-list-1024x768.png" alt="collections-list-1024x768" width="350" />
+<img src="img/getting-started/collections-buttons.png" alt="collections-buttons" width="200" /> &nbsp; <img src="img/getting-started/collections-grid-1024x768.png" alt="collections-grid-1024x768" width="350" /> & nbsp; <img src="img/getting-started/collections-list-1024x768.png" alt="collections-list-1024x768" width="350" />
 
 ## Weather
 
@@ -75,13 +71,14 @@ The [Editing Page](Editing.md) has many details on how to use the editor.
 
 ## Integrations
 
-For smart home device automation, go to the configuration area to enable one of the current integrations (e.g., Home Assistant).
+For connecting to other applications, go to the configuration area to enable one of the current integrations (e.g., Home Assistant).
 
 <img src="img/getting-started/integrations-page-empty-1024x768.png" alt="integrations-page-empty-1024x768" width="400" /> &nbsp; <img src="img/getting-started/integrations-enable-modal-1024x768.png" alt="integrations-enable-modal-1024x768" width="400" />
 
 After enabled, you can connect all the items to add them to your views and collections.
 
-<img src="img/getting-started/integrations-page-view-1024x768.png" alt="integrations-page-view-1024x768" width="400" /> <img src="img/getting-started/integrations-sync-result-1024x768.png" alt="integrations-sync-result-1024x768" width="400" />
+<img src="img/getting-started/integrations-page-view-1024x768.png" alt="integrations-page-view-1024x768" width="400" /> &nbsp; <img src="img/getting-started/integrations-sync-result-1024x768.png" alt="integrations-sync-result-1024x768" width="400" /> &nbsp;  <img src="img/getting-started/integrations-place-items-1024x768.png" alt="integrations-place-items-1024x768" width="400" />
+
 
 See the [Integrations Page](Integrations.md) for more details.
  

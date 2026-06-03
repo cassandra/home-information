@@ -6,8 +6,7 @@ Home Information includes a built-in floor plan editor that lets you draw your h
 
 If you'd rather not draw your own, you can pick from a set of predefined templates or upload an SVG file you've created elsewhere.
 
-![Floor plan editor](img/screenshots/floor-plan-editor.png)
-*The floor plan editor with the element palette across the top*
+<img src="img/screenshots/floor-plan-editor-1024x768.png" alt="The floor plan editor with the element palette across the top" width="600">
 
 ## Getting Started
 
@@ -18,8 +17,7 @@ The floor plan is the background image for each Space (Location) in the app. To 
 4. Click the **BACKGROUND IMAGE** button in the Space properties panel sidebar
 5. Choose **Edit Current** to open the floor plan editor from modal selection
 
-![Background Image button](img/screenshots/background-image-button.png)
-*The Background Image button in the Space properties panel*
+<img src="img/screenshots/background-image-button-1024x768.png" alt="The Background Image button in the Space properties panel" width="300"> &nbsp; <img src="img/screenshots/template-selector-1024x768.png" alt="The Background Image dialog" width="300">
 
 From the Background Image dialog, you can also:
 - **Choose a Template** — pick from predefined floor plans to use as-is or as a starting point
@@ -37,8 +35,7 @@ Drag any element from the palette and drop it onto the canvas. Elements are orga
 - **Features** — countertops, fireplaces, stairs, shelves, cabinets
 - **Exterior** — grass, ground, pavement, deck, fencing, property lines
 
-![Palette drag and drop](img/screenshots/palette-drag-drop.png)
-*Dragging a wall element from the palette onto the canvas*
+<img src="img/screenshots/palette-drag-drop-1024x768.png" alt="Dragging a wall element from the palette onto the canvas" width="600"> 
 
 ### Editing Elements
 
@@ -66,8 +63,7 @@ Your changes are saved to a draft while editing. If your browser closes unexpect
 
 The template selector shows visual previews of all available floor plans. Selecting a template replaces the current background.
 
-![Template selector](img/screenshots/template-selector.png)
-*Choosing from predefined floor plan templates*
+<img src="img/screenshots/template-selector-1024x768.png" alt="The Background Image dialog" width="300"> &nbsp; <img src="img/screenshots/template-dialog-1024x768.png" alt="The Background template dialog" width="300">
 
 Templates are a good starting point — select one that roughly matches your layout, then use the editor to customize it.
 
