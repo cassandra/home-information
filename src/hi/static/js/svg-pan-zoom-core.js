@@ -62,6 +62,28 @@
             gSvgElement = gConfig ? $( gConfig.baseSvgSelector )[0] || null : null;
         },
 
+        /*
+          Correct the current viewBox aspect ratio to the container's. The
+          server renders the SVG with a saved viewBox whose aspect ratio
+          need not match the current viewport; with preserveAspectRatio
+          "meet" that paints the view letterboxed (not filling the canvas)
+          until the first pan/zoom runs adjustViewBox(). Calling this once
+          after layout removes that initial mismatch. No-op (rather than
+          producing a NaN/Infinity viewBox) until the container has a real
+          size.
+        */
+        fitViewBoxToContainer: function() {
+            if ( ! gSvgElement ) { HiSvgPanZoomCore.refresh(); }
+            if ( ! gSvgElement || ! gConfig ) { return; }
+            var areaElement = $( gConfig.areaSelector )[0];
+            if ( ! areaElement ) { return; }
+            var rect = areaElement.getBoundingClientRect();
+            if ( ! rect.width || ! rect.height ) { return; }
+            var currentViewBox = Hi.svgUtils.getSvgViewBox( gSvgElement );
+            if ( ! currentViewBox || ! currentViewBox.width ) { return; }
+            adjustViewBox( currentViewBox, currentViewBox.width, currentViewBox.height );
+        },
+
         handleSinglePointerEventStart: function( event ) {
             if ( ! gSvgElement ) { return false; }
 

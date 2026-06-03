@@ -274,6 +274,24 @@
                 },
             });
 
+            // Fit the server-rendered viewBox to the container once the
+            // page has laid out. Deferred to a frame after ready so the
+            // container has its final size (reading it at ready can yield
+            // 0). Without this the view paints letterboxed until the first
+            // pan/zoom. A resize re-fits for the same reason; this only
+            // rewrites the viewBox locally and never triggers a save.
+            function fitToContainer() {
+                window.requestAnimationFrame( function() {
+                    Hi.SvgPanZoomCore.fitViewBoxToContainer();
+                });
+            }
+            $(document).ready( fitToContainer );
+
+            var resizeFitTimer = null;
+            $(window).on( 'resize', function() {
+                clearTimeout( resizeFitTimer );
+                resizeFitTimer = setTimeout( fitToContainer, 150 );
+            });
         },
 
         handleSinglePointerEventStart: function( singlePointerEvent ) {
