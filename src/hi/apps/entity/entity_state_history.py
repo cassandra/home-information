@@ -148,7 +148,17 @@ def get_entity_state_history_page(
     Returned rows are descending by timestamp; the caller derives
     the next-page cursor from the oldest row's timestamp."""
 
-    obs_query = SensorHistory.objects.filter( sensor__entity_state = entity_state )
+    # Filter on the instrument FK directly (resolving ids first) rather
+    # than joining through Sensor/Controller on ``entity_state``. The join
+    # form prevents SQLite from using the ``(sensor, -response_datetime)``
+    # composite index to satisfy the ORDER BY, forcing a full temp-B-tree
+    # sort of the sensor's entire history on every page. Filtering by
+    # ``sensor_id__in`` lets the composite index serve both the filter and
+    # the ordering, so only ``page_size`` rows are touched.
+    sensor_ids = list( entity_state.sensors.values_list( 'id', flat = True ))
+    controller_ids = list( entity_state.controllers.values_list( 'id', flat = True ))
+
+    obs_query = SensorHistory.objects.filter( sensor_id__in = sensor_ids )
     if before is not None:
         obs_query = obs_query.filter( response_datetime__lt = before )
     observation_rows = list(
@@ -156,7 +166,7 @@ def get_entity_state_history_page(
     )
 
     intent_query = ControllerHistory.objects.filter(
-        controller__entity_state = entity_state,
+        controller_id__in = controller_ids,
     )
     if before is not None:
         intent_query = intent_query.filter( created_datetime__lt = before )

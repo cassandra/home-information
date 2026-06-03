@@ -89,3 +89,6 @@ class ControllerHistory(models.Model):
         verbose_name = 'Controller History'
         verbose_name_plural = 'Controller History'
         ordering = [ '-created_datetime' ]
+        indexes = [
+            models.Index( fields = [ 'controller', '-created_datetime' ] ),
+        ]
