@@ -41,6 +41,10 @@ class SimEntityFieldsForm( forms.Form ):
         # CSV string for the dataclass consumer.
         self._csv_choice_field_names = set()
 
+        # Track plain ``list`` fields so ``clean()`` can split the
+        # comma-separated text input back into a list.
+        self._list_field_names = set()
+
         for field in fields( sim_entity_fields_class ):
             metadata = field.metadata or {}
             help_text = metadata.get( 'help_text', '' )
@@ -50,6 +54,14 @@ class SimEntityFieldsForm( forms.Form ):
                 self._add_csv_choice_field(
                     field = field,
                     choices_source = csv_choices,
+                    help_text = help_text,
+                    initial = initial,
+                )
+                continue
+
+            if field.type is list:
+                self._add_list_field(
+                    field = field,
                     help_text = help_text,
                     initial = initial,
                 )
@@ -101,6 +113,32 @@ class SimEntityFieldsForm( forms.Form ):
         self._csv_choice_field_names.add( field.name )
         return
 
+    def _add_list_field(self, field, help_text, initial):
+        """Render a plain ``list`` dataclass field as a comma-separated
+        text input, round-tripping list <-> CSV so the dataclass keeps
+        its ``list`` shape. Distinct from ``csv_choices``, which renders
+        a fixed choice set as checkboxes and backs a CSV *string* field."""
+        if field.default_factory is not MISSING:
+            default_value = field.default_factory()
+        elif field.default is not MISSING:
+            default_value = field.default
+        else:
+            default_value = []
+        raw_initial = initial.get( field.name, default_value ) if initial else default_value
+        if isinstance( raw_initial, (list, tuple) ):
+            field_initial = ', '.join( str( item ) for item in raw_initial )
+        else:
+            field_initial = raw_initial or ''
+
+        self.fields[field.name] = forms.CharField(
+            initial = field_initial,
+            required = False,
+            label = field.name.replace("_", " ").capitalize(),
+            help_text = help_text or 'Comma-separated list.',
+        )
+        self._list_field_names.add( field.name )
+        return
+
     def clean(self):
         cleaned = super().clean()
         # Rejoin multi-select lists back into CSV so consumers
@@ -110,4 +148,12 @@ class SimEntityFieldsForm( forms.Form ):
             value = cleaned.get( name )
             if isinstance( value, (list, tuple) ):
                 cleaned[name] = ','.join( value )
+        # Split comma-separated text back into a list for plain ``list``
+        # dataclass fields.
+        for name in self._list_field_names:
+            value = cleaned.get( name )
+            if isinstance( value, str ):
+                cleaned[name] = [
+                    token.strip() for token in value.split(',') if token.strip()
+                ]
         return cleaned
