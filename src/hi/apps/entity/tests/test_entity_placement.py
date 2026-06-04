@@ -538,3 +538,39 @@ class TestPlacementInputBuilder(BaseTestCase):
             item_key_fn=self._key,
         )
         self.assertEqual(placement_input.heading, PLACEMENT_DEFAULT_HEADING)
+
+
+class TestGeometryViewForOverride(BaseTestCase):
+    """The override path that lets placement follow the user's current
+    pan/zoom: a transient view carries the override geometry while the
+    real view stays the linkage target."""
+
+    def test_no_override_returns_same_view(self):
+        from hi.apps.location.tests.synthetic_data import LocationSyntheticData
+
+        location_view = LocationSyntheticData.create_test_location_view(
+            svg_view_box_str='0 0 800 600')
+        result = EntityPlacer()._geometry_view_for_override(
+            location_view=location_view,
+            svg_view_box_override=None,
+        )
+        self.assertIs(result, location_view)
+
+    def test_override_returns_transient_copy_without_mutating_original(self):
+        from hi.apps.common.svg_models import SvgViewBox
+        from hi.apps.location.tests.synthetic_data import LocationSyntheticData
+
+        location_view = LocationSyntheticData.create_test_location_view(
+            svg_view_box_str='0 0 800 600')
+        override = SvgViewBox(x=100, y=50, width=200, height=150)
+
+        result = EntityPlacer()._geometry_view_for_override(
+            location_view=location_view,
+            svg_view_box_override=override,
+        )
+
+        # A distinct object carrying the override geometry...
+        self.assertIsNot(result, location_view)
+        self.assertEqual(result.svg_view_box.to_dict(), override.to_dict())
+        # ...leaving the real view (the linkage target) untouched.
+        self.assertEqual(location_view.svg_view_box_str, '0 0 800 600')

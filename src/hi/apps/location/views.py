@@ -6,6 +6,7 @@ from django.http import HttpRequest, HttpResponse, HttpResponseRedirect
 from django.shortcuts import reverse
 from django.views.generic import View
 
+from hi.apps.common.svg_models import SvgViewBox
 from hi.apps.common.utils import is_ajax, str_to_bool
 import hi.apps.common.antinode as antinode
 
@@ -100,11 +101,39 @@ class LocationViewView( HiGridView, LocationViewMixin ):
             include_status_display_data = bool( not request.view_parameters.is_editing ),
         )
 
+        svg_view_box_override, svg_rotate_override = self._get_geometry_override( request )
+
         return {
             'is_async_request': is_ajax( request ),
             'location_view': location_view,
             'location_view_data': location_view_data,
+            # Optional pan/zoom override carried by operations that preserve
+            # the user's current view (e.g. EntityAddView). Absent on normal
+            # navigation, so the template falls back to the stored geometry.
+            'svg_view_box_override': svg_view_box_override,
+            'svg_rotate_override': svg_rotate_override,
         }
+
+    def _get_geometry_override( self, request ):
+        """Parse and validate an optional SVG geometry override from the
+        query string. Returns (SvgViewBox|None, rotate_str|None). The
+        rotate override is only honored alongside a valid viewbox, since
+        the two together represent one explored geometry."""
+        svg_view_box_str = request.GET.get( 'svg_view_box' )
+        if not svg_view_box_str:
+            return ( None, None )
+        try:
+            svg_view_box_override = SvgViewBox.from_attribute_value( svg_view_box_str )
+        except ( ValueError, TypeError ):
+            return ( None, None )
+
+        svg_rotate_override = request.GET.get( 'svg_rotate' )
+        try:
+            float( svg_rotate_override )
+        except ( ValueError, TypeError ):
+            svg_rotate_override = None
+
+        return ( svg_view_box_override, svg_rotate_override )
 
     
 class LocationSwitchView( View, LocationViewMixin ):

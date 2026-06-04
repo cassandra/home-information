@@ -3,6 +3,7 @@ from dataclasses import dataclass
 from django.http import HttpRequest
 
 from hi.apps.collection.models import Collection
+from hi.apps.common.svg_models import SvgViewBox
 from hi.apps.location.models import Location, LocationView
 
 from .enums import ViewMode, ViewType
@@ -22,6 +23,18 @@ class ViewParameters:
     location_view_id            : int       = None  # Last LocationView viewed
     collection_id               : int       = None  # Last Collection viewed
     ref_picker_integration_id   : str       = None  # Last referencer the operator successfully linked from
+
+    # Transient pan/zoom state for the current LocationView. Pan/zoom is
+    # normally ephemeral (a full reload restores the LocationView's stored
+    # viewbox), but specific operations (e.g. adding an entity) want to
+    # preserve where the user is looking. This holds the last-explored SVG
+    # geometry so those operations can opt in to it; it is NOT a render
+    # default - consumers apply it explicitly (see EntityAddView). It is
+    # cleared whenever the view context shifts (different LocationView, or
+    # any Collection view), since the geometry is meaningless elsewhere.
+    # Serialized to/from the session as its SVG attribute string.
+    last_svg_view_box           : SvgViewBox = None
+    last_svg_rotate             : str        = None
     
     def __post_init__(self):
         if self.view_type is None:
@@ -74,12 +87,30 @@ class ViewParameters:
             self.location_view_id = None
             return None
 
+    def set_last_svg_geometry( self, svg_view_box : SvgViewBox, svg_rotate : str ):
+        self.last_svg_view_box = svg_view_box
+        self.last_svg_rotate = svg_rotate
+        return
+
+    def clear_last_svg_geometry( self ):
+        self.last_svg_view_box = None
+        self.last_svg_rotate = None
+        return
+
     def update_location_view( self, location_view : LocationView ):
         if not location_view:
+            if self.location_view_id is not None:
+                self.clear_last_svg_geometry()
             self.location_view_id = None
             self._location_view = None
             self._location = None
         else:
+            # Switching to a different LocationView invalidates any preserved
+            # pan/zoom (sibling views share a Location's coordinate space but
+            # frame it differently). Same-id re-renders must NOT clear it, or
+            # the post-add redirect would lose the geometry it is preserving.
+            if self.location_view_id != location_view.id:
+                self.clear_last_svg_geometry()
             self.location_view_id = location_view.id
             self._location_view = location_view
             self._location = location_view.location
@@ -105,6 +136,9 @@ class ViewParameters:
             return None
         
     def update_collection( self, collection : Collection ):
+        # Moving to a Collection view is a context shift away from any
+        # LocationView; preserved location pan/zoom no longer applies.
+        self.clear_last_svg_geometry()
         if not collection:
             self.collection_id = None
             self._collection = None
@@ -127,6 +161,10 @@ class ViewParameters:
         request.session['location_view_id'] = self.location_view_id
         request.session['collection_id'] = self.collection_id
         request.session['ref_picker_integration_id'] = self.ref_picker_integration_id
+        request.session['last_svg_view_box_str'] = (
+            str(self.last_svg_view_box) if self.last_svg_view_box is not None else None
+        )
+        request.session['last_svg_rotate'] = self.last_svg_rotate
         return
 
     @staticmethod
@@ -152,11 +190,21 @@ class ViewParameters:
             'ref_picker_integration_id',
         )
 
+        last_svg_view_box = None
+        last_svg_view_box_str = request.session.get( 'last_svg_view_box_str' )
+        if last_svg_view_box_str:
+            try:
+                last_svg_view_box = SvgViewBox.from_attribute_value( last_svg_view_box_str )
+            except ( ValueError, TypeError ):
+                last_svg_view_box = None
+
         return ViewParameters(
             view_type = view_type,
             view_mode = view_mode,
             location_view_id = location_view_id,
             collection_id = collection_id,
             ref_picker_integration_id = ref_picker_integration_id,
+            last_svg_view_box = last_svg_view_box,
+            last_svg_rotate = request.session.get( 'last_svg_rotate' ),
         )
     

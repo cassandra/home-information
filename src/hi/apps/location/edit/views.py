@@ -18,6 +18,7 @@ from hi.apps.collection.edit.views import CollectionPositionEditView
 from hi.apps.collection.models import Collection
 import hi.apps.common.antinode as antinode
 from hi.apps.common.svg_models import SvgViewBox
+from hi.apps.common.utils import str_to_bool
 from hi.apps.entity.edit.views import EntityPositionEditView
 from hi.apps.entity.entity_manager import EntityManager
 from hi.apps.entity.entity_placement import EntityPlacer
@@ -411,6 +412,20 @@ class LocationViewGeometryView( View, LocationViewMixin, LocationEditViewMixin )
     def post(self, request, *args, **kwargs):
         location_view = self.get_location_view( request, *args, **kwargs )
 
+        # Always remember the latest explored geometry in the session so
+        # full-reload operations (e.g. adding an entity) can preserve the
+        # user's current pan/zoom. This never touches the LocationView's
+        # stored geometry.
+        self._track_session_geometry( request )
+
+        # 'view_edit_active' is context, not instruction: it reports that
+        # the LocationView properties editor is open, which is the only
+        # case where a pan/zoom should overwrite the stored geometry. All
+        # other pan/zoom is ephemeral - the session tracking above is
+        # enough, so we are done.
+        if not str_to_bool( request.POST.get( 'view_edit_active' ) ):
+            return antinode.response( status = 200 )
+
         location_view_geometry_form = forms.LocationViewGeometryForm( request.POST, instance = location_view )
         if location_view_geometry_form.is_valid():
             location_view_geometry_form.save()
@@ -427,12 +442,38 @@ class LocationViewGeometryView( View, LocationViewMixin, LocationEditViewMixin )
 
         location_view_edit_data = LocationViewEditModeData(
             location_view = location_view,
-        )       
+        )
         return self.location_view_edit_mode_response(
             request = request,
             location_view_edit_data = location_view_edit_data,
             status_code = status_code,
         )
+
+    def _track_session_geometry( self, request ):
+        """Record the posted pan/zoom geometry in the session view
+        parameters (validated), regardless of whether it will also be
+        persisted to the LocationView. Silently ignores malformed input -
+        this is best-effort UX state, not authoritative data."""
+        svg_view_box_str = request.POST.get( 'svg_view_box_str' )
+        if not svg_view_box_str:
+            return
+        try:
+            svg_view_box = SvgViewBox.from_attribute_value( svg_view_box_str )
+        except ( ValueError, TypeError ):
+            return
+
+        svg_rotate = request.POST.get( 'svg_rotate' )
+        try:
+            float( svg_rotate )
+        except ( ValueError, TypeError ):
+            svg_rotate = None
+
+        request.view_parameters.set_last_svg_geometry(
+            svg_view_box = svg_view_box,
+            svg_rotate = svg_rotate,
+        )
+        request.view_parameters.to_session( request )
+        return
 
     
 @method_decorator( edit_required, name='dispatch' )

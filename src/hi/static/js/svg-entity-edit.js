@@ -264,13 +264,21 @@
                     var data = {
                         svg_view_box_str: saveData.viewBoxStr,
                         svg_rotate: saveData.rotationAngle || 0,
+                        // Context, not instruction: signals the LocationView
+                        // properties editor is open. The server decides what
+                        // to do with it (persist to the LocationView vs. only
+                        // track the session pan/zoom).
+                        view_edit_active: ( $( LOCATION_VIEW_EDIT_PANE_SELECTOR ).length > 0 ),
                     };
                     AN.post( API_EDIT_LOCATION_VIEW_GEOMETRY_URL + '/' + locationViewId, data );
                 },
                 shouldSave: function() {
+                    // Send pan/zoom to the server throughout edit mode so the
+                    // session always holds the latest geometry. Whether it
+                    // overwrites the stored LocationView geometry is the
+                    // server's call (see view_edit_active above).
                     return ( Hi.isEditMode
-                             && $( Hi.BASE_SVG_SELECTOR ).length > 0
-                             && $( LOCATION_VIEW_EDIT_PANE_SELECTOR ).length > 0 );
+                             && $( Hi.BASE_SVG_SELECTOR ).length > 0 );
                 },
             });
 

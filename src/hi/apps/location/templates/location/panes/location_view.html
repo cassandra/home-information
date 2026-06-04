@@ -6,11 +6,11 @@
        class="hi-location-view-svg"
        location-view-id="{{  location_view.id }}"
        xmlns="http://www.w3.org/2000/svg"
-       viewBox="{{ location_view.svg_view_box }}"
-       extents="{{ location_view.location.svg_view_box }}" 
+       viewBox="{{ svg_view_box_override|default:location_view.svg_view_box }}"
+       extents="{{ location_view.location.svg_view_box }}"
        width="100%" height="100%" preserveAspectRatio="xMidYMid meet"
-       style="transform-origin: 50% 50%; transform: rotate( {{ location_view.svg_rotate }}deg );"
-       transform="rotate({{ location_view.svg_rotate }})">
+       style="transform-origin: 50% 50%; transform: rotate( {{ svg_rotate_override|default:location_view.svg_rotate }}deg );"
+       transform="rotate({{ svg_rotate_override|default:location_view.svg_rotate }})">
     <defs>
       {% include location_view.svg_style_name.svg_defs_template_name %}
     </defs>

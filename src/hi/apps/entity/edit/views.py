@@ -1,6 +1,7 @@
 import logging
 import re
 from typing import Any, Dict, List, Optional
+from urllib.parse import urlencode
 
 from django.core.exceptions import BadRequest, PermissionDenied
 from django.db import transaction
@@ -12,6 +13,7 @@ from django.views.generic import View
 
 from hi.apps.collection.collection_manager import CollectionManager
 import hi.apps.common.antinode as antinode
+from hi.apps.common.svg_models import SvgViewBox
 from hi.apps.entity.entity_manager import EntityManager
 from hi.apps.entity.entity_pairing_manager import EntityPairingManager, EntityPairingError
 from hi.apps.entity.entity_placement import EntityPlacer
@@ -83,6 +85,10 @@ class EntityAddView( HiModalView ):
             }
             return self.modal_response( request, context )
 
+        # Preserve the user's current pan/zoom both for the post-add reload
+        # (query params, below) and for where the new items are placed.
+        svg_view_box_override = request.view_parameters.last_svg_view_box
+
         with transaction.atomic():
             created_entities = self._create_entities_bulk( entity_form = entity_form )
             for i, entity in enumerate( created_entities ):
@@ -91,11 +97,29 @@ class EntityAddView( HiModalView ):
                     entity = entity,
                     bulk_grid_index = i,
                     bulk_grid_total = len( created_entities ),
+                    svg_view_box_override = svg_view_box_override,
                 )
                 continue
-            
-        redirect_url = reverse('home')
+
+        redirect_url = self._home_url_preserving_geometry( request )
         return self.redirect_response( request, redirect_url )
+
+    def _home_url_preserving_geometry( self, request ) -> str:
+        """Carry the user's current pan/zoom across the post-add full
+        reload via query params, so the newly added item stays in view
+        instead of snapping back to the LocationView's stored geometry.
+        Scoped to this operation: normal navigation carries no params and
+        resets to stored. Empty when there is no tracked geometry (e.g.
+        adding from a collection view)."""
+        redirect_url = reverse('home')
+        svg_view_box = request.view_parameters.last_svg_view_box
+        if svg_view_box is None:
+            return redirect_url
+        params = { 'svg_view_box': str(svg_view_box) }
+        svg_rotate = request.view_parameters.last_svg_rotate
+        if svg_rotate is not None:
+            params['svg_rotate'] = svg_rotate
+        return f'{redirect_url}?{urlencode(params)}'
 
     def _create_entities_bulk(self, entity_form: EntityAddForm) -> List[Entity]:
         base_name = entity_form.cleaned_data['name']
@@ -122,8 +146,9 @@ class EntityAddView( HiModalView ):
                                    request,
                                    entity : Entity,
                                    bulk_grid_index : Optional[int] = None,
-                                   bulk_grid_total : Optional[int] = None ):
-        
+                                   bulk_grid_total : Optional[int] = None,
+                                   svg_view_box_override : Optional[SvgViewBox] = None ):
+
         if request.view_parameters.view_type.is_location_view:
             try:
                 current_location_view = LocationManager().get_default_location_view( request = request )
@@ -132,6 +157,7 @@ class EntityAddView( HiModalView ):
                     location_view = current_location_view,
                     bulk_grid_index = bulk_grid_index,
                     bulk_grid_total = bulk_grid_total,
+                    svg_view_box_override = svg_view_box_override,
                 )
             except LocationView.DoesNotExist:
                 logger.warning( 'No current location view to add new entity to.')

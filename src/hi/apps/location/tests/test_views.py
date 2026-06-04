@@ -8,10 +8,13 @@ from hi.apps.control.models import Controller
 from hi.apps.control.one_click_control_service import (
     OneClickNotSupported,
 )
+from hi.apps.common.svg_models import SvgViewBox
 from hi.apps.entity.models import Entity, EntityState
 from hi.apps.location.location_manager import LocationManager
 from hi.apps.location.models import Location, LocationView
+from hi.apps.location.views import LocationViewView
 from hi.enums import ViewType
+from hi.testing.base_test_case import BaseTestCase, MockRequest
 from hi.testing.view_test_base import SyncViewTestCase, AsyncViewTestCase, DualModeViewTestCase
 
 logging.disable(logging.CRITICAL)
@@ -896,3 +899,36 @@ class TestLocationItemEditModeView(SyncViewTestCase):
 
         self.assertEqual(response.status_code, 405)
         
+
+
+class TestLocationViewGeometryOverride(BaseTestCase):
+    """LocationViewView._get_geometry_override - validates the optional
+    pan/zoom override carried on the query string, rejecting malformed
+    input so it can never inject a bad viewBox attribute."""
+
+    def _override(self, **get_params):
+        request = MockRequest(GET=dict(get_params))
+        return LocationViewView()._get_geometry_override(request)
+
+    def test_no_params_returns_none(self):
+        view_box, rotate = self._override()
+        self.assertIsNone(view_box)
+        self.assertIsNone(rotate)
+
+    def test_valid_viewbox_and_rotate(self):
+        view_box, rotate = self._override(
+            svg_view_box='10 20 30 40', svg_rotate='45')
+        self.assertEqual(view_box.to_dict(),
+                         SvgViewBox(x=10, y=20, width=30, height=40).to_dict())
+        self.assertEqual(rotate, '45')
+
+    def test_malformed_viewbox_rejected(self):
+        view_box, rotate = self._override(svg_view_box='not a box')
+        self.assertIsNone(view_box)
+        self.assertIsNone(rotate)
+
+    def test_valid_viewbox_with_malformed_rotate_drops_only_rotate(self):
+        view_box, rotate = self._override(
+            svg_view_box='10 20 30 40', svg_rotate='sideways')
+        self.assertIsNotNone(view_box)
+        self.assertIsNone(rotate)

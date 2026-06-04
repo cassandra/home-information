@@ -28,6 +28,7 @@ without any spread. Multiple delegates therefore overlap. Phase 3
 inherits this behavior; revisit when it bites.
 """
 
+import copy
 from dataclasses import dataclass, field
 from decimal import Decimal
 import logging
@@ -35,6 +36,7 @@ from typing import Callable, Dict, List, Optional, Tuple, Union
 
 from django.db import transaction
 
+from hi.apps.common.svg_models import SvgViewBox
 from hi.apps.entity.edit.forms import EntityPositionForm
 from hi.apps.entity.enums import (
     EntityGroupType,
@@ -536,8 +538,9 @@ class EntityPlacer:
                               entity           : Entity,
                               location_view    : LocationView,
                               placement_shape  : Optional[PlacementShape] = None,
-                              bulk_grid_index  : Optional[int]            = None,
-                              bulk_grid_total  : Optional[int]            = None ):
+                              bulk_grid_index      : Optional[int]            = None,
+                              bulk_grid_total      : Optional[int]            = None,
+                              svg_view_box_override : Optional[SvgViewBox]    = None ):
         """Place a single entity into a location view, including its
         delegate entities. Idempotent: existing position/path/view rows
         are preserved.
@@ -549,10 +552,25 @@ class EntityPlacer:
            (legacy form-driven flow) — calculator picks the slot.
         3. Otherwise — calculator centers the shape on the viewbox.
 
+        ``svg_view_box_override`` optionally overrides the geometry the
+        calculator positions/sizes against (e.g. the user's current
+        pan/zoom) without changing the linkage target. Ignored when
+        ``placement_shape`` is given. Applies to modes (2) and (3);
+        delegates still center on the same (possibly overridden) viewbox.
+
         Delegates always go through mode (3): each delegate is placed
         at the viewbox center. See module docstring on the
         delegate-overlap limitation.
         """
+        # The calculator positions/sizes against this view's geometry; the
+        # real location_view remains the linkage target below. With an
+        # override they differ (transient copy carrying the override
+        # viewbox); without one they are the same object.
+        geometry_view = self._geometry_view_for_override(
+            location_view = location_view,
+            svg_view_box_override = svg_view_box_override,
+        )
+
         with transaction.atomic():
             if not entity.entity_views.all().exists():
                 delegate_entity_list = (
@@ -567,7 +585,7 @@ class EntityPlacer:
             if placement_shape is None:
                 placement_shape = self._derive_placement_shape(
                     entity = entity,
-                    location_view = location_view,
+                    location_view = geometry_view,
                     bulk_grid_index = bulk_grid_index,
                     bulk_grid_total = bulk_grid_total,
                 )
@@ -581,7 +599,7 @@ class EntityPlacer:
                     principal_entity = entity,
                     principal_shape = placement_shape,
                     delegate_entity = delegate_entity,
-                    location_view = location_view,
+                    location_view = geometry_view,
                 )
                 self._create_entity_view(
                     entity = delegate_entity,
@@ -590,6 +608,21 @@ class EntityPlacer:
                 )
                 continue
         return
+
+    def _geometry_view_for_override( self,
+                                     location_view         : LocationView,
+                                     svg_view_box_override : Optional[SvgViewBox] ) -> LocationView:
+        """Return the LocationView the calculator should position/size
+        against. Without an override this is the real view; with one, a
+        transient shallow copy carrying the override viewbox - never saved,
+        so the geometry follows the user's current pan/zoom while the real
+        view stays the placement/linkage target. The calculator reads only
+        geometry (no DB writes, no id use) from the view it is handed."""
+        if svg_view_box_override is None:
+            return location_view
+        geometry_view = copy.copy( location_view )
+        geometry_view.svg_view_box = svg_view_box_override
+        return geometry_view
 
     # Apex offset along the principal's icon-facing direction, expressed
     # as a fraction of the icon's half-extent in that direction. 0.0 =

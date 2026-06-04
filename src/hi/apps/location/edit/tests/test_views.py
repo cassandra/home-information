@@ -4,13 +4,17 @@ from django.core.files.uploadedfile import SimpleUploadedFile
 from django.urls import reverse
 
 from hi.apps.collection.collection_manager import CollectionManager
+from hi.apps.common.svg_models import SvgViewBox
 from hi.apps.entity.entity_manager import EntityManager
 from hi.apps.entity.enums import EntityType
+from hi.apps.location.edit.views import LocationViewGeometryView
 from hi.apps.location.location_manager import LocationManager
 from hi.apps.location.models import Location, LocationView
 from hi.apps.location.tests.synthetic_data import LocationSyntheticData
 from hi.enums import ItemType, ViewMode
+from hi.testing.base_test_case import BaseTestCase, MockRequest
 from hi.testing.view_test_base import SyncViewTestCase, DualModeViewTestCase
+from hi.view_parameters import ViewParameters
 
 logging.disable(logging.CRITICAL)
 
@@ -1015,3 +1019,36 @@ class TestLocationItemPathView(SyncViewTestCase):
 
         self.assertEqual(response.status_code, 405)
         
+
+
+class TestLocationViewGeometrySessionTracking(BaseTestCase):
+    """LocationViewGeometryView._track_session_geometry - records the
+    posted pan/zoom in the session view parameters, rejecting malformed
+    input (best-effort UX state, never authoritative)."""
+
+    def _track(self, **post_params):
+        request = MockRequest(POST=dict(post_params))
+        request.view_parameters = ViewParameters()
+        LocationViewGeometryView()._track_session_geometry(request)
+        return request.view_parameters
+
+    def test_valid_geometry_recorded(self):
+        view_parameters = self._track(
+            svg_view_box_str='10 20 30 40', svg_rotate='45')
+        self.assertEqual(view_parameters.last_svg_view_box.to_dict(),
+                         SvgViewBox(x=10, y=20, width=30, height=40).to_dict())
+        self.assertEqual(view_parameters.last_svg_rotate, '45')
+
+    def test_missing_viewbox_records_nothing(self):
+        view_parameters = self._track(svg_rotate='45')
+        self.assertIsNone(view_parameters.last_svg_view_box)
+
+    def test_malformed_viewbox_records_nothing(self):
+        view_parameters = self._track(svg_view_box_str='garbage')
+        self.assertIsNone(view_parameters.last_svg_view_box)
+
+    def test_valid_viewbox_with_malformed_rotate_drops_only_rotate(self):
+        view_parameters = self._track(
+            svg_view_box_str='10 20 30 40', svg_rotate='tilt')
+        self.assertIsNotNone(view_parameters.last_svg_view_box)
+        self.assertIsNone(view_parameters.last_svg_rotate)
