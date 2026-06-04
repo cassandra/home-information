@@ -10,7 +10,15 @@ DOCKER_IMAGE="ghcr.io/cassandra/home-information"
 DOCKER_TAG="${1:-latest}"  # Allow override for testing (default: latest)
 CONTAINER_NAME="hi"
 EXTERNAL_PORT="9411"
-HI_HOME="${HOME}/.hi"
+# Resolve the existing install directory. install.sh uses the hidden ~/.hi by
+# default, but falls back to a non-hidden ~/home-information when Docker cannot
+# read dot-directories (e.g. snap Docker). Detect by the install's env file
+# (what this updater actually needs) rather than a bare directory.
+if [[ -f "${HOME}/home-information/env/local.env" ]]; then
+    HI_HOME="${HOME}/home-information"
+else
+    HI_HOME="${HOME}/.hi"
+fi
 ENV_FILE="${HI_HOME}/env/local.env"
 DATABASE_DIR="${HI_HOME}/database"
 MEDIA_DIR="${HI_HOME}/media"

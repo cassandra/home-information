@@ -8,7 +8,7 @@ EXTERNAL_PORT=9411
 BACKGROUND_FLAGS=""
 
 usage() {
-    echo "Usage: $0 [-env ENV_VAR_FILE] [-db DATA_DIR] [-port EXTERNAL_PORT] [-bg]"
+    echo "Usage: $0 [-env ENV_VAR_FILE] [-dir DATA_DIR] [-port EXTERNAL_PORT] [-bg]"
     exit 1
 }
 

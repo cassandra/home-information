@@ -100,6 +100,9 @@ We also provide some helper scripts [Helper Scripts README](../scripts/README.md
 ### Q: The installation failed. What should I check?
 **A:** Most installation issues relate to Docker setup or system permissions. Check that Docker is running, you have sufficient disk space, and your user account has permissions to create files in your home directory. See the [Installation Guide](Installation.md) troubleshooting section for specific error messages.
 
+### Q: My data is in `~/home-information` instead of `~/.hi` — is that right?
+**A:** Yes. Home Information normally stores everything in the hidden `~/.hi` directory. However, **snap-packaged Docker** (and some other confined Docker setups) cannot read files inside hidden ("dot") directories, which makes the install fail with a `permission denied` error. When the installer detects this, it uses the visible `~/home-information` directory instead. Everything works the same — just substitute `~/home-information` for `~/.hi` in any instructions (your data lives in `~/home-information/database/` and `~/home-information/media/`). If you'd prefer the hidden `~/.hi` default, install Docker from the official apt/yum repository instead of the snap.
+
 ### Q: Can I access it from outside my home network?
 **A:** Yes, but it requires additional network configuration (port forwarding, dynamic DNS, etc.). For security reasons, we recommend using VPN access to your home network rather than exposing the service directly to the internet.
 

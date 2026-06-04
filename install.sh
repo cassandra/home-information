@@ -10,13 +10,23 @@ DOCKER_IMAGE="ghcr.io/cassandra/home-information"  # GitHub Container Registry
 DOCKER_TAG="${1:-latest}"  # Allow override for testing (default: latest)
 CONTAINER_NAME="hi"
 EXTERNAL_PORT="9411"
+# Install directory. Defaults to the hidden ~/.hi. choose_install_dir() may
+# switch this to the non-hidden HI_HOME_VISIBLE at install time when Docker
+# cannot read files inside dot-directories (e.g. snap-packaged Docker, whose
+# confinement denies access to hidden home dirs). Derived paths are computed
+# from the final HI_HOME by set_install_paths().
 HI_HOME="${HOME}/.hi"
-ENV_DIR="${HI_HOME}/env"
-DATABASE_DIR="${HI_HOME}/database"
-MEDIA_DIR="${HI_HOME}/media"
-ENV_FILE="${ENV_DIR}/local.env"
-COMPOSE_FILE="${HI_HOME}/docker-compose.yml"
+HI_HOME_VISIBLE="${HOME}/home-information"
 HAS_COMPOSE=0  # Set by check_docker_compose; 1 if `docker compose` is available.
+
+# Derive all install paths from the (possibly updated) HI_HOME.
+set_install_paths() {
+    ENV_DIR="${HI_HOME}/env"
+    DATABASE_DIR="${HI_HOME}/database"
+    MEDIA_DIR="${HI_HOME}/media"
+    ENV_FILE="${ENV_DIR}/local.env"
+    COMPOSE_FILE="${HI_HOME}/docker-compose.yml"
+}
 
 # Colors for output
 RED='\033[0;31m'
@@ -77,6 +87,36 @@ check_docker_compose() {
         HAS_COMPOSE=0
         print_info "docker compose not detected — will use legacy docker run flow"
     fi
+}
+
+# Choose the install directory. Snap-packaged (and otherwise AppArmor-confined)
+# Docker cannot read files inside hidden "dot" directories, so it cannot parse a
+# compose file or --env-file under ~/.hi and fails with an opaque "permission
+# denied". Rather than fingerprint snap (brittle, and misses other confinement),
+# we probe the real capability: ask Docker to read a throwaway compose file from
+# a dot-directory. If that read is denied, fall back to a non-hidden directory.
+#
+# `docker compose config` only parses/reads the file (no image pull, no
+# container, no network), so the probe is fast and side-effect-free. It needs
+# the compose plugin; confined Docker (snap) always bundles it. Without the
+# plugin we are on an old, unconfined daemon where the hidden default is fine.
+choose_install_dir() {
+    if (( HAS_COMPOSE == 0 )); then
+        return
+    fi
+
+    local probe_dir="${HOME}/.hi-install-probe.$$"
+    local probe_file="${probe_dir}/docker-compose.yml"
+    mkdir -p "${probe_dir}"
+    printf 'services:\n  probe:\n    image: busybox\n    command: ["true"]\n' > "${probe_file}"
+
+    if ! docker compose -f "${probe_file}" config &> /dev/null; then
+        HI_HOME="${HI_HOME_VISIBLE}"
+        print_info "Docker cannot read hidden directories (e.g. snap Docker);"
+        print_info "using ${HI_HOME} instead of ${HOME}/.hi"
+    fi
+
+    rm -rf "${probe_dir}"
 }
 
 # Check if Python3 is installed (needed for secure secret generation)
@@ -212,7 +252,7 @@ INSTALL_ENV_FILE_EOF
     ADMIN_PASSWORD="${DJANGO_ADMIN_PASSWORD}"
 }
 
-# Write a fully-resolved docker-compose.yml to ~/.hi/. Always written, even
+# Write a fully-resolved docker-compose.yml to ${HI_HOME}/. Always written, even
 # when compose is not available, so it is ready for use the moment the user
 # installs the compose plugin. Container name `hi` matches the legacy
 # `docker run --name hi` invocation so management commands like `docker logs
@@ -381,6 +421,8 @@ main() {
 
     check_docker
     check_docker_compose
+    choose_install_dir
+    set_install_paths
     check_python
     create_directories
     create_env_file

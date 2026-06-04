@@ -6,8 +6,14 @@
 # Usage: ./scripts/export-location-attributes.sh
 #
 
-# Database location (adjust if your installation differs)
-DB_PATH="${HOME}/.hi/database/hi.sqlite3"
+# Database location. install.sh uses ~/.hi by default, or ~/home-information
+# when Docker can't read dot-directories (e.g. snap Docker); use whichever
+# actually has the database file. Adjust if your installation differs.
+if [ -f "${HOME}/home-information/database/hi.sqlite3" ]; then
+    DB_PATH="${HOME}/home-information/database/hi.sqlite3"
+else
+    DB_PATH="${HOME}/.hi/database/hi.sqlite3"
+fi
 
 # Check if database exists
 if [ ! -f "$DB_PATH" ]; then
