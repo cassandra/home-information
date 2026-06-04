@@ -2427,6 +2427,38 @@ _THERMOSTAT_HVAC_ACTION_CHOICES = [
 ]
 
 
+# Closed value sets for the multi-axis thermostat's mode lists. Rendered as
+# checkbox pickers in the simulator edit form (via the ``csv_choices`` hook);
+# the dataclass fields stay plain lists of the selected wire values.
+HASS_HVAC_MODE_CHOICES = [
+    ( 'off',       'Off' ),
+    ( 'heat',      'Heat' ),
+    ( 'cool',      'Cool' ),
+    ( 'heat_cool', 'Heat/Cool' ),
+    ( 'auto',      'Auto' ),
+    ( 'dry',       'Dry' ),
+    ( 'fan_only',  'Fan only' ),
+]
+HASS_FAN_MODE_CHOICES = [
+    ( 'auto',   'Auto' ),
+    ( 'low',    'Low' ),
+    ( 'medium', 'Medium' ),
+    ( 'high',   'High' ),
+    ( 'on',     'On' ),
+    ( 'off',    'Off' ),
+]
+HASS_PRESET_MODE_CHOICES = [
+    ( 'none',     'None' ),
+    ( 'eco',      'Eco' ),
+    ( 'away',     'Away' ),
+    ( 'home',     'Home' ),
+    ( 'sleep',    'Sleep' ),
+    ( 'comfort',  'Comfort' ),
+    ( 'boost',    'Boost' ),
+    ( 'activity', 'Activity' ),
+]
+
+
 @dataclass( frozen = True )
 class HassThermostatFields( SimEntityFields ):
     """A multi-axis thermostat. Composed of multiple SimStates
@@ -2446,12 +2478,24 @@ class HassThermostatFields( SimEntityFields ):
 
     hvac_modes       : list = field(
         default_factory = lambda : [ 'heat', 'cool', 'heat_cool', 'off' ],
+        metadata = {
+            'csv_choices': HASS_HVAC_MODE_CHOICES,
+            'help_text': 'HVAC modes this thermostat exposes.',
+        },
     )
     fan_modes        : list = field(
         default_factory = lambda : [ 'auto', 'low', 'medium', 'high' ],
+        metadata = {
+            'csv_choices': HASS_FAN_MODE_CHOICES,
+            'help_text': 'Fan modes (leave empty to omit the fan-mode axis).',
+        },
     )
     preset_modes     : list = field(
         default_factory = lambda : [ 'eco', 'away', 'home', 'sleep' ],
+        metadata = {
+            'csv_choices': HASS_PRESET_MODE_CHOICES,
+            'help_text': 'Preset modes this thermostat exposes.',
+        },
     )
     temperature_unit : str  = '°F'
 

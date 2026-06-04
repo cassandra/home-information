@@ -36,19 +36,22 @@ class SimEntityFieldsForm( forms.Form ):
     def __init__(self, sim_entity_fields_class: Type[ SimEntityFields ], *args, initial = None, **kwargs):
         super().__init__(*args, **kwargs)
 
-        # Track which fields use the CSV-choices round-trip so
-        # ``clean()`` can rejoin the multi-select list back into a
-        # CSV string for the dataclass consumer.
+        # Fields rendered as multi-checkbox pickers (csv_choices metadata).
         self._csv_choice_field_names = set()
 
-        # Track plain ``list`` fields so ``clean()`` can split the
-        # comma-separated text input back into a list.
+        # Fields whose dataclass type is ``list``. clean() coerces these
+        # back to a list regardless of widget (checkbox or text input), so
+        # the dataclass keeps its list shape. A ``str`` field with
+        # csv_choices is NOT in this set and stays a CSV string (HomeBox).
         self._list_field_names = set()
 
         for field in fields( sim_entity_fields_class ):
             metadata = field.metadata or {}
             help_text = metadata.get( 'help_text', '' )
             csv_choices = metadata.get( 'csv_choices' )
+
+            if field.type is list:
+                self._list_field_names.add( field.name )
 
             if csv_choices is not None:
                 self._add_csv_choice_field(
@@ -85,10 +88,11 @@ class SimEntityFieldsForm( forms.Form ):
         return
 
     def _add_csv_choice_field(self, field, choices_source, help_text, initial):
-        """Render a CSV-string dataclass field as a multi-checkbox
-        picker. The dataclass keeps its plain ``str`` shape; the
-        form converts initial CSV → list at render time and
-        ``clean()`` converts list → CSV at submit time."""
+        """Render a dataclass field as a multi-checkbox picker. The
+        widget converts initial CSV-or-list → list at render time; at
+        submit time ``clean()`` coerces the selection back to the
+        dataclass's shape — a list for a ``list`` field, or a CSV string
+        for a ``str`` field (e.g. HomeBox ``attachment_keys``)."""
         choices = choices_source() if callable( choices_source ) else list( choices_source )
 
         default_value = '' if field.default is MISSING else ( field.default or '' )
@@ -114,10 +118,10 @@ class SimEntityFieldsForm( forms.Form ):
         return
 
     def _add_list_field(self, field, help_text, initial):
-        """Render a plain ``list`` dataclass field as a comma-separated
-        text input, round-tripping list <-> CSV so the dataclass keeps
-        its ``list`` shape. Distinct from ``csv_choices``, which renders
-        a fixed choice set as checkboxes and backs a CSV *string* field."""
+        """Fallback for a plain ``list`` field that has no ``csv_choices``:
+        a comma-separated text input. ``clean()`` splits it back to a list
+        so the dataclass keeps its ``list`` shape. (List fields are tracked
+        as list-typed in ``__init__``, not here.)"""
         if field.default_factory is not MISSING:
             default_value = field.default_factory()
         elif field.default is not MISSING:
@@ -136,24 +140,30 @@ class SimEntityFieldsForm( forms.Form ):
             label = field.name.replace("_", " ").capitalize(),
             help_text = help_text or 'Comma-separated list.',
         )
-        self._list_field_names.add( field.name )
         return
 
     def clean(self):
         cleaned = super().clean()
-        # Rejoin multi-select lists back into CSV so consumers
-        # (the dataclass build path) see the same shape regardless
-        # of widget choice.
-        for name in self._csv_choice_field_names:
+        # Coerce multi-value fields to the shape the dataclass expects.
+        # A ``list``-typed field becomes a list; a ``str``-typed
+        # csv_choices field (e.g. HomeBox attachment_keys) becomes a CSV
+        # string. The widget (checkbox vs text) is independent of the
+        # target shape. Must be idempotent: the view calls clean() again
+        # after is_valid() has already run it once, so each branch leaves
+        # an already-coerced value unchanged.
+        for name in ( self._csv_choice_field_names | self._list_field_names ):
             value = cleaned.get( name )
-            if isinstance( value, (list, tuple) ):
+            if name in self._list_field_names:
+                # Target shape: list. From the text widget it is a CSV
+                # string; from the checkbox widget it is already a list.
+                if isinstance( value, str ):
+                    cleaned[name] = [
+                        token.strip() for token in value.split(',') if token.strip()
+                    ]
+                elif isinstance( value, (list, tuple) ):
+                    cleaned[name] = list( value )
+            elif isinstance( value, (list, tuple) ):
+                # str-typed csv_choices field: join the selection to CSV
+                # (already a string on a second pass -> left untouched).
                 cleaned[name] = ','.join( value )
-        # Split comma-separated text back into a list for plain ``list``
-        # dataclass fields.
-        for name in self._list_field_names:
-            value = cleaned.get( name )
-            if isinstance( value, str ):
-                cleaned[name] = [
-                    token.strip() for token in value.split(',') if token.strip()
-                ]
         return cleaned
