@@ -16,7 +16,6 @@
     window.Hi = window.Hi || {};
     window.Hi.edit = window.Hi.edit || {};
     window.Hi.SvgEdit = window.Hi.SvgEdit || {};
-    window.Hi.SvgEdit.snapGridPixels = window.Hi.SvgEdit.snapGridPixels || 5;
 
     var API_EDIT_LOCATION_ITEM_POSITION_URL = '/location/edit/item/position';
 
@@ -357,11 +356,5 @@
 
     window.Hi.location = HiSvgLocation;
     HiSvgLocation.init();
-
-    $(document).ready(function() {
-        $( '#hi-entity-snap-grid' ).on( 'change input', function() {
-            Hi.SvgEdit.snapGridPixels = parseInt( $( this ).val(), 10 ) || 0;
-        });
-    });
 
 })();

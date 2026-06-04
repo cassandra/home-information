@@ -183,8 +183,28 @@ class HomeView( View ):
         if query_string:
             redirect_url = redirect_url + '?' + query_string
         return HttpResponseRedirect( redirect_url )
-        
-        
+
+
+class SetSnapGridView( View ):
+    """Persist the SVG-editor snap-grid preference (screen pixels) to the
+    session view parameters so it survives reloads. Both SVG editors post
+    here on change. Value is clamped to the same range as the UI input
+    (0 = snapping disabled); malformed input is rejected."""
+
+    MIN_PIXELS = 0
+    MAX_PIXELS = 50
+
+    def post( self, request, *args, **kwargs ):
+        try:
+            value = int( request.POST.get( 'snap_grid_pixels' ) )
+        except ( TypeError, ValueError ):
+            return antinode.response( status = 400 )
+        value = max( self.MIN_PIXELS, min( value, self.MAX_PIXELS ) )
+        request.view_parameters.svg_snap_grid_pixels = value
+        request.view_parameters.to_session( request )
+        return antinode.response( status = 200 )
+
+
 class StartView( View ):
 
     def get(self, request, *args, **kwargs):

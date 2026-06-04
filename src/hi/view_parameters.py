@@ -12,17 +12,27 @@ from .enums import ViewMode, ViewType
 @dataclass
 class ViewParameters:
 
+    # Default SVG-editor snap grid in screen pixels (0 disables snapping).
+    # Single source of truth for the value, seeded to the client via
+    # ClientConfig and shared by both SVG editors.
+    DEFAULT_SVG_SNAP_GRID_PIXELS = 5
+
     # For anything in this view state that needs to be kept in sync with
     # Javascript, add global variables in the base.html template at start
     # of body and reference in Javascript as needed. e.g., The editing mode
     # requires additional event registrations to handle mouse and gesture
     # events..
-    
+
     view_type                   : ViewType  = None
     view_mode                   : ViewMode  = None
     location_view_id            : int       = None  # Last LocationView viewed
     collection_id               : int       = None  # Last Collection viewed
     ref_picker_integration_id   : str       = None  # Last referencer the operator successfully linked from
+
+    # User preference: snap-grid size (screen pixels) for the SVG editors,
+    # persisted across reloads. 0 = snapping disabled. Delivered to JS via
+    # ClientConfig; both snap inputs render and write it back.
+    svg_snap_grid_pixels        : int       = DEFAULT_SVG_SNAP_GRID_PIXELS
 
     # Transient pan/zoom state for the current LocationView. Pan/zoom is
     # normally ephemeral (a full reload restores the LocationView's stored
@@ -165,6 +175,7 @@ class ViewParameters:
             str(self.last_svg_view_box) if self.last_svg_view_box is not None else None
         )
         request.session['last_svg_rotate'] = self.last_svg_rotate
+        request.session['svg_snap_grid_pixels'] = self.svg_snap_grid_pixels
         return
 
     @staticmethod
@@ -198,6 +209,13 @@ class ViewParameters:
             except ( ValueError, TypeError ):
                 last_svg_view_box = None
 
+        # Preserve an explicit 0 (snapping disabled); fall back to the
+        # default only when the key is missing or malformed.
+        try:
+            svg_snap_grid_pixels = int( request.session.get( 'svg_snap_grid_pixels' ) )
+        except ( TypeError, ValueError ):
+            svg_snap_grid_pixels = ViewParameters.DEFAULT_SVG_SNAP_GRID_PIXELS
+
         return ViewParameters(
             view_type = view_type,
             view_mode = view_mode,
@@ -206,5 +224,6 @@ class ViewParameters:
             ref_picker_integration_id = ref_picker_integration_id,
             last_svg_view_box = last_svg_view_box,
             last_svg_rotate = request.session.get( 'last_svg_rotate' ),
+            svg_snap_grid_pixels = svg_snap_grid_pixels,
         )
     

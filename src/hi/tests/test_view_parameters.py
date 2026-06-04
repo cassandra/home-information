@@ -89,3 +89,31 @@ class TestViewParametersLastSvgGeometry(BaseTestCase):
 
         self.assertIsNone( restored.last_svg_view_box )
         self.assertIsNone( restored.last_svg_rotate )
+
+
+class TestViewParametersSnapGrid(BaseTestCase):
+    """The snap-grid user preference: round-trips through the session,
+    preserves an explicit 0 (snapping disabled), and falls back to the
+    default only when the key is missing/malformed."""
+
+    def test_round_trip_preserves_value(self):
+        view_parameters = ViewParameters()
+        view_parameters.svg_snap_grid_pixels = 12
+        request = MockRequest()
+        view_parameters.to_session( request )
+        self.assertEqual(
+            ViewParameters.from_session( request ).svg_snap_grid_pixels, 12 )
+
+    def test_explicit_zero_preserved(self):
+        view_parameters = ViewParameters()
+        view_parameters.svg_snap_grid_pixels = 0
+        request = MockRequest()
+        view_parameters.to_session( request )
+        self.assertEqual(
+            ViewParameters.from_session( request ).svg_snap_grid_pixels, 0 )
+
+    def test_missing_key_falls_back_to_default(self):
+        restored = ViewParameters.from_session( MockRequest() )
+        self.assertEqual(
+            restored.svg_snap_grid_pixels,
+            ViewParameters.DEFAULT_SVG_SNAP_GRID_PIXELS )

@@ -225,3 +225,30 @@ class TestHealthView(SyncViewTestCase):
 
         # Should return 405 Method Not Allowed
         self.assertEqual(response.status_code, 405)
+
+
+class TestSetSnapGridView(SyncViewTestCase):
+    """SetSnapGridView persists the snap-grid preference to the session,
+    clamped to the UI input's range (0 = disabled); malformed input is
+    rejected so a crafted POST cannot store garbage."""
+
+    def test_valid_value_persisted(self):
+        response = self.client.post(reverse('set_snap_grid'), {'snap_grid_pixels': '10'})
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(self.client.session['svg_snap_grid_pixels'], 10)
+
+    def test_value_clamped_to_max(self):
+        self.client.post(reverse('set_snap_grid'), {'snap_grid_pixels': '999'})
+        self.assertEqual(self.client.session['svg_snap_grid_pixels'], 50)
+
+    def test_value_clamped_to_min(self):
+        self.client.post(reverse('set_snap_grid'), {'snap_grid_pixels': '-5'})
+        self.assertEqual(self.client.session['svg_snap_grid_pixels'], 0)
+
+    def test_explicit_zero_disables(self):
+        self.client.post(reverse('set_snap_grid'), {'snap_grid_pixels': '0'})
+        self.assertEqual(self.client.session['svg_snap_grid_pixels'], 0)
+
+    def test_malformed_rejected(self):
+        response = self.client.post(reverse('set_snap_grid'), {'snap_grid_pixels': 'abc'})
+        self.assertEqual(response.status_code, 400)

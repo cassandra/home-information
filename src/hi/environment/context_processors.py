@@ -24,6 +24,7 @@ def client_config(request):
         VIEW_MODE = str(request.view_parameters.view_mode),
         VIEW_TYPE = str(request.view_parameters.view_type) if request.view_parameters.view_type else None,
         IS_EDIT_MODE = request.view_parameters.is_editing,
+        SVG_SNAP_GRID_PIXELS = request.view_parameters.svg_snap_grid_pixels,
         API_STATUS_URL = reverse( 'api_status' ),
         CONSOLE_UNLOCK_URL = reverse( 'console_unlock' ),
     )

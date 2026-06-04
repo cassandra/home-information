@@ -11,14 +11,15 @@ class ClientConfig:
     needed.
 
     """
-    DEBUG              : bool
-    ENVIRONMENT        : str
-    VERSION            : str
-    VIEW_MODE          : str
-    VIEW_TYPE          : str
-    IS_EDIT_MODE       : bool
-    API_STATUS_URL     : str = ''
-    CONSOLE_UNLOCK_URL : str = ''
+    DEBUG                : bool
+    ENVIRONMENT          : str
+    VERSION              : str
+    VIEW_MODE            : str
+    VIEW_TYPE            : str
+    IS_EDIT_MODE         : bool
+    SVG_SNAP_GRID_PIXELS : int
+    API_STATUS_URL       : str = ''
+    CONSOLE_UNLOCK_URL   : str = ''
     
     def to_json_dict(self) -> dict:
         """

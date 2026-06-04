@@ -29,6 +29,7 @@ urlpatterns = [
     path( 'index.html', views.HomeView.as_view(), name='home_index' ),
     path( 'start', views.StartView.as_view(), name='start' ),
     path( 'health', views.HealthView.as_view(), name='health' ),
+    path( 'snap-grid', views.SetSnapGridView.as_view(), name='set_snap_grid' ),
 
     path( 'env/', include('hi.environment.urls' )),
     path( 'user/', include('hi.apps.user.urls' )),

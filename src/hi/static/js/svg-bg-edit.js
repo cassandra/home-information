@@ -4,7 +4,6 @@
 
     window.Hi = window.Hi || {};
     window.Hi.SvgEdit = window.Hi.SvgEdit || {};
-    window.Hi.SvgEdit.snapGridPixels = 5;
 
     const SVG_NS = 'http://www.w3.org/2000/svg';
 
@@ -633,10 +632,6 @@
 
         /* Seed undo cache so the first edit has a valid pre-edit state. */
         gLastSavedSnapshot = getCleanSnapshot();
-
-        $( '#hi-svg-edit-snap-grid' ).on( 'change input', function() {
-            Hi.SvgEdit.snapGridPixels = parseInt( $( this ).val(), 10 ) || 0;
-        });
     });
 
 })();

@@ -1,0 +1,11 @@
+{% comment %}
+Shared SVG-editor snap-grid control. The `hi-snap-grid` class is the JS hook
+(delegated handler lives in main.js); both editors include this so the markup
+and the JS binding cannot drift. No id - nothing references one.
+{% endcomment %}
+<label class="mb-0 mx-1" style="font-size: 0.85rem;"><b>Snap:</b></label>
+<input type="number" class="hi-snap-grid form-control form-control-sm"
+       style="width: 4rem;" value="{{ request.view_parameters.svg_snap_grid_pixels }}"
+       min="0" max="50" step="1"
+       title="Snap grid in screen pixels (0 to disable, hold Shift for fine mode)">
+<label class="ms-1 mb-0" style="font-size: 0.85rem;">px</label>
