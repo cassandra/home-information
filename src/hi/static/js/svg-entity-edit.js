@@ -269,7 +269,8 @@
                         // track the session pan/zoom).
                         view_edit_active: ( $( LOCATION_VIEW_EDIT_PANE_SELECTOR ).length > 0 ),
                     };
-                    AN.post( API_EDIT_LOCATION_VIEW_GEOMETRY_URL + '/' + locationViewId, data );
+                    AN.post( API_EDIT_LOCATION_VIEW_GEOMETRY_URL + '/' + locationViewId, data,
+                             { suppressLoader: true } );
                 },
                 shouldSave: function() {
                     // Send pan/zoom to the server throughout edit mode so the

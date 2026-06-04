@@ -168,16 +168,23 @@
             });
         },
 
-        post: function( url, data ) {
+        post: function( url, data, options ) {
+            options = options || {};
             $.ajax({
                 type: 'POST',
                 url: url,
                 data: data,
                 async: true,
                 cache: false,
+                // suppressLoader: behind-the-scenes saves (e.g. snap-grid,
+                // pan/zoom geometry) opt out of the loading interstitial.
+                // global:false also keeps the request out of the shared
+                // ajaxStart/ajaxStop counter, so it never affects a
+                // concurrent user-initiated request's interstitial.
+                global: ( options.suppressLoader !== true ),
                 contentType: 'application/x-www-form-urlencoded; charset=UTF-8',
                 processData: true,
-                
+
                 success: function(data, status, xhr) {
                     asyncUpdateData( null, null, data, xhr );
                     return false;

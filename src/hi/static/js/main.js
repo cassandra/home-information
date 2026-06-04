@@ -241,7 +241,8 @@
             // Debounced persist so a spinner-arrow burst is one save.
             clearTimeout( snapSaveTimer );
             snapSaveTimer = setTimeout( function() {
-                AN.post( Hi.API_SET_SNAP_GRID_URL, { snap_grid_pixels: value } );
+                AN.post( Hi.API_SET_SNAP_GRID_URL, { snap_grid_pixels: value },
+                         { suppressLoader: true } );
             }, 400 );
         });
     });
