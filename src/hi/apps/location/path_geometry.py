@@ -1,9 +1,8 @@
 from typing import Optional, Tuple
 
-from hi.apps.common.svg_models import SvgRadius
+from hi.apps.common.svg_models import SvgRadius, SvgViewBox
 from hi.apps.entity.enums import EntityType
 from hi.apps.collection.enums import CollectionType
-from hi.apps.location.models import LocationView
 
 
 class PathGeometry:
@@ -48,7 +47,7 @@ class PathGeometry:
     
     @classmethod
     def create_default_path_string(cls,
-                                   location_view: LocationView,
+                                   view_box: SvgViewBox,
                                    is_path_closed: bool,
                                    center_x: Optional[float] = None,
                                    center_y: Optional[float] = None,
@@ -56,29 +55,29 @@ class PathGeometry:
                                    collection_type: Optional[CollectionType] = None,
                                    radius_multiplier: float = 1.0) -> str:
         """Create a default SVG path string with configurable positioning and sizing.
-        
+
         Args:
-            location_view: LocationView for calculating dimensions
+            view_box: SvgViewBox for calculating dimensions
             is_path_closed: Whether to create closed (rectangle) or open (line) path
             center_x: X position for path center (defaults to view center)
-            center_y: Y position for path center (defaults to view center)  
+            center_y: Y position for path center (defaults to view center)
             entity_type: EntityType for entity-specific radius (optional)
             collection_type: CollectionType for collection-specific radius (optional)
             radius_multiplier: Multiplier for radius size (e.g., 2.0 for double size)
-            
+
         Returns:
             SVG path string
         """
         # Default to view center if no center provided
         if center_x is None:
-            center_x = location_view.svg_view_box.x + (location_view.svg_view_box.width / 2.0)
+            center_x = view_box.x + (view_box.width / 2.0)
         if center_y is None:
-            center_y = location_view.svg_view_box.y + (location_view.svg_view_box.height / 2.0)
-        
+            center_y = view_box.y + (view_box.height / 2.0)
+
         # Get type-specific radius if provided, otherwise use default calculation
         radius_x = None
         radius_y = None
-        
+
         if entity_type:
             entity_radius = cls.get_entity_radius(entity_type)
             radius_x = entity_radius.x
@@ -87,12 +86,12 @@ class PathGeometry:
             collection_radius = cls.get_collection_radius(collection_type)
             radius_x = collection_radius.x
             radius_y = collection_radius.y
-        
+
         # Apply default calculation for None values
         if radius_x is None:
-            radius_x = location_view.svg_view_box.width * (cls.DEFAULT_RADIUS_PERCENT / 50.0)
+            radius_x = view_box.width * (cls.DEFAULT_RADIUS_PERCENT / 50.0)
         if radius_y is None:
-            radius_y = location_view.svg_view_box.height * (cls.DEFAULT_RADIUS_PERCENT / 50.0)
+            radius_y = view_box.height * (cls.DEFAULT_RADIUS_PERCENT / 50.0)
             
         # Apply radius multiplier
         radius_x *= radius_multiplier
@@ -120,7 +119,7 @@ class PathGeometry:
     @classmethod
     def create_coverage_triangle_path_string(
             cls,
-            location_view : LocationView,
+            view_box      : SvgViewBox,
             apex_x        : float,
             apex_y        : float,
             direction     : Tuple[float, float],
@@ -136,8 +135,8 @@ class PathGeometry:
         # the same magnitude as the default rectangle path
         # (DEFAULT_RADIUS_PERCENT controls both).
         size_fraction = cls.DEFAULT_RADIUS_PERCENT / 50.0
-        height = location_view.svg_view_box.width * size_fraction * 2.0
-        base_half_width = location_view.svg_view_box.height * size_fraction
+        height = view_box.width * size_fraction * 2.0
+        base_half_width = view_box.height * size_fraction
 
         # Perpendicular to direction (rotate 90° counter-clockwise in
         # SVG coordinates).

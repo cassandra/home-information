@@ -1,9 +1,9 @@
 import logging
 from django.test import TestCase
 
+from hi.apps.common.svg_models import SvgViewBox
 from hi.apps.entity.enums import EntityType
 from hi.apps.collection.enums import CollectionType
-from hi.apps.location.models import Location, LocationView
 from hi.apps.location.path_geometry import PathGeometry
 
 logging.disable(logging.CRITICAL)
@@ -14,21 +14,8 @@ class TestPathGeometry(TestCase):
 
     def setUp(self):
         """Set up test data."""
-        self.location = Location.objects.create(
-            name='Test Location',
-            svg_fragment_filename='test.svg',
-            svg_view_box_str='0 0 200 100',
-            order_id=1
-        )
-        
-        self.location_view = LocationView.objects.create(
-            location=self.location,
-            location_view_type_str='DEFAULT',
-            name='Test View',
-            svg_view_box_str='0 0 200 100',  # Width=200, Height=100, Center=(100,50)
-            svg_rotate=0,
-            svg_style_name_str='COLOR'
-        )
+        # Width=200, Height=100, Center=(100,50)
+        self.view_box = SvgViewBox(x=0, y=0, width=200, height=100)
 
     def test_get_entity_radius_configured_types(self):
         """Test entity-specific radius configurations."""
@@ -62,7 +49,7 @@ class TestPathGeometry(TestCase):
     def test_create_default_path_closed_no_entity_type(self):
         """Test closed path creation with default settings."""
         svg_path = PathGeometry.create_default_path_string(
-            location_view=self.location_view,
+            view_box=self.view_box,
             is_path_closed=True
         )
         
@@ -86,7 +73,7 @@ class TestPathGeometry(TestCase):
     def test_create_default_path_open_no_entity_type(self):
         """Test open path creation with default settings."""
         svg_path = PathGeometry.create_default_path_string(
-            location_view=self.location_view,
+            view_box=self.view_box,
             is_path_closed=False
         )
         
@@ -103,7 +90,7 @@ class TestPathGeometry(TestCase):
     def test_create_default_path_with_entity_type_door(self):
         """Test path creation with entity-specific radius (DOOR: y=16)."""
         svg_path = PathGeometry.create_default_path_string(
-            location_view=self.location_view,
+            view_box=self.view_box,
             is_path_closed=True,
             entity_type=EntityType.DOOR
         )
@@ -122,7 +109,7 @@ class TestPathGeometry(TestCase):
     def test_create_default_path_with_entity_type_wall(self):
         """Test path creation with entity-specific radius (WALL: x=16)."""
         svg_path = PathGeometry.create_default_path_string(
-            location_view=self.location_view,
+            view_box=self.view_box,
             is_path_closed=True,
             entity_type=EntityType.WALL
         )
@@ -141,7 +128,7 @@ class TestPathGeometry(TestCase):
     def test_create_default_path_custom_center(self):
         """Test path creation with custom center position."""
         svg_path = PathGeometry.create_default_path_string(
-            location_view=self.location_view,
+            view_box=self.view_box,
             is_path_closed=False,
             center_x=150.0,
             center_y=25.0
@@ -155,7 +142,7 @@ class TestPathGeometry(TestCase):
     def test_create_default_path_radius_multiplier(self):
         """Test path creation with radius multiplier."""
         svg_path = PathGeometry.create_default_path_string(
-            location_view=self.location_view,
+            view_box=self.view_box,
             is_path_closed=True,
             radius_multiplier=2.0
         )
@@ -174,7 +161,7 @@ class TestPathGeometry(TestCase):
     def test_create_default_path_entity_type_with_multiplier(self):
         """Test path creation with entity type and radius multiplier."""
         svg_path = PathGeometry.create_default_path_string(
-            location_view=self.location_view,
+            view_box=self.view_box,
             is_path_closed=True,
             entity_type=EntityType.APPLIANCE,  # x=32, y=32
             radius_multiplier=0.5
@@ -211,7 +198,7 @@ class TestPathGeometry(TestCase):
     def test_create_default_path_with_collection_type(self):
         """Test path creation with collection type uses default behavior."""
         svg_path = PathGeometry.create_default_path_string(
-            location_view=self.location_view,
+            view_box=self.view_box,
             is_path_closed=True,
             collection_type=CollectionType.APPLIANCES
         )
@@ -236,7 +223,7 @@ class TestPathGeometry(TestCase):
     def test_entity_type_and_collection_type_mutual_exclusion(self):
         """Test that entity_type takes precedence over collection_type if both provided."""
         svg_path = PathGeometry.create_default_path_string(
-            location_view=self.location_view,
+            view_box=self.view_box,
             is_path_closed=True,
             entity_type=EntityType.DOOR,  # Has y=16 radius
             collection_type=CollectionType.APPLIANCES  # Should be ignored

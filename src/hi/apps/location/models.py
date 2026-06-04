@@ -77,8 +77,8 @@ class Location( models.Model, ItemTypeModelMixin ):
             min_y = svg_view_box.y,
             max_x = svg_view_box.x + svg_view_box.width,
             max_y = svg_view_box.y + svg_view_box.height,
-            min_scale = 0.1,
-            max_scale = 25.0,
+            min_scale = SvgItemPositionBounds.DEFAULT_MIN_SCALE,
+            max_scale = SvgItemPositionBounds.DEFAULT_MAX_SCALE,
         )
     
     def delete( self, *args, **kwargs ):

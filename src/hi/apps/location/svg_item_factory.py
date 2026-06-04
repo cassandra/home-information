@@ -116,7 +116,7 @@ class SvgItemFactory( Singleton ):
                                          location_view  : LocationView,
                                          is_path_closed : bool           ) -> str:
         return PathGeometry.create_default_path_string(
-            location_view=location_view,
+            view_box=location_view.svg_view_box,
             is_path_closed=is_path_closed,
             entity_type=entity.entity_type,
         )
@@ -127,7 +127,7 @@ class SvgItemFactory( Singleton ):
                                              is_path_closed  : bool           ) -> str:
         # Use unified PathGeometry approach for collections
         return PathGeometry.create_default_path_string(
-            location_view=location_view,
+            view_box=location_view.svg_view_box,
             is_path_closed=is_path_closed,
             collection_type=collection.collection_type,
         )

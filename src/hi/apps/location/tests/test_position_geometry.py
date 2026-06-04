@@ -1,14 +1,14 @@
 """
 Tests for PositionGeometry.
 
-Pure-functional layout math. No DB writes; some methods take a
-``LocationView`` (mockable) or a Location row.
+Pure-functional layout math. No DB writes and no model coupling:
+methods take a bare ``SvgViewBox`` and return geometry.
 """
 
 import logging
 from decimal import Decimal
-from unittest.mock import Mock
 
+from hi.apps.common.svg_models import SvgItemPositionBounds, SvgViewBox
 from hi.apps.entity.models import Entity
 from hi.apps.entity.enums import EntityType
 from hi.apps.location.position_geometry import PositionGeometry
@@ -20,35 +20,24 @@ logging.disable(logging.CRITICAL)
 class TestPositionGeometryViewCenter(BaseTestCase):
 
     def test_view_center_respects_origin(self):
-        from hi.apps.common.svg_models import SvgViewBox
-
-        location_view = Mock()
-        location_view.svg_view_box = SvgViewBox(x=200, y=300, width=1000, height=1000)
-
-        x, y = PositionGeometry.view_center(location_view)
+        view_box = SvgViewBox(x=200, y=300, width=1000, height=1000)
+        x, y = PositionGeometry.view_center(view_box)
         self.assertAlmostEqual(x, 700.0)
         self.assertAlmostEqual(y, 800.0)
 
 
 class TestPositionGeometryGridSlot(BaseTestCase):
 
-    def _make_view(self, x, y, width, height):
-        from hi.apps.common.svg_models import SvgViewBox
-
-        location_view = Mock()
-        location_view.svg_view_box = SvgViewBox(x=x, y=y, width=width, height=height)
-        return location_view
-
     def test_single_entity_returns_center(self):
-        view = self._make_view(0, 0, 1000, 1000)
-        x, y = PositionGeometry.grid_slot(location_view=view, grid_index=0, grid_total=1)
+        view_box = SvgViewBox(x=0, y=0, width=1000, height=1000)
+        x, y = PositionGeometry.grid_slot(view_box=view_box, grid_index=0, grid_total=1)
         self.assertAlmostEqual(x, 500.0)
         self.assertAlmostEqual(y, 500.0)
 
     def test_multiple_entities_distributed_around_center(self):
-        view = self._make_view(0, 0, 1000, 1000)
+        view_box = SvgViewBox(x=0, y=0, width=1000, height=1000)
         positions = [
-            PositionGeometry.grid_slot(location_view=view, grid_index=i, grid_total=4)
+            PositionGeometry.grid_slot(view_box=view_box, grid_index=i, grid_total=4)
             for i in range(4)
         ]
         # All four positions are distinct, all sit inside the viewbox
@@ -69,9 +58,9 @@ class TestPositionGeometryGridSlot(BaseTestCase):
         self.assertAlmostEqual(mean_y, 500.0)
 
     def test_grid_wraps_to_multiple_rows(self):
-        view = self._make_view(0, 0, 1000, 1000)
+        view_box = SvgViewBox(x=0, y=0, width=1000, height=1000)
         positions = [
-            PositionGeometry.grid_slot(location_view=view, grid_index=i, grid_total=8)
+            PositionGeometry.grid_slot(view_box=view_box, grid_index=i, grid_total=8)
             for i in range(8)
         ]
         # Grid spans multiple rows AND multiple columns (eight items
@@ -83,8 +72,8 @@ class TestPositionGeometryGridSlot(BaseTestCase):
         self.assertGreater(len(distinct_ys), 1)
 
     def test_clamps_to_viewbox_margin(self):
-        view = self._make_view(0, 0, 100, 100)
-        x, y = PositionGeometry.grid_slot(location_view=view, grid_index=0, grid_total=16)
+        view_box = SvgViewBox(x=0, y=0, width=100, height=100)
+        x, y = PositionGeometry.grid_slot(view_box=view_box, grid_index=0, grid_total=16)
         margin_fraction = PositionGeometry.DEFAULT_VIEWBOX_MARGIN_FRACTION
         margin = 100 * margin_fraction
         self.assertGreaterEqual(x, margin)
@@ -96,44 +85,27 @@ class TestPositionGeometryGridSlot(BaseTestCase):
 class TestPositionGeometryDefaultIconScale(BaseTestCase):
 
     def _fixtures(self, viewbox_width, viewbox_height):
-        from hi.apps.common.svg_models import SvgViewBox
-        from hi.apps.location.models import Location
-
         entity = Entity.objects.create(
             name='Scale Test Entity',
             entity_type_str=str(EntityType.CAMERA),
         )
-        location = Location.objects.create(
-            name='Test Location',
-            svg_view_box_str=f'0 0 {viewbox_width} {viewbox_height}',
-        )
-        location_view = Mock()
-        location_view.location = location
-        location_view.svg_view_box = SvgViewBox(
-            x=0, y=0, width=viewbox_width, height=viewbox_height,
-        )
-        return entity, location, location_view
+        view_box = SvgViewBox(x=0, y=0, width=viewbox_width, height=viewbox_height)
+        return entity, view_box
 
     def test_zero_viewbox_clamps_to_min_scale(self):
-        entity, location, location_view = self._fixtures(0, 0)
-        scale = PositionGeometry.default_icon_scale(
-            entity=entity, location_view=location_view,
-        )
-        self.assertEqual(scale, Decimal(str(location.svg_position_bounds.min_scale)))
+        entity, view_box = self._fixtures(0, 0)
+        scale = PositionGeometry.default_icon_scale(entity=entity, view_box=view_box)
+        self.assertEqual(scale, Decimal(str(SvgItemPositionBounds.DEFAULT_MIN_SCALE)))
 
     def test_very_large_viewbox_clamps_to_max_scale(self):
-        entity, location, location_view = self._fixtures(100000, 100000)
-        scale = PositionGeometry.default_icon_scale(
-            entity=entity, location_view=location_view,
-        )
-        self.assertEqual(scale, Decimal(str(location.svg_position_bounds.max_scale)))
+        entity, view_box = self._fixtures(100000, 100000)
+        scale = PositionGeometry.default_icon_scale(entity=entity, view_box=view_box)
+        self.assertEqual(scale, Decimal(str(SvgItemPositionBounds.DEFAULT_MAX_SCALE)))
 
     def test_very_small_viewbox_clamps_to_min_scale(self):
-        entity, location, location_view = self._fixtures(10, 10)
-        scale = PositionGeometry.default_icon_scale(
-            entity=entity, location_view=location_view,
-        )
-        self.assertEqual(scale, Decimal(str(location.svg_position_bounds.min_scale)))
+        entity, view_box = self._fixtures(10, 10)
+        scale = PositionGeometry.default_icon_scale(entity=entity, view_box=view_box)
+        self.assertEqual(scale, Decimal(str(SvgItemPositionBounds.DEFAULT_MIN_SCALE)))
 
 
 class TestPositionGeometryPathCenter(BaseTestCase):

@@ -28,7 +28,6 @@ without any spread. Multiple delegates therefore overlap. Phase 3
 inherits this behavior; revisit when it bites.
 """
 
-import copy
 from dataclasses import dataclass, field
 from decimal import Decimal
 import logging
@@ -423,29 +422,31 @@ class EntityPlacementService:
 
 
 class EntityPlacementCalculator:
-    """Orchestrates per-entity shape selection. Pure-functional;
-    performs no DB writes. The geometry math lives in
-    ``PositionGeometry`` (where) and ``PathGeometry`` (how a path
-    looks); this class branches on entity_type to decide which
+    """Orchestrates per-entity shape selection against a fixed viewbox.
+    Pure-functional; performs no DB writes and has no model coupling -
+    constructed with the ``SvgViewBox`` to position/size against (the
+    LocationView's stored geometry, or an override). The geometry math
+    lives in ``PositionGeometry`` (where) and ``PathGeometry`` (how a
+    path looks); this class branches on entity_type to decide which
     output shape applies.
     """
 
-    def shape_for_entity( self,
-                          entity         : Entity,
-                          location_view  : LocationView ) -> PlacementShape:
+    def __init__( self, view_box : SvgViewBox ):
+        self._view_box = view_box
+        return
+
+    @property
+    def view_box( self ) -> SvgViewBox:
+        return self._view_box
+
+    def shape_for_entity( self, entity : Entity ) -> PlacementShape:
         """Return the placement shape for a single entity centered on
-        the current viewbox."""
-        svg_x, svg_y = PositionGeometry.view_center( location_view )
-        return self._shape_at_point(
-            entity = entity,
-            location_view = location_view,
-            svg_x = svg_x,
-            svg_y = svg_y,
-        )
+        the viewbox."""
+        svg_x, svg_y = PositionGeometry.view_center( self._view_box )
+        return self._shape_at_point( entity = entity, svg_x = svg_x, svg_y = svg_y )
 
     def shapes_for_entities( self,
-                             entities       : List[Entity],
-                             location_view  : LocationView ) -> List[PlacementShape]:
+                             entities       : List[Entity] ) -> List[PlacementShape]:
         """Return one shape per entity in input order. Single-entity
         input degenerates to ``shape_for_entity``. Larger groups get
         a centered grid; each entity's slot becomes either a Point
@@ -455,55 +456,44 @@ class EntityPlacementCalculator:
         if total == 0:
             return []
         if total == 1:
-            return [ self.shape_for_entity(
-                entity = entities[0], location_view = location_view ) ]
+            return [ self.shape_for_entity( entity = entities[0] ) ]
 
         return [
             self._shape_at_grid_slot(
                 entity = entity,
-                location_view = location_view,
                 grid_index = index,
                 grid_total = total,
             )
             for index, entity in enumerate( entities )
         ]
 
-    def default_icon_scale( self,
-                            entity         : Entity,
-                            location_view  : LocationView ) -> Decimal:
+    def default_icon_scale( self, entity : Entity ) -> Decimal:
         """Default scale for an icon entity. Delegates to
         ``PositionGeometry.default_icon_scale``."""
         return PositionGeometry.default_icon_scale(
-            entity = entity, location_view = location_view )
+            entity = entity, view_box = self._view_box )
 
     # ----- internal shape routing (no DB) -----
 
     def _shape_at_grid_slot( self,
                              entity         : Entity,
-                             location_view  : LocationView,
                              grid_index     : int,
                              grid_total     : int ) -> PlacementShape:
         svg_x, svg_y = PositionGeometry.grid_slot(
-            location_view = location_view,
+            view_box = self._view_box,
             grid_index = grid_index,
             grid_total = grid_total,
         )
-        return self._shape_at_point(
-            entity = entity,
-            location_view = location_view,
-            svg_x = svg_x,
-            svg_y = svg_y,
-        )
+        return self._shape_at_point( entity = entity, svg_x = svg_x, svg_y = svg_y )
 
     def _shape_at_point( self,
                          entity         : Entity,
-                         location_view  : LocationView,
                          svg_x          : float,
                          svg_y          : float ) -> PlacementShape:
         entity_type = entity.entity_type
         if entity_type.requires_path():
             svg_path = PathGeometry.create_default_path_string(
-                location_view = location_view,
+                view_box = self._view_box,
                 is_path_closed = entity_type.requires_closed_path(),
                 center_x = svg_x,
                 center_y = svg_y,
@@ -514,8 +504,7 @@ class EntityPlacementCalculator:
         return PlacementPoint(
             svg_x = svg_x,
             svg_y = svg_y,
-            svg_scale = self.default_icon_scale(
-                entity = entity, location_view = location_view ),
+            svg_scale = self.default_icon_scale( entity = entity ),
         )
 
 
@@ -526,13 +515,18 @@ class EntityPlacer:
     user-drawn-path persistence, edit-form construction, and
     entity-type transitions (icon ↔ path)."""
 
-    def __init__( self ):
-        self._calculator = EntityPlacementCalculator()
-        return
-
-    @property
-    def calculator(self) -> EntityPlacementCalculator:
-        return self._calculator
+    @staticmethod
+    def _calculator_for( location_view         : LocationView,
+                         svg_view_box_override : Optional[SvgViewBox] = None
+                         ) -> EntityPlacementCalculator:
+        """Build a calculator bound to the geometry placement should use:
+        the override viewbox when given (e.g. the user's current
+        pan/zoom), otherwise the LocationView's stored viewbox. The real
+        location_view is never handed to the calculator - it is only the
+        linkage target for persisted rows."""
+        view_box = ( svg_view_box_override if svg_view_box_override is not None
+                     else location_view.svg_view_box )
+        return EntityPlacementCalculator( view_box = view_box )
 
     def place_entity_in_view( self,
                               entity           : Entity,
@@ -562,14 +556,10 @@ class EntityPlacer:
         at the viewbox center. See module docstring on the
         delegate-overlap limitation.
         """
-        # The calculator positions/sizes against this view's geometry; the
-        # real location_view remains the linkage target below. With an
-        # override they differ (transient copy carrying the override
-        # viewbox); without one they are the same object.
-        geometry_view = self._geometry_view_for_override(
-            location_view = location_view,
-            svg_view_box_override = svg_view_box_override,
-        )
+        # The calculator positions/sizes against the override viewbox when
+        # given, else the view's stored viewbox; the real location_view is
+        # only the linkage target for the persisted rows below.
+        calculator = self._calculator_for( location_view, svg_view_box_override )
 
         with transaction.atomic():
             if not entity.entity_views.all().exists():
@@ -584,8 +574,8 @@ class EntityPlacer:
 
             if placement_shape is None:
                 placement_shape = self._derive_placement_shape(
+                    calculator = calculator,
                     entity = entity,
-                    location_view = geometry_view,
                     bulk_grid_index = bulk_grid_index,
                     bulk_grid_total = bulk_grid_total,
                 )
@@ -596,10 +586,10 @@ class EntityPlacer:
             )
             for delegate_entity in delegate_entity_list:
                 delegate_shape = self._build_delegate_shape(
+                    calculator = calculator,
                     principal_entity = entity,
                     principal_shape = placement_shape,
                     delegate_entity = delegate_entity,
-                    location_view = geometry_view,
                 )
                 self._create_entity_view(
                     entity = delegate_entity,
@@ -609,21 +599,6 @@ class EntityPlacer:
                 continue
         return
 
-    def _geometry_view_for_override( self,
-                                     location_view         : LocationView,
-                                     svg_view_box_override : Optional[SvgViewBox] ) -> LocationView:
-        """Return the LocationView the calculator should position/size
-        against. Without an override this is the real view; with one, a
-        transient shallow copy carrying the override viewbox - never saved,
-        so the geometry follows the user's current pan/zoom while the real
-        view stays the placement/linkage target. The calculator reads only
-        geometry (no DB writes, no id use) from the view it is handed."""
-        if svg_view_box_override is None:
-            return location_view
-        geometry_view = copy.copy( location_view )
-        geometry_view.svg_view_box = svg_view_box_override
-        return geometry_view
-
     # Apex offset along the principal's icon-facing direction, expressed
     # as a fraction of the icon's half-extent in that direction. 0.0 =
     # apex at icon center; 1.0 = apex at icon edge. Falls between for a
@@ -632,10 +607,10 @@ class EntityPlacer:
 
     def _build_delegate_shape(
             self,
+            calculator       : EntityPlacementCalculator,
             principal_entity : Entity,
             principal_shape  : PlacementShape,
             delegate_entity  : Entity,
-            location_view    : LocationView,
     ) -> PlacementShape:
         """Compute the delegate's placement shape. Default is the
         calculator's centered default. When the principal is an icon
@@ -643,10 +618,7 @@ class EntityPlacer:
         delegate is an AREA, build a triangular coverage path with its
         apex anchored near the principal's position so the delegate
         visually reads as the principal's coverage cone."""
-        default_shape = self._calculator.shape_for_entity(
-            entity = delegate_entity,
-            location_view = location_view,
-        )
+        default_shape = calculator.shape_for_entity( entity = delegate_entity )
         if delegate_entity.entity_type != EntityType.AREA:
             return default_shape
         if not isinstance( principal_shape, PlacementPoint ):
@@ -673,7 +645,7 @@ class EntityPlacer:
         apex_y = float( principal_shape.svg_y ) + ( dy * apex_offset )
 
         svg_path = PathGeometry.create_coverage_triangle_path_string(
-            location_view = location_view,
+            view_box = calculator.view_box,
             apex_x = apex_x,
             apex_y = apex_y,
             direction = icon_direction.value,
@@ -688,9 +660,8 @@ class EntityPlacer:
         items in a result group together. The grid is computed once
         across the entire group; per-entity delegates are placed by
         the single-entity flow."""
-        shapes = self._calculator.shapes_for_entities(
+        shapes = self._calculator_for( location_view ).shapes_for_entities(
             entities = entities,
-            location_view = location_view,
         )
         with transaction.atomic():
             for entity, shape in zip( entities, shapes ):
@@ -727,9 +698,8 @@ class EntityPlacer:
         Used by entity-type transition flows that already have an
         EntityView and just need a shape row to exist (e.g., a type
         change to a path-based type when no path row exists yet)."""
-        shape = self._calculator.shape_for_entity(
+        shape = self._calculator_for( location_view ).shape_for_entity(
             entity = entity,
-            location_view = location_view,
         )
         self._persist_placement_shape(
             entity = entity,
@@ -893,8 +863,8 @@ class EntityPlacer:
     # ----- internal helpers -----
 
     def _derive_placement_shape( self,
+                                 calculator       : EntityPlacementCalculator,
                                  entity           : Entity,
-                                 location_view    : LocationView,
                                  bulk_grid_index  : Optional[int],
                                  bulk_grid_total  : Optional[int] ) -> PlacementShape:
         if (
@@ -902,14 +872,12 @@ class EntityPlacer:
             and bulk_grid_total > 1
             and bulk_grid_index is not None
         ):
-            return self._calculator._shape_at_grid_slot(
+            return calculator._shape_at_grid_slot(
                 entity = entity,
-                location_view = location_view,
                 grid_index = bulk_grid_index,
                 grid_total = bulk_grid_total,
             )
-        return self._calculator.shape_for_entity(
-            entity = entity, location_view = location_view )
+        return calculator.shape_for_entity( entity = entity )
 
     def _create_entity_view( self,
                              entity           : Entity,
@@ -1020,7 +988,7 @@ class EntityPlacer:
         center_y = float( entity_position.svg_y )
 
         svg_path = PathGeometry.create_default_path_string(
-            location_view = location_view,
+            view_box = location_view.svg_view_box,
             is_path_closed = is_path_closed,
             center_x = center_x,
             center_y = center_y,
@@ -1046,10 +1014,10 @@ class EntityPlacer:
         verbatim."""
         center_x, center_y = PositionGeometry.path_center( entity_path.svg_path )
         if center_x is None or center_y is None:
-            center_x, center_y = PositionGeometry.view_center( location_view )
+            center_x, center_y = PositionGeometry.view_center( location_view.svg_view_box )
 
-        svg_scale = self._calculator.default_icon_scale(
-            entity = entity, location_view = location_view )
+        svg_scale = self._calculator_for( location_view ).default_icon_scale(
+            entity = entity )
         EntityPosition.objects.get_or_create(
             entity = entity,
             location = location_view.location,

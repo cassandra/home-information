@@ -11,16 +11,15 @@ like once you've decided where").
   viewbox; used to lay out a group of entities arriving together.
 * ``clamp_to_viewbox`` — keep a point inside the viewbox margin.
 * ``default_icon_scale`` — entity-aware icon scale: ~10% of the
-  viewbox's smaller dimension, clamped to the location's
-  svg_position_bounds.
+  viewbox's smaller dimension, clamped to the canonical scale bounds.
 * ``path_center`` — geometric center of an existing SVG path
   string. Lives here because the *output* is a position even
   though the input is a path string.
 
-Performs no DB writes and has no opinions about Entity vs
-Collection: callers in either domain pass in a ``LocationView`` (or
-view box) and receive geometry. Constants for the placement
-heuristic live here as the canonical home.
+Performs no DB writes and has no opinions about Entity vs Collection,
+and no coupling to any model: callers pass in a bare ``SvgViewBox``
+and receive geometry. Constants for the placement heuristic live here
+as the canonical home (scale clamps live on ``SvgItemPositionBounds``).
 """
 
 from decimal import Decimal
@@ -28,7 +27,7 @@ import math
 import re
 from typing import Optional, Tuple
 
-from hi.apps.location.models import LocationView
+from hi.apps.common.svg_models import SvgItemPositionBounds, SvgViewBox
 from hi.hi_styles import EntityStyle
 
 
@@ -43,8 +42,7 @@ class PositionGeometry:
     DEFAULT_VIEWBOX_MARGIN_FRACTION = 0.05
 
     @classmethod
-    def view_center( cls, location_view : LocationView ) -> Tuple[float, float]:
-        view_box = location_view.svg_view_box
+    def view_center( cls, view_box : SvgViewBox ) -> Tuple[float, float]:
         return (
             view_box.x + ( view_box.width / 2.0 ),
             view_box.y + ( view_box.height / 2.0 ),
@@ -52,11 +50,10 @@ class PositionGeometry:
 
     @classmethod
     def grid_slot( cls,
-                   location_view  : LocationView,
+                   view_box       : SvgViewBox,
                    grid_index     : int,
                    grid_total     : int ) -> Tuple[float, float]:
-        view_box = location_view.svg_view_box
-        center_x, center_y = cls.view_center( location_view )
+        center_x, center_y = cls.view_center( view_box )
 
         if grid_total <= 1:
             return center_x, center_y
@@ -135,19 +132,18 @@ class PositionGeometry:
     @classmethod
     def default_icon_scale( cls,
                             entity,
-                            location_view : LocationView ) -> Decimal:
+                            view_box : SvgViewBox ) -> Decimal:
         """Default scale for an icon entity: ~10% of the viewbox's
         smaller dimension, multiplied by the entity type's opt-in
         size factor (defaults to 1.0; only entity types with
         meaningfully different intended layout sizes — e.g.
-        Automobile — override it), clamped to the location's
-        svg_position_bounds.min_scale / max_scale."""
-        view_box = location_view.svg_view_box
+        Automobile — override it), clamped to the canonical
+        SvgItemPositionBounds.DEFAULT_MIN_SCALE / DEFAULT_MAX_SCALE."""
         icon_view_box = EntityStyle.get_svg_icon_viewbox( entity.entity_type )
 
         icon_max_dimension = max( icon_view_box.width, icon_view_box.height )
         if icon_max_dimension <= 0:
-            return Decimal( str( location_view.location.svg_position_bounds.min_scale ) )
+            return Decimal( str( SvgItemPositionBounds.DEFAULT_MIN_SCALE ) )
 
         viewbox_min_dimension = min( view_box.width, view_box.height )
         size_fraction = cls.DEFAULT_ICON_SIZE_PERCENT_OF_VIEWBOX / 100.0
@@ -155,9 +151,8 @@ class PositionGeometry:
         target_icon_size = viewbox_min_dimension * size_fraction * size_factor
         scale = target_icon_size / icon_max_dimension
 
-        position_bounds = location_view.location.svg_position_bounds
-        scale = max( position_bounds.min_scale,
-                     min( scale, position_bounds.max_scale ) )
+        scale = max( SvgItemPositionBounds.DEFAULT_MIN_SCALE,
+                     min( scale, SvgItemPositionBounds.DEFAULT_MAX_SCALE ) )
 
         return Decimal( str( scale ) )
 

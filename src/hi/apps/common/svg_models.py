@@ -228,6 +228,14 @@ class SvgStatusStyle:
 
 @dataclass
 class SvgItemPositionBounds:
+
+    # Canonical scale clamps for auto-placed/edited SVG items. These are
+    # placement policy, not per-Location data - both Location.svg_position_bounds
+    # and the placement scale heuristic reference them so the values stay in
+    # one place.
+    DEFAULT_MIN_SCALE = 0.1
+    DEFAULT_MAX_SCALE = 25.0
+
     min_x      : float
     min_y      : float
     max_x      : float
