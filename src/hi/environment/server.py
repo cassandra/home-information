@@ -1,6 +1,7 @@
 from dataclasses import dataclass, field
 import os
 import re
+import sys
 from typing import Tuple
 import urllib.parse
 
@@ -125,7 +126,10 @@ class EnvironmentSettings:
             env_settings.REDIS_HOST,
         )
         try:
-            env_settings.REDIS_PORT = int( cls.get_env_variable('HI_REDIS_PORT') )
+            env_settings.REDIS_PORT = int( cls.get_env_variable(
+                'HI_REDIS_PORT',
+                env_settings.REDIS_PORT,
+            ))
         except ( TypeError, ValueError ):
             pass
 
@@ -191,7 +195,8 @@ class EnvironmentSettings:
 
         extra_host_urls_str = cls.get_env_variable( 'HI_EXTRA_HOST_URLS', '' )
         if extra_host_urls_str:
-            host_url_tuple_list = cls.parse_url_list_str( extra_host_urls_str )
+            host_url_tuple_list = cls.parse_url_list_str(
+                extra_host_urls_str, source_var = 'HI_EXTRA_HOST_URLS' )
             
             # Assume first extra host is the SITE_DOMAIN, but this does not
             # matter until the Django "sites" feature needs to be used (if
@@ -207,7 +212,8 @@ class EnvironmentSettings:
         
         extra_csp_urls_str = cls.get_env_variable( 'HI_EXTRA_CSP_URLS', '' )
         if extra_csp_urls_str:
-            host_url_tuple_list = cls.parse_url_list_str( extra_csp_urls_str )
+            host_url_tuple_list = cls.parse_url_list_str(
+                extra_csp_urls_str, source_var = 'HI_EXTRA_CSP_URLS' )
             for host, url in host_url_tuple_list:
                 cors_allowed_origins_list.append( url )
                 continue
@@ -246,29 +252,42 @@ class EnvironmentSettings:
             return value
         if isinstance( value, str ):
             truthy_values = {'true', '1', 'on', 'yes', 'y', 't', 'enabled'}
-            if isinstance( value, str ):
-                return value.strip().lower() in truthy_values
-            return False
+            return value.strip().lower() in truthy_values
         return bool( value )
 
     @classmethod
-    def parse_url_list_str( cls, a_string : str ):
+    def parse_url_list_str( cls, a_string : str, source_var : str = 'HI_EXTRA_HOST_URLS' ):
         url_str_list = re.split( r'[\s\;\,]+', a_string )
         host_url_tuple_list = list()
         for url_str in url_str_list:
+            if not url_str:
+                continue
             try:
                 parsed_url = cls.parse_url( url_str )
                 scheme = parsed_url.scheme
                 host = parsed_url.hostname
                 port = parsed_url.port
                 if port:
-                    normalized_url_str = f'{scheme}://{host}:{port}' 
+                    normalized_url_str = f'{scheme}://{host}:{port}'
                 else:
                     normalized_url_str = f'{scheme}://{host}'
                 host_url_tuple_list.append( ( host, normalized_url_str ) )
 
             except ( TypeError, ValueError ):
-                pass
+                # Loud, actionable feedback rather than a silent drop. Without
+                # this, a bare hostname (exactly what Django's DisallowedHost
+                # error tells users to add) is discarded with no signal. This
+                # runs during settings construction, before Django logging is
+                # configured, so write to stderr — it surfaces in `docker logs`
+                # / compose output at startup, where the user is already looking.
+                # The example is fixed (not built from the bad input, which
+                # could produce a nonsense suggestion).
+                print(
+                    f"WARNING: {source_var} value '{url_str}' was ignored — entries "
+                    f"must be full URLs including the scheme and the port you browse "
+                    f"to, e.g. 'http://myhost:9411'. See Installation.md.",
+                    file = sys.stderr,
+                )
             continue
         return host_url_tuple_list
             

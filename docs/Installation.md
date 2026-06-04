@@ -100,7 +100,7 @@ By default, the app only accepts requests to `localhost`. To access it from othe
 - For standalone Docker: edit `$HOME/.hi/env/local.env` and run `docker restart hi`
 - For unRAID: set the "Extra Host URLs" field under "Show more settings"
 
-If you see `Invalid HTTP_HOST header` errors in the logs, this is the setting you need.
+If you see `Invalid HTTP_HOST header` errors in the logs, this is the setting you need. However, note that this setting requires the full URL location, not just a hostname.
 
 **Email alerts not working?**
 Configure email settings in `$HOME/.hi/env/local.env`:
