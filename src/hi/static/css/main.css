@@ -934,6 +934,19 @@ g[status="past"] {
 g[status="off"] path.hi-state-bg  {
     fill: var(--status-off-color);
 }
+/* Base for every status-display chip. MUST precede the specific
+ * .hi-status-display[status="..."] rules below: they share its
+ * specificity (class + one attribute), so they only override it by
+ * source order. Previously this sat after on/off/dim and silently
+ * clobbered them. */
+.hi-status-display[status] {
+    color: var(--black);
+    background-color: var(--white);
+    border-color: var(--black);
+    border-style: solid;
+    border-width: 2px;
+    border-radius: 8px;
+}
 .hi-status-display[status="off"] {
     color: var(--on-status-off-color);
     background-color: var(--status-off-color);
@@ -943,6 +956,34 @@ g[status="on"] {
 }
 g[status="on"] path.hi-state-bg {
     fill: var(--status-on-color);
+}
+/* Fan icons: spin the blades while "on" as a live state cue alongside the
+ * on-glow. We rotate the blade path(s) -- NOT the placed <g> wrapper, whose
+ * transform attribute carries the icon's position/scale (a CSS transform on
+ * it would override that and move the icon). transform-box: fill-box pivots
+ * relative to the path's own bounding box. */
+@keyframes hi-fan-spin {
+    to { transform: rotate( 360deg ); }
+}
+@media (prefers-reduced-motion: no-preference) {
+    /* Ceiling fan: blades are their own path. The top blade reaches higher
+     * than the bottom blades reach low, so the bbox center sits ~4% above
+     * the hub -- nudge the y origin down to match. Eyeball-tune the second
+     * value (try 52-56%) if it still wobbles. */
+    g[status="on"] path.hi-entity-ceiling-fan-blades {
+        transform-box: fill-box;
+        transform-origin: 50% 54%;
+        animation: hi-fan-spin 3s linear infinite;
+    }
+    /* Exhaust fan: blades, outer ring and center hub share one path, but the
+     * ring and hub are circular so only the blades read as moving. The
+     * dominant circular ring keeps the bbox centered on the true axis, so
+     * plain center works without a tuned offset. */
+    g[status="on"] path.hi-entity-exhaust-fan-lines {
+        transform-box: fill-box;
+        transform-origin: center;
+        animation: hi-fan-spin 3s linear infinite;
+    }
 }
 .hi-status-display[status="on"] {
     color: var(--on-status-on-color);
@@ -993,14 +1034,6 @@ g[status="gas_detected"] {
 }
 
 
-.hi-status-display[status] {
-    color: var(--black);
-    background-color: var(--white);
-    border-color: var(--black);
-    border-style: solid;
-    border-width: 2px;
-    border-radius: 8px;
-}
 .hi-status-display[status="active"] {
     color: var(--on-status-active-color);
     background-color: var(--status-active-color);
