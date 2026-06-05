@@ -73,8 +73,7 @@
           size.
         */
         fitViewBoxToContainer: function() {
-            if ( ! gSvgElement ) { HiSvgPanZoomCore.refresh(); }
-            if ( ! gSvgElement || ! gConfig ) { return; }
+            if ( ! ensureSvgElement() || ! gConfig ) { return; }
             var areaElement = $( gConfig.areaSelector )[0];
             if ( ! areaElement ) { return; }
             var rect = areaElement.getBoundingClientRect();
@@ -85,7 +84,7 @@
         },
 
         handleSinglePointerEventStart: function( event ) {
-            if ( ! gSvgElement ) { return false; }
+            if ( ! ensureSvgElement() ) { return false; }
 
             var svgViewBox = Hi.svgUtils.getSvgViewBox( gSvgElement );
             gTransformData = {
@@ -145,7 +144,7 @@
         },
 
         handleDoublePointerEventStart: function( doublePointerEvent ) {
-            if ( ! gSvgElement ) { return false; }
+            if ( ! ensureSvgElement() ) { return false; }
 
             var svgViewBox = Hi.svgUtils.getSvgViewBox( gSvgElement );
             gTransformData = {
@@ -189,7 +188,7 @@
         },
 
         handleMouseWheel: function( event ) {
-            if ( ! gSvgElement ) { return false; }
+            if ( ! ensureSvgElement() ) { return false; }
             if ( ! isEventInArea( event ) ) { return false; }
 
             if ( gConfig.enableCanvasRotation && gTransformType === SvgTransformType.ROTATE ) {
@@ -214,7 +213,7 @@
         },
 
         handleKeyDown: function( event ) {
-            if ( ! gSvgElement ) { return false; }
+            if ( ! ensureSvgElement() ) { return false; }
             if ( $( event.target ).is( 'input, textarea' ) ) { return false; }
             if ( $( event.target ).closest( '.modal' ).length > 0 ) { return false; }
             if ( ! isEventInArea( event ) ) { return false; }
@@ -557,6 +556,23 @@
     /* ==================== */
     /* Utilities            */
     /* ==================== */
+
+    /*
+      Re-resolve the cached SVG element if it is missing OR has been
+      detached from the document by an async DOM swap (e.g. toggling an
+      entity/collection into the view replaces #hi-location-view-main, so
+      the SVG element this module cached at init() is now an orphaned
+      ghost). Without this, every pan/zoom/click silently operates on the
+      detached element and the live background stops responding until a
+      full page reload. Called at each gesture entry point so the core
+      self-heals no matter which code path replaced the SVG.
+    */
+    function ensureSvgElement() {
+        if ( ! gSvgElement || ! gSvgElement.isConnected ) {
+            gSvgElement = gConfig ? ( $( gConfig.baseSvgSelector )[0] || null ) : null;
+        }
+        return gSvgElement;
+    }
 
     function isEventInArea( event ) {
         if ( ! gConfig || ! gConfig.areaSelector ) {
