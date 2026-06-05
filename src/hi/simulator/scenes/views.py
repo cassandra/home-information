@@ -440,7 +440,23 @@ class SceneClearStatesView( View ):
             self.CUTOFF_TTL_SECS,
         )
         ServiceSimulatorManager().reset_all_to_defaults()
-        return _scenes_redirect( request.POST.get( 'scene' ) )
+        return antinode.refresh_response()
+
+
+class SceneClearStatesConfirmView( View ):
+    """Server-rendered confirmation modal for Clear States. Warns when the
+    cutoff is disabled in settings, so the operator knows the main app will
+    ignore it (simulator resets, but the console's recent/past won't clear)."""
+
+    MODAL_TEMPLATE_NAME = 'scenes/modals/clear_states_confirm.html'
+
+    def get( self, request, *args, **kwargs ):
+        context = {
+            'cutoff_enabled': bool( getattr(
+                settings, 'DEBUG_FORCE_SENSOR_RESPONSE_CUTOFF', False,
+            )),
+        }
+        return render( request, self.MODAL_TEMPLATE_NAME, context )
 
 
 class SceneRestoreStatesView( View ):

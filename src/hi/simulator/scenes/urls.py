@@ -32,6 +32,10 @@ urlpatterns = [
           views.SceneClearStatesView.as_view(),
           name = 'simulator_scene_clear_states' ),
 
+    path( 'clear-states/confirm',
+          views.SceneClearStatesConfirmView.as_view(),
+          name = 'simulator_scene_clear_states_confirm' ),
+
     path( 'restore-states',
           views.SceneRestoreStatesView.as_view(),
           name = 'simulator_scene_restore_states' ),

@@ -110,14 +110,10 @@
        href="{% url 'simulator_scene_edit_states' scene_id=scene.id %}">
       {% icon "edit" size="sm" css_class="hi-icon-left" %}Edit States
     </a>
-    <form method="post" action="{% url 'simulator_scene_clear_states' %}" class="ml-2">
-      {% csrf_token %}
-      <input type="hidden" name="scene" value="{{ scene.id }}">
-      <button type="submit" class="btn btn-sm btn-outline-warning"
-              onclick="return confirm('Reset all simulator states to defaults and clear the main app’s recent/past visuals?');">
-        Clear States
-      </button>
-    </form>
+    <a class="btn btn-sm btn-outline-warning ml-2" data-async="modal"
+       href="{% url 'simulator_scene_clear_states_confirm' %}">
+      Clear States
+    </a>
     <form method="post" action="{% url 'simulator_scene_restore_states' %}" class="ml-1">
       {% csrf_token %}
       <input type="hidden" name="scene" value="{{ scene.id }}">

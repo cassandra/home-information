@@ -1,0 +1,34 @@
+{% extends "modals/action_with_cancel.html" %}
+{% load icons %}
+
+{% block preamble %}
+<form action="{% url 'simulator_scene_clear_states' %}" method="post" class="form" data-async="modal">
+  {% csrf_token %}
+{% endblock %}
+
+{% block title_text %}
+Clear States
+{% endblock %}
+
+{% block body %}
+<p>Reset all simulator states to their defaults and clear the main app's
+   lingering “recent / past” visuals, so a fresh sequence run starts clean.</p>
+{% if not cutoff_enabled %}
+<div class="alert alert-warning py-2 mb-0 small">
+  <strong>Heads up:</strong> <code>DEBUG_FORCE_SENSOR_RESPONSE_CUTOFF</code> is off, so the
+  main app will ignore the cutoff. This will reset the simulator, but the console's
+  recent/past decay will <em>not</em> clear. Set it to <code>True</code> in
+  <code>settings/development.py</code> to enable that.
+</div>
+{% endif %}
+{% endblock %}
+
+{% block action_right %}
+<button type="submit" class="btn btn-warning" name="action" value="clear">
+  Clear States
+</button>
+{% endblock %}
+
+{% block postamble %}
+</form>
+{% endblock %}
