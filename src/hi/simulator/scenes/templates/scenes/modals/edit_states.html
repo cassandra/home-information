@@ -1,0 +1,52 @@
+{% extends "modals/action_with_cancel.html" %}
+{% load icons %}
+
+{% block preamble %}
+<form action="{% url 'simulator_scene_edit_states' scene_id=scene.id %}"
+      method="post" class="form" data-async="modal">
+  {% csrf_token %}
+{% endblock %}
+
+{% block title_text %}
+Select States for {{ scene.name }}
+{% endblock %}
+
+{% block body %}
+<div class="sim-edit-states">
+  <p class="text-muted small">
+    Showing currently-loaded states. If a scene's entities are missing,
+    apply the scene first so its profiles load, then re-open this dialog.
+  </p>
+  {% for module in module_state_tree %}
+  <div class="sim-edit-states-module mb-3">
+    <div class="font-weight-bold">{{ module.label }}</div>
+    {% for entity in module.entities %}
+    <div class="ml-3 mt-1">
+      <div class="text-muted small">{{ entity.name }}</div>
+      {% for state in entity.states %}
+      <div class="form-check ml-3">
+        <input class="form-check-input" type="checkbox" name="state"
+               id="{{ state.dom_id }}" value="{{ state.key }}"
+               {% if state.selected %}checked{% endif %}>
+        <label class="form-check-label" for="{{ state.dom_id }}">{{ state.name }}</label>
+      </div>
+      {% endfor %}
+    </div>
+    {% endfor %}
+  </div>
+  {% empty %}
+  <p class="text-warning">No states are currently loaded. Apply a scene (or
+  add entities to the modules' profiles) and try again.</p>
+  {% endfor %}
+</div>
+{% endblock %}
+
+{% block action_right %}
+<button type="submit" class="btn btn-primary" name="action" value="save">
+  {% icon "edit" size="sm" css_class="hi-icon-left" %}SAVE STATES
+</button>
+{% endblock %}
+
+{% block postamble %}
+</form>
+{% endblock %}

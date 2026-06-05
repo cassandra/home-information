@@ -1,0 +1,48 @@
+{% extends "modals/action_with_cancel.html" %}
+{% load icons %}
+
+{% block preamble %}
+<form action="{% url 'simulator_sequence_import' scene_id=scene.id %}"
+      method="post" class="form" enctype="multipart/form-data" data-async="modal">
+  {% csrf_token %}
+{% endblock %}
+
+{% block title_text %}
+Import Sequence into {{ scene.name }}
+{% endblock %}
+
+{% block body %}
+<div class="sim-import-sequence">
+  {% if error %}
+  <div class="alert alert-danger py-2">{{ error }}</div>
+  {% endif %}
+  <div class="form-group">
+    <label class="small text-muted mb-1">Name (optional)</label>
+    <input type="text" name="name" class="form-control" value="{{ name_value }}"
+           placeholder="From file / auto">
+  </div>
+  <div class="form-group">
+    <label class="small text-muted mb-1">Upload an exported .json file</label>
+    <input type="file" name="file" class="form-control-file" accept=".json,application/json">
+  </div>
+  <div class="form-group mb-0">
+    <label class="small text-muted mb-1">…or paste JSON</label>
+    <textarea name="steps" class="form-control text-monospace" rows="12"
+              spellcheck="false" style="font-size:0.85rem;">{{ steps_text }}</textarea>
+    <small class="form-text text-muted">
+      Accepts an export envelope <code>{"name": "...", "steps": [...]}</code> or a bare step list.
+      A file upload takes precedence over pasted text.
+    </small>
+  </div>
+</div>
+{% endblock %}
+
+{% block action_right %}
+<button type="submit" class="btn btn-primary" name="action" value="import">
+  {% icon "edit" size="sm" css_class="hi-icon-left" %}IMPORT
+</button>
+{% endblock %}
+
+{% block postamble %}
+</form>
+{% endblock %}

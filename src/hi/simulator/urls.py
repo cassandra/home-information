@@ -12,6 +12,7 @@ urlpatterns = [
 
     path( 'services/', include( 'hi.simulator.services.urls' )),
     path( 'weather/', include( 'hi.simulator.weather_sources.urls' )),
+    path( 'scenes/', include( 'hi.simulator.scenes.urls' )),
     path( 'settings/', include( 'hi.simulator.settings.urls' )),
     path( 'profile/', include( 'hi.simulator.profile.urls' )),
 ]

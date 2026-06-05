@@ -1,0 +1,44 @@
+{% extends "modals/action_with_cancel.html" %}
+{% load icons %}
+
+{% block preamble %}
+<form action="{% url 'simulator_sequence_edit' scene_id=scene.id sequence_id=sequence.id %}"
+      method="post" class="form" data-async="modal">
+  {% csrf_token %}
+{% endblock %}
+
+{% block title_text %}
+Edit Sequence
+{% endblock %}
+
+{% block body %}
+<div class="sim-edit-sequence">
+  {% if error %}
+  <div class="alert alert-danger py-2">{{ error }}</div>
+  {% endif %}
+  <div class="form-group">
+    <label class="small text-muted mb-1">Name</label>
+    <input type="text" name="name" class="form-control" value="{{ name_value }}">
+  </div>
+  <div class="form-group mb-0">
+    <label class="small text-muted mb-1">Steps (JSON)</label>
+    <textarea name="steps" class="form-control text-monospace" rows="16"
+              spellcheck="false" style="font-size:0.85rem;">{{ steps_text }}</textarea>
+    <small class="form-text text-muted">
+      A list of steps: timed steps
+      <code>{"t": 0.0, "module": "...", "entity": "...", "state": "...", "value": "..."}</code>
+      and markers <code>{"marker": "name"}</code>.
+    </small>
+  </div>
+</div>
+{% endblock %}
+
+{% block action_right %}
+<button type="submit" class="btn btn-primary" name="action" value="save">
+  {% icon "edit" size="sm" css_class="hi-icon-left" %}SAVE
+</button>
+{% endblock %}
+
+{% block postamble %}
+</form>
+{% endblock %}

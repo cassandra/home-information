@@ -18,6 +18,12 @@
       </a>
     </li>
     <li>
+      <a href="{% url 'simulator_scenes' %}"
+         class="sim-top-nav-link {% if active_section == 'scenes' %}active{% endif %}">
+        Scenes
+      </a>
+    </li>
+    <li>
       <a href="{% url 'simulator_settings' %}"
          class="sim-top-nav-link {% if active_section == 'settings' %}active{% endif %}">
         Settings

@@ -1,0 +1,154 @@
+{% load icons %}
+{% comment %}
+Recording / playback transport pane. Server-rendered, and live-refreshed by
+scene_status.js: the .js-playhead / .js-rec-steps spans and the timeline
+playhead update every poll, and the whole pane is re-fetched (this partial)
+when the transport signature changes.
+{% endcomment %}
+<div class="sim-scene-transport mt-4 mb-2 p-2"
+     data-status-url="{% url 'simulator_scene_status' %}"
+     data-transport-url="{% url 'simulator_scene_transport' scene_id=scene.id %}{% if selected_sequence %}?sequence={{ selected_sequence.id }}{% endif %}"
+     style="background:#f6f6f8; border-radius:6px;">
+  <div class="d-flex align-items-center flex-wrap">
+    {# --- status badge --- #}
+    {% if recorder_status.paused %}
+      <span class="badge badge-warning mr-3">⏸ Recording paused — <span class="js-rec-steps">{{ recorder_status.step_count }}</span> step(s)</span>
+    {% elif recorder_status.recording %}
+      <span class="badge badge-danger mr-3">● Recording — <span class="js-rec-steps">{{ recorder_status.step_count }}</span> step(s)</span>
+    {% elif player_status.playing %}
+      <span class="badge badge-info mr-3">▶ {{ player_status.sequence_name }} — <span class="js-playhead">{{ player_status.playhead|floatformat:1 }}</span>/{{ player_status.total|floatformat:1 }}s</span>
+    {% elif player_status.paused %}
+      <span class="badge badge-primary mr-3">⏸ {{ player_status.sequence_name }} — <span class="js-playhead">{{ player_status.playhead|floatformat:1 }}</span>/{{ player_status.total|floatformat:1 }}s{% if player_status.next_marker %} → {{ player_status.next_marker }}{% endif %}</span>
+    {% elif recorder_status.has_working %}
+      <span class="badge badge-warning mr-3">Unsaved recording — {{ recorder_status.working_step_count }} step(s)</span>
+    {% else %}
+      <span class="badge badge-secondary mr-3">Idle</span>
+    {% endif %}
+
+    {% if recorder_status.recording %}
+      {# --- recording controls --- #}
+      <form method="post" action="{% url 'simulator_scene_pause' scene_id=scene.id %}" class="mr-2">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-sm btn-outline-dark">{% if recorder_status.paused %}▶ Resume{% else %}⏸ Pause{% endif %}</button>
+      </form>
+      {% if recorder_status.paused %}
+      <form method="post" action="{% url 'simulator_scene_mark' scene_id=scene.id %}" class="form-inline mr-2">
+        {% csrf_token %}
+        <input type="text" name="name" class="form-control form-control-sm mr-1" placeholder="Marker name">
+        <button type="submit" class="btn btn-sm btn-outline-info">⚑ Mark</button>
+      </form>
+      {% endif %}
+      <form method="post" action="{% url 'simulator_scene_stop' scene_id=scene.id %}" class="mr-2">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-sm btn-dark">■ Stop</button>
+      </form>
+    {% elif recorder_status.has_working %}
+      {# --- finalize the just-stopped recording --- #}
+      <form method="post" action="{% url 'simulator_scene_record_save' scene_id=scene.id %}" class="form-inline mr-2">
+        {% csrf_token %}
+        <input type="text" name="name" class="form-control form-control-sm mr-1" placeholder="Name (auto)">
+        <button type="submit" class="btn btn-sm btn-success">Save</button>
+      </form>
+      <form method="post" action="{% url 'simulator_scene_record_discard' scene_id=scene.id %}" class="mr-2">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-sm btn-outline-secondary">Discard</button>
+      </form>
+    {% else %}
+      {# --- idle: start a recording --- #}
+      <form method="post" action="{% url 'simulator_scene_record_start' scene_id=scene.id %}" class="mr-2">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-sm btn-danger">● Record</button>
+      </form>
+    {% endif %}
+
+    {# --- playback panel (hidden while recording) --- #}
+    {% if not recorder_status.recording and not recorder_status.has_working %}
+    <div class="ml-auto d-flex align-items-center">
+      {% if sequence_list %}
+      <div class="dropdown mr-2">
+        <button class="btn btn-sm btn-outline-primary dropdown-toggle" type="button"
+                id="hi-sequence-select" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+          Sequence: <strong>{{ selected_sequence.name|default:"(none)" }}</strong>
+        </button>
+        <div class="dropdown-menu dropdown-menu-right" aria-labelledby="hi-sequence-select">
+          {% for seq in sequence_list %}
+          <a class="dropdown-item plain {% if selected_sequence and seq.id == selected_sequence.id %}active{% endif %}"
+             href="{% url 'simulator_scenes' %}?scene={{ scene.id }}&sequence={{ seq.id }}">{{ seq.name }}</a>
+          {% endfor %}
+        </div>
+      </div>
+      {% if selected_sequence %}
+        {% if player_status.playing %}
+        <form method="post" action="{% url 'simulator_scene_pause' scene_id=scene.id %}" class="mr-1">
+          {% csrf_token %}
+          <input type="hidden" name="sequence" value="{{ selected_sequence.id }}">
+          <button type="submit" class="btn btn-sm btn-secondary">⏸ Pause</button>
+        </form>
+        <form method="post" action="{% url 'simulator_scene_stop' scene_id=scene.id %}" class="mr-1">
+          {% csrf_token %}
+          <input type="hidden" name="sequence" value="{{ selected_sequence.id }}">
+          <button type="submit" class="btn btn-sm btn-dark">■ Stop</button>
+        </form>
+        {% else %}
+        <form method="post" action="{% url 'simulator_scene_play' scene_id=scene.id sequence_id=selected_sequence.id %}" class="mr-1">
+          {% csrf_token %}
+          <button type="submit" class="btn btn-sm btn-primary">▶ Play</button>
+        </form>
+        <form method="post" action="{% url 'simulator_scene_step' scene_id=scene.id sequence_id=selected_sequence.id %}" class="mr-1">
+          {% csrf_token %}
+          <button type="submit" class="btn btn-sm btn-outline-primary">⏭ Step</button>
+        </form>
+        {% if player_status.paused and player_status.sequence_id == selected_sequence.id %}
+        <form method="post" action="{% url 'simulator_scene_mark' scene_id=scene.id %}" class="form-inline mr-1">
+          {% csrf_token %}
+          <input type="hidden" name="sequence" value="{{ selected_sequence.id }}">
+          <input type="text" name="name" class="form-control form-control-sm mr-1" placeholder="Marker name" style="max-width:9em;">
+          <button type="submit" class="btn btn-sm btn-outline-info">⚑ Mark</button>
+        </form>
+        <form method="post" action="{% url 'simulator_scene_stop' scene_id=scene.id %}" class="mr-1">
+          {% csrf_token %}
+          <input type="hidden" name="sequence" value="{{ selected_sequence.id }}">
+          <button type="submit" class="btn btn-sm btn-dark">■ Stop</button>
+        </form>
+        {% else %}
+        <a class="btn btn-sm btn-outline-secondary mr-1" data-async="modal"
+           href="{% url 'simulator_sequence_edit' scene_id=scene.id sequence_id=selected_sequence.id %}"
+           title="Rename / edit JSON">{% icon "edit" size="sm" %}</a>
+        <a class="btn btn-sm btn-outline-secondary mr-1"
+           href="{% url 'simulator_sequence_export' scene_id=scene.id sequence_id=selected_sequence.id %}"
+           title="Export JSON">Export</a>
+        <form method="post" action="{% url 'simulator_sequence_delete' sequence_id=selected_sequence.id %}">
+          {% csrf_token %}
+          <button type="submit" class="btn btn-sm btn-outline-danger"
+                  onclick="return confirm('Delete sequence ‘{{ selected_sequence.name|escapejs }}’?');">{% icon "delete" size="sm" %}</button>
+        </form>
+        {% endif %}
+        {% endif %}
+      {% endif %}
+      {% else %}
+      <span class="text-muted small mr-2">No saved sequences yet.</span>
+      {% endif %}
+      <a class="btn btn-sm btn-outline-secondary ml-1" data-async="modal"
+         href="{% url 'simulator_sequence_import' scene_id=scene.id %}"
+         title="Import a sequence">Import</a>
+    </div>
+    {% endif %}
+  </div>
+
+  {# --- annotated, click-to-jump timeline for the selected sequence --- #}
+  {% if timeline and not recorder_status.recording %}
+  {% include "scenes/panes/timeline.html" %}
+  {% endif %}
+
+  {% if player_status.misses %}
+  <details class="text-warning small mt-1">
+    <summary>Last playback: {{ player_status.misses|length }} step(s) could not be resolved
+      — entity not loaded (apply the matching scene/profile).</summary>
+    <ul class="mb-0 mt-1">
+      {% for miss in player_status.misses %}
+      <li><code>[{{ miss.module }}]</code> {{ miss.entity }}.{{ miss.state }}</li>
+      {% endfor %}
+    </ul>
+  </details>
+  {% endif %}
+</div>

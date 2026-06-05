@@ -1,0 +1,51 @@
+{% comment %}
+Annotated, click-to-jump SVG timeline for the selected sequence.
+Static render from steps_json; the playhead element is repositioned live
+by scene_timeline.js once status polling is added.
+{% endcomment %}
+<div class="sim-timeline mt-2"
+     data-total="{{ timeline.total|floatformat:3 }}"
+     data-x0="{{ timeline.x0 }}" data-x1="{{ timeline.x1 }}" data-vbw="{{ timeline.vbw }}">
+  <svg class="sim-timeline-svg" viewBox="0 0 {{ timeline.vbw }} {{ timeline.height }}"
+       preserveAspectRatio="none" width="100%" height="{{ timeline.height }}"
+       role="img" aria-label="Sequence timeline (click to jump)">
+
+    <line class="sim-timeline-axis" x1="{{ timeline.x0 }}" y1="{{ timeline.axis_y }}"
+          x2="{{ timeline.x1 }}" y2="{{ timeline.axis_y }}"/>
+
+    {% for e in timeline.entries %}
+      {% if e.kind == 'end' %}
+      <g class="sim-timeline-end" data-t="{{ e.t }}" data-title="{{ e.title }}">
+        <line class="sim-timeline-end-rule" x1="{{ e.x }}" y1="{{ timeline.end_y1 }}"
+              x2="{{ e.x }}" y2="{{ timeline.end_y2 }}"/>
+        <rect class="sim-timeline-hit" x="{{ e.hit_x }}" y="{{ e.hit_y }}"
+              width="{{ timeline.hit_w }}" height="{{ e.hit_h }}"/>
+      </g>
+      {% else %}
+      <g class="sim-timeline-{{ e.kind }}" data-t="{{ e.t }}" data-title="{{ e.title }}">
+        <polygon class="sim-timeline-glyph" points="{{ e.points }}"/>
+        <rect class="sim-timeline-hit" x="{{ e.hit_x }}" y="{{ e.hit_y }}"
+              width="{{ timeline.hit_w }}" height="{{ e.hit_h }}"/>
+      </g>
+      {% endif %}
+    {% endfor %}
+
+    <line class="sim-timeline-playhead" data-role="playhead"
+          x1="{{ timeline.playhead_x }}" y1="{{ timeline.playhead_y1 }}"
+          x2="{{ timeline.playhead_x }}" y2="{{ timeline.playhead_y2 }}"
+          {% if not timeline.active %}style="display:none;"{% endif %}/>
+  </svg>
+
+  <div class="d-flex justify-content-between sim-timeline-scale">
+    <span>0s</span>
+    <span class="text-muted">click to jump · hover a mark for detail</span>
+    <span>{{ timeline.total|floatformat:1 }}s</span>
+  </div>
+
+  <form class="sim-timeline-seek-form"
+        method="post"
+        action="{% url 'simulator_scene_seek' scene_id=scene.id sequence_id=selected_sequence.id %}">
+    {% csrf_token %}
+    <input type="hidden" name="t" value="">
+  </form>
+</div>

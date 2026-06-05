@@ -364,3 +364,77 @@ a.underline:visited {
 .switch input:checked + .slider:before {
     transform: translateX(26px);
 }
+
+/* ----- Scene sequence timeline ----- */
+.sim-timeline {
+    width: 100%;
+    position: relative;
+}
+.sim-timeline-svg {
+    display: block;
+    cursor: pointer;
+    background: #fbfbfd;
+    border: 1px solid #e3e3e8;
+    border-radius: 4px;
+}
+.sim-timeline-axis {
+    stroke: #b6b6c0;
+    stroke-width: 2;
+    vector-effect: non-scaling-stroke;
+}
+/* Wide transparent column makes each glyph easy to hover/click. */
+.sim-timeline-hit {
+    fill: transparent;
+    cursor: pointer;
+}
+.sim-timeline-glyph {
+    pointer-events: none;
+    transition: fill 0.1s ease;
+}
+.sim-timeline-step .sim-timeline-glyph {
+    fill: #6c8cd5;
+}
+.sim-timeline-step:hover .sim-timeline-glyph {
+    fill: #21407f;
+}
+.sim-timeline-marker .sim-timeline-glyph {
+    fill: #d99a2b;
+}
+.sim-timeline-marker:hover .sim-timeline-glyph {
+    fill: #9c6606;
+}
+.sim-timeline-end-rule {
+    stroke: #6c757d;
+    stroke-width: 3;
+    vector-effect: non-scaling-stroke;
+}
+.sim-timeline-end:hover .sim-timeline-end-rule {
+    stroke: #343a40;
+}
+.sim-timeline-playhead {
+    stroke: #d9534f;
+    stroke-width: 2;
+    vector-effect: non-scaling-stroke;
+    pointer-events: none;
+}
+.sim-timeline-scale {
+    font-size: 0.72rem;
+    color: #888;
+    padding: 0 2px;
+}
+.sim-timeline-tooltip {
+    position: absolute;
+    z-index: 20;
+    pointer-events: none;
+    background: rgba(33, 37, 41, 0.95);
+    color: #fff;
+    font-size: 0.74rem;
+    line-height: 1.25;
+    padding: 4px 8px;
+    border-radius: 4px;
+    white-space: nowrap;
+    max-width: 95%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
+}

@@ -1,3 +1,5 @@
+import logging
+
 from django.core.exceptions import BadRequest
 from django.http import Http404, HttpResponseRedirect, JsonResponse
 from django.shortcuts import render
@@ -16,6 +18,8 @@ from . import forms
 from .service_simulator_manager import ServiceSimulatorManager
 from .sim_entity import SimEntity
 from hi.simulator.services.view_mixins import ServiceSimulatorViewMixin
+
+logger = logging.getLogger(__name__)
 
 
 def _build_service_tab_specs( active_simulator_id : str ):
@@ -325,8 +329,31 @@ class SimStateSetView( View, ServiceSimulatorViewMixin ):
             sim_state_id = sim_state_id,
             value_str = value_str,
         )
+        self._record_if_active( simulator, sim_entity_id, sim_state_id, value_str )
         context = {
             'simulator': simulator,
             'sim_state': sim_state,
         }
         return render( request, self.TEMPLATE_NAME, context )
+
+    def _record_if_active( self, simulator, sim_entity_id, sim_state_id, value_str ):
+        """Append this operator state change to the active scene recording,
+        if any. Lazy import keeps the services app decoupled from scenes."""
+        from hi.simulator.scenes.recorder import SimRecorder
+        recorder = SimRecorder()
+        if not recorder.is_recording():
+            return
+        try:
+            entity_name = simulator.get_sim_entity_by_id(
+                sim_entity_id = sim_entity_id,
+            ).name
+        except Exception:
+            logger.exception( 'Recorder: failed to resolve entity for capture.' )
+            return
+        recorder.record_step(
+            module_key = simulator.module_key,
+            entity_name = entity_name,
+            sim_state_id = sim_state_id,
+            value_str = value_str,
+        )
+        return

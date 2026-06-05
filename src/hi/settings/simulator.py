@@ -16,6 +16,7 @@ INSTALLED_APPS = [
     'hi.simulator',
     'hi.simulator.profile',
     'hi.simulator.services',
+    'hi.simulator.scenes',
     'hi.simulator.weather_sources',
     'hi.simulator.settings',
     'hi.simulator.services.frigate',
