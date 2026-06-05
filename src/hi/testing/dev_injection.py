@@ -46,26 +46,45 @@ class DevInjectionManager:
             cls,
             sensor_to_sensor_response_list : Dict[ Sensor, List[ SensorResponse ] ],
     ) -> Dict[ Sensor, List[ SensorResponse ] ]:
-        """Encapsulates the 'Clear States' cutoff logic for the status display:
-        when a cutoff has been poked into the shared cache, return a copy of the
-        ``{sensor: [SensorResponse, ...]}`` map with responses older than the
-        cutoff removed (so lingering recent/past visuals clear); otherwise
-        return the input unchanged. Never mutates the caller's (cache-owned)
-        lists. The caller gates this dev-only path on ``settings.DEBUG`` and
-        ``DEBUG_FORCE_SENSOR_RESPONSE_CUTOFF``."""
+        """Encapsulates the 'Clear States' cutoff logic for the status display.
+
+        When a cutoff has been poked into the shared cache, return a copy of
+        the ``{sensor: [SensorResponse, ...]}`` map in which each sensor keeps
+        its latest response plus any older responses at/after the cutoff, and
+        drops the older *pre-cutoff* ones. Returns the input unchanged when off
+        or no cutoff is set. Never mutates the caller's (cache-owned) lists.
+        The caller gates this dev-only path on ``settings.DEBUG`` and
+        ``DEBUG_FORCE_SENSOR_RESPONSE_CUTOFF``.
+
+        Why keep the latest and only drop older pre-cutoff responses: the
+        'recent/past' decay styling fires only when the *penultimate* response
+        is an active/triggered value (see display_data._get_movement_status_
+        style et al.). Dropping a stale pre-cutoff active entry makes the
+        penultimate either absent or a post-cutoff response, so the lingering
+        decay clears. Keeping the latest preserves a current value to display
+        and keeps the sensor in the polling payload, so the cleared status is
+        actually pushed to the UI. Post-cutoff history is left intact, so
+        genuine events after the cutoff still show recent/past normally."""
         cutoff = cls._get_sensor_response_cutoff()
         if cutoff is None:
             return sensor_to_sensor_response_list
-        # Drop a sensor entirely when all its responses predate the cutoff:
-        # callers rely on every sensor in the map having >= 1 response, so an
-        # all-cleared sensor must read as "no data" (absent) -> default display,
-        # exactly like a sensor with no cached responses. Leaving an empty list
-        # breaks that invariant (IndexError downstream).
+
         filtered = dict()
         for sensor, response_list in sensor_to_sensor_response_list.items():
-            kept = [ r for r in response_list if r.timestamp >= cutoff ]
-            if kept:
-                filtered[ sensor ] = kept
+            if not response_list:
+                continue
+
+            # Responses are newest-first. Always keep the latest one so the
+            # sensor still has a current value. Among the older responses, keep
+            # only those at/after the cutoff and drop the rest.
+            latest_response = response_list[ 0 ]
+            kept_responses = [ latest_response ]
+            for older_response in response_list[ 1: ]:
+                if older_response.timestamp >= cutoff:
+                    kept_responses.append( older_response )
+                continue
+
+            filtered[ sensor ] = kept_responses
             continue
         return filtered
 
