@@ -48,6 +48,13 @@ class ServiceSimulatorManager( Singleton ):
         simulator_data_list.sort( key = lambda item : item.simulator.label )
         return simulator_data_list
 
+    def reset_all_to_defaults( self ):
+        """Re-hydrate every simulator to its current profile's defaults. Sim
+        state values aren't persisted, so a reload resets them — used by the
+        Scenes 'Clear States' action to start a fresh sequence run clean."""
+        self._load_entities_for_all_simulators()
+        return
+
     def add_sim_entity( self,
                         simulator              : ServiceSimulator,
                         sim_entity_definition  : SimEntityDefinition,

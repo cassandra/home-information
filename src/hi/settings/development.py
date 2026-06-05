@@ -159,6 +159,16 @@ SUPPRESS_MONITORS = False
 # Allows injecting transient view data for testing auto-view functionality
 DEBUG_FORCE_TRANSIENT_VIEW_OVERRIDE = False  # Set to True to enable
 
+# Enables the simulator's Scenes "Clear States" action to make the status
+# display drop sensor responses older than its cutoff (avoids waiting out the
+# recent/past decay between sequence runs). Dev-only.
+DEBUG_FORCE_SENSOR_RESPONSE_CUTOFF = True
+# Shared cache key holding the "Clear States" cutoff epoch: the independent
+# simulator process writes it; the main app reads it (DevInjectionManager
+# .apply_sensor_response_cutoff). The *only* contract between the two processes
+# for this feature — both inherit it here, so neither imports the other's code.
+SENSOR_RESPONSE_CUTOFF_CACHE_KEY = 'hi.dev.sensor_response_cutoff'
+
 # For testing UI error display of the various attribute editing form errors.
 DEBUG_INJECT_ATTRIBUTE_FORM_ERRORS = False
 

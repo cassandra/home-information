@@ -2,6 +2,8 @@ import json
 import logging
 import re
 
+from django.conf import settings
+from django.core.cache import cache
 from django.db import transaction
 from django.http import Http404, HttpResponse, HttpResponseRedirect, JsonResponse
 from django.shortcuts import render
@@ -9,6 +11,7 @@ from django.urls import reverse
 from django.views.generic import View
 
 import hi.apps.common.antinode as antinode
+from hi.apps.common import datetimeproxy
 from hi.simulator.profile.models import SimProfile
 from hi.simulator.profile.profile_manager import ProfileManager
 from hi.simulator.services.service_simulator_manager import ServiceSimulatorManager
@@ -417,6 +420,36 @@ class SceneApplyView( View ):
 class SceneOffView( View ):
     def post( self, request, *args, **kwargs ):
         SceneController().clear()
+        return _scenes_redirect( request.POST.get( 'scene' ) )
+
+
+class SceneClearStatesView( View ):
+    """Reset the simulator's states to defaults and signal the (independent)
+    main HI app to drop sensor responses from before now — so its lingering
+    'recent/past' visuals don't force a wait before re-running a sequence.
+
+    The two processes stay decoupled: the simulator only writes a cutoff epoch
+    to the shared cache key; the main app owns reading/filtering it."""
+
+    CUTOFF_TTL_SECS = 2 * 60 * 60  # past the main app's longest decay window
+
+    def post( self, request, *args, **kwargs ):
+        cache.set(
+            settings.SENSOR_RESPONSE_CUTOFF_CACHE_KEY,
+            datetimeproxy.now().timestamp(),
+            self.CUTOFF_TTL_SECS,
+        )
+        ServiceSimulatorManager().reset_all_to_defaults()
+        return _scenes_redirect( request.POST.get( 'scene' ) )
+
+
+class SceneRestoreStatesView( View ):
+    """Complement to Clear States: drop the cutoff override from the shared
+    cache so the main app reverts to normal (shows all cached sensor responses
+    again). A debug aid for comparing cleared vs. normal behavior."""
+
+    def post( self, request, *args, **kwargs ):
+        cache.delete( settings.SENSOR_RESPONSE_CUTOFF_CACHE_KEY )
         return _scenes_redirect( request.POST.get( 'scene' ) )
 
 

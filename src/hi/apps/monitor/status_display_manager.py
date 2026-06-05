@@ -12,6 +12,7 @@ from hi.apps.location.svg_item_factory import SvgItemFactory
 from hi.apps.sense.models import Sensor
 from hi.apps.sense.sensor_response_manager import SensorResponseMixin
 from hi.apps.sense.transient_models import SensorResponse
+from hi.testing.dev_injection import DevInjectionManager
 from hi.testing.dev_overrides import DevOverrideManager
 
 from .display_data import EntityStateDisplayData
@@ -54,7 +55,6 @@ class StatusDisplayManager( Singleton, SensorResponseMixin ):
             continue
 
         return status_map
-
 
     def get_all_entity_state_status_data_list( self ) -> List[ EntityStateStatusData ]:
         """
@@ -393,6 +393,13 @@ class StatusDisplayManager( Singleton, SensorResponseMixin ):
         else:
             sensor_to_sensor_response_list = sensor_response_manager.get_latest_sensor_responses(
                 sensor_list = sensor_list,
+            )
+
+        # Dev-only: let the simulator's 'Clear States' drop pre-cutoff
+        # responses so lingering recent/past visuals don't block re-runs.
+        if settings.DEBUG and getattr( settings, 'DEBUG_FORCE_SENSOR_RESPONSE_CUTOFF', False ):
+            sensor_to_sensor_response_list = DevInjectionManager.apply_sensor_response_cutoff(
+                sensor_to_sensor_response_list,
             )
 
         # Apply overrides into a fresh dict so neither the

@@ -1,8 +1,14 @@
 import os
 import json
 import logging
+from datetime import datetime, timezone
+from typing import Dict, List, Optional
+
 from django.conf import settings
 from django.core.cache import cache
+
+from hi.apps.sense.models import Sensor
+from hi.apps.sense.transient_models import SensorResponse
 
 logger = logging.getLogger(__name__)
 
@@ -34,6 +40,47 @@ class DevInjectionManager:
     
     CACHE_PREFIX = 'dev_inject_'
     DATA_DIR = '/tmp/hi_dev_overrides'
+
+    @classmethod
+    def apply_sensor_response_cutoff(
+            cls,
+            sensor_to_sensor_response_list : Dict[ Sensor, List[ SensorResponse ] ],
+    ) -> Dict[ Sensor, List[ SensorResponse ] ]:
+        """Encapsulates the 'Clear States' cutoff logic for the status display:
+        when a cutoff has been poked into the shared cache, return a copy of the
+        ``{sensor: [SensorResponse, ...]}`` map with responses older than the
+        cutoff removed (so lingering recent/past visuals clear); otherwise
+        return the input unchanged. Never mutates the caller's (cache-owned)
+        lists. The caller gates this dev-only path on ``settings.DEBUG`` and
+        ``DEBUG_FORCE_SENSOR_RESPONSE_CUTOFF``."""
+        cutoff = cls._get_sensor_response_cutoff()
+        if cutoff is None:
+            return sensor_to_sensor_response_list
+        # Drop a sensor entirely when all its responses predate the cutoff:
+        # callers rely on every sensor in the map having >= 1 response, so an
+        # all-cleared sensor must read as "no data" (absent) -> default display,
+        # exactly like a sensor with no cached responses. Leaving an empty list
+        # breaks that invariant (IndexError downstream).
+        filtered = dict()
+        for sensor, response_list in sensor_to_sensor_response_list.items():
+            kept = [ r for r in response_list if r.timestamp >= cutoff ]
+            if kept:
+                filtered[ sensor ] = kept
+            continue
+        return filtered
+
+    @classmethod
+    def _get_sensor_response_cutoff( cls ) -> Optional[ datetime ]:
+        cache_key = getattr( settings, 'SENSOR_RESPONSE_CUTOFF_CACHE_KEY', None )
+        if not cache_key:
+            return None
+        epoch = cache.get( cache_key )
+        if epoch is None:
+            return None
+        try:
+            return datetime.fromtimestamp( float( epoch ), tz = timezone.utc )
+        except ( TypeError, ValueError, OSError ):
+            return None
     
     @classmethod
     def _ensure_data_dir(cls):

@@ -28,6 +28,14 @@ urlpatterns = [
           views.SceneOffView.as_view(),
           name = 'simulator_scene_off' ),
 
+    path( 'clear-states',
+          views.SceneClearStatesView.as_view(),
+          name = 'simulator_scene_clear_states' ),
+
+    path( 'restore-states',
+          views.SceneRestoreStatesView.as_view(),
+          name = 'simulator_scene_restore_states' ),
+
     path( 'status',
           views.SceneStatusView.as_view(),
           name = 'simulator_scene_status' ),

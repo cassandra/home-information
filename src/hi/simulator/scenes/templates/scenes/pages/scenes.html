@@ -110,6 +110,22 @@
        href="{% url 'simulator_scene_edit_states' scene_id=scene.id %}">
       {% icon "edit" size="sm" css_class="hi-icon-left" %}Edit States
     </a>
+    <form method="post" action="{% url 'simulator_scene_clear_states' %}" class="ml-2">
+      {% csrf_token %}
+      <input type="hidden" name="scene" value="{{ scene.id }}">
+      <button type="submit" class="btn btn-sm btn-outline-warning"
+              onclick="return confirm('Reset all simulator states to defaults and clear the main app’s recent/past visuals?');">
+        Clear States
+      </button>
+    </form>
+    <form method="post" action="{% url 'simulator_scene_restore_states' %}" class="ml-1">
+      {% csrf_token %}
+      <input type="hidden" name="scene" value="{{ scene.id }}">
+      <button type="submit" class="btn btn-sm btn-outline-secondary"
+              title="Remove the cutoff override so the main app reverts to normal behavior">
+        Restore States
+      </button>
+    </form>
     {% if missing_control_count %}
     <span class="text-warning small ml-3">
       {{ missing_control_count }} selected control(s) not loaded — apply the scene so its entities load.
