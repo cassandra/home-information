@@ -1,4 +1,5 @@
 {% load icons %}
+{% load attribute_extras %}
 
 <div class="attr-v2-external-structured">
 
@@ -59,7 +60,7 @@
         </div>
       </div>
       <div class="attr-v2-attribute-value">
-        <div class="attr-ext-value attr-ext-value--clamped">{{ pair.value }}</div>
+        <div class="attr-ext-value attr-ext-value--clamped">{{ pair.value|attribute_text_linkify }}</div>
       </div>
     </div>
     {% endfor %}
