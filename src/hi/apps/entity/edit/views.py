@@ -1,7 +1,6 @@
 import logging
 import re
 from typing import Any, Dict, List, Optional
-from urllib.parse import urlencode
 
 from django.core.exceptions import BadRequest, PermissionDenied
 from django.db import transaction
@@ -66,7 +65,7 @@ class EntityEditModeView( HiSideView, EntityViewMixin ):
 
 
 @method_decorator( edit_required, name='dispatch' )
-class EntityAddView( HiModalView ):
+class EntityAddView( HiModalView, EntityViewMixin ):
 
     def get_template_name( self ) -> str:
         return 'entity/edit/modals/entity_add.html'
@@ -101,25 +100,7 @@ class EntityAddView( HiModalView ):
                 )
                 continue
 
-        redirect_url = self._home_url_preserving_geometry( request )
-        return self.redirect_response( request, redirect_url )
-
-    def _home_url_preserving_geometry( self, request ) -> str:
-        """Carry the user's current pan/zoom across the post-add full
-        reload via query params, so the newly added item stays in view
-        instead of snapping back to the LocationView's stored geometry.
-        Scoped to this operation: normal navigation carries no params and
-        resets to stored. Empty when there is no tracked geometry (e.g.
-        adding from a collection view)."""
-        redirect_url = reverse('home')
-        svg_view_box = request.view_parameters.last_svg_view_box
-        if svg_view_box is None:
-            return redirect_url
-        params = { 'svg_view_box': str(svg_view_box) }
-        svg_rotate = request.view_parameters.last_svg_rotate
-        if svg_rotate is not None:
-            params['svg_rotate'] = svg_rotate
-        return f'{redirect_url}?{urlencode(params)}'
+        return self.redirect_home_w_geometry( request )
 
     def _create_entities_bulk(self, entity_form: EntityAddForm) -> List[Entity]:
         base_name = entity_form.cleaned_data['name']
@@ -207,8 +188,7 @@ class EntityDeleteView( HiModalView, EntityViewMixin ):
                 
         entity.delete()
 
-        redirect_url = reverse('home')
-        return self.redirect_response( request, redirect_url )
+        return self.redirect_home_w_geometry( request )
 
 
 @method_decorator( edit_required, name='dispatch' )

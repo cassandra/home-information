@@ -271,6 +271,19 @@
                     };
                     AN.post( API_EDIT_LOCATION_VIEW_GEOMETRY_URL + '/' + locationViewId, data,
                              { suppressLoader: true } );
+
+                    // Keep this page's URL query params in sync with the latest
+                    // pan/zoom so any reload of the current view (e.g. antinode's
+                    // refresh_response after an edit) restores the geometry
+                    // instead of snapping to the stored viewbox. A deliberate
+                    // navigation to another view replaces the URL (no params)
+                    // and correctly resets to stored.
+                    try {
+                        var url = new URL( window.location.href );
+                        url.searchParams.set( 'svg_view_box', saveData.viewBoxStr );
+                        url.searchParams.set( 'svg_rotate', saveData.rotationAngle || 0 );
+                        window.history.replaceState( window.history.state, '', url.toString() );
+                    } catch ( e ) { /* URL/History unavailable; non-critical */ }
                 },
                 shouldSave: function() {
                     // Send pan/zoom to the server throughout edit mode so the

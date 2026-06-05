@@ -98,7 +98,10 @@ class HiSideView( HiAsyncView ):
         else:
             del referrer_query_params[self.SIDE_URL_PARAM_NAME]
             
-        updated_query_string = urllib.parse.urlencode( referrer_query_params )
+        # parse_qs returns list-valued params; doseq=True emits each value
+        # correctly (single-element lists become clean scalars) instead of
+        # str()'ing the list into "['value']".
+        updated_query_string = urllib.parse.urlencode( referrer_query_params, doseq = True )
         return f"{referrer_url.path}?{updated_query_string}"
         
         
