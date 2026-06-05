@@ -107,14 +107,23 @@ class LocationViewData:
         return
 
     def _get_state_id_map(self):
-        # One state id per entity — the primary state's id. Drives
-        # the ``data-state-id`` attribute on the SVG icon / path
-        # elements so the polling dispatcher can target them.
-        # Entities without a primary state (no states with sensor
-        # responses) get no entry and render without data-state-id.
+        # One state id per entity — the primary state's id — so the SVG
+        # icon/path elements carry ``data-state-id`` and the polling
+        # dispatcher can target them. Entities with a current response keep
+        # their responded primary (so the marker and the rendered status
+        # value reference the same state); entities with states but no current
+        # response fall back to their configured primary, rendered with the
+        # existing empty/unknown status, so a later state change is picked up
+        # live by polling instead of being stuck until a full re-render.
         state_id_map = dict()
-        for entity, picked in self._latest_entity_state_status_data_map.items():
-            state_id_map[entity] = picked.entity_state.id
+        for entity, status_data_list in self.entity_to_entity_state_status_data_list.items():
+            responded = self._latest_entity_state_status_data_map.get( entity )
+            if responded is not None:
+                state_id_map[entity] = responded.entity_state.id
+                continue
+            primary = self._pick_primary_status_data( entity, status_data_list )
+            if primary is not None:
+                state_id_map[entity] = primary.entity_state.id
             continue
         return state_id_map
 
@@ -129,16 +138,24 @@ class LocationViewData:
         # the time-latest response across all of that state's sensors.
         latest_entity_state_status_data_map = dict()
         for entity, entity_state_status_data_list in self.entity_to_entity_state_status_data_list.items():
-            if not entity_state_status_data_list:
-                continue
             with_responses_list = [ x for x in entity_state_status_data_list if x.latest_sensor_response ]
-            if not with_responses_list:
-                continue
-            with_responses_list.sort(
-                key = lambda d: ENTITY_PRIMARY_STATE_ORDERING.sort_key(
-                    d.entity_state.entity_state_role, entity.entity_type,
-                ),
-            )
-            latest_entity_state_status_data_map[entity] = with_responses_list[0]
+            primary = self._pick_primary_status_data( entity, with_responses_list )
+            if primary is not None:
+                latest_entity_state_status_data_map[entity] = primary
             continue
         return latest_entity_state_status_data_map
+
+    def _pick_primary_status_data(self, entity, status_data_list):
+        # Single source of the primary-state selection: from a list of the
+        # entity's EntityStateStatusData, pick the one whose state role ranks
+        # highest in ``ENTITY_PRIMARY_STATE_ORDERING`` for the entity's type.
+        # Callers choose the candidate set (response-only vs. all states); this
+        # owns the ordering. Returns None for an empty list.
+        if not status_data_list:
+            return None
+        return min(
+            status_data_list,
+            key = lambda d: ENTITY_PRIMARY_STATE_ORDERING.sort_key(
+                d.entity_state.entity_state_role, entity.entity_type,
+            ),
+        )
