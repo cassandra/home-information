@@ -79,3 +79,13 @@ DATABASES = {
 # subdirectory names become the camera ``live_clip`` / ``event_clip`` choices
 # (scanned once at startup). Restart the simulator to pick up new clips.
 SIMULATOR_VIDEO_DIR = str( BASE_DIR.parent.parent / 'data' / 'demo' / 'videos' )
+
+
+# The LOGGING inherited from development wires a request-log suppression filter
+# for the *main app's* endpoints (whose URL names don't resolve in this
+# process). Swap in the simulator's own filter on the same console handler so
+# the simulator's frequently-polled integration / weather / status endpoints
+# stop flooding the dev console.
+LOGGING[ 'filters' ][ 'suppress_select_request_endpoints' ][ '()' ] = (
+    'hi.simulator.log_filters.SuppressSimulatorPollingFilter'
+)
