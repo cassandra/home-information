@@ -438,3 +438,13 @@ a.underline:visited {
     text-overflow: ellipsis;
     box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
 }
+
+/* Bootstrap's .sticky-top is z-index 1020, which sits ABOVE dropdown
+   menus (z-index 1000). The scene selector lives in the header above this
+   sticky transport, so its open menu would be shadowed by the bar. Drop
+   the transport below the dropdown layer while keeping it above the
+   scrolling states grid. The transport's own dropdowns (sequence select)
+   still open fine over the grid via this element's stacking context. */
+.sim-scene-transport.sticky-top {
+    z-index: 100;
+}

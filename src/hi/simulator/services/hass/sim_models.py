@@ -179,7 +179,8 @@ class HassInsteonDimmerLightLightState( HassInsteonState ):
     # HASS-imported dimmers.
     sim_state_type     : SimStateType                  = SimStateType.CONTINUOUS
     sim_state_id       : str                           = 'light'
-    value              : str                           = '255'
+    # Default off (brightness 0); operator raises it via the slider.
+    value              : str                           = '0'
 
     @property
     def min_value(self):
@@ -428,7 +429,8 @@ class HassSmartBulbState( HassState ):
     sim_entity_fields  : HassSmartBulbFields
     sim_state_type     : SimStateType                  = SimStateType.CONTINUOUS
     sim_state_id       : str                           = 'light'
-    value              : str                           = '255'
+    # Default off (brightness 0); operator raises it via the slider.
+    value              : str                           = '0'
 
     @property
     def min_value(self):
@@ -489,7 +491,8 @@ class HassColorSmartBulbBrightnessState( HassState ):
     sim_entity_fields  : HassColorSmartBulbFields
     sim_state_type     : SimStateType                  = SimStateType.CONTINUOUS
     sim_state_id       : str                           = 'brightness'
-    value              : str                           = '255'
+    # Default off (brightness 0); operator raises it via the slider.
+    value              : str                           = '0'
 
     @property
     def min_value(self):
