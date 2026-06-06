@@ -22,11 +22,17 @@ def main():
         print( "Usage: simulator.py <command> [options]" )
         sys.exit(1)
 
-    # Different default port for simulator's "runserver"
+    # Different default port for simulator's "runserver". Only supply the
+    # default when the user gave no address/port of their own. The addrport
+    # is runserver's sole positional (non-flag) argument, and it may be a
+    # bare port ("7411"), "host:port" ("192.168.100.6:7411"), or
+    # "0.0.0.0:7411" -- so detect "was an addrport given?" as "is there any
+    # non-flag argument?" rather than "is any argument all digits?".
     command = sys.argv[1]
     command_args = sys.argv[2:]
     if command == "runserver":
-        if not any( arg.isdigit() for arg in command_args ):
+        has_addrport = any( not arg.startswith( '-' ) for arg in command_args )
+        if not has_addrport:
             command_args.append( "7411" )
 
     full_command = [ 'python', manage_py_path, command ] + command_args + [ f'--settings={settings_module}' ]
