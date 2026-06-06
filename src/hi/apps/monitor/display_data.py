@@ -201,6 +201,18 @@ class EntityStateDisplayData:
         return None
 
     @property
+    def latest_sensor_timestamp(self):
+        # Responses are deduplicated by value change upstream, so the
+        # latest response is the most recent *transition*. In the decay
+        # handlers this branch is only reached once the entity has left
+        # the value of interest, making this timestamp the moment that
+        # event ENDED — the correct anchor for the recent/past decay
+        # window (independent of how long the event lasted).
+        if self.sensor_response_list:
+            return self.sensor_response_list[0].timestamp
+        return None
+
+    @property
     def latest_display_value(self) -> DisplayValue:
         """Latest sensor value translated to the user's preferred
         display unit (when the EntityState has unit-bearing data) —
@@ -301,13 +313,7 @@ class EntityStateDisplayData:
         if len(self.sensor_response_list) > 1:
             return self.sensor_response_list[1].value
         return None
-    
-    @property
-    def penultimate_sensor_timestamp(self):
-        if len(self.sensor_response_list) > 1:
-            return self.sensor_response_list[1].timestamp
-        return None
-    
+
     def _get_controller_data_value(self):
         """Compute the controller-shaped value for this state.
 
@@ -414,7 +420,7 @@ class EntityStateDisplayData:
             return StatusStyle.MovementActive
 
         if self.penultimate_sensor_value == str(EntityStateValue.ACTIVE):
-            movement_timedelta = datetimeproxy.now() - self.penultimate_sensor_timestamp
+            movement_timedelta = datetimeproxy.now() - self.latest_sensor_timestamp
             if movement_timedelta.total_seconds() < self.RECENT_MOVEMENT_THRESHOLD_SECS:
                 return StatusStyle.MovementRecent
 
@@ -429,7 +435,7 @@ class EntityStateDisplayData:
             return StatusStyle.MovementActive
 
         if self.penultimate_sensor_value == str(EntityStateValue.ACTIVE):
-            presence_timedelta = datetimeproxy.now() - self.penultimate_sensor_timestamp
+            presence_timedelta = datetimeproxy.now() - self.latest_sensor_timestamp
             if presence_timedelta.total_seconds() < self.RECENT_MOVEMENT_THRESHOLD_SECS:
                 return StatusStyle.MovementRecent
 
@@ -452,7 +458,7 @@ class EntityStateDisplayData:
 
         if ( self.penultimate_sensor_value
              and self.penultimate_sensor_value != object_none_value ):
-            object_timedelta = datetimeproxy.now() - self.penultimate_sensor_timestamp
+            object_timedelta = datetimeproxy.now() - self.latest_sensor_timestamp
             if object_timedelta.total_seconds() < self.RECENT_MOVEMENT_THRESHOLD_SECS:
                 return StatusStyle.MovementRecent
 
@@ -467,7 +473,7 @@ class EntityStateDisplayData:
             return StatusStyle.SmokeDetected
 
         if self.penultimate_sensor_value == str(EntityStateValue.SMOKE_DETECTED):
-            smoke_timedelta = datetimeproxy.now() - self.penultimate_sensor_timestamp
+            smoke_timedelta = datetimeproxy.now() - self.latest_sensor_timestamp
             if smoke_timedelta.total_seconds() < self.RECENT_SMOKE_THRESHOLD_SECS:
                 return StatusStyle.SmokeRecent
 
@@ -482,7 +488,7 @@ class EntityStateDisplayData:
             return StatusStyle.MoistureDetected
 
         if self.penultimate_sensor_value == str(EntityStateValue.MOISTURE_DETECTED):
-            moisture_timedelta = datetimeproxy.now() - self.penultimate_sensor_timestamp
+            moisture_timedelta = datetimeproxy.now() - self.latest_sensor_timestamp
             if moisture_timedelta.total_seconds() < self.RECENT_MOISTURE_THRESHOLD_SECS:
                 return StatusStyle.MoistureRecent
 
@@ -497,7 +503,7 @@ class EntityStateDisplayData:
             return StatusStyle.CoDetected
 
         if self.penultimate_sensor_value == str(EntityStateValue.CO_DETECTED):
-            co_timedelta = datetimeproxy.now() - self.penultimate_sensor_timestamp
+            co_timedelta = datetimeproxy.now() - self.latest_sensor_timestamp
             if co_timedelta.total_seconds() < self.RECENT_CO_THRESHOLD_SECS:
                 return StatusStyle.CoRecent
 
@@ -512,7 +518,7 @@ class EntityStateDisplayData:
             return StatusStyle.GasDetected
 
         if self.penultimate_sensor_value == str(EntityStateValue.GAS_DETECTED):
-            gas_timedelta = datetimeproxy.now() - self.penultimate_sensor_timestamp
+            gas_timedelta = datetimeproxy.now() - self.latest_sensor_timestamp
             if gas_timedelta.total_seconds() < self.RECENT_GAS_THRESHOLD_SECS:
                 return StatusStyle.GasRecent
 
@@ -555,7 +561,7 @@ class EntityStateDisplayData:
             return StatusStyle.Open
 
         if self.penultimate_sensor_value == str(EntityStateValue.OPEN):
-            open_timedelta = datetimeproxy.now() - self.penultimate_sensor_timestamp
+            open_timedelta = datetimeproxy.now() - self.latest_sensor_timestamp
             if open_timedelta.total_seconds() < self.RECENT_OPEN_THRESHOLD_SECS:
                 return StatusStyle.OpenRecent
 
