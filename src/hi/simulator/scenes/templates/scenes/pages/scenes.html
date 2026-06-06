@@ -7,11 +7,16 @@
 <div class="sim-main" data-states-url="{% url 'simulator_api_states' %}" hidden></div>
 <div class="sim-scenes container-fluid py-3">
 
+  {% comment %}
+  Scene header: scene picker + active badge on the left, current-scene actions
+  (apply / off / rename / delete) grouped after a divider, new-scene creation
+  pushed to the right. One wrapping row.
+  {% endcomment %}
   <div class="d-flex align-items-center flex-wrap mb-3">
     <h4 class="mr-3 mb-0">Scenes</h4>
 
     {% if scene_list %}
-    <div class="dropdown mr-2">
+    <div class="dropdown mr-2 mb-1">
       <button class="btn btn-sm btn-outline-primary dropdown-toggle" type="button"
               id="hi-scene-select" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
         Scene: <strong>{{ scene.name|default:"(none)" }}</strong>
@@ -26,12 +31,39 @@
     {% endif %}
 
     {% if active_scene %}
-      <span class="badge badge-success mr-2">Active: {{ active_scene.name }}</span>
+      <span class="badge badge-success mr-2 mb-1">Active: {{ active_scene.name }}</span>
     {% else %}
-      <span class="badge badge-secondary mr-2">No active scene (Off)</span>
+      <span class="badge badge-secondary mr-2 mb-1">No active scene (Off)</span>
     {% endif %}
 
-    <form method="post" action="{% url 'simulator_scene_create' %}" class="form-inline ml-auto">
+    {% if scene %}
+    <span class="border-left mr-2 mb-1" style="height: 1.6rem;"></span>
+    <form method="post" action="{% url 'simulator_scene_apply' scene_id=scene.id %}" class="mr-1 mb-1">
+      {% csrf_token %}
+      <button type="submit" class="btn btn-sm btn-primary">Apply Scene</button>
+    </form>
+    <form method="post" action="{% url 'simulator_scene_off' %}" class="mr-1 mb-1">
+      {% csrf_token %}
+      <input type="hidden" name="scene" value="{{ scene.id }}">
+      <button type="submit" class="btn btn-sm btn-outline-secondary">Off</button>
+    </form>
+    <form method="post" action="{% url 'simulator_scene_rename' scene_id=scene.id %}"
+          class="form-inline mr-1 mb-1">
+      {% csrf_token %}
+      <input type="text" name="name" class="form-control form-control-sm mr-1"
+             style="max-width: 10rem;" value="{{ scene.name }}">
+      <button type="submit" class="btn btn-sm btn-outline-secondary">Rename</button>
+    </form>
+    <form method="post" action="{% url 'simulator_scene_delete' scene_id=scene.id %}" class="mr-1 mb-1"
+          onsubmit="return confirm('Delete scene ‘{{ scene.name|escapejs }}’?');">
+      {% csrf_token %}
+      <button type="submit" class="btn btn-sm btn-outline-danger">
+        {% icon "delete" size="sm" css_class="hi-icon-left" %}Delete
+      </button>
+    </form>
+    {% endif %}
+
+    <form method="post" action="{% url 'simulator_scene_create' %}" class="form-inline ml-auto mb-1">
       {% csrf_token %}
       <input type="text" name="name" class="form-control form-control-sm mr-1"
              placeholder="New scene name" required>
@@ -42,79 +74,21 @@
   </div>
 
   {% if scene %}
-  <div class="d-flex align-items-center flex-wrap mb-3">
-    <form method="post" action="{% url 'simulator_scene_apply' scene_id=scene.id %}" class="mr-2 mb-1">
-      {% csrf_token %}
-      <button type="submit" class="btn btn-sm btn-primary">Apply Scene</button>
-    </form>
-    <form method="post" action="{% url 'simulator_scene_off' %}" class="mr-3 mb-1">
-      {% csrf_token %}
-      <input type="hidden" name="scene" value="{{ scene.id }}">
-      <button type="submit" class="btn btn-sm btn-outline-secondary">Off</button>
-    </form>
 
-    <form method="post" action="{% url 'simulator_scene_rename' scene_id=scene.id %}"
-          class="form-inline mr-2 mb-1">
-      {% csrf_token %}
-      <input type="text" name="name" class="form-control form-control-sm mr-1" value="{{ scene.name }}">
-      <button type="submit" class="btn btn-sm btn-outline-secondary">Rename</button>
-    </form>
-
-    <form method="post" action="{% url 'simulator_scene_delete' scene_id=scene.id %}" class="mb-1"
-          onsubmit="return confirm('Delete scene ‘{{ scene.name|escapejs }}’?');">
-      {% csrf_token %}
-      <button type="submit" class="btn btn-sm btn-outline-danger">
-        {% icon "delete" size="sm" css_class="hi-icon-left" %}Delete
-      </button>
-    </form>
-  </div>
-
-  <h6 class="text-muted">Module Profiles</h6>
-  <table class="table table-sm sim-scene-bindings" style="max-width: 640px;">
-    <tbody>
-      {% for row in module_rows %}
-      <tr>
-        <td class="align-middle"><strong>{{ row.label }}</strong></td>
-        <td class="align-middle">
-          <div class="dropdown">
-            <button class="btn btn-sm btn-outline-primary dropdown-toggle" type="button"
-                    id="hi-binding-{{ forloop.counter }}"
-                    data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-              {% if row.bound_profile %}{{ row.bound_profile.name }}{% else %}— (individual control){% endif %}
-            </button>
-            <div class="dropdown-menu" aria-labelledby="hi-binding-{{ forloop.counter }}">
-              <a class="dropdown-item plain {% if not row.bound_profile %}active{% endif %}"
-                 href="{% url 'simulator_scene_binding_set' scene_id=scene.id module_key=row.module_key profile_id='none' %}">
-                — (individual control)
-              </a>
-              <div class="dropdown-divider"></div>
-              {% for profile in row.profile_list %}
-              <a class="dropdown-item plain {% if row.bound_profile and profile.id == row.bound_profile.id %}active{% endif %}"
-                 href="{% url 'simulator_scene_binding_set' scene_id=scene.id module_key=row.module_key profile_id=profile.id %}">
-                {{ profile.name }}
-              </a>
-              {% endfor %}
-            </div>
-          </div>
-        </td>
-      </tr>
-      {% endfor %}
-    </tbody>
-  </table>
-
+  {% comment %} Transport (record / playback + timeline) — sticky so it stays in view while working the states grid below. {% endcomment %}
   {% include "scenes/panes/transport.html" %}
 
-  <div class="d-flex align-items-center mt-4 mb-2">
+  <div class="d-flex align-items-center flex-wrap mt-4 mb-2">
     <h6 class="text-muted mb-0 mr-2">States</h6>
-    <a class="btn btn-sm btn-outline-secondary" data-async="modal"
+    <a class="btn btn-sm btn-outline-secondary mb-1" data-async="modal"
        href="{% url 'simulator_scene_edit_states' scene_id=scene.id %}">
       {% icon "edit" size="sm" css_class="hi-icon-left" %}Edit States
     </a>
-    <a class="btn btn-sm btn-outline-warning ml-2" data-async="modal"
+    <a class="btn btn-sm btn-outline-warning ml-2 mb-1" data-async="modal"
        href="{% url 'simulator_scene_clear_states_confirm' %}">
       Clear States
     </a>
-    <form method="post" action="{% url 'simulator_scene_restore_states' %}" class="ml-1">
+    <form method="post" action="{% url 'simulator_scene_restore_states' %}" class="ml-1 mb-1">
       {% csrf_token %}
       <input type="hidden" name="scene" value="{{ scene.id }}">
       <button type="submit" class="btn btn-sm btn-outline-secondary"
@@ -123,18 +97,20 @@
       </button>
     </form>
     {% if missing_control_count %}
-    <span class="text-warning small ml-3">
+    <span class="text-warning small ml-3 mb-1">
       {{ missing_control_count }} selected control(s) not loaded — apply the scene so its entities load.
     </span>
     {% endif %}
   </div>
 
   {% if control_grid %}
-  <div class="sim-scene-controls" style="max-width: 820px;">
+  {% comment %} Dense responsive grid: 1 / 2 / 3 columns as width allows, so all controls stay reachable without scrolling while recording. {% endcomment %}
+  <div class="row sim-scene-controls">
     {% for item in control_grid %}
-    <div class="row align-items-center sim-scene-control-row">
-      <div class="col-3 text-truncate text-muted small" title="{{ item.entity_name }}">{{ item.entity_name }}</div>
-      <div class="col-9">
+    <div class="col-12 col-md-6 col-xl-4 mb-2">
+      <div class="border rounded p-2 h-100">
+        <div class="font-weight-bold text-truncate small mb-1"
+             title="{{ item.entity_name }}">{{ item.entity_name }}</div>
         {% include "services/panes/sim_state.html" with simulator=item.simulator sim_state=item.sim_state label=item.state_label %}
       </div>
     </div>
@@ -143,6 +119,48 @@
   {% else %}
   <p class="text-muted">No states selected. Use “Edit States” to choose the controls for this scene.</p>
   {% endif %}
+
+  {% comment %}
+  Module Profiles: per-integration profile bindings. Set up once per scene and
+  rarely revisited, so demoted to a collapsed section at the foot of the page.
+  {% endcomment %}
+  <details class="sim-scene-bindings mt-4 border-top pt-2">
+    <summary class="text-muted font-weight-bold" style="cursor: pointer;">
+      Module Profiles
+      <span class="font-weight-normal small">— per-integration profile bindings (set up once)</span>
+    </summary>
+    <table class="table table-sm mt-2" style="max-width: 640px;">
+      <tbody>
+        {% for row in module_rows %}
+        <tr>
+          <td class="align-middle"><strong>{{ row.label }}</strong></td>
+          <td class="align-middle">
+            <div class="dropdown">
+              <button class="btn btn-sm btn-outline-primary dropdown-toggle" type="button"
+                      id="hi-binding-{{ forloop.counter }}"
+                      data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                {% if row.bound_profile %}{{ row.bound_profile.name }}{% else %}— (individual control){% endif %}
+              </button>
+              <div class="dropdown-menu" aria-labelledby="hi-binding-{{ forloop.counter }}">
+                <a class="dropdown-item plain {% if not row.bound_profile %}active{% endif %}"
+                   href="{% url 'simulator_scene_binding_set' scene_id=scene.id module_key=row.module_key profile_id='none' %}">
+                  — (individual control)
+                </a>
+                <div class="dropdown-divider"></div>
+                {% for profile in row.profile_list %}
+                <a class="dropdown-item plain {% if row.bound_profile and profile.id == row.bound_profile.id %}active{% endif %}"
+                   href="{% url 'simulator_scene_binding_set' scene_id=scene.id module_key=row.module_key profile_id=profile.id %}">
+                  {{ profile.name }}
+                </a>
+                {% endfor %}
+              </div>
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </details>
 
   {% else %}
   <p class="text-muted">No scenes yet. Create one above to begin.</p>

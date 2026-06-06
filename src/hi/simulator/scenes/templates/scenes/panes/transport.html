@@ -5,10 +5,9 @@ scene_status.js: the .js-playhead / .js-rec-steps spans and the timeline
 playhead update every poll, and the whole pane is re-fetched (this partial)
 when the transport signature changes.
 {% endcomment %}
-<div class="sim-scene-transport mt-4 mb-2 p-2"
+<div class="sim-scene-transport sticky-top shadow-sm border rounded bg-light mb-3 p-2"
      data-status-url="{% url 'simulator_scene_status' %}"
-     data-transport-url="{% url 'simulator_scene_transport' scene_id=scene.id %}{% if selected_sequence %}?sequence={{ selected_sequence.id }}{% endif %}"
-     style="background:#f6f6f8; border-radius:6px;">
+     data-transport-url="{% url 'simulator_scene_transport' scene_id=scene.id %}{% if selected_sequence %}?sequence={{ selected_sequence.id }}{% endif %}">
   <div class="d-flex align-items-center flex-wrap">
     {# --- status badge --- #}
     {% if recorder_status.paused %}
@@ -112,6 +111,7 @@ when the transport signature changes.
           <button type="submit" class="btn btn-sm btn-dark">■ Stop</button>
         </form>
         {% else %}
+        <span class="border-left mr-2" style="height: 1.6rem;"></span>
         <a class="btn btn-sm btn-outline-secondary mr-1" data-async="modal"
            href="{% url 'simulator_sequence_edit' scene_id=scene.id sequence_id=selected_sequence.id %}"
            title="Rename / edit JSON">{% icon "edit" size="sm" %}</a>
