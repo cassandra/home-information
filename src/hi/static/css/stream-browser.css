@@ -139,14 +139,41 @@
     border-radius: 8px;
     overflow: hidden;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-    background-color: var(--black);
+    background-color: var(--hi-video-letterbox-bg);
     min-height: 400px;
 }
 
-.video-container img {
+/* Covers both the MJPEG/snapshot <img> and the finite-clip <video>
+   (an mp4 clip renders as <video class="img-fluid">, wrapped in
+   .hi-video-clip). */
+.video-container img,
+.video-container video {
     display: block;
     width: 100%;
     height: auto;
+    /* Width-driven sizing (landscape fills the pane, height follows the
+       aspect ratio) until the height would exceed the cap — then clamp and
+       letterbox so a portrait camera fits on screen rather than overflowing
+       to ~2x the height. Landscape stays well under the cap, so object-fit
+       is a no-op there and its sizing is unchanged. */
+    max-height: var(--hi-video-max-height);
+    object-fit: contain;
+}
+
+/* Compact variant for denser contexts (collection grid, alert-detail
+   modal): a shorter cap so portrait media stays manageable where there is
+   less room. Set on a container; it re-points the active cap variable to
+   the compact token, which the .video-container media above (collection
+   camera panels) pick up by inheritance, AND caps bare <img>/<video> media
+   that aren't wrapped in a .video-container (the alert modal renders media
+   directly in .hi-video-clip / a card body). */
+.hi-video-compact {
+    --hi-video-max-height: var(--hi-video-max-height-compact);
+}
+.hi-video-compact img,
+.hi-video-compact video {
+    max-height: var(--hi-video-max-height);
+    object-fit: contain;
 }
 
 /* Event Header */

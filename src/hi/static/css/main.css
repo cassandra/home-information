@@ -99,6 +99,22 @@
   --hi-panel-row-max-height: 128px;
   --hi-panel-default-tile-min-size: 160px;
 
+  /* Ceiling for a video-pane image/clip's rendered height. Landscape
+     cameras stay well under this (so they fill width as before); portrait
+     cameras are clamped here and letterboxed via object-fit so they fit
+     on screen instead of overflowing to ~2x the height. The two named
+     tokens are the menu of sizes; --hi-video-max-height is the active one,
+     defaulting to standard and re-pointed to compact by .hi-video-compact. */
+  --hi-video-max-height-standard: 80vh;
+  --hi-video-max-height-compact: 40vh;
+  --hi-video-max-height: var(--hi-video-max-height-standard);
+
+  /* Letterbox/backdrop fill behind a video that doesn't fill its container
+     (e.g. a portrait clip in a landscape pane). A very dark, lightly
+     teal-tinted neutral — softer than pure black and cohesive with
+     --primary-color (#177072) — so the frame recedes without being stark. */
+  --hi-video-letterbox-bg: #13201f;
+
 }
 
 html, body {
