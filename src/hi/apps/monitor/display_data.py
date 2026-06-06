@@ -23,8 +23,10 @@ from hi.apps.console.console_converter_helper import (
 from hi.apps.entity.entity_state_role_order import ENTITY_STATUS_VIEW_ORDERING
 from hi.apps.entity.enums import EntityStateRole, EntityStateType, EntityStateValue
 from hi.apps.entity.models import Entity
+from hi.apps.sense.transient_models import SensorResponse
 
 from hi.hi_styles import StatusStyle
+from hi.units import UnitQuantity
 
 from .enums import EntityDisplayCategory
 from .status_data import EntityStateStatusData, EntityStatusData
@@ -112,6 +114,27 @@ class EntityStateDisplayData:
         self._svg_status_style = self._get_svg_status_style()
         self._controller_data_value = self._get_controller_data_value()
         return
+
+    @classmethod
+    def for_value( cls, entity_state, value ) -> 'EntityStateDisplayData':
+        """Build a display projection for a single discrete value (e.g. a
+        historical reading) so callers color it through the SAME status
+        dispatch as the live display, rather than re-deriving the status
+        token from the raw value. No time-decay is applied — a lone value
+        has no penultimate to decay from — so the result reflects the
+        value's own bucket/token (e.g. a TEMPERATURE reading's color band,
+        a BATTERY level's low/ok)."""
+        synthetic_response = SensorResponse(
+            integration_key = None,
+            value = None if value is None else str( value ),
+            timestamp = datetimeproxy.now(),
+        )
+        status_data = EntityStateStatusData(
+            entity_state = entity_state,
+            sensor_response_list = [ synthetic_response ],
+            controller_data_list = [],
+        )
+        return cls( status_data )
 
     def __getattr__( self, name ):
         # Fall through to the wrapped raw data for any accessor not
@@ -358,6 +381,9 @@ class EntityStateDisplayData:
         if self.entity_state.entity_state_type == EntityStateType.BATTERY_LEVEL:
             return self._get_battery_level_status_style()
 
+        if self.entity_state.entity_state_type == EntityStateType.TEMPERATURE:
+            return self._get_temperature_status_style()
+
         # TODO: These should map the latest value into a continuous range of colors/opacity
         #
         # EntityStateType.AIR_PRESSURE
@@ -367,10 +393,12 @@ class EntityStateDisplayData:
         # EntityStateType.LIGHT_LEVEL
         # EntityStateType.MOISTURE
         # EntityStateType.SOUND_LEVEL
-        # EntityStateType.TEMPERATURE
         # EntityStateType.WATER_FLOW
         # EntityStateType.WIND_SPEED
 
+        return self._get_default_status_style()
+
+    def _get_default_status_style( self ):
         # Use the display-unit text so the polling refresh of the
         # status display matches what the initial server-side
         # template render produced (combined magnitude + unit
@@ -378,9 +406,8 @@ class EntityStateDisplayData:
         status_value = str( self.latest_display_value )
         if not status_value:
             status_value = StatusStyle.DEFAULT_STATUS_VALUE
-
         return StatusStyle.default( status_value = status_value )
-    
+
     def _get_movement_status_style( self ):
 
         if self.latest_sensor_value == str(EntityStateValue.ACTIVE):
@@ -567,7 +594,30 @@ class EntityStateDisplayData:
         if magnitude < self.BATTERY_LOW_THRESHOLD_PCT:
             return StatusStyle.BatteryLow
         return StatusStyle.BatteryOk
-    
+
+    def _get_temperature_status_style( self ):
+        # Bucket on the absolute temperature (cold -> pleasant -> hot).
+        # Normalize to the canonical °C first so the bucket thresholds are
+        # unit-agnostic regardless of whether this state is stored in °F,
+        # °C, etc. If the value or units can't be resolved, fall back to the
+        # plain numeric status display.
+        celsius = self._latest_temperature_celsius()
+        if celsius is None:
+            return self._get_default_status_style()
+        return StatusStyle.temperature( celsius )
+
+    def _latest_temperature_celsius( self ):
+        """The latest sensor value converted to canonical °C using the
+        EntityState's stored ``units``, or None when it can't be resolved
+        (no value, no/unknown units, non-numeric)."""
+        raw_value = self.latest_sensor_value
+        units = self.entity_state.units
+        if raw_value is None or not units:
+            return None
+        try:
+            return UnitQuantity( float( raw_value ), units ).to( 'degC' ).magnitude
+        except Exception:
+            return None
 
 
 @dataclass

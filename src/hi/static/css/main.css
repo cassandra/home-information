@@ -71,6 +71,20 @@
   --on-status-bad-color: white;
   --on-status-idle-color: black;
 
+  /* Temperature ramp: blue (cold) -> green (pleasant) -> orange/red (hot).
+     These should match those in hi.hi_styles.StatusStyle (STATUS_TEMP_*). */
+  --status-temp-cold-color: #2c7fb8;
+  --status-temp-cool-color: #74add1;
+  --status-temp-pleasant-color: #1a9850;
+  --status-temp-warm-color: #fdae61;
+  --status-temp-hot-color: #d73027;
+
+  --on-status-temp-cold-color: white;
+  --on-status-temp-cool-color: black;
+  --on-status-temp-pleasant-color: white;
+  --on-status-temp-warm-color: black;
+  --on-status-temp-hot-color: white;
+
   /* Panel size budgets. Soft enforcement: collection wrappers reference
      these via auto-fit/minmax for adaptive column counts; panels
      reference them when their content scales with the budget.
@@ -1032,6 +1046,21 @@ g[status="co_detected"] {
 g[status="gas_detected"] {
     filter: drop-shadow(0 0 5px var(--status-bad-color));
 }
+g[status="temperature_cold"] {
+    filter: drop-shadow(0 0 5px var(--status-temp-cold-color));
+}
+g[status="temperature_cool"] {
+    filter: drop-shadow(0 0 5px var(--status-temp-cool-color));
+}
+g[status="temperature_pleasant"] {
+    filter: drop-shadow(0 0 5px var(--status-temp-pleasant-color));
+}
+g[status="temperature_warm"] {
+    filter: drop-shadow(0 0 5px var(--status-temp-warm-color));
+}
+g[status="temperature_hot"] {
+    filter: drop-shadow(0 0 5px var(--status-temp-hot-color));
+}
 
 
 .hi-status-display[status="active"] {
@@ -1071,6 +1100,7 @@ g[status="gas_detected"] {
     color: var(--on-status-bad-color);
     background-color: var(--status-bad-color);
 }
+.hi-status-display[status="ok"],
 .hi-status-display[status="high"] {
     color: var(--on-status-ok-color);
     background-color: var(--status-ok-color);
@@ -1110,6 +1140,38 @@ g[status="gas_detected"] {
 .hi-status-display[status="gas_detected"] {
     color: var(--on-status-bad-color);
     background-color: var(--status-bad-color);
+}
+.hi-status-display[status="object_person"],
+.hi-status-display[status="object_car"],
+.hi-status-display[status="object_animal"],
+.hi-status-display[status="object_package"],
+.hi-status-display[status="object_other"] {
+    color: var(--on-status-active-color);
+    background-color: var(--status-active-color);
+}
+.hi-status-display[status="object_none"] {
+    color: var(--on-status-ok-color);
+    background-color: var(--status-ok-color);
+}
+.hi-status-display[status="temperature_cold"] {
+    color: var(--on-status-temp-cold-color);
+    background-color: var(--status-temp-cold-color);
+}
+.hi-status-display[status="temperature_cool"] {
+    color: var(--on-status-temp-cool-color);
+    background-color: var(--status-temp-cool-color);
+}
+.hi-status-display[status="temperature_pleasant"] {
+    color: var(--on-status-temp-pleasant-color);
+    background-color: var(--status-temp-pleasant-color);
+}
+.hi-status-display[status="temperature_warm"] {
+    color: var(--on-status-temp-warm-color);
+    background-color: var(--status-temp-warm-color);
+}
+.hi-status-display[status="temperature_hot"] {
+    color: var(--on-status-temp-hot-color);
+    background-color: var(--status-temp-hot-color);
 }
 
 g[hover] {

@@ -826,6 +826,63 @@ class StatusStyle:
         fill_opacity = 0.15,
     )
 
+    # Temperature: a single absolute-temperature scale, bucketed into a
+    # blue (cold) -> green (pleasant) -> orange/red (hot) ramp. One scale
+    # serves both thermostats and outdoor thermometers because comfortable
+    # indoor temperatures naturally land in the green band while only the
+    # outdoors reaches the blue/red extremes — so the same reading always
+    # gets the same color, no indoor/outdoor distinction needed. The
+    # extremes also carry higher fill_opacity (more intense) than the
+    # subtle pleasant band, reinforcing "how far from comfortable" at a
+    # glance. Thresholds live in EntityStateDisplayData (in canonical °C);
+    # these are just the finite palette the CSS rules key off.
+    STATUS_TEMP_COLD_COLOR     = '#2c7fb8'   # blue
+    STATUS_TEMP_COOL_COLOR     = '#74add1'   # light blue
+    STATUS_TEMP_PLEASANT_COLOR = '#1a9850'   # green
+    STATUS_TEMP_WARM_COLOR     = '#fdae61'   # orange
+    STATUS_TEMP_HOT_COLOR      = '#d73027'   # red
+
+    TemperatureCold = SvgStatusStyle(
+        status_value = 'temperature_cold',
+        stroke_color = STATUS_TEMP_COLD_COLOR,
+        stroke_width = DEFAULT_STROKE_WIDTH,
+        stroke_dasharray = DEFAULT_STROKE_DASHARRAY,
+        fill_color = STATUS_TEMP_COLD_COLOR,
+        fill_opacity = 0.5,
+    )
+    TemperatureCool = SvgStatusStyle(
+        status_value = 'temperature_cool',
+        stroke_color = STATUS_TEMP_COOL_COLOR,
+        stroke_width = DEFAULT_STROKE_WIDTH,
+        stroke_dasharray = DEFAULT_STROKE_DASHARRAY,
+        fill_color = STATUS_TEMP_COOL_COLOR,
+        fill_opacity = 0.35,
+    )
+    TemperaturePleasant = SvgStatusStyle(
+        status_value = 'temperature_pleasant',
+        stroke_color = STATUS_TEMP_PLEASANT_COLOR,
+        stroke_width = DEFAULT_STROKE_WIDTH,
+        stroke_dasharray = DEFAULT_STROKE_DASHARRAY,
+        fill_color = STATUS_TEMP_PLEASANT_COLOR,
+        fill_opacity = 0.2,
+    )
+    TemperatureWarm = SvgStatusStyle(
+        status_value = 'temperature_warm',
+        stroke_color = STATUS_TEMP_WARM_COLOR,
+        stroke_width = DEFAULT_STROKE_WIDTH,
+        stroke_dasharray = DEFAULT_STROKE_DASHARRAY,
+        fill_color = STATUS_TEMP_WARM_COLOR,
+        fill_opacity = 0.35,
+    )
+    TemperatureHot = SvgStatusStyle(
+        status_value = 'temperature_hot',
+        stroke_color = STATUS_TEMP_HOT_COLOR,
+        stroke_width = DEFAULT_STROKE_WIDTH,
+        stroke_dasharray = DEFAULT_STROKE_DASHARRAY,
+        fill_color = STATUS_TEMP_HOT_COLOR,
+        fill_opacity = 0.5,
+    )
+
     @classmethod
     def default( cls, status_value : str = DEFAULT_STATUS_VALUE ):
         return SvgStatusStyle(
@@ -860,3 +917,21 @@ class StatusStyle:
             fill_color = 'yellow',
             fill_opacity = opacity,
         )
+
+    # Upper bound (exclusive, in canonical °C) for each temperature bucket,
+    # paired with the style to use below that bound; the final entry is the
+    # open-ended "hot" catch-all. Bounds are chosen so human-comfortable
+    # readings (~19-24°C) land in the green "pleasant" band.
+    TEMPERATURE_BUCKETS_CELSIUS = [
+        ( 5.0, TemperatureCold ),       # below freezing-ish / bitter
+        ( 16.0, TemperatureCool ),      # chilly
+        ( 25.0, TemperaturePleasant ),  # comfortable
+        ( 31.0, TemperatureWarm ),      # warm
+    ]
+
+    @classmethod
+    def temperature( cls, celsius : float ):
+        for upper_bound_celsius, status_style in cls.TEMPERATURE_BUCKETS_CELSIUS:
+            if celsius < upper_bound_celsius:
+                return status_style
+        return cls.TemperatureHot

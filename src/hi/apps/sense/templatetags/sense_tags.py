@@ -34,3 +34,21 @@ def render_state_value_text( context, entity_state : EntityState, value : str ):
     flat[ 'entity_state' ] = entity_state
     flat[ 'value' ] = value
     return template_obj.render( flat )
+
+
+@register.simple_tag
+def state_value_status( entity_state : EntityState, value : str ) -> str:
+    """The CSS status token for a single EntityState value, via the same
+    dispatch the live display uses (``EntityStateDisplayData``), so a
+    bucketed type (TEMPERATURE, BATTERY, dimmer, position) colors the
+    same way it does on the SVG icon / status panels. Falls back to the
+    raw value when the dispatch yields no token (unrecognized value), so
+    callers can always render a ``status="..."`` attribute.
+
+    Imported lazily to keep the sense template tags free of a load-time
+    dependency on the monitor display layer."""
+    from hi.apps.monitor.display_data import EntityStateDisplayData
+    svg_status_style = EntityStateDisplayData.for_value( entity_state, value ).svg_status_style
+    if svg_status_style and svg_status_style.status_value:
+        return svg_status_style.status_value
+    return value

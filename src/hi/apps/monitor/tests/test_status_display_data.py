@@ -617,7 +617,7 @@ class TestEntityStateDisplayData(BaseTestCase):
     def test_unmapped_entity_type_returns_default_style(self):
         """Test unmapped entity types return default style with sensor value."""
         sensor_response = self._create_mock_sensor_response('25.5')
-        status_data = self._create_entity_state_status_data('TEMPERATURE', [sensor_response])
+        status_data = self._create_entity_state_status_data('HUMIDITY', [sensor_response])
         
         with patch.object(StatusStyle, 'default') as mock_default:
             expected_style = Mock()
@@ -1032,3 +1032,70 @@ class TestToPollingUpdateDict(BaseTestCase):
         self.assertNotIn( 'status', row )
         self.assertNotIn( 'svg_style', row )
         self.assertIn( 'display', row )
+
+
+class TestTemperatureStatusStyle(BaseTestCase):
+    """TEMPERATURE buckets the absolute reading onto a cold→pleasant→hot
+    color ramp. The reading is normalized to canonical °C first, so the
+    bucket thresholds hold regardless of the EntityState's stored units;
+    an unresolvable reading (no/unknown units, non-numeric) falls back to
+    the plain numeric status display."""
+
+    def setUp(self):
+        super().setUp()
+        self.entity = Entity.objects.create(
+            name = 'Test Entity',
+            entity_type_str = 'SENSOR',
+        )
+
+    def _make_display_data(self, value, units):
+        entity_state = EntityState.objects.create(
+            entity = self.entity,
+            entity_state_type_str = 'TEMPERATURE',
+            units = units,
+        )
+        response = Mock(spec=SensorResponse)
+        response.value = value
+        response.timestamp = datetime.now()
+        status_data = EntityStateStatusData(
+            entity_state = entity_state,
+            sensor_response_list = [ response ],
+            controller_data_list = [],
+        )
+        return EntityStateDisplayData( status_data )
+
+    def test_fahrenheit_buckets_span_cold_to_hot(self):
+        # °F readings normalize to °C before bucketing; comfortable room
+        # temperatures (68-75°F) land in the green "pleasant" band while
+        # only outdoor extremes reach the blue/red ends.
+        cases = [
+            ( '10', StatusStyle.TemperatureCold ),
+            ( '45', StatusStyle.TemperatureCool ),
+            ( '70', StatusStyle.TemperaturePleasant ),
+            ( '85', StatusStyle.TemperatureWarm ),
+            ( '95', StatusStyle.TemperatureHot ),
+        ]
+        for value, expected_style in cases:
+            with self.subTest( fahrenheit = value ):
+                display_data = self._make_display_data( value, '°F' )
+                self.assertEqual( display_data.svg_status_style, expected_style )
+
+    def test_celsius_uses_same_thresholds(self):
+        # The same canonical-°C thresholds apply when the state is
+        # already stored in °C (no indoor/outdoor distinction needed).
+        display_data = self._make_display_data( '21', '°C' )
+        self.assertEqual(
+            display_data.svg_status_style, StatusStyle.TemperaturePleasant,
+        )
+
+    def test_missing_units_falls_back_to_default_style(self):
+        # Without units the reading can't be placed on the scale, so the
+        # plain numeric status display is used (status == the value text).
+        display_data = self._make_display_data( '21', None )
+        self.assertEqual( display_data.svg_status_style.status_value, '21' )
+
+    def test_non_numeric_value_falls_back_to_default_style(self):
+        display_data = self._make_display_data( 'unavailable', '°F' )
+        self.assertEqual(
+            display_data.svg_status_style.status_value, 'unavailable',
+        )
