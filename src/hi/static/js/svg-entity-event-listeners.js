@@ -468,6 +468,17 @@
    	}
     }    
     
+    function targetMatchesSelector( target, selector ) {
+	// event.target is not always an Element with .closest(): it can be a
+	// text node (resolve to its parent element) or a non-Element node such
+	// as the document (no enclosing element). Guard so a stray event over
+	// such a target doesn't throw "closest is not a function".
+	const element = ( target instanceof Element )
+	      ? target
+	      : ( target && target.parentElement );
+	return Boolean( element && element.closest( selector ));
+    }
+
     function addPointerListener( eventType, selector, handler, passive = true ) {
 	// N.B.
 	//   - "passive = false" ensures preventDefault() works for pointer events.
@@ -475,7 +486,7 @@
 	
         $(document).each( function() {
 	    this.addEventListener( eventType, function( event ) {
-                if ( event.target.closest( selector )) {
+                if ( targetMatchesSelector( event.target, selector )) {
 		    handler( event );
                 }
 	    }, { passive: passive });
@@ -494,7 +505,7 @@
 	// default, which silently ignores preventDefault() (jQuery also has
 	// no way to set the passive option). See addPointerListener above.
 	document.addEventListener( 'wheel', function( event ) {
-	    if ( ! event.target.closest( Hi.LOCATION_VIEW_AREA_SELECTOR )) { return; }
+	    if ( ! targetMatchesSelector( event.target, Hi.LOCATION_VIEW_AREA_SELECTOR )) { return; }
 	    let handled = Hi.edit.icon.handleMouseWheel( event );
 	    if ( ! handled ) {
 		handled = Hi.location.handleMouseWheel( event );
