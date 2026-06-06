@@ -17,6 +17,9 @@
         API_STATUS_URL: window.HiClientConfig?.API_STATUS_URL ?? '/api/status',
         CONSOLE_UNLOCK_URL: window.HiClientConfig?.CONSOLE_UNLOCK_URL ?? '/console/unlock',
 
+        // Status polling cadence (ms), user-configurable via ConsoleSetting.
+        API_STATUS_POLLING_INTERVAL_MS: window.HiClientConfig?.API_STATUS_POLLING_INTERVAL_MS ?? 3000,
+
         MAIN_AREA_SELECTOR: '#hi-main-content',
         LOCATION_VIEW_AREA_SELECTOR: '#hi-location-view-main',
         LOCATION_VIEW_SVG_CLASS: 'hi-location-view-svg',

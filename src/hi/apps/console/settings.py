@@ -86,4 +86,13 @@ class ConsoleSetting( SettingEnum ):
         is_required = True,
         initial_value = '30',
     )
-    
+    STATUS_POLLING_INTERVAL = SettingDefinition(
+        label = 'Status Polling Interval (seconds)',
+        description = 'How often the console polls the server for status and alerts',
+        value_type = AttributeValueType.INTEGER,
+        value_range = [ 1, 3600 ],
+        is_editable = True,
+        is_required = True,
+        initial_value = '3',
+    )
+

@@ -23,7 +23,7 @@
     
     const ServerPollingWatchdogType = 'serverPolling';
     const ServerPollingStartDelayMs = 1000;
-    const ServerPollingIntervalMs = 3 * 1000;
+    const ServerPollingIntervalMs = Hi.API_STATUS_POLLING_INTERVAL_MS ?? (3 * 1000);
     const PollingErrorNotifyTimeMs = 60 * 1000;
     const ServerErrorMessageSelector = '#hi-server-error-msg';
     const ServerPollingUrl = Hi.API_STATUS_URL;

@@ -70,6 +70,18 @@ class ConsoleSettingsHelper( Singleton, SettingsMixin ):
     def get_auto_view_duration( self ) -> int:
         return int( self.settings_manager().get_setting_value( ConsoleSetting.AUTO_VIEW_DURATION ) )
 
+    DEFAULT_STATUS_POLLING_INTERVAL_MS = 3000
+
+    def get_status_polling_interval_ms( self ) -> int:
+        # Stored in seconds (user-friendly); the client contract is in ms.
+        # Robust to an uninitialized/blank setting so the per-request
+        # context processor can call this unconditionally.
+        raw_value = self.settings_manager().get_setting_value( ConsoleSetting.STATUS_POLLING_INTERVAL )
+        try:
+            return int( raw_value ) * 1000
+        except ( TypeError, ValueError ):
+            return self.DEFAULT_STATUS_POLLING_INTERVAL_MS
+
     @staticmethod
     def compute_camera_short_names( entity_list : Iterable[ Entity ] ) -> Dict[ int, str ]:
         """Return a ``{entity.id: short_name}`` mapping for camera-button
