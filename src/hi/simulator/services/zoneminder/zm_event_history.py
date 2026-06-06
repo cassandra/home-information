@@ -7,6 +7,23 @@ import hi.apps.common.datetimeproxy as datetimeproxy
 from .sim_models import ZmSimEvent, ZmSimMonitor
 
 
+# Encode the monitor id into the (integer, native-ZM) event id so the
+# event-media endpoints — which receive only an event id — can resolve the
+# monitor, and thus its selected clip, even for historical events the ephemeral
+# in-memory manager no longer holds. ``monitor_id * STRIDE + sequence`` keeps
+# the id a plain integer (real ZM ids are integers; HI treats them opaquely and
+# orders events by time, not id). Assumes < STRIDE events per simulator session.
+_EVENT_ID_MONITOR_STRIDE = 1_000_000
+
+
+def make_event_id( monitor_id : int, sequence : int ) -> int:
+    return monitor_id * _EVENT_ID_MONITOR_STRIDE + sequence
+
+
+def monitor_id_from_event_id( event_id : int ) -> int:
+    return event_id // _EVENT_ID_MONITOR_STRIDE
+
+
 class ZmSimEventHistory:
 
     def __init__( self,
@@ -40,7 +57,10 @@ class ZmSimEventHistory:
         return latest_zm_sim_event
 
     def add_zm_sim_event( self ) -> ZmSimEvent:
-        event_id = self._event_id_allocator()
+        event_id = make_event_id(
+            self._zm_sim_monitor.monitor_id,
+            self._event_id_allocator(),
+        )
         zm_sim_event = ZmSimEvent(
             zm_sim_monitor = self._zm_sim_monitor,
             event_id = event_id,

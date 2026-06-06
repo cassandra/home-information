@@ -6,6 +6,11 @@ import hi.apps.common.datetimeproxy as datetimeproxy
 from hi.apps.common.utils import str_to_bool
 
 from hi.simulator.services.base_models import SimEntityFields, SimState, SimEntityDefinition
+from hi.simulator.video_playback.sim_states import (
+    CameraEventClipState,
+    CameraLiveClipState,
+)
+from hi.simulator.video_playback.video_clip_manager import SYNTHETIC_CLIP_VALUE
 from hi.simulator.services.enums import SimEntityType, SimStateType
 from hi.simulator.services.sim_entity import SimEntity
 
@@ -135,7 +140,23 @@ class ZmSimMonitor:
                 return sim_state
             continue
         raise ValueError( f'No motion sim state for ZM monitor {self.sim_entity}' )
-    
+
+    @property
+    def live_clip(self) -> str:
+        return self._clip_value( CameraLiveClipState )
+
+    @property
+    def event_clip(self) -> str:
+        return self._clip_value( CameraEventClipState )
+
+    def _clip_value(self, sim_state_class) -> str:
+        for sim_state in self.sim_entity.sim_state_list:
+            if isinstance( sim_state, sim_state_class ):
+                return sim_state.value
+            continue
+        return SYNTHETIC_CLIP_VALUE
+
+
     def to_api_dict(self):
         fields = self.sim_entity.sim_entity_fields
 
@@ -421,6 +442,8 @@ ZONEMINDER_SIM_ENTITY_DEFINITION_LIST = [
         sim_state_class_list = [
             ZmMonitorFunctionState,
             ZmMonitorMotionState,
+            CameraLiveClipState,
+            CameraEventClipState,
         ],
     ),
     SimEntityDefinition(

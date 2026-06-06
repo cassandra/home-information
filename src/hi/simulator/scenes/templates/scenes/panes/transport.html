@@ -54,10 +54,11 @@ when the transport signature changes.
         <button type="submit" class="btn btn-sm btn-outline-secondary">Discard</button>
       </form>
     {% else %}
-      {# --- idle: start a recording --- #}
+      {# --- idle: start a new recording (each recording is a new sequence) --- #}
       <form method="post" action="{% url 'simulator_scene_record_start' scene_id=scene.id %}" class="mr-2">
         {% csrf_token %}
-        <button type="submit" class="btn btn-sm btn-danger">● Record</button>
+        <button type="submit" class="btn btn-sm btn-danger"
+                title="Start recording a new sequence">● Record New Sequence</button>
       </form>
     {% endif %}
 

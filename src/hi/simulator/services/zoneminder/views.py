@@ -20,13 +20,27 @@ long-lived streams open against Django's dev server.
 from django.http import HttpResponse, StreamingHttpResponse
 from django.views.generic import View
 
+from hi.simulator.video_playback.video_clip_manager import VideoClipManager
+
 from .simulator import ZoneMinderSimulator
+from .zm_event_history import monitor_id_from_event_id
 from .zm_event_manager import ZmSimEventManager
 from .zm_media import (
     iter_bounded_mjpeg_parts,
+    iter_mjpeg_parts_from_frames,
     mjpeg_content_type,
     render_thumbnail_jpeg,
 )
+
+# Bounded live-feed window (frames) served from a pre-canned clip's current
+# wall-clock position; advances on each reconnect. Keeps the MJPEG short.
+_LIVE_CLIP_FRAME_COUNT = 25
+
+# Inter-frame delay for real-footage MJPEG (live + event), matching the clip's
+# render rate so the streams play at the same speed as clip.mp4 / latest.jpg
+# (the synthesized placeholder stream keeps its own slower, counter-readable
+# cadence).
+_CLIP_FRAME_INTERVAL = 1.0 / VideoClipManager.VIDEO_FPS
 
 
 class HomeView( View ):
@@ -95,6 +109,7 @@ class NphZmsView( View ):
 
     def _monitor_snapshot_response( self, monitor_id_str : str ) -> HttpResponse:
         text_lines = [ 'Monitor Snapshot (simulator)' ]
+        frame_bytes = None
         try:
             monitor_id = int( monitor_id_str )
         except ValueError:
@@ -106,34 +121,32 @@ class NphZmsView( View ):
             if zm_sim_monitor is None:
                 text_lines.append( f'monitor {monitor_id} (no record)' )
             else:
+                frame_bytes = VideoClipManager().live_frame_bytes( zm_sim_monitor.live_clip )
                 text_lines.append( f'monitor: {zm_sim_monitor.name}' )
                 text_lines.append( f'id: {monitor_id}' )
-        response = HttpResponse(
-            render_thumbnail_jpeg( text_lines = text_lines ),
-            content_type = 'image/jpeg',
-        )
+        if frame_bytes is None:
+            frame_bytes = render_thumbnail_jpeg( text_lines = text_lines )
+        response = HttpResponse( frame_bytes, content_type = 'image/jpeg' )
         _apply_no_cache_headers( response )
         return response
 
     def _event_snapshot_response( self, event_id_str : str ) -> HttpResponse:
         text_lines = [ 'Event Snapshot (simulator)' ]
+        frame_bytes = None
         try:
             event_id = int( event_id_str )
         except ValueError:
             text_lines.append( f'unknown event "{event_id_str}"' )
         else:
-            zm_sim_event = ZmSimEventManager().find_event_by_id( event_id = event_id )
-            if zm_sim_event is None:
-                text_lines.append( f'event {event_id} (no record)' )
-            else:
-                text_lines.append(
-                    f'monitor: {zm_sim_event.zm_sim_monitor.name}',
+            zm_sim_monitor = _find_zm_monitor_for_event( event_id )
+            if zm_sim_monitor is not None:
+                frame_bytes = VideoClipManager().event_frame_bytes(
+                    zm_sim_monitor.event_clip,
                 )
-                text_lines.append( f'event id: {event_id}' )
-        response = HttpResponse(
-            render_thumbnail_jpeg( text_lines = text_lines ),
-            content_type = 'image/jpeg',
-        )
+            text_lines.append( f'event id: {event_id}' )
+        if frame_bytes is None:
+            frame_bytes = render_thumbnail_jpeg( text_lines = text_lines )
+        response = HttpResponse( frame_bytes, content_type = 'image/jpeg' )
         _apply_no_cache_headers( response )
         return response
 
@@ -146,14 +159,18 @@ class NphZmsView( View ):
         except ValueError:
             text_lines.append( f'unknown event "{event_id_str}"' )
         else:
-            zm_sim_event = ZmSimEventManager().find_event_by_id( event_id = event_id )
-            if zm_sim_event is None:
-                text_lines.append( f'event {event_id} (no record)' )
-            else:
-                text_lines.append(
-                    f'monitor: {zm_sim_event.zm_sim_monitor.name}',
+            zm_sim_monitor = _find_zm_monitor_for_event( event_id )
+            if ( zm_sim_monitor is not None
+                 and VideoClipManager().has_clip_frames( zm_sim_monitor.event_clip )):
+                # Play the selected event clip's frames as MJPEG.
+                return _streaming_clip_response(
+                    VideoClipManager().clip_frame_iter( zm_sim_monitor.event_clip )
                 )
-                text_lines.append( f'event id: {event_id}' )
+            text_lines.append( f'event id: {event_id}' )
+            # No clip selected — fall back to the synthesized stream, with
+            # event-time interpolation when the event is still in the manager.
+            zm_sim_event = ZmSimEventManager().find_event_by_id( event_id = event_id )
+            if zm_sim_event is not None:
                 playback_start = zm_sim_event.start_datetime
                 # ``length_secs`` is an event-driven value the
                 # simulator updates as the event is closed; it can
@@ -182,6 +199,13 @@ class NphZmsView( View ):
             )
             if zm_sim_monitor is None:
                 text_lines.append( f'monitor {monitor_id} (no record)' )
+            elif VideoClipManager().has_clip_frames( zm_sim_monitor.live_clip ):
+                # Stream a bounded window of the selected live clip's frames.
+                return _streaming_clip_response(
+                    VideoClipManager().live_frame_iter(
+                        zm_sim_monitor.live_clip, _LIVE_CLIP_FRAME_COUNT,
+                    )
+                )
             else:
                 text_lines.append( f'monitor: {zm_sim_monitor.name}' )
                 text_lines.append( f'id: {monitor_id}' )
@@ -215,6 +239,17 @@ def _streaming_mjpeg_response(
     return response
 
 
+def _streaming_clip_response( jpeg_frames ) -> StreamingHttpResponse:
+    """Streaming MJPEG response built from real pre-canned clip frames, with the
+    same cache-busting headers as the synthesized stream."""
+    response = StreamingHttpResponse(
+        iter_mjpeg_parts_from_frames( jpeg_frames, frame_interval = _CLIP_FRAME_INTERVAL ),
+        content_type = mjpeg_content_type(),
+    )
+    _apply_no_cache_headers( response )
+    return response
+
+
 def _apply_no_cache_headers( response ) -> None:
     response['Cache-Control'] = 'no-store, no-cache, must-revalidate, max-age=0'
     response['Pragma'] = 'no-cache'
@@ -222,9 +257,18 @@ def _apply_no_cache_headers( response ) -> None:
     return
 
 
+def _find_zm_monitor_for_event( event_id : int ):
+    """Resolve the monitor for an event-media request from the event id alone
+    (the id encodes the monitor id), independent of the ephemeral event
+    manager. None when no such monitor exists (e.g. a legacy/pre-encoding id)."""
+    monitor_id = monitor_id_from_event_id( event_id )
+    return ZoneMinderSimulator().find_zm_monitor_by_id( monitor_id = monitor_id )
+
+
 def _event_image_response( request ) -> HttpResponse:
     event_id_str = request.GET.get( 'eid' )
     text_lines = [ 'Event Snapshot (simulator)' ]
+    frame_bytes = None
     try:
         event_id = int( event_id_str ) if event_id_str else None
     except ValueError:
@@ -232,15 +276,14 @@ def _event_image_response( request ) -> HttpResponse:
     if event_id is None:
         text_lines.append( f'unknown event "{event_id_str}"' )
     else:
-        zm_sim_event = ZmSimEventManager().find_event_by_id( event_id = event_id )
-        if zm_sim_event is None:
-            text_lines.append( f'event {event_id} (no record)' )
-        else:
-            text_lines.append( f'monitor: {zm_sim_event.zm_sim_monitor.name}' )
-            text_lines.append( f'event id: {event_id}' )
-    response = HttpResponse(
-        render_thumbnail_jpeg( text_lines = text_lines ),
-        content_type = 'image/jpeg',
-    )
+        zm_sim_monitor = _find_zm_monitor_for_event( event_id )
+        if zm_sim_monitor is not None:
+            frame_bytes = VideoClipManager().event_frame_bytes(
+                zm_sim_monitor.event_clip,
+            )
+        text_lines.append( f'event id: {event_id}' )
+    if frame_bytes is None:
+        frame_bytes = render_thumbnail_jpeg( text_lines = text_lines )
+    response = HttpResponse( frame_bytes, content_type = 'image/jpeg' )
     _apply_no_cache_headers( response )
     return response

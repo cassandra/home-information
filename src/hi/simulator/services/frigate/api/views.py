@@ -13,8 +13,10 @@ from django.http import FileResponse, Http404, HttpResponse, JsonResponse
 from django.views.generic import View
 
 from hi.simulator.media import render_jpeg_frame
+from hi.simulator.services.frigate.event_history import camera_name_from_event_id
 from hi.simulator.services.frigate.event_manager import FrigateSimEventManager
 from hi.simulator.services.frigate.simulator import FrigateSimulator
+from hi.simulator.video_playback.video_clip_manager import VideoClipManager
 
 
 # Pre-generated short MP4 (~14 KB, H.264 baseline) ships alongside
@@ -36,6 +38,25 @@ def _apply_no_cache_headers( response ) -> None:
     response[ 'Pragma' ] = 'no-cache'
     response[ 'Expires' ] = '0'
     return
+
+
+def _find_sim_camera( camera_name : str ):
+    for sim_camera in FrigateSimulator().get_sim_cameras():
+        if sim_camera.camera_name == camera_name:
+            return sim_camera
+        continue
+    return None
+
+
+def _find_sim_camera_for_event( event_id : str ):
+    """Resolve the camera for an event-media request from the event id alone
+    (the id encodes the camera name), so it works even for historical events
+    the ephemeral event manager no longer holds. None when the id predates the
+    camera-encoded format or the camera no longer exists."""
+    camera_name = camera_name_from_event_id( event_id )
+    if camera_name is None:
+        return None
+    return _find_sim_camera( camera_name = camera_name )
 
 
 class ConfigView( View ):
@@ -125,45 +146,49 @@ class CameraLatestJpegView( View ):
     inside HI are obviously coming from the simulator."""
 
     def get(self, request, camera_name : str, *args, **kwargs):
-        text_lines = [ 'Live Snapshot (simulator)' ]
-        sim_camera = self._find_sim_camera( camera_name = camera_name )
-        if sim_camera is None:
-            text_lines.append( f'camera "{camera_name}" (no record)' )
-        else:
-            text_lines.append( f'camera: {sim_camera.display_name}' )
-            text_lines.append( f'name: {sim_camera.camera_name}' )
-        response = HttpResponse(
-            render_jpeg_frame( text_lines = text_lines ),
-            content_type = 'image/jpeg',
-        )
+        sim_camera = _find_sim_camera( camera_name = camera_name )
+
+        # Serve a frame from the selected live clip; fall through to the
+        # synthesized placeholder when "synthetic" (or the clip is missing).
+        frame_bytes = None
+        if sim_camera is not None:
+            frame_bytes = VideoClipManager().live_frame_bytes( sim_camera.live_clip )
+        if frame_bytes is None:
+            text_lines = [ 'Live Snapshot (simulator)' ]
+            if sim_camera is None:
+                text_lines.append( f'camera "{camera_name}" (no record)' )
+            else:
+                text_lines.append( f'camera: {sim_camera.display_name}' )
+                text_lines.append( f'name: {sim_camera.camera_name}' )
+            frame_bytes = render_jpeg_frame( text_lines = text_lines )
+
+        response = HttpResponse( frame_bytes, content_type = 'image/jpeg' )
         _apply_no_cache_headers( response )
         return response
-
-    @staticmethod
-    def _find_sim_camera( camera_name : str ):
-        for sim_camera in FrigateSimulator().get_sim_cameras():
-            if sim_camera.camera_name == camera_name:
-                return sim_camera
-            continue
-        return None
 
 
 class EventClipMp4View( View ):
     """``GET /api/events/<id>/clip.mp4`` — event clip playback.
 
-    Real Frigate streams an MP4 of the event's clip. The simulator
-    serves a fixed-content placeholder MP4 (frame-counter + clock
-    overlay) so HI's Video Browse can demonstrate the round-trip
-    without runtime media synthesis. 404s for unknown event ids."""
+    Serves the pre-rendered ``clip.mp4`` of the event camera's selected
+    ``event_clip`` (built offline by the import tool — no runtime transcoding).
+    Falls back to the fixed-content placeholder MP4 when the clip has no mp4,
+    the selection is ``synthetic``, or the event is unknown.
+
+    Unknown event ids are NOT 404'd: HI history/alarms persist and can
+    reference events the (ephemeral, in-memory) simulator no longer has after
+    a restart, and a 404 here renders as an unplayable ``<video>`` ("No video
+    with supported format")."""
 
     def get(self, request, event_id : str, *args, **kwargs):
-        event = FrigateSimEventManager().find_event_by_id( event_id = event_id )
-        if event is None:
-            raise Http404( f'Unknown Frigate event id: {event_id!r}' )
-        response = FileResponse(
-            open( _EVENT_PLAYBACK_MP4_PATH, 'rb' ),
-            content_type = 'video/mp4',
-        )
+        mp4_path = None
+        sim_camera = _find_sim_camera_for_event( event_id )
+        if sim_camera is not None:
+            mp4_path = VideoClipManager().clip_mp4_path( sim_camera.event_clip )
+        if mp4_path is None:
+            mp4_path = _EVENT_PLAYBACK_MP4_PATH
+
+        response = FileResponse( open( mp4_path, 'rb' ), content_type = 'video/mp4' )
         _apply_no_cache_headers( response )
         return response
 
@@ -175,26 +200,25 @@ class EventSnapshotJpegView( View ):
     detection. HI's Frigate gateway builds this URL on demand from
     the event id (the SensorResponse carries the existence flag
     ``has_event_video_snapshot``) so the alert / history views can
-    show what the camera saw. The simulator returns a placeholder
-    JPEG stamped with the event id and label.
+    show what the camera saw.
 
-    404s for unknown event ids so the HI client distinguishes "event
-    missing" from "simulator broken" — same posture as ``GET
-    /api/events/<id>``."""
+    Unknown event ids are NOT 404'd (a 404 renders as a broken ``<img>``):
+    HI history/alarms persist and can reference events the (ephemeral,
+    in-memory) simulator no longer has after a restart. Serve the event
+    camera's selected event-clip frame when the event is known; otherwise a
+    placeholder."""
 
     def get(self, request, event_id : str, *args, **kwargs):
-        event = FrigateSimEventManager().find_event_by_id( event_id = event_id )
-        if event is None:
-            raise Http404( f'Unknown Frigate event id: {event_id!r}' )
-        text_lines = [
-            'Event Snapshot (simulator)',
-            f'camera: {event.camera_name}',
-            f'event id: {event.event_id}',
-            f'label: {event.label}',
-        ]
-        response = HttpResponse(
-            render_jpeg_frame( text_lines = text_lines ),
-            content_type = 'image/jpeg',
-        )
+        frame_bytes = None
+        sim_camera = _find_sim_camera_for_event( event_id )
+        if sim_camera is not None:
+            frame_bytes = VideoClipManager().event_frame_bytes( sim_camera.event_clip )
+        if frame_bytes is None:
+            frame_bytes = render_jpeg_frame( text_lines = [
+                'Event Snapshot (simulator)',
+                f'event id: {event_id}',
+            ] )
+
+        response = HttpResponse( frame_bytes, content_type = 'image/jpeg' )
         _apply_no_cache_headers( response )
         return response

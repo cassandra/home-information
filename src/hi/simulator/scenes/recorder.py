@@ -137,6 +137,7 @@ class SimRecorder( Singleton ):
             self.discard()
             return None
         name = ( name or '' ).strip() or self._auto_name( scene )
+        name = self._unique_name( scene, name )
         sequence = SimStateSequence.objects.create(
             scene = scene,
             name = name,
@@ -159,3 +160,16 @@ class SimRecorder( Singleton ):
 
     def _auto_name( self, scene : SimScene ) -> str:
         return f'Sequence {scene.state_sequences.count() + 1}'
+
+    def _unique_name( self, scene : SimScene, name : str ) -> str:
+        """Append a numeric suffix when the name is already used in the scene,
+        so a save never collides with the (scene, name) unique constraint (a
+        duplicate name previously raised IntegrityError). Quick capture action
+        — uniquify rather than block; the operator can rename afterward."""
+        if not scene.state_sequences.filter( name = name ).exists():
+            return name
+        index = 2
+        while scene.state_sequences.filter( name = f'{name} ({index})' ).exists():
+            index += 1
+            continue
+        return f'{name} ({index})'

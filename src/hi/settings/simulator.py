@@ -17,6 +17,7 @@ INSTALLED_APPS = [
     'hi.simulator.profile',
     'hi.simulator.services',
     'hi.simulator.scenes',
+    'hi.simulator.video_playback',
     'hi.simulator.weather_sources',
     'hi.simulator.settings',
     'hi.simulator.services.frigate',
@@ -71,3 +72,10 @@ DATABASES = {
         'NAME': os.path.join( ENV.DATABASES_NAME_PATH, 'simulator.sqlite3' ),
     }
 }
+
+
+# Well-known directory of pre-canned camera clips. Each immediate subdirectory
+# is a clip; its alphabetically-ordered ``*.jpg`` files are the frames. The
+# subdirectory names become the camera ``live_clip`` / ``event_clip`` choices
+# (scanned once at startup). Restart the simulator to pick up new clips.
+SIMULATOR_VIDEO_DIR = str( BASE_DIR.parent.parent / 'data' / 'demo' / 'videos' )

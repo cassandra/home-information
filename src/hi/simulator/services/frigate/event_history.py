@@ -3,6 +3,7 @@
 Per-camera ring buffer of events. Events are synthesized from the
 operator's ObjectPresence sim-state changes — no DB row, no CRUD UI.
 """
+import re
 from collections import deque
 from datetime import datetime
 from typing import Callable, List, Optional
@@ -10,6 +11,25 @@ from typing import Callable, List, Optional
 import hi.apps.common.datetimeproxy as datetimeproxy
 
 from .sim_models import FrigateSimCamera, FrigateSimEvent
+
+
+# Simulator event ids encode the camera name so the event-media endpoints
+# (clip.mp4 / snapshot.jpg) — which receive only an event id — can resolve the
+# camera, and thus its selected clip, even for historical events the ephemeral
+# in-memory manager no longer holds (e.g. after a restart). Real Frigate ids
+# are opaque, so any unique, URL-safe format is fine. Format is
+# ``<camera_name>-<sequence>``; decoding peels the trailing ``-<digits>``, so a
+# camera name containing ``-`` (or even a trailing ``-<digits>``) round-trips.
+_EVENT_ID_RE = re.compile( r'^(?P<camera_name>.+)-(?P<sequence>\d+)$' )
+
+
+def make_event_id( camera_name : str, sequence : str ) -> str:
+    return f'{camera_name}-{sequence}'
+
+
+def camera_name_from_event_id( event_id : str ) -> Optional[ str ]:
+    match = _EVENT_ID_RE.match( event_id or '' )
+    return match.group( 'camera_name' ) if match else None
 
 
 class FrigateSimEventHistory:
@@ -65,7 +85,10 @@ class FrigateSimEventHistory:
 
     def _open_event( self, object_label : str ) -> FrigateSimEvent:
         event = FrigateSimEvent(
-            event_id = self._event_id_allocator(),
+            event_id = make_event_id(
+                self._frigate_sim_camera.camera_name,
+                self._event_id_allocator(),
+            ),
             camera_name = self._frigate_sim_camera.camera_name,
             label = object_label,
             start_datetime = datetimeproxy.now(),

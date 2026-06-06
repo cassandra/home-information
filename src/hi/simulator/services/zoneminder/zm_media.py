@@ -67,6 +67,32 @@ def mjpeg_content_type() -> str:
     )
 
 
+def _mjpeg_part( jpeg_bytes : bytes ) -> bytes:
+    """One ``multipart/x-mixed-replace`` chunk wrapping a JPEG frame."""
+    return (
+        b'--' + _MJPEG_BOUNDARY + b'\r\n'
+        + b'Content-Type: image/jpeg\r\n'
+        + f'Content-Length: {len(jpeg_bytes)}\r\n\r\n'.encode( 'latin-1' )
+        + jpeg_bytes
+        + b'\r\n'
+    )
+
+
+def iter_mjpeg_parts_from_frames(
+        jpeg_frames    : Iterator[ bytes ],
+        frame_interval : float             = _DEFAULT_FRAME_INTERVAL_SECS,
+) -> Iterator[ bytes ]:
+    """Bounded MJPEG from pre-rendered JPEG frames (real pre-canned footage),
+    sleeping between frames so the browser animates rather than collapsing to
+    the last frame. Mirrors ``iter_bounded_mjpeg_parts`` but serves given
+    frames instead of synthesized placeholders."""
+    for jpeg_bytes in jpeg_frames:
+        yield _mjpeg_part( jpeg_bytes )
+        time.sleep( frame_interval )
+        continue
+    yield b'--' + _MJPEG_BOUNDARY + b'--\r\n'
+
+
 def iter_bounded_mjpeg_parts(
         text_lines           : List[str],
         frame_count          : int               = _DEFAULT_FRAME_COUNT,
@@ -92,7 +118,6 @@ def iter_bounded_mjpeg_parts(
     closes naturally after the last frame so we don't hold an
     open-ended live feed against the Django dev server.
     """
-    boundary = _MJPEG_BOUNDARY
     for index in range( frame_count ):
         frame_text = list( text_lines ) + [
             f'frame {index + 1}/{frame_count}',
@@ -106,20 +131,14 @@ def iter_bounded_mjpeg_parts(
                 frame_count = frame_count,
             ),
         )
-        part = (
-            b'--' + boundary + b'\r\n'
-            + b'Content-Type: image/jpeg\r\n'
-            + f'Content-Length: {len(jpeg_bytes)}\r\n\r\n'.encode( 'latin-1' )
-            + jpeg_bytes
-            + b'\r\n'
-        )
-        yield part
+        yield _mjpeg_part( jpeg_bytes )
         # Sleep AFTER yielding the frame so the browser sees a
         # cadence between frames; the final frame still gets
         # displayed for ``frame_interval`` before the closing
         # boundary tells the browser the stream has ended.
         time.sleep( frame_interval )
-    yield b'--' + boundary + b'--\r\n'
+        continue
+    yield b'--' + _MJPEG_BOUNDARY + b'--\r\n'
 
 
 def _interpolated_frame_time(
