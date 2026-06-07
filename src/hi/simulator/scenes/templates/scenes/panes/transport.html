@@ -78,6 +78,12 @@ when the transport signature changes.
         </div>
       </div>
       {% if selected_sequence %}
+      <span class="badge {% if initial_state_count %}badge-info{% else %}badge-light{% endif %} mr-2"
+            title="Captured initial state applied after the scene baseline on load / Apply Scene">
+        Initial: {% if initial_state_count %}{{ initial_state_count }}{% else %}—{% endif %}
+      </span>
+      {% endif %}
+      {% if selected_sequence %}
         {% if player_status.playing %}
         <form method="post" action="{% url 'simulator_scene_pause' scene_id=scene.id %}" class="mr-1">
           {% csrf_token %}
@@ -112,6 +118,24 @@ when the transport signature changes.
         </form>
         {% else %}
         <span class="border-left mr-2" style="height: 1.6rem;"></span>
+        <form method="post" action="{% url 'simulator_sequence_set_initial' sequence_id=selected_sequence.id %}" class="mr-1">
+          {% csrf_token %}
+          <button type="submit" class="btn btn-sm btn-outline-info"
+                  title="Snapshot all currently-loaded sim states as this sequence's initial-state overlay"
+                  onclick="return confirm('Snapshot all current sim states as initial state for ‘{{ selected_sequence.name|escapejs }}’?{% if initial_state_count %}\n\nThis replaces the existing snapshot ({{ initial_state_count }} entries).{% endif %}');">
+            Set As Initial
+          </button>
+        </form>
+        {% if initial_state_count %}
+        <form method="post" action="{% url 'simulator_sequence_clear_initial' sequence_id=selected_sequence.id %}" class="mr-1">
+          {% csrf_token %}
+          <button type="submit" class="btn btn-sm btn-outline-secondary"
+                  title="Wipe this sequence's initial-state overlay"
+                  onclick="return confirm('Clear the initial-state snapshot for ‘{{ selected_sequence.name|escapejs }}’?');">
+            Clear Initial
+          </button>
+        </form>
+        {% endif %}
         <a class="btn btn-sm btn-outline-secondary mr-1" data-async="modal"
            href="{% url 'simulator_sequence_edit' scene_id=scene.id sequence_id=selected_sequence.id %}"
            title="Rename / edit JSON">{% icon "edit" size="sm" %}</a>

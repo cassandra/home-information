@@ -20,6 +20,7 @@ from .player import SimPlayer
 from .recorder import SimRecorder
 from .scene_controller import SceneController
 from .control_grid import control_key, resolve_control, simulator_by_module, split_control_key
+from .initial_state import apply_initial_state, capture_current_state
 from .sequence_io import parse_steps, safe_filename
 from .transport import build_transport_context, transport_signature
 
@@ -140,10 +141,24 @@ class SceneDeleteView( View ):
 
 
 class SceneApplyView( View ):
+    """Apply the scene's profile bindings (clean baseline). If a sequence
+    is currently selected, overlay its captured initial state on top so the
+    operator lands at the sequence's intended starting point in one click."""
+
     def post( self, request, scene_id, *args, **kwargs ):
         scene = _get_scene( scene_id )
         SceneController().apply( scene )
-        return _scenes_redirect( scene.id )
+        sequence_id = request.POST.get( 'sequence' )
+        if sequence_id:
+            try:
+                sequence = SimStateSequence.objects.get(
+                    id = int( sequence_id ), scene_id = scene.id,
+                )
+            except ( ValueError, SimStateSequence.DoesNotExist ):
+                sequence = None
+            if sequence is not None:
+                apply_initial_state( sequence.initial_state_json or [] )
+        return _scenes_redirect( scene.id, sequence_id or None )
 
 
 class SceneOffView( View ):
@@ -391,6 +406,35 @@ class SequenceDeleteView( View ):
         scene_id = sequence.scene_id
         sequence.delete()
         return _scenes_redirect( scene_id )
+
+
+class SequenceSetInitialView( View ):
+    """Snapshot all currently-loaded sim states and save them as the
+    sequence's initial-state overlay. Refreshes the page so the operator
+    sees the updated count badge in the transport pane."""
+
+    def post( self, request, sequence_id, *args, **kwargs ):
+        try:
+            sequence = SimStateSequence.objects.get( id = sequence_id )
+        except SimStateSequence.DoesNotExist:
+            raise Http404( 'Sequence not found.' )
+        sequence.initial_state_json = capture_current_state()
+        sequence.save( update_fields = [ 'initial_state_json', 'updated_datetime' ] )
+        return _scenes_redirect( sequence.scene_id, sequence.id )
+
+
+class SequenceClearInitialView( View ):
+    """Wipe the sequence's initial-state overlay so it loads against pure
+    profile baseline."""
+
+    def post( self, request, sequence_id, *args, **kwargs ):
+        try:
+            sequence = SimStateSequence.objects.get( id = sequence_id )
+        except SimStateSequence.DoesNotExist:
+            raise Http404( 'Sequence not found.' )
+        sequence.initial_state_json = []
+        sequence.save( update_fields = [ 'initial_state_json', 'updated_datetime' ] )
+        return _scenes_redirect( sequence.scene_id, sequence.id )
 
 
 class SceneSequenceEditView( View ):

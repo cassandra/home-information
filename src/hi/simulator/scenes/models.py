@@ -119,6 +119,10 @@ class SimStateSequence( models.Model ):
         'Steps',
         default = list,
     )
+    initial_state_json = models.JSONField(
+        'Initial State',
+        default = list,
+    )
     created_datetime = models.DateTimeField(
         'Created',
         auto_now_add = True,

@@ -26,8 +26,10 @@ def build_transport_context( scene, sequence_param ):
     selected_sequence = _resolve_sequence( sequence_param, sequence_list )
     player_status = SimPlayer().get_status()
     timeline = None
+    initial_state_count = 0
     if selected_sequence is not None:
         timeline = timeline_model( selected_sequence, player_status )
+        initial_state_count = len( selected_sequence.initial_state_json or [] )
     return {
         'scene': scene,
         'sequence_list': sequence_list,
@@ -35,6 +37,7 @@ def build_transport_context( scene, sequence_param ):
         'recorder_status': SimRecorder().get_status(),
         'player_status': player_status,
         'timeline': timeline,
+        'initial_state_count': initial_state_count,
     }
 
 

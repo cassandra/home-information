@@ -40,7 +40,13 @@
     <span class="border-left mr-2 mb-1" style="height: 1.6rem;"></span>
     <form method="post" action="{% url 'simulator_scene_apply' scene_id=scene.id %}" class="mr-1 mb-1">
       {% csrf_token %}
-      <button type="submit" class="btn btn-sm btn-primary">Apply Scene</button>
+      {% if selected_sequence %}
+      <input type="hidden" name="sequence" value="{{ selected_sequence.id }}">
+      {% endif %}
+      <button type="submit" class="btn btn-sm btn-primary"
+              {% if selected_sequence and initial_state_count %}title="Applies scene baseline, then overlays the selected sequence's {{ initial_state_count }}-entry initial state"{% endif %}>
+        Apply Scene
+      </button>
     </form>
     <form method="post" action="{% url 'simulator_scene_off' %}" class="mr-1 mb-1">
       {% csrf_token %}

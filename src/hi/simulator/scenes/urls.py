@@ -92,6 +92,14 @@ urlpatterns = [
           views.SequenceDeleteView.as_view(),
           name = 'simulator_sequence_delete' ),
 
+    path( 'sequence/<int:sequence_id>/initial/set',
+          views.SequenceSetInitialView.as_view(),
+          name = 'simulator_sequence_set_initial' ),
+
+    path( 'sequence/<int:sequence_id>/initial/clear',
+          views.SequenceClearInitialView.as_view(),
+          name = 'simulator_sequence_clear_initial' ),
+
     path( '<int:scene_id>/sequence/<int:sequence_id>/edit',
           views.SceneSequenceEditView.as_view(),
           name = 'simulator_sequence_edit' ),

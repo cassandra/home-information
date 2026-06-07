@@ -26,6 +26,7 @@ from django import db
 from hi.apps.common.singleton import Singleton
 from hi.simulator.services.service_simulator_manager import ServiceSimulatorManager
 
+from .initial_state import apply_initial_state
 from .models import SimStateSequence
 from .scene_controller import SceneController
 
@@ -128,6 +129,7 @@ class SimPlayer( Singleton ):
         self._cancel_and_join()
         if self._load_if_needed( sequence ):
             SceneController().apply( sequence.scene )
+            self._apply_initial_state_locked( sequence )
         self._start_thread( stepping = False )
         return
 
@@ -135,6 +137,7 @@ class SimPlayer( Singleton ):
         self._cancel_and_join()
         if self._load_if_needed( sequence ):
             SceneController().apply( sequence.scene )
+            self._apply_initial_state_locked( sequence )
         self._start_thread( stepping = True )
         return
 
@@ -163,6 +166,7 @@ class SimPlayer( Singleton ):
         self._load_if_needed( sequence )
         # Seeking (incl. backward) always rebuilds from the baseline.
         SceneController().apply( sequence.scene )
+        self._apply_initial_state_locked( sequence )
         simulator_by_module = self._simulator_by_module()
         misses : List[ dict ] = []
         with self._lock:
@@ -297,6 +301,16 @@ class SimPlayer( Singleton ):
             data.simulator.module_key: data.simulator
             for data in ServiceSimulatorManager().get_simulator_data_list()
         }
+
+    def _apply_initial_state_locked( self, sequence : SimStateSequence ):
+        """Overlay the sequence's captured initial state onto the just-applied
+        scene baseline. Misses (unloaded entities) are merged into the player's
+        miss list so the transport surfaces them like step misses."""
+        misses = apply_initial_state( sequence.initial_state_json or [] )
+        if misses:
+            with self._lock:
+                self._misses.extend( misses )
+        return
 
     def _apply_step( self, step, simulator_by_module, misses ):
         module_key = step.get( 'module' )
