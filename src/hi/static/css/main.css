@@ -105,7 +105,7 @@
      on screen instead of overflowing to ~2x the height. The two named
      tokens are the menu of sizes; --hi-video-max-height is the active one,
      defaulting to standard and re-pointed to compact by .hi-video-compact. */
-  --hi-video-max-height-standard: 80vh;
+  --hi-video-max-height-standard: 60vh;
   --hi-video-max-height-compact: 40vh;
   --hi-video-max-height: var(--hi-video-max-height-standard);
 
