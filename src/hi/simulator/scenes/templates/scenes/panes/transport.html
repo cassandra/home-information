@@ -56,8 +56,13 @@ when the transport signature changes.
       {# --- idle: start a new recording (each recording is a new sequence) --- #}
       <form method="post" action="{% url 'simulator_scene_record_start' scene_id=scene.id %}" class="mr-2">
         {% csrf_token %}
+        {% if selected_sequence %}
+        <input type="hidden" name="sequence" value="{{ selected_sequence.id }}">
+        {% endif %}
         <button type="submit" class="btn btn-sm btn-danger"
-                title="Start recording a new sequence">● Record New Sequence</button>
+                {% if selected_sequence and initial_state_count %}title="Applies scene baseline + ‘{{ selected_sequence.name|escapejs }}’ initial state ({{ initial_state_count }}), then starts recording"{% else %}title="Start recording a new sequence"{% endif %}>
+          ● Record New Sequence
+        </button>
       </form>
     {% endif %}
 

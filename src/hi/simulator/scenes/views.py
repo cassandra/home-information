@@ -308,13 +308,25 @@ class SceneEditStatesView( View ):
 class SceneRecordStartView( View ):
     """Apply the scene's clean baseline, then start recording so the
     captured sequence is reproducible (playback applies the same baseline
-    before replaying steps)."""
+    before replaying steps). If a sequence is currently selected, overlay
+    its captured initial state too — re-records of a beat sequence start
+    from the same starting world the playback would."""
 
     def post( self, request, scene_id, *args, **kwargs ):
         scene = _get_scene( scene_id )
         SceneController().apply( scene )
+        sequence_id = request.POST.get( 'sequence' )
+        if sequence_id:
+            try:
+                sequence = SimStateSequence.objects.get(
+                    id = int( sequence_id ), scene_id = scene.id,
+                )
+            except ( ValueError, SimStateSequence.DoesNotExist ):
+                sequence = None
+            if sequence is not None:
+                apply_initial_state( sequence.initial_state_json or [] )
         SimRecorder().start( scene )
-        return _scenes_redirect( scene.id )
+        return _scenes_redirect( scene.id, sequence_id or None )
 
 
 class SceneStopView( View ):
