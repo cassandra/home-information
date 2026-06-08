@@ -14,8 +14,10 @@ from hi.apps.collection.edit.views import (
     CollectionReorder,
     CollectionReorderEntitiesView,
 )
+import hi.apps.common.antinode as antinode
 from hi.apps.control.models import Controller
 from hi.apps.entity.models import EntityState
+from hi.apps.entity.view_mixins import EntityViewMixin
 from hi.apps.location.edit.views import (
     LocationViewManageItemsView,
     LocationViewReorder,
@@ -25,6 +27,8 @@ from hi.apps.profiles.session_helpers import mark_edit_mode_entry
 from hi.decorators import edit_required
 from hi.enums import ItemType, ViewMode
 from hi.hi_async_view import HiSideView
+
+from .entity_membership import EntityViewMembership
 
 
 logger = logging.getLogger(__name__)
@@ -186,3 +190,28 @@ class EntityStateValueChoicesView( View ):
 
         return HttpResponse( json.dumps( entity_state.choices() ),
                              content_type='application/json' )
+
+
+@method_decorator( edit_required, name = 'dispatch' )
+class EntityViewMembershipToggleView( View, EntityViewMixin ):
+    """Toggle an entity in/out of the active LocationView or Collection
+    from the entity edit sidebar.
+
+    Cross-cutting (entity <-> location/collection), so it lives in the edit
+    app and delegates the container-specific work to ``EntityViewMembership``
+    -- no branching here on view type.
+
+    Responds with a full-page refresh. The current URL already carries the
+    live pan/zoom (kept in sync by svg-entity-edit.js via replaceState) and
+    the open entity editor (the ``details`` param), so reloading restores
+    both the view box and the editing context -- the flipped add/remove
+    control included. A partial re-render would instead snap the canvas back
+    to the LocationView's stored geometry."""
+
+    def post( self, request, *args, **kwargs ):
+        entity = self.get_entity( request, *args, **kwargs )
+        membership = EntityViewMembership.for_request( request )
+        if membership is None:
+            raise BadRequest( 'No active view or collection to modify.' )
+        membership.toggle( entity = entity )
+        return antinode.refresh_response()

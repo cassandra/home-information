@@ -90,7 +90,7 @@ class EntityEditModeData:
             self.entity_form = EntityForm(
                 instance = self.entity,
             )
-    
+
     def to_template_context(self):
         return {
             'entity': self.entity,

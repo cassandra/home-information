@@ -18,11 +18,15 @@ urlpatterns = [
           views.ReorderItemsView.as_view(), 
           name='edit_reorder_items' ),
 
-    path( 'item/details/close', 
-          views.ItemDetailsCloseView.as_view(), 
+    path( 'item/details/close',
+          views.ItemDetailsCloseView.as_view(),
           name='edit_item_details_close' ),
 
-    re_path( r'^entity/state/values/(?P<instance_name>\w+)/(?P<instance_id>\d+)$', 
+    path( 'entity/view-membership/toggle/<int:entity_id>',
+          views.EntityViewMembershipToggleView.as_view(),
+          name='edit_entity_view_membership_toggle' ),
+
+    re_path( r'^entity/state/values/(?P<instance_name>\w+)/(?P<instance_id>\d+)$',
              views.EntityStateValueChoicesView.as_view(), 
              name='edit_entity_state_value_choices' ),
     
