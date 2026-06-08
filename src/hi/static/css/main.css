@@ -109,6 +109,13 @@
   --hi-video-max-height-compact: 40vh;
   --hi-video-max-height: var(--hi-video-max-height-standard);
 
+  /* Ceiling for the hi_grid side panel width. Its content is designed for
+     a narrow column and looks sparse past this, so on wide screens the
+     side clamps here and MAIN reclaims the freed width. A no-op on
+     small/medium screens, where the Bootstrap col-3 (25%) is already
+     narrower than this. */
+  --hi-side-max-width: 375px;
+
   /* Letterbox/backdrop fill behind a video that doesn't fill its container
      (e.g. a portrait clip in a landscape pane). A very dark, lightly
      teal-tinted neutral — softer than pure black and cohesive with
@@ -575,6 +582,10 @@ a.clickable-card:active {
 .hi-side {
     padding-left: 0;
     padding-right: 0;
+    /* Clamp to min(col-3 25%, --hi-side-max-width): the cap only engages
+       on wide screens; below it the 25% flex-basis governs unchanged.
+       Paired with .scrollable-column flex-grow so MAIN reclaims the gap. */
+    max-width: var(--hi-side-max-width);
 }
 #hi-side-content {
     height: calc(100vh - var(--top-buttons-height) - var(--bottom-buttons-height));
@@ -625,6 +636,11 @@ a.clickable-card:active {
     max-height: 100vh;
     padding-top: var(--top-buttons-height);
     padding-bottom: var(--bottom-buttons-height);
+    /* Grow past the col-9 75% to absorb the width freed when .hi-side is
+       clamped on wide screens; no free space exists below the clamp, so
+       this is a no-op there. */
+    flex-grow: 1;
+    max-width: none;
 }
 .fixed-column {
     overflow-y: auto;
