@@ -2434,30 +2434,30 @@ _THERMOSTAT_HVAC_ACTION_CHOICES = [
 # checkbox pickers in the simulator edit form (via the ``csv_choices`` hook);
 # the dataclass fields stay plain lists of the selected wire values.
 HASS_HVAC_MODE_CHOICES = [
-    ( 'off',       'Off' ),
-    ( 'heat',      'Heat' ),
-    ( 'cool',      'Cool' ),
+    ( 'off', 'Off' ),
+    ( 'heat', 'Heat' ),
+    ( 'cool', 'Cool' ),
     ( 'heat_cool', 'Heat/Cool' ),
-    ( 'auto',      'Auto' ),
-    ( 'dry',       'Dry' ),
-    ( 'fan_only',  'Fan only' ),
+    ( 'auto', 'Auto' ),
+    ( 'dry', 'Dry' ),
+    ( 'fan_only', 'Fan only' ),
 ]
 HASS_FAN_MODE_CHOICES = [
-    ( 'auto',   'Auto' ),
-    ( 'low',    'Low' ),
+    ( 'auto', 'Auto' ),
+    ( 'low', 'Low' ),
     ( 'medium', 'Medium' ),
-    ( 'high',   'High' ),
-    ( 'on',     'On' ),
-    ( 'off',    'Off' ),
+    ( 'high', 'High' ),
+    ( 'on', 'On' ),
+    ( 'off', 'Off' ),
 ]
 HASS_PRESET_MODE_CHOICES = [
-    ( 'none',     'None' ),
-    ( 'eco',      'Eco' ),
-    ( 'away',     'Away' ),
-    ( 'home',     'Home' ),
-    ( 'sleep',    'Sleep' ),
-    ( 'comfort',  'Comfort' ),
-    ( 'boost',    'Boost' ),
+    ( 'none', 'None' ),
+    ( 'eco', 'Eco' ),
+    ( 'away', 'Away' ),
+    ( 'home', 'Home' ),
+    ( 'sleep', 'Sleep' ),
+    ( 'comfort', 'Comfort' ),
+    ( 'boost', 'Boost' ),
     ( 'activity', 'Activity' ),
 ]
 
