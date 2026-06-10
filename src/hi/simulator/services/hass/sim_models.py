@@ -1554,6 +1554,114 @@ class HassOpeningSensorState( HassState ):
 
 
 # --------------------------------------------------------------------------
+# Command Line Sensor (free-form string output)
+# --------------------------------------------------------------------------
+#
+# HA's ``command_line`` integration creates a ``sensor.x`` whose state is
+# whatever string the configured shell command emits to stdout (trimmed).
+# Typical homelab uses: RAID health check via SSH (``OK`` / ``Degraded`` /
+# ``Failed``), WAN IP lookup (``checkip.amazonaws.com``), certificate
+# expiry days, disk-space percentage, etc.
+#
+# The simulator represents this as a single TEXT state — the operator
+# types whatever string the command would have produced. ``icon`` is
+# operator-configurable since the YAML allows it per-sensor (e.g.,
+# ``mdi:harddisk`` for RAID, ``mdi:ip-network`` for WAN address).
+
+
+@dataclass( frozen = True )
+class HassCommandLineSensorFields( SimEntityFields ):
+    """Free-form ``sensor.x`` whose state is whatever string the
+    operator types in the simulator UI — mirrors HA's
+    ``command_line`` sensor (state = command stdout). ``icon`` and
+    ``unit_of_measurement`` are pass-through to the emitted
+    attributes."""
+    icon                : str = 'mdi:console-line'
+    unit_of_measurement : str = ''
+
+
+@dataclass
+class HassCommandLineSensorState( HassState ):
+    sim_entity_fields  : HassCommandLineSensorFields
+    sim_state_type     : SimStateType                  = SimStateType.TEXT
+    sim_state_id       : str                           = 'output'
+    value              : str                           = 'OK'
+
+    @property
+    def name(self):
+        return f'{self.entity_name} Output'
+
+    @property
+    def entity_id(self):
+        return _sensor_entity_id( self.entity_name )
+
+    @property
+    def state(self):
+        # HA emits the command's stdout as the entity's state
+        # (string-typed). No coercion — pass through as-is.
+        return self.value
+
+    @property
+    def attributes(self) -> Dict[ str, str ]:
+        attrs = {
+            'friendly_name': self.entity_name,
+            'icon': self.sim_entity_fields.icon,
+        }
+        if self.sim_entity_fields.unit_of_measurement:
+            attrs[ 'unit_of_measurement' ] = self.sim_entity_fields.unit_of_measurement
+        return attrs
+
+
+# --------------------------------------------------------------------------
+# Ping (ICMP) connectivity sensor
+# --------------------------------------------------------------------------
+#
+# HA's Ping integration creates one ``binary_sensor.X`` per host with
+# ``device_class=connectivity``. ``'on'`` means the host is reachable,
+# ``'off'`` means unreachable (HA's connectivity convention). The
+# ``host`` field carries the IP/hostname being pinged, emitted as an
+# entity attribute so HI can surface it on the device tile. Common
+# homelab use: tracking up/down for servers, NAS, routers, APs.
+
+
+@dataclass( frozen = True )
+class HassPingFields( SimEntityFields ):
+    """A Ping (ICMP) connectivity sensor — single binary_sensor with
+    ``device_class=connectivity``. ``host`` is the target being
+    pinged (informational; emitted as the ``host`` attribute)."""
+    host : str = '192.168.1.1'
+
+
+@dataclass
+class HassPingState( HassState ):
+    sim_entity_fields  : HassPingFields
+    sim_state_type     : SimStateType                  = SimStateType.CONNECTIVITY
+    sim_state_id       : str                           = 'ping'
+    value              : str                           = 'on'
+
+    @property
+    def name(self):
+        return f'{self.entity_name} Ping'
+
+    @property
+    def entity_id(self):
+        return _binary_sensor_entity_id( self.entity_name )
+
+    @property
+    def state(self):
+        return 'on' if str_to_bool( self.value ) else 'off'
+
+    @property
+    def attributes(self) -> Dict[ str, str ]:
+        return {
+            'device_class': 'connectivity',
+            'friendly_name': self.entity_name,
+            'host': self.sim_entity_fields.host,
+            'icon': 'mdi:lan-connect',
+        }
+
+
+# --------------------------------------------------------------------------
 # Power meter (numeric ``sensor.x`` with ``device_class=power``)
 # --------------------------------------------------------------------------
 
@@ -3267,6 +3375,22 @@ HASS_SIM_ENTITY_DEFINITION_LIST = [
         sim_entity_fields_class = HassOpeningSensorFields,
         sim_state_class_list = [
             HassOpeningSensorState,
+        ],
+    ),
+    SimEntityDefinition(
+        class_label = 'Command Line Sensor',
+        sim_entity_type = SimEntityType.HEALTHCHECK,
+        sim_entity_fields_class = HassCommandLineSensorFields,
+        sim_state_class_list = [
+            HassCommandLineSensorState,
+        ],
+    ),
+    SimEntityDefinition(
+        class_label = 'Ping (ICMP)',
+        sim_entity_type = SimEntityType.COMPUTER,
+        sim_entity_fields_class = HassPingFields,
+        sim_state_class_list = [
+            HassPingState,
         ],
     ),
     SimEntityDefinition(

@@ -2,6 +2,15 @@
 {# Label above value/controller widget. Used by fallback row.html and #}
 {# tile.html, capped to a small number of states per the framework's  #}
 {# "fallback is intentionally minimal" stance.                        #}
+{#                                                                    #}
+{# Value rendering mirrors the modal's chip pattern from              #}
+{# ``sensor_response_status_row.html``: ``hi-status-display`` class + #}
+{# ``data-status`` marker + ``status="..."`` attribute drive the      #}
+{# CSS chip styling keyed on the recognized status token (connected, #}
+{# disconnected, on, off, open, closed, etc.). States with no         #}
+{# recognized status (e.g. free-form TEXT) emit no ``status``         #}
+{# attribute and the ``[status]`` CSS selector skips them — graceful #}
+{# degrade to plain text.                                             #}
 <div class="state-compact">
   <div class="state-compact__label">{{ state_data.entity_state.short_name }}</div>
   <div class="state-compact__value">
@@ -10,8 +19,12 @@
         {% include "control/panes/controller_data.html" with controller_data=controller_data %}
       {% endfor %}
     {% elif state_data.latest_display_label %}
-      <span data-state-id="{{ state_data.entity_state.id }}"
-            data-display-text>{{ state_data.latest_display_label }}</span>
+      {% with status_value=state_data.attribute_dict.status %}
+      <span class="hi-status-display"
+            data-state-id="{{ state_data.entity_state.id }}"
+            data-status data-display-text
+            {% if status_value %}status="{{ status_value }}"{% endif %}>{{ state_data.latest_display_label }}</span>
+      {% endwith %}
     {% endif %}
   </div>
 </div>

@@ -7,6 +7,7 @@ class SimStateType(LabeledEnum):
     # General types
     DISCRETE         = ( 'Discrete'         , 'Single value, fixed set of possible values' )
     CONTINUOUS       = ( 'Continuous'       , 'For single value with a float type value' )
+    TEXT             = ( 'Text'             , 'Free-form string value (e.g., output of a shell command)' )
 
     # Specific types
     AIR_PRESSURE     = ( 'Air Pressure'     , '' )
