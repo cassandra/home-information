@@ -180,15 +180,27 @@ class LocationItemStatusView( View, LocationViewMixin, EntityViewMixin ):
         location_view_id = request.view_parameters.location_view_id
         location_view = LocationView.objects.get( id = location_view_id )
 
-        # ``long_press`` signals that the gesture-based escape hatch
-        # was used; in AUTOMATION views a tap fires one-click control,
-        # so the long-press is the only way operators have to reach
-        # status / history / edit for a controllable entity in that
-        # view. The JS doesn't dictate which view to surface -- it
-        # just reports the gesture -- and the server picks the route.
+        # ``long_press`` signals that the gesture-based escape hatch was
+        # used. It is the universal route back to the status modal: in
+        # AUTOMATION a tap fires one-click control, and in INFORMATION a
+        # tap opens the entity edit modal, so the long-press is the only
+        # way operators have to reach status / history / edit in those
+        # views. The JS doesn't dictate which view to surface -- it just
+        # reports the gesture -- and the server picks the route.
         # ``str_to_bool`` tolerates ``1``/``true``/``yes``/``on``/etc.
         # and returns False for a missing param.
         long_press = str_to_bool( request.GET.get( 'long_press' ) )
+
+        # INFORMATION views default an entity tap to the edit (details /
+        # config) modal even when the entity has states, where DEFAULT /
+        # SECURITY would show status.
+        if ( not long_press
+             and location_view.location_view_type == LocationViewType.INFORMATION ):
+            return self._entity_edit_response(
+                request = request,
+                entity = entity,
+            )
+
         if ( long_press
              or location_view.location_view_type not in [ LocationViewType.AUTOMATION ] ):
             return self._entity_status_response(
@@ -234,6 +246,10 @@ class LocationItemStatusView( View, LocationViewMixin, EntityViewMixin ):
 
     def _entity_status_response( self, request : HttpRequest, entity : Entity ):
         url = reverse( 'entity_status', kwargs = { 'entity_id': entity.id } )
+        return HttpResponseRedirect( url )
+
+    def _entity_edit_response( self, request : HttpRequest, entity : Entity ):
+        url = reverse( 'entity_edit', kwargs = { 'entity_id': entity.id } )
         return HttpResponseRedirect( url )
             
         

@@ -515,6 +515,15 @@ class TestLocationItemStatusView(SyncViewTestCase):
             svg_rotate=0.0,
             order_id=2
         )
+
+        self.information_view = LocationView.objects.create(
+            location=self.location,
+            name='Information View',
+            location_view_type_str='information',
+            svg_view_box_str='0 0 100 100',
+            svg_rotate=0.0,
+            order_id=3
+        )
         
         # Create test entity with controllable state
         self.entity = Entity.objects.create(
@@ -758,6 +767,43 @@ class TestLocationItemStatusView(SyncViewTestCase):
         session = self.client.session
         session['view_type'] = str(ViewType.LOCATION_VIEW)
         session['location_view_id'] = self.default_view.id
+        session.save()
+
+        html_id = ItemType.ENTITY.html_id(self.entity.id)
+        url = reverse('location_item_status', kwargs={'html_id': html_id})
+
+        response = self.client.get(url + '?long_press=1')
+
+        self.assertEqual(response.status_code, 302)
+        expected_url = reverse('entity_status', kwargs={'entity_id': self.entity.id})
+        self.assertEqual(response.url, expected_url)
+
+    def test_information_view_tap_redirects_to_entity_edit(self):
+        """An INFORMATION view routes a plain entity tap to the edit
+        (details/config) modal even though the entity has states — where
+        a DEFAULT view would show status."""
+        from hi.enums import ItemType
+        session = self.client.session
+        session['view_type'] = str(ViewType.LOCATION_VIEW)
+        session['location_view_id'] = self.information_view.id
+        session.save()
+
+        html_id = ItemType.ENTITY.html_id(self.entity.id)
+        url = reverse('location_item_status', kwargs={'html_id': html_id})
+
+        response = self.client.get(url)
+
+        self.assertEqual(response.status_code, 302)
+        expected_url = reverse('entity_edit', kwargs={'entity_id': self.entity.id})
+        self.assertEqual(response.url, expected_url)
+
+    def test_information_view_long_press_redirects_to_status(self):
+        """Long-press is the escape hatch in an INFORMATION view: it
+        bypasses the edit modal and reaches entity status."""
+        from hi.enums import ItemType
+        session = self.client.session
+        session['view_type'] = str(ViewType.LOCATION_VIEW)
+        session['location_view_id'] = self.information_view.id
         session.save()
 
         html_id = ItemType.ENTITY.html_id(self.entity.id)

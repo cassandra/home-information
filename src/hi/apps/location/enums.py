@@ -3,15 +3,19 @@ from hi.apps.common.enums import LabeledEnum
 
 class LocationViewType(LabeledEnum):
     """View-level intent for a LocationView. Drives which interactions
-    are offered: AUTOMATION enables one-click control on entity icons;
-    DEFAULT and SECURITY route the click to the EntityStatus modal.
+    are offered on an entity icon tap: AUTOMATION enables one-click
+    control; DEFAULT and SECURITY route to the EntityStatus modal;
+    INFORMATION routes to the EntityEdit modal (entity details/config)
+    even when the entity has states. For AUTOMATION and INFORMATION a
+    long-press is the escape hatch back to the EntityStatus modal.
     Per-entity state selection (visual primary, one-click target) is
     handled by the role-based orderings in
     ``hi.apps.entity.entity_state_role_order``."""
 
-    DEFAULT    = ( 'Default'   , '' )
-    SECURITY   = ( 'Security'  , '' )
-    AUTOMATION = ( 'Automation', '' )
+    DEFAULT     = ( 'Default'    , '' )
+    SECURITY    = ( 'Security'   , '' )
+    AUTOMATION  = ( 'Automation' , '' )
+    INFORMATION = ( 'Information', '' )
 
 
 class SvgItemType(LabeledEnum):
