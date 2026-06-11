@@ -5,6 +5,7 @@ from hi.apps.entity.models import (
     Entity,
     EntityState,
     EntityStateDelegation,
+    EntityView,
 )
 from hi.apps.entity.enums import EntityGroupType, EntityStateType, EntityType
 from hi.apps.location.tests.synthetic_data import LocationSyntheticData
@@ -274,5 +275,62 @@ class TestCreateLocationEntityViewGroupListExcludeDelegates(BaseTestCase):
 
         names = self._names_in_groups(group_list)
         self.assertIn(plain.name, names)
+
+    def test_delegate_view_item_list_contains_only_delegates(self):
+        # The "Paired Items" section is the complement of the excluded
+        # type-grouped list: just the delegates, neither the principal
+        # nor unrelated standalone entities.
+        principal, delegate_area = self._make_principal_with_delegate()
+        Entity.objects.create(
+            name='Standalone Light',
+            entity_type_str=str(EntityType.LIGHT),
+        )
+        location_view = LocationSyntheticData.create_test_location_view()
+
+        item_list = EntityManager().create_location_delegate_view_item_list(
+            location_view=location_view,
+        )
+
+        names = { item.entity.name for item in item_list }
+        self.assertEqual(names, { delegate_area.name })
+
+    def _make_named_delegate(self, principal_name, delegate_name):
+        principal = Entity.objects.create(
+            name=principal_name,
+            entity_type_str=str(EntityType.MOTION_SENSOR),
+        )
+        state = EntityState.objects.create(
+            entity=principal,
+            entity_state_type_str=str(EntityStateType.MOVEMENT),
+            name='movement',
+        )
+        delegate = Entity.objects.create(
+            name=delegate_name,
+            entity_type_str=str(EntityType.AREA),
+        )
+        EntityStateDelegation.objects.create(
+            entity_state=state,
+            delegate_entity=delegate,
+        )
+        return delegate
+
+    def test_delegate_view_item_exists_in_view_flag(self):
+        # A delegate already placed in the view is flagged in-view so the
+        # picker renders it as a toggle-off; one not in the view is not.
+        delegate_area = self._make_named_delegate('Front Motion', 'Front Area')
+        other_delegate = self._make_named_delegate('Back Motion', 'Back Area')
+        location_view = LocationSyntheticData.create_test_location_view()
+        EntityView.objects.create(
+            entity=delegate_area,
+            location_view=location_view,
+        )
+
+        item_list = EntityManager().create_location_delegate_view_item_list(
+            location_view=location_view,
+        )
+        exists_by_name = { item.entity.name: item.exists_in_view for item in item_list }
+
+        self.assertTrue(exists_by_name[delegate_area.name])
+        self.assertFalse(exists_by_name[other_delegate.name])
 
 

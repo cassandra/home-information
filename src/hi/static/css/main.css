@@ -1065,6 +1065,9 @@ g[status="open"] {
 g[status="connected"] {
     filter: drop-shadow(0 0 5px var(--status-ok-color));
 }
+g[status="disconnected"] {
+    filter: drop-shadow(0 0 5px var(--status-bad-color));
+}
 g[status="degraded"] {
     filter: drop-shadow(0 0 5px var(--status-recent-color));
 }

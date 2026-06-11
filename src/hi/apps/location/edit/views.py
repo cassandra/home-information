@@ -492,12 +492,17 @@ class LocationViewManageItemsView( HiSideView ):
             unused_entity_ids = unused_entity_ids,
             exclude_delegates = True,
         )
+        delegate_view_item_list = EntityManager().create_location_delegate_view_item_list(
+            location_view = location_view,
+            unused_entity_ids = unused_entity_ids,
+        )
         collection_view_group = CollectionManager().create_location_collection_view_group(
             location_view = location_view,
         )
         return {
             'location_view': location_view,
             'entity_view_group_list': entity_view_group_list,
+            'delegate_view_item_list': delegate_view_item_list,
             'collection_view_group': collection_view_group,
         }
 

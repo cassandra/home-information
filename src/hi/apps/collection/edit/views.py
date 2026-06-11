@@ -257,8 +257,14 @@ class CollectionManageItemsView( HiSideView ):
             unused_entity_ids = unused_entity_ids,
             exclude_delegates = True,
         )
+        delegate_view_item_list = CollectionManager().create_collection_delegate_view_item_list(
+            collection = collection,
+            unused_entity_ids = unused_entity_ids,
+        )
         return {
+            'collection': collection,
             'entity_collection_group_list': entity_collection_group_list,
+            'delegate_view_item_list': delegate_view_item_list,
         }
 
     

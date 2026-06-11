@@ -16,9 +16,8 @@ $(document).ready(function() {
             var $items = $(Hi.ENTITY_PICKER_FILTERABLE_ITEM_SELECTOR);
             var $groups = $(Hi.ENTITY_PICKER_GROUP_SECTION_SELECTOR);
             var self = this;
-
-            // Reset all groups to visible first
-            $groups.show();
+            var filtersActive = ( self.searchTerm !== ''
+                                  || self.currentFilter !== Hi.ENTITY_PICKER_FILTER_ALL );
 
             $items.each(function() {
                 var $item = $(this);
@@ -62,14 +61,39 @@ $(document).ready(function() {
                 $item.toggle(show);
             });
 
-            // Show/hide groups based on visible items
+            // Show/hide groups based on items that MATCH the current
+            // filter -- using each item's own display rather than
+            // ':visible'. A collapsed group's items are display:none via
+            // Bootstrap's .collapse, so ':visible' reports zero matches
+            // and would wrongly hide an otherwise-matching group (and
+            // never reveal its matches). While a search/filter is active
+            // we also force a matching group's body open so its matches
+            // are actually shown; when cleared, we drop the override so
+            // the group's own collapsed/expanded state governs again.
             $groups.each(function() {
                 var $group = $(this);
-                var $visibleItems = $group.find(Hi.ENTITY_PICKER_FILTERABLE_ITEM_SELECTOR + ':visible');
-                if ($visibleItems.length > 0) {
-                    $group.show();
-                } else {
+                var $body = $group.find('.entity-group-items');
+                var $header = $group.find('.entity-group-header');
+                var matchCount = $group.find(Hi.ENTITY_PICKER_FILTERABLE_ITEM_SELECTOR).filter(function() {
+                    return this.style.display !== 'none';
+                }).length;
+
+                if (matchCount === 0) {
                     $group.hide();
+                    $body.css('display', '');
+                    return;
+                }
+
+                $group.show();
+                if (filtersActive) {
+                    // Reveal matches even inside a collapsed group.
+                    $body.css('display', 'block');
+                    $header.attr('aria-expanded', 'true');
+                } else {
+                    // Restore the group's own collapse state (default or
+                    // user-toggled), tracked by Bootstrap's 'show' class.
+                    $body.css('display', '');
+                    $header.attr('aria-expanded', $body.hasClass('show') ? 'true' : 'false');
                 }
             });
         },

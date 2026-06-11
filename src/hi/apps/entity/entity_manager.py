@@ -100,6 +100,34 @@ class EntityManager(Singleton):
             unused_entity_ids = unused_entity_ids,
         )
 
+    def create_location_delegate_view_item_list( self,
+                                                 location_view : LocationView,
+                                                 unused_entity_ids : set = None,
+                                                 ) -> List[EntityViewItem]:
+        """Delegate entities (those proxying other entities' states) are
+        kept out of the type-grouped picker lists -- via
+        ``exclude_delegates`` -- and surfaced in their own "Paired Items"
+        section instead. Returns a flat, name-sorted item list for that
+        section."""
+        if unused_entity_ids is None:
+            unused_entity_ids = set()
+        existing_entity_set = {
+            x.entity for x in location_view.entity_views.select_related('entity').all()
+        }
+        delegate_entities = Entity.objects.filter(
+            entity_state_delegations__isnull = False,
+        ).distinct()
+        item_list = [
+            EntityViewItem(
+                entity = entity,
+                exists_in_view = bool( entity in existing_entity_set ),
+                is_unused = entity.id in unused_entity_ids,
+            )
+            for entity in delegate_entities
+        ]
+        item_list.sort( key = lambda item : item.entity.name )
+        return item_list
+
     def create_entity_view_group_list( self,
                                        existing_entities  : List[ Entity ],
                                        all_entities       : Sequence[ Entity ],

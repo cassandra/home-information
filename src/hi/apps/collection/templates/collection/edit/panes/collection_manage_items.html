@@ -22,3 +22,23 @@
 {% include "edit/panes/no_entities_message.html" %}
 {% endfor %}
 {% endblock %}
+
+{% block delegates_section %}
+{% if delegate_view_item_list %}
+<div class="{{ DIVID.ENTITY_PICKER_GROUP_SECTION_CLASS }}" data-group="paired-items">
+  <div class="entity-group-header"
+       data-toggle="collapse"
+       data-target="#group-paired-items"
+       aria-expanded="false"
+       aria-controls="group-paired-items">
+    <span class="entity-group-title">Paired Items</span>
+    {% icon "chevron-down" css_class="entity-group-toggle" %}
+  </div>
+  <div class="entity-group-items collapse" id="group-paired-items">
+    {% for entity_collection_item in delegate_view_item_list %}
+    {% include "collection/edit/panes/collection_entity_toggle.html" with collection=collection entity=entity_collection_item.entity exists_in_collection=entity_collection_item.exists_in_collection is_unused=entity_collection_item.is_unused %}
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+{% endblock %}

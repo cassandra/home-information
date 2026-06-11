@@ -60,6 +60,10 @@
       {# Override this block for location views that need collections section #}
       {% endblock %}
 
+      {% block delegates_section %}
+      {# Override this block for pickers that surface delegate (paired) items #}
+      {% endblock %}
+
       <div class="my-3">
         <a href="{% url 'entity_edit_archive_list' %}"
            class="btn btn-sm btn-outline-secondary btn-block btn-control" role="button"

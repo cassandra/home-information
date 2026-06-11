@@ -387,6 +387,38 @@ class CollectionManager(Singleton):
         entity_collection_group_list.sort( key = lambda item : item.entity_group_type.label )
         return entity_collection_group_list
 
+    def create_collection_delegate_view_item_list( self,
+                                                   collection : Collection,
+                                                   unused_entity_ids : set = None,
+                                                   ) -> List[EntityCollectionItem]:
+        """Delegate entities are kept out of the type-grouped picker
+        lists -- via ``exclude_delegates`` -- and surfaced in their own
+        "Paired Items" section instead. Returns a flat, name-sorted item
+        list for that section."""
+        if unused_entity_ids is None:
+            unused_entity_ids = set()
+        delegate_entities = Entity.objects.filter(
+            entity_state_delegations__isnull = False,
+        ).distinct()
+        item_list = list()
+        for entity in delegate_entities:
+            exists_in_collection = False
+            for collection_entity in entity.collections.all():
+                if collection_entity.collection == collection:
+                    exists_in_collection = True
+                    break
+                continue
+            item_list.append(
+                EntityCollectionItem(
+                    entity = entity,
+                    exists_in_collection = exists_in_collection,
+                    is_unused = entity.id in unused_entity_ids,
+                )
+            )
+            continue
+        item_list.sort( key = lambda item : item.entity.name )
+        return item_list
+
     def toggle_entity_in_collection( self, entity : Entity, collection : Collection ) -> bool:
 
         if CollectionEntity.objects.filter( entity = entity, collection = collection ).exists():
