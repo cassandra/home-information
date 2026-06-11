@@ -175,11 +175,15 @@
             if ( ! gSelectedGroup ) { return false; }
             if ( ! isPointerInArea() ) { return false; }
 
-            if ( event.key === ICON_ACTION_SCALE_KEY ) {
+            /* Plain s/r scale/rotate the SELECTED icon. Ctrl+s / Ctrl+r are
+               reserved as the global canvas transforms: let them fall through
+               (return false below) to the pan/zoom core so the canvas can be
+               scaled/rotated without first deselecting the icon. */
+            if ( event.key === ICON_ACTION_SCALE_KEY && ! event.ctrlKey ) {
                 rotateAbort();
                 startScale();
 
-            } else if ( event.key === ICON_ACTION_ROTATE_KEY ) {
+            } else if ( event.key === ICON_ACTION_ROTATE_KEY && ! event.ctrlKey ) {
                 scaleAbort();
                 startRotate();
 

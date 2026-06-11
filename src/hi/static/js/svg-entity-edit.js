@@ -344,20 +344,14 @@
             return Hi.SvgPanZoomCore.handleMouseWheel( event );
         },
         handleClick: function( event ) {
-            /* Pan-zoom click suppression (after drag) must be checked first. */
-            var suppressed = Hi.SvgPanZoomCore.handleClick( event );
-            if ( suppressed ) { return true; }
-
-            /* Select the location view SVG on background click — clear other selections. */
-            if ( $( event.target ).closest( Hi.LOCATION_VIEW_BASE_SELECTOR ).length > 0 ) {
-                var closest = $( event.target ).closest( Hi.LOCATION_VIEW_SVG_SELECTOR );
-                if ( closest.length > 0 ) {
-                    Hi.SvgIconCore.clearSelection();
-                    Hi.SvgPathCore.clearSelection();
-                    return true;
-                }
-            }
-            return false;
+            /* Location only suppresses the trailing click after a pan/scale/
+               rotate drag. A click on empty canvas is deliberately NOT
+               consumed here: it falls through to the path module so that,
+               while a path is being edited, clicking extends it (open or
+               closed paths alike). Deselecting is done with Escape -- a stray
+               background click no longer clears the icon/path selection or
+               exits path editing. */
+            return Hi.SvgPanZoomCore.handleClick( event );
         },
         handleLongPress: function( event ) {
             return false;
