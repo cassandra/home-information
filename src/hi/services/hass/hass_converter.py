@@ -267,7 +267,17 @@ class HassConverter:
         (HassApi.SENSOR_DOMAIN, HassApi.WIND_SPEED_DEVICE_CLASS, None): EntityStateType.WIND_SPEED,
         (HassApi.SENSOR_DOMAIN, HassApi.TIMESTAMP_DEVICE_CLASS, None): EntityStateType.DATETIME,
         (HassApi.SENSOR_DOMAIN, HassApi.ENUM_DEVICE_CLASS, None): EntityStateType.DISCRETE,
-        (HassApi.SENSOR_DOMAIN, None, None): EntityStateType.BLOB,  # Generic sensor
+        # Generic sensor (no device_class). DISCRETE rather than BLOB so
+        # history persists (BLOB is in EXCLUDE_FROM_SENSOR_HISTORY by design).
+        # HA's convention is that continuously-varying numeric sensors carry
+        # a device_class (temperature, humidity, power, battery, pressure,
+        # wind_speed, illuminance); a sensor without one is almost always
+        # status-like text (command_line script output, template sensor
+        # emitting a state string, custom integration reporting categorical
+        # state). DISCRETE is a heuristic — for the rare continuous case
+        # we trade range/unit affordances for history retention, which is
+        # the right call when history loss is the alternative.
+        (HassApi.SENSOR_DOMAIN, None, None): EntityStateType.DISCRETE,
         
         # Other domains (read-only)
         # Note: CAMERA_DOMAIN entities expose video_snapshot capability

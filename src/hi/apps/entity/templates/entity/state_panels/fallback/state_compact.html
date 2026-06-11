@@ -1,18 +1,22 @@
-{# Per-state compact rendering for fallback ROW / TILE contexts.       #}
-{# Label above value/controller widget. Used by fallback row.html and #}
-{# tile.html, capped to a small number of states per the framework's  #}
-{# "fallback is intentionally minimal" stance.                        #}
-{#                                                                    #}
-{# Value rendering mirrors the modal's chip pattern from              #}
-{# ``sensor_response_status_row.html``: ``hi-status-display`` class + #}
-{# ``data-status`` marker + ``status="..."`` attribute drive the      #}
-{# CSS chip styling keyed on the recognized status token (connected, #}
-{# disconnected, on, off, open, closed, etc.). States with no         #}
-{# recognized status (e.g. free-form TEXT) emit no ``status``         #}
-{# attribute and the ``[status]`` CSS selector skips them — graceful #}
-{# degrade to plain text.                                             #}
+{% comment %}
+Per-state compact rendering for fallback ROW / TILE contexts. Label above
+value/controller widget. Used by fallback row.html and tile.html, capped to
+a small number of states per the framework's "fallback is intentionally
+minimal" stance.
+
+Value rendering mirrors the modal's chip pattern from
+``sensor_response_status_row.html``: ``hi-status-display`` class +
+``data-status`` marker + ``status="..."`` attribute drive the CSS chip
+styling keyed on the recognized status token (connected, disconnected, on,
+off, open, closed, etc.). The status attribute is always lowercased so CSS
+selectors stay consistent regardless of whether the value came from an
+explicit ``StatusStyle`` mapping or the raw sensor value (free-form TEXT
+from a Command Line sensor, etc.).
+{% endcomment %}
 <div class="state-compact">
+  {% if state_data.entity_state.short_name != entity.name %}
   <div class="state-compact__label">{{ state_data.entity_state.short_name }}</div>
+  {% endif %}
   <div class="state-compact__value">
     {% if state_data.controller_data_list %}
       {% for controller_data in state_data.controller_data_list %}

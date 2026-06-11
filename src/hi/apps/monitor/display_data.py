@@ -409,7 +409,11 @@ class EntityStateDisplayData:
         # status display matches what the initial server-side
         # template render produced (combined magnitude + unit
         # suffix for unit-bearing values, raw value otherwise).
-        status_value = str( self.latest_display_value )
+        # Lowercased so CSS ``[status="..."]`` selectors stay
+        # canonical regardless of the source value's original
+        # case — explicit StatusStyle constants are already
+        # lowercase, so this normalizes only the fallback path.
+        status_value = str( self.latest_display_value ).lower()
         if not status_value:
             status_value = StatusStyle.DEFAULT_STATUS_VALUE
         return StatusStyle.default( status_value = status_value )

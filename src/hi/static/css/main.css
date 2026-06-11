@@ -986,12 +986,20 @@ g[status="off"] path.hi-state-bg  {
  * source order. Previously this sat after on/off/dim and silently
  * clobbered them. */
 .hi-status-display[status] {
+    display: inline-block;
     color: var(--black);
     background-color: var(--white);
-    border-color: var(--black);
-    border-style: solid;
-    border-width: 2px;
-    border-radius: 8px;
+    border: 1px solid var(--black);
+    border-radius: 4px;
+    padding: 1px 8px;
+    font-size: 0.9em;
+    line-height: 1.4;
+    width: 10em;
+    text-align: center;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    box-sizing: border-box;
 }
 .hi-status-display[status="off"] {
     color: var(--on-status-off-color);
@@ -1057,77 +1065,19 @@ g[status="open"] {
 g[status="connected"] {
     filter: drop-shadow(0 0 5px var(--status-ok-color));
 }
-g[status="disconnected"] {
-    filter: drop-shadow(0 0 5px var(--status-bad-color));
+g[status="degraded"] {
+    filter: drop-shadow(0 0 5px var(--status-recent-color));
 }
-g[status="high"] {
-    filter: drop-shadow(0 0 5px var(--status-ok-color));
-}
-g[status="low"] {
-    filter: drop-shadow(0 0 5px var(--status-bad-color));
-}
-g[status="smoke_detected"] {
-    filter: drop-shadow(0 0 5px var(--status-bad-color));
-}
-g[status="moisture_detected"] {
-    filter: drop-shadow(0 0 5px var(--status-bad-color));
-}
-g[status="co_detected"] {
-    filter: drop-shadow(0 0 5px var(--status-bad-color));
-}
-g[status="gas_detected"] {
-    filter: drop-shadow(0 0 5px var(--status-bad-color));
-}
-g[status="temperature_cold"] {
-    filter: drop-shadow(0 0 5px var(--status-temp-cold-color));
-}
-g[status="temperature_cool"] {
-    filter: drop-shadow(0 0 5px var(--status-temp-cool-color));
-}
-g[status="temperature_pleasant"] {
-    filter: drop-shadow(0 0 5px var(--status-temp-pleasant-color));
-}
-g[status="temperature_warm"] {
-    filter: drop-shadow(0 0 5px var(--status-temp-warm-color));
-}
-g[status="temperature_hot"] {
-    filter: drop-shadow(0 0 5px var(--status-temp-hot-color));
-}
-
-
-.hi-status-display[status="active"] {
-    color: var(--on-status-active-color);
-    background-color: var(--status-active-color);
-}
-.hi-status-display[status="idle"] {
-    color: var(--on-status-ok-color);
-    background-color: var(--status-ok-color);
-}
-.hi-status-display[status="recent"] {
-    color: var(--on-status-recent-color);
-    background-color: var(--status-recent-color);
-}
-.hi-status-display[status="past"] {
-    color: var(--on-status-past-color);
-    background-color: var(--status-past-color);
-}
-.hi-status-display[status="partial"] {
-    color: var(--on-status-recent-color);
-    background-color: var(--status-recent-color);
-}
-.hi-status-display[status="open"] {
-    color: var(--on-status-bad-color);
-    background-color: var(--status-bad-color);
-}
-.hi-status-display[status="closed"] {
-    color: var(--on-status-idle-color);
-    background-color: var(--status-idle-color);
-}
-.hi-status-display[status="RAID_OK"],
+.hi-status-display[status="raid_ok"],
 .hi-status-display[status="connected"] {
     color: var(--on-status-ok-color);
     background-color: var(--status-ok-color);
 }
+.hi-status-display[status="degraded"] {
+    color: var(--on-status-recent-color);
+    background-color: var(--status-recent-color);
+}
+.hi-status-display[status="failed"],
 .hi-status-display[status="disconnected"] {
     color: var(--on-status-bad-color);
     background-color: var(--status-bad-color);

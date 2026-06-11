@@ -70,9 +70,11 @@
     font-size: 1rem;
 }
 .hi-state-panel-fallback--row .state-compact {
-    flex: 1 1 0;
+    flex: 0 1 auto;
     min-width: 0;
     max-width: 280px;
+    margin-left: auto;
+    align-items: flex-end;
 }
 
 /* TILE: icon centered atop name; states stacked vertically below. */
