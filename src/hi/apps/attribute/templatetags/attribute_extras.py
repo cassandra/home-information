@@ -6,24 +6,55 @@ from django.utils.html import escape, format_html
 from django.utils.safestring import mark_safe
 
 register = template.Library()
-_URL_IN_TEXT_PATTERN = re.compile(r'https?://[^\s<>"\']+')
+
+# Schemes are split by URI shape so both the validator and the
+# free-text regex can be driven from one list. To add a scheme, add it
+# to whichever group matches its syntax — _URL_IN_TEXT_PATTERN and
+# _is_valid_url automatically pick it up.
+#
+# Netloc-form (``scheme://netloc/...``): http, https, rtsp.
+# Path-only-form (``scheme:path``, no ``//``): mailto, tel, sms.
+#
+# Note on rtsp: most browsers don't open it natively — clicking only
+# works for users with a registered handler (e.g., VLC). Keeping it
+# linkable lets users right-click → copy URL.
+_NETLOC_SCHEMES = ( 'http', 'https', 'rtsp' )
+_PATH_ONLY_SCHEMES = ( 'mailto', 'tel', 'sms' )
+_LINKABLE_URL_SCHEMES = frozenset( _NETLOC_SCHEMES + _PATH_ONLY_SCHEMES )
+
+# One regex finds every linkable URL form in free text. Built from the
+# scheme lists so the allowlist and the matcher can never drift.
+_URL_IN_TEXT_PATTERN = re.compile(
+    r'(?:(?:%s)://|(?:%s):)[^\s<>"\']+' % (
+        '|'.join( _NETLOC_SCHEMES ),
+        '|'.join( _PATH_ONLY_SCHEMES ),
+    )
+)
+
 _TRAILING_PUNCTUATION = '.,;:!?)]}'
 
 
 def _is_valid_url(value):
-    """Return True when value looks like an http(s) URL with a host.
+    """Return True when value is a linkable URL.
 
-    Single-label intranet hostnames (e.g. ``http://cassandra:4100/…``)
-    are accepted; Django's URLValidator rejects those because they
-    lack a TLD, but they're common on LANs.
+    Netloc-form schemes (http, https, rtsp) require a non-empty
+    ``netloc`` — single-label intranet hostnames (e.g.
+    ``http://cassandra:4100/…``) are accepted; Django's URLValidator
+    rejects those because they lack a TLD, but they're common on LANs.
+
+    Path-only schemes (mailto, tel, sms) require a non-empty ``path``
+    (the email address / phone number), since they carry no netloc.
     """
     try:
         parsed = urlparse(value)
     except ValueError:
         return False
-    if parsed.scheme not in ('http', 'https'):
-        return False
-    return bool(parsed.netloc)
+    scheme = parsed.scheme
+    if scheme in _NETLOC_SCHEMES:
+        return bool(parsed.netloc)
+    if scheme in _PATH_ONLY_SCHEMES:
+        return bool(parsed.path)
+    return False
 
 
 def _split_url_and_trailing_punctuation(candidate):

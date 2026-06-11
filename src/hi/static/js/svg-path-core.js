@@ -31,7 +31,8 @@
 
     const PATH_ACTION_DELETE_KEY_CODES = [ 88, 8, 46 ];   // x, Backspace, Delete
     const PATH_ACTION_INSERT_KEY_CODES = [ 73, 45 ];       // i, Insert
-    const PATH_ACTION_ADD_KEY_CODES = [ 65, 61 ];          // a, +
+    const PATH_ACTION_ADD_KEY_CODES = [ 65, 61 ];          // a, + (legacy keyCode; 61 is Firefox-only for '+')
+    const PATH_ACTION_ADD_KEYS = [ 'a', '+', '=' ];        // event.key: browser-independent (Chrome/Safari report '+' as keyCode 187, not 61)
     const PATH_ACTION_END_KEY_CODES = [ 27 ];              // Escape
 
     const CURSOR_MOVEMENT_THRESHOLD_PIXELS = 3;
@@ -268,7 +269,8 @@
         if ( $( event.target ).closest( '.modal' ).length > 0 ) { return false; }
         if ( ! gSvgPathEditData ) { return false; }
 
-        if ( PATH_ACTION_ADD_KEY_CODES.indexOf( event.keyCode ) >= 0 ) {
+        if ( PATH_ACTION_ADD_KEYS.indexOf( event.key ) >= 0
+             || PATH_ACTION_ADD_KEY_CODES.indexOf( event.keyCode ) >= 0 ) {
             addProxyPath();
             return true;
 

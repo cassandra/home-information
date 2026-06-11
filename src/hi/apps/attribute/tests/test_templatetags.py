@@ -169,6 +169,46 @@ class TestAttributeUrlFilter(TestCase):
         self.assertEqual(attribute_url(""), "")
         self.assertEqual(attribute_url(None), "")
 
+    def test_attribute_url_accepts_path_only_schemes(self):
+        # mailto / tel / sms have no netloc — the address/number is in
+        # the path. Regression: earlier code required netloc and broke
+        # these.
+        self.assertEqual(
+            attribute_url("mailto:foo@bar.com"), "mailto:foo@bar.com"
+        )
+        self.assertEqual(
+            attribute_url("tel:+15551234567"), "tel:+15551234567"
+        )
+        self.assertEqual(
+            attribute_url("sms:+15551234567"), "sms:+15551234567"
+        )
+
+    def test_attribute_url_accepts_rtsp(self):
+        self.assertEqual(
+            attribute_url("rtsp://10.0.0.1:554/stream"),
+            "rtsp://10.0.0.1:554/stream",
+        )
+
+    def test_attribute_url_rejects_path_only_scheme_without_address(self):
+        # A bare ``mailto:`` / ``tel:`` / ``sms:`` is not a usable link.
+        self.assertEqual(attribute_url("mailto:"), "")
+        self.assertEqual(attribute_url("tel:"), "")
+        self.assertEqual(attribute_url("sms:"), "")
+
+    def test_attribute_url_rejects_netloc_scheme_without_host(self):
+        self.assertEqual(attribute_url("http://"), "")
+        self.assertEqual(attribute_url("rtsp://"), "")
+
+    def test_attribute_url_rejects_disallowed_schemes(self):
+        # Security boundary — every scheme outside _LINKABLE_URL_SCHEMES
+        # must be refused. ``javascript:`` is the canonical XSS vector;
+        # ``data:`` can embed scripts; ``ftp:`` / ``file:`` are dropped
+        # by modern browsers and only leak content shape.
+        self.assertEqual(attribute_url("javascript:alert(1)"), "")
+        self.assertEqual(attribute_url("data:text/html,<script>"), "")
+        self.assertEqual(attribute_url("ftp://foo.com"), "")
+        self.assertEqual(attribute_url("file:///etc/passwd"), "")
+
 
 class TestAttributeTextUrlFilters(TestCase):
     """Test URL detection and inline linkification for text attributes."""
@@ -241,6 +281,60 @@ class TestAttributeTextUrlFilters(TestCase):
         rendered = template.render(Context({'value': 'See https://example.com'}))
         self.assertIn('<a href="https://example.com" target="_blank" rel="noopener noreferrer">', rendered)
         self.assertNotIn('&lt;a href=', rendered)
+
+    def test_attribute_text_has_url_detects_path_only_schemes(self):
+        # mailto / tel / sms embedded in free text — regex must match
+        # the ``scheme:`` (no ``//``) shape, not just ``scheme://``.
+        self.assertTrue(attribute_text_has_url("Email mailto:foo@bar.com for support"))
+        self.assertTrue(attribute_text_has_url("Call tel:+15551234567 anytime"))
+        self.assertTrue(attribute_text_has_url("Or text sms:+15551234567 directly"))
+
+    def test_attribute_text_has_url_detects_rtsp(self):
+        self.assertTrue(
+            attribute_text_has_url("Stream at rtsp://10.0.0.1:554/live now")
+        )
+
+    def test_attribute_text_has_url_ignores_disallowed_schemes(self):
+        self.assertFalse(attribute_text_has_url("Click javascript:alert(1) for fun"))
+        self.assertFalse(attribute_text_has_url("Get the file ftp://foo.com/bin"))
+
+    def test_attribute_text_linkify_renders_path_only_schemes(self):
+        # All four path-only / netloc schemes in one mixed prose blob.
+        rendered = attribute_text_linkify(
+            "Email mailto:foo@bar.com, call tel:+15551234567, "
+            "text sms:+15551234567, stream rtsp://10.0.0.1:554/live"
+        )
+        self.assertIn(
+            '<a href="mailto:foo@bar.com" target="_blank" rel="noopener noreferrer">mailto:foo@bar.com</a>',
+            rendered,
+        )
+        self.assertIn(
+            '<a href="tel:+15551234567" target="_blank" rel="noopener noreferrer">tel:+15551234567</a>',
+            rendered,
+        )
+        self.assertIn(
+            '<a href="sms:+15551234567" target="_blank" rel="noopener noreferrer">sms:+15551234567</a>',
+            rendered,
+        )
+        self.assertIn(
+            '<a href="rtsp://10.0.0.1:554/live" target="_blank" rel="noopener noreferrer">rtsp://10.0.0.1:554/live</a>',
+            rendered,
+        )
+
+    def test_attribute_text_linkify_does_not_link_disallowed_schemes(self):
+        # ``javascript:`` content stays as escaped text — no anchor tag.
+        rendered = attribute_text_linkify("Run javascript:alert(1) here")
+        self.assertNotIn('<a href="javascript:', rendered)
+        self.assertIn('javascript:alert(1)', rendered)
+
+    def test_attribute_text_linkify_keeps_trailing_punctuation_outside_path_only_schemes(self):
+        # The same trailing-punctuation strip that protects http(s)
+        # links has to work for mailto / tel / sms too.
+        rendered = attribute_text_linkify("Reach me at mailto:foo@bar.com, anytime.")
+        self.assertIn(
+            '<a href="mailto:foo@bar.com" target="_blank" rel="noopener noreferrer">mailto:foo@bar.com</a>,',
+            rendered,
+        )
 
     def test_attribute_text_has_url_filter_works_in_template_condition(self):
         template_str = """
