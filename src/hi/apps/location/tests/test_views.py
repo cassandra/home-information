@@ -815,6 +815,31 @@ class TestLocationItemStatusView(SyncViewTestCase):
         expected_url = reverse('entity_status', kwargs={'entity_id': self.entity.id})
         self.assertEqual(response.url, expected_url)
 
+    def test_information_view_tap_redirects_to_edit_even_without_states(self):
+        """The INFORMATION branch short-circuits to the edit modal before
+        the status route, so it applies regardless of whether the entity
+        has states (a stateless entity would otherwise also reach edit,
+        but via the status view's own fallback -- this confirms the
+        INFORMATION branch itself owns the routing)."""
+        from hi.enums import ItemType
+        stateless_entity = Entity.objects.create(
+            name='Decorative Marker',
+            entity_type_str='OTHER',
+        )
+        session = self.client.session
+        session['view_type'] = str(ViewType.LOCATION_VIEW)
+        session['location_view_id'] = self.information_view.id
+        session.save()
+
+        html_id = ItemType.ENTITY.html_id(stateless_entity.id)
+        url = reverse('location_item_status', kwargs={'html_id': html_id})
+
+        response = self.client.get(url)
+
+        self.assertEqual(response.status_code, 302)
+        expected_url = reverse('entity_edit', kwargs={'entity_id': stateless_entity.id})
+        self.assertEqual(response.url, expected_url)
+
     @patch('hi.apps.control.one_click_control_service.ControllerManager')
     def test_long_press_param_truthy_variants_all_bypass(self, mock_controller_manager):
         """The view consumes ``long_press`` via ``str_to_bool``, so any

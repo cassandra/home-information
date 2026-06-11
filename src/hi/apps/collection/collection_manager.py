@@ -412,7 +412,7 @@ class CollectionManager(Singleton):
             unused_entity_ids = set()
         member_entity_id_set = self._collection_member_entity_id_set( collection )
         delegate_entity_id_set = set(
-            EntityStateDelegation.objects.values_list( 'delegate_entity_id', flat = True )
+            EntityStateDelegation.objects.values_list( 'delegate_entity_id', flat = True ).distinct()
         )
         all_entities = list( Entity.objects.all() )
 

@@ -1626,9 +1626,9 @@ class HassCommandLineSensorState( HassState ):
 
 
 _PRINTER_STATE_CHOICES = [
-    ( 'idle',     'Idle' ),
-    ( 'printing', 'Printing' ),
-    ( 'stopped', 'Stopped' ),
+    ( 'idle'     , 'Idle' ),
+    ( 'printing' , 'Printing' ),
+    ( 'stopped'  , 'Stopped' ),
 ]
 _PRINTER_STATE_OPTIONS = [ choice for choice, _label in _PRINTER_STATE_CHOICES ]
 

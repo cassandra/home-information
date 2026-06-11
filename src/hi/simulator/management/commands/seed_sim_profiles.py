@@ -334,7 +334,7 @@ class Command(BaseCommand):
         self._add_hass_opening_sensor(   profile, 'Zoo Opening' )
         self._add_hass_power_meter(      profile, 'Zoo Power Meter' )
         self._add_hass_command_line_sensor( profile, 'Zoo Command Line Sensor' )
-        self._add_hass_ping(             profile, 'Zoo Ping',       host = '192.168.1.10' )
+        self._add_hass_ping(             profile, 'Zoo Ping', host = '192.168.1.10' )
         self._add_hass_printer_mono(     profile, 'Zoo Mono Printer' )
         self._add_hass_printer_color(    profile, 'Zoo Color Printer' )
         self._add_hass_weather_station(  profile, 'Zoo Weather Station' )

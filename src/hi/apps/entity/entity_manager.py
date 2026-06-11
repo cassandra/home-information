@@ -116,7 +116,7 @@ class EntityManager(Singleton):
                               for x in location_view.entity_views.select_related('entity').all() ]
         existing_entity_id_set = { x.id for x in existing_entities }
         delegate_entity_id_set = set(
-            EntityStateDelegation.objects.values_list( 'delegate_entity_id', flat = True )
+            EntityStateDelegation.objects.values_list( 'delegate_entity_id', flat = True ).distinct()
         )
         all_entities = list( Entity.objects.all() )
 
