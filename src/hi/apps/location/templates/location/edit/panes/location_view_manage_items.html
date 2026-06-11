@@ -25,13 +25,16 @@
 
 {% block collections_section %}
 {% if collection_view_group.item_list %}
-<div class="{{ DIVID.ENTITY_PICKER_GROUP_SECTION_CLASS }}" data-group="collections">
+<div class="{{ DIVID.ENTITY_PICKER_GROUP_SECTION_CLASS }} mt-4" data-group="collections">
   <div class="entity-group-header"
        data-toggle="collapse"
        data-target="#group-collections"
        aria-expanded="true"
        aria-controls="group-collections">
-    <span class="entity-group-title">Collections</span>
+    <div class="flex-grow-1">
+      <span class="entity-group-title d-block">{% icon "collection" size="sm" css_class="hi-icon-left" %}Collections</span>
+      <small class="text-muted-custom d-block">Adds a collection reference</small>
+    </div>
     {% icon "chevron-down" css_class="entity-group-toggle" %}
   </div>
   <div class="entity-group-items collapse show" id="group-collections">

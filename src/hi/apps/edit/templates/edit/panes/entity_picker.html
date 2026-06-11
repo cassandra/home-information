@@ -56,12 +56,17 @@
       {# Override this block in child templates #}
       {% endblock %}
 
-      {% block collections_section %}
-      {# Override this block for location views that need collections section #}
-      {% endblock %}
-
+      {% comment %}
+      Paired Items render with the entity groups (they are just another
+      grouping of entities); Collections render last as they are a
+      different kind of item -- a navigable reference, not an entity.
+      {% endcomment %}
       {% block delegates_section %}
       {# Override this block for pickers that surface delegate (paired) items #}
+      {% endblock %}
+
+      {% block collections_section %}
+      {# Override this block for location views that need collections section #}
       {% endblock %}
 
       <div class="my-3">
