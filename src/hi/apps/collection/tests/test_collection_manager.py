@@ -723,6 +723,95 @@ class TestCreateEntityCollectionGroupListExcludeDelegates(BaseTestCase):
             collection_view_type_str='LIST',
         )
 
+    def _make_named_delegate(self, principal_name, delegate_name):
+        principal = Entity.objects.create(
+            name=principal_name,
+            entity_type_str=str(EntityType.MOTION_SENSOR),
+        )
+        state = EntityState.objects.create(
+            entity=principal,
+            entity_state_type_str=str(EntityStateType.MOVEMENT),
+            name='movement',
+        )
+        delegate = Entity.objects.create(
+            name=delegate_name,
+            entity_type_str=str(EntityType.AREA),
+        )
+        EntityStateDelegation.objects.create(
+            entity_state=state,
+            delegate_entity=delegate,
+        )
+        return delegate
+
+    def _picker_groups_and_delegates(self, collection, unused_entity_ids=None):
+        """Bridges the current two-method picker API (type-grouped list +
+        delegate list). The query-optimization refactor will repoint this
+        single helper at the combined method without touching the test
+        bodies, so these tests double as a behavior-preserving net."""
+        if unused_entity_ids is None:
+            unused_entity_ids = set()
+        picker_data = CollectionManager().create_collection_entity_picker_data(
+            collection=collection,
+            unused_entity_ids=unused_entity_ids,
+        )
+        return picker_data.entity_collection_group_list, picker_data.delegate_view_item_list
+
+    def test_collection_delegate_partition_is_mutually_exclusive(self):
+        # A delegate appears only in the delegate list; a non-delegate
+        # (principal or standalone) appears only in the type-grouped
+        # list. The two halves never overlap.
+        principal, delegate_area = self._make_principal_with_delegate()
+        standalone = Entity.objects.create(
+            name='Standalone Light',
+            entity_type_str=str(EntityType.LIGHT),
+        )
+        collection = self._make_collection()
+
+        group_list, delegate_item_list = self._picker_groups_and_delegates(collection)
+        group_names = self._names_in_groups(group_list)
+        delegate_names = { item.entity.name for item in delegate_item_list }
+
+        self.assertEqual(delegate_names, { delegate_area.name })
+        self.assertIn(principal.name, group_names)
+        self.assertIn(standalone.name, group_names)
+        self.assertNotIn(delegate_area.name, group_names)
+        self.assertNotIn(principal.name, delegate_names)
+        self.assertNotIn(standalone.name, delegate_names)
+
+    def test_collection_delegate_exists_in_collection_flag(self):
+        # A delegate already in the collection is flagged in-collection so
+        # the picker renders it as a toggle-off; one not in it is not.
+        delegate_in = self._make_named_delegate('Front Motion', 'Front Area')
+        delegate_out = self._make_named_delegate('Back Motion', 'Back Area')
+        collection = self._make_collection()
+        CollectionEntity.objects.create(collection=collection, entity=delegate_in)
+
+        _, delegate_item_list = self._picker_groups_and_delegates(collection)
+        exists_by_name = {
+            item.entity.name: item.exists_in_collection for item in delegate_item_list
+        }
+
+        self.assertTrue(exists_by_name[delegate_in.name])
+        self.assertFalse(exists_by_name[delegate_out.name])
+
+    def test_is_unused_propagates_to_collection_delegate_list(self):
+        # The delegate list carries the is_unused flag through from the
+        # caller-supplied set, same as the type-grouped list.
+        _, delegate_area = self._make_principal_with_delegate()
+        collection = self._make_collection()
+
+        _, delegate_item_list = self._picker_groups_and_delegates(
+            collection, unused_entity_ids={ delegate_area.id },
+        )
+        item = next( i for i in delegate_item_list if i.entity == delegate_area )
+        self.assertTrue(item.is_unused)
+
+        _, delegate_item_list = self._picker_groups_and_delegates(
+            collection, unused_entity_ids=set(),
+        )
+        item = next( i for i in delegate_item_list if i.entity == delegate_area )
+        self.assertFalse(item.is_unused)
+
     def test_delegate_hidden_when_exclude_delegates_true(self):
         principal, delegate_area = self._make_principal_with_delegate()
         collection = self._make_collection()

@@ -26,6 +26,7 @@ from .transient_models import (
     EntityEditModeData,
     EntityViewGroup,
     EntityViewItem,
+    LocationViewEntityPickerData,
 )
 
 logger = logging.getLogger(__name__)
@@ -100,33 +101,47 @@ class EntityManager(Singleton):
             unused_entity_ids = unused_entity_ids,
         )
 
-    def create_location_delegate_view_item_list( self,
-                                                 location_view : LocationView,
-                                                 unused_entity_ids : set = None,
-                                                 ) -> List[EntityViewItem]:
-        """Delegate entities (those proxying other entities' states) are
-        kept out of the type-grouped picker lists -- via
-        ``exclude_delegates`` -- and surfaced in their own "Paired Items"
-        section instead. Returns a flat, name-sorted item list for that
-        section."""
+    def create_location_entity_picker_data( self,
+                                            location_view : LocationView,
+                                            unused_entity_ids : set = None,
+                                            ) -> LocationViewEntityPickerData:
+        """Build both LocationView item-picker sections in a single entity
+        scan: the type-grouped non-delegate entities and the flat delegate
+        ("Paired Items") list. Replaces a separate query per section --
+        the entities are loaded once and partitioned in Python by whether
+        they act as a delegate, sharing one ``entity_views`` lookup."""
         if unused_entity_ids is None:
             unused_entity_ids = set()
-        existing_entity_set = {
-            x.entity for x in location_view.entity_views.select_related('entity').all()
-        }
-        delegate_entities = Entity.objects.filter(
-            entity_state_delegations__isnull = False,
-        ).distinct()
-        item_list = [
+        existing_entities = [ x.entity
+                              for x in location_view.entity_views.select_related('entity').all() ]
+        existing_entity_id_set = { x.id for x in existing_entities }
+        delegate_entity_id_set = set(
+            EntityStateDelegation.objects.values_list( 'delegate_entity_id', flat = True )
+        )
+        all_entities = list( Entity.objects.all() )
+
+        non_delegate_entities = [ entity for entity in all_entities
+                                  if entity.id not in delegate_entity_id_set ]
+        entity_view_group_list = self.create_entity_view_group_list(
+            existing_entities = existing_entities,
+            all_entities = non_delegate_entities,
+            unused_entity_ids = unused_entity_ids,
+        )
+
+        delegate_view_item_list = [
             EntityViewItem(
                 entity = entity,
-                exists_in_view = bool( entity in existing_entity_set ),
+                exists_in_view = entity.id in existing_entity_id_set,
                 is_unused = entity.id in unused_entity_ids,
             )
-            for entity in delegate_entities
+            for entity in all_entities if entity.id in delegate_entity_id_set
         ]
-        item_list.sort( key = lambda item : item.entity.name )
-        return item_list
+        delegate_view_item_list.sort( key = lambda item : item.entity.name )
+
+        return LocationViewEntityPickerData(
+            entity_view_group_list = entity_view_group_list,
+            delegate_view_item_list = delegate_view_item_list,
+        )
 
     def create_entity_view_group_list( self,
                                        existing_entities  : List[ Entity ],

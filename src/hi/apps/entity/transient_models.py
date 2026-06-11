@@ -52,9 +52,19 @@ class EntityViewItem:
 @dataclass
 class EntityViewGroup:
     """All entities of a given type and flagged as in the view or not."""
-    
+
     entity_group_type  : EntityGroupType
     item_list          : List[EntityViewItem]  = field( default_factory = list )
+
+
+@dataclass
+class LocationViewEntityPickerData:
+    """The two sections of the LocationView item picker, built together
+    from a single entity scan: the type-grouped non-delegate entities and
+    the flat delegate ("Paired Items") list."""
+
+    entity_view_group_list   : List[EntityViewGroup]  = field( default_factory = list )
+    delegate_view_item_list  : List[EntityViewItem]   = field( default_factory = list )
 
     
 @dataclass

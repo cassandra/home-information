@@ -53,6 +53,16 @@ class EntityCollectionGroup:
 
 
 @dataclass
+class CollectionEntityPickerData:
+    """The two sections of the Collection item picker, built together from
+    a single entity scan: the type-grouped non-delegate entities and the
+    flat delegate ("Paired Items") list."""
+
+    entity_collection_group_list  : List[EntityCollectionGroup]  = field( default_factory = list )
+    delegate_view_item_list       : List[EntityCollectionItem]   = field( default_factory = list )
+
+
+@dataclass
 class CollectionEditModeData:
     """ All the data needed to render the Collection details pane. """
 

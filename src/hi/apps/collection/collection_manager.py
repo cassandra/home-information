@@ -7,7 +7,7 @@ from django.http import HttpRequest
 from hi.apps.collection.edit.forms import CollectionPositionForm
 from hi.apps.common.singleton import Singleton
 from hi.apps.entity.enums import DisplayContext, EntityGroupType
-from hi.apps.entity.models import Entity
+from hi.apps.entity.models import Entity, EntityStateDelegation
 from hi.apps.entity.state_panel_dispatch import EntityStatePanelData, StatePanelDispatcher
 from hi.apps.location.models import Location, LocationView
 from hi.apps.location.svg_item_factory import SvgItemFactory
@@ -24,6 +24,7 @@ from .models import (
 from .transient_models import (
     CollectionData,
     CollectionEditModeData,
+    CollectionEntityPickerData,
     CollectionViewGroup,
     CollectionViewItem,
     EntityCollectionGroup,
@@ -341,6 +342,41 @@ class CollectionManager(Singleton):
             collection_position_form = collection_position_form,
         )
 
+    def _collection_member_entity_id_set( self, collection : Collection ) -> set:
+        return set(
+            CollectionEntity.objects.filter( collection = collection )
+            .values_list( 'entity_id', flat = True )
+        )
+
+    def _build_entity_collection_group_list( self,
+                                             collection : Collection,
+                                             entities : List[ Entity ],
+                                             member_entity_id_set : set,
+                                             unused_entity_ids : set,
+                                             ) -> List[EntityCollectionGroup]:
+        """Type-group the given entities, flagging each as in/out of the
+        collection from ``member_entity_id_set`` (no per-entity query)."""
+        entity_collection_group_dict = dict()
+        for entity in entities:
+            entity_collection_item = EntityCollectionItem(
+                entity = entity,
+                exists_in_collection = entity.id in member_entity_id_set,
+                is_unused = entity.id in unused_entity_ids,
+            )
+
+            entity_group_type = EntityGroupType.from_entity_type( entity.entity_type )
+            if entity_group_type not in entity_collection_group_dict:
+                entity_collection_group_dict[entity_group_type] = EntityCollectionGroup(
+                    collection = collection,
+                    entity_group_type = entity_group_type,
+                )
+            entity_collection_group_dict[entity_group_type].item_list.append( entity_collection_item )
+            continue
+
+        entity_collection_group_list = list( entity_collection_group_dict.values() )
+        entity_collection_group_list.sort( key = lambda item : item.entity_group_type.label )
+        return entity_collection_group_list
+
     def create_entity_collection_group_list( self,
                                              collection : Collection,
                                              unused_entity_ids : set = None,
@@ -356,68 +392,53 @@ class CollectionManager(Singleton):
         if unused_entity_ids is None:
             unused_entity_ids = set()
 
-        entity_collection_group_dict = dict()
-        for entity in entity_queryset:
+        return self._build_entity_collection_group_list(
+            collection = collection,
+            entities = list( entity_queryset ),
+            member_entity_id_set = self._collection_member_entity_id_set( collection ),
+            unused_entity_ids = unused_entity_ids,
+        )
 
-            exists_in_collection = False
-            for collection_entity in entity.collections.all():
-                if collection_entity.collection == collection:
-                    exists_in_collection = True
-                    break
-                continue
-
-            entity_collection_item = EntityCollectionItem(
-                entity = entity,
-                exists_in_collection = exists_in_collection,
-                is_unused = entity.id in unused_entity_ids,
-            )
-
-            entity_group_type = EntityGroupType.from_entity_type( entity.entity_type )
- 
-            if entity_group_type not in entity_collection_group_dict:
-                entity_collection_group = EntityCollectionGroup(
-                    collection = collection,
-                    entity_group_type = entity_group_type,
-                )
-                entity_collection_group_dict[entity_group_type] = entity_collection_group
-            entity_collection_group_dict[entity_group_type].item_list.append( entity_collection_item )
-            continue
-
-        entity_collection_group_list = list( entity_collection_group_dict.values() )
-        entity_collection_group_list.sort( key = lambda item : item.entity_group_type.label )
-        return entity_collection_group_list
-
-    def create_collection_delegate_view_item_list( self,
-                                                   collection : Collection,
-                                                   unused_entity_ids : set = None,
-                                                   ) -> List[EntityCollectionItem]:
-        """Delegate entities are kept out of the type-grouped picker
-        lists -- via ``exclude_delegates`` -- and surfaced in their own
-        "Paired Items" section instead. Returns a flat, name-sorted item
-        list for that section."""
+    def create_collection_entity_picker_data( self,
+                                              collection : Collection,
+                                              unused_entity_ids : set = None,
+                                              ) -> CollectionEntityPickerData:
+        """Build both Collection item-picker sections in a single entity
+        scan: the type-grouped non-delegate entities and the flat delegate
+        ("Paired Items") list. Replaces a separate query per section --
+        entities are loaded once and partitioned in Python by whether they
+        act as a delegate, sharing one collection-membership lookup."""
         if unused_entity_ids is None:
             unused_entity_ids = set()
-        delegate_entities = Entity.objects.filter(
-            entity_state_delegations__isnull = False,
-        ).distinct()
-        item_list = list()
-        for entity in delegate_entities:
-            exists_in_collection = False
-            for collection_entity in entity.collections.all():
-                if collection_entity.collection == collection:
-                    exists_in_collection = True
-                    break
-                continue
-            item_list.append(
-                EntityCollectionItem(
-                    entity = entity,
-                    exists_in_collection = exists_in_collection,
-                    is_unused = entity.id in unused_entity_ids,
-                )
+        member_entity_id_set = self._collection_member_entity_id_set( collection )
+        delegate_entity_id_set = set(
+            EntityStateDelegation.objects.values_list( 'delegate_entity_id', flat = True )
+        )
+        all_entities = list( Entity.objects.all() )
+
+        non_delegate_entities = [ entity for entity in all_entities
+                                  if entity.id not in delegate_entity_id_set ]
+        entity_collection_group_list = self._build_entity_collection_group_list(
+            collection = collection,
+            entities = non_delegate_entities,
+            member_entity_id_set = member_entity_id_set,
+            unused_entity_ids = unused_entity_ids,
+        )
+
+        delegate_view_item_list = [
+            EntityCollectionItem(
+                entity = entity,
+                exists_in_collection = entity.id in member_entity_id_set,
+                is_unused = entity.id in unused_entity_ids,
             )
-            continue
-        item_list.sort( key = lambda item : item.entity.name )
-        return item_list
+            for entity in all_entities if entity.id in delegate_entity_id_set
+        ]
+        delegate_view_item_list.sort( key = lambda item : item.entity.name )
+
+        return CollectionEntityPickerData(
+            entity_collection_group_list = entity_collection_group_list,
+            delegate_view_item_list = delegate_view_item_list,
+        )
 
     def toggle_entity_in_collection( self, entity : Entity, collection : Collection ) -> bool:
 
