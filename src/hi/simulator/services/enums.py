@@ -90,6 +90,7 @@ class SimEntityType(LabeledEnum):
     OPEN_CLOSE_SENSOR    = ( 'Open/Close Sensor', '' )
     OTHER                = ( 'Other', '' )  # Will use generic visual element
     PRESENCE_SENSOR      = ( 'Presence Sensor', '' )
+    PRINTER              = ( 'Printer', '' )
     SEWER_LINE           = ( 'Sewer Wire', '' )
     SHOWER               = ( 'Shower', '' )
     SINK                 = ( 'Sink', '' )

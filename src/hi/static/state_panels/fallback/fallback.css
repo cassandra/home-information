@@ -17,6 +17,13 @@
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+    /* Override default ``min-width: auto`` on flex items — without this,
+     * ``text-overflow: ellipsis`` never triggers because the flex item
+     * refuses to shrink below its content's intrinsic width. Combined
+     * with ``max-width: 100%`` (and the parent's own min-width: 0), the
+     * name finally respects the grid cell boundary. */
+    min-width: 0;
+    max-width: 100%;
 }
 
 /* Per-state compact block: label above value/control. Both contexts
@@ -85,6 +92,10 @@
     gap: 6px;
     padding: 12px;
     text-align: center;
+    /* Allow this grid-item-as-flex-container to shrink below its
+     * content's intrinsic width so name truncation propagates from
+     * the cell boundary all the way to ``.hi-state-panel-fallback__name``. */
+    min-width: 0;
 }
 .hi-state-panel-fallback--tile .hi-state-panel-fallback__icon {
     width: 48px;

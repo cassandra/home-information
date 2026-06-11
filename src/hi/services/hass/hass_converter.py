@@ -156,8 +156,11 @@ class HassConverter:
         HassApi.NEXT_DUSK_ID_SUFFIX,
         HassApi.NEXT_DAWN_ID_SUFFIX,
 
-        # Printer
+        # Printer (IPP)
         HassApi.BLACK_CARTRIDGE_ID_SUFFIX,
+        HassApi.CYAN_CARTRIDGE_ID_SUFFIX,
+        HassApi.MAGENTA_CARTRIDGE_ID_SUFFIX,
+        HassApi.YELLOW_CARTRIDGE_ID_SUFFIX,
     }
 
     # Domains for controllable devices that support on/off operations
@@ -2233,6 +2236,18 @@ class HassConverter:
             return EntityType.LIGHT
         return None
 
+    # Cartridge entity_id suffixes that identify an HA IPP printer
+    # device. Mirrors the printer entries in ``STATE_SUFFIXES`` — any
+    # state in the grouped device ending with one of these signals the
+    # device is a networked printer (HA's IPP integration emits one
+    # ``sensor.X_<color>_cartridge`` per installed cartridge).
+    _PRINTER_CARTRIDGE_SUFFIXES = (
+        HassApi.BLACK_CARTRIDGE_ID_SUFFIX,
+        HassApi.CYAN_CARTRIDGE_ID_SUFFIX,
+        HassApi.MAGENTA_CARTRIDGE_ID_SUFFIX,
+        HassApi.YELLOW_CARTRIDGE_ID_SUFFIX,
+    )
+
     @classmethod
     def hass_device_to_entity_type( cls, hass_device : HassDevice ) -> EntityType:
         domain_set = hass_device.domain_set
@@ -2242,6 +2257,17 @@ class HassConverter:
             return EntityType.CAMERA
         if HassApi.WEATHER_DOMAIN in domain_set:
             return EntityType.WEATHER_STATION
+        # Printer (IPP) — identified by the presence of any cartridge
+        # sensor in the grouped device. The cartridges and the primary
+        # state sensor share a short_name via the printer entries in
+        # STATE_SUFFIXES, so by the time we get here a printer device
+        # carries one to four cartridge states alongside its primary.
+        if any(
+            state.entity_id.endswith( suffix )
+            for state in hass_device.hass_state_list
+            for suffix in cls._PRINTER_CARTRIDGE_SUFFIXES
+        ):
+            return EntityType.PRINTER
         if HassApi.TIMESTAMP_DEVICE_CLASS in device_class_set:
             return EntityType.TIME_SOURCE
         if ( HassApi.BINARY_SENSOR_DOMAIN in domain_set

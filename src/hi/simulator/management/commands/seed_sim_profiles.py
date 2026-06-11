@@ -81,6 +81,7 @@ from hi.simulator.services.hass.sim_models import (
     HassCameraSimEntityFields,
     HassCarbonMonoxideDetectorFields,
     HassColorSmartBulbFields,
+    HassCommandLineSensorFields,
     HassFanFields,
     HassGarageCoverFields,
     HassGasDetectorFields,
@@ -99,8 +100,11 @@ from hi.simulator.services.hass.sim_models import (
     HassOccupancyLightSensorFields,
     HassOpeningSensorFields,
     HassOutletFields,
+    HassPingFields,
     HassPowerMeterFields,
     HassPresenceSensorFields,
+    HassPrinterColorFields,
+    HassPrinterMonoFields,
     HassSmartBulbFields,
     HassSmokeDetectorFields,
     HassSmokeDetectorWithBatteryFields,
@@ -329,6 +333,10 @@ class Command(BaseCommand):
         self._add_hass_presence_sensor(  profile, 'Zoo Presence' )
         self._add_hass_opening_sensor(   profile, 'Zoo Opening' )
         self._add_hass_power_meter(      profile, 'Zoo Power Meter' )
+        self._add_hass_command_line_sensor( profile, 'Zoo Command Line Sensor' )
+        self._add_hass_ping(             profile, 'Zoo Ping',       host = '192.168.1.10' )
+        self._add_hass_printer_mono(     profile, 'Zoo Mono Printer' )
+        self._add_hass_printer_color(    profile, 'Zoo Color Printer' )
         self._add_hass_weather_station(  profile, 'Zoo Weather Station' )
         self._add_hass_occupancy_light_sensor( profile, 'Zoo Room Sensor' )
         self._add_hass_water_leak_sensor( profile, 'Zoo Leak Sensor' )
@@ -1126,11 +1134,49 @@ class Command(BaseCommand):
             fields_kwargs = {'name': name},
         )
 
+    def _add_hass_command_line_sensor(self, profile, name, icon = 'mdi:console-line'):
+        self._create_db_entity(
+            profile = profile,
+            fields_class = HassCommandLineSensorFields,
+            sim_entity_type = SimEntityType.HEALTHCHECK,
+            fields_kwargs = {
+                'name': name,
+                'icon': icon,
+            },
+        )
+
+    def _add_hass_ping(self, profile, name, host = '192.168.1.1'):
+        self._create_db_entity(
+            profile = profile,
+            fields_class = HassPingFields,
+            sim_entity_type = SimEntityType.COMPUTER,
+            fields_kwargs = {
+                'name': name,
+                'host': host,
+            },
+        )
+
     def _add_hass_power_meter(self, profile, name):
         self._create_db_entity(
             profile = profile,
             fields_class = HassPowerMeterFields,
             sim_entity_type = SimEntityType.ELECTRICY_METER,
+            fields_kwargs = {'name': name},
+        )
+
+    def _add_hass_printer_mono(self, profile, name):
+        self._create_db_entity(
+            profile = profile,
+            fields_class = HassPrinterMonoFields,
+            sim_entity_type = SimEntityType.PRINTER,
+            fields_kwargs = {'name': name},
+        )
+
+    def _add_hass_printer_color(self, profile, name):
+        self._create_db_entity(
+            profile = profile,
+            fields_class = HassPrinterColorFields,
+            sim_entity_type = SimEntityType.PRINTER,
             fields_kwargs = {'name': name},
         )
 

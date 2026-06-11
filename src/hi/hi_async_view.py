@@ -95,7 +95,7 @@ class HiSideView( HiAsyncView ):
         referrer_query_params = urllib.parse.parse_qs( referrer_url.query )
         if self.should_push_url():
             referrer_query_params[self.SIDE_URL_PARAM_NAME] = side_url
-        else:
+        elif self.SIDE_URL_PARAM_NAME in referrer_query_params:
             del referrer_query_params[self.SIDE_URL_PARAM_NAME]
             
         # parse_qs returns list-valued params; doseq=True emits each value

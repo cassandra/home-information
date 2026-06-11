@@ -91,8 +91,11 @@ class HassApi:
     NEXT_NOON_ID_SUFFIX = '_next_noon'
     NEXT_RISING_ID_SUFFIX = '_next_rising'
     NEXT_SETTING_ID_SUFFIX = '_next_setting'
-    # Printer
+    # Printer (IPP integration cartridge sensors)
     BLACK_CARTRIDGE_ID_SUFFIX = '_black_cartridge'
+    CYAN_CARTRIDGE_ID_SUFFIX = '_cyan_cartridge'
+    MAGENTA_CARTRIDGE_ID_SUFFIX = '_magenta_cartridge'
+    YELLOW_CARTRIDGE_ID_SUFFIX = '_yellow_cartridge'
     
     DEVICE_CLASS_ATTR = 'device_class'
     FRIENDLY_NAME_ATTR = 'friendly_name'
