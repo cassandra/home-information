@@ -1,5 +1,6 @@
 import json
 import logging
+import shutil
 import uuid
 from unittest.mock import patch, call
 
@@ -266,7 +267,31 @@ class TestAttributeModel(BaseTestCase):
 
             generated = AttributeThumbnail(attr).generate_thumbnail_best_effort()
 
-            self.assertTrue(generated)
+            # The app degrades gracefully when poppler is absent (returns
+            # False), but this integration test asserts the feature actually
+            # works -- poppler-utils is a required dependency in Docker and CI.
+            # Make the failure self-explanatory when run without it locally.
+            poppler_binary = shutil.which('pdftoppm') or shutil.which('pdftocairo')
+            if poppler_binary:
+                failure_reason = (
+                    f'poppler was found at {poppler_binary!r}, so PDF rendering '
+                    'failed for another reason -- check the logged '
+                    '"Error rendering PDF thumbnail" warning above.'
+                )
+            else:
+                failure_reason = (
+                    'the poppler system binary (pdftoppm/pdftocairo) is not on '
+                    'PATH. pdf2image shells out to poppler-utils, a required '
+                    'dependency (installed automatically in Docker and CI). '
+                    'Install it locally -- macOS: "brew install poppler"; '
+                    'Debian/Ubuntu: "sudo apt install poppler-utils". '
+                    'See docs/dev/Dependencies.md.'
+                )
+
+            self.assertTrue(
+                generated,
+                msg=f'PDF thumbnail generation returned False because {failure_reason}',
+            )
             self.assertTrue(default_storage.exists(attr.thumbnail_relative_path))
             self.assertTrue(attr.has_thumbnail)
             self.assertIsNotNone(attr.thumbnail_url)
