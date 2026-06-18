@@ -389,8 +389,8 @@ class IntegrationManager( Singleton ):
                         integration_id_to_gateway[integration_id] = integration_gateway
                     continue                
                 
-            except Exception as e:
-                logger.exception( f'Problem getting integration gateway for {module_name}.', e )
+            except Exception:
+                logger.exception( f'Problem getting integration gateway for {module_name}.' )
             continue
 
         return integration_id_to_gateway

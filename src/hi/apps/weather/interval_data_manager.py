@@ -47,8 +47,8 @@ class IntervalDataManager:
             return
         try:
             self._initialize()
-        except Exception as e:
-            logger.exception( 'Problem trying to initialize time interval data', e )
+        except Exception:
+            logger.exception( 'Problem trying to initialize time interval data' )
         self._was_initialized = True
         return
    

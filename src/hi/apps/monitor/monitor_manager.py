@@ -123,8 +123,8 @@ class AppMonitorManager( Singleton ):
                         periodic_monitor_class_list.append( attr )
                     continue                
                 
-            except Exception as e:
-                logger.exception( f'Problem loading monitor for {module_name}.', e )
+            except Exception:
+                logger.exception( f'Problem loading monitor for {module_name}.' )
             continue
 
         return periodic_monitor_class_list

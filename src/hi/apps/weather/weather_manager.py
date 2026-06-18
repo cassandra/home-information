@@ -100,8 +100,8 @@ class WeatherManager( Singleton, SettingsMixin, AlertMixin ):
             return
         try:
             self._initialize()
-        except Exception as e:
-            logger.exception( 'Problem trying to initialize weather', e )
+        except Exception:
+            logger.exception( 'Problem trying to initialize weather' )
         self._was_initialized = True
         return
 

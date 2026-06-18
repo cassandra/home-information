@@ -78,8 +78,8 @@ class SettingsManager( Singleton ):
         for callback in self._change_listeners:
             try:
                 callback()
-            except Exception as e:
-                logger.exception( 'Problem calling setting change callback.', e )
+            except Exception:
+                logger.exception( 'Problem calling setting change callback.' )
             continue
         return
 

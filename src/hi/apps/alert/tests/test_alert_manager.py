@@ -1,12 +1,13 @@
 import logging
-from unittest.mock import patch
+from unittest.mock import patch, AsyncMock, MagicMock
 
 import hi.apps.common.datetimeproxy as datetimeproxy
 from hi.apps.alert.alert_manager import AlertManager, AlertMaintenanceResult
 from hi.apps.alert.alarm import Alarm, AlarmSignature
 from hi.apps.alert.enums import AlarmLevel, AlarmSource
+from hi.apps.alert.tests.synthetic_data import AlertSyntheticData
 from hi.apps.security.enums import SecurityLevel
-from hi.testing.async_task_utils import AsyncTaskFastTestCase
+from hi.testing.async_task_utils import AsyncTaskFastTestCase, AsyncTaskTestCase
 from hi.testing.base_test_case import BaseTestCase
 
 logging.disable(logging.CRITICAL)
@@ -413,6 +414,41 @@ class TestAlertManagerMaintenance(AsyncTaskFastTestCase):
                 self.assertIsInstance(result, AlertMaintenanceResult)
                 self.assertEqual(result.alerts_before_cleanup, 0)  # Empty queue before exception
                 self.assertIn("Test exception", result.error_message)
+
+        self.run_async(async_test_logic())
+
+
+class TestAlertManagerAsyncSecurityInit(AsyncTaskTestCase):
+    """Regression for issue #404: the async alarm path (reached e.g. from
+    WeatherManager) must obtain SecurityManager via the async accessor. The
+    synchronous accessor runs a sync ORM query on the loop, which
+    SecurityManager.ensure_initialized() swallows while forcing security state
+    DISABLED -- a silent fault. We assert the accessor contract directly."""
+
+    def setUp(self):
+        super().setUp()
+        AlertManager._instance = None
+        self.manager = AlertManager()
+
+    def test_upsert_alarm_async_uses_async_security_accessor(self):
+        async def async_test_logic():
+            alarm = AlertSyntheticData.create_single_alarm_alert().first_alarm
+
+            security_state = MagicMock()
+            security_state.uses_notifications = False  # skip the notify branch
+            security_manager = MagicMock()
+            security_manager.security_state = security_state
+
+            with patch.object( self.manager, 'notification_manager_async',
+                               new = AsyncMock( return_value = MagicMock() )), \
+                 patch.object( self.manager, 'security_manager_async',
+                               new = AsyncMock( return_value = security_manager )) as mock_async, \
+                 patch.object( self.manager, 'security_manager' ) as mock_sync:
+
+                await self.manager.upsert_alarm_async( alarm )
+
+            mock_async.assert_awaited_once()
+            mock_sync.assert_not_called()
 
         self.run_async(async_test_logic())
 

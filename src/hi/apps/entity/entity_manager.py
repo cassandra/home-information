@@ -58,8 +58,8 @@ class EntityManager(Singleton):
         for callback in self._change_listeners:
             try:
                 callback()
-            except Exception as e:
-                logger.exception( 'Problem calling EntityManager change callback.', e )
+            except Exception:
+                logger.exception( 'Problem calling EntityManager change callback.' )
             continue
         return
 

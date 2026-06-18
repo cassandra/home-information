@@ -100,6 +100,6 @@ class EmailThread( threading.Thread ):
     def run(self):
         try:
             self.message.send()
-        except Exception as e:
-            logger.exception( 'Problem in email thread.', e )
+        except Exception:
+            logger.exception( 'Problem in email thread.' )
         return

@@ -38,8 +38,8 @@ class SettingsInitializer:
                 if len(app_settings) > 0:
                     app_settings_list.append( app_settings )
                 
-            except Exception as e:
-                logger.exception( f'Problem loading settings for {module_name}.', e )
+            except Exception:
+                logger.exception( f'Problem loading settings for {module_name}.' )
             continue
 
         return app_settings_list

@@ -41,7 +41,7 @@ class EmailUnsubscribeView( View ):
 
         try:
             UnsubscribedEmail.objects.create( email = email )
-        except Exception as e:
-            logger.exception( f'Problem unsubscribing email {email}', e )
+        except Exception:
+            logger.exception( f'Problem unsubscribing email {email}' )
         
         return render( request, self.SUCCESS_PAGE_TEMPLATE_NAME, context )

@@ -30,8 +30,8 @@ class NotificationQueue:
             queue = self._queues_map[notification_item.signature]
             queue.add_to_queue( notification_item )
 
-        except Exception as e:
-            logger.exception( 'Problem adding notification to notification queue.', e )
+        except Exception:
+            logger.exception( 'Problem adding notification to notification queue.' )
         finally:
             self._queues_lock.release()
         return
@@ -54,8 +54,8 @@ class NotificationQueue:
                 logger.debug( f'Notify queue "{signature}" emitted {len(notification_item_list)} items.' )
                 continue
 
-        except Exception as e:
-            logger.exception( 'Problem checking notification queues.', e )
+        except Exception:
+            logger.exception( 'Problem checking notification queues.' )
         finally:
             self._queues_lock.release()
 

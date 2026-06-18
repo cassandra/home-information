@@ -1,11 +1,12 @@
 import logging
 from datetime import timedelta
-from unittest.mock import patch, AsyncMock
+from unittest.mock import patch, AsyncMock, MagicMock
 from asgiref.sync import sync_to_async
 
 from django.utils import timezone
 
 from hi.apps.alert.enums import AlarmLevel
+from hi.apps.control.models import Controller
 from hi.apps.entity.models import Entity, EntityState
 from hi.apps.security.enums import SecurityLevel
 from hi.apps.sense.transient_models import SensorResponse
@@ -15,7 +16,7 @@ from hi.testing.async_task_utils import AsyncTaskTestCase
 
 from hi.apps.event.enums import EventClauseOperator, EventType
 from hi.apps.event.event_manager import EventManager
-from hi.apps.event.models import EventDefinition, EventClause, AlarmAction, EventHistory
+from hi.apps.event.models import EventDefinition, EventClause, AlarmAction, ControlAction, EventHistory
 from hi.apps.event.transient_models import EntityStateTransition, Event
 
 logging.disable(logging.CRITICAL)
@@ -215,6 +216,36 @@ class TestEventManagerTransitionProcessing(AsyncEventManagerTestCase):
                 # Verify event was created and cached
                 self.assertIn(event_def.id, manager._recent_events)
         
+        self.run_async(async_test_logic())
+        return
+
+    def test_do_new_event_action_uses_async_security_accessor(self):
+        """Regression for issue #404: _do_new_event_action runs on the event
+        loop, so it must obtain SecurityManager via the async accessor (which
+        wraps init in sync_to_async). The synchronous accessor runs a sync ORM
+        query on the loop -- SecurityManager.ensure_initialized() swallows the
+        resulting SynchronousOnlyOperation and forces security state DISABLED,
+        so the defect is silent; we assert the accessor contract directly."""
+        async def async_test_logic():
+            manager = EventManager()
+            security_manager = AsyncMock()
+            security_manager.security_level = SecurityLevel.OFF
+
+            # Sibling accessors truthy so we reach the security accessor; an
+            # empty event list skips the (separately tested) alarm loop.
+            with patch.object( manager, 'alert_manager_async',
+                               new = AsyncMock( return_value = AsyncMock() )), \
+                 patch.object( manager, 'controller_manager_async',
+                               new = AsyncMock( return_value = AsyncMock() )), \
+                 patch.object( manager, 'security_manager_async',
+                               new = AsyncMock( return_value = security_manager )) as mock_async, \
+                 patch.object( manager, 'security_manager' ) as mock_sync:
+
+                await manager._do_new_event_action( event_list = [] )
+
+            mock_async.assert_awaited_once()
+            mock_sync.assert_not_called()
+
         self.run_async(async_test_logic())
         return
 
@@ -523,13 +554,14 @@ class TestEventManagerEventActions(AsyncEventManagerTestCase):
             mock_alert_manager = AsyncMock()
             mock_controller_manager = AsyncMock()
             
+            # Security level HIGH (via the async accessor) matches the alarm action
+            mock_security_manager = MagicMock()
+            mock_security_manager.security_level = SecurityLevel.HIGH
+
             with patch.object(self.manager, 'alert_manager_async', return_value=mock_alert_manager), \
                  patch.object(self.manager, 'controller_manager_async', return_value=mock_controller_manager), \
-                 patch.object(self.manager, 'security_manager') as mock_security:
-                
-                # Set current security level to HIGH to match alarm action
-                mock_security.return_value.security_level = SecurityLevel.HIGH
-                
+                 patch.object(self.manager, 'security_manager_async', return_value=mock_security_manager):
+
                 # Call method under test - let it use real database operations
                 await self.manager._do_new_event_action([event])
                 
@@ -538,7 +570,53 @@ class TestEventManagerEventActions(AsyncEventManagerTestCase):
                 alarm_call_args = mock_alert_manager.upsert_alarm_async.call_args[0][0]
                 self.assertEqual(alarm_call_args.title, 'Test Event')
                 self.assertEqual(alarm_call_args.alarm_level, AlarmLevel.CRITICAL)
-        
+
+        self.run_async(async_test_logic())
+        return
+
+    def test_do_new_event_action_eager_loads_controller_for_control_actions(self):
+        """Regression for issue #404 (same class of bug): _do_new_event_action
+        runs on the event loop, so the ControlAction.controller FK must be
+        eager-loaded. Without select_related('controller'), reading
+        control_action.controller triggers a synchronous ORM query on the loop
+        -- a SynchronousOnlyOperation that (unlike the security path) is not
+        swallowed and would propagate out of the event action."""
+        async def async_test_logic():
+            entity, entity_state = await self.create_test_entities_async()
+            event_def = await self.create_test_event_definition_async()
+
+            controller = await sync_to_async(Controller.objects.create)(
+                name='Test Controller',
+                entity_state=entity_state,
+                controller_type_str='DEFAULT',
+                integration_id='ctrl_id',
+                integration_name='ctrl_integration',
+            )
+            await sync_to_async(ControlAction.objects.create)(
+                event_definition=event_def,
+                controller=controller,
+                value='on',
+            )
+
+            sensor_response = create_test_sensor_response(value='on', timestamp=timezone.now())
+            event = Event(event_definition=event_def, sensor_response_list=[sensor_response])
+
+            mock_controller_manager = AsyncMock()
+            mock_security_manager = MagicMock()
+            mock_security_manager.security_level = SecurityLevel.HIGH
+
+            with patch.object(self.manager, 'alert_manager_async', return_value=AsyncMock()), \
+                 patch.object(self.manager, 'controller_manager_async', return_value=mock_controller_manager), \
+                 patch.object(self.manager, 'security_manager_async', return_value=mock_security_manager):
+
+                # Reading control_action.controller below must not issue a sync
+                # ORM query on the loop -- select_related makes it loop-safe.
+                await self.manager._do_new_event_action([event])
+
+            mock_controller_manager.do_control_async.assert_awaited_once()
+            _, kwargs = mock_controller_manager.do_control_async.call_args
+            self.assertEqual(kwargs['controller'], controller)
+
         self.run_async(async_test_logic())
         return
 

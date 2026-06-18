@@ -24,8 +24,8 @@ class TestingHomeView( View ):
                 if module:
                     app_url_list.append( ( short_name, f'{short_name}/' ) )
                 
-            except Exception as e:
-                logger.exception( f'Problem loading UI tests for {short_name}.', e )
+            except Exception:
+                logger.exception( f'Problem loading UI tests for {short_name}.' )
 
             continue
         context = {

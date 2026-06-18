@@ -95,9 +95,13 @@ class AlertManager( Singleton, NotificationMixin, SecurityMixin ):
         notification_manager = await self.notification_manager_async()
         if not notification_manager:
             return
+        security_manager = await self.security_manager_async()
+        if not security_manager:
+            return
         self._upsert_alarm_impl(
             alarm = alarm,
             notification_manager = notification_manager,
+            security_state = security_manager.security_state,
         )
         return
 
@@ -115,12 +119,12 @@ class AlertManager( Singleton, NotificationMixin, SecurityMixin ):
         self._upsert_alarm_impl(
             alarm = alarm,
             notification_manager = notification_manager,
+            security_state = self.security_manager().security_state,
         )
         return
 
-    def _upsert_alarm_impl( self, alarm : Alarm, notification_manager ):
+    def _upsert_alarm_impl( self, alarm : Alarm, notification_manager, security_state ):
         logging.debug( f'Adding Alarm: {alarm}' )
-        security_state = self.security_manager().security_state
         try:
             alert = self._alert_queue.add_alarm( alarm = alarm )
             if security_state.uses_notifications and alert.has_single_alarm:
@@ -150,7 +154,7 @@ class AlertManager( Singleton, NotificationMixin, SecurityMixin ):
             result.alerts_after_cleanup = len(self._alert_queue)
 
         except Exception as e:
-            logger.exception( 'Problem doing periodic alert maintenance.', e )
+            logger.exception( 'Problem doing periodic alert maintenance.' )
             result.error_message = str(e)[:100]  # Truncate long error messages
 
         return result

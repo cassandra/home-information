@@ -91,7 +91,7 @@ class NotificationManager( Singleton, SettingsMixin ):
                 continue
 
         except Exception as e:
-            logger.exception( "Problem checking notifications queue", e )
+            logger.exception( "Problem checking notifications queue" )
             result.error_messages.append(f"Queue check failed: {str(e)[:100]}")
 
         return result

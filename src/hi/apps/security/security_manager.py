@@ -56,8 +56,8 @@ class SecurityManager( Singleton, SettingsMixin ):
             return
         try:
             self._initialize_security_state()
-        except Exception as e:
-            logger.exception( 'Problem trying to initialize security state', e )
+        except Exception:
+            logger.exception( 'Problem trying to initialize security state' )
             self._security_state = SecurityState.DISABLED
         self._was_initialized = True
         return

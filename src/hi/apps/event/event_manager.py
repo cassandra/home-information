@@ -225,8 +225,11 @@ class EventManager( Singleton, AlertMixin, ControllerMixin, SecurityMixin ):
         if not alert_manager:
             return
         controller_manager = await self.controller_manager_async()
-        
-        current_security_level = self.security_manager().security_level
+
+        security_manager = await self.security_manager_async()
+        if not security_manager:
+            return
+        current_security_level = security_manager.security_level
 
         for event in event_list:
 
@@ -238,7 +241,9 @@ class EventManager( Singleton, AlertMixin, ControllerMixin, SecurityMixin ):
                 await alert_manager.upsert_alarm_async( alarm )
                 continue
             
-            control_actions = await sync_to_async(list)(event.event_definition.control_actions.all())
+            control_actions = await sync_to_async(list)(
+                event.event_definition.control_actions.select_related('controller').all()
+            )
             for control_action in control_actions:
                 await controller_manager.do_control_async(
                     controller = control_action.controller,
