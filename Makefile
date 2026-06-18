@@ -32,6 +32,16 @@ docker-build:	Dockerfile
 		--tag hi:$$HI_VERSION \
 		--tag hi:latest .
 
+docker-slim-build:	Dockerfile-slim
+	@HI_VERSION=$$(cat HI_VERSION); \
+	docker build \
+		-f Dockerfile-slim \
+		--label "name=hi-slim" \
+		--label "version=$$HI_VERSION" \
+		--label "build-date=$(NOW_DATE)" \
+		--tag hi-slim:$$HI_VERSION \
+		--tag hi-slim:latest .
+
 docker-run:	.private/env/local.dev Dockerfile fix-permissions
 	./deploy/run_container.sh -bg
 

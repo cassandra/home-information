@@ -1,0 +1,76 @@
+# Pin specific Python version for consistency across platforms
+FROM python:3.11.15-alpine3.24 AS build
+
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV PYTHONUNBUFFERED=1
+
+# Install build requirements
+RUN apk add --no-cache gcc python3-dev musl-dev linux-headers
+
+# Assumes base.txt is all that is needed (ignores dev-specific dependencies)
+RUN --mount=type=bind,source=src/hi/requirements/base.txt,target=/tmp/requirements.txt \
+    mkdir -p /opt/hienv \
+    && python -m venv /opt/hienv \
+    && source /opt/hienv/bin/activate \
+    && pip install --no-cache-dir -r /tmp/requirements.txt
+
+# Deploy stage
+FROM python:3.11.15-alpine3.24
+
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV PYTHONUNBUFFERED=1
+ENV PATH="/opt/hienv/bin:$PATH"
+
+# Install dependencies with curl for healthcheck
+RUN apk add --no-cache \
+        bash \
+        curl \
+        supervisor \
+        nginx \
+        redis \
+        poppler-utils
+
+# The nginx user needs to be able to write to /dev/stdout
+RUN addgroup nginx tty
+
+RUN mkdir -p /data/database \
+    && mkdir -p /data/media \
+    && chown -c nginx:nginx /data/* \
+    && mkdir -p /opt/supervisor.d \
+    && chown nginx:nginx /opt/supervisor.d
+
+COPY --chown=nginx:nginx package/docker-slim_supervisord.conf /opt/supervisor.d/hi.conf
+COPY --chown=nginx:nginx package/docker_nginx.conf /etc/nginx/http.d/hi.conf
+
+# Clean up nginx default configurations and ensure proper symlinks
+RUN rm -f /etc/nginx/http.d/default.conf \
+    && nginx -t
+
+COPY --from=build --chown=nginx:nginx /opt/hienv /opt/hienv
+COPY --chown=nginx:nginx src /src
+COPY --chmod=+x --chown=nginx:nginx package/docker_entrypoint.sh /src/entrypoint.sh
+COPY HI_VERSION /HI_VERSION
+
+# Adjust the shipped gunicorn scripts to use a writable location
+RUN mkdir -p /run/gunicorn \
+    && chown nginx:nginx /run/gunicorn \
+    && sed -i 's/var\/run\/gunicorn.sock/run\/gunicorn\/gunicorn.sock/g' /etc/nginx/http.d/hi.conf \
+    && sed -i 's/var\/run\/gunicorn.sock/run\/gunicorn\/gunicorn.sock/g' /src/bin/docker-start-gunicorn.sh
+
+RUN chmod +x /src/bin/docker-start-gunicorn.sh
+
+HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
+    CMD curl -f http://localhost:8000/health || exit 1
+
+VOLUME /data/database /data/media
+
+# Supervisord does not like being started as a non-root user, instead it will drop to the user when running the processes
+# This is not as good as a non-root user but a compromise until we can refactor the image to not require supervisord
+# USER nginx
+WORKDIR /src
+
+EXPOSE 8000
+
+ENTRYPOINT ["/src/entrypoint.sh"]
+
+CMD ["/usr/bin/supervisord", "-c", "/opt/supervisor.d/hi.conf" ]
