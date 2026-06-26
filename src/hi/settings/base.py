@@ -403,6 +403,7 @@ EMAIL_USE_SSL = ENV.EMAIL_USE_SSL
 #
 BASE_URL_FOR_EMAIL_LINKS = f'http://{SITE_DOMAIN}'
 
+MASTER_ENCRYPTION_KEY = "-IvqgosaU7R6rychu4fdTd93OlWuAtD8gpJINa-qMog="
 
 # ====================
 # Development-related Settings

@@ -15,6 +15,7 @@ from .edit_context import AttributeItemEditContext
 from .enums import AttributeValueType
 from .models import AttributeModel
 from .transient_models import AttributeEditFormData, AttributeMultiEditFormData
+from .cripto import encrypt_value, decrypt_value
 
 logger = logging.getLogger(__name__)
 
@@ -77,6 +78,11 @@ class AttributeEditFormHandler:
         with transaction.atomic():
             if edit_form_data.owner_form:
                 edit_form_data.owner_form.save()
+
+            self.encrypt_secret_attributes(
+                formset=edit_form_data.regular_attributes_formset
+            )
+
             edit_form_data.regular_attributes_formset.save()
             
             self.process_file_title_updates(
@@ -93,6 +99,16 @@ class AttributeEditFormHandler:
             )
         return
     
+    def encrypt_secret_attributes(self, formset):
+        for form in formset.forms:
+            if not form.instance.value_type.is_secret:
+                continue
+
+            encripted_value = encrypt_value(form.instance.value)
+            print(f"Encrypting value for attribute {form.instance.id}: {form.instance.value} -> {encripted_value}")
+            decrypted_value = decrypt_value(encripted_value)  # For demonstration, decrypting immediately
+            print(f"Decrypted value for attribute {form.instance.id}: {decrypted_value}")
+
     def process_file_deletions( self,
                                 attr_item_context  : AttributeItemEditContext,
                                 request       : HttpRequest           ) -> None:
