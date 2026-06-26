@@ -1,7 +1,7 @@
 import logging
 
 from django.conf import settings
-from cryptography.fernet import Fernet
+from cryptography.fernet import Fernet, InvalidToken
 
 logger = logging.getLogger(__name__)
 
@@ -32,6 +32,6 @@ def decrypt_value(encrypted_text: str) -> str:
     cipher = get_cipher()
     try:
         return cipher.decrypt(encrypted_text.encode('utf-8')).decode('utf-8')
-    except Exception as e:
-        logger.warning("Unable to decrypt value.")
-        raise ValueError("Unable to decrypt value.") from e
+    except InvalidToken:
+        logger.warning("Failed to decrypt value. Assuming legacy plain text.")
+        return encrypted_text
