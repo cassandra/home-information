@@ -31,22 +31,27 @@ def initialize_global_cache_client():
     if _g_global_redis_client:
         _g_global_redis_client = None  # No good way to explicitly "close" this
 
-    host, port = ( settings.REDIS_HOST, settings.REDIS_PORT )
+    host, port, password = ( settings.REDIS_HOST, settings.REDIS_PORT, settings.REDIS_PASSWORD )
     if not port:
         port = 6379
 
     logger.info( "Attempting to connect to Redis at %s:%s ..." % ( host, port ))
 
+    kwargs = {
+        "host": host,
+        "port": port,
+        "db": 0,
+        "socket_timeout": 5,
+        "socket_connect_timeout": 5,
+        "decode_responses": True,
+    }
+    if password:
+        kwargs["password"] = password
+        
     try:
-        _g_global_redis_client = redis.StrictRedis( host = host,
-                                                    port = port,
-                                                    db = 0,
-                                                    socket_timeout = 5,
-                                                    socket_connect_timeout = 5,
-                                                    decode_responses = True )
+        _g_global_redis_client = redis.StrictRedis( **kwargs )
         _g_global_redis_client.ping()
         logger.info( "Successfully connected to Redis at %s:%s" % ( host, port ))
-        
     except ( ConnectionRefusedError, redis.exceptions.ConnectionError ) as e:
         logger.error( f'Could not connect to Redis server: {e}' )
         _g_global_redis_client = None

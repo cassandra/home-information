@@ -356,13 +356,14 @@ CONSTANCE_CONFIG = {
 
 REDIS_HOST = ENV.REDIS_HOST
 REDIS_PORT = ENV.REDIS_PORT
+REDIS_PASSWORD = ENV.REDIS_PASSWORD
 
 CACHES = {
     'default': {
         # 'BACKEND': 'django.core.cache.backends.dummy.DummyCache',
         'BACKEND': 'django.core.cache.backends.redis.RedisCache',
         'LOCATION': [
-            f'redis://{REDIS_HOST}:{REDIS_PORT}',
+            f'redis://{REDIS_HOST}:{REDIS_PORT}' if not REDIS_PASSWORD else f'redis://:{REDIS_PASSWORD}@{REDIS_HOST}:{REDIS_PORT}',
         ],
         "KEY_PREFIX": 'main:',
     }

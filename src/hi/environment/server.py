@@ -38,6 +38,7 @@ class EnvironmentSettings:
     MEDIA_ROOT                 : str           = None
     REDIS_HOST                 : str           = 'localhost'
     REDIS_PORT                 : int           = 6379
+    REDIS_PASSWORD             : str           = ''
     SUPPRESS_AUTHENTICATION    : bool          = True
     EMAIL_SUBJECT_PREFIX       : str           = ''
     DEFAULT_FROM_EMAIL         : str           = ''
@@ -132,6 +133,11 @@ class EnvironmentSettings:
             ))
         except ( TypeError, ValueError ):
             pass
+
+        env_settings.REDIS_PASSWORD = cls.get_env_variable(
+            'HI_REDIS_PASSWORD',
+            env_settings.REDIS_PASSWORD,
+        )
 
         ###########
         # Email-related

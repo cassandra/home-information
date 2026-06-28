@@ -143,6 +143,7 @@ class HiEnvironmentGenerator:
             ( 'HI_REDIS_HOST', '127.0.0.1' ),
             ( 'HI_REDIS_PORT', '6379' ),
             ( 'HI_REDIS_KEY_PREFIX', '' ),
+            ( 'HI_REDIS_PASSWORD', '' ),
         ] ),
         ( 'Authentication',
           'optional; "true" disables login for simple single-user setups', [
@@ -224,6 +225,7 @@ class HiEnvironmentGenerator:
             'HI_REDIS_HOST': '127.0.0.1',
             'HI_REDIS_PORT': '6379',
             'HI_REDIS_KEY_PREFIX': self._env_config.redis_key_prefix,
+            'HI_REDIS_PASSWORD': '',  # Optional; empty means no Redis auth (backward-compatible)
             'HI_EMAIL_SUBJECT_PREFIX': self._env_config.redis_subject_prefix,
             'HI_EXTRA_HOST_URLS': '',  # To be filled in manually if/when running beyond localhost
             'HI_EXTRA_CSP_URLS': '',  # To be filled in manually if/when running beyond localhost

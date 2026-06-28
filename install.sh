@@ -223,6 +223,7 @@ HI_MEDIA_PATH=/data/media
 HI_REDIS_HOST=127.0.0.1
 HI_REDIS_PORT=6379
 HI_REDIS_KEY_PREFIX=
+HI_REDIS_PASSWORD=
 
 # Authentication (disabled for simple setup)
 HI_SUPPRESS_AUTHENTICATION=true
