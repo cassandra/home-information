@@ -36,6 +36,7 @@ class EnvironmentSettings:
     EXTRA_CSP_URLS             : Tuple[ str ]  = field( default_factory = tuple )
     DATABASES_NAME_PATH        : str           = None
     MEDIA_ROOT                 : str           = None
+    ENCRYPTION_KEY      : str           = '-IvqgosaU7R6rychu4fdTd93OlWuAtD8gpJINa-qMog='
     REDIS_HOST                 : str           = 'localhost'
     REDIS_PORT                 : int           = 6379
     SUPPRESS_AUTHENTICATION    : bool          = True
@@ -116,6 +117,10 @@ class EnvironmentSettings:
         env_settings.MEDIA_ROOT = cls.get_env_variable(
             'HI_MEDIA_PATH',
             env_settings.MEDIA_ROOT,
+        )
+        env_settings.ENCRYPTION_KEY = cls.get_env_variable(
+            'HI_ENCRYPTION_KEY',
+            env_settings.ENCRYPTION_KEY,
         )
 
         ###########

@@ -6,13 +6,9 @@ from cryptography.fernet import Fernet, InvalidToken
 logger = logging.getLogger(__name__)
 
 
-def get_cipher():
+def get_cipher() -> Fernet:
     """Retrieves the master key from settings and initializes Fernet."""
-    key = getattr(settings, 'MASTER_ENCRYPTION_KEY', None)
-    if not key:
-        logger.critical("Security misconfiguration: MASTER_ENCRYPTION_KEY is not defined in settings.")
-        raise ValueError("The MASTER_ENCRYPTION_KEY setting is not defined.")
-    return Fernet(key)
+    return Fernet(settings.ENCRYPTION_KEY)
 
 
 def encrypt_value(plain_text: str) -> str:

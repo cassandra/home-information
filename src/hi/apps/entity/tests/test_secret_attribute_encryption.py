@@ -36,7 +36,7 @@ class TestSecretAttributeEncryption(BaseTestCase):
         plain = 'my_api_key_12345'
         entity = self._create_entity()
 
-        with self.settings(MASTER_ENCRYPTION_KEY=TEST_ENCRYPTION_KEY):
+        with self.settings(ENCRYPTION_KEY=TEST_ENCRYPTION_KEY):
             form = self._build_bound_form(entity, value=plain, secret=True)
             self.assertTrue(form.is_valid(), form.errors)
             saved_attr = form.save()
@@ -49,7 +49,7 @@ class TestSecretAttributeEncryption(BaseTestCase):
             'The plain-text value must not be stored directly in the database.',
         )
 
-        with self.settings(MASTER_ENCRYPTION_KEY=TEST_ENCRYPTION_KEY):
+        with self.settings(ENCRYPTION_KEY=TEST_ENCRYPTION_KEY):
             decrypted = decrypt_value(saved_attr.value)
             self.assertEqual(decrypted, plain)
 
@@ -59,7 +59,7 @@ class TestSecretAttributeEncryption(BaseTestCase):
         plain = 'ordinary_value'
         entity = self._create_entity()
 
-        with self.settings(MASTER_ENCRYPTION_KEY=TEST_ENCRYPTION_KEY):
+        with self.settings(ENCRYPTION_KEY=TEST_ENCRYPTION_KEY):
             form = self._build_bound_form(entity, value=plain, secret=False)
             self.assertTrue(form.is_valid(), form.errors)
             saved_attr = form.save()
@@ -75,7 +75,7 @@ class TestSecretAttributeEncryption(BaseTestCase):
         plain = 'secret_token_xyz'
         attr = self._create_encrypted_attribute(plain)
 
-        with self.settings(MASTER_ENCRYPTION_KEY=TEST_ENCRYPTION_KEY):
+        with self.settings(ENCRYPTION_KEY=TEST_ENCRYPTION_KEY):
             form = EntityAttributeForm(instance=attr)
 
         self.assertEqual(
@@ -92,7 +92,7 @@ class TestSecretAttributeEncryption(BaseTestCase):
         handler = AttributeEditFormHandler()
         post_data = self._create_secret_post_data(entity, context, plain)
 
-        with self.settings(MASTER_ENCRYPTION_KEY=TEST_ENCRYPTION_KEY):
+        with self.settings(ENCRYPTION_KEY=TEST_ENCRYPTION_KEY):
             form_data = handler.create_edit_form_data(
                 attr_item_context=context,
                 form_data=post_data,
@@ -161,7 +161,7 @@ class TestSecretAttributeEncryption(BaseTestCase):
         if entity is None:
             entity = self._create_entity()
 
-        with self.settings(MASTER_ENCRYPTION_KEY=TEST_ENCRYPTION_KEY):
+        with self.settings(ENCRYPTION_KEY=TEST_ENCRYPTION_KEY):
             ciphertext = encrypt_value(plain)
 
         return EntityAttribute.objects.create(
