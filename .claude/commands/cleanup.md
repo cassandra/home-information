@@ -1,7 +1,7 @@
 ---
 allowed-tools: Bash, TodoWrite
 description: Post-PR branch cleanup following our safety procedures
-argument-hint: [feature-branch-name]
+argument-hint: "[feature-branch-name]"
 ---
 
 Post-PR cleanup for merged feature branch "$0" following `docs/dev/workflow/workflow-guidelines.md`:

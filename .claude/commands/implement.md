@@ -1,7 +1,7 @@
 ---
 allowed-tools: Bash, Read, Edit, Write, TodoWrite, Grep, Glob, Task
 description: Implement a GitHub issue that has been picked up, stopping at PR-ready state
-argument-hint: [issue-number]
+argument-hint: "[issue-number]"
 ---
 
 Implement GitHub issue #$0 following our development standards from `docs/dev/workflow/workflow-guidelines.md`:

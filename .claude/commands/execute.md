@@ -1,7 +1,7 @@
 ---
 allowed-tools: Bash, Read, Edit, Write, TodoWrite, Grep, Glob, Task
 description: Complete issue-to-PR orchestration with intelligent sub-agent coordination
-argument-hint: [issue-number]
+argument-hint: "[issue-number]"
 ---
 
 Complete issue-to-PR orchestration for GitHub issue #$0:

@@ -1,7 +1,7 @@
 ---
 allowed-tools: Bash, TodoWrite
 description: Create smart commits following our message standards
-argument-hint: [commit-message]
+argument-hint: "[commit-message]"
 ---
 
 Create commit with message "$0" following our standards from `docs/dev/workflow/workflow-guidelines.md`:

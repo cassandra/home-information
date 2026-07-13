@@ -1,7 +1,7 @@
 ---
 allowed-tools: Bash, Read, Write, TodoWrite, Grep, Glob
 description: Pick up a GitHub issue — prepare branch, investigate, and produce a proposed phased work breakdown for review
-argument-hint: [issue-number]
+argument-hint: "[issue-number]"
 ---
 
 # Pick up GitHub issue #$0

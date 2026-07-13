@@ -1,7 +1,7 @@
 ---
 allowed-tools: Bash, Read, Edit, TodoWrite, Grep, Glob, Task
 description: Deep investigation and analysis of GitHub issues for implementation planning
-argument-hint: [issue-number]
+argument-hint: "[issue-number]"
 ---
 
 Deep investigation and implementation planning for GitHub issue #$0:

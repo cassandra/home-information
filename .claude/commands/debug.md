@@ -1,7 +1,7 @@
 ---
 allowed-tools: Bash, Read, TodoWrite, Grep, Glob, Task
 description: Debug issues with AI-assisted analysis and troubleshooting
-argument-hint: [description]
+argument-hint: "[description]"
 ---
 
 Debug issue: "$0"

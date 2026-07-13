@@ -1,7 +1,7 @@
 ---
 allowed-tools: Bash, Read, TodoWrite, Grep, Glob, Task
 description: Systematic response to GitHub pull request feedback
-argument-hint: [pr-number]
+argument-hint: "[pr-number]"
 ---
 
 Systematic response to GitHub pull request #$0 feedback:
