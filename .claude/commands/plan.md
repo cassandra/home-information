@@ -1,7 +1,7 @@
 ---
 allowed-tools: Bash, Read, TodoWrite, Grep, Glob
 description: Strategic planning and work breakdown for GitHub issues
-argument-hint: [issue-number]
+argument-hint: "[issue-number]"
 ---
 
 Strategic planning and work breakdown for GitHub issue #$0:

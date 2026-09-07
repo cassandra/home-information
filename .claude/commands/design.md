@@ -1,7 +1,7 @@
 ---
 allowed-tools: Bash, Read, Write, TodoWrite, Grep, Glob
 description: Design planning and HTML mockup creation for GitHub issues
-argument-hint: [issue-number]
+argument-hint: "[issue-number]"
 ---
 
 Design planning and HTML mockup creation for GitHub issue #$0:

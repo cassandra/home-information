@@ -1,7 +1,7 @@
 ---
 allowed-tools: Bash, Read, TodoWrite, Grep, Glob, Task
 description: Plan and execute refactoring with expert analysis
-argument-hint: [target] (e.g., ClassName, module_name, or file_path)
+argument-hint: "[target] (e.g., ClassName, module_name, or file_path)"
 ---
 
 Plan refactoring for: "$0"

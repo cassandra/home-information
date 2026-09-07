@@ -1,7 +1,7 @@
 ---
 allowed-tools: Bash, Read, TodoWrite
 description: Create GitHub issues using proper templates and conventions
-argument-hint: [type] [title]
+argument-hint: "[type] [title]"
 ---
 
 Create GitHub issue of type "$0" with title "$1" using proper templates and conventions:

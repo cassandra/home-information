@@ -1,7 +1,7 @@
 ---
 allowed-tools: Bash, Read, Write, TodoWrite
 description: Create pull request following our workflow and template requirements
-argument-hint: [title]
+argument-hint: "[title]"
 ---
 
 Create pull request with title "$0" following our workflow from `docs/dev/workflow/workflow-guidelines.md`:

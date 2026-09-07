@@ -1,7 +1,7 @@
 ---
 allowed-tools: Bash, Read, Write, Edit, Grep, TodoWrite
 description: Find existing icons or create new ones for the standardized icon system
-argument-hint: [concept/action]
+argument-hint: "[concept/action]"
 ---
 
 Find or create an icon for "$0":
