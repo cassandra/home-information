@@ -1,5 +1,33 @@
 # Pin specific Python version for consistency across platforms
-FROM python:3.11.8-bookworm
+FROM python:3.11.8-slim AS build
+
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV PYTHONUNBUFFERED=1
+
+# Install build requirements
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends \
+        curl \
+    && rm -rf /var/lib/apt/lists/* \
+    && mkdir -p /opt/hienv
+
+# Configure virtual environment for installed module portability
+ENV VIRTUAL_ENV=/opt/hienv
+RUN python3 -m venv $VIRTUAL_ENV
+ENV PATH="$VIRTUAL_ENV/bin:$PATH"
+
+# Assumes base.txt is all that is needed (ignores dev-specific dependencies)
+COPY src/hi/requirements/base.txt /tmp/requirements.txt
+RUN pip install --no-cache-dir -r /tmp/requirements.txt
+
+# Deploy stage
+FROM python:3.11.8-slim
+
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV PYTHONUNBUFFERED=1
+ENV PYTHONPATH=/src
+ENV VIRTUAL_ENV=/opt/hienv
+ENV PATH="$VIRTUAL_ENV/bin:$PATH"
 
 # Install dependencies with curl for healthcheck
 RUN apt-get update \
@@ -12,27 +40,11 @@ RUN apt-get update \
         poppler-utils \
     && mkdir -p /var/log/supervisor \
     && mkdir -p /etc/supervisor/conf.d \
-    && rm -rf /var/lib/apt/lists/* \
-    && pip install --upgrade pip
+    && mkdir -p /data/database \
+    && mkdir -p /data/media \
+    && rm -rf /var/lib/apt/lists/*
 
-WORKDIR /src
-
-ENV PYTHONDONTWRITEBYTECODE=1
-ENV PYTHONUNBUFFERED=1
-ENV PYTHONPATH=/src
-
-EXPOSE 8000
-
-VOLUME /data/database /data/media
-RUN mkdir -p /data/database && mkdir -p /data/media
-
-HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
-    CMD curl -f http://localhost:8000/health || exit 1
-
-# Assumes base.txt is all that is needed (ignores dev-specific dependencies)
-COPY src/hi/requirements/base.txt /src/requirements.txt
-RUN pip install --no-cache-dir --root-user-action=ignore -r requirements.txt
-
+# Add our config files
 COPY package/docker_supervisord.conf /etc/supervisor/conf.d/hi.conf
 COPY package/docker_nginx.conf /etc/nginx/sites-available/default
 
@@ -42,12 +54,21 @@ RUN rm -f /etc/nginx/conf.d/default.conf \
     && ln -s /etc/nginx/sites-available/default /etc/nginx/sites-enabled/default \
     && nginx -t
 
-COPY package/docker_entrypoint.sh /src/entrypoint.sh
-RUN chmod +x /src/entrypoint.sh
-
-COPY HI_VERSION /HI_VERSION
+COPY --from=build /opt/hienv /opt/hienv
 COPY src /src
-RUN chmod +x /src/bin/docker-start-gunicorn.sh
+COPY package/docker_entrypoint.sh /src/entrypoint.sh
+COPY HI_VERSION /HI_VERSION
+
+RUN chmod +x /src/entrypoint.sh /src/bin/docker-start-gunicorn.sh
+
+HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
+    CMD curl -f http://localhost:8000/health || exit 1
+
+VOLUME /data/database /data/media
+
+WORKDIR /src
+
+EXPOSE 8000
 
 ENTRYPOINT ["/src/entrypoint.sh"]
 
