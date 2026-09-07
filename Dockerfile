@@ -17,8 +17,8 @@ RUN python3 -m venv $VIRTUAL_ENV
 ENV PATH="$VIRTUAL_ENV/bin:$PATH"
 
 # Assumes base.txt is all that is needed (ignores dev-specific dependencies)
-RUN --mount=type=bind,source=src/hi/requirements/base.txt,target=/tmp/requirements.txt \
-    pip install --no-cache-dir -r /tmp/requirements.txt
+COPY src/hi/requirements/base.txt /tmp/requirements.txt
+RUN pip install --no-cache-dir -r /tmp/requirements.txt
 
 # Deploy stage
 FROM python:3.11.8-slim
@@ -56,10 +56,10 @@ RUN rm -f /etc/nginx/conf.d/default.conf \
 
 COPY --from=build /opt/hienv /opt/hienv
 COPY src /src
-COPY --chmod=+x package/docker_entrypoint.sh /src/entrypoint.sh
+COPY package/docker_entrypoint.sh /src/entrypoint.sh
 COPY HI_VERSION /HI_VERSION
 
-RUN chmod +x /src/bin/docker-start-gunicorn.sh
+RUN chmod +x /src/entrypoint.sh /src/bin/docker-start-gunicorn.sh
 
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
     CMD curl -f http://localhost:8000/health || exit 1
