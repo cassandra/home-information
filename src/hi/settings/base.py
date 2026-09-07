@@ -363,11 +363,22 @@ CACHES = {
         # 'BACKEND': 'django.core.cache.backends.dummy.DummyCache',
         'BACKEND': 'django.core.cache.backends.redis.RedisCache',
         'LOCATION': [
-            f'redis://{REDIS_HOST}:{REDIS_PORT}' if not REDIS_PASSWORD else f'redis://:{REDIS_PASSWORD}@{REDIS_HOST}:{REDIS_PORT}',
+            f'redis://{REDIS_HOST}:{REDIS_PORT}',
         ],
         "KEY_PREFIX": 'main:',
     }
 }
+
+# The password is passed as a connection option rather than embedded in the
+# LOCATION URL: a URL would need percent-encoding (a "/", "#" or "?" in the
+# password breaks URL parsing outright) and would expose the secret in the
+# Django debug page, which cleanses settings by name and does not treat
+# LOCATION as sensitive. Only set when non-empty so the no-password case is
+# byte-identical to having no Redis authentication at all.
+if REDIS_PASSWORD:
+    CACHES['default']['OPTIONS'] = {
+        'password': REDIS_PASSWORD,
+    }
 
 TEST_RUNNER = 'hi.testing.runner.HiTestRunner'
 

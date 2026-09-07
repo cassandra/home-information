@@ -225,7 +225,11 @@ class HiEnvironmentGenerator:
             'HI_REDIS_HOST': '127.0.0.1',
             'HI_REDIS_PORT': '6379',
             'HI_REDIS_KEY_PREFIX': self._env_config.redis_key_prefix,
-            'HI_REDIS_PASSWORD': '',  # Optional; empty means no Redis auth (backward-compatible)
+            # Optional; empty means no Redis auth (backward-compatible). Leave empty
+            # unless HI_REDIS_HOST points at a server requiring a password. The
+            # bundled Redis deliberately runs without one: with no password set,
+            # Redis protected mode refuses all non-loopback connections.
+            'HI_REDIS_PASSWORD': '',
             'HI_EMAIL_SUBJECT_PREFIX': self._env_config.redis_subject_prefix,
             'HI_EXTRA_HOST_URLS': '',  # To be filled in manually if/when running beyond localhost
             'HI_EXTRA_CSP_URLS': '',  # To be filled in manually if/when running beyond localhost

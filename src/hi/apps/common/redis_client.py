@@ -37,21 +37,41 @@ def initialize_global_cache_client():
 
     logger.info( "Attempting to connect to Redis at %s:%s ..." % ( host, port ))
 
-    kwargs = {
-        "host": host,
-        "port": port,
-        "db": 0,
-        "socket_timeout": 5,
-        "socket_connect_timeout": 5,
-        "decode_responses": True,
+    client_kwargs = {
+        'host': host,
+        'port': port,
+        'db': 0,
+        'socket_timeout': 5,
+        'socket_connect_timeout': 5,
+        'decode_responses': True,
     }
+
+    # Only pass a password when one is configured. Sending AUTH to a server
+    # that has no password set is an error, so an empty setting must result in
+    # exactly the same connection as before Redis authentication was supported.
     if password:
-        kwargs["password"] = password
-        
+        client_kwargs['password'] = password
+
     try:
-        _g_global_redis_client = redis.StrictRedis( **kwargs )
+        _g_global_redis_client = redis.StrictRedis( **client_kwargs )
         _g_global_redis_client.ping()
         logger.info( "Successfully connected to Redis at %s:%s" % ( host, port ))
+
+    except redis.exceptions.AuthenticationError as e:
+        # Covers both a wrong password and a password being configured for a
+        # server that requires none. Subclass of ConnectionError, so this must
+        # precede that handler to report a credential problem rather than an
+        # unreachable server.
+        logger.error( f'Redis rejected the credentials. Check whether the configured'
+                      f' Redis password matches the server, and whether the server'
+                      f' requires a password at all: {e}' )
+        _g_global_redis_client = None
+    except redis.exceptions.ResponseError as e:
+        # Not a ConnectionError subclass, so it would otherwise escape as an
+        # unhandled exception. Defensive: covers server-side rejections other
+        # than authentication.
+        logger.error( f'Redis refused the connection: {e}' )
+        _g_global_redis_client = None
     except ( ConnectionRefusedError, redis.exceptions.ConnectionError ) as e:
         logger.error( f'Could not connect to Redis server: {e}' )
         _g_global_redis_client = None
