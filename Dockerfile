@@ -1,5 +1,5 @@
 # Pin specific Python version for consistency across platforms
-FROM python:3.11.8-slim AS build
+FROM python:3.11.16-slim-trixie AS build
 
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
@@ -21,7 +21,7 @@ COPY src/hi/requirements/base.txt /tmp/requirements.txt
 RUN pip install --no-cache-dir -r /tmp/requirements.txt
 
 # Deploy stage
-FROM python:3.11.8-slim
+FROM python:3.11.16-slim-trixie
 
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
