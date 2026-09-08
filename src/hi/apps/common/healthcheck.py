@@ -22,14 +22,12 @@ def do_healthcheck( db_layer = True, cache_layer = True ) -> Dict[ str, str ]:
         status['database'] = 'not-checked'
 
     if cache_layer:
-        # The client is None when the connection could not be established at all
-        # (unreachable server, or rejected credentials). Report that directly
-        # instead of raising an AttributeError on None and surfacing it as the
-        # health detail.
+        # get_redis_client() returns None when no connection could be established,
+        # whether the server was unreachable or the credentials were rejected.
         redis_client = get_redis_client()
         if redis_client is None:
-            status['cache'] = ( 'unhealthy: no cache connection could be established;'
-                                ' see the server log for the connection or credential error' )
+            status['cache'] = ( 'unhealthy: no cache connection; cache-backed requests'
+                                ' will fail until the server or credentials are corrected' )
             status['is_healthy'] = False
         else:
             try:
