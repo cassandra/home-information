@@ -126,7 +126,6 @@ class WeatherDataSource( ApiHealthStatusProvider ):
         # Store last query times in redis as external API rate limits do
         # not care how many times our server restarts.
         #
-        self._redis_client = get_redis_client()
         self._redis_last_poll_key = f'ws:last:dt:{self._id}'
         return
 
@@ -152,7 +151,9 @@ class WeatherDataSource( ApiHealthStatusProvider ):
 
     @property
     def redis_client(self):
-        return self._redis_client
+        # Resolved on each use rather than captured at construction, so that a
+        # reconnect reaches sources built while Redis was unreachable.
+        return get_redis_client()
 
     @property
     def geographic_location(self):
@@ -278,14 +279,14 @@ class WeatherDataSource( ApiHealthStatusProvider ):
         poll_time = datetimeproxy.now()
         poll_time_str = poll_time.isoformat()
         try:
-            self._redis_client.set( self._redis_last_poll_key, poll_time_str )
+            self.redis_client.set( self._redis_last_poll_key, poll_time_str )
             return True
         except redis.exceptions.RedisError as e:
             logger.error( f'Error storing datetime: {e}')
         return False
     
     def fetch_last_poll_datetime(self):
-        poll_time_str = self._redis_client.get( self._redis_last_poll_key )
+        poll_time_str = self.redis_client.get( self._redis_last_poll_key )
         if not poll_time_str:
             return None
         try:

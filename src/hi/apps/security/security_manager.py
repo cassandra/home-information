@@ -39,9 +39,15 @@ class SecurityManager( Singleton, SettingsMixin ):
         self._delayed_security_state = None
         
         self._security_status_lock = Lock()
-        self._redis_client = get_redis_client()
         self._was_initialized = False
         return
+
+    @property
+    def _redis_client(self):
+        # Resolved on each use rather than captured: this is a singleton, so a
+        # client captured while Redis was unreachable would stay None for the
+        # life of the process even after the connection is re-established.
+        return get_redis_client()
     
     def cleanup(self):
         """Clean up resources, particularly timer threads."""

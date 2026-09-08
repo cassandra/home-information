@@ -277,7 +277,8 @@ class TestSunriseSunsetOrg(BaseTestCase):
         }
         
         # Mock Redis client to return cached data and the API call
-        with patch.object(self.sunrise_sunset, '_redis_client') as mock_redis, \
+        mock_redis = Mock()
+        with patch( 'hi.apps.weather.weather_data_source.get_redis_client', return_value = mock_redis ), \
              patch.object(self.sunrise_sunset, '_get_astronomical_api_data_from_api') as mock_api_call:
             
             mock_redis.get.return_value = json.dumps(cached_api_data)
@@ -310,7 +311,8 @@ class TestSunriseSunsetOrg(BaseTestCase):
         mock_api_call.return_value = api_data
         
         # Mock Redis client - cache miss, then set
-        with patch.object(self.sunrise_sunset, '_redis_client') as mock_redis:
+        mock_redis = Mock()
+        with patch( 'hi.apps.weather.weather_data_source.get_redis_client', return_value = mock_redis ):
             mock_redis.get.return_value = None  # Cache miss
             
             result = self.sunrise_sunset.get_astronomical_data(

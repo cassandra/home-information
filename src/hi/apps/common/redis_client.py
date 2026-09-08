@@ -1,35 +1,51 @@
 import logging
+import time
+
 import redis
 
 from django.conf import settings
 
 logger = logging.getLogger(__name__)
 
-# We want to allow running without the redis dependency, so it is not
-# enough to see a "None" for the client to know whether we tried to
-# initialize the client or not.
+# How long to wait before re-attempting a connection after one fails. A single
+# transient failure -- the bundled Redis not yet accepting connections while the
+# app starts, say -- must not cost the process its cache for its whole lifetime.
+# The cooldown keeps an outage from paying a connection timeout on every cache
+# access.
 #
-_g_global_redis_initialized_attempted = False
+RECONNECT_COOLDOWN_SECS = 60
 
 # According to docs, the Redis client is thread safe.
 #
 _g_global_redis_client = None
 
+# Monotonic timestamp of the last connection attempt, None before the first.
+# Monotonic so that a system clock adjustment can neither postpone nor stampede
+# reconnection.
+#
+_g_last_connect_attempt = None
+
+
+def _is_connect_attempt_due():
+    if _g_last_connect_attempt is None:
+        return True
+    return bool( ( time.monotonic() - _g_last_connect_attempt ) >= RECONNECT_COOLDOWN_SECS )
+
 
 def initialize_global_cache_client():
     """
-    Need to call this once at process start if you want to use cache-based
-    features.
+    Establishes the shared Redis client. Safe to call repeatedly: it returns
+    immediately once connected, and while disconnected it re-attempts no more
+    often than RECONNECT_COOLDOWN_SECS.
     """
-    global _g_global_redis_initialized_attempted
     global _g_global_redis_client
+    global _g_last_connect_attempt
 
-    if _g_global_redis_initialized_attempted:
+    if _g_global_redis_client is not None:
         return
-    _g_global_redis_initialized_attempted = True
-    
-    if _g_global_redis_client:
-        _g_global_redis_client = None  # No good way to explicitly "close" this
+    if not _is_connect_attempt_due():
+        return
+    _g_last_connect_attempt = time.monotonic()
 
     host = settings.REDIS_HOST
     port = settings.REDIS_PORT
@@ -87,12 +103,17 @@ def get_redis_client():
 
 
 def clear_redis_client():
-    global _g_global_redis_initialized_attempted
+    """
+    Discards the shared client and allows an immediate reconnect. Provided for
+    test convenience; live code has no reason to call it, since reconnection is
+    handled by initialize_global_cache_client().
+    """
     global _g_global_redis_client
+    global _g_last_connect_attempt
     if _g_global_redis_client:
         logger.info( "Clearing existing Redis connection" )
-        _g_global_redis_initialized_attempted = False
-        _g_global_redis_client = None  # No good way to explicitly "close" this
+    _g_global_redis_client = None  # No good way to explicitly "close" this
+    _g_last_connect_attempt = None
     return
 
 

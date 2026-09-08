@@ -71,8 +71,14 @@ class SensorResponseManager( Singleton, SensorHistoryMixin, EventMixin ):
     SENSOR_RESPONSE_LIST_SIZE = 5
     SENSOR_RESPONSE_LIST_SET_KEY = 'hi.sr.list.keys'
 
+    @property
+    def _redis_client(self):
+        # Resolved on each use rather than captured: this is a singleton, so a
+        # client captured while Redis was unreachable would stay None for the
+        # life of the process even after the connection is re-established.
+        return get_redis_client()
+
     def __init_singleton__( self ):
-        self._redis_client = get_redis_client()
         self._sensor_cache = TTLCache( maxsize = 1000, ttl = 300 )  # Is thread-safe
         self._latest_sensor_data_dirty = True
         self._sensor_response_list_map = dict()

@@ -267,11 +267,23 @@ class TestSecurityManager(BaseTestCase):
         # Should cancel existing timer
         existing_timer.cancel.assert_called_once()
 
+    def _patch_redis_client(self):
+        """
+        The manager resolves its Redis client per use so that a reconnect
+        reaches this singleton, so tests patch the resolver rather than
+        assigning an instance attribute.
+        """
+        patcher = patch( 'hi.apps.security.security_manager.get_redis_client',
+                         return_value = Mock() )
+        patcher.start()
+        self.addCleanup( patcher.stop )
+        return
+
     def test_apply_delayed_state(self):
         """Test apply delayed state - calls immediate update with delayed state."""
         manager = SecurityManager()
         manager._delayed_security_state = SecurityState.AWAY
-        manager._redis_client = Mock()
+        self._patch_redis_client()
 
         with patch.object(manager, 'update_security_state_immediate') as mock_update:
             manager._apply_delayed_state()
@@ -282,7 +294,7 @@ class TestSecurityManager(BaseTestCase):
         """Test delayed AWAY transition sets console auto-lock timestamp."""
         manager = SecurityManager()
         manager._delayed_security_state = SecurityState.AWAY
-        manager._redis_client = Mock()
+        self._patch_redis_client()
 
         with patch.object( manager, 'update_security_state_immediate' ):
             manager._apply_delayed_state()
@@ -297,7 +309,7 @@ class TestSecurityManager(BaseTestCase):
         """Test delayed non-AWAY transition does not set auto-lock timestamp."""
         manager = SecurityManager()
         manager._delayed_security_state = SecurityState.NIGHT
-        manager._redis_client = Mock()
+        self._patch_redis_client()
 
         with patch.object( manager, 'update_security_state_immediate' ):
             manager._apply_delayed_state()
@@ -309,7 +321,7 @@ class TestSecurityManager(BaseTestCase):
         """Test transitioning out of AWAY deletes the auto-lock timestamp."""
         manager = SecurityManager()
         manager._security_state = SecurityState.AWAY
-        manager._redis_client = Mock()
+        self._patch_redis_client()
 
         manager.update_security_state_immediate( SecurityState.DAY )
 
@@ -322,7 +334,7 @@ class TestSecurityManager(BaseTestCase):
         """Test re-entering AWAY does not delete the auto-lock timestamp."""
         manager = SecurityManager()
         manager._security_state = SecurityState.AWAY
-        manager._redis_client = Mock()
+        self._patch_redis_client()
 
         manager.update_security_state_immediate( SecurityState.AWAY )
 
@@ -333,7 +345,7 @@ class TestSecurityManager(BaseTestCase):
         """Test non-AWAY to non-AWAY transition does not delete timestamp."""
         manager = SecurityManager()
         manager._security_state = SecurityState.DAY
-        manager._redis_client = Mock()
+        self._patch_redis_client()
 
         manager.update_security_state_immediate( SecurityState.NIGHT )
 

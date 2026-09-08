@@ -185,6 +185,7 @@ class AsyncSensorResponseManagerTestCase(AsyncTaskFastTestCase):
         """Test dirty flag optimization reduces Redis operations for repeated calls."""
         mock_redis = Mock()
         mock_redis.smembers.return_value = []
+        mock_redis.pipeline.return_value.execute.return_value = []
         mock_get_redis_client.return_value = mock_redis
         
         # First call should hit Redis
@@ -228,7 +229,8 @@ class AsyncSensorResponseManagerTestCase(AsyncTaskFastTestCase):
 
     def test_get_latest_sensor_response_map_empty_list_short_circuits(self):
         """Empty integration_keys returns empty dict without touching Redis."""
-        with patch.object(self.manager, '_redis_client') as mock_redis:
+        mock_redis = Mock()
+        with patch( 'hi.apps.sense.sensor_response_manager.get_redis_client', return_value = mock_redis ):
             result = self.manager.get_latest_sensor_response_map(integration_keys=[])
             self.assertEqual(result, {})
             mock_redis.pipeline.assert_not_called()
@@ -301,7 +303,8 @@ class AsyncSensorResponseManagerTestCase(AsyncTaskFastTestCase):
             response_datetime=timezone.now()
         )
         
-        with patch.object(self.manager, '_redis_client') as mock_redis:
+        mock_redis = Mock()
+        with patch( 'hi.apps.sense.sensor_response_manager.get_redis_client', return_value = mock_redis ):
             mock_pipeline = Mock()
             mock_redis.pipeline.return_value = mock_pipeline
             
@@ -390,7 +393,8 @@ class AsyncSensorResponseManagerDirtyFlagTestCase(AsyncTaskFastTestCase):
             mock_history_manager = Mock()
             mock_history_manager.add_to_sensor_history = AsyncMock( return_value = [] )
 
-            with patch.object( self.manager, '_redis_client' ) as mock_redis, \
+            mock_redis = Mock()
+            with patch( 'hi.apps.sense.sensor_response_manager.get_redis_client', return_value = mock_redis ), \
                  patch.object( self.manager, 'sensor_history_manager_async',
                                new = AsyncMock( return_value = mock_history_manager )):
                 mock_redis.pipeline.return_value = mock_pipeline
@@ -492,7 +496,7 @@ class TestUpdateWithLatestSensorResponseLists(AsyncTaskFastTestCase):
             )
 
         async def run():
-            with patch.object( self.manager, '_redis_client', mock_redis ), \
+            with patch( 'hi.apps.sense.sensor_response_manager.get_redis_client', return_value = mock_redis ), \
                  patch.object( self.manager, '_add_latest_sensor_responses',
                                side_effect = capture_add ), \
                  patch.object( self.manager, 'event_manager_async',
@@ -655,7 +659,7 @@ class TestUpdateWithLatestSensorResponseLists(AsyncTaskFastTestCase):
         mock_event_manager.add_entity_state_transitions = AsyncMock()
 
         async def run():
-            with patch.object( self.manager, '_redis_client', mock_redis ), \
+            with patch( 'hi.apps.sense.sensor_response_manager.get_redis_client', return_value = mock_redis ), \
                  patch.object( self.manager, '_add_latest_sensor_responses',
                                new = AsyncMock() ), \
                  patch.object( self.manager, 'event_manager_async',
