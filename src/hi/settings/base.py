@@ -369,12 +369,10 @@ CACHES = {
     }
 }
 
-# The password is passed as a connection option rather than embedded in the
-# LOCATION URL: a URL would need percent-encoding (a "/", "#" or "?" in the
-# password breaks URL parsing outright) and would expose the secret in the
-# Django debug page, which cleanses settings by name and does not treat
-# LOCATION as sensitive. Only set when non-empty so the no-password case is
-# byte-identical to having no Redis authentication at all.
+# Passed as a connection option rather than in the LOCATION URL: a URL needs
+# percent-encoding, and Django's debug page cleanses OPTIONS by key name but not
+# LOCATION. The key is lowercase for Django's own RedisCache; django-redis
+# spells it PASSWORD.
 if REDIS_PASSWORD:
     CACHES['default']['OPTIONS'] = {
         'password': REDIS_PASSWORD,

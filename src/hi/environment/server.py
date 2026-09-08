@@ -133,11 +133,12 @@ class EnvironmentSettings:
             ))
         except ( TypeError, ValueError ):
             pass
-
+        # Stripped so that stray whitespace in an env file cannot be mistaken for
+        # a configured password: empty means no authentication.
         env_settings.REDIS_PASSWORD = cls.get_env_variable(
             'HI_REDIS_PASSWORD',
             env_settings.REDIS_PASSWORD,
-        )
+        ).strip()
 
         ###########
         # Email-related

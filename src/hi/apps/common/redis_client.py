@@ -31,53 +31,45 @@ def initialize_global_cache_client():
     if _g_global_redis_client:
         _g_global_redis_client = None  # No good way to explicitly "close" this
 
-    host, port, password = ( settings.REDIS_HOST, settings.REDIS_PORT, settings.REDIS_PASSWORD )
+    host = settings.REDIS_HOST
+    port = settings.REDIS_PORT
+    password = settings.REDIS_PASSWORD
     if not port:
         port = 6379
 
     logger.info( "Attempting to connect to Redis at %s:%s ..." % ( host, port ))
 
-    client_kwargs = {
-        'host': host,
-        'port': port,
-        'db': 0,
-        'socket_timeout': 5,
-        'socket_connect_timeout': 5,
-        'decode_responses': True,
-    }
-
-    # Only pass a password when one is configured. Sending AUTH to a server
-    # that has no password set is an error, so an empty setting must result in
-    # exactly the same connection as before Redis authentication was supported.
-    if password:
-        client_kwargs['password'] = password
-
     try:
-        _g_global_redis_client = redis.StrictRedis( **client_kwargs )
-        _g_global_redis_client.ping()
+        # An empty password is falsy to redis-py, which then sends no AUTH, so
+        # this is the same connection as one built without credentials.
+        redis_client = redis.StrictRedis( host                   = host,
+                                          port                   = port,
+                                          db                     = 0,
+                                          password               = password or None,
+                                          socket_timeout         = 5,
+                                          socket_connect_timeout = 5,
+                                          decode_responses       = True )
+        redis_client.ping()
+        _g_global_redis_client = redis_client
         logger.info( "Successfully connected to Redis at %s:%s" % ( host, port ))
 
     except redis.exceptions.AuthenticationError as e:
-        # Covers both a wrong password and a password being configured for a
-        # server that requires none. Subclass of ConnectionError, so this must
-        # precede that handler to report a credential problem rather than an
-        # unreachable server.
+        # Every credential rejection arrives here: wrong password, a password
+        # configured for a server that requires none, and a server requiring one
+        # when none is configured. Subclass of ConnectionError, so it must
+        # precede that handler to report credentials rather than reachability.
         logger.error( f'Redis rejected the credentials. Check whether the configured'
                       f' Redis password matches the server, and whether the server'
                       f' requires a password at all: {e}' )
-        _g_global_redis_client = None
     except redis.exceptions.ResponseError as e:
-        # Not a ConnectionError subclass, so it would otherwise escape as an
-        # unhandled exception. Defensive: covers server-side rejections other
-        # than authentication.
+        # AuthenticationWrongNumberOfArgsError lands here rather than above, and
+        # ResponseError is not a ConnectionError subclass, so without this it
+        # would escape uncaught.
         logger.error( f'Redis refused the connection: {e}' )
-        _g_global_redis_client = None
     except ( ConnectionRefusedError, redis.exceptions.ConnectionError ) as e:
         logger.error( f'Could not connect to Redis server: {e}' )
-        _g_global_redis_client = None
     except ValueError as ve:
         logger.exception( f'Problem seting up Redis client: {ve}' )
-        _g_global_redis_client = None
         
     return
 

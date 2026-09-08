@@ -223,9 +223,8 @@ HI_MEDIA_PATH=/data/media
 HI_REDIS_HOST=127.0.0.1
 HI_REDIS_PORT=6379
 HI_REDIS_KEY_PREFIX=
-# Leave empty unless HI_REDIS_HOST points at a Redis server requiring a password.
-# The bundled Redis deliberately runs without one: with no password set, Redis
-# protected mode refuses all non-loopback connections.
+# Only needed when HI_REDIS_HOST points at a Redis server that requires a
+# password. The bundled Redis intentionally requires none.
 HI_REDIS_PASSWORD=
 
 # Authentication (disabled for simple setup)
