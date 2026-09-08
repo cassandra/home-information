@@ -7,7 +7,7 @@ from django.http import HttpRequest
 from django.template.loader import get_template
 
 import hi.apps.common.datetimeproxy as datetimeproxy
-from hi.apps.common.redis_client import get_redis_client
+from hi.apps.common.redis_client import get_safe_cache_client
 from hi.apps.common.singleton import Singleton
 from hi.apps.config.settings_mixins import SettingsMixin
 from hi.apps.console.console_helper import ConsoleSettingsHelper
@@ -39,9 +39,16 @@ class SecurityManager( Singleton, SettingsMixin ):
         self._delayed_security_state = None
         
         self._security_status_lock = Lock()
-        self._redis_client = get_redis_client()
         self._was_initialized = False
         return
+
+    @property
+    def _redis_client(self):
+        # Resolved on each use rather than captured: this is a singleton, so a
+        # client captured while Redis was unreachable would stay unusable for
+        # the life of the process even after the connection is re-established.
+        # Losing the cache here costs a reset default, so degrading is correct.
+        return get_safe_cache_client()
     
     def cleanup(self):
         """Clean up resources, particularly timer threads."""
@@ -71,8 +78,6 @@ class SecurityManager( Singleton, SettingsMixin ):
         return self._security_level
 
     def get_console_away_lock_timestamp( self ) -> Optional[str]:
-        if not self._redis_client:
-            return None
         return self._redis_client.get( self.CONSOLE_AWAY_LOCK_TIMESTAMP_CACHE_KEY )
     
     def get_security_status_data(self) -> SecurityStatusData:
@@ -212,8 +217,6 @@ class SecurityManager( Singleton, SettingsMixin ):
         return
 
     def _set_console_away_lock_timestamp( self ) -> None:
-        if not self._redis_client:
-            return
         self._redis_client.set(
             self.CONSOLE_AWAY_LOCK_TIMESTAMP_CACHE_KEY,
             str( datetimeproxy.now() ),
@@ -221,8 +224,6 @@ class SecurityManager( Singleton, SettingsMixin ):
         return
 
     def _delete_console_away_lock_timestamp( self ) -> None:
-        if not self._redis_client:
-            return
         self._redis_client.delete( self.CONSOLE_AWAY_LOCK_TIMESTAMP_CACHE_KEY )
         return
     

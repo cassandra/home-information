@@ -30,9 +30,8 @@ class HiTestRunner( DiscoverRunner ):
         # test hits real Redis. Mark as initialized so the real
         # initialize_global_cache_client() is never called.
         self._original_redis_client = redis_client_module._g_global_redis_client
-        self._original_redis_initialized = redis_client_module._g_global_redis_initialized_attempted
+        self._original_last_connect_attempt = redis_client_module._g_last_connect_attempt
         redis_client_module._g_global_redis_client = fakeredis.FakeRedis( decode_responses = True )
-        redis_client_module._g_global_redis_initialized_attempted = True
 
         # Override Django's cache to use in-memory backend so cache.clear()
         # does not execute FLUSHDB on real Redis.
@@ -43,6 +42,6 @@ class HiTestRunner( DiscoverRunner ):
     def teardown_test_environment( self, **kwargs ):
         self._cache_override.disable()
         redis_client_module._g_global_redis_client = self._original_redis_client
-        redis_client_module._g_global_redis_initialized_attempted = self._original_redis_initialized
+        redis_client_module._g_last_connect_attempt = self._original_last_connect_attempt
         super().teardown_test_environment( **kwargs )
         return

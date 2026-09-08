@@ -136,7 +136,8 @@ class TestUSNO(BaseTestCase):
     def test_get_astronomical_data_handles_api_errors_gracefully(self, mock_get):
         """Test that API errors are handled gracefully in public interface."""
         # Mock API error - need to mock the redis client to skip cache
-        with patch.object(self.usno, '_redis_client') as mock_redis:
+        mock_redis = Mock()
+        with patch( 'hi.apps.weather.weather_data_source.get_redis_client', return_value = mock_redis ):
             mock_redis.get.return_value = None  # Cache miss
             
             # Mock API error
@@ -172,7 +173,8 @@ class TestUSNO(BaseTestCase):
                      f'{self.test_location.longitude:.3f}:{target_date}')
         
         # Mock Redis to return cached data
-        with patch.object(self.usno, '_redis_client') as mock_redis:
+        mock_redis = Mock()
+        with patch( 'hi.apps.weather.weather_data_source.get_redis_client', return_value = mock_redis ):
             mock_redis.get.return_value = json.dumps(cached_api_data)
             
             with patch('hi.apps.common.datetimeproxy.now') as mock_now:
@@ -578,7 +580,8 @@ class TestUSNO(BaseTestCase):
         }
         
         # Mock Redis client to return cached data and the API call
-        with patch.object(self.usno, '_redis_client') as mock_redis, \
+        mock_redis = Mock()
+        with patch( 'hi.apps.weather.weather_data_source.get_redis_client', return_value = mock_redis ), \
              patch.object(self.usno, '_get_astronomical_api_data_from_api') as mock_api_call:
             
             mock_redis.get.return_value = json.dumps(cached_api_data)

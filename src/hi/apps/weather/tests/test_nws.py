@@ -2642,7 +2642,8 @@ class TestNationalWeatherService( BaseTestCase ):
         }
         
         # Mock Redis client
-        with patch.object(nws, '_redis_client') as mock_redis, \
+        mock_redis = Mock()
+        with patch( 'hi.apps.weather.weather_data_source.get_redis_client', return_value = mock_redis ), \
              patch.object(nws, '_get_alerts_data_from_api') as mock_api_call:
             
             import json
