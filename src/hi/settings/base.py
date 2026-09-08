@@ -356,6 +356,7 @@ CONSTANCE_CONFIG = {
 
 REDIS_HOST = ENV.REDIS_HOST
 REDIS_PORT = ENV.REDIS_PORT
+REDIS_PASSWORD = ENV.REDIS_PASSWORD
 
 CACHES = {
     'default': {
@@ -367,6 +368,15 @@ CACHES = {
         "KEY_PREFIX": 'main:',
     }
 }
+
+# Passed as a connection option rather than in the LOCATION URL: a URL needs
+# percent-encoding, and Django's debug page cleanses OPTIONS by key name but not
+# LOCATION. The key is lowercase for Django's own RedisCache; django-redis
+# spells it PASSWORD.
+if REDIS_PASSWORD:
+    CACHES['default']['OPTIONS'] = {
+        'password': REDIS_PASSWORD,
+    }
 
 TEST_RUNNER = 'hi.testing.runner.HiTestRunner'
 

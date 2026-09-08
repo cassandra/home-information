@@ -124,6 +124,8 @@ class HiEnvironmentGenerator:
     # AND assigned a value during generate_env_file() — otherwise the run
     # fails. Entries are
     # ( section_heading, requirement_note, [ ( var_name, placeholder ) ] ).
+    # An entry may carry a third element, a note emitted as a comment above the
+    # variable, for guidance that does not fit the section heading.
     SETTING_SECTIONS = [
         ( 'Core Django', 'required', [
             ( 'DJANGO_SETTINGS_MODULE', 'hi.settings.local' ),
@@ -143,6 +145,9 @@ class HiEnvironmentGenerator:
             ( 'HI_REDIS_HOST', '127.0.0.1' ),
             ( 'HI_REDIS_PORT', '6379' ),
             ( 'HI_REDIS_KEY_PREFIX', '' ),
+            ( 'HI_REDIS_PASSWORD', '',
+              'Only needed when HI_REDIS_HOST points at a Redis server that requires a\n'
+              'password. The bundled Redis intentionally requires none.' ),
         ] ),
         ( 'Authentication',
           'optional; "true" disables login for simple single-user setups', [
@@ -189,14 +194,19 @@ class HiEnvironmentGenerator:
 
     @classmethod
     def _declared_var_names( cls ):
-        return [ name for _h, _r, entries in cls.SETTING_SECTIONS for name, _v in entries ]
+        return [ entry[0] for _h, _r, entries in cls.SETTING_SECTIONS for entry in entries ]
 
     @classmethod
     def print_example_env_file( cls ):
         sys.stdout.write( cls.EXAMPLE_HEADER )
         for heading, requirement, entries in cls.SETTING_SECTIONS:
             sys.stdout.write( f'\n# --- {heading} ({requirement}) ---\n' )
-            for name, value in entries:
+            for entry in entries:
+                name, value = entry[0], entry[1]
+                note = entry[2] if len(entry) > 2 else None
+                if note:
+                    for note_line in note.split( '\n' ):
+                        sys.stdout.write( f'# {note_line}\n' )
                 sys.stdout.write( f'{name}={value}\n' )
         return
 
@@ -224,6 +234,7 @@ class HiEnvironmentGenerator:
             'HI_REDIS_HOST': '127.0.0.1',
             'HI_REDIS_PORT': '6379',
             'HI_REDIS_KEY_PREFIX': self._env_config.redis_key_prefix,
+            'HI_REDIS_PASSWORD': '',  # Empty means no Redis auth
             'HI_EMAIL_SUBJECT_PREFIX': self._env_config.redis_subject_prefix,
             'HI_EXTRA_HOST_URLS': '',  # To be filled in manually if/when running beyond localhost
             'HI_EXTRA_CSP_URLS': '',  # To be filled in manually if/when running beyond localhost
