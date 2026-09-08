@@ -45,7 +45,7 @@ class TestSecurityManager(BaseTestCase):
         self.assertIsNone(manager._delayed_security_state)
         self.assertFalse(manager._was_initialized)
 
-    @patch('hi.apps.security.security_manager.get_redis_client')
+    @patch('hi.apps.security.security_manager.get_safe_cache_client')
     def test_ensure_initialized_tracking(self, mock_get_redis_client):
         """Test initialization tracking - important for lazy loading."""
         mock_redis = Mock()
@@ -94,7 +94,7 @@ class TestSecurityManager(BaseTestCase):
         self.assertEqual(manager.security_state, SecurityState.AWAY)
         self.assertEqual(manager.security_level, SecurityLevel.HIGH)
 
-    @patch('hi.apps.security.security_manager.get_redis_client')
+    @patch('hi.apps.security.security_manager.get_safe_cache_client')
     def test_update_security_state_immediate_redis_caching(self, mock_get_redis_client):
         """Test Redis state caching - important for persistence across restarts."""
         mock_redis = Mock()
@@ -225,7 +225,7 @@ class TestSecurityManager(BaseTestCase):
             manager.update_security_state_user(mock_action)
 
     @patch('hi.apps.security.security_manager.Timer')
-    @patch('hi.apps.security.security_manager.get_redis_client')
+    @patch('hi.apps.security.security_manager.get_safe_cache_client')
     def test_update_security_state_delayed_timer_setup(self, mock_get_redis_client, mock_timer_class):
         """Test delayed state timer setup and Redis caching."""
         mock_redis = Mock()
@@ -269,11 +269,11 @@ class TestSecurityManager(BaseTestCase):
 
     def _patch_redis_client(self):
         """
-        The manager resolves its Redis client per use so that a reconnect
+        The manager resolves its cache client per use so that a reconnect
         reaches this singleton, so tests patch the resolver rather than
         assigning an instance attribute.
         """
-        patcher = patch( 'hi.apps.security.security_manager.get_redis_client',
+        patcher = patch( 'hi.apps.security.security_manager.get_safe_cache_client',
                          return_value = Mock() )
         patcher.start()
         self.addCleanup( patcher.stop )
@@ -352,7 +352,7 @@ class TestSecurityManager(BaseTestCase):
         manager._redis_client.delete.assert_not_called()
         return
 
-    @patch('hi.apps.security.security_manager.get_redis_client')
+    @patch('hi.apps.security.security_manager.get_safe_cache_client')
     def test_initialize_away_sets_lock_timestamp(self, mock_get_redis_client):
         """Test initializing with AWAY state sets a fresh lock timestamp."""
         mock_redis = Mock()

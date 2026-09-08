@@ -4,7 +4,7 @@ from unittest.mock import Mock, patch
 
 import redis
 
-from hi.apps.common.redis_client import get_redis_client
+from hi.apps.common.redis_client import get_redis_client, get_safe_cache_client
 import hi.apps.common.redis_client as redis_client_module
 from hi.testing.base_test_case import BaseTestCase
 
@@ -100,4 +100,53 @@ class RedisClientTestCase( BaseTestCase ):
             self.assertIsNone( get_redis_client() )
 
         self.assertEqual( constructor.call_count, 1 )
+        return
+
+
+class SafeCacheClientTestCase( BaseTestCase ):
+    """
+    Cache access must degrade rather than raise in both failure modes: when no
+    connection was ever established, and when a live connection has since
+    failed. Callers already treat a miss as normal, so degrading is invisible
+    to them; raising is not.
+    """
+
+    def _patched_client( self, client ):
+        return patch.object( redis_client_module, 'get_redis_client', return_value = client )
+
+    def _assert_all_operations_degrade( self, cache ):
+        self.assertIsNone( cache.get( 'some-key' ) )
+        self.assertFalse( cache.set( 'some-key', 'some-value' ) )
+        self.assertEqual( cache.delete( 'some-key' ), 0 )
+        self.assertEqual( cache.smembers( 'some-set' ), set() )
+        self.assertEqual( cache.pipeline().lindex( 'some-key', 0 ).execute(), list() )
+        return
+
+    def test_operations_degrade_when_no_client_was_established(self):
+        with self._patched_client( None ):
+            self._assert_all_operations_degrade( get_safe_cache_client() )
+        return
+
+    def test_operations_degrade_when_a_live_client_fails(self):
+        client = Mock()
+        for command_name in [ 'get', 'set', 'delete', 'smembers', 'pipeline' ]:
+            getattr( client, command_name ).side_effect = redis.exceptions.ConnectionError( 'gone' )
+
+        with self._patched_client( client ):
+            self._assert_all_operations_degrade( get_safe_cache_client() )
+        return
+
+    def test_pipeline_degrades_when_execution_fails(self):
+        """
+        The pipeline is obtained before the server goes away, so the failure
+        surfaces at execute() rather than when the pipeline is created.
+        """
+        pipeline = Mock()
+        pipeline.execute.side_effect = redis.exceptions.ConnectionError( 'gone' )
+        client = Mock()
+        client.pipeline.return_value = pipeline
+
+        with self._patched_client( client ):
+            self.assertEqual( get_safe_cache_client().pipeline().lindex( 'k', 0 ).execute(),
+                              list() )
         return

@@ -4,6 +4,7 @@ from unittest.mock import AsyncMock, Mock, patch
 from django.utils import timezone
 from hi.testing.async_task_utils import AsyncTaskFastTestCase
 
+from hi.apps.common.redis_client import get_redis_client
 from hi.apps.entity.models import Entity, EntityState
 from hi.apps.sense.models import Sensor, SensorHistory
 from hi.apps.sense.sensor_response_manager import SensorResponseManager
@@ -68,21 +69,21 @@ class AsyncSensorResponseManagerTestCase(AsyncTaskFastTestCase):
         self.manager.ensure_initialized()
         self.assertEqual(self.manager._was_initialized, original_state)
 
-    @patch('hi.apps.sense.sensor_response_manager.get_redis_client')
-    def test_cache_key_generation(self, mock_get_redis_client):
+    @patch('hi.apps.sense.sensor_response_manager.get_safe_cache_client')
+    def test_cache_key_generation(self, mock_get_cache_client):
         """Test cache key generation follows expected pattern."""
-        mock_get_redis_client.return_value = Mock()
+        mock_get_cache_client.return_value = Mock()
         
         cache_key = self.manager.to_sensor_response_list_cache_key(self.integration_key)
         expected_key = f'hi.sr.latest.{self.integration_key}'
         
         self.assertEqual(cache_key, expected_key)
 
-    @patch('hi.apps.sense.sensor_response_manager.get_redis_client')
-    def test_update_with_no_sensor_responses_does_nothing(self, mock_get_redis_client):
+    @patch('hi.apps.sense.sensor_response_manager.get_safe_cache_client')
+    def test_update_with_no_sensor_responses_does_nothing(self, mock_get_cache_client):
         """Test update with empty map returns without Redis operations."""
         mock_redis = Mock()
-        mock_get_redis_client.return_value = mock_redis
+        mock_get_cache_client.return_value = mock_redis
         
         async def async_test_logic():
             await self.manager.update_with_latest_sensor_responses({})
@@ -180,13 +181,13 @@ class AsyncSensorResponseManagerTestCase(AsyncTaskFastTestCase):
         result = self.manager._get_sensor(nonexistent_key)
         self.assertIsNone(result)
 
-    @patch('hi.apps.sense.sensor_response_manager.get_redis_client')
-    def test_dirty_flag_optimization_prevents_unnecessary_redis_calls(self, mock_get_redis_client):
+    @patch('hi.apps.sense.sensor_response_manager.get_safe_cache_client')
+    def test_dirty_flag_optimization_prevents_unnecessary_redis_calls(self, mock_get_cache_client):
         """Test dirty flag optimization reduces Redis operations for repeated calls."""
         mock_redis = Mock()
         mock_redis.smembers.return_value = []
         mock_redis.pipeline.return_value.execute.return_value = []
-        mock_get_redis_client.return_value = mock_redis
+        mock_get_cache_client.return_value = mock_redis
         
         # First call should hit Redis
         result1 = self.manager.get_all_latest_sensor_responses()
@@ -200,11 +201,11 @@ class AsyncSensorResponseManagerTestCase(AsyncTaskFastTestCase):
         mock_redis.smembers.assert_not_called()
         self.assertEqual(result1, result2)
 
-    @patch('hi.apps.sense.sensor_response_manager.get_redis_client')
-    def test_sensor_response_serialization_roundtrip(self, mock_get_redis_client):
+    @patch('hi.apps.sense.sensor_response_manager.get_safe_cache_client')
+    def test_sensor_response_serialization_roundtrip(self, mock_get_cache_client):
         """Test sensor responses serialize/deserialize correctly for Redis storage."""
         mock_redis = Mock()
-        mock_get_redis_client.return_value = mock_redis
+        mock_get_cache_client.return_value = mock_redis
         
         original_response = SensorResponse(
             integration_key=self.integration_key,
@@ -230,7 +231,7 @@ class AsyncSensorResponseManagerTestCase(AsyncTaskFastTestCase):
     def test_get_latest_sensor_response_map_empty_list_short_circuits(self):
         """Empty integration_keys returns empty dict without touching Redis."""
         mock_redis = Mock()
-        with patch( 'hi.apps.sense.sensor_response_manager.get_redis_client', return_value = mock_redis ):
+        with patch( 'hi.apps.sense.sensor_response_manager.get_safe_cache_client', return_value = mock_redis ):
             result = self.manager.get_latest_sensor_response_map(integration_keys=[])
             self.assertEqual(result, {})
             mock_redis.pipeline.assert_not_called()
@@ -238,7 +239,7 @@ class AsyncSensorResponseManagerTestCase(AsyncTaskFastTestCase):
     def test_get_latest_sensor_response_map_returns_none_for_uncached(self):
         """Keys with no cached entry map to None."""
         # Reset fakeredis state for this test.
-        self.manager._redis_client.flushdb()
+        get_redis_client().flushdb()
 
         result = self.manager.get_latest_sensor_response_map(
             integration_keys=[self.integration_key],
@@ -247,7 +248,7 @@ class AsyncSensorResponseManagerTestCase(AsyncTaskFastTestCase):
 
     def test_get_latest_sensor_response_map_returns_latest_for_cached(self):
         """Keys with cached entries return the most recent SensorResponse."""
-        self.manager._redis_client.flushdb()
+        get_redis_client().flushdb()
 
         cache_key = self.manager.to_sensor_response_list_cache_key(self.integration_key)
         older = SensorResponse(
@@ -261,8 +262,8 @@ class AsyncSensorResponseManagerTestCase(AsyncTaskFastTestCase):
             timestamp=timezone.now(),
         )
         # LPUSH order matches the production write path (newer at index 0).
-        self.manager._redis_client.lpush(cache_key, str(older))
-        self.manager._redis_client.lpush(cache_key, str(newer))
+        get_redis_client().lpush(cache_key, str(older))
+        get_redis_client().lpush(cache_key, str(newer))
 
         result = self.manager.get_latest_sensor_response_map(
             integration_keys=[self.integration_key],
@@ -272,7 +273,7 @@ class AsyncSensorResponseManagerTestCase(AsyncTaskFastTestCase):
 
     def test_get_latest_sensor_response_map_handles_mixed_cached_and_uncached(self):
         """Multiple keys: some cached, some not — order preserved, None for misses."""
-        self.manager._redis_client.flushdb()
+        get_redis_client().flushdb()
 
         key_a = IntegrationKey(integration_id='a', integration_name='one')
         key_b = IntegrationKey(integration_id='b', integration_name='two')
@@ -284,7 +285,7 @@ class AsyncSensorResponseManagerTestCase(AsyncTaskFastTestCase):
             response = SensorResponse(
                 integration_key=key, value=value, timestamp=timezone.now(),
             )
-            self.manager._redis_client.lpush(cache_key, str(response))
+            get_redis_client().lpush(cache_key, str(response))
 
         result = self.manager.get_latest_sensor_response_map(
             integration_keys=[key_a, key_b, key_c],
@@ -304,7 +305,7 @@ class AsyncSensorResponseManagerTestCase(AsyncTaskFastTestCase):
         )
         
         mock_redis = Mock()
-        with patch( 'hi.apps.sense.sensor_response_manager.get_redis_client', return_value = mock_redis ):
+        with patch( 'hi.apps.sense.sensor_response_manager.get_safe_cache_client', return_value = mock_redis ):
             mock_pipeline = Mock()
             mock_redis.pipeline.return_value = mock_pipeline
             
@@ -394,7 +395,7 @@ class AsyncSensorResponseManagerDirtyFlagTestCase(AsyncTaskFastTestCase):
             mock_history_manager.add_to_sensor_history = AsyncMock( return_value = [] )
 
             mock_redis = Mock()
-            with patch( 'hi.apps.sense.sensor_response_manager.get_redis_client', return_value = mock_redis ), \
+            with patch( 'hi.apps.sense.sensor_response_manager.get_safe_cache_client', return_value = mock_redis ), \
                  patch.object( self.manager, 'sensor_history_manager_async',
                                new = AsyncMock( return_value = mock_history_manager )):
                 mock_redis.pipeline.return_value = mock_pipeline
@@ -496,7 +497,7 @@ class TestUpdateWithLatestSensorResponseLists(AsyncTaskFastTestCase):
             )
 
         async def run():
-            with patch( 'hi.apps.sense.sensor_response_manager.get_redis_client', return_value = mock_redis ), \
+            with patch( 'hi.apps.sense.sensor_response_manager.get_safe_cache_client', return_value = mock_redis ), \
                  patch.object( self.manager, '_add_latest_sensor_responses',
                                side_effect = capture_add ), \
                  patch.object( self.manager, 'event_manager_async',
@@ -659,7 +660,7 @@ class TestUpdateWithLatestSensorResponseLists(AsyncTaskFastTestCase):
         mock_event_manager.add_entity_state_transitions = AsyncMock()
 
         async def run():
-            with patch( 'hi.apps.sense.sensor_response_manager.get_redis_client', return_value = mock_redis ), \
+            with patch( 'hi.apps.sense.sensor_response_manager.get_safe_cache_client', return_value = mock_redis ), \
                  patch.object( self.manager, '_add_latest_sensor_responses',
                                new = AsyncMock() ), \
                  patch.object( self.manager, 'event_manager_async',
