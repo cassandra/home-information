@@ -43,7 +43,7 @@ class IntegrationConnector( CapabilityGateway ):
 
     The framework calls `sync()`. The base implementation acquires a
     process-wide synchronization lock, delegates to the subclass's
-    `_sync_impl()`, and converts unexpected RuntimeError into a result
+    `_sync_impl()`, and converts any unexpected exception into a result
     object. Subclasses implement the integration-specific work in
     `_sync_impl()` and the small metadata accessors below.
 
@@ -183,11 +183,14 @@ class IntegrationConnector( CapabilityGateway ):
             with ExclusionLockContext(name=self.SYNCHRONIZATION_LOCK_NAME):
                 logger.debug(f'{self.__class__.__name__} sync started.')
                 result = self._sync_impl(is_initial_connect=is_initial_connect)
-        except RuntimeError as e:
+        except Exception as e:
+            # Broad catch, matching sync_preview(): any failure (e.g., a
+            # DB integrity violation) must surface in the result modal
+            # as an error rather than as a generic server error.
             logger.exception(e)
             result = IntegrationSyncResult(
                 title=self.get_result_title(is_initial_connect=is_initial_connect),
-                error_list=[str(e)],
+                error_list=[str(e) or e.__class__.__name__],
             )
         finally:
             logger.debug(f'{self.__class__.__name__} sync ended.')

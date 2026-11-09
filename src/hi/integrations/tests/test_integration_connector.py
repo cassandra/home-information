@@ -11,6 +11,8 @@ synchronizers share:
     pre-pass.
   * ``_rebuild_integration_components`` — abstract subclass hook
     used by reconnect.
+  * ``sync`` error handling — exceptions from ``_sync_impl`` become
+    error results.
 
 End-to-end cycle coverage (sync → detach → reconnect across multiple
 sync passes) lives in ``IntegrationConnectorReconnectCycleTests``
@@ -20,6 +22,7 @@ contracts live in each ``services/<integration>/tests/`` directory.
 
 import logging
 
+from django.db import IntegrityError
 from django.test import TestCase
 
 from hi.apps.attribute.enums import AttributeType
@@ -1706,3 +1709,50 @@ class IntegrationConnectorReconnectCycleTests(TestCase):
         self.assertEqual(legacy.name, '[Disconnected] light.cellar')
         self.assertIsNone(legacy.integration_id)
         self.assertIsNone(legacy.previous_integration_id)
+
+
+class IntegrationConnectorSyncErrorHandlingTests(TestCase):
+    """``sync()`` converts any exception escaping ``_sync_impl`` into
+    an error result so the operator sees what failed instead of a
+    generic server error (Issue #422)."""
+
+    def _make_synchronizer(self, sync_impl_error):
+        class FailingSynchronizer(IntegrationConnector):
+            SYNCHRONIZATION_LOCK_NAME = 'sync_error_handling_test_lock'
+
+            post_sync_called = False
+
+            def get_metadata(self):
+                return _stub_integration_metadata()
+
+            def get_result_title(self, is_initial_connect=False):
+                return 'Test Sync Result'
+
+            def _sync_impl(self, is_initial_connect=False):
+                raise sync_impl_error
+
+            def post_sync(self, result):
+                self.post_sync_called = True
+
+        return FailingSynchronizer()
+
+    def test_non_runtime_error_becomes_error_result(self):
+        synchronizer = self._make_synchronizer(
+            IntegrityError('UNIQUE constraint failed: sense_sensor.integration_id'),
+        )
+
+        result = synchronizer.sync(is_initial_connect=False)
+
+        self.assertEqual(result.title, 'Test Sync Result')
+        self.assertEqual(
+            result.error_list,
+            ['UNIQUE constraint failed: sense_sensor.integration_id'],
+        )
+        self.assertTrue(synchronizer.post_sync_called)
+
+    def test_exception_without_message_reports_exception_type(self):
+        synchronizer = self._make_synchronizer(KeyError())
+
+        result = synchronizer.sync(is_initial_connect=False)
+
+        self.assertEqual(result.error_list, ['KeyError'])
