@@ -857,6 +857,30 @@ class IntegrationConnectorPostSyncHookTests(TestCase):
         self.assertTrue(loaded.needs_sync)
         self.assertEqual(loaded.delta.added, {_key('a'), _key('b')})
 
+    def test_sync_with_conflicts_leaves_cache_alone(self):
+        from hi.integrations.connector.sync_result import IntegrationSyncResult
+
+        stale = IntegrationSyncCheck.build_result(
+            delta=SyncDelta(added={_key('a')}),
+            integration_label=self.INTEGRATION_LABEL,
+        )
+        IntegrationSyncCheck.set_state(
+            integration_id=self.INTEGRATION_ID,
+            result=stale,
+        )
+        synchronizer = self._make_synchronizer(
+            sync_impl_result=IntegrationSyncResult(
+                title='Update Check Result',
+                conflict_list=['upstream item a conflicts with HI item b'],
+            ),
+        )
+
+        synchronizer.sync(is_initial_connect=False)
+
+        loaded = IntegrationSyncCheck.get_state(self.INTEGRATION_ID)
+        self.assertIsNotNone(loaded)
+        self.assertTrue(loaded.needs_sync)
+
 
 class SyncCheckResultEqualityTests(TestCase):
     """Frozen dataclass equality is the only path tests use to compare

@@ -1,0 +1,25 @@
+{% comment %}
+Collapsible conflict block. Default open -- each conflict is an
+upstream item the sync left untouched until the operator resolves it
+upstream. Caller renders this regardless of result state; the partial
+gates internally so it's a no-op when there are no conflicts.
+
+Context:
+  sync_result : IntegrationSyncResult (or subclass).
+{% endcomment %}
+{% if sync_result.conflict_list %}
+<div class="mb-2 pl-3 hi-category-section hi-category-section--warning">
+  <a class="small text-warning text-uppercase hi-uppercase-label" data-toggle="collapse"
+     href="#hi-sync-result-conflicts" role="button"
+     aria-expanded="true" aria-controls="hi-sync-result-conflicts">
+    Conflicts ({{ sync_result.conflict_list|length }})
+  </a>
+  <div class="collapse show" id="hi-sync-result-conflicts">
+    <ul class="list-unstyled small mt-1 mb-0">
+      {% for conflict_message in sync_result.conflict_list %}
+      <li>{{ conflict_message }}</li>
+      {% endfor %}
+    </ul>
+  </div>
+</div>
+{% endif %}

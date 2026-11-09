@@ -23,7 +23,7 @@ from asgiref.sync import async_to_sync
 
 from hi.apps.entity.models import Entity
 
-from .sync_result import IntegrationSyncPreviewResult
+from .sync_result import IntegrationSyncItem, IntegrationSyncPreviewResult
 from .user_data_detector import EntityUserDataDetector
 
 logger = logging.getLogger(__name__)
@@ -90,21 +90,16 @@ class IntegrationSyncPreviewer:
 
     @staticmethod
     def _populate_added( result : IntegrationSyncPreviewResult, delta ):
-        """Created items: count + technical keys. Display names are not
+        """Created items: integration keys only. Display names are not
         available from this layer -- the upstream side is opaque to the
         framework, and ``check_needs_sync`` only returns
-        ``IntegrationKey`` instances. The technical names surface
-        behind a collapsed debug section in the preview-result modal
-        so the operator can verify what would be created without
-        committing to sync; placeholder entries in ``created_list``
-        keep the stat-card count consistent with the upstream count.
+        ``IntegrationKey`` instances -- so each item carries an empty
+        name and the result partials show just its key.
         """
-        if not delta.added:
-            return
-        result.upstream_added_keys = sorted(
-            k.integration_name for k in delta.added
-        )
-        result.created_list = [ '' ] * len( delta.added )
+        result.created_list = [
+            IntegrationSyncItem( name = '', integration_key = integration_key )
+            for integration_key in sorted( delta.added, key = str )
+        ]
         return
 
     @staticmethod
@@ -123,8 +118,12 @@ class IntegrationSyncPreviewer:
             Entity.objects.filter_by_integration_keys( list( delta.removed ))
         )
         for entity in removed_entities:
+            item = IntegrationSyncItem(
+                name = entity.name,
+                integration_key = entity.integration_key,
+            )
             if preserve_user_data and EntityUserDataDetector.has_user_created_attributes( entity ):
-                result.detached_list.append( entity.name )
+                result.detached_list.append( item )
             else:
-                result.removed_list.append( entity.name )
+                result.removed_list.append( item )
         return

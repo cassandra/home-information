@@ -3,7 +3,7 @@ Tests for the IntegrationSyncResult shape.
 
 Sync-vocabulary fields: title, per-category name lists
 (created_list / updated_list / removed_list), info_list /
-error_list / footer_message, plus the optional placement_input
+error_list / conflict_list / footer_message, plus the optional placement_input
 that bridges to the placement modal when the sync produced new
 entities to place.
 
@@ -87,6 +87,17 @@ class IntegrationSyncResultTests(SimpleTestCase):
             info_list=['Found 12 upstream items'],
         )
         self.assertFalse(result.has_changes)
+
+    def test_is_successful_only_without_errors_or_conflicts(self):
+        """Conflicts count against success: the conflicting upstream
+        items are still pending, so the "needs sync" state must stay."""
+        self.assertTrue(IntegrationSyncResult(title='X').is_successful)
+        self.assertFalse(
+            IntegrationSyncResult(title='X', error_list=['e']).is_successful
+        )
+        self.assertFalse(
+            IntegrationSyncResult(title='X', conflict_list=['c']).is_successful
+        )
 
     def test_placement_input_default_is_none(self):
         """A bare sync result has no placement_input — that's the

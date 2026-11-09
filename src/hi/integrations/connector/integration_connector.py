@@ -213,8 +213,10 @@ class IntegrationConnector( CapabilityGateway ):
         timestamp so UI surfaces clear immediately and the next
         background probe has a fresh baseline. Cache write failures must
         not propagate -- the sync itself succeeded and the caller's
-        flow should continue regardless."""
-        if result.error_list:
+        flow should continue regardless. A sync with conflicts is not
+        successful: the conflicting upstream items are still pending,
+        so the "needs sync" state is left in place."""
+        if not result.is_successful:
             return
         try:
             metadata = self.get_metadata()

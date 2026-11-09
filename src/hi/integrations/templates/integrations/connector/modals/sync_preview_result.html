@@ -7,9 +7,8 @@ preview framing -- the operator sees what a sync would do without
 committing it, and decides to proceed or back out.
 
 Reuses the five sync-result partials so the information layout
-matches the post-sync modal exactly. Preview-specific surfaces (the
-approximation disclaimer and the technical-key debug expander) sit
-alongside them.
+matches the post-sync modal exactly. The preview-specific
+approximation disclaimer sits alongside them.
 
 Footer action selection mirrors the pre-sync modal's policy logic
 but is driven by the preview's actual ``detached_list`` rather than
@@ -56,23 +55,7 @@ Preview: {{ sync_result.title }}
   </div>
 {% endif %}
 
-{% if sync_result.upstream_added_keys %}
-  <div class="mt-2 mb-3">
-    <a class="text-muted small" data-toggle="collapse"
-       href="#hi-sync-preview-upstream-keys" role="button"
-       aria-expanded="false" aria-controls="hi-sync-preview-upstream-keys">
-      Show upstream identifiers ({{ sync_result.upstream_added_keys|length }})
-    </a>
-    <div class="collapse" id="hi-sync-preview-upstream-keys">
-      <ul class="small mt-1 mb-0 text-muted">
-        {% for key in sync_result.upstream_added_keys %}
-        <li><code>{{ key }}</code></li>
-        {% endfor %}
-      </ul>
-    </div>
-  </div>
-{% endif %}
-
+{% include "integrations/connector/panes/sync_result_conflicts.html" %}
 {% include "integrations/connector/panes/sync_result_errors.html" %}
 {% include "integrations/connector/panes/sync_result_info.html" %}
 {% endblock %}

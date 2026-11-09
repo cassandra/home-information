@@ -2467,6 +2467,9 @@ g[hover] {
 .hi-category-section--success {
     border-left-color: var(--success-color);
 }
+.hi-category-section--warning {
+    border-left-color: var(--warning-color);
+}
 .hi-category-section--danger {
     border-left-color: var(--danger-color);
 }
