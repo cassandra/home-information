@@ -100,6 +100,7 @@ class HassApi:
     DEVICE_CLASS_ATTR = 'device_class'
     FRIENDLY_NAME_ATTR = 'friendly_name'
     INSTEON_ADDRESS_ATTR = 'insteon_address'
+    INSTEON_GROUP_ATTR = 'insteon_group'
     OPTIONS_ATTR = 'options'
     UNIT_OF_MEASUREMENT_ATTR = 'unit_of_measurement'
     
@@ -242,6 +243,10 @@ class HassState:
     @property
     def insteon_address(self):
         return self.attributes.get( HassApi.INSTEON_ADDRESS_ATTR )
+
+    @property
+    def insteon_group(self):
+        return self.attributes.get( HassApi.INSTEON_GROUP_ATTR )
     
     @property
     def unit_of_measurement(self):

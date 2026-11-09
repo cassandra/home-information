@@ -398,6 +398,10 @@ class HassConverter:
 
     INSTEON_ADDRESS_ATTR_NAME = 'Insteon Address'
 
+    # ``insteon_group`` of a multi-channel Insteon device's own load;
+    # its other groups are secondary channels (e.g., keypad buttons).
+    INSTEON_PRIMARY_GROUP = 1
+
     # Joins a substate suffix to its parent entity_id in substate
     # integration keys. ``~`` chosen over ``:`` because the latter has
     # special meaning in CSS selectors (pseudo-classes) and in URLs;
@@ -762,6 +766,13 @@ class HassConverter:
                                 changed_fields = model.update_integration_payload(new_payload)
                                 if changed_fields:
                                     messages.append(f'Updated payload for {model_type} {model}: {", ".join(changed_fields)}')
+                        role_message = cls._reconcile_bare_state_role(
+                            hass_device = hass_device,
+                            hass_state = hass_state,
+                            entity_state = model_with_entity_state.entity_state,
+                        )
+                        if role_message:
+                            messages.append( role_message )
 
                     # Create any newly-implied substate models
                     # (e.g., a bulb that gained color modes since
@@ -996,16 +1007,85 @@ class HassConverter:
             controller = cls._create_controller_from_entity_state_type(
                 entity_state_type, entity, integration_key, name, domain_payload
             )
-            return controller.entity_state
+            entity_state = controller.entity_state
 
         ##########
         # Sensors - Create sensor-only for non-controllable states using mapping logic
-        
-        sensor = cls._create_sensor_from_entity_state_type_with_params(
-            entity_state_type, entity, integration_key, name, domain_payload,
-            hass_state, add_alarm_events
+
+        else:
+            sensor = cls._create_sensor_from_entity_state_type_with_params(
+                entity_state_type, entity, integration_key, name, domain_payload,
+                hass_state, add_alarm_events
+            )
+            entity_state = sensor.entity_state
+
+        role_override = cls._bare_state_role_override(
+            hass_device = hass_device,
+            hass_state = hass_state,
+            entity_state_type = entity_state.entity_state_type,
         )
-        return sensor.entity_state
+        if role_override is not None:
+            entity_state.entity_state_role = role_override
+            entity_state.save( update_fields = [ 'role_str' ] )
+        return entity_state
+
+    @classmethod
+    def _bare_state_role_override( cls,
+                                   hass_device       : HassDevice,
+                                   hass_state        : HassState,
+                                   entity_state_type : EntityStateType ) -> Optional[ EntityStateRole ]:
+        """The role for a bare-key state when its type default does not
+        fit, else None.
+
+        Multi-channel Insteon devices (e.g., KeypadLinc) report each
+        channel as its own HA state, numbered by ``insteon_group``;
+        group 1 is the device's own load. Any other on/off channel
+        (a keypad's scene buttons) is SECONDARY_ON_OFF so that
+        role-driven choices -- one-click target, primary status,
+        listing order -- favor the load rather than whichever button
+        sorts first. Applies only when the device's group-1 state is
+        present, so a partially imported device keeps the defaults."""
+        if entity_state_type != EntityStateType.ON_OFF:
+            return None
+        insteon_group = hass_state.insteon_group
+        if insteon_group is None or insteon_group == cls.INSTEON_PRIMARY_GROUP:
+            return None
+        has_primary_channel = any(
+            device_state.insteon_group == cls.INSTEON_PRIMARY_GROUP
+            for device_state in hass_device.hass_state_list
+        )
+        if not has_primary_channel:
+            return None
+        return EntityStateRole.SECONDARY_ON_OFF
+
+    @classmethod
+    def _reconcile_bare_state_role( cls,
+                                    hass_device  : HassDevice,
+                                    hass_state   : HassState,
+                                    entity_state : EntityState ) -> Optional[ str ]:
+        """Bring an existing bare-key state's role in line with
+        ``_bare_state_role_override``, so devices imported before the
+        override existed (or whose channels changed) pick it up on
+        refresh. Only moves between an override and the type default;
+        any other role is left alone. Returns a change message, or
+        None when nothing changed."""
+        role_override = cls._bare_state_role_override(
+            hass_device = hass_device,
+            hass_state = hass_state,
+            entity_state_type = entity_state.entity_state_type,
+        )
+        current_role = entity_state.entity_state_role
+        if role_override is not None:
+            target_role = role_override
+        elif current_role == EntityStateRole.SECONDARY_ON_OFF:
+            target_role = entity_state.entity_state_type.default_role()
+        else:
+            return None
+        if current_role == target_role:
+            return None
+        entity_state.entity_state_role = target_role
+        entity_state.save( update_fields = [ 'role_str' ] )
+        return f'Changed role of {entity_state} from {current_role.name} to {target_role.name}'
 
     @classmethod
     def _create_hass_state_with_mapping( cls,
