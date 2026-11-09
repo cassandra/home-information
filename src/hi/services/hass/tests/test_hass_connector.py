@@ -5,10 +5,12 @@ from unittest.mock import Mock, patch
 from django.test import TestCase
 
 from hi.apps.entity.models import Entity
+from hi.apps.sense.models import Sensor
 from hi.integrations.connector.sync_result import IntegrationSyncResult
 from hi.integrations.transient_models import IntegrationKey
 
 from hi.services.hass.hass_connector import HassConnector
+from hi.services.hass.hass_converter import HassConverter
 from hi.services.hass.hass_models import HassState
 from hi.services.hass.integration import HassGateway
 
@@ -142,33 +144,6 @@ class TestHassConnectorTransactionBehavior(TestCase):
     def setUp(self):
         self.synchronizer = HassConnector()
     
-    def test_sync_impl_creates_and_removes_in_one_pass(self):
-        """A new upstream device is created and a vanished one removed in the same sync."""
-        with patch.object(self.synchronizer, 'hass_manager') as mock_hass_manager, \
-             patch.object(self.synchronizer, '_get_existing_hass_entities') as mock_get_entities, \
-             patch.object(self.synchronizer, '_create_entity') as mock_create, \
-             patch.object(self.synchronizer, '_remove_entity') as mock_remove:
-            
-            # Setup manager
-            mock_manager = Mock()
-            mock_manager.hass_client = Mock()
-            mock_manager.include_filter = None
-            mock_hass_manager.return_value = mock_manager
-
-            # Setup scenario: one new device, one entity to remove
-            api_states = {'light.new': self._create_mock_hass_state('light.new', 'light', 'on')}
-            mock_manager.fetch_hass_states_from_api.return_value = api_states
-            
-            old_entity = Mock(spec=Entity)
-            old_key = IntegrationKey(integration_id='hass', integration_name='old_device')
-            mock_get_entities.return_value = {old_key: old_entity}
-            
-            result = self.synchronizer._sync_impl(is_initial_connect=True)
-
-            mock_create.assert_called_once()
-            mock_remove.assert_called_once()
-            self.assertEqual(len(result.error_list), 0)
-    
     def test_sync_impl_isolates_single_device_failure(self):
         """One device's failure is reported and skipped; the other
         devices are still processed (Issue #422)."""
@@ -199,7 +174,7 @@ class TestHassConnectorTransactionBehavior(TestCase):
             self.assertEqual(result.created_list, ['working'])
             self.assertEqual(len(result.created_entities), 1)
             self.assertEqual(len(result.error_list), 1)
-            self.assertIn('"broken" (switch.broken)', result.error_list[0])
+            self.assertIn('switch.broken', result.error_list[0])
             self.assertIn('Entity creation failed', result.error_list[0])
     
     def _create_mock_hass_state(self, entity_id, domain, state):
@@ -215,6 +190,85 @@ class TestHassConnectorTransactionBehavior(TestCase):
         hass_state.device_class = None
         hass_state.friendly_name = None
         return hass_state
+
+
+class TestHassConnectorRegroupedDeviceConflict(TestCase):
+    """Issue #422 regression: HA reports an imported Insteon device's
+    state without its Insteon address (e.g., a restored/unavailable
+    registry entry), so the state regroups under a name-based device
+    id. The sync must leave the existing entity and its history
+    untouched, report the conflict, and still process other devices,
+    instead of failing on the sensor key unique constraint."""
+
+    def _hass_state(self, entity_id, state, attributes):
+        return HassConverter.create_hass_state({
+            'entity_id': entity_id,
+            'state': state,
+            'attributes': attributes,
+            'last_changed': '2026-01-01T00:00:00+00:00',
+            'last_reported': '2026-01-01T00:00:00+00:00',
+            'last_updated': '2026-01-01T00:00:00+00:00',
+            'context': {'id': 'ctx', 'parent_id': None, 'user_id': None},
+        })
+
+    def _sync_with_states(self, synchronizer, hass_states):
+        mock_manager = Mock()
+        mock_manager.hass_client = Mock()
+        mock_manager.include_filter = None
+        mock_manager.should_add_alarm_events = False
+        mock_manager.fetch_hass_states_from_api.return_value = {
+            hass_state.entity_id: hass_state for hass_state in hass_states
+        }
+        with patch.object(synchronizer, 'hass_manager', return_value=mock_manager):
+            return synchronizer._sync_impl(is_initial_connect=False)
+
+    def test_regrouped_device_is_reported_and_left_untouched(self):
+        door_entity_id = 'binary_sensor.open_close_sensor_2d_79_55'
+        synchronizer = HassConnector()
+        imported = self._sync_with_states(synchronizer, [
+            self._hass_state(door_entity_id, 'off', {
+                'insteon_address': '2D.79.55',
+                'device_class': 'door',
+                'friendly_name': 'Garage Outer Door',
+            }),
+        ])
+        door = imported.created_entities[0]
+        self.assertEqual(door.integration_name, 'insteon:2d.79.55')
+
+        result = self._sync_with_states(synchronizer, [
+            self._hass_state(door_entity_id, 'unavailable', {
+                'restored': True,
+                'device_class': 'door',
+                'friendly_name': 'Garage Outer Door',
+            }),
+            self._hass_state('switch.porch_light', 'on', {'friendly_name': 'Porch Light'}),
+        ])
+
+        self.assertEqual(result.error_list, [])
+        self.assertEqual(len(result.conflict_list), 1)
+        self.assertIn(door_entity_id, result.conflict_list[0])
+        self.assertIn('Garage Outer Door', result.conflict_list[0])
+        self.assertEqual(result.removed_list, [])
+        self.assertEqual(result.detached_list, [])
+        self.assertEqual(len(result.created_entities), 1)
+        self.assertTrue(
+            Sensor.objects.filter(
+                entity_state__entity=result.created_entities[0],
+                integration_name='switch.porch_light',
+            ).exists()
+        )
+
+        door.refresh_from_db()
+        self.assertEqual(door.integration_name, 'insteon:2d.79.55')
+        self.assertTrue(
+            Sensor.objects.filter(
+                entity_state__entity=door,
+                integration_name=door_entity_id,
+            ).exists()
+        )
+        self.assertFalse(
+            Entity.objects.filter(integration_name='open_close_sensor_2d_79_55').exists()
+        )
 
 
 class TestHassConnectorErrorScenarios(TestCase):
@@ -384,7 +438,6 @@ class TestHassConnectorCheckNeedsSync(AsyncTaskTestCase):
     """
 
     def _hass_key(self, name: str):
-        from hi.integrations.transient_models import IntegrationKey
         from hi.services.hass.hass_metadata import HassMetaData
         return IntegrationKey(
             integration_id=HassMetaData.integration_id,

@@ -7,6 +7,7 @@ claim component keys owned by a different HI entity;
 of each conflict from the sync maps and reports it.
 """
 import logging
+from types import SimpleNamespace
 
 from django.test import TestCase
 
@@ -14,7 +15,10 @@ from hi.apps.control.models import Controller
 from hi.apps.entity.models import Entity, EntityState
 from hi.apps.sense.models import Sensor
 from hi.integrations.connector.integration_connector import IntegrationConnector
-from hi.integrations.connector.sync_conflicts import IntegrationSyncConflictDetector
+from hi.integrations.connector.sync_conflicts import (
+    IntegrationSyncConflict,
+    IntegrationSyncConflictDetector,
+)
 from hi.integrations.connector.sync_result import IntegrationSyncResult
 from hi.integrations.transient_models import IntegrationKey
 
@@ -31,7 +35,6 @@ def _key(name: str) -> IntegrationKey:
 class _ConflictTestSynchronizer(IntegrationConnector):
 
     def get_metadata(self):
-        from types import SimpleNamespace
         return SimpleNamespace(integration_id=INTEGRATION_ID, label=INTEGRATION_LABEL)
 
     def _sync_impl(self, is_initial_connect=False):
@@ -77,7 +80,7 @@ class IntegrationSyncConflictDetectorTests(_ConflictTestCase):
         return IntegrationSyncConflictDetector.find_conflicts(
             upstream_key_to_component_keys=upstream_key_to_component_keys,
             integration_key_to_entity=integration_key_to_entity,
-            component_key_to_owner=IntegrationSyncConflictDetector.load_component_owners(
+            component_key_to_owners=IntegrationSyncConflictDetector.load_component_owners(
                 integration_id=INTEGRATION_ID,
             ),
         )
@@ -159,6 +162,39 @@ class IntegrationSyncConflictDetectorTests(_ConflictTestCase):
             sorted(conflict.owner_entity.name for conflict in conflicts),
             ['Owner One', 'Owner Two'],
         )
+
+
+    def test_sensor_and_controller_owners_of_one_key_are_both_reported(self):
+        """Keys are unique per component model, so an inconsistent DB
+        can hold the same key on a Sensor of one entity and a
+        Controller of another; neither owner may be masked."""
+        sensor_owner = self._create_entity('Sensor Owner', 'device_1', sensor_names=['switch.shared'])
+        controller_owner = self._create_entity(
+            'Controller Owner', 'device_2', controller_names=['switch.shared'],
+        )
+
+        conflicts = self._find_conflicts(
+            upstream_key_to_component_keys={_key('device_3'): {_key('switch.shared')}},
+            integration_key_to_entity={},
+        )
+
+        self.assertEqual(
+            [conflict.owner_entity.id for conflict in conflicts],
+            [sensor_owner.id, controller_owner.id],
+        )
+
+    def test_message_for_owner_without_key_points_at_hi_side(self):
+        owner = self._create_entity('Broken Row', 'device_1', sensor_names=['switch.x'])
+        owner.integration_name = None
+
+        message = IntegrationSyncConflict(
+            upstream_key=_key('device_2'),
+            owner_entity=owner,
+            component_keys=[_key('switch.x')],
+        ).to_message(integration_label=INTEGRATION_LABEL)
+
+        self.assertIn('no valid integration key', message)
+        self.assertNotIn(f'resolve this in {INTEGRATION_LABEL}', message)
 
 
 class ExcludeConflictingItemsTests(_ConflictTestCase):

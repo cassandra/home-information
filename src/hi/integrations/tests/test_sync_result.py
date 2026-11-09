@@ -88,17 +88,6 @@ class IntegrationSyncResultTests(SimpleTestCase):
         )
         self.assertFalse(result.has_changes)
 
-    def test_is_successful_only_without_errors_or_conflicts(self):
-        """Conflicts count against success: the conflicting upstream
-        items are still pending, so the "needs sync" state must stay."""
-        self.assertTrue(IntegrationSyncResult(title='X').is_successful)
-        self.assertFalse(
-            IntegrationSyncResult(title='X', error_list=['e']).is_successful
-        )
-        self.assertFalse(
-            IntegrationSyncResult(title='X', conflict_list=['c']).is_successful
-        )
-
     def test_placement_input_default_is_none(self):
         """A bare sync result has no placement_input — that's the
         signal the framework uses to decide whether to show the

@@ -6,7 +6,7 @@ Sync preview-result modal. Same shape as sync_result.html but with
 preview framing -- the operator sees what a sync would do without
 committing it, and decides to proceed or back out.
 
-Reuses the five sync-result partials so the information layout
+Reuses the shared sync-result partials so the information layout
 matches the post-sync modal exactly. The preview-specific
 approximation disclaimer sits alongside them.
 
@@ -55,8 +55,8 @@ Preview: {{ sync_result.title }}
   </div>
 {% endif %}
 
-{% include "integrations/connector/panes/sync_result_conflicts.html" %}
 {% include "integrations/connector/panes/sync_result_errors.html" %}
+{% include "integrations/connector/panes/sync_result_conflicts.html" %}
 {% include "integrations/connector/panes/sync_result_info.html" %}
 {% endblock %}
 

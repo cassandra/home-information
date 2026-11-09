@@ -245,7 +245,7 @@ class HassConnector( IntegrationConnector, HassMixin ):
                         ),
                         result = result,
                     )
-                    if entity:
+                    if entity is not None:
                         created_entities.append( entity )
                 continue
 

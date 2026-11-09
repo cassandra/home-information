@@ -191,7 +191,7 @@ class IntegrationConnector( CapabilityGateway ):
             logger.exception(e)
             result = IntegrationSyncResult(
                 title=self.get_result_title(is_initial_connect=is_initial_connect),
-                error_list=[str(e) or e.__class__.__name__],
+                error_list=[self._exception_text(e)],
             )
         finally:
             logger.debug(f'{self.__class__.__name__} sync ended.')
@@ -388,7 +388,7 @@ class IntegrationConnector( CapabilityGateway ):
         conflicts = IntegrationSyncConflictDetector.find_conflicts(
             upstream_key_to_component_keys = upstream_key_to_component_keys,
             integration_key_to_entity = integration_key_to_entity,
-            component_key_to_owner = IntegrationSyncConflictDetector.load_component_owners(
+            component_key_to_owners = IntegrationSyncConflictDetector.load_component_owners(
                 integration_id = metadata.integration_id,
             ),
         )
@@ -400,7 +400,7 @@ class IntegrationConnector( CapabilityGateway ):
         for conflict in conflicts:
             excluded_keys.add( conflict.upstream_key )
             excluded_entity_ids.add( conflict.owner_entity.id )
-            if conflict.owner_entity.integration_key:
+            if conflict.owner_entity.integration_key is not None:
                 excluded_keys.add( conflict.owner_entity.integration_key )
             message = conflict.to_message( integration_label = metadata.label )
             logger.warning( f'Sync conflict: {message}' )
@@ -427,29 +427,41 @@ class IntegrationConnector( CapabilityGateway ):
         affects only that item.
 
         ``operation`` receives a scratch result and runs in its own
-        savepoint. On success the scratch result is merged into
+        atomic block (a savepoint when the caller already holds a
+        transaction). On success the scratch result is merged into
         ``result`` and the operation's return value is returned. On
-        any exception the savepoint rolls back, the scratch result is
+        any exception the block rolls back, the scratch result is
         discarded (so no category list reports a change that did not
         persist), an error naming ``description`` is recorded, and
         None is returned so the sync can continue with other items.
+        An operation that swallowed a DB error, leaving its block
+        marked for rollback, is treated the same as one that raised.
 
-        ``NotImplementedError`` is re-raised: a missing subclass hook
-        is a programming error that fails every item alike, not an
-        item-level failure to isolate.
+        Two cases are re-raised rather than isolated, since they would
+        fail every item alike: ``NotImplementedError`` (a missing
+        subclass hook) and a failure that left the caller's enclosing
+        transaction marked for rollback.
         """
         item_result = IntegrationSyncResult( title = result.title )
         try:
             with transaction.atomic():
                 operation_value = operation( item_result )
+                if transaction.get_rollback():
+                    raise RuntimeError( 'Changes were marked for rollback after a database error.' )
         except NotImplementedError:
             raise
         except Exception as e:
+            if transaction.get_connection().in_atomic_block and transaction.get_rollback():
+                raise
             logger.exception( f'Sync item operation failed: {description}' )
-            result.error_list.append( f'{description} failed: {str(e) or e.__class__.__name__}' )
+            result.error_list.append( f'{description} failed: {self._exception_text( e )}' )
             return None
         result.extend_from( item_result )
         return operation_value
+
+    @staticmethod
+    def _exception_text( exception : Exception ) -> str:
+        return str( exception ) or exception.__class__.__name__
 
     def reconnect_disconnected_items(
             self,
@@ -528,7 +540,7 @@ class IntegrationConnector( CapabilityGateway ):
                 ),
                 result = result,
             )
-            if reconnected_entity:
+            if reconnected_entity is not None:
                 integration_key_to_entity[ upstream_key ] = reconnected_entity
             else:
                 # Skip the item for this sync rather than letting the
