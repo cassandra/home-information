@@ -114,6 +114,21 @@ class IntegrationSyncResult:
             or self.removed_list
         )
 
+    def extend_from( self, other : 'IntegrationSyncResult' ):
+        """Append ``other``'s per-item outcomes (entities, category
+        lists, notes) to this result. Title, placement and footer are
+        run-level and left as they are."""
+        self.created_entities.extend( other.created_entities )
+        self.created_list.extend( other.created_list )
+        self.updated_list.extend( other.updated_list )
+        self.reconnected_list.extend( other.reconnected_list )
+        self.detached_list.extend( other.detached_list )
+        self.removed_list.extend( other.removed_list )
+        self.info_list.extend( other.info_list )
+        self.error_list.extend( other.error_list )
+        self.conflict_list.extend( other.conflict_list )
+        return
+
     @property
     def is_successful(self) -> bool:
         """True if HI is now in line with upstream: no errors and no

@@ -142,8 +142,8 @@ class TestHassConnectorTransactionBehavior(TestCase):
     def setUp(self):
         self.synchronizer = HassConnector()
     
-    def test_sync_impl_executes_entity_operations_atomically(self):
-        """Test that all entity operations in sync_helper execute within single transaction"""
+    def test_sync_impl_creates_and_removes_in_one_pass(self):
+        """A new upstream device is created and a vanished one removed in the same sync."""
         with patch.object(self.synchronizer, 'hass_manager') as mock_hass_manager, \
              patch.object(self.synchronizer, '_get_existing_hass_entities') as mock_get_entities, \
              patch.object(self.synchronizer, '_create_entity') as mock_create, \
@@ -163,48 +163,44 @@ class TestHassConnectorTransactionBehavior(TestCase):
             old_key = IntegrationKey(integration_id='hass', integration_name='old_device')
             mock_get_entities.return_value = {old_key: old_entity}
             
-            # Track transaction usage
-            with patch('hi.services.hass.hass_connector.transaction.atomic') as mock_atomic:
-                mock_atomic.return_value.__enter__ = Mock()
-                mock_atomic.return_value.__exit__ = Mock()
-                
-                result = self.synchronizer._sync_impl(is_initial_connect=True)
-                
-                # Verify atomic transaction was used exactly once
-                mock_atomic.assert_called_once()
-                
-                # Verify both operations occurred (would be within same transaction)
-                mock_create.assert_called_once()
-                mock_remove.assert_called_once()
-                
-                # Verify successful result
-                self.assertEqual(len(result.error_list), 0)
+            result = self.synchronizer._sync_impl(is_initial_connect=True)
+
+            mock_create.assert_called_once()
+            mock_remove.assert_called_once()
+            self.assertEqual(len(result.error_list), 0)
     
-    def test_sync_impl_rollback_behavior_on_entity_operation_failure(self):
-        """Test that transaction rollback works when entity operations fail"""
+    def test_sync_impl_isolates_single_device_failure(self):
+        """One device's failure is reported and skipped; the other
+        devices are still processed (Issue #422)."""
         with patch.object(self.synchronizer, 'hass_manager') as mock_hass_manager, \
              patch.object(self.synchronizer, '_get_existing_hass_entities') as mock_get_entities:
-            
-            # Setup manager
+
             mock_manager = Mock()
             mock_manager.hass_client = Mock()
             mock_manager.include_filter = None
             mock_hass_manager.return_value = mock_manager
 
-            # Setup API data
-            api_states = {'light.test': self._create_mock_hass_state('light.test', 'light', 'on')}
+            api_states = {
+                'switch.broken': self._create_mock_hass_state('switch.broken', 'switch', 'on'),
+                'switch.working': self._create_mock_hass_state('switch.working', 'switch', 'on'),
+            }
             mock_manager.fetch_hass_states_from_api.return_value = api_states
             mock_get_entities.return_value = {}
-            
-            # Mock entity creation failure within transaction
-            with patch.object(self.synchronizer, '_create_entity') as mock_create:
-                mock_create.side_effect = Exception("Entity creation failed")
-                
-                # Transaction should propagate the exception (allowing rollback)
-                with self.assertRaises(Exception) as context:
-                    self.synchronizer._sync_impl(is_initial_connect=True)
-                
-                self.assertEqual(str(context.exception), "Entity creation failed")
+
+            def create_entity(hass_device, result):
+                if hass_device.device_id == 'broken':
+                    raise Exception('Entity creation failed')
+                result.created_list.append(hass_device.device_id)
+                return Mock(spec=Entity)
+
+            with patch.object(self.synchronizer, '_create_entity', side_effect=create_entity):
+                result = self.synchronizer._sync_impl(is_initial_connect=True)
+
+            self.assertEqual(result.created_list, ['working'])
+            self.assertEqual(len(result.created_entities), 1)
+            self.assertEqual(len(result.error_list), 1)
+            self.assertIn('"broken" (switch.broken)', result.error_list[0])
+            self.assertIn('Entity creation failed', result.error_list[0])
     
     def _create_mock_hass_state(self, entity_id, domain, state):
         """Helper to create mock HASS state for testing"""

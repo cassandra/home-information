@@ -13,7 +13,7 @@ Sync is opt-in: a gateway whose integration does not support sync
 returns None.
 """
 import logging
-from typing import Any, Dict, Optional, Set
+from typing import Any, Callable, Dict, Optional, Set
 
 from django.db import transaction
 
@@ -417,6 +417,40 @@ class IntegrationConnector( CapabilityGateway ):
             continue
         return
 
+    def run_isolated_item_operation(
+            self,
+            description : str,
+            operation   : Callable[ [ IntegrationSyncResult ], Any ],
+            result      : IntegrationSyncResult ) -> Any:
+        """
+        Run one upstream item's create/update/remove so its failure
+        affects only that item.
+
+        ``operation`` receives a scratch result and runs in its own
+        savepoint. On success the scratch result is merged into
+        ``result`` and the operation's return value is returned. On
+        any exception the savepoint rolls back, the scratch result is
+        discarded (so no category list reports a change that did not
+        persist), an error naming ``description`` is recorded, and
+        None is returned so the sync can continue with other items.
+
+        ``NotImplementedError`` is re-raised: a missing subclass hook
+        is a programming error that fails every item alike, not an
+        item-level failure to isolate.
+        """
+        item_result = IntegrationSyncResult( title = result.title )
+        try:
+            with transaction.atomic():
+                operation_value = operation( item_result )
+        except NotImplementedError:
+            raise
+        except Exception as e:
+            logger.exception( f'Sync item operation failed: {description}' )
+            result.error_list.append( f'{description} failed: {str(e) or e.__class__.__name__}' )
+            return None
+        result.extend_from( item_result )
+        return operation_value
+
     def reconnect_disconnected_items(
             self,
             integration_key_to_upstream : Dict[ IntegrationKey, Any ],
@@ -453,6 +487,11 @@ class IntegrationConnector( CapabilityGateway ):
         ``find_reconnect_candidates``: dropped silently, with a
         WARNING log + ``info_list`` breadcrumb so the operator can
         find them and resolve via merge.
+
+        A reconnect that fails is rolled back and reported in
+        ``result.error_list``, and its upstream item is removed from
+        ``integration_key_to_upstream`` for this sync so the main loop
+        does not create a duplicate of the still-detached entity.
         """
         unmatched_upstream_keys = [
             integration_key for integration_key in integration_key_to_upstream
@@ -471,48 +510,70 @@ class IntegrationConnector( CapabilityGateway ):
             return
 
         for upstream_key, entity in candidates.items():
-            # Wrap each reconnect in its own atomic boundary so a
-            # mid-batch converter failure rolls back that single
-            # entity's changes (including the cleared previous
-            # identity) without aborting reconnects already
-            # committed for prior entities. The result-list appends
-            # are inside the boundary so they stay consistent with
-            # the persisted state.
-            with transaction.atomic():
-                entity.previous_integration_key = None
-                self._rebuild_integration_components(
+            # Each reconnect runs isolated so a converter failure rolls
+            # back that single entity's changes (including the cleared
+            # previous identity) and is reported, without aborting the
+            # sync or reconnects already done for prior entities.
+            upstream = integration_key_to_upstream[ upstream_key ]
+            reconnected_entity = self.run_isolated_item_operation(
+                description = (
+                    f'Reconnecting HI item "{entity.name}" to'
+                    f' {metadata.label} item "{upstream_key.integration_name}"'
+                ),
+                operation = lambda item_result: self._reconnect_entity(
                     entity = entity,
-                    upstream = integration_key_to_upstream[ upstream_key ],
-                    result = result,
-                )
-                # The disconnect path set is_disabled=True (the
-                # capability gate that hides detached entities from
-                # capability-filtered listings). Reconnect is the
-                # symmetric clear: the entity is integration-attached
-                # again and should participate in those listings.
-                # Capability flags like has_video_stream are
-                # converter-owned and should already have been
-                # re-established by _rebuild_integration_components.
-                entity.is_disabled = False
-                # Defensive save: subclasses' converters typically
-                # save the entity themselves, but the framework
-                # explicitly persists the cleared previous-identity
-                # and is_disabled fields so a future converter that
-                # only writes related rows cannot leave the entity
-                # in a half-reconnected state.
-                entity.save(
-                    update_fields = [
-                        'previous_integration_id',
-                        'previous_integration_name',
-                        'is_disabled',
-                    ],
-                )
-                result.reconnected_list.append( entity.name )
-                result.info_list.append(
-                    f'Auto-reconnected {metadata.label} item "{entity.name}"'
-                )
-                integration_key_to_entity[ upstream_key ] = entity
+                    upstream = upstream,
+                    integration_label = metadata.label,
+                    result = item_result,
+                ),
+                result = result,
+            )
+            if reconnected_entity:
+                integration_key_to_entity[ upstream_key ] = reconnected_entity
+            else:
+                # Skip the item for this sync rather than letting the
+                # main loop treat it as unmatched: creating a fresh
+                # entity would duplicate the still-detached one.
+                del integration_key_to_upstream[ upstream_key ]
+            continue
         return
+
+    def _reconnect_entity( self,
+                           entity            : Entity,
+                           upstream          : Any,
+                           integration_label : str,
+                           result            : IntegrationSyncResult ) -> Entity:
+        entity.previous_integration_key = None
+        self._rebuild_integration_components(
+            entity = entity,
+            upstream = upstream,
+            result = result,
+        )
+        # The disconnect path set is_disabled=True (the capability
+        # gate that hides detached entities from capability-filtered
+        # listings). Reconnect is the symmetric clear: the entity is
+        # integration-attached again and should participate in those
+        # listings. Capability flags like has_video_stream are
+        # converter-owned and should already have been re-established
+        # by _rebuild_integration_components.
+        entity.is_disabled = False
+        # Defensive save: subclasses' converters typically save the
+        # entity themselves, but the framework explicitly persists the
+        # cleared previous-identity and is_disabled fields so a future
+        # converter that only writes related rows cannot leave the
+        # entity in a half-reconnected state.
+        entity.save(
+            update_fields = [
+                'previous_integration_id',
+                'previous_integration_name',
+                'is_disabled',
+            ],
+        )
+        result.reconnected_list.append( entity.name )
+        result.info_list.append(
+            f'Auto-reconnected {integration_label} item "{entity.name}"'
+        )
+        return entity
 
     def _rebuild_integration_components( self,
                                          entity   : Entity,

@@ -220,23 +220,45 @@ class HassConnector( IntegrationConnector, HassMixin ):
         # by reconnect (Part 3 contract) so they don't need placement.
         created_entities: List[Entity] = []
 
+        # Each item runs in its own savepoint so an unexpected failure
+        # skips only that item (reported in error_list) rather than
+        # aborting the whole sync.
         with transaction.atomic():
             for integration_key, hass_device in integration_key_to_hass_device.items():
                 entity = integration_key_to_entity.get( integration_key )
                 if entity:
-                    self._update_entity( entity = entity,
-                                         hass_device = hass_device,
-                                         result = result )
+                    self.run_isolated_item_operation(
+                        description = f'Updating {self._describe_hass_device( hass_device )}',
+                        operation = lambda item_result: self._update_entity(
+                            entity = entity,
+                            hass_device = hass_device,
+                            result = item_result,
+                        ),
+                        result = result,
+                    )
                 else:
-                    entity = self._create_entity( hass_device = hass_device,
-                                                  result = result )
-                    created_entities.append( entity )
+                    entity = self.run_isolated_item_operation(
+                        description = f'Creating {self._describe_hass_device( hass_device )}',
+                        operation = lambda item_result: self._create_entity(
+                            hass_device = hass_device,
+                            result = item_result,
+                        ),
+                        result = result,
+                    )
+                    if entity:
+                        created_entities.append( entity )
                 continue
 
             for integration_key, entity in integration_key_to_entity.items():
                 if integration_key not in integration_key_to_hass_device:
-                    self._remove_entity( entity = entity,
-                                         result = result )
+                    self.run_isolated_item_operation(
+                        description = f'Removing HI item "{entity.name}" ({integration_key.integration_name})',
+                        operation = lambda item_result: self._remove_entity(
+                            entity = entity,
+                            result = item_result,
+                        ),
+                        result = result,
+                    )
                 continue
 
         result.created_entities = created_entities
@@ -256,6 +278,11 @@ class HassConnector( IntegrationConnector, HassMixin ):
             entity = entity,
         )
         return
+
+    @staticmethod
+    def _describe_hass_device( hass_device : HassDevice ) -> str:
+        state_ids = ', '.join( hass_state.entity_id for hass_state in hass_device.hass_state_list )
+        return f'Home Assistant item "{hass_device.device_id}" ({state_ids})'
 
     def _get_existing_hass_entities( self, result : IntegrationSyncResult ) -> Dict[ IntegrationKey, Entity ]:
         logger.debug( 'Getting existing HAss entities.' )
