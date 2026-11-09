@@ -3,7 +3,7 @@ Tests for the IntegrationSyncResult shape.
 
 Sync-vocabulary fields: title, per-category name lists
 (created_list / updated_list / removed_list), info_list /
-error_list / footer_message, plus the optional placement_input
+error_list / conflict_list / footer_message, plus the optional placement_input
 that bridges to the placement modal when the sync produced new
 entities to place.
 

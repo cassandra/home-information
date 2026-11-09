@@ -2,15 +2,8 @@
 Color-coded per-category enumerations of affected entities. Five
 categories rendered in this order (severity-descending): removed,
 detached, updated, reconnected, created. Each gated on its own
-list being non-empty.
-
-The Created section additionally gates on ``has_displayable_created_list``
-because the preview's framework default impl populates ``created_list``
-with placeholder empty entries to keep the stat-card "Created" count
-consistent with the upstream-added count -- those placeholders have
-no name to display here, so the section is skipped in that case
-(the preview template surfaces the technical keys behind a separate
-debug expander).
+list being non-empty. Entries render via sync_result_item.html, which
+handles both plain names and preview IntegrationSyncItem entries.
 
 Context:
   sync_result : IntegrationSyncResult (or subclass).
@@ -21,8 +14,8 @@ Context:
     Removed ({{ sync_result.removed_list|length }})
   </div>
   <ul class="list-unstyled small mb-0 hi-sync-result-item-list">
-    {% for name in sync_result.removed_list %}
-    <li>{{ name }}</li>
+    {% for item in sync_result.removed_list %}
+    {% include "integrations/connector/panes/sync_result_item.html" %}
     {% endfor %}
   </ul>
 </div>
@@ -34,8 +27,8 @@ Context:
     Detached ({{ sync_result.detached_list|length }})
   </div>
   <ul class="list-unstyled small mb-0 hi-sync-result-item-list">
-    {% for name in sync_result.detached_list %}
-    <li>{{ name }}</li>
+    {% for item in sync_result.detached_list %}
+    {% include "integrations/connector/panes/sync_result_item.html" %}
     {% endfor %}
   </ul>
 </div>
@@ -47,8 +40,8 @@ Context:
     Updated ({{ sync_result.updated_list|length }})
   </div>
   <ul class="list-unstyled small mb-0 hi-sync-result-item-list">
-    {% for name in sync_result.updated_list %}
-    <li>{{ name }}</li>
+    {% for item in sync_result.updated_list %}
+    {% include "integrations/connector/panes/sync_result_item.html" %}
     {% endfor %}
   </ul>
 </div>
@@ -60,21 +53,21 @@ Context:
     Reconnected ({{ sync_result.reconnected_list|length }})
   </div>
   <ul class="list-unstyled small mb-0 hi-sync-result-item-list">
-    {% for name in sync_result.reconnected_list %}
-    <li>{{ name }}</li>
+    {% for item in sync_result.reconnected_list %}
+    {% include "integrations/connector/panes/sync_result_item.html" %}
     {% endfor %}
   </ul>
 </div>
 {% endif %}
 
-{% if sync_result.has_displayable_created_list %}
+{% if sync_result.created_list %}
 <div class="mb-3 pl-3 hi-category-section hi-category-section--success">
   <div class="small text-success text-uppercase mb-1 hi-uppercase-label">
     Created ({{ sync_result.created_list|length }})
   </div>
   <ul class="list-unstyled small mb-0 hi-sync-result-item-list">
-    {% for name in sync_result.created_list %}
-    {% if name %}<li>{{ name }}</li>{% endif %}
+    {% for item in sync_result.created_list %}
+    {% include "integrations/connector/panes/sync_result_item.html" %}
     {% endfor %}
   </ul>
 </div>

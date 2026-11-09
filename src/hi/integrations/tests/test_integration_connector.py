@@ -11,6 +11,9 @@ synchronizers share:
     pre-pass.
   * ``_rebuild_integration_components`` — abstract subclass hook
     used by reconnect.
+  * ``sync`` error handling — exceptions from ``_sync_impl`` become
+    error results.
+  * ``run_isolated_item_operation`` — per-item savepoint isolation.
 
 End-to-end cycle coverage (sync → detach → reconnect across multiple
 sync passes) lives in ``IntegrationConnectorReconnectCycleTests``
@@ -20,6 +23,7 @@ contracts live in each ``services/<integration>/tests/`` directory.
 
 import logging
 
+from django.db import IntegrityError
 from django.test import TestCase
 
 from hi.apps.attribute.enums import AttributeType
@@ -1322,6 +1326,62 @@ class ReconnectDisconnectedItemsFrameworkTests(TestCase):
             for note in result.info_list
         ))
 
+    def test_failed_reconnect_is_isolated_and_skips_the_upstream_item(self):
+        """A converter failure rolls back that entity's reconnect (it
+        stays detached), is reported, and drops its upstream item so
+        the main loop cannot create a duplicate entity. Other
+        reconnects still go through (Issue #422)."""
+        broken = self._disconnected_entity('Broken Light', 'light.broken')
+        working = self._disconnected_entity('Working Light', 'light.working')
+        broken_key = self._make_upstream_key('light.broken')
+        working_key = self._make_upstream_key('light.working')
+
+        synchronizer, captured = self._make_synchronizer()
+        rebuild = synchronizer._rebuild_integration_components
+
+        def rebuild_or_fail(entity, upstream, result):
+            rebuild(entity, upstream, result)
+            if upstream['name'] == 'light.broken':
+                entity_state = EntityState.objects.create(
+                    entity=entity,
+                    entity_state_type_str='ON_OFF',
+                    name='Broken Light State',
+                )
+                Sensor.objects.create(
+                    name='Broken Light Sensor',
+                    entity_state=entity_state,
+                    sensor_type_str='DISCRETE',
+                    integration_id=self.INTEGRATION_ID,
+                    integration_name='light.broken',
+                )
+                raise ValueError('converter blew up')
+
+        synchronizer._rebuild_integration_components = rebuild_or_fail
+        result = IntegrationSyncResult(title='Test')
+        integration_key_to_upstream = {
+            broken_key: {'name': 'light.broken'},
+            working_key: {'name': 'light.working'},
+        }
+        integration_key_to_entity = {}
+
+        synchronizer.reconnect_disconnected_items(
+            integration_key_to_upstream=integration_key_to_upstream,
+            integration_key_to_entity=integration_key_to_entity,
+            result=result,
+        )
+
+        broken.refresh_from_db()
+        self.assertIsNone(broken.integration_id)
+        self.assertEqual(broken.previous_integration_name, 'light.broken')
+        self.assertEqual(list(integration_key_to_upstream), [working_key])
+        self.assertEqual(integration_key_to_entity, {working_key: working})
+        self.assertEqual(result.reconnected_list, ['Working Light'])
+        self.assertEqual(len(result.error_list), 1)
+        self.assertIn('Broken Light', result.error_list[0])
+        self.assertIn('converter blew up', result.error_list[0])
+        # Components the converter created before failing are rolled back too.
+        self.assertFalse(Sensor.objects.filter(entity_state__entity=broken).exists())
+
     def test_no_unmatched_short_circuits_without_dispatch(self):
         """All upstream keys already primary-matched →
         _rebuild_integration_components is never invoked."""
@@ -1706,3 +1766,137 @@ class IntegrationConnectorReconnectCycleTests(TestCase):
         self.assertEqual(legacy.name, '[Disconnected] light.cellar')
         self.assertIsNone(legacy.integration_id)
         self.assertIsNone(legacy.previous_integration_id)
+
+
+class IntegrationConnectorSyncErrorHandlingTests(TestCase):
+    """``sync()`` converts any exception escaping ``_sync_impl`` into
+    an error result so the operator sees what failed instead of a
+    generic server error (Issue #422)."""
+
+    def _make_synchronizer(self, sync_impl_error):
+        class FailingSynchronizer(IntegrationConnector):
+            SYNCHRONIZATION_LOCK_NAME = 'sync_error_handling_test_lock'
+
+            post_sync_called = False
+
+            def get_metadata(self):
+                return _stub_integration_metadata()
+
+            def get_result_title(self, is_initial_connect=False):
+                return 'Test Sync Result'
+
+            def _sync_impl(self, is_initial_connect=False):
+                raise sync_impl_error
+
+            def post_sync(self, result):
+                self.post_sync_called = True
+
+        return FailingSynchronizer()
+
+    def test_non_runtime_error_becomes_error_result(self):
+        synchronizer = self._make_synchronizer(
+            IntegrityError('UNIQUE constraint failed: sense_sensor.integration_id'),
+        )
+
+        result = synchronizer.sync(is_initial_connect=False)
+
+        self.assertEqual(result.title, 'Test Sync Result')
+        self.assertEqual(
+            result.error_list,
+            ['UNIQUE constraint failed: sense_sensor.integration_id'],
+        )
+        self.assertTrue(synchronizer.post_sync_called)
+
+    def test_exception_without_message_reports_exception_type(self):
+        synchronizer = self._make_synchronizer(KeyError())
+
+        result = synchronizer.sync(is_initial_connect=False)
+
+        self.assertEqual(result.error_list, ['KeyError'])
+
+
+class IntegrationConnectorIsolatedItemOperationTests(TestCase):
+    """``run_isolated_item_operation`` confines one upstream item's
+    failure to that item (Issue #422)."""
+
+    def setUp(self):
+        self.synchronizer = TestSynchronizer()
+        self.result = IntegrationSyncResult(title='Sync')
+
+    def _create_entity_operation(self, fail):
+        def operation(item_result):
+            entity = Entity.objects.create(
+                name='Porch Light',
+                entity_type_str='LIGHT',
+                integration_id='test_integration',
+                integration_name='porch_light',
+            )
+            item_result.created_list.append(entity.name)
+            if fail:
+                raise ValueError('converter blew up')
+            return entity
+        return operation
+
+    def test_success_merges_item_result_and_returns_value(self):
+        entity = self.synchronizer.run_isolated_item_operation(
+            description='Creating porch_light',
+            operation=self._create_entity_operation(fail=False),
+            result=self.result,
+        )
+
+        self.assertTrue(Entity.objects.filter(id=entity.id).exists())
+        self.assertEqual(self.result.created_list, ['Porch Light'])
+        self.assertEqual(self.result.error_list, [])
+
+    def test_failure_rolls_back_and_reports_only_the_error(self):
+        value = self.synchronizer.run_isolated_item_operation(
+            description='Creating porch_light',
+            operation=self._create_entity_operation(fail=True),
+            result=self.result,
+        )
+
+        self.assertIsNone(value)
+        self.assertFalse(Entity.objects.filter(integration_name='porch_light').exists())
+        self.assertEqual(self.result.created_list, [])
+        self.assertEqual(len(self.result.error_list), 1)
+        self.assertIn('Creating porch_light', self.result.error_list[0])
+        self.assertIn('converter blew up', self.result.error_list[0])
+
+    def test_swallowed_database_error_is_treated_as_failure(self):
+        """An operation that catches a DB error itself leaves its block
+        marked for rollback; reporting it as a success would name an
+        entity that was never saved."""
+        def operation(item_result):
+            entity = self._create_entity_operation(fail=False)(item_result)
+            try:
+                Entity.objects.create(
+                    name='Duplicate',
+                    entity_type_str='LIGHT',
+                    integration_id='test_integration',
+                    integration_name='porch_light',
+                )
+            except IntegrityError:
+                pass
+            return entity
+
+        value = self.synchronizer.run_isolated_item_operation(
+            description='Creating porch_light',
+            operation=operation,
+            result=self.result,
+        )
+
+        self.assertIsNone(value)
+        self.assertFalse(Entity.objects.filter(integration_name='porch_light').exists())
+        self.assertEqual(self.result.created_list, [])
+        self.assertEqual(len(self.result.error_list), 1)
+
+    def test_missing_subclass_hook_is_not_isolated(self):
+        def operation(item_result):
+            raise NotImplementedError('subclass must override')
+
+        with self.assertRaises(NotImplementedError):
+            self.synchronizer.run_isolated_item_operation(
+                description='Reconnecting porch_light',
+                operation=operation,
+                result=self.result,
+            )

@@ -13,7 +13,7 @@ Sync is opt-in: a gateway whose integration does not support sync
 returns None.
 """
 import logging
-from typing import Any, Dict, Optional
+from typing import Any, Callable, Dict, Optional, Set
 
 from django.db import transaction
 
@@ -30,6 +30,7 @@ from hi.integrations.enums import IntegrationCapability
 from .external_view_data import ExternalViewData
 from .integration_controller import IntegrationController
 from .sync_check import IntegrationSyncCheck, SyncDelta
+from .sync_conflicts import IntegrationSyncConflictDetector
 from .sync_preview import IntegrationSyncPreviewer
 from .sync_result import IntegrationSyncResult, IntegrationSyncPreviewResult
 from hi.integrations.transient_models import IntegrationKey
@@ -43,7 +44,7 @@ class IntegrationConnector( CapabilityGateway ):
 
     The framework calls `sync()`. The base implementation acquires a
     process-wide synchronization lock, delegates to the subclass's
-    `_sync_impl()`, and converts unexpected RuntimeError into a result
+    `_sync_impl()`, and converts any unexpected exception into a result
     object. Subclasses implement the integration-specific work in
     `_sync_impl()` and the small metadata accessors below.
 
@@ -183,11 +184,14 @@ class IntegrationConnector( CapabilityGateway ):
             with ExclusionLockContext(name=self.SYNCHRONIZATION_LOCK_NAME):
                 logger.debug(f'{self.__class__.__name__} sync started.')
                 result = self._sync_impl(is_initial_connect=is_initial_connect)
-        except RuntimeError as e:
+        except Exception as e:
+            # Broad catch, matching sync_preview(): any failure (e.g., a
+            # DB integrity violation) must surface in the result modal
+            # as an error rather than as a generic server error.
             logger.exception(e)
             result = IntegrationSyncResult(
                 title=self.get_result_title(is_initial_connect=is_initial_connect),
-                error_list=[str(e)],
+                error_list=[self._exception_text(e)],
             )
         finally:
             logger.debug(f'{self.__class__.__name__} sync ended.')
@@ -210,8 +214,10 @@ class IntegrationConnector( CapabilityGateway ):
         timestamp so UI surfaces clear immediately and the next
         background probe has a fresh baseline. Cache write failures must
         not propagate -- the sync itself succeeded and the caller's
-        flow should continue regardless."""
-        if result.error_list:
+        flow should continue regardless. A sync with conflicts is not
+        successful: the conflicting upstream items are still pending,
+        so the "needs sync" state is left in place."""
+        if not result.is_successful:
             return
         try:
             metadata = self.get_metadata()
@@ -352,6 +358,121 @@ class IntegrationConnector( CapabilityGateway ):
         """
         return None
 
+    def exclude_conflicting_items(
+            self,
+            integration_key_to_upstream : Dict[ IntegrationKey, Any ],
+            integration_key_to_entity   : Dict[ IntegrationKey, Entity ],
+            upstream_key_to_claim_keys  : Dict[ IntegrationKey, Set[ IntegrationKey ]],
+            result                      : IntegrationSyncResult ):
+        """
+        Framework-level conflict guard, run before
+        ``reconnect_disconnected_items`` and the synchronizer's main
+        loop. Each integration contributes the claim keys of each
+        upstream item (see ``sync_conflicts``) and, when its component
+        keys differ from its claim keys, overrides
+        ``get_component_claim_key``.
+
+        For every upstream item claiming a key whose components a
+        different HI entity owns, this method removes from both maps:
+
+          * the conflicting upstream item, plus its matched entity, so
+            it is neither created, reconnected, updated nor removed;
+          * the owning entity, plus its own upstream item, so it is
+            neither updated nor removed.
+
+        Both sides stay exactly as they were until the operator
+        resolves the conflict upstream. Each conflict is appended to
+        ``result.conflict_list``, which keeps the integration's
+        "needs sync" state in place.
+        """
+        metadata = self.get_metadata()
+        conflicts = IntegrationSyncConflictDetector.find_conflicts(
+            upstream_key_to_claim_keys = upstream_key_to_claim_keys,
+            integration_key_to_entity = integration_key_to_entity,
+            claim_key_to_owners = IntegrationSyncConflictDetector.load_claim_owners(
+                integration_id = metadata.integration_id,
+                component_key_to_claim_key = self.get_component_claim_key,
+            ),
+        )
+        if not conflicts:
+            return
+
+        excluded_keys = set()
+        excluded_entity_ids = set()
+        for conflict in conflicts:
+            excluded_keys.add( conflict.upstream_key )
+            excluded_entity_ids.add( conflict.owner_entity.id )
+            if conflict.owner_entity.integration_key is not None:
+                excluded_keys.add( conflict.owner_entity.integration_key )
+            message = conflict.to_message( integration_label = metadata.label )
+            logger.warning( f'Sync conflict: {message}' )
+            result.conflict_list.append( message )
+            continue
+
+        for integration_key in list( integration_key_to_upstream.keys() ):
+            if integration_key in excluded_keys:
+                del integration_key_to_upstream[ integration_key ]
+            continue
+        for integration_key, entity in list( integration_key_to_entity.items() ):
+            if integration_key in excluded_keys or entity.id in excluded_entity_ids:
+                del integration_key_to_entity[ integration_key ]
+            continue
+        return
+
+    def get_component_claim_key( self, component_key : IntegrationKey ) -> IntegrationKey:
+        """The key of the upstream record a component (Sensor or
+        Controller) derives from, for conflict detection. Default: the
+        component's own key. Integrations that derive several
+        components from one upstream record under distinct keys map
+        them back to that record's key."""
+        return component_key
+
+    def run_isolated_item_operation(
+            self,
+            description : str,
+            operation   : Callable[ [ IntegrationSyncResult ], Any ],
+            result      : IntegrationSyncResult ) -> Any:
+        """
+        Run one upstream item's create/update/remove so its failure
+        affects only that item.
+
+        ``operation`` receives a scratch result and runs in its own
+        atomic block (a savepoint when the caller already holds a
+        transaction). On success the scratch result is merged into
+        ``result`` and the operation's return value is returned. On
+        any exception the block rolls back, the scratch result is
+        discarded (so no category list reports a change that did not
+        persist), an error naming ``description`` is recorded, and
+        None is returned so the sync can continue with other items.
+        An operation that swallowed a DB error, leaving its block
+        marked for rollback, is treated the same as one that raised.
+
+        Two cases are re-raised rather than isolated, since they would
+        fail every item alike: ``NotImplementedError`` (a missing
+        subclass hook) and a failure that left the caller's enclosing
+        transaction marked for rollback.
+        """
+        item_result = IntegrationSyncResult( title = result.title )
+        try:
+            with transaction.atomic():
+                operation_value = operation( item_result )
+                if transaction.get_rollback():
+                    raise RuntimeError( 'Changes were marked for rollback after a database error.' )
+        except NotImplementedError:
+            raise
+        except Exception as e:
+            if transaction.get_connection().in_atomic_block and transaction.get_rollback():
+                raise
+            logger.exception( f'Sync item operation failed: {description}' )
+            result.error_list.append( f'{description} failed: {self._exception_text( e )}' )
+            return None
+        result.extend_from( item_result )
+        return operation_value
+
+    @staticmethod
+    def _exception_text( exception : Exception ) -> str:
+        return str( exception ) or exception.__class__.__name__
+
     def reconnect_disconnected_items(
             self,
             integration_key_to_upstream : Dict[ IntegrationKey, Any ],
@@ -388,6 +509,11 @@ class IntegrationConnector( CapabilityGateway ):
         ``find_reconnect_candidates``: dropped silently, with a
         WARNING log + ``info_list`` breadcrumb so the operator can
         find them and resolve via merge.
+
+        A reconnect that fails is rolled back and reported in
+        ``result.error_list``, and its upstream item is removed from
+        ``integration_key_to_upstream`` for this sync so the main loop
+        does not create a duplicate of the still-detached entity.
         """
         unmatched_upstream_keys = [
             integration_key for integration_key in integration_key_to_upstream
@@ -406,48 +532,70 @@ class IntegrationConnector( CapabilityGateway ):
             return
 
         for upstream_key, entity in candidates.items():
-            # Wrap each reconnect in its own atomic boundary so a
-            # mid-batch converter failure rolls back that single
-            # entity's changes (including the cleared previous
-            # identity) without aborting reconnects already
-            # committed for prior entities. The result-list appends
-            # are inside the boundary so they stay consistent with
-            # the persisted state.
-            with transaction.atomic():
-                entity.previous_integration_key = None
-                self._rebuild_integration_components(
+            # Each reconnect runs isolated so a converter failure rolls
+            # back that single entity's changes (including the cleared
+            # previous identity) and is reported, without aborting the
+            # sync or reconnects already done for prior entities.
+            upstream = integration_key_to_upstream[ upstream_key ]
+            reconnected_entity = self.run_isolated_item_operation(
+                description = (
+                    f'Reconnecting HI item "{entity.name}" to'
+                    f' {metadata.label} item "{upstream_key.integration_name}"'
+                ),
+                operation = lambda item_result: self._reconnect_entity(
                     entity = entity,
-                    upstream = integration_key_to_upstream[ upstream_key ],
-                    result = result,
-                )
-                # The disconnect path set is_disabled=True (the
-                # capability gate that hides detached entities from
-                # capability-filtered listings). Reconnect is the
-                # symmetric clear: the entity is integration-attached
-                # again and should participate in those listings.
-                # Capability flags like has_video_stream are
-                # converter-owned and should already have been
-                # re-established by _rebuild_integration_components.
-                entity.is_disabled = False
-                # Defensive save: subclasses' converters typically
-                # save the entity themselves, but the framework
-                # explicitly persists the cleared previous-identity
-                # and is_disabled fields so a future converter that
-                # only writes related rows cannot leave the entity
-                # in a half-reconnected state.
-                entity.save(
-                    update_fields = [
-                        'previous_integration_id',
-                        'previous_integration_name',
-                        'is_disabled',
-                    ],
-                )
-                result.reconnected_list.append( entity.name )
-                result.info_list.append(
-                    f'Auto-reconnected {metadata.label} item "{entity.name}"'
-                )
-                integration_key_to_entity[ upstream_key ] = entity
+                    upstream = upstream,
+                    integration_label = metadata.label,
+                    result = item_result,
+                ),
+                result = result,
+            )
+            if reconnected_entity is not None:
+                integration_key_to_entity[ upstream_key ] = reconnected_entity
+            else:
+                # Skip the item for this sync rather than letting the
+                # main loop treat it as unmatched: creating a fresh
+                # entity would duplicate the still-detached one.
+                del integration_key_to_upstream[ upstream_key ]
+            continue
         return
+
+    def _reconnect_entity( self,
+                           entity            : Entity,
+                           upstream          : Any,
+                           integration_label : str,
+                           result            : IntegrationSyncResult ) -> Entity:
+        entity.previous_integration_key = None
+        self._rebuild_integration_components(
+            entity = entity,
+            upstream = upstream,
+            result = result,
+        )
+        # The disconnect path set is_disabled=True (the capability
+        # gate that hides detached entities from capability-filtered
+        # listings). Reconnect is the symmetric clear: the entity is
+        # integration-attached again and should participate in those
+        # listings. Capability flags like has_video_stream are
+        # converter-owned and should already have been re-established
+        # by _rebuild_integration_components.
+        entity.is_disabled = False
+        # Defensive save: subclasses' converters typically save the
+        # entity themselves, but the framework explicitly persists the
+        # cleared previous-identity and is_disabled fields so a future
+        # converter that only writes related rows cannot leave the
+        # entity in a half-reconnected state.
+        entity.save(
+            update_fields = [
+                'previous_integration_id',
+                'previous_integration_name',
+                'is_disabled',
+            ],
+        )
+        result.reconnected_list.append( entity.name )
+        result.info_list.append(
+            f'Auto-reconnected {integration_label} item "{entity.name}"'
+        )
+        return entity
 
     def _rebuild_integration_components( self,
                                          entity   : Entity,

@@ -482,3 +482,35 @@ class TestColorModeSubstate(TestCase):
             integration_name__endswith='~color_mode',
         ).count()
         self.assertEqual(after, 1)
+
+
+class TestComponentClaimKeys(TestCase):
+    """The sync conflict guard (Issue #422) compares a device's claimed
+    state keys with the state keys of existing components, so every
+    component the converter creates must map back to a claimed state
+    key -- otherwise a conflicting device could slip through."""
+
+    def test_every_created_component_maps_to_a_claimed_state_key(self):
+        device = _build_color_light_device(
+            device_id='claim_check',
+            supported_color_modes=['hs', 'color_temp'],
+        )
+        entity = HassConverter.create_models_for_hass_device(
+            hass_device=device,
+            add_alarm_events=False,
+        )
+        created_keys = {
+            sensor.integration_key
+            for sensor in Sensor.objects.filter(entity_state__entity=entity)
+        } | {
+            controller.integration_key
+            for controller in Controller.objects.filter(entity_state__entity=entity)
+        }
+
+        claimed_keys = HassConverter.hass_device_to_state_integration_keys(device)
+
+        self.assertTrue(any('~' in key.integration_name for key in created_keys))
+        self.assertLessEqual(
+            {HassConverter.component_key_to_state_integration_key(key) for key in created_keys},
+            claimed_keys,
+        )

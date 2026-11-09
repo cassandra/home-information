@@ -1,0 +1,10 @@
+{% comment %}
+One entry of a sync-result category list. Entries are either plain
+entity names (sync results) or IntegrationSyncItem instances (preview
+results), which render their name and integration key. A plain name
+has no integration_key attribute, so the key is skipped.
+
+Context:
+  item : str or IntegrationSyncItem.
+{% endcomment %}
+<li>{{ item }}{% if item.integration_key %} <code class="text-muted">{{ item.integration_key.integration_name }}</code>{% endif %}</li>

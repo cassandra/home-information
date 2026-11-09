@@ -10,10 +10,12 @@
 
   The body composes shared panes:
     sync_result_hero.html       -- headline (success / nothing-new /
-                                   error-partial / error-fatal).
+                                   conflicts / error-partial /
+                                   error-fatal).
     sync_result_stats.html      -- stat-card row (success-only).
     sync_result_categories.html -- per-category enumerations.
     sync_result_errors.html     -- collapsible errors block.
+    sync_result_conflicts.html  -- collapsible conflicts block.
     sync_result_info.html       -- collapsible details block.
 
   The preview-result modal reuses the same partials with preview
@@ -55,6 +57,7 @@
 {% endif %}
 
 {% include "integrations/connector/panes/sync_result_errors.html" %}
+{% include "integrations/connector/panes/sync_result_conflicts.html" %}
 {% include "integrations/connector/panes/sync_result_info.html" %}
 {% endblock %}
 

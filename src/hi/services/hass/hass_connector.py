@@ -184,6 +184,23 @@ class HassConnector( IntegrationConnector, HassMixin ):
             for hass_device in hass_device_id_to_device.values()
         }
 
+        # Conflict guard (framework-level), ahead of reconnect since
+        # reconnect also creates components. A device whose HA states
+        # belong to a different HI entity (e.g., HA regrouped it under
+        # a new device id) is dropped from both maps along with that
+        # owner, so neither side is touched and the conflict is
+        # reported for the operator to resolve in HA. Devices claim
+        # their states' keys; see get_component_claim_key.
+        self.exclude_conflicting_items(
+            integration_key_to_upstream = integration_key_to_hass_device,
+            integration_key_to_entity = integration_key_to_entity,
+            upstream_key_to_claim_keys = {
+                integration_key: HassConverter.hass_device_to_state_integration_keys( hass_device )
+                for integration_key, hass_device in integration_key_to_hass_device.items()
+            },
+            result = result,
+        )
+
         # Issue #281 reconnect pre-pass (framework-level). Any
         # disconnected entity whose previous identity matches an
         # unmatched upstream device is reconnected in place and
@@ -204,27 +221,56 @@ class HassConnector( IntegrationConnector, HassMixin ):
         # by reconnect (Part 3 contract) so they don't need placement.
         created_entities: List[Entity] = []
 
+        # Each item runs in its own savepoint so an unexpected failure
+        # skips only that item (reported in error_list) rather than
+        # aborting the whole sync.
         with transaction.atomic():
             for integration_key, hass_device in integration_key_to_hass_device.items():
                 entity = integration_key_to_entity.get( integration_key )
                 if entity:
-                    self._update_entity( entity = entity,
-                                         hass_device = hass_device,
-                                         result = result )
+                    self.run_isolated_item_operation(
+                        description = f'Updating {self._describe_hass_device( hass_device )}',
+                        operation = lambda item_result: self._update_entity(
+                            entity = entity,
+                            hass_device = hass_device,
+                            result = item_result,
+                        ),
+                        result = result,
+                    )
                 else:
-                    entity = self._create_entity( hass_device = hass_device,
-                                                  result = result )
-                    created_entities.append( entity )
+                    entity = self.run_isolated_item_operation(
+                        description = f'Creating {self._describe_hass_device( hass_device )}',
+                        operation = lambda item_result: self._create_entity(
+                            hass_device = hass_device,
+                            result = item_result,
+                        ),
+                        result = result,
+                    )
+                    if entity is not None:
+                        created_entities.append( entity )
                 continue
 
             for integration_key, entity in integration_key_to_entity.items():
                 if integration_key not in integration_key_to_hass_device:
-                    self._remove_entity( entity = entity,
-                                         result = result )
+                    self.run_isolated_item_operation(
+                        description = f'Removing HI item "{entity.name}" ({integration_key.integration_name})',
+                        operation = lambda item_result: self._remove_entity(
+                            entity = entity,
+                            result = item_result,
+                        ),
+                        result = result,
+                    )
                 continue
 
         result.created_entities = created_entities
         return result
+
+    def get_component_claim_key( self, component_key : IntegrationKey ) -> IntegrationKey:
+        """Claims are per HA state: a substate component belongs to
+        its parent state regardless of which substates the state
+        currently implies (an unavailable state reports fewer
+        attributes, hence fewer substates)."""
+        return HassConverter.component_key_to_state_integration_key( component_key )
 
     def _rebuild_integration_components( self,
                                          entity   : Entity,
@@ -240,6 +286,11 @@ class HassConnector( IntegrationConnector, HassMixin ):
             entity = entity,
         )
         return
+
+    @staticmethod
+    def _describe_hass_device( hass_device : HassDevice ) -> str:
+        state_ids = ', '.join( hass_state.entity_id for hass_state in hass_device.hass_state_list )
+        return f'Home Assistant item "{hass_device.device_id}" ({state_ids})'
 
     def _get_existing_hass_entities( self, result : IntegrationSyncResult ) -> Dict[ IntegrationKey, Entity ]:
         logger.debug( 'Getting existing HAss entities.' )
