@@ -13,7 +13,7 @@ Sync is opt-in: a gateway whose integration does not support sync
 returns None.
 """
 import logging
-from typing import Any, Dict, Optional
+from typing import Any, Dict, Optional, Set
 
 from django.db import transaction
 
@@ -30,6 +30,7 @@ from hi.integrations.enums import IntegrationCapability
 from .external_view_data import ExternalViewData
 from .integration_controller import IntegrationController
 from .sync_check import IntegrationSyncCheck, SyncDelta
+from .sync_conflicts import IntegrationSyncConflictDetector
 from .sync_preview import IntegrationSyncPreviewer
 from .sync_result import IntegrationSyncResult, IntegrationSyncPreviewResult
 from hi.integrations.transient_models import IntegrationKey
@@ -356,6 +357,65 @@ class IntegrationConnector( CapabilityGateway ):
         among integrations that support full sync.
         """
         return None
+
+    def exclude_conflicting_items(
+            self,
+            integration_key_to_upstream    : Dict[ IntegrationKey, Any ],
+            integration_key_to_entity      : Dict[ IntegrationKey, Entity ],
+            upstream_key_to_component_keys : Dict[ IntegrationKey, Set[ IntegrationKey ]],
+            result                         : IntegrationSyncResult ):
+        """
+        Framework-level conflict guard, run before
+        ``reconnect_disconnected_items`` and the synchronizer's main
+        loop. Each integration contributes only the component keys
+        (Sensor/Controller integration keys) each upstream item would
+        claim.
+
+        For every upstream item claiming a component key owned by a
+        different HI entity, this method removes from both maps:
+
+          * the conflicting upstream item, plus its matched entity, so
+            it is neither created, reconnected, updated nor removed;
+          * the owning entity, plus its own upstream item, so it is
+            neither updated nor removed.
+
+        Both sides stay exactly as they were until the operator
+        resolves the conflict upstream. Each conflict is appended to
+        ``result.conflict_list``, which keeps the integration's
+        "needs sync" state in place.
+        """
+        metadata = self.get_metadata()
+        conflicts = IntegrationSyncConflictDetector.find_conflicts(
+            upstream_key_to_component_keys = upstream_key_to_component_keys,
+            integration_key_to_entity = integration_key_to_entity,
+            component_key_to_owner = IntegrationSyncConflictDetector.load_component_owners(
+                integration_id = metadata.integration_id,
+            ),
+        )
+        if not conflicts:
+            return
+
+        excluded_keys = set()
+        excluded_entity_ids = set()
+        for conflict in conflicts:
+            excluded_keys.add( conflict.upstream_key )
+            excluded_entity_ids.add( conflict.owner_entity.id )
+            if conflict.owner_entity.integration_key:
+                excluded_keys.add( conflict.owner_entity.integration_key )
+            message = conflict.to_message( integration_label = metadata.label )
+            logger.warning( f'Sync conflict: {message}' )
+            result.conflict_list.append( message )
+            continue
+
+        for integration_key in list( integration_key_to_upstream.keys() ):
+            if integration_key in excluded_keys:
+                del integration_key_to_upstream[ integration_key ]
+            continue
+        for integration_key, entity in list( integration_key_to_entity.items() ):
+            if integration_key in excluded_keys or entity.id in excluded_entity_ids:
+                del integration_key_to_entity[ integration_key ]
+            continue
+        return
 
     def reconnect_disconnected_items(
             self,

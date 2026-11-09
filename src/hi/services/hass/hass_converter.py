@@ -2375,6 +2375,24 @@ class HassConverter:
         )
 
     @classmethod
+    def hass_device_to_component_integration_keys( cls, hass_device : HassDevice ) -> Set[ IntegrationKey ]:
+        """Every Sensor/Controller key the device's states map to: each
+        state's bare key plus the keys of any substates it decomposes
+        into. A bare key may have no model (multi-substate lights);
+        claiming it is harmless since it then has no owner."""
+        component_keys = set()
+        for hass_state in hass_device.hass_state_list:
+            component_keys.add( cls.hass_state_to_integration_key( hass_state = hass_state ))
+            for state_spec in cls._state_specs_for_hass_state( hass_state ):
+                component_keys.add( cls._substate_integration_key(
+                    hass_state = hass_state,
+                    suffix = state_spec.suffix,
+                ))
+                continue
+            continue
+        return component_keys
+
+    @classmethod
     def hass_state_to_sensor_value_map(
             cls, hass_state : HassState ) -> Dict[ IntegrationKey, str ]:
         """All HI sensor values produced by a single HA state,

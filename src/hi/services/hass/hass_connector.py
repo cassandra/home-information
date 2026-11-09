@@ -184,6 +184,22 @@ class HassConnector( IntegrationConnector, HassMixin ):
             for hass_device in hass_device_id_to_device.values()
         }
 
+        # Conflict guard (framework-level), ahead of reconnect since
+        # reconnect also creates components. A device whose states'
+        # keys belong to a different HI entity (e.g., HA regrouped it
+        # under a new device id) is dropped from both maps along with
+        # that owner, so neither side is touched and the conflict is
+        # reported for the operator to resolve in HA.
+        self.exclude_conflicting_items(
+            integration_key_to_upstream = integration_key_to_hass_device,
+            integration_key_to_entity = integration_key_to_entity,
+            upstream_key_to_component_keys = {
+                integration_key: HassConverter.hass_device_to_component_integration_keys( hass_device )
+                for integration_key, hass_device in integration_key_to_hass_device.items()
+            },
+            result = result,
+        )
+
         # Issue #281 reconnect pre-pass (framework-level). Any
         # disconnected entity whose previous identity matches an
         # unmatched upstream device is reconnected in place and
