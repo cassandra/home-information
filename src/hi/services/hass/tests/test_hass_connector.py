@@ -4,6 +4,7 @@ import os
 from unittest.mock import Mock, patch
 from django.test import TestCase
 
+from hi.apps.control.models import Controller
 from hi.apps.entity.models import Entity
 from hi.apps.sense.models import Sensor
 from hi.integrations.connector.sync_result import IntegrationSyncResult
@@ -269,6 +270,42 @@ class TestHassConnectorRegroupedDeviceConflict(TestCase):
         self.assertFalse(
             Entity.objects.filter(integration_name='open_close_sensor_2d_79_55').exists()
         )
+
+
+    def test_regrouped_fan_reporting_fewer_substates_is_still_a_conflict(self):
+        """An unavailable fan loses the attributes that imply its
+        substates, so the regrouped device would create only the bare
+        ``fan.x`` key -- no constraint collision, but the existing
+        entity would be removed. The state-level claim catches it."""
+        fan_entity_id = 'fan.bedroom_fan_aa_bb_cc'
+        synchronizer = HassConnector()
+        imported = self._sync_with_states(synchronizer, [
+            self._hass_state(fan_entity_id, 'on', {
+                'insteon_address': 'AA.BB.CC',
+                'percentage': 50,
+                'oscillating': False,
+                'direction': 'forward',
+                'friendly_name': 'Bedroom Fan',
+            }),
+        ])
+        fan = imported.created_entities[0]
+        self.assertFalse(
+            Controller.objects.filter(entity_state__entity=fan, integration_name=fan_entity_id).exists()
+        )
+
+        result = self._sync_with_states(synchronizer, [
+            self._hass_state(fan_entity_id, 'unavailable', {
+                'restored': True,
+                'friendly_name': 'Bedroom Fan',
+            }),
+        ])
+
+        self.assertEqual(len(result.conflict_list), 1)
+        self.assertIn('Bedroom Fan', result.conflict_list[0])
+        self.assertEqual(result.created_list, [])
+        self.assertEqual(result.removed_list, [])
+        self.assertEqual(result.detached_list, [])
+        self.assertTrue(Entity.objects.filter(id=fan.id, integration_name='insteon:aa.bb.cc').exists())
 
 
 class TestHassConnectorErrorScenarios(TestCase):

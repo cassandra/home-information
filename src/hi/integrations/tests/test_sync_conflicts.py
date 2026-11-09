@@ -2,7 +2,7 @@
 Tests for sync-time integration-key conflict handling (Issue #422).
 
 ``IntegrationSyncConflictDetector`` decides which upstream items
-claim component keys owned by a different HI entity;
+claim keys whose components a different HI entity owns;
 ``IntegrationConnector.exclude_conflicting_items`` drops both sides
 of each conflict from the sync maps and reports it.
 """
@@ -76,12 +76,14 @@ class _ConflictTestCase(TestCase):
 
 class IntegrationSyncConflictDetectorTests(_ConflictTestCase):
 
-    def _find_conflicts(self, upstream_key_to_component_keys, integration_key_to_entity):
+    def _find_conflicts(self, upstream_key_to_claim_keys, integration_key_to_entity,
+                        component_key_to_claim_key=lambda component_key: component_key):
         return IntegrationSyncConflictDetector.find_conflicts(
-            upstream_key_to_component_keys=upstream_key_to_component_keys,
+            upstream_key_to_claim_keys=upstream_key_to_claim_keys,
             integration_key_to_entity=integration_key_to_entity,
-            component_key_to_owners=IntegrationSyncConflictDetector.load_component_owners(
+            claim_key_to_owners=IntegrationSyncConflictDetector.load_claim_owners(
                 integration_id=INTEGRATION_ID,
+                component_key_to_claim_key=component_key_to_claim_key,
             ),
         )
 
@@ -92,7 +94,7 @@ class IntegrationSyncConflictDetectorTests(_ConflictTestCase):
         )
 
         conflicts = self._find_conflicts(
-            upstream_key_to_component_keys={
+            upstream_key_to_claim_keys={
                 _key('insteon:aa.bb.cc'): {_key('light.porch'), _key('light.porch~brightness')},
             },
             integration_key_to_entity={_key('insteon:aa.bb.cc'): entity},
@@ -108,7 +110,7 @@ class IntegrationSyncConflictDetectorTests(_ConflictTestCase):
         )
 
         conflicts = self._find_conflicts(
-            upstream_key_to_component_keys={
+            upstream_key_to_claim_keys={
                 _key('motion_sensor_28_5b_c1'): {
                     _key('motion_28_5b_c1_motion'),
                     _key('motion_28_5b_c1_battery'),
@@ -123,7 +125,7 @@ class IntegrationSyncConflictDetectorTests(_ConflictTestCase):
         self.assertEqual(conflict.upstream_key, _key('motion_sensor_28_5b_c1'))
         self.assertEqual(conflict.owner_entity.id, owner.id)
         self.assertEqual(
-            conflict.component_keys,
+            conflict.claim_keys,
             [_key('motion_28_5b_c1_battery'), _key('motion_28_5b_c1_motion')],
         )
 
@@ -132,7 +134,7 @@ class IntegrationSyncConflictDetectorTests(_ConflictTestCase):
         gaining = self._create_entity('Keypad B', 'insteon:22.22.22', sensor_names=['switch.button_b'])
 
         conflicts = self._find_conflicts(
-            upstream_key_to_component_keys={
+            upstream_key_to_claim_keys={
                 _key('insteon:11.11.11'): set(),
                 _key('insteon:22.22.22'): {_key('switch.button_a'), _key('switch.button_b')},
             },
@@ -145,14 +147,14 @@ class IntegrationSyncConflictDetectorTests(_ConflictTestCase):
         self.assertEqual(len(conflicts), 1)
         self.assertEqual(conflicts[0].upstream_key, _key('insteon:22.22.22'))
         self.assertEqual(conflicts[0].owner_entity.id, losing.id)
-        self.assertEqual(conflicts[0].component_keys, [_key('switch.button_a')])
+        self.assertEqual(conflicts[0].claim_keys, [_key('switch.button_a')])
 
     def test_one_conflict_per_foreign_owner(self):
         self._create_entity('Owner One', 'device_1', sensor_names=['state_1'])
         self._create_entity('Owner Two', 'device_2', controller_names=['state_2'])
 
         conflicts = self._find_conflicts(
-            upstream_key_to_component_keys={
+            upstream_key_to_claim_keys={
                 _key('merged_device'): {_key('state_1'), _key('state_2')},
             },
             integration_key_to_entity={},
@@ -164,6 +166,28 @@ class IntegrationSyncConflictDetectorTests(_ConflictTestCase):
         )
 
 
+    def test_claim_key_mapping_catches_components_the_item_no_longer_implies(self):
+        """An upstream record reported with fewer attributes implies
+        fewer derived components (e.g., an unavailable HA fan loses
+        its oscillating/direction substates). Mapping owned components
+        to their record's claim key still detects the takeover."""
+        owner = self._create_entity(
+            'Bedroom Fan', 'insteon:aa.bb.cc',
+            controller_names=['fan.bedroom~speed', 'fan.bedroom~oscillating'],
+        )
+
+        conflicts = self._find_conflicts(
+            upstream_key_to_claim_keys={_key('bedroom_fan'): {_key('fan.bedroom')}},
+            integration_key_to_entity={_key('insteon:aa.bb.cc'): owner},
+            component_key_to_claim_key=lambda component_key: _key(
+                component_key.integration_name.split('~', 1)[0],
+            ),
+        )
+
+        self.assertEqual(len(conflicts), 1)
+        self.assertEqual(conflicts[0].owner_entity.id, owner.id)
+        self.assertEqual(conflicts[0].claim_keys, [_key('fan.bedroom')])
+
     def test_sensor_and_controller_owners_of_one_key_are_both_reported(self):
         """Keys are unique per component model, so an inconsistent DB
         can hold the same key on a Sensor of one entity and a
@@ -174,7 +198,7 @@ class IntegrationSyncConflictDetectorTests(_ConflictTestCase):
         )
 
         conflicts = self._find_conflicts(
-            upstream_key_to_component_keys={_key('device_3'): {_key('switch.shared')}},
+            upstream_key_to_claim_keys={_key('device_3'): {_key('switch.shared')}},
             integration_key_to_entity={},
         )
 
@@ -190,7 +214,7 @@ class IntegrationSyncConflictDetectorTests(_ConflictTestCase):
         message = IntegrationSyncConflict(
             upstream_key=_key('device_2'),
             owner_entity=owner,
-            component_keys=[_key('switch.x')],
+            claim_keys=[_key('switch.x')],
         ).to_message(integration_label=INTEGRATION_LABEL)
 
         self.assertIn('no valid integration key', message)
@@ -222,7 +246,7 @@ class ExcludeConflictingItemsTests(_ConflictTestCase):
         _ConflictTestSynchronizer().exclude_conflicting_items(
             integration_key_to_upstream=integration_key_to_upstream,
             integration_key_to_entity=integration_key_to_entity,
-            upstream_key_to_component_keys={
+            upstream_key_to_claim_keys={
                 _key('open_close_sensor_2d_79_55'): {_key('binary_sensor.garage_door')},
                 _key('insteon:aa.bb.cc'): {_key('light.porch')},
             },
@@ -266,7 +290,7 @@ class ExcludeConflictingItemsTests(_ConflictTestCase):
         _ConflictTestSynchronizer().exclude_conflicting_items(
             integration_key_to_upstream=integration_key_to_upstream,
             integration_key_to_entity=integration_key_to_entity,
-            upstream_key_to_component_keys={
+            upstream_key_to_claim_keys={
                 _key('insteon:11.11.11'): set(),
                 _key('insteon:22.22.22'): {_key('switch.button_a')},
             },
@@ -285,7 +309,7 @@ class ExcludeConflictingItemsTests(_ConflictTestCase):
         _ConflictTestSynchronizer().exclude_conflicting_items(
             integration_key_to_upstream=integration_key_to_upstream,
             integration_key_to_entity=integration_key_to_entity,
-            upstream_key_to_component_keys={_key('insteon:aa.bb.cc'): {_key('light.porch')}},
+            upstream_key_to_claim_keys={_key('insteon:aa.bb.cc'): {_key('light.porch')}},
             result=result,
         )
 

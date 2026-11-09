@@ -360,19 +360,20 @@ class IntegrationConnector( CapabilityGateway ):
 
     def exclude_conflicting_items(
             self,
-            integration_key_to_upstream    : Dict[ IntegrationKey, Any ],
-            integration_key_to_entity      : Dict[ IntegrationKey, Entity ],
-            upstream_key_to_component_keys : Dict[ IntegrationKey, Set[ IntegrationKey ]],
-            result                         : IntegrationSyncResult ):
+            integration_key_to_upstream : Dict[ IntegrationKey, Any ],
+            integration_key_to_entity   : Dict[ IntegrationKey, Entity ],
+            upstream_key_to_claim_keys  : Dict[ IntegrationKey, Set[ IntegrationKey ]],
+            result                      : IntegrationSyncResult ):
         """
         Framework-level conflict guard, run before
         ``reconnect_disconnected_items`` and the synchronizer's main
-        loop. Each integration contributes only the component keys
-        (Sensor/Controller integration keys) each upstream item would
-        claim.
+        loop. Each integration contributes the claim keys of each
+        upstream item (see ``sync_conflicts``) and, when its component
+        keys differ from its claim keys, overrides
+        ``get_component_claim_key``.
 
-        For every upstream item claiming a component key owned by a
-        different HI entity, this method removes from both maps:
+        For every upstream item claiming a key whose components a
+        different HI entity owns, this method removes from both maps:
 
           * the conflicting upstream item, plus its matched entity, so
             it is neither created, reconnected, updated nor removed;
@@ -386,10 +387,11 @@ class IntegrationConnector( CapabilityGateway ):
         """
         metadata = self.get_metadata()
         conflicts = IntegrationSyncConflictDetector.find_conflicts(
-            upstream_key_to_component_keys = upstream_key_to_component_keys,
+            upstream_key_to_claim_keys = upstream_key_to_claim_keys,
             integration_key_to_entity = integration_key_to_entity,
-            component_key_to_owners = IntegrationSyncConflictDetector.load_component_owners(
+            claim_key_to_owners = IntegrationSyncConflictDetector.load_claim_owners(
                 integration_id = metadata.integration_id,
+                component_key_to_claim_key = self.get_component_claim_key,
             ),
         )
         if not conflicts:
@@ -416,6 +418,14 @@ class IntegrationConnector( CapabilityGateway ):
                 del integration_key_to_entity[ integration_key ]
             continue
         return
+
+    def get_component_claim_key( self, component_key : IntegrationKey ) -> IntegrationKey:
+        """The key of the upstream record a component (Sensor or
+        Controller) derives from, for conflict detection. Default: the
+        component's own key. Integrations that derive several
+        components from one upstream record under distinct keys map
+        them back to that record's key."""
+        return component_key
 
     def run_isolated_item_operation(
             self,

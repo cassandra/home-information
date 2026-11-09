@@ -484,13 +484,13 @@ class TestColorModeSubstate(TestCase):
         self.assertEqual(after, 1)
 
 
-class TestComponentIntegrationKeys(TestCase):
-    """``hass_device_to_component_integration_keys`` drives the sync
-    conflict guard (Issue #422), so it must claim every key the
-    converter actually creates models for -- a missed substate key
-    would let a conflicting device through to a constraint failure."""
+class TestComponentClaimKeys(TestCase):
+    """The sync conflict guard (Issue #422) compares a device's claimed
+    state keys with the state keys of existing components, so every
+    component the converter creates must map back to a claimed state
+    key -- otherwise a conflicting device could slip through."""
 
-    def test_claimed_keys_cover_every_created_sensor_and_controller(self):
+    def test_every_created_component_maps_to_a_claimed_state_key(self):
         device = _build_color_light_device(
             device_id='claim_check',
             supported_color_modes=['hs', 'color_temp'],
@@ -507,7 +507,10 @@ class TestComponentIntegrationKeys(TestCase):
             for controller in Controller.objects.filter(entity_state__entity=entity)
         }
 
-        claimed_keys = HassConverter.hass_device_to_component_integration_keys(device)
+        claimed_keys = HassConverter.hass_device_to_state_integration_keys(device)
 
         self.assertTrue(any('~' in key.integration_name for key in created_keys))
-        self.assertLessEqual(created_keys, claimed_keys)
+        self.assertLessEqual(
+            {HassConverter.component_key_to_state_integration_key(key) for key in created_keys},
+            claimed_keys,
+        )

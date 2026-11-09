@@ -398,6 +398,13 @@ class HassConverter:
 
     INSTEON_ADDRESS_ATTR_NAME = 'Insteon Address'
 
+    # Joins a substate suffix to its parent entity_id in substate
+    # integration keys. ``~`` chosen over ``:`` because the latter has
+    # special meaning in CSS selectors (pseudo-classes) and in URLs;
+    # ``~`` is web-safe in every position and never appears in real HA
+    # entity_ids (they're ``[a-z0-9_]+``).
+    SUBSTATE_KEY_SEPARATOR = '~'
+
     @classmethod
     def create_hass_state( cls, api_dict : Dict ) -> HassState:
 
@@ -1721,13 +1728,9 @@ class HassConverter:
             parent_entity_id : str,
             suffix           : str,
     ) -> IntegrationKey:
-        # ``~`` separator chosen over ``:`` because the latter has
-        # special meaning in CSS selectors (pseudo-classes) and
-        # in URLs; ``~`` is web-safe in every position and never
-        # appears in real HA entity_ids (they're ``[a-z0-9_]+``).
         return IntegrationKey(
             integration_id = HassMetaData.integration_id,
-            integration_name = f'{parent_entity_id}~{suffix}',
+            integration_name = f'{parent_entity_id}{cls.SUBSTATE_KEY_SEPARATOR}{suffix}',
         )
 
     @classmethod
@@ -2375,22 +2378,26 @@ class HassConverter:
         )
 
     @classmethod
-    def hass_device_to_component_integration_keys( cls, hass_device : HassDevice ) -> Set[ IntegrationKey ]:
-        """Every Sensor/Controller key the device's states map to: each
-        state's bare key plus the keys of any substates it decomposes
-        into. A bare key may have no model (multi-substate lights);
-        claiming it is harmless since it then has no owner."""
-        component_keys = set()
-        for hass_state in hass_device.hass_state_list:
-            component_keys.add( cls.hass_state_to_integration_key( hass_state = hass_state ))
-            for state_spec in cls._state_specs_for_hass_state( hass_state ):
-                component_keys.add( cls._substate_integration_key(
-                    hass_state = hass_state,
-                    suffix = state_spec.suffix,
-                ))
-                continue
-            continue
-        return component_keys
+    def hass_device_to_state_integration_keys( cls, hass_device : HassDevice ) -> Set[ IntegrationKey ]:
+        return {
+            cls.hass_state_to_integration_key( hass_state = hass_state )
+            for hass_state in hass_device.hass_state_list
+        }
+
+    @classmethod
+    def component_key_to_state_integration_key( cls, component_key : IntegrationKey ) -> IntegrationKey:
+        """The key of the HA state a Sensor/Controller derives from:
+        a substate key (``<entity_id>~<suffix>``) maps to its parent
+        state's key; a bare state key maps to itself."""
+        parent_entity_id, separator, _ = component_key.integration_name.partition(
+            cls.SUBSTATE_KEY_SEPARATOR,
+        )
+        if not separator:
+            return component_key
+        return IntegrationKey(
+            integration_id = component_key.integration_id,
+            integration_name = parent_entity_id,
+        )
 
     @classmethod
     def hass_state_to_sensor_value_map(

@@ -185,16 +185,17 @@ class HassConnector( IntegrationConnector, HassMixin ):
         }
 
         # Conflict guard (framework-level), ahead of reconnect since
-        # reconnect also creates components. A device whose states'
-        # keys belong to a different HI entity (e.g., HA regrouped it
-        # under a new device id) is dropped from both maps along with
-        # that owner, so neither side is touched and the conflict is
-        # reported for the operator to resolve in HA.
+        # reconnect also creates components. A device whose HA states
+        # belong to a different HI entity (e.g., HA regrouped it under
+        # a new device id) is dropped from both maps along with that
+        # owner, so neither side is touched and the conflict is
+        # reported for the operator to resolve in HA. Devices claim
+        # their states' keys; see get_component_claim_key.
         self.exclude_conflicting_items(
             integration_key_to_upstream = integration_key_to_hass_device,
             integration_key_to_entity = integration_key_to_entity,
-            upstream_key_to_component_keys = {
-                integration_key: HassConverter.hass_device_to_component_integration_keys( hass_device )
+            upstream_key_to_claim_keys = {
+                integration_key: HassConverter.hass_device_to_state_integration_keys( hass_device )
                 for integration_key, hass_device in integration_key_to_hass_device.items()
             },
             result = result,
@@ -263,6 +264,13 @@ class HassConnector( IntegrationConnector, HassMixin ):
 
         result.created_entities = created_entities
         return result
+
+    def get_component_claim_key( self, component_key : IntegrationKey ) -> IntegrationKey:
+        """Claims are per HA state: a substate component belongs to
+        its parent state regardless of which substates the state
+        currently implies (an unavailable state reports fewer
+        attributes, hence fewer substates)."""
+        return HassConverter.component_key_to_state_integration_key( component_key )
 
     def _rebuild_integration_components( self,
                                          entity   : Entity,
