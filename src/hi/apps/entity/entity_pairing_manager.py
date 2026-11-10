@@ -1,4 +1,5 @@
-from typing import List, Set
+from collections import defaultdict
+from typing import Dict, List, Set
 
 from django.db import transaction
 
@@ -34,20 +35,49 @@ class EntityPairingManager(Singleton):
     def get_entity_pairing_list( self, entity : models.Entity ) -> List[ EntityPairing ]:
         entity_pairing_list = list()
 
-        for principal_entity in self.get_principal_entities( entity = entity ):
+        # Entity as delegate: one pair per principal whose states it receives.
+        principal_to_delegated_states = defaultdict( list )
+        delegation_queryset = entity.entity_state_delegations.select_related(
+            'entity_state',
+            'entity_state__entity',
+        ).all()
+        for entity_state_delegation in delegation_queryset:
+            entity_state = entity_state_delegation.entity_state
+            principal_to_delegated_states[entity_state.entity].append( entity_state )
+            continue
+
+        for principal_entity in sorted( principal_to_delegated_states, key = lambda x : x.name ):
             entity_pairing = EntityPairing(
                 entity = entity,
                 paired_entity = principal_entity,
                 pairing_type = enums.EntityPairingType.PRINCIPAL,
+                principal_states = list( principal_entity.states.order_by( 'id' )),
+                delegated_states = sorted( principal_to_delegated_states[principal_entity],
+                                           key = lambda x : x.id ),
             )
             entity_pairing_list.append( entity_pairing )
             continue
 
-        for delegate_entity in self.get_delegate_entities( entity = entity ):
+        # Entity as principal: one pair per delegate of any of its states.
+        principal_states = list( entity.states.order_by( 'id' ))
+        delegate_to_delegated_states = defaultdict( list )
+        delegation_queryset = models.EntityStateDelegation.objects.filter(
+            entity_state__entity = entity,
+        ).select_related( 'entity_state', 'delegate_entity' )
+        for entity_state_delegation in delegation_queryset:
+            delegate_to_delegated_states[entity_state_delegation.delegate_entity].append(
+                entity_state_delegation.entity_state
+            )
+            continue
+
+        for delegate_entity in sorted( delegate_to_delegated_states, key = lambda x : x.name ):
             entity_pairing = EntityPairing(
                 entity = entity,
                 paired_entity = delegate_entity,
                 pairing_type = enums.EntityPairingType.DELEGATE,
+                principal_states = principal_states,
+                delegated_states = sorted( delegate_to_delegated_states[delegate_entity],
+                                           key = lambda x : x.id ),
             )
             entity_pairing_list.append( entity_pairing )
             continue
@@ -243,4 +273,55 @@ class EntityPairingManager(Singleton):
                     if delegation.entity_state.entity == principle_entity:
                         delegation.delete()
                     continue
+        return
+
+    def set_delegated_states( self,
+                              principal_entity                 : models.Entity,
+                              delegate_entity_id_to_state_ids  : Dict[ int, Set[ int ] ] ):
+        """Make the principal's delegations exactly the given ones: each
+        delegate receives just the listed states of the principal. A
+        delegate absent from the mapping, or mapped to no states, is
+        unpaired from this principal. Delegations from other principals
+        are not touched."""
+
+        principal_state_ids = set( principal_entity.states.values_list( 'id', flat = True ))
+        if not principal_state_ids:
+            raise EntityPairingError( f'Cannot delegate states of an entity without states: {principal_entity}' )
+
+        delegate_entity_map = models.Entity.objects.in_bulk( list( delegate_entity_id_to_state_ids.keys() ))
+        desired_pairs = set()
+        for delegate_entity_id, state_ids in delegate_entity_id_to_state_ids.items():
+            delegate_entity = delegate_entity_map.get( delegate_entity_id )
+            if not delegate_entity:
+                raise EntityPairingError( f'Unknown delegate entity id: {delegate_entity_id}' )
+            if delegate_entity.states.exists():
+                raise EntityPairingError(
+                    f'Cannot pair entities both with states: {principal_entity} and {delegate_entity}' )
+            foreign_state_ids = set( state_ids ) - principal_state_ids
+            if foreign_state_ids:
+                raise EntityPairingError(
+                    f'States {sorted(foreign_state_ids)} do not belong to {principal_entity}' )
+            desired_pairs.update( ( state_id, delegate_entity_id ) for state_id in state_ids )
+            continue
+
+        # Per-object create/delete (not bulk) so model signals fire.
+        with transaction.atomic():
+            delegation_queryset = models.EntityStateDelegation.objects.filter(
+                entity_state__entity = principal_entity,
+            )
+            existing_pairs = set()
+            for delegation in delegation_queryset:
+                pair = ( delegation.entity_state_id, delegation.delegate_entity_id )
+                if pair in desired_pairs:
+                    existing_pairs.add( pair )
+                else:
+                    delegation.delete()
+                continue
+
+            for state_id, delegate_entity_id in desired_pairs - existing_pairs:
+                models.EntityStateDelegation.objects.create(
+                    entity_state_id = state_id,
+                    delegate_entity_id = delegate_entity_id,
+                )
+                continue
         return

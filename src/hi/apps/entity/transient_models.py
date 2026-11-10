@@ -4,6 +4,7 @@ from typing import Any, Dict, List
 from hi.apps.entity.edit.forms import EntityPositionForm
 
 from .entity_state_history import EntityStateHistoryValue
+from .entity_state_labels import entity_state_short_labels
 from .enums import EntityGroupType, EntityPairingType, VideoStreamType
 from .forms import EntityForm
 from .models import Entity, EntityState
@@ -78,10 +79,24 @@ class EntityPairing:
     state. Thus, by just pairing two entities, we can deduce which
     direction the delagation relatiojnship goes.
     """
-    entity         : Entity
-    paired_entity  : Entity
-    pairing_type   : EntityPairingType
-    
+    entity            : Entity
+    paired_entity     : Entity
+    pairing_type      : EntityPairingType
+
+    # Coverage of the principal's states by this pair: a delegate may
+    # receive only some of them.
+    principal_states  : List[ EntityState ]  = field( default_factory = list )
+    delegated_states  : List[ EntityState ]  = field( default_factory = list )
+
+    @property
+    def is_partial( self ) -> bool:
+        return len( self.delegated_states ) < len( self.principal_states )
+
+    @property
+    def delegated_state_labels( self ) -> List[ str ]:
+        short_labels = entity_state_short_labels( self.principal_states )
+        return [ short_labels[ entity_state.id ] for entity_state in self.delegated_states ]
+
 
 @dataclass
 class EntityEditModeData:
