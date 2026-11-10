@@ -46,6 +46,7 @@ DEFAULT_ENTITY_STATE_ROLE_ORDER : List[ EntityStateRole ] = [
     # Discrete / on-off.
     EntityStateRole.LIGHT_ON_OFF,
     EntityStateRole.ON_OFF,
+    EntityStateRole.SECONDARY_ON_OFF,
     EntityStateRole.DISCRETE,
     EntityStateRole.MULTIVALUED,
 
@@ -224,8 +225,14 @@ DEFAULT_CONTROL_STATE_ROLE_ORDER : List[ EntityStateRole ] = [
 
 
 ENTITY_CONTROL_STATE_ENTITY_TYPE_OVERRIDES : Dict[ EntityType, List[ EntityStateRole ] ] = {
+    # LIGHT_DIMMER is the bare-key role of a brightness-only dimmer
+    # (color bulbs carry LIGHT_BRIGHTNESS on a substate instead). It
+    # must precede the default's generic ON_OFF, or a dimmer entity
+    # that also has unrelated on/off states (e.g., a keypad dimmer's
+    # buttons) would one-click one of those instead of its light.
     EntityType.LIGHT              : [ EntityStateRole.LIGHT_ON_OFF,
-                                      EntityStateRole.LIGHT_BRIGHTNESS ],
+                                      EntityStateRole.LIGHT_BRIGHTNESS,
+                                      EntityStateRole.LIGHT_DIMMER ],
     EntityType.CEILING_FAN        : [ EntityStateRole.FAN_SPEED ],
     EntityType.EXHAUST_FAN        : [ EntityStateRole.FAN_SPEED ],
     EntityType.GARAGE_DOOR_OPENER : [ EntityStateRole.OPEN_CLOSE ],

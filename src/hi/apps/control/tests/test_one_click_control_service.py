@@ -115,6 +115,25 @@ class TestOneClickFindController(BaseTestCase):
         picked = OneClickControlService()._find_controller( entity = entity )
         self.assertEqual( picked, controller )
 
+    def test_light_dimmer_wins_over_unrelated_on_off_states(self):
+        # A keypad dimmer: the load is a bare-key dimmer (LIGHT_DIMMER
+        # role) and the scene buttons are ON_OFF switches. One-click
+        # must toggle the load, not whichever button sorts first.
+        entity = Entity.objects.create(
+            name = 'Keypad Dimmer',
+            entity_type_str = str(EntityType.LIGHT),
+        )
+        button = _make_state( entity, EntityStateType.ON_OFF, EntityStateRole.ON_OFF )
+        _add_controller( button, name = 'button-ctrl' )
+        load = _make_state(
+            entity, EntityStateType.LIGHT_DIMMER, EntityStateRole.LIGHT_DIMMER,
+            value_range_str = json.dumps({ 'min': 0, 'max': 100 }),
+        )
+        load_controller = _add_controller( load, name = 'load-ctrl' )
+
+        picked = OneClickControlService()._find_controller( entity = entity )
+        self.assertEqual( picked, load_controller )
+
     def test_thermometer_with_no_controllable_state_is_unsupported(self):
         # Sensor-only entity: no controllers → no one-click target.
         entity = Entity.objects.create(

@@ -355,6 +355,11 @@ class EntityStateRole(LabeledEnum):
     LIGHT_COLOR_MODE                   = ( 'Color Mode'          , '' )
     LIGHT_ON_OFF                       = ( 'On/Off'              , '' )
 
+    # A device's additional on/off channel beyond its own load (e.g., a
+    # keypad's scene buttons). Kept out of one-click and ranked after
+    # ON_OFF so the device's load wins role-driven choices.
+    SECONDARY_ON_OFF                   = ( 'On/Off'              , '' )
+
     @classmethod
     def default(cls):
         return cls.DISCRETE
