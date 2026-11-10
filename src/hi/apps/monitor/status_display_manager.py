@@ -187,47 +187,22 @@ class StatusDisplayManager( Singleton, SensorResponseMixin ):
             self,
             entities : Sequence[ Entity ] ) -> Dict[ Entity, EntityStatusData ]:
 
-        # Gather all EntityStates for all Entities so we can issue a single
-        # fetch of the latest SensorResponses.
+        # Delegated states belong to each requesting entity, not to
+        # their owning principal, so a delegate gets its delegated
+        # states even when the principal is not among the entities.
         #
-        entity_to_entity_state_set = { x: set( x.states.all() ) for x in entities }
-        all_entity_states = set()
-        for entity, entity_state_set in entity_to_entity_state_set.items():
-            all_entity_states.update( entity_state_set )
-            for entity_state_delegation in entity.entity_state_delegations.all():
-                entity_state_set.add( entity_state_delegation.entity_state )
-                all_entity_states.add( entity_state_delegation.entity_state )
-                continue
-            continue
-
-        # Includes a single fetch for getting all latest sensor data.
-        #
-        entity_state_to_status_data = self._get_entity_state_to_entity_state_status_data(
-            entity_states = all_entity_states,
+        entity_to_entity_state_status_data_list = self.get_entity_to_entity_state_status_data_list(
+            entities = set( entities ),
         )
-        
-        # Collate EntityStateStatusData by Entity
-        #
-        entity_to_entity_status_data = dict()
-        for entity_state, entity_state_status_data in entity_state_to_status_data.items():
-            entity = entity_state.entity
-            if entity not in entity_to_entity_status_data:
-                entity_status_data = EntityStatusData(
-                    entity = entity,
-                    entity_state_status_data_list = list()
-                    # entity_for_video not looking for delegations here
-                    # display_only_svg_icon_item is filled in later
-                )
-                entity_to_entity_status_data[entity] = entity_status_data
-            else:
-                entity_status_data = entity_to_entity_status_data[entity]
-                
-            entity_status_data.entity_state_status_data_list.append(
-                entity_state_status_data
+        return {
+            entity: EntityStatusData(
+                entity = entity,
+                entity_state_status_data_list = entity_state_status_data_list,
+                # entity_for_video not looking for delegations here
+                # display_only_svg_icon_item is filled in later
             )
-            continue
-
-        return entity_to_entity_status_data
+            for entity, entity_state_status_data_list in entity_to_entity_state_status_data_list.items()
+        }
 
     def _get_entity_state_to_entity_state_status_data(
             self,
