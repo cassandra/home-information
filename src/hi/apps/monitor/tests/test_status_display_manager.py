@@ -2,7 +2,7 @@ import logging
 from datetime import datetime
 from unittest.mock import Mock, patch
 
-from hi.apps.entity.models import Entity, EntityState
+from hi.apps.entity.models import Entity, EntityState, EntityStateDelegation
 from hi.apps.sense.models import Sensor
 from hi.apps.sense.transient_models import SensorResponse
 from hi.apps.monitor.status_display_manager import StatusDisplayManager
@@ -271,3 +271,53 @@ class TestStatusDisplayManager(BaseTestCase):
         self.assertNotIn('svg_style', result[state_id_key])
         self.assertNotIn('status', result[state_id_key])
         self.assertIn('display', result[state_id_key])
+
+
+class TestEntityStatusDataListDelegation(BaseTestCase):
+    """Collection status data must collate delegated states under the
+    requesting entity, not the principal that owns them."""
+
+    def setUp(self):
+        super().setUp()
+        self.principal = Entity.objects.create(name='Controller', entity_type_str='IRRIGATION_CONTROLLER')
+        self.zone_state = EntityState.objects.create(entity=self.principal, entity_state_type_str='ON_OFF')
+
+    def _delegate(self, entity_state, name, entity_type_str='AREA'):
+        delegate = Entity.objects.create(name=name, entity_type_str=entity_type_str)
+        EntityStateDelegation.objects.create(entity_state=entity_state, delegate_entity=delegate)
+        return delegate
+
+    def _state_ids_by_entity(self, entities):
+        manager = StatusDisplayManager()
+        with patch.object(manager, '_get_latest_sensor_responses_helper', return_value={}):
+            status_data_list = manager.get_entity_status_data_list(entities)
+        return {
+            data.entity: sorted(x.entity_state.id for x in data.entity_state_status_data_list)
+            for data in status_data_list
+        }
+
+    def test_delegate_without_principal_gets_delegated_state(self):
+        area = self._delegate(self.zone_state, 'Front Lawn')
+
+        result = self._state_ids_by_entity([area])
+
+        self.assertEqual(result[area], [self.zone_state.id])
+
+    def test_state_shared_by_two_delegates_appears_under_each(self):
+        area = self._delegate(self.zone_state, 'Front Lawn')
+        valve = self._delegate(self.zone_state, 'Valve 1', entity_type_str='SPRINKLER_VALVE')
+
+        result = self._state_ids_by_entity([area, valve, self.principal])
+
+        self.assertEqual(result[area], [self.zone_state.id])
+        self.assertEqual(result[valve], [self.zone_state.id])
+        self.assertEqual(result[self.principal], [self.zone_state.id])
+
+    def test_delegate_with_own_states_gets_both_without_duplicates(self):
+        area = self._delegate(self.zone_state, 'Front Lawn')
+        own_state = EntityState.objects.create(entity=area, entity_state_type_str='ON_OFF')
+        EntityStateDelegation.objects.create(entity_state=own_state, delegate_entity=area)
+
+        result = self._state_ids_by_entity([area])
+
+        self.assertEqual(result[area], sorted([self.zone_state.id, own_state.id]))
