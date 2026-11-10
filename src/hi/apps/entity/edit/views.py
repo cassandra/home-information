@@ -1,6 +1,6 @@
 import logging
 import re
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Set
 
 from django.core.exceptions import BadRequest, PermissionDenied
 from django.db import transaction
@@ -244,51 +244,144 @@ class EntityPositionEditView( View, EntityViewMixin ):
 @method_decorator( edit_required, name='dispatch' )
 class ManagePairingsView( HiModalView, EntityViewMixin ):
 
+    """Pairs an entity with others. A principal with several states can
+    go on to a grid that picks which of its states each delegate
+    receives (the "refine" step) before submitting."""
+
     ENTITY_PAIR_ID_NAME_PREFIX = 'entity-pair-id-'
+    ENTITY_PAIR_STATE_NAME_PREFIX = 'entity-pair-state-'
+
+    ACTION_SUBMIT = 'submit'
+    ACTION_REFINE = 'refine'
+    ACTION_BACK = 'back'
+    ACTION_SUBMIT_STATES = 'submit-states'
+
+    STATE_GRID_TEMPLATE_NAME = 'entity/edit/modals/manage_pairing_states.html'
 
     def get_template_name( self ) -> str:
         return 'entity/edit/modals/manage_pairings.html'
 
     def get( self, request, *args, **kwargs ):
         entity = self.get_entity( request, *args, **kwargs )
+        return self._picker_response( request, entity = entity )
 
+    def post( self, request, *args, **kwargs ):
+        entity = self.get_entity( request, *args, **kwargs )
+        action = request.POST.get( 'action', self.ACTION_SUBMIT )
+        paired_entity_ids = self._get_posted_paired_entity_ids( request )
+
+        if action == self.ACTION_REFINE:
+            if not self._can_refine_states( entity ):
+                raise BadRequest( f'States of {entity} cannot be refined.' )
+            candidate_entity_ids = {
+                x.id for x in EntityPairingManager().get_candidate_entities( entity = entity )
+            }
+            if not paired_entity_ids <= candidate_entity_ids:
+                raise BadRequest( f'Cannot pair {entity} with: {sorted( paired_entity_ids - candidate_entity_ids )}' )
+            if not paired_entity_ids:
+                return self._picker_response(
+                    request,
+                    entity = entity,
+                    checked_entity_ids = paired_entity_ids,
+                    message = 'Select at least one item to refine its states.',
+                )
+            return self._state_grid_response( request, entity = entity, paired_entity_ids = paired_entity_ids )
+
+        if action == self.ACTION_BACK:
+            return self._picker_response( request, entity = entity, checked_entity_ids = paired_entity_ids )
+
+        if action not in ( self.ACTION_SUBMIT, self.ACTION_SUBMIT_STATES ):
+            raise BadRequest( f'Unknown pairing action: {action}' )
+
+        try:
+            if action == self.ACTION_SUBMIT_STATES:
+                EntityPairingManager().set_delegated_states(
+                    principal_entity = entity,
+                    delegate_entity_id_to_state_ids = self._get_posted_delegate_state_ids(
+                        request,
+                        paired_entity_ids = paired_entity_ids,
+                    ),
+                )
+            else:
+                EntityPairingManager().adjust_entity_pairings(
+                    entity = entity,
+                    desired_paired_entity_ids = paired_entity_ids,
+                )
+            return antinode.refresh_response()
+        except EntityPairingError as epe:
+            raise BadRequest( str(epe) )
+
+    def _can_refine_states( self, entity : Entity ) -> bool:
+        return bool( entity.states.count() > 1 )
+
+    def _picker_response( self,
+                          request,
+                          entity              : Entity,
+                          checked_entity_ids  : Set[ int ]  = None,
+                          message             : str         = None ):
+        """The item picker. Items are checked per their current pairing
+        unless checked_entity_ids carries the selection over from the
+        refine step."""
         entity_pairing_manager = EntityPairingManager()
         entity_pairings = entity_pairing_manager.get_entity_pairing_list( entity = entity )
         candidate_entities = entity_pairing_manager.get_candidate_entities( entity = entity )
 
-        existing_entities = [ x.paired_entity for x in entity_pairings ]
+        if checked_entity_ids is None:
+            checked_entities = [ x.paired_entity for x in entity_pairings ]
+        else:
+            checked_entities = [ x for x in candidate_entities if x.id in checked_entity_ids ]
         entity_view_group_list = EntityManager().create_entity_view_group_list(
-            existing_entities = existing_entities,
+            existing_entities = checked_entities,
             all_entities = candidate_entities,
         )
         context = {
             'entity': entity,
             'entity_view_group_list': entity_view_group_list,
+            'entity_pairing_map': { x.paired_entity.id: x for x in entity_pairings },
             'principal_entity_id_name_prefix': self.ENTITY_PAIR_ID_NAME_PREFIX,
+            'can_refine_states': self._can_refine_states( entity ),
+            'message': message,
         }
         return self.modal_response( request, context )
-    
-    def post( self, request, *args, **kwargs ):
-        entity = self.get_entity( request, *args, **kwargs )
 
-        desired_paired_entity_ids = set()
-        for name, value in request.POST.items():
-            m = re.match( r'(\D+)(\d+)', name )
+    def _state_grid_response( self, request, entity : Entity, paired_entity_ids : Set[ int ] ):
+        delegate_entities = list( Entity.objects.filter( id__in = paired_entity_ids ))
+        pairing_state_grid = EntityPairingManager().get_pairing_state_grid(
+            principal_entity = entity,
+            delegate_entities = delegate_entities,
+        )
+        context = {
+            'entity': entity,
+            'pairing_state_grid': pairing_state_grid,
+            'principal_entity_id_name_prefix': self.ENTITY_PAIR_ID_NAME_PREFIX,
+            'entity_pair_state_name_prefix': self.ENTITY_PAIR_STATE_NAME_PREFIX,
+        }
+        return self.modal_response( request, context, template_name = self.STATE_GRID_TEMPLATE_NAME )
+
+    def _get_posted_paired_entity_ids( self, request ) -> Set[ int ]:
+        paired_entity_ids = set()
+        for name in request.POST.keys():
+            m = re.match( rf'^{self.ENTITY_PAIR_ID_NAME_PREFIX}(\d+)$', name )
+            if m:
+                paired_entity_ids.add( int( m.group(1) ))
+            continue
+        return paired_entity_ids
+
+    def _get_posted_delegate_state_ids( self, request, paired_entity_ids : Set[ int ] ) -> Dict[ int, Set[ int ] ]:
+        """Checked grid cells by delegate. Every grid row is posted as a
+        paired entity id, so a row with no checked cells maps to no
+        states (unpaired)."""
+        delegate_entity_id_to_state_ids = { x: set() for x in paired_entity_ids }
+        for name in request.POST.keys():
+            m = re.match( rf'^{self.ENTITY_PAIR_STATE_NAME_PREFIX}(\d+)-(\d+)$', name )
             if not m:
                 continue
-            prefix = m.group(1)
-            if prefix == self.ENTITY_PAIR_ID_NAME_PREFIX:
-                desired_paired_entity_ids.add( int( m.group(2) ))
+            delegate_entity_id = int( m.group(1) )
+            if delegate_entity_id not in delegate_entity_id_to_state_ids:
+                raise BadRequest( f'State posted for an item not in the grid: {delegate_entity_id}' )
+            delegate_entity_id_to_state_ids[delegate_entity_id].add( int( m.group(2) ))
             continue
-
-        try:
-            EntityPairingManager().adjust_entity_pairings(
-                entity = entity,
-                desired_paired_entity_ids = desired_paired_entity_ids,
-            )
-            return antinode.refresh_response()
-        except EntityPairingError as epe:
-            raise BadRequest( str(epe) )
+        return delegate_entity_id_to_state_ids
 
 
 class EntityPropertiesEditView( View, EntityViewMixin ):

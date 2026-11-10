@@ -1,5 +1,5 @@
-{% extends "modals/action_with_cancel.html" %}
-{% load icons %}
+{% extends "modals/action_2_with_cancel.html" %}
+{% load icons common_tags %}
 
 {% block modal_dialog_class %}hi-modal-dialog-600{% endblock %}
 
@@ -14,6 +14,9 @@
   {% endblock %}
   
   {% block body %}
+  {% if message %}
+  <div class="alert alert-warning py-1" role="alert">{{ message }}</div>
+  {% endif %}
   <div>
     {% if entity.states.exists %}
     Select "delegate" items to pair whose status will determined by
@@ -36,6 +39,7 @@
                name="{{ principal_entity_id_name_prefix }}{{ entity_view_item.entity.id }}" 
                {% if entity_view_item.exists_in_view %}checked{% endif %} >
         <label for="principal-entity-checkbox-{{ entity_view_item.entity.id }}">{{ entity_view_item.entity.name }}</label>
+        {% include "entity/edit/panes/entity_pairing_coverage.html" with entity_pairing=entity_pairing_map|get_item:entity_view_item.entity.id show_edit_link=True %}
       </div>
       {% endfor %}
     </div>
@@ -46,6 +50,14 @@
   
   {% endblock %}
   
+  {% block action_center %}
+  {% if can_refine_states %}
+  <button type="submit" class="btn btn-outline-primary" name="action" value="refine">
+    REFINE STATES&hellip;
+  </button>
+  {% endif %}
+  {% endblock %}
+
   {% block action_right %}
   <button id="hi-principal-manage-button" type="submit" class="btn btn-primary"
         name="action" value="submit">

@@ -9,7 +9,7 @@ from hi.apps.entity.edit.views import ManagePairingsView
 from hi.apps.entity.entity_manager import EntityManager
 from hi.apps.entity.entity_pairing_manager import EntityPairingManager
 from hi.apps.entity.enums import EntityType
-from hi.apps.entity.models import Entity, EntityPosition, EntityStateDelegation
+from hi.apps.entity.models import Entity, EntityPosition, EntityState, EntityStateDelegation
 from hi.apps.location.enums import LocationViewType
 from hi.apps.location.location_manager import LocationManager
 from hi.apps.location.models import Location, LocationView
@@ -845,3 +845,160 @@ class TestManagePairingsView(DualModeViewTestCase):
         response = self.client.get(url)
 
         self.assertEqual(response.status_code, 404)
+
+
+class TestManagePairingsPerState(DualModeViewTestCase):
+    """Per-state pairing in the pairing modal: partial pairings in the
+    picker, and the refine step whose grid is applied exactly on submit."""
+
+    def setUp(self):
+        super().setUp()
+        self.setSessionViewMode(ViewMode.EDIT)
+        self.principal = Entity.objects.create(name='Sprinkler', entity_type_str='IRRIGATION_CONTROLLER')
+        self.zones = [
+            EntityState.objects.create(entity=self.principal, entity_state_type_str='ON_OFF', name=name)
+            for name in ['EZFlora Front Lawn', 'EZFlora Back Lawn']
+        ]
+        self.front = Entity.objects.create(name='Front Area', entity_type_str='AREA')
+        self.back = Entity.objects.create(name='Back Area', entity_type_str='AREA')
+        self.url = reverse('entity_edit_manage_pairings', kwargs={'entity_id': self.principal.id})
+
+    def _pair_field(self, entity):
+        return f'{ManagePairingsView.ENTITY_PAIR_ID_NAME_PREFIX}{entity.id}'
+
+    def _state_field(self, entity, entity_state):
+        return f'{ManagePairingsView.ENTITY_PAIR_STATE_NAME_PREFIX}{entity.id}-{entity_state.id}'
+
+    def _delegate(self, entity_state, delegate_entity):
+        EntityStateDelegation.objects.create(entity_state=entity_state, delegate_entity=delegate_entity)
+
+    def _delegation_pairs(self):
+        return set(
+            EntityStateDelegation.objects.filter(entity_state__entity=self.principal)
+            .values_list('entity_state_id', 'delegate_entity_id')
+        )
+
+    def test_picker_carries_partial_pairing_coverage(self):
+        self._delegate(self.zones[0], self.front)
+
+        response = self.client.get(self.url)
+
+        self.assertTrue(response.context['entity_pairing_map'][self.front.id].is_partial)
+
+    def test_picker_submit_keeps_partial_pairing(self):
+        self._delegate(self.zones[0], self.front)
+
+        response = self.client.post(self.url, {
+            'action': ManagePairingsView.ACTION_SUBMIT,
+            self._pair_field(self.front): 'on',
+            self._pair_field(self.back): 'on',
+        })
+
+        self.assertSuccessResponse(response)
+        self.assertEqual(self._delegation_pairs(), {
+            (self.zones[0].id, self.front.id),
+            (self.zones[0].id, self.back.id),
+            (self.zones[1].id, self.back.id),
+        })
+
+    def test_unknown_action_is_rejected(self):
+        response = self.client.post(self.url, {'action': 'bogus', self._pair_field(self.front): 'on'})
+
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(self._delegation_pairs(), set())
+
+    def test_refine_builds_grid_for_selected_items_and_lists_dropped_pairings(self):
+        self._delegate(self.zones[0], self.back)
+
+        response = self.client.post(self.url, {
+            'action': ManagePairingsView.ACTION_REFINE,
+            self._pair_field(self.front): 'on',
+        })
+
+        self.assertTemplateRendered(response, ManagePairingsView.STATE_GRID_TEMPLATE_NAME)
+        grid = response.context['pairing_state_grid']
+        row_entities = [row.entity for group in grid.row_group_list for row in group.row_list]
+        self.assertEqual(row_entities, [self.front])
+        self.assertEqual(grid.unpaired_entity_list, [self.back])
+
+    def test_refine_without_selection_returns_picker_with_message(self):
+        response = self.client.post(self.url, {'action': ManagePairingsView.ACTION_REFINE})
+
+        self.assertTemplateRendered(response, ManagePairingsView().get_template_name())
+        self.assertIsNotNone(response.context['message'])
+
+    def test_refine_rejects_non_candidate_item(self):
+        motion = Entity.objects.create(name='Motion', entity_type_str='MOTION_SENSOR')
+        EntityState.objects.create(entity=motion, entity_state_type_str='MOVEMENT', name='Motion')
+
+        response = self.client.post(self.url, {
+            'action': ManagePairingsView.ACTION_REFINE,
+            self._pair_field(motion): 'on',
+        })
+
+        self.assertEqual(response.status_code, 400)
+
+    def test_refine_rejected_for_single_state_principal(self):
+        motion = Entity.objects.create(name='Motion', entity_type_str='MOTION_SENSOR')
+        EntityState.objects.create(entity=motion, entity_state_type_str='MOVEMENT', name='Motion')
+        url = reverse('entity_edit_manage_pairings', kwargs={'entity_id': motion.id})
+
+        response = self.client.post(url, {
+            'action': ManagePairingsView.ACTION_REFINE,
+            self._pair_field(self.front): 'on',
+        })
+
+        self.assertEqual(response.status_code, 400)
+
+    def test_back_keeps_grid_items_checked(self):
+        response = self.client.post(self.url, {
+            'action': ManagePairingsView.ACTION_BACK,
+            self._pair_field(self.back): 'on',
+        })
+
+        checked_ids = {
+            item.entity.id
+            for group in response.context['entity_view_group_list']
+            for item in group.item_list if item.exists_in_view
+        }
+        self.assertEqual(checked_ids, {self.back.id})
+
+    def test_submit_states_applies_grid_and_unpairs_empty_rows(self):
+        for zone in self.zones:
+            self._delegate(zone, self.front)
+            self._delegate(zone, self.back)
+
+        response = self.client.post(self.url, {
+            'action': ManagePairingsView.ACTION_SUBMIT_STATES,
+            self._pair_field(self.front): 'on',
+            self._pair_field(self.back): 'on',
+            self._state_field(self.front, self.zones[0]): 'on',
+        })
+
+        self.assertSuccessResponse(response)
+        self.assertEqual(self._delegation_pairs(), {(self.zones[0].id, self.front.id)})
+
+    def test_submit_states_rejects_state_for_item_not_in_grid(self):
+        self._delegate(self.zones[0], self.front)
+
+        response = self.client.post(self.url, {
+            'action': ManagePairingsView.ACTION_SUBMIT_STATES,
+            self._pair_field(self.front): 'on',
+            self._state_field(self.back, self.zones[0]): 'on',
+        })
+
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(self._delegation_pairs(), {(self.zones[0].id, self.front.id)})
+
+    def test_submit_states_rejects_state_of_another_entity(self):
+        other = Entity.objects.create(name='Other', entity_type_str='IRRIGATION_CONTROLLER')
+        other_state = EntityState.objects.create(entity=other, entity_state_type_str='ON_OFF', name='Other')
+
+        response = self.client.post(self.url, {
+            'action': ManagePairingsView.ACTION_SUBMIT_STATES,
+            self._pair_field(self.front): 'on',
+            self._state_field(self.front, other_state): 'on',
+        })
+
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(self._delegation_pairs(), set())

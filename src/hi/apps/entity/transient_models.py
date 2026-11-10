@@ -1,9 +1,10 @@
 from dataclasses import dataclass, field
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Set
 
 from hi.apps.entity.edit.forms import EntityPositionForm
 
 from .entity_state_history import EntityStateHistoryValue
+from .entity_state_labels import entity_state_short_labels
 from .enums import EntityGroupType, EntityPairingType, VideoStreamType
 from .forms import EntityForm
 from .models import Entity, EntityState
@@ -78,10 +79,59 @@ class EntityPairing:
     state. Thus, by just pairing two entities, we can deduce which
     direction the delagation relatiojnship goes.
     """
-    entity         : Entity
-    paired_entity  : Entity
-    pairing_type   : EntityPairingType
-    
+    entity            : Entity
+    paired_entity     : Entity
+    pairing_type      : EntityPairingType
+
+    # Coverage of the principal's states by this pair: a delegate may
+    # receive only some of them.
+    principal_states  : List[ EntityState ]  = field( default_factory = list )
+    delegated_states  : List[ EntityState ]  = field( default_factory = list )
+
+    @property
+    def paired_entity_is_principal( self ) -> bool:
+        return bool( self.pairing_type == EntityPairingType.PRINCIPAL )
+
+    @property
+    def is_partial( self ) -> bool:
+        return len( self.delegated_states ) < len( self.principal_states )
+
+    @property
+    def delegated_state_labels( self ) -> List[ str ]:
+        short_labels = entity_state_short_labels( self.principal_states )
+        return [ short_labels[ entity_state.id ] for entity_state in self.delegated_states ]
+
+
+@dataclass
+class PairingStateColumn:
+    entity_state  : EntityState
+    label         : str
+
+
+@dataclass
+class PairingStateRow:
+    entity               : Entity
+    delegated_state_ids  : Set[ int ]
+
+
+@dataclass
+class PairingStateRowGroup:
+    entity_group_type  : EntityGroupType
+    row_list           : List[ PairingStateRow ]  = field( default_factory = list )
+
+
+@dataclass
+class PairingStateGrid:
+    """Which of a principal's states (columns) each chosen delegate
+    (rows, grouped by type) receives, for editing states per delegate."""
+
+    principal_entity      : Entity
+    column_list           : List[ PairingStateColumn ]    = field( default_factory = list )
+    row_group_list        : List[ PairingStateRowGroup ]  = field( default_factory = list )
+
+    # Currently paired delegates absent from the grid: unpaired on submit.
+    unpaired_entity_list  : List[ Entity ]                = field( default_factory = list )
+
 
 @dataclass
 class EntityEditModeData:

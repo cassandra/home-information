@@ -207,6 +207,13 @@
         REF_PICKER_SOURCE_LOGO_ATTR:        'data-ref-picker-source-logo',
         REF_PICKER_SOURCE_LABEL_ATTR:       'data-ref-picker-source-label',
 
+        // Pairing state grid -- mirrors PAIRING_STATE_GRID_* keys in
+        // hi.constants.DIVID.
+        PAIRING_STATE_GRID_CLASS:               'hi-pairing-state-grid',
+        PAIRING_STATE_GRID_TOGGLE_CLASS:        'hi-pairing-state-grid-toggle',
+        PAIRING_STATE_GRID_CLEAR_LABEL_ATTR:    'data-clear-label',
+        PAIRING_STATE_GRID_SELECT_LABEL_ATTR:   'data-select-label',
+
         // External-reference card grid -- mirrors EXT_REF_* keys in
         // hi.constants.DIVID.
         EXT_REF_GRID_CLASS:                  'hi-ext-ref-grid',

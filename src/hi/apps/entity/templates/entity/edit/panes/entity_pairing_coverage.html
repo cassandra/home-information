@@ -1,0 +1,18 @@
+{% comment %}
+Marks a pairing that covers only some of the principal's states: a k/N
+badge, and when the paired entity is the principal, the states received.
+Context: entity_pairing (may be None); show_edit_link to link to the
+principal's pairing modal, where the states are edited.
+{% endcomment %}
+{% if entity_pairing.is_partial %}
+<span class="badge badge-warning">{{ entity_pairing.delegated_states|length }}/{{ entity_pairing.principal_states|length }}</span>
+{% if entity_pairing.paired_entity_is_principal %}
+<div class="small text-muted ml-4">
+  receives: {{ entity_pairing.delegated_state_labels|join:", " }}
+  {% if show_edit_link %}
+  &middot; <a href="{% url 'entity_edit_manage_pairings' entity_id=entity_pairing.paired_entity.id %}"
+              data-async="true">edit states on {{ entity_pairing.paired_entity.name }}&hellip;</a>
+  {% endif %}
+</div>
+{% endif %}
+{% endif %}

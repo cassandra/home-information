@@ -71,7 +71,9 @@ branching.
 <div id="hi-edit-entity-principals">
   <ul>
     {% for entity_pairing in entity_pairing_list %}
-    <li>{{ entity_pairing.paired_entity.name }} <small>[{{entity_pairing.pairing_type}}]</small></li>
+    <li>{{ entity_pairing.paired_entity.name }} <small>[{{entity_pairing.pairing_type}}]</small>
+      {% include "entity/edit/panes/entity_pairing_coverage.html" %}
+    </li>
     {% empty %}
     <em>No current pairings.</em>
     {% endfor %}
