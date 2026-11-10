@@ -264,6 +264,7 @@ class ManagePairingsView( HiModalView, EntityViewMixin ):
         context = {
             'entity': entity,
             'entity_view_group_list': entity_view_group_list,
+            'entity_pairing_map': { x.paired_entity.id: x for x in entity_pairings },
             'principal_entity_id_name_prefix': self.ENTITY_PAIR_ID_NAME_PREFIX,
         }
         return self.modal_response( request, context )

@@ -9,7 +9,7 @@ from hi.apps.entity.edit.views import ManagePairingsView
 from hi.apps.entity.entity_manager import EntityManager
 from hi.apps.entity.entity_pairing_manager import EntityPairingManager
 from hi.apps.entity.enums import EntityType
-from hi.apps.entity.models import Entity, EntityPosition, EntityStateDelegation
+from hi.apps.entity.models import Entity, EntityPosition, EntityState, EntityStateDelegation
 from hi.apps.location.enums import LocationViewType
 from hi.apps.location.location_manager import LocationManager
 from hi.apps.location.models import Location, LocationView
@@ -845,3 +845,47 @@ class TestManagePairingsView(DualModeViewTestCase):
         response = self.client.get(url)
 
         self.assertEqual(response.status_code, 404)
+
+
+class TestManagePairingsPartialCoverage(DualModeViewTestCase):
+    """The pairing picker marks pairings that cover only some of the
+    principal's states, and on the delegate side says which states are
+    received and links to the principal's pairing modal."""
+
+    def setUp(self):
+        super().setUp()
+        self.setSessionViewMode(ViewMode.EDIT)
+        self.principal = Entity.objects.create(name='Sprinkler', entity_type_str='IRRIGATION_CONTROLLER')
+        self.zones = [
+            EntityState.objects.create(entity=self.principal, entity_state_type_str='ON_OFF', name=name)
+            for name in ['EZFlora Front Lawn', 'EZFlora Back Lawn', 'EZFlora Side Yard']
+        ]
+        self.area = Entity.objects.create(name='Front Area', entity_type_str='AREA')
+
+    def _picker_html(self, entity):
+        url = reverse('entity_edit_manage_pairings', kwargs={'entity_id': entity.id})
+        return self.client.get(url).content.decode()
+
+    def test_partial_pairing_shows_badge_and_received_states(self):
+        EntityStateDelegation.objects.create(entity_state=self.zones[0], delegate_entity=self.area)
+
+        principal_html = self._picker_html(self.principal)
+        delegate_html = self._picker_html(self.area)
+
+        self.assertIn('1/3', principal_html)
+        self.assertNotIn('receives:', principal_html)
+        self.assertIn('1/3', delegate_html)
+        self.assertIn('receives: Front Lawn', delegate_html)
+        self.assertIn(
+            reverse('entity_edit_manage_pairings', kwargs={'entity_id': self.principal.id}),
+            delegate_html,
+        )
+
+    def test_full_pairing_renders_without_coverage_marks(self):
+        for zone in self.zones:
+            EntityStateDelegation.objects.create(entity_state=zone, delegate_entity=self.area)
+
+        delegate_html = self._picker_html(self.area)
+
+        self.assertNotIn('badge-warning', delegate_html)
+        self.assertNotIn('receives:', delegate_html)

@@ -89,6 +89,10 @@ class EntityPairing:
     delegated_states  : List[ EntityState ]  = field( default_factory = list )
 
     @property
+    def paired_entity_is_principal( self ) -> bool:
+        return bool( self.pairing_type == EntityPairingType.PRINCIPAL )
+
+    @property
     def is_partial( self ) -> bool:
         return len( self.delegated_states ) < len( self.principal_states )
 

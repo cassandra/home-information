@@ -1,5 +1,5 @@
 {% extends "modals/action_with_cancel.html" %}
-{% load icons %}
+{% load icons common_tags %}
 
 {% block modal_dialog_class %}hi-modal-dialog-600{% endblock %}
 
@@ -36,6 +36,7 @@
                name="{{ principal_entity_id_name_prefix }}{{ entity_view_item.entity.id }}" 
                {% if entity_view_item.exists_in_view %}checked{% endif %} >
         <label for="principal-entity-checkbox-{{ entity_view_item.entity.id }}">{{ entity_view_item.entity.name }}</label>
+        {% include "entity/edit/panes/entity_pairing_coverage.html" with entity_pairing=entity_pairing_map|get_item:entity_view_item.entity.id show_edit_link=True %}
       </div>
       {% endfor %}
     </div>
