@@ -1,7 +1,7 @@
 from collections import defaultdict
-from typing import Dict, List, Sequence, Set
+from typing import Dict, List, Sequence, Set, Tuple
 
-from django.db import transaction
+from django.db import IntegrityError, transaction
 
 from hi.apps.common.singleton import Singleton
 from hi.apps.location.models import LocationView
@@ -288,7 +288,8 @@ class EntityPairingManager(Singleton):
         """Grid of the principal's states for the given delegates. A
         delegate already paired starts with the states it receives now;
         a new one starts with all states, as an entity-level pairing
-        would give it."""
+        would give it. Current delegates not in the grid are listed,
+        since submitting the grid unpairs them."""
         principal_states = list( principal_entity.states.order_by( 'id' ))
         short_labels = entity_state_short_labels( principal_states )
         all_state_ids = { x.id for x in principal_states }
@@ -308,15 +309,19 @@ class EntityPairingManager(Singleton):
                 row_group_map[entity_group_type] = PairingStateRowGroup( entity_group_type = entity_group_type )
             row_group_map[entity_group_type].row_list.append( PairingStateRow(
                 entity = delegate_entity,
-                delegated_state_ids = delegate_to_state_ids.get( delegate_entity.id, all_state_ids ),
+                delegated_state_ids = set( delegate_to_state_ids.get( delegate_entity.id, all_state_ids )),
             ))
             continue
 
+        grid_entity_ids = { x.id for x in delegate_entities }
+        unpaired_entity_ids = set( delegate_to_state_ids.keys() ) - grid_entity_ids
         return PairingStateGrid(
             principal_entity = principal_entity,
             column_list = [ PairingStateColumn( entity_state = x, label = short_labels[x.id] )
                             for x in principal_states ],
             row_group_list = sorted( row_group_map.values(), key = lambda x : x.entity_group_type.label ),
+            unpaired_entity_list = list( models.Entity.objects.filter(
+                id__in = unpaired_entity_ids ).order_by( 'name' )),
         )
 
     def set_delegated_states( self,
@@ -328,6 +333,44 @@ class EntityPairingManager(Singleton):
         unpaired from this principal. Delegations from other principals
         are not touched."""
 
+        # Validation reads happen in the transaction too, so a state
+        # removed concurrently (e.g., by an integration sync) surfaces
+        # as a pairing error rather than a database error.
+        try:
+            with transaction.atomic():
+                desired_pairs = self._get_desired_delegation_pairs(
+                    principal_entity = principal_entity,
+                    delegate_entity_id_to_state_ids = delegate_entity_id_to_state_ids,
+                )
+
+                # Per-object create/delete (not bulk) so model signals fire.
+                delegation_queryset = models.EntityStateDelegation.objects.filter(
+                    entity_state__entity = principal_entity,
+                )
+                existing_pairs = set()
+                for delegation in delegation_queryset:
+                    pair = ( delegation.entity_state_id, delegation.delegate_entity_id )
+                    if pair in desired_pairs:
+                        existing_pairs.add( pair )
+                    else:
+                        delegation.delete()
+                    continue
+
+                for state_id, delegate_entity_id in desired_pairs - existing_pairs:
+                    models.EntityStateDelegation.objects.create(
+                        entity_state_id = state_id,
+                        delegate_entity_id = delegate_entity_id,
+                    )
+                    continue
+        except IntegrityError as ie:
+            raise EntityPairingError( f'Pairings of {principal_entity} changed during the update: {ie}' )
+        return
+
+    def _get_desired_delegation_pairs(
+            self,
+            principal_entity                 : models.Entity,
+            delegate_entity_id_to_state_ids  : Dict[ int, Set[ int ] ] ) -> Set[ Tuple[ int, int ] ]:
+        """Validated ( state id, delegate entity id ) pairs for the mapping."""
         principal_state_ids = set( principal_entity.states.values_list( 'id', flat = True ))
         if not principal_state_ids:
             raise EntityPairingError( f'Cannot delegate states of an entity without states: {principal_entity}' )
@@ -347,25 +390,4 @@ class EntityPairingManager(Singleton):
                     f'States {sorted(foreign_state_ids)} do not belong to {principal_entity}' )
             desired_pairs.update( ( state_id, delegate_entity_id ) for state_id in state_ids )
             continue
-
-        # Per-object create/delete (not bulk) so model signals fire.
-        with transaction.atomic():
-            delegation_queryset = models.EntityStateDelegation.objects.filter(
-                entity_state__entity = principal_entity,
-            )
-            existing_pairs = set()
-            for delegation in delegation_queryset:
-                pair = ( delegation.entity_state_id, delegation.delegate_entity_id )
-                if pair in desired_pairs:
-                    existing_pairs.add( pair )
-                else:
-                    delegation.delete()
-                continue
-
-            for state_id, delegate_entity_id in desired_pairs - existing_pairs:
-                models.EntityStateDelegation.objects.create(
-                    entity_state_id = state_id,
-                    delegate_entity_id = delegate_entity_id,
-                )
-                continue
-        return
+        return desired_pairs

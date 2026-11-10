@@ -14,6 +14,11 @@
   {% endblock %}
 
   {% block body %}
+  {% if pairing_state_grid.unpaired_entity_list %}
+  <div class="alert alert-warning py-1">
+    Will be unpaired: {% for unpaired_entity in pairing_state_grid.unpaired_entity_list %}{{ unpaired_entity.name }}{% if not forloop.last %}, {% endif %}{% endfor %}
+  </div>
+  {% endif %}
   <div class="{{ DIVID.PAIRING_STATE_GRID_CLASS }}">
     <div class="d-flex justify-content-between align-items-center mb-2">
       <div>
@@ -51,8 +56,8 @@
             <td class="text-center">
               <input type="checkbox"
                      name="{{ entity_pair_state_name_prefix }}{{ row.entity.id }}-{{ column.entity_state.id }}"
-                     title="{{ column.entity_state.name }} → {{ row.entity.name }}"
-                     aria-label="{{ column.entity_state.name }} → {{ row.entity.name }}"
+                     title="{{ row.entity.name }} receives {{ column.entity_state.name }}"
+                     aria-label="{{ row.entity.name }} receives {{ column.entity_state.name }}"
                      {% if column.entity_state.id in row.delegated_state_ids %}checked{% endif %}>
             </td>
             {% endfor %}
@@ -67,7 +72,7 @@
 
   {% block action_left %}
   <button type="submit" class="btn btn-outline-tertiary" name="action" value="back">
-    &larr; BACK TO ITEMS
+    {% icon "chevron-left" size="md" css_class="hi-icon-left" %}BACK TO ITEMS
   </button>
   {% endblock %}
 

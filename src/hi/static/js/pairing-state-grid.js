@@ -28,8 +28,7 @@ $(document).ready(function() {
         }
     };
 
-    $('body').on( 'click', '.' + Hi.PAIRING_STATE_GRID_TOGGLE_CLASS, function( e ) {
-        e.preventDefault();
+    $('body').on( 'click', '.' + Hi.PAIRING_STATE_GRID_TOGGLE_CLASS, function() {
         PairingStateGrid.toggleAll( $(this).closest( '.' + Hi.PAIRING_STATE_GRID_CLASS ));
     });
 

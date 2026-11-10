@@ -15,7 +15,7 @@
   
   {% block body %}
   {% if message %}
-  <div class="alert alert-warning py-1">{{ message }}</div>
+  <div class="alert alert-warning py-1" role="alert">{{ message }}</div>
   {% endif %}
   <div>
     {% if entity.states.exists %}

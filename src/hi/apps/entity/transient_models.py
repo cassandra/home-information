@@ -125,9 +125,12 @@ class PairingStateGrid:
     """Which of a principal's states (columns) each chosen delegate
     (rows, grouped by type) receives, for editing states per delegate."""
 
-    principal_entity  : Entity
-    column_list       : List[ PairingStateColumn ]    = field( default_factory = list )
-    row_group_list    : List[ PairingStateRowGroup ]  = field( default_factory = list )
+    principal_entity      : Entity
+    column_list           : List[ PairingStateColumn ]    = field( default_factory = list )
+    row_group_list        : List[ PairingStateRowGroup ]  = field( default_factory = list )
+
+    # Currently paired delegates absent from the grid: unpaired on submit.
+    unpaired_entity_list  : List[ Entity ]                = field( default_factory = list )
 
 
 @dataclass

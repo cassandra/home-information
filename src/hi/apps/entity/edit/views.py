@@ -273,6 +273,11 @@ class ManagePairingsView( HiModalView, EntityViewMixin ):
         if action == self.ACTION_REFINE:
             if not self._can_refine_states( entity ):
                 raise BadRequest( f'States of {entity} cannot be refined.' )
+            candidate_entity_ids = {
+                x.id for x in EntityPairingManager().get_candidate_entities( entity = entity )
+            }
+            if not paired_entity_ids <= candidate_entity_ids:
+                raise BadRequest( f'Cannot pair {entity} with: {sorted( paired_entity_ids - candidate_entity_ids )}' )
             if not paired_entity_ids:
                 return self._picker_response(
                     request,
@@ -284,6 +289,9 @@ class ManagePairingsView( HiModalView, EntityViewMixin ):
 
         if action == self.ACTION_BACK:
             return self._picker_response( request, entity = entity, checked_entity_ids = paired_entity_ids )
+
+        if action not in ( self.ACTION_SUBMIT, self.ACTION_SUBMIT_STATES ):
+            raise BadRequest( f'Unknown pairing action: {action}' )
 
         try:
             if action == self.ACTION_SUBMIT_STATES:
