@@ -1,5 +1,5 @@
 from dataclasses import dataclass, field
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Set
 
 from hi.apps.entity.edit.forms import EntityPositionForm
 
@@ -100,6 +100,34 @@ class EntityPairing:
     def delegated_state_labels( self ) -> List[ str ]:
         short_labels = entity_state_short_labels( self.principal_states )
         return [ short_labels[ entity_state.id ] for entity_state in self.delegated_states ]
+
+
+@dataclass
+class PairingStateColumn:
+    entity_state  : EntityState
+    label         : str
+
+
+@dataclass
+class PairingStateRow:
+    entity               : Entity
+    delegated_state_ids  : Set[ int ]
+
+
+@dataclass
+class PairingStateRowGroup:
+    entity_group_type  : EntityGroupType
+    row_list           : List[ PairingStateRow ]  = field( default_factory = list )
+
+
+@dataclass
+class PairingStateGrid:
+    """Which of a principal's states (columns) each chosen delegate
+    (rows, grouped by type) receives, for editing states per delegate."""
+
+    principal_entity  : Entity
+    column_list       : List[ PairingStateColumn ]    = field( default_factory = list )
+    row_group_list    : List[ PairingStateRowGroup ]  = field( default_factory = list )
 
 
 @dataclass

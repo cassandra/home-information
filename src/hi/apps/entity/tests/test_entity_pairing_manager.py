@@ -179,3 +179,22 @@ class TestEntityStateShortLabels(PairingTestMixin, BaseTestCase):
 
     def test_single_state_keeps_full_name(self):
         self.assertEqual(self._labels(['EZFlora Front Lawn']), ['EZFlora Front Lawn'])
+
+
+class TestPairingStateGrid(PairingTestMixin, BaseTestCase):
+
+    def test_rows_start_from_current_delegations_or_all_states(self):
+        principal, zones = self._create_principal('Sprinkler', ['EZFlora Front Lawn', 'EZFlora Back Lawn'])
+        paired = self._create_area('Paired')
+        new = self._create_area('New')
+        self._delegate(zones[1], paired)
+
+        grid = EntityPairingManager().get_pairing_state_grid(
+            principal_entity=principal,
+            delegate_entities=[new, paired],
+        )
+
+        self.assertEqual([c.label for c in grid.column_list], ['Front Lawn', 'Back Lawn'])
+        rows = {row.entity: row for group in grid.row_group_list for row in group.row_list}
+        self.assertEqual(rows[paired].delegated_state_ids, {zones[1].id})
+        self.assertEqual(rows[new].delegated_state_ids, {zones[0].id, zones[1].id})

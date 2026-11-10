@@ -1,0 +1,82 @@
+{% extends "modals/action_3.html" %}
+{% load icons %}
+
+{% block modal_dialog_class %}hi-modal-dialog-800{% endblock %}
+
+{% block preamble %}
+<form action="{% url 'entity_edit_manage_pairings' entity_id=entity.id %}" method="post"
+      class="form" data-async="true">
+  {% csrf_token %}
+{% endblock %}
+
+  {% block title_text %}
+  Refine Paired States
+  {% endblock %}
+
+  {% block body %}
+  <div class="{{ DIVID.PAIRING_STATE_GRID_CLASS }}">
+    <div class="d-flex justify-content-between align-items-center mb-2">
+      <div>
+        States of <span class="h6">{{ entity.name }}</span> delegated to each item.
+        <div class="small text-muted">Items left with no states checked are unpaired.</div>
+      </div>
+      <button type="button" class="btn btn-sm btn-outline-primary {{ DIVID.PAIRING_STATE_GRID_TOGGLE_CLASS }}"
+              {{ DIVID.PAIRING_STATE_GRID_CLEAR_LABEL_ATTR }}="Clear all"
+              {{ DIVID.PAIRING_STATE_GRID_SELECT_LABEL_ATTR }}="Select all">Clear all</button>
+    </div>
+    <div class="table-responsive">
+      <table class="table table-sm table-hover mb-0">
+        <thead>
+          <tr>
+            <th scope="col" class="align-bottom">Item</th>
+            {% for column in pairing_state_grid.column_list %}
+            <th scope="col" class="small text-center align-bottom" title="{{ column.entity_state.name }}">{{ column.label }}</th>
+            {% endfor %}
+          </tr>
+        </thead>
+        <tbody>
+          {% for row_group in pairing_state_grid.row_group_list %}
+          <tr class="table-light">
+            <td colspan="{{ pairing_state_grid.column_list|length|add:1 }}" class="small font-weight-bold text-muted">
+              {{ row_group.entity_group_type.label }}
+            </td>
+          </tr>
+          {% for row in row_group.row_list %}
+          <tr>
+            <th scope="row" class="font-weight-normal text-nowrap">
+              {{ row.entity.name }}
+              <input type="hidden" name="{{ principal_entity_id_name_prefix }}{{ row.entity.id }}" value="on">
+            </th>
+            {% for column in pairing_state_grid.column_list %}
+            <td class="text-center">
+              <input type="checkbox"
+                     name="{{ entity_pair_state_name_prefix }}{{ row.entity.id }}-{{ column.entity_state.id }}"
+                     title="{{ column.entity_state.name }} → {{ row.entity.name }}"
+                     aria-label="{{ column.entity_state.name }} → {{ row.entity.name }}"
+                     {% if column.entity_state.id in row.delegated_state_ids %}checked{% endif %}>
+            </td>
+            {% endfor %}
+          </tr>
+          {% endfor %}
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  {% endblock %}
+
+  {% block action_left %}
+  <button type="submit" class="btn btn-outline-tertiary" name="action" value="back">
+    &larr; BACK TO ITEMS
+  </button>
+  {% endblock %}
+
+  {% block action_right %}
+  <button type="submit" class="btn btn-primary" name="action" value="submit-states">
+    {% icon "save" size="md" css_class="hi-icon-left" %}SUBMIT
+  </button>
+  {% endblock %}
+
+{% block postamble %}
+</form>
+{% endblock %}

@@ -1,4 +1,4 @@
-{% extends "modals/action_with_cancel.html" %}
+{% extends "modals/action_2_with_cancel.html" %}
 {% load icons common_tags %}
 
 {% block modal_dialog_class %}hi-modal-dialog-600{% endblock %}
@@ -14,6 +14,9 @@
   {% endblock %}
   
   {% block body %}
+  {% if message %}
+  <div class="alert alert-warning py-1">{{ message }}</div>
+  {% endif %}
   <div>
     {% if entity.states.exists %}
     Select "delegate" items to pair whose status will determined by
@@ -47,6 +50,14 @@
   
   {% endblock %}
   
+  {% block action_center %}
+  {% if can_refine_states %}
+  <button type="submit" class="btn btn-outline-primary" name="action" value="refine">
+    REFINE STATES&hellip;
+  </button>
+  {% endif %}
+  {% endblock %}
+
   {% block action_right %}
   <button id="hi-principal-manage-button" type="submit" class="btn btn-primary"
         name="action" value="submit">

@@ -310,6 +310,7 @@ PIPELINE = {
                 'js/popper.min.js',
                 'bootstrap/js/bootstrap.js',
                 'js/entity-picker.js',
+                'js/pairing-state-grid.js',
             ),
             'output_filename': 'js/js_after_content.js',
         },

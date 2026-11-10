@@ -1,5 +1,5 @@
 from collections import defaultdict
-from typing import Dict, List, Set
+from typing import Dict, List, Sequence, Set
 
 from django.db import transaction
 
@@ -8,7 +8,14 @@ from hi.apps.location.models import LocationView
 
 from . import enums
 from . import models
-from .transient_models import EntityPairing
+from .entity_state_labels import entity_state_short_labels
+from .transient_models import (
+    EntityPairing,
+    PairingStateColumn,
+    PairingStateGrid,
+    PairingStateRow,
+    PairingStateRowGroup,
+)
 
 
 class EntityPairingError(Exception):
@@ -274,6 +281,43 @@ class EntityPairingManager(Singleton):
                         delegation.delete()
                     continue
         return
+
+    def get_pairing_state_grid( self,
+                                principal_entity  : models.Entity,
+                                delegate_entities : Sequence[ models.Entity ] ) -> PairingStateGrid:
+        """Grid of the principal's states for the given delegates. A
+        delegate already paired starts with the states it receives now;
+        a new one starts with all states, as an entity-level pairing
+        would give it."""
+        principal_states = list( principal_entity.states.order_by( 'id' ))
+        short_labels = entity_state_short_labels( principal_states )
+        all_state_ids = { x.id for x in principal_states }
+
+        delegate_to_state_ids = defaultdict( set )
+        delegation_queryset = models.EntityStateDelegation.objects.filter(
+            entity_state__entity = principal_entity,
+        )
+        for delegation in delegation_queryset:
+            delegate_to_state_ids[delegation.delegate_entity_id].add( delegation.entity_state_id )
+            continue
+
+        row_group_map = dict()
+        for delegate_entity in sorted( delegate_entities, key = lambda x : x.name ):
+            entity_group_type = enums.EntityGroupType.from_entity_type( delegate_entity.entity_type )
+            if entity_group_type not in row_group_map:
+                row_group_map[entity_group_type] = PairingStateRowGroup( entity_group_type = entity_group_type )
+            row_group_map[entity_group_type].row_list.append( PairingStateRow(
+                entity = delegate_entity,
+                delegated_state_ids = delegate_to_state_ids.get( delegate_entity.id, all_state_ids ),
+            ))
+            continue
+
+        return PairingStateGrid(
+            principal_entity = principal_entity,
+            column_list = [ PairingStateColumn( entity_state = x, label = short_labels[x.id] )
+                            for x in principal_states ],
+            row_group_list = sorted( row_group_map.values(), key = lambda x : x.entity_group_type.label ),
+        )
 
     def set_delegated_states( self,
                               principal_entity                 : models.Entity,

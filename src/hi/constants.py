@@ -198,6 +198,14 @@ DIVID = {
     'REF_PICKER_SOURCE_LOGO_ATTR': 'data-ref-picker-source-logo',
     'REF_PICKER_SOURCE_LABEL_ATTR': 'data-ref-picker-source-label',
 
+    # Pairing state grid -- DOM classes and data attributes shared by
+    # the refine-states modal and pairing-state-grid.js. Mirror in
+    # ``src/hi/static/js/main.js`` (``Hi.PAIRING_STATE_GRID_*``).
+    'PAIRING_STATE_GRID_CLASS': 'hi-pairing-state-grid',
+    'PAIRING_STATE_GRID_TOGGLE_CLASS': 'hi-pairing-state-grid-toggle',
+    'PAIRING_STATE_GRID_CLEAR_LABEL_ATTR': 'data-clear-label',
+    'PAIRING_STATE_GRID_SELECT_LABEL_ATTR': 'data-select-label',
+
     # External-reference grid -- DOM classes, data attributes, and
     # action endpoint URL names for the framework-rendered card grid
     # on the entity/location edit pages. Mirror in
