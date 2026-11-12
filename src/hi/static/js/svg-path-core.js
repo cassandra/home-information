@@ -34,6 +34,12 @@
     const PATH_ACTION_ADD_KEY_CODES = [ 65, 61 ];          // a, + (legacy keyCode; 61 is Firefox-only for '+')
     const PATH_ACTION_ADD_KEYS = [ 'a', '+', '=' ];        // event.key: browser-independent (Chrome/Safari report '+' as keyCode 187, not 61)
     const PATH_ACTION_END_KEY_CODES = [ 27 ];              // Escape
+    const PATH_ACTION_ROTATE_KEYS = [ 'r' ];
+    const PATH_ACTION_SCALE_KEYS  = [ 's' ];
+    const ROTATE_STEP_DEGREES       = 1;
+    const ROTATE_STEP_LARGE_DEGREES = 10;
+    const SCALE_STEP                = 1.02;
+    const SCALE_STEP_LARGE          = 1.1;
 
     const CURSOR_MOVEMENT_THRESHOLD_PIXELS = 3;
     const PATH_EDIT_PROXY_POINT_RADIUS_PIXELS = 8;
@@ -269,6 +275,60 @@
         if ( $( event.target ).closest( '.modal' ).length > 0 ) { return false; }
         if ( ! gSvgPathEditData ) { return false; }
 
+        var mode = gSvgPathEditData.pathActionMode;
+
+        if ( mode === 'rotate' || mode === 'scale' ) {
+            var isEscape   = ( PATH_ACTION_END_KEY_CODES.indexOf( event.keyCode ) >= 0 );
+            var isEnter    = ( event.keyCode === 13 );
+            var isSameMode = ( mode === 'rotate' && PATH_ACTION_ROTATE_KEYS.indexOf( event.key ) >= 0 )
+                        || ( mode === 'scale'  && PATH_ACTION_SCALE_KEYS.indexOf( event.key ) >= 0 );
+
+            if ( isEscape || isEnter || isSameMode ) {
+                setPathActionMode( null );
+                saveSvgPath();
+                return true;
+            }
+
+            var isIncrease = ( event.key === 'ArrowRight' || event.keyCode === 39
+                            || event.key === '+' || event.key === '=' || event.keyCode === 187 || event.keyCode === 61 );
+            var isDecrease = ( event.key === 'ArrowLeft' || event.keyCode === 37
+                            || event.key === '-' || event.key === '_' || event.keyCode === 189 || event.keyCode === 173 );
+            var isLarge = event.shiftKey;
+
+            if ( mode === 'rotate' ) {
+                if ( isIncrease ) {
+                    rotateAllProxyPoints( isLarge ? ROTATE_STEP_LARGE_DEGREES : ROTATE_STEP_DEGREES );
+                    saveSvgPath();
+                    return true;
+                } else if ( isDecrease ) {
+                    rotateAllProxyPoints( -( isLarge ? ROTATE_STEP_LARGE_DEGREES : ROTATE_STEP_DEGREES ) );
+                    saveSvgPath();
+                    return true;
+                }
+            } else if ( mode === 'scale' ) {
+                if ( isIncrease ) {
+                    scaleAllProxyPoints( isLarge ? SCALE_STEP_LARGE : SCALE_STEP );
+                    saveSvgPath();
+                    return true;
+                } else if ( isDecrease ) {
+                    scaleAllProxyPoints( 1.0 / ( isLarge ? SCALE_STEP_LARGE : SCALE_STEP ) );
+                    saveSvgPath();
+                    return true;
+                }
+            }
+
+            return true;
+        }
+
+        if ( PATH_ACTION_ROTATE_KEYS.indexOf( event.key ) >= 0 ) {
+            setPathActionMode( 'rotate' );
+            return true;
+        }
+        if ( PATH_ACTION_SCALE_KEYS.indexOf( event.key ) >= 0 ) {
+            setPathActionMode( 'scale' );
+            return true;
+        }
+
         if ( PATH_ACTION_ADD_KEYS.indexOf( event.key ) >= 0
              || PATH_ACTION_ADD_KEY_CODES.indexOf( event.keyCode ) >= 0 ) {
             addProxyPath();
@@ -377,6 +437,7 @@
             proxyPathContainer: proxyPathContainer,
             selectedProxyElement: null,
             dragProxyPoint: null,
+            pathActionMode: null,
         };
 
         var svgPathElement = $( pathSvgGroup ).find( 'path' ).not( '.hi-bg-hit-area' );
@@ -472,6 +533,8 @@
 
         var proxyPathContainer = $( '#' + PROXY_PATH_CONTAINER_ID );
         $( proxyPathContainer ).remove();
+
+        setActionStateAttr( '' );
 
         gSelectedPathSvgGroup.show();
         gSvgPathEditData = null;
@@ -887,6 +950,112 @@
         if ( gConfig && gConfig.baseSvgSelector ) {
             $( gConfig.baseSvgSelector ).attr( 'action-state', actionState || '' );
         }
+    }
+
+    function setPathActionMode( mode ) {
+        if ( ! gSvgPathEditData ) { return; }
+        gSvgPathEditData.pathActionMode = mode;
+        setActionStateAttr( mode || '' );
+    }
+
+    function getProxyPointCentroid() {
+        if ( ! gSvgPathEditData || ! gSvgPathEditData.proxyPathContainer ) {
+            return { x: 0, y: 0 };
+        }
+        var proxyPoints = $( gSvgPathEditData.proxyPathContainer ).find( PROXY_POINT_SELECTOR );
+        if ( proxyPoints.length === 0 ) { return { x: 0, y: 0 }; }
+
+        var sumX = 0, sumY = 0;
+        proxyPoints.each( function() {
+            sumX += parseFloat( $( this ).attr( 'cx' ) );
+            sumY += parseFloat( $( this ).attr( 'cy' ) );
+        });
+        return { x: sumX / proxyPoints.length, y: sumY / proxyPoints.length };
+    }
+
+    /* ==================== */
+    /* Whole Path Rotate    */
+    /* ==================== */
+
+    function rotateAllProxyPoints( angleDeg ) {
+        if ( ! gSvgPathEditData || ! gSvgPathEditData.proxyPathContainer ) { return; }
+
+        var centroid = getProxyPointCentroid();
+        var rad = angleDeg * Math.PI / 180;
+        var cos = Math.cos( rad );
+        var sin = Math.sin( rad );
+
+        function rotatePoint( x, y ) {
+            var dx = x - centroid.x;
+            var dy = y - centroid.y;
+            return {
+                x: centroid.x + dx * cos - dy * sin,
+                y: centroid.y + dx * sin + dy * cos,
+            };
+        }
+
+        var proxyPoints = $( gSvgPathEditData.proxyPathContainer ).find( PROXY_POINT_SELECTOR );
+        proxyPoints.each( function() {
+            var p = rotatePoint(
+                parseFloat( $( this ).attr( 'cx' ) ),
+                parseFloat( $( this ).attr( 'cy' ) )
+            );
+            $( this ).attr( 'cx', p.x ).attr( 'cy', p.y );
+        });
+
+        var proxyLines = $( gSvgPathEditData.proxyPathContainer ).find( PROXY_LINE_SELECTOR );
+        proxyLines.each( function() {
+            var p1 = rotatePoint(
+                parseFloat( $( this ).attr( 'x1' ) ),
+                parseFloat( $( this ).attr( 'y1' ) )
+            );
+            var p2 = rotatePoint(
+                parseFloat( $( this ).attr( 'x2' ) ),
+                parseFloat( $( this ).attr( 'y2' ) )
+            );
+            $( this ).attr( 'x1', p1.x ).attr( 'y1', p1.y )
+                     .attr( 'x2', p2.x ).attr( 'y2', p2.y );
+        });
+    }
+
+    /* ==================== */
+    /* Whole Path Scale     */
+    /* ==================== */
+
+    function scaleAllProxyPoints( factor ) {
+        if ( ! gSvgPathEditData || ! gSvgPathEditData.proxyPathContainer ) { return; }
+
+        var centroid = getProxyPointCentroid();
+
+        function scalePoint( x, y ) {
+            return {
+                x: centroid.x + ( x - centroid.x ) * factor,
+                y: centroid.y + ( y - centroid.y ) * factor,
+            };
+        }
+
+        var proxyPoints = $( gSvgPathEditData.proxyPathContainer ).find( PROXY_POINT_SELECTOR );
+        proxyPoints.each( function() {
+            var p = scalePoint(
+                parseFloat( $( this ).attr( 'cx' ) ),
+                parseFloat( $( this ).attr( 'cy' ) )
+            );
+            $( this ).attr( 'cx', p.x ).attr( 'cy', p.y );
+        });
+
+        var proxyLines = $( gSvgPathEditData.proxyPathContainer ).find( PROXY_LINE_SELECTOR );
+        proxyLines.each( function() {
+            var p1 = scalePoint(
+                parseFloat( $( this ).attr( 'x1' ) ),
+                parseFloat( $( this ).attr( 'y1' ) )
+            );
+            var p2 = scalePoint(
+                parseFloat( $( this ).attr( 'x2' ) ),
+                parseFloat( $( this ).attr( 'y2' ) )
+            );
+            $( this ).attr( 'x1', p1.x ).attr( 'y1', p1.y )
+                     .attr( 'x2', p2.x ).attr( 'y2', p2.y );
+        });
     }
 
     /* ==================== */
