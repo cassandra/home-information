@@ -27,7 +27,6 @@ Options:
 
 import argparse
 import asyncio
-import os
 import sys
 from datetime import datetime
 from pathlib import Path
@@ -39,7 +38,8 @@ project_root = Path(__file__).parent.parent.parent
 sys.path.append(str(project_root / 'src'))
 
 # Set up Django
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'hi.settings')
+from hi.environment.settings_module import require_settings_module
+require_settings_module()
 import django
 django.setup()
 
