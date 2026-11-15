@@ -398,7 +398,7 @@
             
             // Re-initialize containers after update
             setTimeout(() => {
-                _initializeAllContainers();
+                _initializeAllContainers({ preserveDirtyState: options.preserveDirtyState });
             }, 50);
         },
         
@@ -408,7 +408,7 @@
         },
         
         // Handle form submission errors - now delegates to unified handler
-        handleFormError: function(xhr, $form) {
+        handleFormError: function(xhr, $form, options = {}) {
             let response;
             let hasValidResponse = false;
             
@@ -443,7 +443,7 @@
             }
             
             // Use unified handler to process error response (including DOM updates)
-            this.handleResponse(response, $form, {}, true);
+            this.handleResponse(response, $form, options, true);
         },
         
         // Generate appropriate error message based on HTTP status code
@@ -634,14 +634,18 @@
     
     
     // Multi-instance container initialization
-    function _initializeAllContainers() {
+    // initOptions.preserveDirtyState: the update only added supporting
+    // content (e.g., a history panel) and left the editable fields as
+    // they were, so their unsaved-edit state must survive. Re-baselining
+    // would make pending edits look saved.
+    function _initializeAllContainers(initOptions = {}) {
         // Initialize all attribute editing containers found on page
         $(Hi.ATTR_V2_CONTAINER_SELECTOR).each(function() {
-            _initializeContainer($(this));
+            _initializeContainer($(this), initOptions);
         });
     }
-    
-    function _initializeContainer($container) {
+
+    function _initializeContainer($container, initOptions = {}) {
         // Check if this container is already initialized to prevent double-initialization
         if ($container.data(ATTR_V2_INTERNAL.INITIALIZED_DATA_KEY)) {
             // Always reprocess AJAX handlers to handle newly loaded content
@@ -649,7 +653,7 @@
             // Re-initialize textareas after content updates (DOM may have changed)
             _reinitializeTextareas($container);
             // Reinitialize dirty tracking for new content
-            if (window.Hi.attr.dirtyTracking) {
+            if (window.Hi.attr.dirtyTracking && !initOptions.preserveDirtyState) {
                 window.Hi.attr.dirtyTracking.reinitializeContainer($container.attr('id'));
             }
             return;
@@ -739,14 +743,16 @@
                         'X-Requested-With': 'XMLHttpRequest'
                     }
                 }).done((response) => {
-                    _ajax.handleFormSuccess(response, $container.find(Hi.ATTR_V2_FORM_CLASS_SELECTOR));
+                    _ajax.handleFormSuccess(response, $container.find(Hi.ATTR_V2_FORM_CLASS_SELECTOR),
+                                            { preserveDirtyState: true });
                 }).fail((xhr) => {
-                    _ajax.handleFormError(xhr, $container.find(Hi.ATTR_V2_FORM_CLASS_SELECTOR));
+                    _ajax.handleFormError(xhr, $container.find(Hi.ATTR_V2_FORM_CLASS_SELECTOR),
+                                          { preserveDirtyState: true });
                 });
             });
         });
-        
-        // Handle value restore links  
+
+        // Handle value restore links
         const $restoreLinks = $container.find(Hi.ATTR_V2_RESTORE_LINK_SELECTOR);
         $restoreLinks.each(function() {
             const $link = $(this);
