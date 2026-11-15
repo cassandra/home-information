@@ -7,10 +7,11 @@ For more information on this file, see
 https://docs.djangoproject.com/en/4.2/howto/deployment/wsgi/
 """
 
+import os
+
 from django.core.wsgi import get_wsgi_application
 
-from hi.environment.settings_module import require_settings_module
-
-require_settings_module()
+# Intentionally invalid: hi/settings/__init__.py rejects it with a clear error.
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'hi.settings')
 
 application = get_wsgi_application()

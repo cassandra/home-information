@@ -27,6 +27,7 @@ Options:
 
 import argparse
 import asyncio
+import os
 import sys
 from datetime import datetime
 from pathlib import Path
@@ -38,8 +39,8 @@ project_root = Path(__file__).parent.parent.parent
 sys.path.append(str(project_root / 'src'))
 
 # Set up Django
-from hi.environment.settings_module import require_settings_module
-require_settings_module()
+# Intentionally invalid: hi/settings/__init__.py rejects it with a clear error.
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'hi.settings')
 import django
 django.setup()
 

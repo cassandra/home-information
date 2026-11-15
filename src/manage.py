@@ -7,6 +7,8 @@ import sys
 
 def main():
     """Run administrative tasks."""
+    # Intentionally invalid: hi/settings/__init__.py rejects it with a clear error.
+    os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'hi.settings')
     try:
         from django.core.management import execute_from_command_line
     except ImportError as exc:
@@ -15,10 +17,6 @@ def main():
             "available on your PYTHONPATH environment variable? Did you "
             "forget to activate a virtual environment?"
         ) from exc
-
-    # Imported here, not at the top, so a missing Django gets the message above.
-    from hi.environment.settings_module import require_settings_module
-    require_settings_module()
 
     set_default_port_if_needed()  # HI Customization
     execute_from_command_line( sys.argv )
