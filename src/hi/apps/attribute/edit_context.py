@@ -181,18 +181,19 @@ class AttributePageEditContext:
         return ''
 
     def extra_template_context(self) -> Dict[str, Any]:
-        """Owner-specific template variables. Supplied by the context
-        itself, rather than by each view, so every response that
-        renders the edit surface (initial open, save, restore) sees
-        the same variables."""
+        """Owner-specific template variables for rendering the whole
+        edit surface (initial open, save, restore). Supplied by the
+        context itself, rather than by each view, so all of those
+        responses see the same variables. Kept out of
+        ``to_template_context()`` because computing it can be costly
+        (e.g., an upstream integration fetch) and fragment renders
+        (file card, history panel) do not use it."""
         return {}
 
     def to_template_context(self) -> Dict[str, Any]:
-        ctx: Dict[str, Any] = {
+        return {
             "attr_page_context": self,
         }
-        ctx.update( self.extra_template_context() )
-        return ctx
 
     
 class AttributeItemEditContext( AttributePageEditContext ):

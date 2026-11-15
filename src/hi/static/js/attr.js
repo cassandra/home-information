@@ -30,6 +30,8 @@
         HAS_DIRTY_INDICATOR_CLASS: 'has-dirty-indicator',
         HAS_DIRTY_FIELD_CLASS: 'has-dirty-field',
         ACTIVE_CLASS: 'active',
+        DISABLED_CLASS: 'disabled',
+        MODAL_SHOWN_CLASS: 'show',
         
         // Form field name patterns
         NAME_FIELD_SUFFIX: '-name',
@@ -202,7 +204,7 @@
             }).done((response) => {
                 this.handleFormSuccess(response, $form, options);
             }).fail((xhr) => {
-                this.handleFormError(xhr, $form);
+                this.handleFormError(xhr, $form, options);
             });
         },
         
@@ -562,6 +564,10 @@
     });
 
     function _saveIfDirtyThenClose($doneButton) {
+        // A save is already in flight (the class does not stop
+        // keyboard activation of the autofocused button).
+        if ($doneButton.hasClass(ATTR_V2_INTERNAL.DISABLED_CLASS)) return;
+
         const $container = $doneButton.closest(ATTR_V2_INTERNAL.MODAL_SELECTOR)
               .find(Hi.ATTR_V2_CONTAINER_SELECTOR).first();
         const $form = $container.find(`form${Hi.ATTR_V2_FORM_CLASS_SELECTOR}`);
@@ -575,12 +581,18 @@
 
         // Block repeat clicks while the save is in flight so pending
         // new attributes are not submitted twice.
-        $doneButton.addClass('disabled');
+        $doneButton.addClass(ATTR_V2_INTERNAL.DISABLED_CLASS);
         _ajax.submitFormWithAjax($form[0], { closeOnSuccess: true })
-            .always(() => $doneButton.removeClass('disabled'));
+            .always(() => $doneButton.removeClass(ATTR_V2_INTERNAL.DISABLED_CLASS));
     }
 
     function _closeContainingModal($element) {
+        // A save can finish after its modal was already closed (e.g.,
+        // the user discarded and left meanwhile). Hiding a modal that
+        // is not shown never fires hidden.bs.modal, which would leave
+        // antinode deferring the next modal it is asked to open.
+        const $modal = $element.closest(ATTR_V2_INTERNAL.MODAL_SELECTOR);
+        if (!$modal.hasClass(ATTR_V2_INTERNAL.MODAL_SHOWN_CLASS)) return;
         AN.hideModalIfNeeded($element);
     }
 
@@ -634,9 +646,10 @@
     
     
     // Multi-instance container initialization
-    // initOptions.preserveDirtyState: the update only added supporting
-    // content (e.g., a history panel) and left the editable fields as
-    // they were, so their unsaved-edit state must survive. Re-baselining
+    // initOptions.preserveDirtyState: the update only added content
+    // (e.g., a history panel or an uploaded file's card) and saved none
+    // of the pending edits, so their unsaved-edit state must survive.
+    // Only newly added fields get a baseline; re-baselining everything
     // would make pending edits look saved.
     function _initializeAllContainers(initOptions = {}) {
         // Initialize all attribute editing containers found on page
@@ -653,8 +666,12 @@
             // Re-initialize textareas after content updates (DOM may have changed)
             _reinitializeTextareas($container);
             // Reinitialize dirty tracking for new content
-            if (window.Hi.attr.dirtyTracking && !initOptions.preserveDirtyState) {
-                window.Hi.attr.dirtyTracking.reinitializeContainer($container.attr('id'));
+            if (window.Hi.attr.dirtyTracking) {
+                if (initOptions.preserveDirtyState) {
+                    window.Hi.attr.dirtyTracking.trackNewFields($container.attr('id'));
+                } else {
+                    window.Hi.attr.dirtyTracking.reinitializeContainer($container.attr('id'));
+                }
             }
             return;
         }
@@ -806,7 +823,10 @@
                     // Use our custom Ajax submission with scroll-to-new-content option
                     // File uploads append new content that users want to see
                     _ajax.submitFormWithAjax($uploadForm[0], {
-                        scrollToNewContent: true
+                        scrollToNewContent: true,
+                        // The upload only adds a file card; the main
+                        // form's pending edits are still unsaved.
+                        preserveDirtyState: true,
                     });
                 } 
             });

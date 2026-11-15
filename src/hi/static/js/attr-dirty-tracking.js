@@ -62,46 +62,54 @@
         },
 
         captureOriginalValues: function() {
-            const form = this.container.querySelector(this.config.formSelector);
-            if (!form) return;
-
-            // Owner-level fields (e.g., entity name and type)
-            const ownerFields = form.querySelectorAll(`${Hi.ATTR_V2_OWNER_FIELDS_SELECTOR} input, ${Hi.ATTR_V2_OWNER_FIELDS_SELECTOR} textarea, ${Hi.ATTR_V2_OWNER_FIELDS_SELECTOR} select`);
-            ownerFields.forEach(field => {
+            this.getTrackedFields().forEach(field => {
                 this.captureFieldValue(field);
             });
+        },
+
+        // For content added without a save (e.g., an uploaded file's
+        // card): baseline only fields not already tracked, so pending
+        // edits elsewhere keep counting as unsaved.
+        captureNewFieldValues: function() {
+            this.container = document.getElementById(this.containerId);
+            if (!this.container) return;
+            this.getTrackedFields().forEach(field => {
+                if (!this.state.originalValues.has(field.id)) {
+                    this.captureFieldValue(field);
+                }
+            });
+        },
+
+        getTrackedFields: function() {
+            const form = this.container.querySelector(this.config.formSelector);
+            if (!form) return [];
+
+            const fields = [];
+
+            // Owner-level fields (e.g., entity name and type)
+            fields.push(...form.querySelectorAll(`${Hi.ATTR_V2_OWNER_FIELDS_SELECTOR} input, ${Hi.ATTR_V2_OWNER_FIELDS_SELECTOR} textarea, ${Hi.ATTR_V2_OWNER_FIELDS_SELECTOR} select`));
 
             const attributeFields = form.querySelectorAll(`${Hi.ATTR_V2_ATTRIBUTE_CARD_SELECTOR} input, ${Hi.ATTR_V2_ATTRIBUTE_CARD_SELECTOR} textarea, ${Hi.ATTR_V2_ATTRIBUTE_CARD_SELECTOR} select`);
             attributeFields.forEach(field => {
                 // Skip hidden management form fields
                 if (field.type === 'hidden' && field.name.includes('_')) return;
-                this.captureFieldValue(field);
+                fields.push(field);
             });
 
-            // Capture order fields so reorders can be tracked as dirty
-            const orderFields = form.querySelectorAll(`${Hi.ATTR_V2_ATTRIBUTE_CARD_SELECTOR} input[type="hidden"][name$="-order_id"]`);
-            orderFields.forEach(field => {
-                this.captureFieldValue(field);
-            });
+            // Order fields so reorders can be tracked as dirty
+            fields.push(...form.querySelectorAll(`${Hi.ATTR_V2_ATTRIBUTE_CARD_SELECTOR} input[type="hidden"][name$="-order_id"]`));
 
             // File cards aren't in the formset and use the
             // ``file_order_id_*`` naming. Pick them up alongside
             // the formset order fields so file reorder is dirty-
             // tracked the same way.
-            const fileOrderFields = form.querySelectorAll('input[type="hidden"][name^="file_order_id_"]');
-            fileOrderFields.forEach(field => {
-                this.captureFieldValue(field);
-            });
+            fields.push(...form.querySelectorAll('input[type="hidden"][name^="file_order_id_"]'));
 
-            const fileDeleteFields = form.querySelectorAll(`input[type="hidden"][name="${Hi.ATTR_V2_DELETE_FILE_ATTR}"]`);
-            fileDeleteFields.forEach(field => {
-                this.captureFieldValue(field);
-            });
+            fields.push(...form.querySelectorAll(`input[type="hidden"][name="${Hi.ATTR_V2_DELETE_FILE_ATTR}"]`));
 
-            const fileTitleFields = form.querySelectorAll(Hi.ATTR_V2_FILE_TITLE_INPUT_SELECTOR);
-            fileTitleFields.forEach(field => {
-                this.captureFieldValue(field);
-            });
+            fields.push(...form.querySelectorAll(Hi.ATTR_V2_FILE_TITLE_INPUT_SELECTOR));
+
+            return fields;
         },
 
         captureFieldValue: function(field) {
@@ -483,6 +491,15 @@
         // deliberately discarded.
         clearDirtyState: function(containerId) {
             this.getInstance(containerId).clearAllDirtyState();
+        },
+
+        trackNewFields: function(containerId) {
+            const instance = this.getInstance(containerId);
+            if (!instance.state.isInitialized) {
+                instance.init();
+                return;
+            }
+            instance.captureNewFieldValues();
         },
 
         handleFormSuccess: function(event) {

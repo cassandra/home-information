@@ -5,12 +5,14 @@ from django.core.files.uploadedfile import SimpleUploadedFile
 from django.db import transaction
 from django.urls import reverse
 
-from hi.apps.attribute.enums import AttributeValueType
+from hi.apps.attribute.enums import AttributeType, AttributeValueType
 from hi.apps.entity.enums import EntityType, EntityStateType
 from hi.apps.entity.models import Entity, EntityAttribute, EntityStateDelegation
 from hi.apps.location.models import Location, LocationView
 from hi.apps.location.enums import LocationViewType
-from hi.enums import ViewType
+from hi.enums import ViewDataPriority, ViewType
+from hi.integrations.connector.external_view_data import NameValuePair, StructuredViewData
+from hi.integrations.models import EntityExternalReference
 from hi.testing.view_test_base import SyncViewTestCase, DualModeViewTestCase
 from .synthetic_data import EntityAttributeSyntheticData
 
@@ -411,6 +413,83 @@ class TestEntityEditView(DualModeViewTestCase):
         self.assertEqual(self.entity.name, 'Transaction Test Name')
 
 
+class TestEntityEditViewDataPriority(SyncViewTestCase):
+    """Which tab the entity edit modal foregrounds (data_priority):
+    INTERNAL > EXTERNAL > REFERENCE by available data, unless the
+    caller overrides it (e.g., the reference picker landing on Linked
+    Content)."""
+
+    def _create_entity(self, name, integration_id=None):
+        return EntityAttributeSyntheticData.create_test_entity(
+            name=name,
+            integration_id=integration_id,
+            integration_name=f'{name}_name' if integration_id else None,
+        )
+
+    def _add_attribute(self, entity):
+        EntityAttribute.objects.create(
+            entity=entity,
+            name='note',
+            value='content',
+            attribute_type_str=str(AttributeType.CUSTOM),
+            value_type_str=str(AttributeValueType.TEXT),
+        )
+
+    def _add_reference(self, entity):
+        EntityExternalReference.objects.create(
+            entity=entity,
+            integration_id='ref',
+            integration_name='doc-1',
+            title='Doc',
+            source_url='https://example.com/doc-1',
+            order_id=0,
+        )
+
+    def _get_data_priority(self, entity, query=''):
+        url = reverse('entity_edit', kwargs={'entity_id': entity.id}) + query
+        gateway = Mock()
+        gateway.get_connector.return_value.get_external_view_data.return_value = (
+            StructuredViewData(
+                deep_link_url='https://upstream.example/items/1',
+                attributes=[NameValuePair(name='Model', value='WidgetPro')],
+                attachments=[],
+            )
+            if entity.integration_id else None
+        )
+        with patch(
+            'hi.integrations.integration_manager.IntegrationManager.get_integration_gateway',
+            return_value=gateway,
+        ):
+            response = self.client.get(url)
+        self.assertSuccessResponse(response)
+        return response.context['data_priority']
+
+    def test_data_derived_priority(self):
+        with_attribute = self._create_entity('With Attribute', integration_id='ext_a')
+        self._add_attribute(with_attribute)
+        self._add_reference(with_attribute)
+        external_only = self._create_entity('External Only', integration_id='ext_b')
+        self._add_reference(external_only)
+        reference_only = self._create_entity('Reference Only')
+        self._add_reference(reference_only)
+        empty = self._create_entity('Empty')
+
+        for entity, expected in [(with_attribute, ViewDataPriority.INTERNAL),
+                                 (external_only, ViewDataPriority.EXTERNAL),
+                                 (reference_only, ViewDataPriority.REFERENCE),
+                                 (empty, ViewDataPriority.INTERNAL)]:
+            with self.subTest(entity=entity.name):
+                self.assertEqual(self._get_data_priority(entity), expected)
+
+    def test_override_takes_precedence_over_data(self):
+        entity = self._create_entity('Override')
+        self._add_attribute(entity)
+
+        priority = self._get_data_priority(entity, query='?data_priority=REFERENCE')
+
+        self.assertEqual(priority, ViewDataPriority.REFERENCE)
+
+
 class TestEntityEditViewExternalViewData(DualModeViewTestCase):
     """Tests for the external-data view dispatch in
     ``EntityEditView.get()``. The external-data region renders only
@@ -472,6 +551,31 @@ class TestEntityEditViewExternalViewData(DualModeViewTestCase):
         self.assertIsNone(response.context['external_view_data'])
         mock_lookup.assert_not_called()
         self.assertNotIn('hi-attr-tab2-', response.content.decode('utf-8'))
+
+    def test_attribute_history_fragment_skips_external_lookup(self):
+        """Fragment responses (here, the inline attribute history) do
+        not use external view data, so they must not trigger the
+        integration lookup -- for some integrations that is a live
+        upstream fetch."""
+        attribute = EntityAttribute.objects.create(
+            entity=self.integration_entity,
+            name='note',
+            value='content',
+            attribute_type_str=str(AttributeType.CUSTOM),
+            value_type_str=str(AttributeValueType.TEXT),
+        )
+        url = reverse('entity_attribute_history_inline', kwargs={
+            'entity_id': self.integration_entity.id,
+            'attribute_id': attribute.id,
+        })
+
+        with patch(
+            'hi.integrations.integration_manager.IntegrationManager.get_integration_gateway'
+        ) as mock_lookup:
+            response = self.client.get(url)
+
+        self.assertSuccessResponse(response)
+        mock_lookup.assert_not_called()
 
     def test_integration_entity_hook_returns_none_omits_section(self):
         """Integration entity whose gateway hook returns None: the

@@ -13,6 +13,14 @@ class AttributeEditTemplateContextBuilder:
     def __init__(self) -> None:
         self.form_handler = AttributeEditFormHandler()
         return
+
+    @staticmethod
+    def _edit_surface_context( edit_context : AttributePageEditContext ) -> Dict[str, Any]:
+        """Context variables for rendering the whole edit surface,
+        including the owner's extras (see ``extra_template_context``)."""
+        context = edit_context.to_template_context()
+        context.update( edit_context.extra_template_context() )
+        return context
     
     def build_initial_template_context(
             self,
@@ -33,8 +41,7 @@ class AttributeEditTemplateContextBuilder:
             f'{attr_item_context.owner_type}_form': edit_form_data.owner_form,
         }
         
-        # Merge in the context variables from AttributeItemEditContext
-        context.update( attr_item_context.to_template_context() )
+        context.update( self._edit_surface_context( attr_item_context ) )
         return context
 
     def build_response_template_context(
@@ -65,8 +72,7 @@ class AttributeEditTemplateContextBuilder:
             'non_form_errors': non_form_errors,
         }
         
-        # Merge in the context variables from AttributeItemEditContext
-        context.update( attr_item_context.to_template_context() )
+        context.update( self._edit_surface_context( attr_item_context ) )
         
         return context
 
@@ -83,8 +89,7 @@ class AttributeEditTemplateContextBuilder:
         context = {
             'multi_edit_form_data_list': multi_edit_form_data_list,
         }
-        # Merge in the context variables from AttributeItemEditContext
-        context.update( attr_page_context.to_template_context() )
+        context.update( self._edit_surface_context( attr_page_context ) )
         return context
 
     def build_response_template_context_multi(
@@ -106,7 +111,6 @@ class AttributeEditTemplateContextBuilder:
             'non_form_errors': non_form_errors,
         }
         
-        # Merge in the context variables from AttributePageEditContext
-        context.update( attr_page_context.to_template_context() )
+        context.update( self._edit_surface_context( attr_page_context ) )
         
         return context
