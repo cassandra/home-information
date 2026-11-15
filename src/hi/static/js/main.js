@@ -123,6 +123,7 @@
         ATTR_V2_EXPAND_CONTROLS_SELECTOR: '.attr-v2-expand-controls',
         ATTR_V2_AUTO_DISMISS_SELECTOR: '.attr-v2-auto-dismiss',
         ATTR_V2_UPDATE_BTN_SELECTOR: '.attr-v2-update-btn',
+        ATTR_V2_DONE_BTN_SELECTOR: '.attr-v2-done-btn',
         ATTR_V2_DISPLAY_FIELD_SELECTOR: '.display-field',
         ATTR_V2_TEXT_READ_MODE_SELECTOR: '.attr-v2-text-read-mode',
         ATTR_V2_TEXT_READ_CONTENT_SELECTOR: '.attr-v2-text-read-content',

@@ -23,6 +23,7 @@ tag in attribute_extras.py.
   
   <!-- Hidden field for deletion marking -->
   <input type="hidden"
+         id="{{ DIVID.ATTR_V2_DELETE_FILE_ATTR }}_{{ attr_item_context.owner.id }}_{{ attribute.id }}"
          name="{{ DIVID.ATTR_V2_DELETE_FILE_ATTR }}"
          value=""
          data-attribute-id="{{ attribute.id }}">

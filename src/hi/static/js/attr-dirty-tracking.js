@@ -93,6 +93,11 @@
                 this.captureFieldValue(field);
             });
 
+            const fileDeleteFields = form.querySelectorAll(`input[type="hidden"][name="${Hi.ATTR_V2_DELETE_FILE_ATTR}"]`);
+            fileDeleteFields.forEach(field => {
+                this.captureFieldValue(field);
+            });
+
             const fileTitleFields = form.querySelectorAll(Hi.ATTR_V2_FILE_TITLE_INPUT_SELECTOR);
             fileTitleFields.forEach(field => {
                 this.captureFieldValue(field);

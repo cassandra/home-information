@@ -77,6 +77,7 @@ DIVID = {
     'ATTR_V2_DIRTY_MESSAGE_CLASS': 'attr-v2-dirty-message',
     'ATTR_V2_UPDATE_BTN_ID': 'attr-v2-update-btn',
     'ATTR_V2_UPDATE_BTN_CLASS': 'attr-v2-update-btn',
+    'ATTR_V2_DONE_BTN_CLASS': 'attr-v2-done-btn',
     'ATTR_V2_ATTRIBUTE_CARD_CLASS': 'attr-v2-attribute-card',
     'ATTR_V2_NEW_ATTRIBUTE_CLASS': 'attr-v2-new-attribute',
     'ATTR_V2_FILE_TITLE_INPUT_CLASS': 'attr-v2-file-title-input',
