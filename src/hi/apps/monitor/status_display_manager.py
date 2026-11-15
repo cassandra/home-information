@@ -5,6 +5,7 @@ from typing import Dict, List, Set, Sequence
 from django.conf import settings
 from django.db.models import prefetch_related_objects
 
+from hi.apps.control.models import Controller
 from hi.apps.control.transient_models import ControllerData
 from hi.apps.common.singleton import Singleton
 from hi.apps.entity.models import Entity, EntityState
@@ -83,6 +84,8 @@ class StatusDisplayManager( Singleton, SensorResponseMixin ):
             entity_state_to_sensor_response_list[sensor.entity_state].extend( sensor_response_list )
             continue
 
+        entity_state_id_to_controller_list = self._get_entity_state_id_to_controller_list()
+
         # Find the latest sensor response for each EntityState and create
         # the EntityStateStatusData instance for each.
         #
@@ -91,13 +94,15 @@ class StatusDisplayManager( Singleton, SensorResponseMixin ):
             sensor_response_list.sort( key = lambda item: item.timestamp, reverse = True )
             latest_sensor_response = sensor_response_list[0]
 
-            controller_data_list = [
-                ControllerData(
+            controller_data_list = list()
+            for controller in entity_state_id_to_controller_list.get( entity_state.id, [] ):
+                # Use the instance in hand to avoid a lazy FK fetch per controller.
+                controller.entity_state = entity_state
+                controller_data_list.append( ControllerData(
                     controller = controller,
                     latest_sensor_response = latest_sensor_response,
-                )
-                for controller in entity_state.controllers.all()
-            ]
+                ))
+                continue
             entity_state_status_data = EntityStateStatusData(
                 entity_state = entity_state,
                 sensor_response_list = sensor_response_list,
@@ -113,6 +118,24 @@ class StatusDisplayManager( Singleton, SensorResponseMixin ):
 
         return entity_state_status_data_list
 
+    def _get_entity_state_id_to_controller_list( self ) -> Dict[ int, List[ Controller ] ]:
+        """
+        All controllers in one query, grouped by EntityState id. Loading all
+        of them (rather than filtering by the states being polled) keeps the
+        query simple and constant; nearly every controller is in use anyway.
+
+        Deliberately not a prefetch onto the EntityStates: those come from
+        SensorResponseManager's long-lived cache, and prefetched results
+        attached to them would go stale.
+        """
+        entity_state_id_to_controller_list = dict()
+        for controller in Controller.objects.all():
+            entity_state_id_to_controller_list.setdefault( controller.entity_state_id, list() ).append(
+                controller
+            )
+            continue
+        return entity_state_id_to_controller_list
+    
     def get_entity_status_data( self, entity : Entity ) -> EntityStatusData:
 
         # The set of entity states used to define the state includes the

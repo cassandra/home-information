@@ -2,6 +2,7 @@ import logging
 from datetime import datetime
 from unittest.mock import Mock, patch
 
+from hi.apps.control.models import Controller
 from hi.apps.entity.models import Entity, EntityState, EntityStateDelegation
 from hi.apps.sense.models import Sensor
 from hi.apps.sense.transient_models import SensorResponse
@@ -271,6 +272,75 @@ class TestStatusDisplayManager(BaseTestCase):
         self.assertNotIn('svg_style', result[state_id_key])
         self.assertNotIn('status', result[state_id_key])
         self.assertIn('display', result[state_id_key])
+
+    def test_all_entity_state_status_data_attaches_controllers_in_one_query(self):
+        # Polling path: controllers for every responding state must come
+        # from a single query, not one per state, and each state gets only
+        # its own controllers.
+        entity = Entity.objects.create( name='Device', entity_type_str='LIGHT' )
+        two_controller_state = EntityState.objects.create(
+            entity=entity, entity_state_type_str='ON_OFF',
+        )
+        one_controller_state = EntityState.objects.create(
+            entity=entity, entity_state_type_str='LIGHT_DIMMER',
+        )
+        sensor_only_state = EntityState.objects.create(
+            entity=entity, entity_state_type_str='MOVEMENT',
+        )
+        unpolled_state = EntityState.objects.create(
+            entity=entity, entity_state_type_str='ON_OFF',
+        )
+        expected_controller_ids = {
+            two_controller_state.id: {
+                self._create_controller( two_controller_state, 'a' ).id,
+                self._create_controller( two_controller_state, 'b' ).id,
+            },
+            one_controller_state.id: { self._create_controller( one_controller_state, 'c' ).id },
+            sensor_only_state.id: set(),
+        }
+        self._create_controller( unpolled_state, 'unused' )
+
+        sensor_to_response_list = dict()
+        for entity_state in [ two_controller_state, one_controller_state, sensor_only_state ]:
+            sensor = Sensor.objects.create(
+                name=f'Sensor {entity_state.id}', entity_state=entity_state, sensor_type_str='DEFAULT',
+            )
+            response = Mock(spec=SensorResponse)
+            response.timestamp = datetime.now()
+            sensor_to_response_list[sensor] = [ response ]
+
+        manager = StatusDisplayManager()
+        with patch.object( manager, '_get_latest_sensor_responses_helper',
+                           return_value=sensor_to_response_list ):
+            with self.assertNumQueries(1):
+                status_data_list = manager.get_all_entity_state_status_data_list()
+                # Controllers must reference the in-hand state without lazy fetches.
+                for status_data in status_data_list:
+                    for controller_data in status_data.controller_data_list:
+                        self.assertIs( controller_data.entity_state, status_data.entity_state )
+
+        actual_controller_ids = {
+            status_data.entity_state.id: { x.controller.id for x in status_data.controller_data_list }
+            for status_data in status_data_list
+        }
+        self.assertEqual( actual_controller_ids, expected_controller_ids )
+        has_controller_by_state_id = {
+            status_data.entity_state.id: status_data.has_controller for status_data in status_data_list
+        }
+        self.assertEqual( has_controller_by_state_id, {
+            two_controller_state.id: True,
+            one_controller_state.id: True,
+            sensor_only_state.id: False,
+        })
+
+    def _create_controller( self, entity_state, suffix ):
+        return Controller.objects.create(
+            name=f'Controller {suffix}',
+            entity_state=entity_state,
+            controller_type_str='DEFAULT',
+            integration_id=f'test.{suffix}',
+            integration_name='test',
+        )
 
 
 class TestEntityStatusDataListDelegation(BaseTestCase):
