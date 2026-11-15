@@ -54,11 +54,7 @@
 {% endblock %}
 
 {% block action_left %}
-<a class="btn btn-primary"
-   href="{% url 'entity_status' entity_id=entity.id %}"
-   data-async="modal">
-  {% icon "info-circle" css_class="hi-icon-left" %}STATUS
-</a>
+{% include "entity/panes/entity_status_button.html" with entity=entity %}
 {% endblock %}
 
 {% block action_center %}

@@ -181,6 +181,13 @@ class Entity( IntegrationDetailsModel, LocationItemModelMixin ):
         state panels, dispatch routing)."""
         return self.has_native_video_stream or self.has_video_snapshot
 
+    @property
+    def has_status_states(self) -> bool:
+        """Whether the entity has any states to show status for: its
+        own, or ones delegated to it. Without them, the status view
+        falls back to the edit view."""
+        return self.states.exists() or self.entity_state_delegations.exists()
+
     def get_attribute_map(self):
         attribute_map = dict()
         for attribute in self.attributes.all():

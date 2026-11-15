@@ -7,7 +7,7 @@ from django.urls import reverse
 
 from hi.apps.attribute.enums import AttributeValueType
 from hi.apps.entity.enums import EntityType, EntityStateType
-from hi.apps.entity.models import Entity, EntityAttribute
+from hi.apps.entity.models import Entity, EntityAttribute, EntityStateDelegation
 from hi.apps.location.models import Location, LocationView
 from hi.apps.location.enums import LocationViewType
 from hi.enums import ViewType
@@ -917,6 +917,39 @@ class TestEntityStatusView(DualModeViewTestCase):
         # and the view should delegate to EntityEditView
         self.assertIn('entity', response.context)
         self.assertEqual(response.context['entity'], entity_no_states)
+
+    def test_has_status_states_matches_status_view_fallback(self):
+        """The STATUS footer button is enabled via has_status_states, so it
+        must agree with whether the status view shows status or falls
+        back to the edit view -- including delegated-only entities."""
+        no_states = Entity.objects.create(
+            integration_id='test.no_states',
+            integration_name='test_integration',
+            name='No States',
+            entity_type_str=str(EntityType.MOTION_SENSOR),
+        )
+        delegate_only = Entity.objects.create(
+            integration_id='test.delegate_only',
+            integration_name='test_integration',
+            name='Delegate Only',
+            entity_type_str=str(EntityType.AREA),
+        )
+        EntityStateDelegation.objects.create(
+            entity_state=self.entity_state,
+            delegate_entity=delegate_only,
+        )
+
+        for entity, expected in [(no_states, False),
+                                 (self.entity, True),
+                                 (delegate_only, True)]:
+            with self.subTest(entity=entity.name):
+                url = reverse('entity_status', kwargs={'entity_id': entity.id})
+                response = self.client.get(url)
+
+                template_names = [t.name for t in response.templates]
+                shows_status = 'entity/modals/entity_status.html' in template_names
+                self.assertEqual(shows_status, expected)
+                self.assertEqual(entity.has_status_states, expected)
 
     def test_nonexistent_entity_returns_404(self):
         """Test that accessing nonexistent entity returns 404."""
