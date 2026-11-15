@@ -127,6 +127,9 @@
         ATTR_V2_UNSAVED_BANNER_SELECTOR: '.attr-v2-unsaved-banner',
         ATTR_V2_DISCARD_CHANGES_BTN_SELECTOR: '.attr-v2-discard-changes-btn',
         ATTR_V2_KEEP_EDITING_BTN_SELECTOR: '.attr-v2-keep-editing-btn',
+        // Triggered on an attribute container with (isDirty) whenever
+        // its dirty state is re-evaluated.
+        ATTR_V2_DIRTY_STATE_CHANGED_EVENT: 'attr-v2-dirty-state-changed',
         ATTR_V2_DISPLAY_FIELD_SELECTOR: '.display-field',
         ATTR_V2_TEXT_READ_MODE_SELECTOR: '.attr-v2-text-read-mode',
         ATTR_V2_TEXT_READ_CONTENT_SELECTOR: '.attr-v2-text-read-content',

@@ -320,11 +320,14 @@
         updateMessageArea: function() {
             // Get fresh reference to container (important for modal scenarios)
             this.container = document.getElementById(this.containerId);
-            const messageContainer = this.container ? this.container.querySelector(this.config.messageContainerSelector) : null;
-            if (!messageContainer) return;
+            if (!this.container) return;
 
             const dirtyCount = this.state.dirtyFields.size;
             const isDirty = dirtyCount > 0;
+            $(this.container).trigger(Hi.ATTR_V2_DIRTY_STATE_CHANGED_EVENT, [isDirty]);
+
+            const messageContainer = this.container.querySelector(this.config.messageContainerSelector);
+            if (!messageContainer) return;
 
             if (dirtyCount === 0) {
                 messageContainer.textContent = '';
