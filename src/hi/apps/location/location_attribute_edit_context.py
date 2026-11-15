@@ -73,7 +73,10 @@ class LocationAttributeItemEditContext( AttributeItemEditContext ):
         EXTERNAL view-data category. An invalid override name
         silently falls through to the data-derived computation."""
         if self._data_priority_override:
-            override_value = ViewDataPriority.from_name_safe( self._data_priority_override )
+            try:
+                override_value = ViewDataPriority.from_name( self._data_priority_override )
+            except ValueError:
+                override_value = None
             if override_value is not None:
                 return override_value
         file_type = str( AttributeValueType.FILE )

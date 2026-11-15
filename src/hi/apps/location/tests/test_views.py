@@ -950,6 +950,11 @@ class TestLocationEditViewDataPriority(SyncViewTestCase):
 
         self.assertEqual(priority, ViewDataPriority.INTERNAL)
 
+    def test_unrecognized_override_falls_back_to_data(self):
+        priority = self._get_data_priority(query='?data_priority=bogus')
+
+        self.assertEqual(priority, ViewDataPriority.REFERENCE)
+
 
 class TestLocationItemEditModeView(SyncViewTestCase):
     """

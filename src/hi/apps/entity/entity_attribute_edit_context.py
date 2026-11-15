@@ -83,7 +83,10 @@ class EntityAttributeItemEditContext(AttributeItemEditContext):
         computation rather than erroring -- the override is an
         optional UX hint, not a contract."""
         if self._data_priority_override:
-            override_value = ViewDataPriority.from_name_safe( self._data_priority_override )
+            try:
+                override_value = ViewDataPriority.from_name( self._data_priority_override )
+            except ValueError:
+                override_value = None
             if override_value is not None:
                 return override_value
         file_type = str( AttributeValueType.FILE )
