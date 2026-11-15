@@ -65,11 +65,11 @@
             const form = this.container.querySelector(this.config.formSelector);
             if (!form) return;
 
-            // Entity/Location name field
-            const nameField = form.querySelector('input[name$="name"]:not([name*="-"])');
-            if (nameField) {
-                this.captureFieldValue(nameField);
-            }
+            // Owner-level fields (e.g., entity name and type)
+            const ownerFields = form.querySelectorAll(`${Hi.ATTR_V2_OWNER_FIELDS_SELECTOR} input, ${Hi.ATTR_V2_OWNER_FIELDS_SELECTOR} textarea, ${Hi.ATTR_V2_OWNER_FIELDS_SELECTOR} select`);
+            ownerFields.forEach(field => {
+                this.captureFieldValue(field);
+            });
 
             const attributeFields = form.querySelectorAll(`${Hi.ATTR_V2_ATTRIBUTE_CARD_SELECTOR} input, ${Hi.ATTR_V2_ATTRIBUTE_CARD_SELECTOR} textarea, ${Hi.ATTR_V2_ATTRIBUTE_CARD_SELECTOR} select`);
             attributeFields.forEach(field => {
@@ -179,6 +179,24 @@
             };
 
             $container.on(`${eventType}.dirty-tracking`, selector, handler);
+        },
+
+        // Text edits are debounced, so a change made just before this
+        // call may not yet be counted; settle those first.
+        isDirty: function() {
+            this.flushPendingChanges();
+            return this.state.dirtyFields.size > 0;
+        },
+
+        flushPendingChanges: function() {
+            this.state.debounceTimers.forEach((timer, fieldId) => {
+                clearTimeout(timer);
+                const field = document.getElementById(fieldId);
+                if (field) {
+                    this.handleFieldChange(field);
+                }
+            });
+            this.state.debounceTimers.clear();
         },
 
         handleFieldChange: function(field) {
@@ -447,6 +465,10 @@
 
             const instance = this.getInstance(id);
             instance.reinitialize();
+        },
+
+        isDirty: function(containerId) {
+            return this.getInstance(containerId).isDirty();
         },
 
         handleFormSuccess: function(event) {

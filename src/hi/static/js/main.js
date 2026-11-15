@@ -102,6 +102,7 @@
         ATTR_V2_FILE_INPUT_SELECTOR: '.attr-v2-file-input',
         ATTR_V2_STATUS_MESSAGE_SELECTOR: '.attr-v2-status-message',
         ATTR_V2_DIRTY_MESSAGE_SELECTOR: '.attr-v2-dirty-message',
+        ATTR_V2_OWNER_FIELDS_SELECTOR: '.attr-v2-owner-fields',
         ATTR_V2_HISTORY_LINK_SELECTOR: '.attr-v2-history-link',
         ATTR_V2_RESTORE_LINK_SELECTOR: '.attr-v2-restore-link',
         ATTR_V2_ATTRIBUTE_CARD_SELECTOR: '.attr-v2-attribute-card',
