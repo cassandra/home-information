@@ -32,7 +32,7 @@ by using the AttributeItemEditContext pattern.
     </div>
     {% endif %}
   
-    <div class="attr-v2-owner-fields">
+    <div class="{{ DIVID.ATTR_V2_OWNER_FIELDS_CLASS }}">
       {% block owner_fields %}
       <!-- Subclasses should override this block to provide owner-specific fields -->
       {% endblock %}

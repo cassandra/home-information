@@ -38,17 +38,10 @@ from .models import AttributeModel, SoftDeleteAttributeModel
 class AttributePageEditContext:
 
     def __init__(self,
-                 owner_type             : str,
-                 owner                  : Model           = None,
-                 extra_template_context : Optional[Dict]  = None ) -> None:
+                 owner_type  : str,
+                 owner       : Model  = None ) -> None:
         self.owner_type = owner_type.lower()
         self.owner = owner
-        # View-supplied extras that the framework's template-context
-        # builders merge in via ``to_template_context()``. Stored as
-        # data only; the view owns the business logic that built it.
-        # Both the initial-GET and async-POST response paths pick
-        # the extras up because both call ``to_template_context()``.
-        self._extra_template_context = dict( extra_template_context or {} )
         return
 
     @property
@@ -187,12 +180,20 @@ class AttributePageEditContext:
         duplication on the normal editable surface."""
         return ''
 
+    def extra_template_context(self) -> Dict[str, Any]:
+        """Owner-specific template variables for rendering the whole
+        edit surface (initial open, save, restore). Supplied by the
+        context itself, rather than by each view, so all of those
+        responses see the same variables. Kept out of
+        ``to_template_context()`` because computing it can be costly
+        (e.g., an upstream integration fetch) and fragment renders
+        (file card, history panel) do not use it."""
+        return {}
+
     def to_template_context(self) -> Dict[str, Any]:
-        ctx: Dict[str, Any] = {
+        return {
             "attr_page_context": self,
         }
-        ctx.update( self._extra_template_context )
-        return ctx
 
     
 class AttributeItemEditContext( AttributePageEditContext ):
@@ -205,13 +206,11 @@ class AttributeItemEditContext( AttributePageEditContext ):
     """
     
     def __init__(self,
-                 owner                  : Model,
-                 owner_type             : str,
-                 extra_template_context : Optional[Dict]  = None ) -> None:
+                 owner       : Model,
+                 owner_type  : str ) -> None:
         super().__init__(
             owner_type = owner_type,
             owner = owner,
-            extra_template_context = extra_template_context,
         )
         return
         

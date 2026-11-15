@@ -1,0 +1,18 @@
+{% load icons %}
+{% comment %}
+STATUS footer button for entity modals. Disabled (rather than hidden,
+so the footer stays stable) when the entity has no states, since the
+status view would just fall back to the edit view.
+{% endcomment %}
+{% if entity.has_status_states %}
+<a class="btn btn-primary"
+   href="{% url 'entity_status' entity_id=entity.id %}"
+   data-async="modal">
+  {% icon "info-circle" css_class="hi-icon-left" %}STATUS
+</a>
+{% else %}
+<button type="button" class="btn btn-primary" disabled
+        title="This entity has no states to show status for.">
+  {% icon "info-circle" css_class="hi-icon-left" %}STATUS
+</button>
+{% endif %}

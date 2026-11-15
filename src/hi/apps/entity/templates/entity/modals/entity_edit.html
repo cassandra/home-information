@@ -9,6 +9,8 @@
 {% endblock %}
 
 {% block body %}
+{% include "attribute/components/unsaved_changes_banner.html" %}
+
 <!-- Root container for this attribute editing context -->
 <div id="{{ attr_page_context.container_html_id }}" 
      class="{{ DIVID.ATTR_V2_CONTAINER_CLASS }}">
@@ -52,11 +54,7 @@
 {% endblock %}
 
 {% block action_left %}
-<a class="btn btn-primary"
-   href="{% url 'entity_status' entity_id=entity.id %}"
-   data-async="modal">
-  {% icon "info-circle" css_class="hi-icon-left" %}STATUS
-</a>
+{% include "entity/panes/entity_status_button.html" with entity=entity %}
 {% endblock %}
 
 {% block action_center %}
@@ -69,5 +67,5 @@
 
 {% block action_right %}
 <a id="hi-modal-done" role="button" {% if autofocus %}autofocus="autofocus"{% endif %}
-   class="btn btn-primary" href="#" data-dismiss="modal">DONE</a>
+   class="btn btn-primary {{ DIVID.ATTR_V2_DONE_BTN_CLASS }}" href="#">DONE</a>
 {% endblock %}

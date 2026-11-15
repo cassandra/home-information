@@ -5,14 +5,17 @@ This module contains Location-specific implementations of the AttributeItemEditC
 pattern, encapsulating location-specific domain knowledge while maintaining
 the generic template interface.
 """
+from functools import cached_property
 from typing import Any, Dict, Optional, Type
 
 from django.forms import ModelForm, BaseInlineFormSet
 from django.urls import reverse
 
 from hi.apps.attribute.edit_context import AttributeItemEditContext
+from hi.apps.attribute.enums import AttributeValueType
 from hi.apps.attribute.forms import AttributeUploadForm
 from hi.apps.attribute.models import AttributeModel
+from hi.enums import ViewDataPriority
 
 from .forms import LocationForm, LocationAttributeRegularFormSet, LocationAttributeUploadForm
 from .models import Location, LocationAttribute
@@ -27,30 +30,73 @@ class LocationAttributeItemEditContext( AttributeItemEditContext ):
     """
     
     def __init__(self,
-                 location               : Location,
-                 extra_template_context : Optional[Dict[str, Any]] = None ) -> None:
+                 location                : Location,
+                 data_priority_override  : Optional[str] = None ) -> None:
         """
         Initialize context for Location attribute editing.
 
         Args:
             location: The Location instance that owns the attributes
-            extra_template_context: View-supplied template variables
-                (external_references, data_priority, etc.). The view
-                computes them once and threads them through the
-                context so the framework's GET and async-POST
-                renderers both see them.
+            data_priority_override: Optional ViewDataPriority name for
+                the initially active tab (e.g., landing on Linked
+                Content after the reference picker). Only the initial
+                open passes this.
         """
         super().__init__(
             owner_type = 'location',
             owner = location,
-            extra_template_context = extra_template_context,
         )
+        self._data_priority_override = data_priority_override
         return
-    
+
     @property
     def location(self) -> Location:
         """Get the Location instance (typed accessor)."""
         return self.owner
+
+    def extra_template_context(self) -> Dict[str, Any]:
+        return self._location_template_context
+
+    @cached_property
+    def _location_template_context(self) -> Dict[str, Any]:
+        external_references = self.location.external_references.all()
+        return {
+            'external_references': external_references,
+            'data_priority': self._resolve_data_priority(
+                external_references = external_references,
+            ),
+        }
+
+    def _resolve_data_priority( self, external_references ) -> ViewDataPriority:
+        """Precedence: caller override (e.g., post-picker landing on
+        Linked Content), then INTERNAL > REFERENCE. Locations have no
+        EXTERNAL view-data category. An invalid override name
+        silently falls through to the data-derived computation."""
+        if self._data_priority_override:
+            try:
+                override_value = ViewDataPriority.from_name( self._data_priority_override )
+            except ValueError:
+                override_value = None
+            if override_value is not None:
+                return override_value
+        file_type = str( AttributeValueType.FILE )
+        has_files = self.location.attributes.filter(
+            value_type_str = file_type,
+        ).exists()
+        has_regulars = self.location.attributes.exclude(
+            value_type_str = file_type,
+        ).exists()
+        has_deleted = (
+            LocationAttribute.deleted_objects.filter( location = self.location ).exists()
+            if getattr( LocationAttribute, 'supports_soft_delete', False )
+            else False
+        )
+        has_internal = has_files or has_regulars or has_deleted
+        if has_internal:
+            return ViewDataPriority.INTERNAL
+        if external_references:
+            return ViewDataPriority.REFERENCE
+        return ViewDataPriority.default()
     
     @property
     def attribute_model_subclass(self) -> Type[AttributeModel]:

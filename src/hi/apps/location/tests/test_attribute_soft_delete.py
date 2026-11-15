@@ -40,6 +40,21 @@ class TestLocationAttributeSoftDelete(SyncViewTestCase):
         restored = LocationAttribute.objects.get(id=self.attribute.id)
         self.assertFalse(restored.is_deleted)
 
+    def test_restore_deleted_response_renders_active_attribute_tab(self):
+        """The re-rendered editor must keep a visible (active) tab, which
+        depends on the location's data-priority context being present."""
+        self.attribute.delete()
+        url = reverse(
+            'location_attribute_restore_deleted_inline',
+            kwargs={'location_id': self.location.id, 'attribute_id': self.attribute.id},
+        )
+
+        response = self.client.get(url)
+
+        self.assertSuccessResponse(response)
+        content_html = response.json()['updates'][0]['html']
+        self.assertIn('tab-pane show active', content_html)
+
     def test_soft_delete_and_restore_model_cycle(self):
         """Soft delete should hide from active manager and restore should bring it back."""
         self.attribute.delete()

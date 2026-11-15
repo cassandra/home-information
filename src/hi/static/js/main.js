@@ -102,6 +102,7 @@
         ATTR_V2_FILE_INPUT_SELECTOR: '.attr-v2-file-input',
         ATTR_V2_STATUS_MESSAGE_SELECTOR: '.attr-v2-status-message',
         ATTR_V2_DIRTY_MESSAGE_SELECTOR: '.attr-v2-dirty-message',
+        ATTR_V2_OWNER_FIELDS_SELECTOR: '.attr-v2-owner-fields',
         ATTR_V2_HISTORY_LINK_SELECTOR: '.attr-v2-history-link',
         ATTR_V2_RESTORE_LINK_SELECTOR: '.attr-v2-restore-link',
         ATTR_V2_ATTRIBUTE_CARD_SELECTOR: '.attr-v2-attribute-card',
@@ -122,6 +123,13 @@
         ATTR_V2_EXPAND_CONTROLS_SELECTOR: '.attr-v2-expand-controls',
         ATTR_V2_AUTO_DISMISS_SELECTOR: '.attr-v2-auto-dismiss',
         ATTR_V2_UPDATE_BTN_SELECTOR: '.attr-v2-update-btn',
+        ATTR_V2_DONE_BTN_SELECTOR: '.attr-v2-done-btn',
+        ATTR_V2_UNSAVED_BANNER_SELECTOR: '.attr-v2-unsaved-banner',
+        ATTR_V2_DISCARD_CHANGES_BTN_SELECTOR: '.attr-v2-discard-changes-btn',
+        ATTR_V2_KEEP_EDITING_BTN_SELECTOR: '.attr-v2-keep-editing-btn',
+        // Triggered on an attribute container with (isDirty) whenever
+        // its dirty state is re-evaluated.
+        ATTR_V2_DIRTY_STATE_CHANGED_EVENT: 'attr-v2-dirty-state-changed',
         ATTR_V2_DISPLAY_FIELD_SELECTOR: '.display-field',
         ATTR_V2_TEXT_READ_MODE_SELECTOR: '.attr-v2-text-read-mode',
         ATTR_V2_TEXT_READ_CONTENT_SELECTOR: '.attr-v2-text-read-content',

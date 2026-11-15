@@ -66,6 +66,21 @@ class TestEntityAttributeSoftDelete(SyncViewTestCase):
         restored = EntityAttribute.objects.get(id=self.attribute.id)
         self.assertFalse(restored.is_deleted)
 
+    def test_restore_deleted_response_renders_active_attribute_tab(self):
+        """The re-rendered editor must keep a visible (active) tab, which
+        depends on the entity's data-priority context being present."""
+        self.attribute.delete()
+        url = reverse(
+            'entity_attribute_restore_deleted_inline',
+            kwargs={'entity_id': self.entity.id, 'attribute_id': self.attribute.id},
+        )
+
+        response = self.client.get(url)
+
+        self.assertSuccessResponse(response)
+        content_html = response.json()['updates'][0]['html']
+        self.assertIn('tab-pane show active', content_html)
+
     def test_restore_deleted_entity_attribute_wrong_entity_returns_404(self):
         """Deleted attributes must only be restored through the owning entity endpoint."""
         other_entity = EntityAttributeSyntheticData.create_test_entity(name='Other Entity')

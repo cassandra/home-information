@@ -12,6 +12,7 @@
         // State management data keys (different granularity levels)
         INITIALIZED_DATA_KEY: 'attr-v2-initialized',      // Container-level flag
         PROCESSED_DATA_KEY: 'attr-v2-processed',          // Element-level flag
+        PRE_DELETE_VALUE_DATA_KEY: 'attr-v2-pre-delete-value', // DELETE field value before marking
         
         // Event namespaces
         AJAX_EVENT_NAMESPACE: 'attr-v2-ajax',
@@ -29,6 +30,8 @@
         HAS_DIRTY_INDICATOR_CLASS: 'has-dirty-indicator',
         HAS_DIRTY_FIELD_CLASS: 'has-dirty-field',
         ACTIVE_CLASS: 'active',
+        DISABLED_CLASS: 'disabled',
+        MODAL_SHOWN_CLASS: 'show',
         
         // Form field name patterns
         NAME_FIELD_SUFFIX: '-name',
@@ -201,7 +204,7 @@
             }).done((response) => {
                 this.handleFormSuccess(response, $form, options);
             }).fail((xhr) => {
-                this.handleFormError(xhr, $form);
+                this.handleFormError(xhr, $form, options);
             });
         },
         
@@ -361,6 +364,16 @@
                 return;
             }
             
+            // The caller only wanted the save; the modal is going away,
+            // so there is no point refreshing its content. The edits
+            // are saved, so nothing is left for an exit guard to flag.
+            if (options.closeOnSuccess && !isError) {
+                const containerId = $form.closest(Hi.ATTR_V2_CONTAINER_SELECTOR).attr('id');
+                window.Hi.attr.dirtyTracking.clearDirtyState(containerId);
+                _closeContainingModal($form);
+                return;
+            }
+
             // Process DOM updates first (works for both success and error)
             const lastAppendTarget = this.processDOMUpdates(data, options);
 
@@ -387,7 +400,7 @@
             
             // Re-initialize containers after update
             setTimeout(() => {
-                _initializeAllContainers();
+                _initializeAllContainers({ preserveDirtyState: options.preserveDirtyState });
             }, 50);
         },
         
@@ -397,7 +410,7 @@
         },
         
         // Handle form submission errors - now delegates to unified handler
-        handleFormError: function(xhr, $form) {
+        handleFormError: function(xhr, $form, options = {}) {
             let response;
             let hasValidResponse = false;
             
@@ -432,7 +445,7 @@
             }
             
             // Use unified handler to process error response (including DOM updates)
-            this.handleResponse(response, $form, {}, true);
+            this.handleResponse(response, $form, options, true);
         },
         
         // Generate appropriate error message based on HTTP status code
@@ -542,6 +555,47 @@
         e.stopPropagation(); // Prevent bubbling to other handlers
     });
 
+    // DONE means "I'm finished": pending edits are saved (exactly as
+    // UPDATE would) before the modal closes. A failed save leaves the
+    // modal open with the errors shown.
+    $(document).on('click', Hi.ATTR_V2_DONE_BTN_SELECTOR, function(e) {
+        e.preventDefault();
+        _saveIfDirtyThenClose($(this));
+    });
+
+    function _saveIfDirtyThenClose($doneButton) {
+        // A save is already in flight (the class does not stop
+        // keyboard activation of the autofocused button).
+        if ($doneButton.hasClass(ATTR_V2_INTERNAL.DISABLED_CLASS)) return;
+
+        const $container = $doneButton.closest(ATTR_V2_INTERNAL.MODAL_SELECTOR)
+              .find(Hi.ATTR_V2_CONTAINER_SELECTOR).first();
+        const $form = $container.find(`form${Hi.ATTR_V2_FORM_CLASS_SELECTOR}`);
+        const isDirty = $form.length > 0
+              && window.Hi.attr.dirtyTracking.isDirty($container.attr('id'));
+
+        if (!isDirty) {
+            _closeContainingModal($doneButton);
+            return;
+        }
+
+        // Block repeat clicks while the save is in flight so pending
+        // new attributes are not submitted twice.
+        $doneButton.addClass(ATTR_V2_INTERNAL.DISABLED_CLASS);
+        _ajax.submitFormWithAjax($form[0], { closeOnSuccess: true })
+            .always(() => $doneButton.removeClass(ATTR_V2_INTERNAL.DISABLED_CLASS));
+    }
+
+    function _closeContainingModal($element) {
+        // A save can finish after its modal was already closed (e.g.,
+        // the user discarded and left meanwhile). Hiding a modal that
+        // is not shown never fires hidden.bs.modal, which would leave
+        // antinode deferring the next modal it is asked to open.
+        const $modal = $element.closest(ATTR_V2_INTERNAL.MODAL_SELECTOR);
+        if (!$modal.hasClass(ATTR_V2_INTERNAL.MODAL_SHOWN_CLASS)) return;
+        AN.hideModalIfNeeded($element);
+    }
+
     $(document).on('click', '.attr-ext-more', function() {
         const $btn = $(this);
         const $value = $btn.prev('.attr-ext-value');
@@ -592,14 +646,19 @@
     
     
     // Multi-instance container initialization
-    function _initializeAllContainers() {
+    // initOptions.preserveDirtyState: the update only added content
+    // (e.g., a history panel or an uploaded file's card) and saved none
+    // of the pending edits, so their unsaved-edit state must survive.
+    // Only newly added fields get a baseline; re-baselining everything
+    // would make pending edits look saved.
+    function _initializeAllContainers(initOptions = {}) {
         // Initialize all attribute editing containers found on page
         $(Hi.ATTR_V2_CONTAINER_SELECTOR).each(function() {
-            _initializeContainer($(this));
+            _initializeContainer($(this), initOptions);
         });
     }
-    
-    function _initializeContainer($container) {
+
+    function _initializeContainer($container, initOptions = {}) {
         // Check if this container is already initialized to prevent double-initialization
         if ($container.data(ATTR_V2_INTERNAL.INITIALIZED_DATA_KEY)) {
             // Always reprocess AJAX handlers to handle newly loaded content
@@ -608,7 +667,11 @@
             _reinitializeTextareas($container);
             // Reinitialize dirty tracking for new content
             if (window.Hi.attr.dirtyTracking) {
-                window.Hi.attr.dirtyTracking.reinitializeContainer($container.attr('id'));
+                if (initOptions.preserveDirtyState) {
+                    window.Hi.attr.dirtyTracking.trackNewFields($container.attr('id'));
+                } else {
+                    window.Hi.attr.dirtyTracking.reinitializeContainer($container.attr('id'));
+                }
             }
             return;
         }
@@ -697,14 +760,16 @@
                         'X-Requested-With': 'XMLHttpRequest'
                     }
                 }).done((response) => {
-                    _ajax.handleFormSuccess(response, $container.find(Hi.ATTR_V2_FORM_CLASS_SELECTOR));
+                    _ajax.handleFormSuccess(response, $container.find(Hi.ATTR_V2_FORM_CLASS_SELECTOR),
+                                            { preserveDirtyState: true });
                 }).fail((xhr) => {
-                    _ajax.handleFormError(xhr, $container.find(Hi.ATTR_V2_FORM_CLASS_SELECTOR));
+                    _ajax.handleFormError(xhr, $container.find(Hi.ATTR_V2_FORM_CLASS_SELECTOR),
+                                          { preserveDirtyState: true });
                 });
             });
         });
-        
-        // Handle value restore links  
+
+        // Handle value restore links
         const $restoreLinks = $container.find(Hi.ATTR_V2_RESTORE_LINK_SELECTOR);
         $restoreLinks.each(function() {
             const $link = $(this);
@@ -758,7 +823,10 @@
                     // Use our custom Ajax submission with scroll-to-new-content option
                     // File uploads append new content that users want to see
                     _ajax.submitFormWithAjax($uploadForm[0], {
-                        scrollToNewContent: true
+                        scrollToNewContent: true,
+                        // The upload only adds a file card; the main
+                        // form's pending edits are still unsaved.
+                        preserveDirtyState: true,
                     });
                 } 
             });
@@ -853,8 +921,17 @@
     }
 
     // Removed dedicated add attribute form functions - using Django formset approach only
-    
-    
+
+    // Deletion markers are hidden inputs changed programmatically, so
+    // no input/change event reaches the dirty tracker on its own.
+    function _notifyDirtyTracking($field) {
+        const $container = $field.closest(Hi.ATTR_V2_CONTAINER_SELECTOR);
+        if ($container.length > 0 && window.Hi.attr.dirtyTracking) {
+            window.Hi.attr.dirtyTracking.getInstance($container.attr('id'))
+                .handleFieldChange($field[0]);
+        }
+    }
+
     window.markFileForDeletion = function(attributeId, containerSelector = null) {
         // Find the file card, scoped to container if provided
         const scope = containerSelector ? $(containerSelector) : $(document);
@@ -869,14 +946,7 @@
         if ($deleteField.length > 0) {
             // Set value to the attribute ID to mark for deletion
             $deleteField.val(attributeId);
-            
-            // Directly notify dirty tracking system
-            const $container = $fileCard.closest(Hi.ATTR_V2_CONTAINER_SELECTOR);
-            if ($container.length > 0 && window.Hi.attr.dirtyTracking) {
-                const containerId = $container.attr('id');
-                const instance = window.Hi.attr.dirtyTracking.getInstance(containerId);
-                instance.handleFieldChange($deleteField[0]);
-            }
+            _notifyDirtyTracking($deleteField);
         } else {
             console.warn(`DELETE field not found for file attribute ${attributeId}`);
             return;
@@ -906,14 +976,7 @@
         const $deleteField = $fileCard.find(`input[name="${Hi.ATTR_V2_DELETE_FILE_ATTR}"]`);
         if ($deleteField.length > 0) {
             $deleteField.val("");
-            
-            // Directly notify dirty tracking system
-            const $container = $fileCard.closest(Hi.ATTR_V2_CONTAINER_SELECTOR);
-            if ($container.length > 0 && window.Hi.attr.dirtyTracking) {
-                const containerId = $container.attr('id');
-                const instance = window.Hi.attr.dirtyTracking.getInstance(containerId);
-                instance.handleFieldChange($deleteField[0]);
-            }
+            _notifyDirtyTracking($deleteField);
         }
         
         // Remove visual feedback - CSS handles all styling
@@ -930,19 +993,30 @@
     // History functionality now handled by antinode async pattern
     // History button uses data-async to load content, no JavaScript needed
     
+    // The name lives in an input, so read its value rather than the
+    // header text (which only holds UI decorations like dirty markers).
+    function _attributeCardName($attributeCard) {
+        const nameSelector = `input[name$="${ATTR_V2_INTERNAL.NAME_FIELD_SUFFIX}"]`;
+        return ($attributeCard.find(nameSelector).first().val() || '').trim();
+    }
+
     window.markAttributeForDeletion = function(attributeId, containerSelector = null) {
         // Find the attribute card, scoped to container if provided
         const scope = containerSelector ? $(containerSelector) : $(document);
         const $attributeCard = scope.find(`[${Hi.DATA_ATTRIBUTE_ID_ATTR}="${attributeId}"]`);
         if ($attributeCard.length === 0) return;
-        
-        const attributeName = $attributeCard.find(Hi.ATTR_V2_ATTRIBUTE_NAME_SELECTOR).text().trim().replace('•', '').trim();
-        
+
+        const attributeName = _attributeCardName($attributeCard);
+
         // Find and mark the server-rendered DELETE field for deletion
-        const $deleteField = $attributeCard.find('input[name$="-DELETE"]');
+        const $deleteField = $attributeCard.find(`input[name$="${ATTR_V2_INTERNAL.DELETE_FIELD_SUFFIX}"]`);
         if ($deleteField.length > 0) {
+            // Undo restores this. A hidden input's defaultValue tracks
+            // its current value, so it cannot serve as the original.
+            $deleteField.data(ATTR_V2_INTERNAL.PRE_DELETE_VALUE_DATA_KEY, $deleteField.val());
             // For hidden fields, set value to "on" (what browsers send for checked checkboxes)
             $deleteField.val("on");
+            _notifyDirtyTracking($deleteField);
         } else {
             console.warn(`DELETE field not found for attribute ${attributeId}`);
             return;
@@ -965,12 +1039,15 @@
         const $attributeCard = scope.find(`[${Hi.DATA_ATTRIBUTE_ID_ATTR}="${attributeId}"]`);
         if ($attributeCard.length === 0) return;
         
-        const attributeName = $attributeCard.find(Hi.ATTR_V2_ATTRIBUTE_NAME_SELECTOR).text().trim().replace('•', '').trim();
-        
+        const attributeName = _attributeCardName($attributeCard);
+
         // Unmark the DELETE field
-        const $deleteField = $attributeCard.find('input[name$="-DELETE"]');
+        const $deleteField = $attributeCard.find(`input[name$="${ATTR_V2_INTERNAL.DELETE_FIELD_SUFFIX}"]`);
         if ($deleteField.length > 0) {
-            $deleteField.val("");
+            // Restore the pre-mark value (not ""), so the dirty
+            // tracker sees the field as unchanged again.
+            $deleteField.val($deleteField.data(ATTR_V2_INTERNAL.PRE_DELETE_VALUE_DATA_KEY) || '');
+            _notifyDirtyTracking($deleteField);
         }
         
         // Remove visual feedback - CSS handles all styling

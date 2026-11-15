@@ -3,6 +3,7 @@ from unittest.mock import patch, Mock
 
 from django.urls import reverse
 
+from hi.apps.attribute.enums import AttributeType, AttributeValueType
 from hi.apps.collection.models import Collection
 from hi.apps.control.models import Controller
 from hi.apps.control.one_click_control_service import (
@@ -11,9 +12,10 @@ from hi.apps.control.one_click_control_service import (
 from hi.apps.common.svg_models import SvgViewBox
 from hi.apps.entity.models import Entity, EntityState
 from hi.apps.location.location_manager import LocationManager
-from hi.apps.location.models import Location, LocationView
+from hi.apps.location.models import Location, LocationAttribute, LocationView
 from hi.apps.location.views import LocationViewView
-from hi.enums import ViewType
+from hi.enums import ViewDataPriority, ViewType
+from hi.integrations.models import LocationExternalReference
 from hi.testing.base_test_case import BaseTestCase, MockRequest
 from hi.testing.view_test_base import SyncViewTestCase, AsyncViewTestCase, DualModeViewTestCase
 
@@ -902,6 +904,56 @@ class TestLocationItemStatusView(SyncViewTestCase):
         self.assertEqual(response.status_code, 302)
         expected_url = reverse('entity_status', kwargs={'entity_id': self.entity.id})
         self.assertEqual(response.url, expected_url)
+
+
+class TestLocationEditViewDataPriority(SyncViewTestCase):
+    """Which tab the location edit modal foregrounds (data_priority):
+    INTERNAL > REFERENCE by available data (locations have no
+    EXTERNAL category), unless the caller overrides it."""
+
+    def setUp(self):
+        super().setUp()
+        self.location = Location.objects.create(
+            name='Priority Location',
+            svg_fragment_filename='priority.svg',
+            svg_view_box_str='0 0 100 100',
+        )
+        LocationExternalReference.objects.create(
+            location=self.location,
+            integration_id='ref',
+            integration_name='doc-1',
+            title='Doc',
+            source_url='https://example.com/doc-1',
+            order_id=0,
+        )
+
+    def _get_data_priority(self, query=''):
+        url = reverse('location_edit_location_edit', kwargs={'location_id': self.location.id}) + query
+        response = self.client.get(url)
+        self.assertSuccessResponse(response)
+        return response.context['data_priority']
+
+    def test_data_derived_priority(self):
+        self.assertEqual(self._get_data_priority(), ViewDataPriority.REFERENCE)
+
+        LocationAttribute.objects.create(
+            location=self.location,
+            name='note',
+            value='content',
+            attribute_type_str=str(AttributeType.CUSTOM),
+            value_type_str=str(AttributeValueType.TEXT),
+        )
+        self.assertEqual(self._get_data_priority(), ViewDataPriority.INTERNAL)
+
+    def test_override_takes_precedence_over_data(self):
+        priority = self._get_data_priority(query='?data_priority=INTERNAL')
+
+        self.assertEqual(priority, ViewDataPriority.INTERNAL)
+
+    def test_unrecognized_override_falls_back_to_data(self):
+        priority = self._get_data_priority(query='?data_priority=bogus')
+
+        self.assertEqual(priority, ViewDataPriority.REFERENCE)
 
 
 class TestLocationItemEditModeView(SyncViewTestCase):
