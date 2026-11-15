@@ -1,4 +1,12 @@
 from enum import Enum
+from functools import cache
+
+
+@cache
+def _lowercase_name_to_member( enum_class ):
+    # Built once per enum class: from_name is on hot paths (e.g., every
+    # EntityState.entity_state_type access during status polling).
+    return { member.name.lower(): member for member in enum_class }
 
 
 class LabeledEnum(Enum):
@@ -51,10 +59,9 @@ class LabeledEnum(Enum):
         if name == '_none_':
             return None
         if name:
-            for value in cls:
-                if value.name.lower() == name.strip().lower():
-                    return value
-                continue
+            member = _lowercase_name_to_member( cls ).get( name.strip().lower() )
+            if member is not None:
+                return member
         raise ValueError( f'Unknown name value "{name}" for {cls.__name__}' )
 
     @classmethod
@@ -133,3 +140,4 @@ class Platform(LabeledEnum):
     @property
     def is_android(self):
         return bool( self == Platform.ANDROID )
+

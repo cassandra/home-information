@@ -342,52 +342,54 @@ class EntityStateDisplayData:
 
     def _get_svg_status_style(self):
 
-        if self.entity_state.entity_state_type == EntityStateType.MOVEMENT:
+        entity_state_type = self.entity_state.entity_state_type
+
+        if entity_state_type == EntityStateType.MOVEMENT:
             return self._get_movement_status_style()
 
-        if self.entity_state.entity_state_type == EntityStateType.OBJECT_PRESENCE:
+        if entity_state_type == EntityStateType.OBJECT_PRESENCE:
             return self._get_object_presence_status_style()
 
-        if self.entity_state.entity_state_type == EntityStateType.PRESENCE:
+        if entity_state_type == EntityStateType.PRESENCE:
             return self._get_presence_status_style()
             
-        if self.entity_state.entity_state_type == EntityStateType.ON_OFF:
+        if entity_state_type == EntityStateType.ON_OFF:
             return self._get_on_off_status_style()
 
-        if self.entity_state.entity_state_type == EntityStateType.LIGHT_DIMMER:
+        if entity_state_type == EntityStateType.LIGHT_DIMMER:
             return self._get_light_dimmer_status_style()
 
-        if self.entity_state.entity_state_type == EntityStateType.OPEN_CLOSE:
+        if entity_state_type == EntityStateType.OPEN_CLOSE:
             return self._get_open_close_status_style()
 
-        if self.entity_state.entity_state_type == EntityStateType.OPEN_CLOSE_POSITION:
+        if entity_state_type == EntityStateType.OPEN_CLOSE_POSITION:
             return self._get_open_close_position_status_style()
 
-        if self.entity_state.entity_state_type == EntityStateType.POWER_LEVEL:
+        if entity_state_type == EntityStateType.POWER_LEVEL:
             return StatusStyle.light_dimmer( self.latest_sensor_value )
         
-        if self.entity_state.entity_state_type == EntityStateType.CONNECTIVITY:
+        if entity_state_type == EntityStateType.CONNECTIVITY:
             return self._get_connectivity_status_style()
         
-        if self.entity_state.entity_state_type == EntityStateType.HIGH_LOW:
+        if entity_state_type == EntityStateType.HIGH_LOW:
             return self._get_high_low_status_style()
 
-        if self.entity_state.entity_state_type == EntityStateType.SMOKE:
+        if entity_state_type == EntityStateType.SMOKE:
             return self._get_smoke_status_style()
 
-        if self.entity_state.entity_state_type == EntityStateType.MOISTURE:
+        if entity_state_type == EntityStateType.MOISTURE:
             return self._get_moisture_status_style()
 
-        if self.entity_state.entity_state_type == EntityStateType.CO:
+        if entity_state_type == EntityStateType.CO:
             return self._get_co_status_style()
 
-        if self.entity_state.entity_state_type == EntityStateType.GAS:
+        if entity_state_type == EntityStateType.GAS:
             return self._get_gas_status_style()
 
-        if self.entity_state.entity_state_type == EntityStateType.BATTERY_LEVEL:
+        if entity_state_type == EntityStateType.BATTERY_LEVEL:
             return self._get_battery_level_status_style()
 
-        if self.entity_state.entity_state_type == EntityStateType.TEMPERATURE:
+        if entity_state_type == EntityStateType.TEMPERATURE:
             return self._get_temperature_status_style()
 
         # TODO: These should map the latest value into a continuous range of colors/opacity
