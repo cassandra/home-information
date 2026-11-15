@@ -1,5 +1,6 @@
 from dataclasses import dataclass, field, fields
 from datetime import datetime, time, timedelta
+from functools import cached_property
 from typing import Dict, Generic, List, Optional, Set, TypeVar
 
 from pint.errors import OffsetUnitCalculusError
@@ -411,7 +412,9 @@ class WeatherStats:
     temperature_min: Optional[NumericDataPoint] = None
     temperature_max: Optional[NumericDataPoint] = None
 
-    @property
+    # Cached: templates access this repeatedly and each construction does
+    # unit arithmetic. Instances are built fresh per request and not mutated.
+    @cached_property
     def temperature(self) -> NumericDataPoint:
         if self.temperature_min and self.temperature_max:
             return NumericDataPoint(
