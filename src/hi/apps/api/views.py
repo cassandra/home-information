@@ -31,6 +31,7 @@ class StatusView( View,
 
     ServerStartTimestampAttr = 'startTimestamp'
     ServerTimestampAttr = 'timestamp'
+    LayoutChangeTimestampAttr = 'layoutTimestamp'
     LastServerTimestampAttr = 'lastTimestamp'
     AlertStatusDataAttr = 'alertData'
     EntityStateStatusMapAttr = 'entityStateStatusMap'
@@ -98,6 +99,10 @@ class StatusView( View,
             ),
         }
         
+        layout_change_timestamp = self.console_manager().get_layout_change_timestamp()
+        if layout_change_timestamp:
+            data[self.LayoutChangeTimestampAttr] = layout_change_timestamp
+            
         if suggestion:
             data[self.TransientViewSuggestionAttr] = {
                 self.TransientViewUrlAttr: suggestion.url,

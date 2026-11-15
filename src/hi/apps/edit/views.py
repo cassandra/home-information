@@ -15,6 +15,7 @@ from hi.apps.collection.edit.views import (
     CollectionReorderEntitiesView,
 )
 import hi.apps.common.antinode as antinode
+from hi.apps.console.console_mixins import ConsoleMixin
 from hi.apps.control.models import Controller
 from hi.apps.entity.models import EntityState
 from hi.apps.entity.view_mixins import EntityViewMixin
@@ -58,7 +59,7 @@ class EditStartView( View ):
         return redirect( redirect_url )
 
     
-class EditEndView( View ):
+class EditEndView( View, ConsoleMixin ):
 
     def get(self, request, *args, **kwargs):
 
@@ -68,6 +69,9 @@ class EditEndView( View ):
 
         request.view_parameters.view_mode = ViewMode.MONITOR
         request.view_parameters.to_session( request )
+
+        # Exiting edit mode is taken as a layout change, so other consoles reload.
+        self.console_manager().mark_layout_changed()
 
         # Do a page refresh, but remove any side bar url set during editing.
         referrer_url = request.headers.get('referer')

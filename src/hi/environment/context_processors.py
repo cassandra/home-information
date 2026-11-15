@@ -2,6 +2,7 @@ from django.conf import settings
 from django.urls import reverse
 
 from hi.apps.console.console_helper import ConsoleSettingsHelper
+from hi.apps.console.console_manager import ConsoleManager
 
 from .client import ClientConfig
 
@@ -30,6 +31,7 @@ def client_config(request):
         API_STATUS_URL = reverse( 'api_status' ),
         CONSOLE_UNLOCK_URL = reverse( 'console_unlock' ),
         API_STATUS_POLLING_INTERVAL_MS = ConsoleSettingsHelper().get_status_polling_interval_ms(),
+        LAYOUT_CHANGE_TIMESTAMP = ConsoleManager().get_layout_change_timestamp() or '',
     )
     
     return {

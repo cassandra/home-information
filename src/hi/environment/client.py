@@ -21,6 +21,7 @@ class ClientConfig:
     API_STATUS_URL       : str = ''
     CONSOLE_UNLOCK_URL   : str = ''
     API_STATUS_POLLING_INTERVAL_MS : int = 3000
+    LAYOUT_CHANGE_TIMESTAMP : str = ''
     
     def to_json_dict(self) -> dict:
         """
