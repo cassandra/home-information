@@ -19,6 +19,28 @@
 
     var API_EDIT_LOCATION_ITEM_POSITION_URL = '/location/edit/item/position';
 
+    /* Non-edit mode: request the status view for the location item
+       (of the given SVG data type) under the event target. Returns
+       whether the event targeted such an item.
+
+       ``isLongPress`` reports the gesture-based escape hatch out of a
+       view-type-specific tap behavior (e.g., AUTOMATION's one-click
+       control). The server decides what to surface; we just signal
+       that the gesture happened. */
+    function requestItemStatus( event, svgDataType, isLongPress ) {
+        var group = $( event.target ).closest( 'g' );
+        if ( group.length === 0 ) { return false; }
+        if ( group.attr( Hi.DATA_TYPE_ATTR ) !== svgDataType ) { return false; }
+        var svgItemId = group.attr( 'id' );
+        if ( ! svgItemId ) { return false; }
+        var url = Hi.API_LOCATION_ITEM_STATUS_URL + '/' + svgItemId;
+        if ( isLongPress ) {
+            url += '?long_press=1';
+        }
+        AN.get( url );
+        return true;
+    }
+
     /* ==================== */
     /* Icon Editing Wrapper  */
     /* ==================== */
@@ -94,37 +116,11 @@
             if ( Hi.isEditMode ) {
                 return Hi.SvgIconCore.handleClick( event );
             }
-
-            /* Non-edit mode: fetch status view on icon click. */
-            var group = $( event.target ).closest( 'g' );
-            if ( group.length > 0 ) {
-                var svgDataType = group.attr( Hi.DATA_TYPE_ATTR );
-                if ( svgDataType === Hi.DATA_TYPE_ICON_VALUE ) {
-                    var svgItemId = group.attr( 'id' );
-                    if ( svgItemId ) {
-                        AN.get( Hi.API_LOCATION_ITEM_STATUS_URL + '/' + svgItemId );
-                        return true;
-                    }
-                }
-            }
-            return false;
+            return requestItemStatus( event, Hi.DATA_TYPE_ICON_VALUE, false );
         },
         handleLongPress: function( event ) {
-            /* Long-press on an entity icon is the gesture-based escape
-               hatch out of a view-type-specific tap behavior (e.g.,
-               AUTOMATION's one-click control). The server decides what
-               to surface; we just signal that the gesture happened. */
             if ( Hi.isEditMode ) { return false; }
-            var group = $( event.target ).closest( 'g' );
-            if ( group.length === 0 ) { return false; }
-            if ( group.attr( Hi.DATA_TYPE_ATTR ) !== Hi.DATA_TYPE_ICON_VALUE ) {
-                return false;
-            }
-            var svgItemId = group.attr( 'id' );
-            if ( ! svgItemId ) { return false; }
-            AN.get( Hi.API_LOCATION_ITEM_STATUS_URL + '/' + svgItemId
-                    + '?long_press=1' );
-            return true;
+            return requestItemStatus( event, Hi.DATA_TYPE_ICON_VALUE, true );
         },
         handleKeyDown: function( event ) {
             if ( ! Hi.isEditMode ) { return false; }
@@ -204,23 +200,11 @@
             if ( Hi.isEditMode ) {
                 return Hi.SvgPathCore.handleClick( event );
             }
-
-            /* Non-edit mode: fetch status view on path click. */
-            var group = $( event.target ).closest( 'g' );
-            if ( group.length > 0 ) {
-                var svgDataType = group.attr( Hi.DATA_TYPE_ATTR );
-                if ( svgDataType === Hi.DATA_TYPE_PATH_VALUE ) {
-                    var svgItemId = group.attr( 'id' );
-                    if ( svgItemId ) {
-                        AN.get( Hi.API_LOCATION_ITEM_STATUS_URL + '/' + svgItemId );
-                        return true;
-                    }
-                }
-            }
-            return false;
+            return requestItemStatus( event, Hi.DATA_TYPE_PATH_VALUE, false );
         },
         handleLongPress: function( event ) {
-            return false;
+            if ( Hi.isEditMode ) { return false; }
+            return requestItemStatus( event, Hi.DATA_TYPE_PATH_VALUE, true );
         },
         handleKeyDown: function( event ) {
             if ( ! Hi.isEditMode ) { return false; }
