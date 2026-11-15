@@ -1,0 +1,25 @@
+{% load icons %}
+{% comment %}
+Unsaved-changes warning for an attribute-editing modal. Including this
+partial in a modal arms the unsaved-changes guard
+(static/js/attr-unsaved-guard.js) for that modal: leaving it with
+unsaved edits shows this banner instead of closing. Hidden (d-none)
+until then; layout lives on the inner element so it cannot override
+the hiding.
+{% endcomment %}
+<div class="{{ DIVID.ATTR_V2_UNSAVED_BANNER_CLASS }} alert alert-warning d-none mb-2"
+     role="alert">
+  <div class="d-flex align-items-center justify-content-between">
+    <span>{% icon "warning" css_class="hi-icon-left" %}You have unsaved changes.</span>
+    <span>
+      <button type="button"
+              class="btn btn-sm btn-danger {{ DIVID.ATTR_V2_DISCARD_CHANGES_BTN_CLASS }}">
+        DISCARD CHANGES
+      </button>
+      <button type="button"
+              class="btn btn-sm btn-primary ml-2 {{ DIVID.ATTR_V2_KEEP_EDITING_BTN_CLASS }}">
+        KEEP EDITING
+      </button>
+    </span>
+  </div>
+</div>

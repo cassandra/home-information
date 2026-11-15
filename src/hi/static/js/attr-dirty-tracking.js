@@ -476,6 +476,12 @@
             return this.getInstance(containerId).isDirty();
         },
 
+        // For when the edits are no longer pending: saved, or
+        // deliberately discarded.
+        clearDirtyState: function(containerId) {
+            this.getInstance(containerId).clearAllDirtyState();
+        },
+
         handleFormSuccess: function(event) {
             const form = event.target.closest(Hi.ATTR_V2_FORM_CLASS_SELECTOR);
             if (form) {

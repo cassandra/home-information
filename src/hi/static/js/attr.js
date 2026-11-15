@@ -363,8 +363,11 @@
             }
             
             // The caller only wanted the save; the modal is going away,
-            // so there is no point refreshing its content.
+            // so there is no point refreshing its content. The edits
+            // are saved, so nothing is left for an exit guard to flag.
             if (options.closeOnSuccess && !isError) {
+                const containerId = $form.closest(Hi.ATTR_V2_CONTAINER_SELECTOR).attr('id');
+                window.Hi.attr.dirtyTracking.clearDirtyState(containerId);
                 _closeContainingModal($form);
                 return;
             }

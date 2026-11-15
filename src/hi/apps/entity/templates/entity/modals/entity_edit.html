@@ -9,6 +9,8 @@
 {% endblock %}
 
 {% block body %}
+{% include "attribute/components/unsaved_changes_banner.html" %}
+
 <!-- Root container for this attribute editing context -->
 <div id="{{ attr_page_context.container_html_id }}" 
      class="{{ DIVID.ATTR_V2_CONTAINER_CLASS }}">
