@@ -29,6 +29,7 @@
     const ServerPollingUrl = Hi.API_STATUS_URL;
     const ServerStartTimestampAttr = 'startTimestamp';
     const ServerTimestampAttr = 'timestamp';
+    const LayoutChangeTimestampAttr = 'layoutTimestamp';
     const LastServerTimestampAttr = 'lastTimestamp';
     const EntityStateStatusMapAttr = 'entityStateStatusMap';
     const IdReplaceUpdateMapAttr = 'idReplaceUpdateMap';
@@ -53,6 +54,7 @@
     let gIsServerErrorShowing = false;
     let gLastStartServerDate = null;
     let gLastServerDate = null;
+    let gLayoutChangeTimestamp = Hi.layoutChangeTimestamp;
     
     function startServerPolling() {
         Hi.watchdog.add( ServerPollingWatchdogType, 
@@ -130,6 +132,7 @@
         if ( Hi.DEBUG && TRACE ) { console.log( "Server response: "+JSON.stringify( respObj)); }
 
         doServerStartTimeCheck( respObj );
+        doLayoutChangeCheck( respObj );
 
         if ( ConsoleLockedAttr in respObj ) {
             handleConsoleLockState( respObj[ConsoleLockedAttr] );
@@ -186,6 +189,25 @@
             } else {
                 gLastStartServerDate = startServerDate;
             }
+        }
+    }
+    
+    function doLayoutChangeCheck( respObj ) {
+        if ( ! ( LayoutChangeTimestampAttr in respObj )) {
+            return;
+        }
+        const layoutChangeTimestamp = respObj[LayoutChangeTimestampAttr];
+        if ( ! gLayoutChangeTimestamp ) {
+            gLayoutChangeTimestamp = layoutChangeTimestamp;
+            return;
+        }
+        if ( layoutChangeTimestamp !== gLayoutChangeTimestamp ) {
+            if ( Hi.DEBUG ) {
+                console.log( 'Layout change detected. Reloading page. '
+                             + `${gLayoutChangeTimestamp} -> ${layoutChangeTimestamp}` );
+            }
+            gLayoutChangeTimestamp = layoutChangeTimestamp;
+            location.reload();
         }
     }
     

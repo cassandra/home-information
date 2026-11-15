@@ -7,6 +7,8 @@ from django.template.loader import get_template
 
 from hi.constants import DIVID
 
+import hi.apps.common.datetimeproxy as datetimeproxy
+from hi.apps.common.redis_client import get_safe_cache_client
 from hi.apps.common.singleton import Singleton
 from hi.apps.config.settings_mixins import SettingsMixin
 from hi.apps.entity.entity_manager import EntityManager
@@ -22,6 +24,8 @@ logger = logging.getLogger(__name__)
 
 
 class ConsoleManager( Singleton, SettingsMixin, SensorResponseMixin, WeatherMixin ):
+
+    LAYOUT_CHANGE_TIMESTAMP_CACHE_KEY = 'hi.console.layout_change_timestamp'
 
     # TTL cache settings
     CAMERA_CONTROL_CACHE_SIZE = 5
@@ -71,6 +75,18 @@ class ConsoleManager( Singleton, SettingsMixin, SensorResponseMixin, WeatherMixi
         return {
             DIVID['SIDEBAR_NOTICE']: sidebar_notice_html_str,
         }
+        
+    def get_layout_change_timestamp( self ) -> Optional[str]:
+        """
+        Opaque marker that changes whenever a layout edit session ends, so
+        console clients can detect they are showing a stale layout.
+        """
+        return get_safe_cache_client().get( self.LAYOUT_CHANGE_TIMESTAMP_CACHE_KEY )
+
+    def mark_layout_changed( self ):
+        get_safe_cache_client().set( self.LAYOUT_CHANGE_TIMESTAMP_CACHE_KEY,
+                                     datetimeproxy.now().isoformat() )
+        return
         
     def get_camera_control_display_list(self) -> List[CameraControlDisplayData]:
         """Get camera control display data with TTL caching."""

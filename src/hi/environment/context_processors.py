@@ -1,7 +1,9 @@
 from django.conf import settings
 from django.urls import reverse
+from django.utils.functional import SimpleLazyObject
 
 from hi.apps.console.console_helper import ConsoleSettingsHelper
+from hi.apps.console.console_manager import ConsoleManager
 
 from .client import ClientConfig
 
@@ -15,11 +17,21 @@ def client_config(request):
     all client configuration needs.
     
     Fails fast on missing required data - no masking of interface problems.
+
+    Built lazily: context processors run for every template rendered with a
+    request, including the partial templates rendered on each status poll,
+    but only full page loads actually use this.
     
     Returns:
         dict: Context variables for templates
     """
-    config = ClientConfig(
+    return {
+        'hi_client_config': SimpleLazyObject( lambda: _build_client_config( request ) ),
+    }
+
+
+def _build_client_config( request ) -> ClientConfig:
+    return ClientConfig(
         DEBUG = settings.DEBUG,
         ENVIRONMENT = settings.ENV.environment_name,
         VERSION = settings.ENV.VERSION,
@@ -30,8 +42,5 @@ def client_config(request):
         API_STATUS_URL = reverse( 'api_status' ),
         CONSOLE_UNLOCK_URL = reverse( 'console_unlock' ),
         API_STATUS_POLLING_INTERVAL_MS = ConsoleSettingsHelper().get_status_polling_interval_ms(),
+        LAYOUT_CHANGE_TIMESTAMP = ConsoleManager().get_layout_change_timestamp() or '',
     )
-    
-    return {
-        'hi_client_config': config
-    }

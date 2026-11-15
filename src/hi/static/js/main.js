@@ -20,6 +20,9 @@
         // Status polling cadence (ms), user-configurable via ConsoleSetting.
         API_STATUS_POLLING_INTERVAL_MS: window.HiClientConfig?.API_STATUS_POLLING_INTERVAL_MS ?? 3000,
 
+        // Layout change marker at page render; status polling reloads when it changes.
+        layoutChangeTimestamp: window.HiClientConfig?.LAYOUT_CHANGE_TIMESTAMP || null,
+
         MAIN_AREA_SELECTOR: '#hi-main-content',
         LOCATION_VIEW_AREA_SELECTOR: '#hi-location-view-main',
         LOCATION_VIEW_SVG_CLASS: 'hi-location-view-svg',
