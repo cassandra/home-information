@@ -11,6 +11,7 @@ import os
 
 from django.core.asgi import get_asgi_application
 
+# Intentionally invalid: hi/settings/__init__.py rejects it with a clear error.
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'hi.settings')
 
 application = get_asgi_application()
