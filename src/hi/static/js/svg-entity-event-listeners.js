@@ -13,10 +13,7 @@
 
     const LAST_MOVE_THROTTLE_THRESHOLD_MS = 10;
     const POINTER_MOVE_THRESHOLD_PIXELS = 2;
-    const POINTER_SCALE_THRESHOLD_PIXELS = 3;
-    const POINTER_ROTATE_THRESHOLD_DEGREES = 3;
     const POTENTIAL_CLICK_TIME_DELTA_THRESHOLD_MS = 150;
-    const POTENTIAL_CLICK_POSITION_DELTA_THRESHOLD = 5;
     const POTENTIAL_CLICK_DELAY_MS = 50;
 
     // Synthetic long-press gesture. The listener layer manages
@@ -25,7 +22,6 @@
     // has no opinion about what should happen on a long-press -- each
     // consuming module decides for itself.
     const LONG_PRESS_DURATION_MS = 750;
-    const LONG_PRESS_MOVE_THRESHOLD_PIXELS = 5;
 
     const activePointers = new Map();
     const gLastMoveEventTimes = new Map();
@@ -46,6 +42,7 @@
 	    
             this.previous = { ...this.start };
             this.last = { ...this.start };
+	    this.isDragCommitted = false;
 	}
 	get deltaXStart() {
             return this.last.x - this.start.x;
@@ -64,6 +61,25 @@
 	    this.last.event = newEvent;
 	    this.last.x = newEvent.clientX;
 	    this.last.y = newEvent.clientY;
+	}
+	// A press only becomes a drag once it leaves tap slop, so finger
+	// wobble during a tap never reaches the move consumers. On commit
+	// the start is rebased to the current point so consumers measuring
+	// deltas from start (pan) begin from zero instead of jumping by the
+	// slop distance. Returns whether the gesture is a drag.
+	commitDragIfBeyondTapSlop( moveEvent ) {
+	    if ( this.isDragCommitted ) {
+		return true;
+	    }
+	    const currentPoint = { x: moveEvent.clientX, y: moveEvent.clientY };
+	    if ( ! Hi.exceedsTapSlop( this.start, currentPoint, moveEvent.pointerType )) {
+		return false;
+	    }
+	    this.start = { event: moveEvent, ...currentPoint };
+	    this.previous = { ...this.start };
+	    this.last = { ...this.start };
+	    this.isDragCommitted = true;
+	    return true;
 	}
     }
 
@@ -142,12 +158,10 @@
 	}
 	
 	const timeDeltaMs = performance.now() - gPotentialClickState.startTimeMs;
-	const positionDeltaX = Math.abs(event.clientX - gPotentialClickState.startPosition.x);
-	const positionDeltaY = Math.abs(event.clientY - gPotentialClickState.startPosition.y);
-	const positionDeltaMax = Math.max(positionDeltaX, positionDeltaY);
+	const endPosition = { x: event.clientX, y: event.clientY };
 
-	if (timeDeltaMs < POTENTIAL_CLICK_TIME_DELTA_THRESHOLD_MS && 
-	    positionDeltaMax < POTENTIAL_CLICK_POSITION_DELTA_THRESHOLD) {
+	if (timeDeltaMs < POTENTIAL_CLICK_TIME_DELTA_THRESHOLD_MS &&
+	    ! Hi.exceedsTapSlop( gPotentialClickState.startPosition, endPosition, event.pointerType )) {
 	    
 	    gPotentialClickState.waitingForClick = true;
 	    
@@ -193,9 +207,8 @@
     function checkLongPressMove( event ) {
 	if ( ! gLongPressState ) { return; }
 	if ( event.pointerId !== gLongPressState.pointerId ) { return; }
-	const dx = Math.abs( event.clientX - gLongPressState.startPosition.x );
-	const dy = Math.abs( event.clientY - gLongPressState.startPosition.y );
-	if ( Math.max( dx, dy ) > LONG_PRESS_MOVE_THRESHOLD_PIXELS ) {
+	const currentPoint = { x: event.clientX, y: event.clientY };
+	if ( Hi.exceedsTapSlop( gLongPressState.startPosition, currentPoint, event.pointerType )) {
 	    cancelLongPress();
 	}
     }
@@ -306,7 +319,7 @@
 	activePointers.set( event.pointerId, { x: event.clientX, y: event.clientY } );
 
 	if ( activePointers.size === 1 ) {
-	    if (gCurrentSingleEvent) {
+	    if ( gCurrentSingleEvent && gCurrentSingleEvent.commitDragIfBeyondTapSlop( event )) {
 		gCurrentSingleEvent.update( event );
 		dispatchSinglePointerEventMove( event, gCurrentSingleEvent );
 	    }

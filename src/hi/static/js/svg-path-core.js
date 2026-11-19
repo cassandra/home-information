@@ -35,7 +35,6 @@
     const PATH_ACTION_ADD_KEYS = [ 'a', '+', '=' ];        // event.key: browser-independent (Chrome/Safari report '+' as keyCode 187, not 61)
     const PATH_ACTION_END_KEY_CODES = [ 27 ];              // Escape
 
-    const CURSOR_MOVEMENT_THRESHOLD_PIXELS = 3;
     const PATH_EDIT_PROXY_POINT_RADIUS_PIXELS = 8;
     const PATH_EDIT_PROXY_LINE_WIDTH_PIXELS = 5;
     const PATH_EDIT_NEW_PATH_RADIUS_PERCENT = 5;
@@ -165,15 +164,8 @@
                                                      singlePointerEvent.last.x,
                                                      singlePointerEvent.last.y );
 
-        var distanceX = Math.abs( singlePointerEvent.last.x - singlePointerEvent.start.x );
-        var distanceY = Math.abs( singlePointerEvent.last.y - singlePointerEvent.start.y );
-
-        if ( ! gDragData.isDragging
-             && distanceX <= CURSOR_MOVEMENT_THRESHOLD_PIXELS
-             && distanceY <= CURSOR_MOVEMENT_THRESHOLD_PIXELS ) {
-            return true;
-        }
-
+        /* The event listeners only dispatch moves once the gesture has
+           left tap slop, so any move reaching here is a real drag. */
         gDragData.isDragging = true;
         gSvgPathEditData.dragProxyPoint = gDragData.proxyPoint;
 
