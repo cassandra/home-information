@@ -280,6 +280,12 @@ PIPELINE = {
             ),
             'output_filename': 'css/css_location_svg_edit.css',
         },
+        'css_onscreen_keyboard': {
+            'source_filenames': (
+                'css/simple-keyboard-3.8.206.css',
+            ),
+            'output_filename': 'css/css_onscreen_keyboard.css',
+        },
     },
     'JAVASCRIPT': {
         'js_before_content': {
@@ -343,6 +349,12 @@ PIPELINE = {
                 'js/svg-bg-event-listeners.js',
             ),
             'output_filename': 'js/js_location_svg_edit.js',
+        },
+        'js_onscreen_keyboard': {
+            'source_filenames': (
+                'js/simple-keyboard-3.8.206.min.js',
+            ),
+            'output_filename': 'js/js_onscreen_keyboard.js',
         },
     }
 }

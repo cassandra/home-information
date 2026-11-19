@@ -32,6 +32,18 @@ def device_requires_attrs( *capability_names, handlers = '' ):
     )
 
 
+@register.simple_tag( takes_context = True )
+def device_capability_available( context, capability_name ):
+    """
+    Usage: {% device_capability_available 'keyboard' as has_keyboard %}
+
+    For gating markup or assets on what the device has. The name is the
+    external vocabulary of DeviceCapabilitiesCodec; unknown names fail.
+    """
+    capability = _resolve_names( [ capability_name ], DeviceCapabilitiesCodec.NAME_TO_CAPABILITY )[ 0 ]
+    return context[ 'device_capabilities' ].is_available( capability )
+
+
 def _resolve_names( names : List[ str ], name_to_value : Dict[ str, T ] ) -> List[ T ]:
     unknown_names = [ name for name in names if name not in name_to_value ]
     if unknown_names:
