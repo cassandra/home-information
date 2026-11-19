@@ -35,7 +35,7 @@ Background Image
 
   <a href="{% url 'location_edit_svg_replace' location_id=location.id %}"
      class="btn btn-outline-primary btn-block text-start p-3" role="button"
-     data-async="true">
+     data-async="true" {{ DIVID.DEVICE_REQUIRES_ATTR }}="local_files">
     <div class="d-flex align-items-center">
       {% icon "upload" size="xl" %}
       <div class="pl-3 text-left">
