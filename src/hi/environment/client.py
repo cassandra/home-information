@@ -1,4 +1,4 @@
-from dataclasses import dataclass, asdict
+from dataclasses import asdict, dataclass, field
 import json
 
 
@@ -22,6 +22,7 @@ class ClientConfig:
     CONSOLE_UNLOCK_URL   : str = ''
     API_STATUS_POLLING_INTERVAL_MS : int = 3000
     LAYOUT_CHANGE_TIMESTAMP : str = ''
+    DEVICE_CAPABILITIES  : dict = field( default_factory = dict )
     
     def to_json_dict(self) -> dict:
         """

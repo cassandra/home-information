@@ -5,6 +5,7 @@ from hi.apps.security.security_manager import SecurityManager
 
 from .console_helper import ConsoleSettingsHelper
 from .constants import ConsoleConstants
+from .device_capabilities import DeviceCapabilities, DeviceCapabilitiesCodec
 from .views import ConsoleUnlockView
 
 
@@ -60,3 +61,42 @@ class ConsoleLockMiddleware:
 
     def process_response(self, request, response):
         return response
+
+
+class DeviceCapabilitiesMiddleware:
+    """
+    Attaches ``request.device_capabilities``. Capability query parameters
+    are accepted on any request so a kiosk launch URL can point at any
+    page; when present they are merged into the persisted cookie.
+    """
+
+    def __init__( self, get_response ):
+        self.get_response = get_response
+        return
+
+    def __call__( self, request ):
+        persisted = DeviceCapabilitiesCodec.from_cookie_value(
+            request.COOKIES.get( ConsoleConstants.DEVICE_CAPABILITIES_COOKIE_NAME )
+        )
+        declarations = DeviceCapabilitiesCodec.declarations_from_query_params( request.GET )
+        request.device_capabilities = persisted.with_declarations( declarations )
+
+        response = self.get_response( request )
+
+        if declarations:
+            self._persist( response, request.device_capabilities )
+        return response
+
+    def _persist( self, response, device_capabilities : DeviceCapabilities ):
+        cookie_name = ConsoleConstants.DEVICE_CAPABILITIES_COOKIE_NAME
+        if device_capabilities.is_default:
+            response.delete_cookie( cookie_name, samesite = 'Lax' )
+            return
+        response.set_cookie(
+            cookie_name,
+            DeviceCapabilitiesCodec.to_cookie_value( device_capabilities ),
+            max_age = ConsoleConstants.DEVICE_CAPABILITIES_COOKIE_MAX_AGE_SECS,
+            samesite = 'Lax',
+            httponly = True,
+        )
+        return
