@@ -8,6 +8,7 @@ class AuthenticationMiddleware:
 
     EXEMPT_VIEW_URL_NAMES = {
         'admin',
+        'console_device_capability_unavailable',
         'manifest',
         'user_signin',
         'user_signin_magic_code',

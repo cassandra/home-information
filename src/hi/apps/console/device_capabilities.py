@@ -1,5 +1,5 @@
 from dataclasses import dataclass, field
-from typing import Dict, Mapping, Optional
+from typing import Dict, Iterable, List, Mapping, Optional
 
 from .enums import DeviceCapability
 
@@ -75,6 +75,13 @@ class DeviceCapabilitiesCodec:
                 declarations[ capability ] = cls.VALUE_TO_AVAILABILITY[ value ]
             continue
         return declarations
+
+    @classmethod
+    def capabilities_from_names( cls, names : Iterable[ str ] ) -> List[ DeviceCapability ]:
+        """ Unrecognized names are ignored; order and uniqueness follow the enum. """
+        name_set = set( names )
+        return [ capability for capability, name in cls.CAPABILITY_TO_NAME.items()
+                 if name in name_set ]
 
     @classmethod
     def from_cookie_value( cls, cookie_value : Optional[ str ] ) -> DeviceCapabilities:

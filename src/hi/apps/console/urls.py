@@ -39,6 +39,10 @@ urlpatterns = [
          views.EntityVideoSensorHistoryLaterView.as_view(),
          name='console_entity_video_sensor_history_later'),
 
+    path( 'device/unavailable',
+          views.DeviceCapabilityUnavailableView.as_view(),
+          name='console_device_capability_unavailable'),
+
     path( 'lock', 
           views.ConsoleLockView.as_view(), 
           name='console_lock'),

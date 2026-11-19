@@ -289,6 +289,7 @@ PIPELINE = {
                 'js/antinode.js',
                 'js/autosize.min.js',
                 'js/main.js',
+                'js/device.js',
                 'js/entity_state_status.js',
                 'state_panels/fallback/fallback.js',
             ),

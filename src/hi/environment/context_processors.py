@@ -42,6 +42,7 @@ def _build_client_config( request ) -> ClientConfig:
         SVG_SNAP_GRID_PIXELS = request.view_parameters.svg_snap_grid_pixels,
         API_STATUS_URL = reverse( 'api_status' ),
         CONSOLE_UNLOCK_URL = reverse( 'console_unlock' ),
+        DEVICE_CAPABILITY_UNAVAILABLE_URL = reverse( 'console_device_capability_unavailable' ),
         API_STATUS_POLLING_INTERVAL_MS = ConsoleSettingsHelper().get_status_polling_interval_ms(),
         LAYOUT_CHANGE_TIMESTAMP = ConsoleManager().get_layout_change_timestamp() or '',
         DEVICE_CAPABILITIES = DeviceCapabilitiesCodec.to_client_dict( request.device_capabilities ),
