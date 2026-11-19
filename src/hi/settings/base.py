@@ -146,6 +146,7 @@ MIDDLEWARE = [
     'hi.middleware.NoStoreMiddleware',
     'hi.middleware.ExceptionMiddleware',
     'hi.middleware.ViewMiddleware',
+    'hi.apps.console.middleware.DeviceCapabilitiesMiddleware',
     'hi.apps.console.middleware.ConsoleLockMiddleware',
     'hi.apps.user.middleware.AuthenticationMiddleware',
 ]
@@ -166,6 +167,7 @@ TEMPLATES = [
                 'hi.context_processors.constants_context',
                 'hi.environment.context_processors.client_config',
                 'hi.apps.console.context_processors.settings_context',
+                'hi.apps.console.context_processors.device_capabilities_context',
                 'hi.apps.audio.context_processors.audio_context',
                 'hi.apps.profiles.context_processors.profiles_context',
             ],
@@ -287,6 +289,7 @@ PIPELINE = {
                 'js/antinode.js',
                 'js/autosize.min.js',
                 'js/main.js',
+                'js/device.js',
                 'js/entity_state_status.js',
                 'state_panels/fallback/fallback.js',
             ),

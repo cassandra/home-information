@@ -1,4 +1,5 @@
 {% load static integration_tags %}
+{% load device_tags %}
 {% integration_logo_path entity as integration_logo %}
 {% integration_display_name entity as integration_name %}
 
@@ -12,7 +13,6 @@
   {% if view_data.deep_link_url %}
   <a class="btn btn-sm btn-outline-primary ml-auto"
      href="{{ view_data.deep_link_url }}"
-     target="_blank"
-     rel="noopener noreferrer">Open in {{ integration_name }} &rarr;</a>
+     {% external_link_attrs %}>Open in {{ integration_name }} &rarr;</a>
   {% endif %}
 </div>

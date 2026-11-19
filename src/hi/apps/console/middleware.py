@@ -5,6 +5,7 @@ from hi.apps.security.security_manager import SecurityManager
 
 from .console_helper import ConsoleSettingsHelper
 from .constants import ConsoleConstants
+from .device_capabilities import DeviceCapabilitiesCookie
 from .views import ConsoleUnlockView
 
 
@@ -12,6 +13,7 @@ class ConsoleLockMiddleware:
 
     EXCLUDED_PATHS = [
         reverse('console_unlock'),
+        reverse('console_device_capabilities'),
         reverse('api_status' ),
     ]
 
@@ -60,3 +62,19 @@ class ConsoleLockMiddleware:
 
     def process_response(self, request, response):
         return response
+
+
+class DeviceCapabilitiesMiddleware:
+    """
+    Attaches ``request.device_capabilities`` from the persisted cookie.
+    Read-only: capabilities are declared only through
+    DeviceCapabilitiesView, the dedicated kiosk entry point.
+    """
+
+    def __init__( self, get_response ):
+        self.get_response = get_response
+        return
+
+    def __call__( self, request ):
+        request.device_capabilities = DeviceCapabilitiesCookie.read( request )
+        return self.get_response( request )

@@ -60,7 +60,8 @@
         {% icon "undo" size="sm" css_class="hi-icon-left" %}REVERT
       </a>
       <a href="{% url 'location_svg_edit_export' location_id=location.id %}"
-         class="btn btn-sm btn-outline-primary text-nowrap mx-1" role="button">
+         class="btn btn-sm btn-outline-primary text-nowrap mx-1" role="button"
+         {{ DIVID.DEVICE_REQUIRES_ATTR }}="local_files">
         {% icon "download" size="sm" css_class="hi-icon-left" %}EXPORT
       </a>
       <a href="{% url 'location_svg_edit_help' %}"

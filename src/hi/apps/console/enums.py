@@ -12,6 +12,21 @@ class DisplayUnits(LabeledEnum):
     METRIC    = ( 'Metric', '' )
 
 
+class DeviceCapability(LabeledEnum):
+    """
+    Independent capabilities of the client device. Each describes the
+    device; none instructs the server. The description is the
+    user-facing reason shown when an action needs a missing capability.
+    """
+
+    KEYBOARD     = ( 'Keyboard',
+                     'This device has no keyboard for typing.' )
+    BROWSER_NAV  = ( 'Browser Navigation',
+                     'This device cannot open or return from other browser pages or tabs.' )
+    LOCAL_FILES  = ( 'Local Files',
+                     'This device has no user files to choose from or save to.' )
+
+
 class VideoDispatchType(LabeledEnum):
     """
     Enum for video dispatch navigation types.

@@ -140,25 +140,6 @@ def hash_with_seed( value : str ):
     return m.hexdigest()
 
 
-REPLACE_URL_REGEX = re.compile( r"((https?):((//)|(\\\\))+[\w\d:#@%/;$()~_?\+-=\\\.&]*)",
-                                re.MULTILINE | re.UNICODE )
-
-
-def replace_url_text_with_html_anchor( value : str, use_link_text : bool = True ):
-    if not value:
-        return value
-    try:
-        if use_link_text:
-            value = REPLACE_URL_REGEX.sub(r'<a href="\1" target="_blank">LINK</a>', value)
-        else:
-            value = REPLACE_URL_REGEX.sub(r'<a href="\1" target="_blank">\1</a>', value)
-        return value
-    
-    except Exception:
-        # We never want this to fail and do not care that much if it does.
-        return value
-
-    
 def get_url_top_level_domain( url_str : str, default_value : str = None ):
 
     hostname = urllib_parse.urlparse( url_str ).hostname

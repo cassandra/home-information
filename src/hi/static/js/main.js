@@ -16,6 +16,11 @@
         // Server-provided URLs (via ClientConfig context processor)
         API_STATUS_URL: window.HiClientConfig?.API_STATUS_URL ?? '/api/status',
         CONSOLE_UNLOCK_URL: window.HiClientConfig?.CONSOLE_UNLOCK_URL ?? '/console/unlock',
+        DEVICE_CAPABILITY_UNAVAILABLE_URL: window.HiClientConfig?.DEVICE_CAPABILITY_UNAVAILABLE_URL ?? '/console/device/unavailable',
+
+        // Device capabilities by external name (e.g. 'local_files'). Names
+        // not listed are available. Consumed via Hi.device (device.js).
+        deviceCapabilities: window.HiClientConfig?.DEVICE_CAPABILITIES ?? {},
 
         // Status polling cadence (ms), user-configurable via ConsoleSetting.
         API_STATUS_POLLING_INTERVAL_MS: window.HiClientConfig?.API_STATUS_POLLING_INTERVAL_MS ?? 3000,
@@ -242,7 +247,11 @@
         EXT_REF_TITLE_FIELD:                 'title',
         EXT_REF_DIRECTION_FIELD:             'direction',
         EXT_REF_DIRECTION_LEFT:              'left',
-        EXT_REF_DIRECTION_RIGHT:             'right'
+        EXT_REF_DIRECTION_RIGHT:             'right',
+
+        // Device capabilities -- mirrors DEVICE_* keys in hi.constants.DIVID.
+        DEVICE_REQUIRES_ATTR:                'data-requires',
+        DEVICE_REQUIRES_FIELD:               'requires'
     };
     
     window.Hi = Hi;

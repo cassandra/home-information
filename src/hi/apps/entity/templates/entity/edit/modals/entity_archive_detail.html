@@ -1,5 +1,6 @@
 {% extends "modals/action_done.html" %}
 {% load icons %}
+{% load device_tags %}
 
 {% block modal_dialog_class %}hi-modal-dialog-700{% endblock %}
 
@@ -31,7 +32,7 @@
     {% if attribute.value_type.is_file %}
       {% if attribute.file_value %}
       <div class="mt-1">
-        <a href="{{ attribute.file_value.url }}" target="_blank" rel="noopener noreferrer"
+        <a href="{{ attribute.file_value.url }}" {% external_link_attrs %}
            class="btn btn-sm btn-outline-primary">
           {% icon "eye" size="sm" css_class="hi-icon-left" %}View File
         </a>

@@ -1,4 +1,5 @@
 {% load icons %}
+{% load device_tags %}
 {% comment %}
 Result-cards partial returned by the search endpoint and swapped
 into the picker's results container by external-reference-picker.js. Each card
@@ -58,7 +59,7 @@ Context:
       {% if r.snippet %}
       <div class="small text-muted text-truncate">{{ r.snippet }}</div>
       {% endif %}
-      <a href="{{ r.source_url }}" target="_blank" rel="noopener"
+      <a href="{{ r.source_url }}" {% external_link_attrs %}
          class="small text-truncate d-block hi-ref-picker-source-link"
          onclick="event.stopPropagation();">
         {{ r.source_url }}

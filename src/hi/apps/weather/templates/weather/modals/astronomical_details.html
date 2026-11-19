@@ -1,4 +1,5 @@
 {% extends "modals/action_done.html" %}
+{% load device_tags %}
 
 {% block modal_dialog_class %}hi-modal-dialog-600{% endblock %}
 
@@ -19,12 +20,12 @@ Astronomical
 <div class="text-muted small mt-3">
     {% if has_sunrise_sunset_attribution %}
     <p class="mb-0">
-        Some data provided by <a href="https://sunrise-sunset.org/" target="_blank" rel="noopener">Sunrise-Sunset.org</a>
+        Some data provided by <a href="https://sunrise-sunset.org/" {% external_link_attrs %}>Sunrise-Sunset.org</a>
     </p>
     {% endif %}
     {% if has_usno_attribution %}
     <p class="mb-0">
-        Some data provided by <a href="https://aa.usno.navy.mil/" target="_blank" rel="noopener">US Naval Observatory</a>
+        Some data provided by <a href="https://aa.usno.navy.mil/" {% external_link_attrs %}>US Naval Observatory</a>
     </p>
     {% endif %}
 </div>

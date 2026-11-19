@@ -1,5 +1,6 @@
 from django.core.exceptions import BadRequest
-from django.http import Http404, HttpRequest
+from django.http import Http404, HttpRequest, HttpResponseRedirect
+from django.urls import reverse
 from django.views.generic import View
 from datetime import datetime
 from django.utils import timezone
@@ -8,12 +9,14 @@ from hi.apps.entity.view_mixins import EntityViewMixin
 from hi.apps.sense.models import Sensor
 from hi.apps.sense.view_mixins import SenseViewMixin
 
+from hi.constants import DIVID
 from hi.enums import ViewType
 from hi.hi_async_view import HiModalView
 from hi.hi_grid_view import HiGridView
 
 from .constants import ConsoleConstants
 from .console_helper import ConsoleSettingsHelper
+from .device_capabilities import DeviceCapabilitiesCodec, DeviceCapabilitiesCookie
 from .enums import VideoDispatchType
 from .video_stream_browsing_helper import VideoStreamBrowsingHelper
 
@@ -264,3 +267,37 @@ class ConsoleUnlockView( HiModalView ):
 
         request.session[ConsoleConstants.CONSOLE_LOCKED_SESSION_VAR] = False
         return self.refresh_response( request= request )
+
+
+class DeviceCapabilitiesView( View ):
+    """
+    Kiosk entry point for declaring device capabilities via query
+    parameters (e.g. ?keyboard=none&browser_nav=none). Each declared
+    capability is merged into the persisted cookie independently; others
+    keep their values. Exempt from authentication and console lock so a
+    signed-out or locked device can still be configured.
+    """
+
+    def get( self, request, *args, **kwargs ):
+        declarations = DeviceCapabilitiesCodec.declarations_from_query_params( request.GET )
+        device_capabilities = request.device_capabilities.with_declarations( declarations )
+        response = HttpResponseRedirect( reverse( 'home' ))
+        if declarations:
+            DeviceCapabilitiesCookie.write( response, device_capabilities )
+        return response
+
+
+class DeviceCapabilityUnavailableView( HiModalView ):
+    """ Explains why an action needing missing device capabilities was blocked. """
+
+    def get_template_name( self ) -> str:
+        return 'console/modals/device_capability_unavailable.html'
+
+    def get( self, request, *args, **kwargs ):
+        capabilities = DeviceCapabilitiesCodec.capabilities_from_names(
+            request.GET.getlist( DIVID['DEVICE_REQUIRES_FIELD'] )
+        )
+        context = {
+            'capabilities': capabilities,
+        }
+        return self.modal_response( request, context = context )

@@ -5,6 +5,8 @@ from django import template
 from django.utils.html import escape, format_html
 from django.utils.safestring import mark_safe
 
+from hi.apps.console.device_markup import external_link_attrs
+
 register = template.Library()
 
 # Schemes are split by URI shape so both the validator and the
@@ -336,8 +338,9 @@ def attribute_text_linkify(value):
 
         rendered_parts.append(
             format_html(
-                '<a href="{}" target="_blank" rel="noopener noreferrer">{}</a>',
+                '<a href="{}" {}>{}</a>',
                 valid_url,
+                external_link_attrs(),
                 valid_url,
             )
         )

@@ -94,6 +94,7 @@ by using the AttributeItemEditContext pattern.
         {% block file_upload_button %}
         <button type="button"
                 class="btn btn-sm btn-outline-primary mb-0"
+                {{ DIVID.DEVICE_REQUIRES_ATTR }}="local_files"
                 onclick="window.Hi.attr.showAddFile(this, '{{ attr_item_context.file_input_html_id }}');">
           {% icon "upload" size="sm" css_class="hi-icon-left" %}Add File
         </button>
