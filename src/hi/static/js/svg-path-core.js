@@ -76,6 +76,13 @@
             gConfig = $.extend( {}, DEFAULT_CONFIG, config );
         },
 
+        /* Called for every new gesture, whichever module claims it. A
+           touch drag produces no trailing click, so suppression armed by
+           the previous drag must not outlive it and eat a later tap. */
+        handlePointerGestureStart: function() {
+            gIgnoreClick = false;
+        },
+
         handleSinglePointerEventStart: function( singlePointerEvent ) {
             return _handleSinglePointerEventStart( singlePointerEvent );
         },

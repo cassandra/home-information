@@ -264,6 +264,7 @@
 	}
 
 	if (( initialActivePointersSize === 0 ) && ( currentActivePointersSize === 1 )) {
+	    dispatchPointerGestureStart();
 	    gCurrentSingleEvent = new SinglePointerEvent( event );
 	    dispatchSinglePointerEventStart( event, gCurrentSingleEvent );
 	    
@@ -402,6 +403,15 @@
     function dispatchLastPointerPosition( x, y ) {
 	Hi.edit.icon.handleLastPointerLocation( x, y );
 	Hi.location.handleLastPointerLocation( x, y );
+    }
+
+    // Broadcast (not a first-claim chain): every module must hear that a
+    // new gesture began, even one that won't claim it, so each can drop
+    // per-gesture state left over from the previous gesture.
+    function dispatchPointerGestureStart() {
+	Hi.edit.icon.handlePointerGestureStart();
+	Hi.edit.path.handlePointerGestureStart();
+	Hi.location.handlePointerGestureStart();
     }
     
     function dispatchSinglePointerEventStart( currentEvent, singlePointerEvent ) {

@@ -187,6 +187,7 @@
         }
 
         if ( initialSize === 0 && currentSize === 1 ) {
+            dispatchPointerGestureStart();
             gCurrentSingleEvent = new SinglePointerEvent( event );
             dispatchSinglePointerEventStart( event, gCurrentSingleEvent );
 
@@ -279,6 +280,15 @@
         Hi.SvgIconCore.handleLastPointerLocation( x, y );
         Hi.SvgPanZoomCore.handleLastPointerLocation( x, y );
         /* Future: path-core position tracking */
+    }
+
+    /* Broadcast (not a first-claim chain): every core must hear that a
+       new gesture began, even one that won't claim it, so each can drop
+       per-gesture state left over from the previous gesture. */
+    function dispatchPointerGestureStart() {
+        Hi.SvgIconCore.handlePointerGestureStart();
+        Hi.SvgPathCore.handlePointerGestureStart();
+        Hi.SvgPanZoomCore.handlePointerGestureStart();
     }
 
     function dispatchSinglePointerEventStart( currentEvent, singlePointerEvent ) {

@@ -79,6 +79,9 @@
 
         },
 
+        handlePointerGestureStart: function() {
+            Hi.SvgIconCore.handlePointerGestureStart();
+        },
         handleSinglePointerEventStart: function( singlePointerEvent ) {
             if ( ! Hi.isEditMode ) { return false; }
             return Hi.SvgIconCore.handleSinglePointerEventStart( singlePointerEvent );
@@ -183,6 +186,9 @@
 
         },
 
+        handlePointerGestureStart: function() {
+            Hi.SvgPathCore.handlePointerGestureStart();
+        },
         handleSinglePointerEventStart: function( singlePointerEvent ) {
             if ( ! Hi.isEditMode ) { return false; }
             return Hi.SvgPathCore.handleSinglePointerEventStart( singlePointerEvent );
@@ -299,6 +305,9 @@
             });
         },
 
+        handlePointerGestureStart: function() {
+            Hi.SvgPanZoomCore.handlePointerGestureStart();
+        },
         handleSinglePointerEventStart: function( singlePointerEvent ) {
             return Hi.SvgPanZoomCore.handleSinglePointerEventStart(
                 singlePointerEvent.start.event );
