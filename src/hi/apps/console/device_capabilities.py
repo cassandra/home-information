@@ -4,7 +4,7 @@ from typing import Dict, Iterable, List, Mapping, Optional
 from django.http import HttpRequest, HttpResponse
 
 from .constants import ConsoleConstants
-from .enums import DeviceCapability
+from .enums import DeviceCapability, DeviceRequirementHandler
 
 
 @dataclass( frozen = True )
@@ -40,9 +40,10 @@ class DeviceCapabilities:
 
 class DeviceCapabilitiesCodec:
     """
-    The external vocabulary for capabilities, shared by URL query
-    parameters, the persisted cookie and the JavaScript client. All
-    conversions go through these explicit tables.
+    The external vocabulary for capabilities and requirement handlers,
+    shared by URL query parameters, the persisted cookie, template markup
+    and the JavaScript client. All conversions go through these explicit
+    tables.
     """
 
     CAPABILITY_TO_NAME = {
@@ -51,6 +52,11 @@ class DeviceCapabilitiesCodec:
         DeviceCapability.LOCAL_FILES  : 'local_files',
     }
     NAME_TO_CAPABILITY = { name: capability for capability, name in CAPABILITY_TO_NAME.items() }
+
+    HANDLER_TO_NAME = {
+        DeviceRequirementHandler.ON_SCREEN_KEYBOARD : 'on-screen-keyboard',
+    }
+    NAME_TO_HANDLER = { name: handler for handler, name in HANDLER_TO_NAME.items() }
 
     # None means "clear back to default".
     VALUE_TO_AVAILABILITY = {

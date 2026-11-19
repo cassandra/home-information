@@ -27,6 +27,17 @@ class DeviceCapability(LabeledEnum):
                      'This device has no user files to choose from or save to.' )
 
 
+class DeviceRequirementHandler(LabeledEnum):
+    """
+    In-app substitutes for a missing device capability. Markup names the
+    handlers an element supports; a handler loaded on the client meets
+    the requirement instead of the action being blocked.
+    """
+
+    ON_SCREEN_KEYBOARD  = ( 'On-Screen Keyboard',
+                            'Types into the field with an in-app keyboard.' )
+
+
 class VideoDispatchType(LabeledEnum):
     """
     Enum for video dispatch navigation types.
