@@ -41,6 +41,7 @@ tag in attribute_extras.py.
   
   <!-- File Preview/Thumbnail Area -->
   <div class="attr-v2-file-thumbnail{% if attribute.has_thumbnail %} has-thumbnail{% endif %}{% if attribute.file_mime_type == 'application/pdf' %} is-document{% endif %}" 
+       {{ DIVID.DEVICE_REQUIRES_ATTR }}="browser_nav"
        onclick="window.open('{{ attribute.file_value.url }}', '_blank');" 
        title="Tap to view file">
     {% if attribute.has_thumbnail and attribute.thumbnail_url %}
@@ -103,6 +104,7 @@ tag in attribute_extras.py.
     </button>
     <button type="button"
             class="btn btn-sm btn-outline-primary"
+            {{ DIVID.DEVICE_REQUIRES_ATTR }}="browser_nav"
             onclick="window.open('{{ attribute.file_value.url }}', '_blank');"
             title="View file">
       {% icon "eye" size="xl" %}

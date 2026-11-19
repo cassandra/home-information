@@ -1,5 +1,6 @@
 {% extends "attribute/components/edit_content_body.html" %}
 {% load icons %}
+{% load device_tags %}
 {% load integration_tags %}
 {% comment %}
 Entity V2 Content Body Fragment
@@ -18,8 +19,7 @@ Extends the generic attribute edit content body with entity-specific field layou
 {% if external_view_data and external_view_data.deep_link_url %}
 {% integration_display_name attr_item_context.owner as deep_link_label %}
 <a href="{{ external_view_data.deep_link_url }}"
-   target="_blank"
-   rel="noopener noreferrer"
+   {% external_link_attrs %}
    class="btn btn-sm btn-outline-primary mb-0">
   Open in {{ deep_link_label|default:"source" }} &rarr;
 </a>

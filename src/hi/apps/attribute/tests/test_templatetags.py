@@ -233,8 +233,8 @@ class TestAttributeTextUrlFilters(TestCase):
             "See https://example.com and https://example.org/path?q=1 for details"
         )
 
-        self.assertIn('<a href="https://example.com" target="_blank" rel="noopener noreferrer">https://example.com</a>', rendered)
-        self.assertIn('<a href="https://example.org/path?q=1" target="_blank" rel="noopener noreferrer">https://example.org/path?q=1</a>', rendered)
+        self.assertIn('<a href="https://example.com" target="_blank" rel="noopener noreferrer" data-requires="browser_nav">https://example.com</a>', rendered)
+        self.assertIn('<a href="https://example.org/path?q=1" target="_blank" rel="noopener noreferrer" data-requires="browser_nav">https://example.org/path?q=1</a>', rendered)
 
     def test_attribute_text_linkify_preserves_newlines_with_br(self):
         rendered = attribute_text_linkify("Line 1\nhttps://example.com\nLine 3")
@@ -248,12 +248,12 @@ class TestAttributeTextUrlFilters(TestCase):
 
     def test_attribute_text_linkify_keeps_trailing_punctuation_outside_link(self):
         rendered = attribute_text_linkify('Read this (https://example.com/docs).')
-        self.assertIn('<a href="https://example.com/docs" target="_blank" rel="noopener noreferrer">https://example.com/docs</a>).', rendered)
+        self.assertIn('<a href="https://example.com/docs" target="_blank" rel="noopener noreferrer" data-requires="browser_nav">https://example.com/docs</a>).', rendered)
 
     def test_attribute_text_linkify_keeps_multiple_trailing_punctuation_outside_link(self):
         rendered = attribute_text_linkify('Open https://example.com/path), right now!')
         self.assertIn(
-            '<a href="https://example.com/path" target="_blank" rel="noopener noreferrer">https://example.com/path</a>),',
+            '<a href="https://example.com/path" target="_blank" rel="noopener noreferrer" data-requires="browser_nav">https://example.com/path</a>),',
             rendered,
         )
 
@@ -262,12 +262,12 @@ class TestAttributeTextUrlFilters(TestCase):
             'Intranet: http://cassandra:4100/documents/8/details/ and public: https://example.com'
         )
         self.assertIn(
-            '<a href="http://cassandra:4100/documents/8/details/" target="_blank" rel="noopener noreferrer">'
+            '<a href="http://cassandra:4100/documents/8/details/" target="_blank" rel="noopener noreferrer" data-requires="browser_nav">'
             'http://cassandra:4100/documents/8/details/</a>',
             rendered,
         )
         self.assertIn(
-            '<a href="https://example.com" target="_blank" rel="noopener noreferrer">https://example.com</a>',
+            '<a href="https://example.com" target="_blank" rel="noopener noreferrer" data-requires="browser_nav">https://example.com</a>',
             rendered,
         )
 
@@ -279,7 +279,7 @@ class TestAttributeTextUrlFilters(TestCase):
         template = Template(template_str)
 
         rendered = template.render(Context({'value': 'See https://example.com'}))
-        self.assertIn('<a href="https://example.com" target="_blank" rel="noopener noreferrer">', rendered)
+        self.assertIn('<a href="https://example.com" target="_blank" rel="noopener noreferrer" data-requires="browser_nav">', rendered)
         self.assertNotIn('&lt;a href=', rendered)
 
     def test_attribute_text_has_url_detects_path_only_schemes(self):
@@ -305,19 +305,19 @@ class TestAttributeTextUrlFilters(TestCase):
             "text sms:+15551234567, stream rtsp://10.0.0.1:554/live"
         )
         self.assertIn(
-            '<a href="mailto:foo@bar.com" target="_blank" rel="noopener noreferrer">mailto:foo@bar.com</a>',
+            '<a href="mailto:foo@bar.com" target="_blank" rel="noopener noreferrer" data-requires="browser_nav">mailto:foo@bar.com</a>',
             rendered,
         )
         self.assertIn(
-            '<a href="tel:+15551234567" target="_blank" rel="noopener noreferrer">tel:+15551234567</a>',
+            '<a href="tel:+15551234567" target="_blank" rel="noopener noreferrer" data-requires="browser_nav">tel:+15551234567</a>',
             rendered,
         )
         self.assertIn(
-            '<a href="sms:+15551234567" target="_blank" rel="noopener noreferrer">sms:+15551234567</a>',
+            '<a href="sms:+15551234567" target="_blank" rel="noopener noreferrer" data-requires="browser_nav">sms:+15551234567</a>',
             rendered,
         )
         self.assertIn(
-            '<a href="rtsp://10.0.0.1:554/live" target="_blank" rel="noopener noreferrer">rtsp://10.0.0.1:554/live</a>',
+            '<a href="rtsp://10.0.0.1:554/live" target="_blank" rel="noopener noreferrer" data-requires="browser_nav">rtsp://10.0.0.1:554/live</a>',
             rendered,
         )
 
@@ -332,7 +332,7 @@ class TestAttributeTextUrlFilters(TestCase):
         # links has to work for mailto / tel / sms too.
         rendered = attribute_text_linkify("Reach me at mailto:foo@bar.com, anytime.")
         self.assertIn(
-            '<a href="mailto:foo@bar.com" target="_blank" rel="noopener noreferrer">mailto:foo@bar.com</a>,',
+            '<a href="mailto:foo@bar.com" target="_blank" rel="noopener noreferrer" data-requires="browser_nav">mailto:foo@bar.com</a>,',
             rendered,
         )
 

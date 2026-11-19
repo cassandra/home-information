@@ -1,4 +1,5 @@
 {% load icons integration_tags static %}
+{% load device_tags %}
 {% comment %}
 External-reference card. Visually mirrors the internal file card
 (same overlay reorder controls, title input, action-button row)
@@ -33,6 +34,7 @@ Context:
   {# literal and a crafted URL can break out of the quotes. #}
   <div class="attr-v2-file-thumbnail{% if reference.thumbnail %} has-thumbnail{% endif %}"
        {{ DIVID.EXT_REF_SOURCE_URL_ATTR }}="{{ reference.source_url }}"
+       {{ DIVID.DEVICE_REQUIRES_ATTR }}="browser_nav"
        title="Open on {{ integration_label|default:'external source' }}">
     {% if reference.thumbnail %}
       <img src="{{ reference.thumbnail.url }}"
@@ -83,8 +85,7 @@ Context:
         {% icon "chevron-left" size="md" %}
       </button>
       <a href="{{ reference.source_url }}"
-         target="_blank"
-         rel="noopener"
+         {% external_link_attrs %}
          class="btn btn-sm btn-outline-primary"
          title="Open on {{ integration_label|default:'external source' }}">
         {% if integration_logo %}
