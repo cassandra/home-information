@@ -28,10 +28,14 @@
 
         hooks.afterEach(function() {
             Hi.deviceCapabilities = originalCapabilities;
-            window.AN.get = originalAnGet;
+            if ( originalAnGet === undefined ) {
+                delete window.AN.get;
+            } else {
+                window.AN.get = originalAnGet;
+            }
         });
 
-        function clickRequiring( requiresValue ) {
+        function clickRequiring( requiresValue, eventType = 'click', mouseButton = 0 ) {
             const fixture = document.getElementById( 'qunit-fixture' );
             const button = document.createElement( 'button' );
             const inner = document.createElement( 'span' );
@@ -40,9 +44,9 @@
             fixture.appendChild( button );
 
             let actionRan = false;
-            button.addEventListener( 'click', function() { actionRan = true; } );
+            button.addEventListener( eventType, function() { actionRan = true; } );
             const notCanceled = inner.dispatchEvent(
-                new MouseEvent( 'click', { bubbles: true, cancelable: true } )
+                new MouseEvent( eventType, { bubbles: true, cancelable: true, button: mouseButton } )
             );
             return { actionRan: actionRan, defaultPrevented: ! notCanceled };
         }
@@ -66,7 +70,18 @@
             assert.ok( result.defaultPrevented, 'default action prevented' );
             assert.equal( requestedUrls.length, 1, 'one modal request' );
             assert.equal( requestedUrls[0],
-                          Hi.DEVICE_CAPABILITY_UNAVAILABLE_URL + '?requires=local_files' );
+                          Hi.DEVICE_CAPABILITY_UNAVAILABLE_URL
+                          + '?' + Hi.DEVICE_REQUIRES_FIELD + '=local_files' );
+        });
+
+        QUnit.test('middle-click is blocked but right-click is not', function(assert) {
+            const middle = clickRequiring( 'local_files', 'auxclick', 1 );
+            assert.notOk( middle.actionRan, 'middle-click blocked' );
+            assert.equal( requestedUrls.length, 1, 'modal requested for middle-click' );
+
+            const right = clickRequiring( 'local_files', 'auxclick', 2 );
+            assert.ok( right.actionRan, 'right-click not blocked' );
+            assert.equal( requestedUrls.length, 1, 'no modal for right-click' );
         });
 
         QUnit.test('click proceeds when all required capabilities are present', function(assert) {

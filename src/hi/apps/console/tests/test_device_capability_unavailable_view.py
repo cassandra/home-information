@@ -3,6 +3,7 @@ import logging
 from django.urls import reverse
 
 from hi.apps.console.enums import DeviceCapability
+from hi.constants import DIVID
 from hi.testing.view_test_base import DualModeViewTestCase
 
 logging.disable( logging.CRITICAL )
@@ -12,7 +13,7 @@ class TestDeviceCapabilityUnavailableView( DualModeViewTestCase ):
 
     def _get_modal_html( self, requires ):
         url = reverse( 'console_device_capability_unavailable' )
-        response = self.async_get( url, { 'requires': requires } )
+        response = self.async_get( url, { DIVID['DEVICE_REQUIRES_FIELD']: requires } )
         self.assertSuccessResponse( response )
         return response.json()[ 'modal' ]
 

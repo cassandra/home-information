@@ -1,5 +1,6 @@
 from django.core.exceptions import BadRequest
-from django.http import Http404, HttpRequest
+from django.http import Http404, HttpRequest, HttpResponseRedirect
+from django.urls import reverse
 from django.views.generic import View
 from datetime import datetime
 from django.utils import timezone
@@ -15,7 +16,7 @@ from hi.hi_grid_view import HiGridView
 
 from .constants import ConsoleConstants
 from .console_helper import ConsoleSettingsHelper
-from .device_capabilities import DeviceCapabilitiesCodec
+from .device_capabilities import DeviceCapabilitiesCodec, DeviceCapabilitiesCookie
 from .enums import VideoDispatchType
 from .video_stream_browsing_helper import VideoStreamBrowsingHelper
 
@@ -266,6 +267,24 @@ class ConsoleUnlockView( HiModalView ):
 
         request.session[ConsoleConstants.CONSOLE_LOCKED_SESSION_VAR] = False
         return self.refresh_response( request= request )
+
+
+class DeviceCapabilitiesView( View ):
+    """
+    Kiosk entry point for declaring device capabilities via query
+    parameters (e.g. ?keyboard=none&browser_nav=none). Each declared
+    capability is merged into the persisted cookie independently; others
+    keep their values. Exempt from authentication and console lock so a
+    signed-out or locked device can still be configured.
+    """
+
+    def get( self, request, *args, **kwargs ):
+        declarations = DeviceCapabilitiesCodec.declarations_from_query_params( request.GET )
+        device_capabilities = request.device_capabilities.with_declarations( declarations )
+        response = HttpResponseRedirect( reverse( 'home' ))
+        if declarations:
+            DeviceCapabilitiesCookie.write( response, device_capabilities )
+        return response
 
 
 class DeviceCapabilityUnavailableView( HiModalView ):

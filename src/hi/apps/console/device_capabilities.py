@@ -1,6 +1,9 @@
 from dataclasses import dataclass, field
 from typing import Dict, Iterable, List, Mapping, Optional
 
+from django.http import HttpRequest, HttpResponse
+
+from .constants import ConsoleConstants
 from .enums import DeviceCapability
 
 
@@ -59,6 +62,7 @@ class DeviceCapabilitiesCodec:
         False : 'none',
         True  : 'present',
     }
+    PERSISTED_VALUES = frozenset( AVAILABILITY_TO_VALUE.values() )
 
     COOKIE_ENTRY_SEPARATOR = '|'
     COOKIE_PAIR_SEPARATOR = ':'
@@ -91,7 +95,7 @@ class DeviceCapabilitiesCodec:
             for entry in cookie_value.split( cls.COOKIE_ENTRY_SEPARATOR ):
                 name, _, value = entry.partition( cls.COOKIE_PAIR_SEPARATOR )
                 capability = cls.NAME_TO_CAPABILITY.get( name )
-                if capability and ( value in cls.AVAILABILITY_TO_VALUE.values() ):
+                if capability and ( value in cls.PERSISTED_VALUES ):
                     declared[ capability ] = cls.VALUE_TO_AVAILABILITY[ value ]
                 continue
         return DeviceCapabilities( declared = declared )
@@ -112,3 +116,31 @@ class DeviceCapabilitiesCodec:
             name: device_capabilities.is_available( capability )
             for capability, name in cls.CAPABILITY_TO_NAME.items()
         }
+
+
+class DeviceCapabilitiesCookie:
+    """
+    Persistence of device capabilities. A cookie, not the session, since
+    capabilities must survive session loss: the sign-in page is where
+    they matter most.
+    """
+
+    NAME = ConsoleConstants.DEVICE_CAPABILITIES_COOKIE_NAME
+
+    @classmethod
+    def read( cls, request : HttpRequest ) -> DeviceCapabilities:
+        return DeviceCapabilitiesCodec.from_cookie_value( request.COOKIES.get( cls.NAME ))
+
+    @classmethod
+    def write( cls, response : HttpResponse, device_capabilities : DeviceCapabilities ):
+        if device_capabilities.is_default:
+            response.delete_cookie( cls.NAME, samesite = 'Lax' )
+            return
+        response.set_cookie(
+            cls.NAME,
+            DeviceCapabilitiesCodec.to_cookie_value( device_capabilities ),
+            max_age = ConsoleConstants.DEVICE_CAPABILITIES_COOKIE_MAX_AGE_SECS,
+            samesite = 'Lax',
+            httponly = True,
+        )
+        return

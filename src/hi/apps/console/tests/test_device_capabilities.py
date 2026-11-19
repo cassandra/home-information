@@ -1,13 +1,15 @@
 import logging
 from unittest.mock import Mock
 
-from django.http import HttpResponse, HttpResponseRedirect
-from django.test import RequestFactory, SimpleTestCase
+from django.http import HttpResponse
+from django.test import RequestFactory, SimpleTestCase, override_settings
+from django.urls import reverse
 
 from hi.apps.console.constants import ConsoleConstants
 from hi.apps.console.device_capabilities import DeviceCapabilities, DeviceCapabilitiesCodec
 from hi.apps.console.enums import DeviceCapability
 from hi.apps.console.middleware import DeviceCapabilitiesMiddleware
+from hi.testing.base_test_case import BaseTestCase
 
 logging.disable( logging.CRITICAL )
 
@@ -80,52 +82,49 @@ class TestDeviceCapabilitiesCodec( SimpleTestCase ):
 
 class TestDeviceCapabilitiesMiddleware( SimpleTestCase ):
 
-    def setUp( self ):
-        super().setUp()
-        self.factory = RequestFactory()
-        return
+    def test_reads_cookie_and_ignores_query_params( self ):
+        request = RequestFactory().get( '/', { 'local_files': 'none' } )
+        request.COOKIES[ COOKIE_NAME ] = 'keyboard:none'
+        response = DeviceCapabilitiesMiddleware( Mock( return_value = HttpResponse( 'ok' ) ))( request )
 
-    def _run( self, request, response = None ):
-        get_response = Mock( return_value = response or HttpResponse( 'ok' ) )
-        return DeviceCapabilitiesMiddleware( get_response )( request )
-
-    def test_no_cookie_no_params_is_default_and_sets_no_cookie( self ):
-        request = self.factory.get( '/' )
-        response = self._run( request )
-        self.assertTrue( request.device_capabilities.is_default )
+        self.assertFalse( request.device_capabilities.is_available( DeviceCapability.KEYBOARD ) )
+        self.assertTrue( request.device_capabilities.is_available( DeviceCapability.LOCAL_FILES ) )
         self.assertNotIn( COOKIE_NAME, response.cookies )
         return
 
-    def test_params_merge_with_cookie_and_persist( self ):
-        request = self.factory.get( '/', { 'local_files': 'none' } )
-        request.COOKIES[ COOKIE_NAME ] = 'keyboard:none'
-        response = self._run( request )
 
-        self.assertFalse( request.device_capabilities.is_available( DeviceCapability.KEYBOARD ) )
-        self.assertFalse( request.device_capabilities.is_available( DeviceCapability.LOCAL_FILES ) )
+class TestDeviceCapabilitiesView( BaseTestCase ):
+
+    URL = reverse( 'console_device_capabilities' )
+
+    def test_params_merge_with_cookie_persist_and_redirect_home( self ):
+        self.client.cookies[ COOKIE_NAME ] = 'keyboard:none'
+        response = self.client.get( self.URL, { 'local_files': 'none' } )
+
+        self.assertRedirects( response, reverse( 'home' ), fetch_redirect_response = False )
         persisted = DeviceCapabilitiesCodec.from_cookie_value( response.cookies[ COOKIE_NAME ].value )
-        self.assertEqual( persisted, request.device_capabilities )
+        self.assertEqual( persisted.declared, {
+            DeviceCapability.KEYBOARD: False,
+            DeviceCapability.LOCAL_FILES: False,
+        })
         return
 
-    def test_cookie_without_params_is_read_but_not_rewritten( self ):
-        request = self.factory.get( '/' )
-        request.COOKIES[ COOKIE_NAME ] = 'browser_nav:none'
-        response = self._run( request )
-        self.assertFalse( request.device_capabilities.is_available( DeviceCapability.BROWSER_NAV ) )
+    def test_no_recognized_params_leaves_cookie_untouched( self ):
+        self.client.cookies[ COOKIE_NAME ] = 'keyboard:none'
+        response = self.client.get( self.URL, { 'keyboard': 'bogus' } )
         self.assertNotIn( COOKIE_NAME, response.cookies )
         return
 
     def test_clearing_last_declaration_deletes_cookie( self ):
-        request = self.factory.get( '/', { 'keyboard': 'default' } )
-        request.COOKIES[ COOKIE_NAME ] = 'keyboard:none'
-        response = self._run( request )
-        self.assertTrue( request.device_capabilities.is_default )
+        self.client.cookies[ COOKIE_NAME ] = 'keyboard:none'
+        response = self.client.get( self.URL, { 'keyboard': 'default' } )
         self.assertEqual( response.cookies[ COOKIE_NAME ][ 'max-age' ], 0 )
         return
 
-    def test_cookie_persisted_on_redirect_response( self ):
-        """ A kiosk launch URL redirected (e.g., to sign-in) must still persist. """
-        request = self.factory.get( '/', { 'keyboard': 'none' } )
-        response = self._run( request, HttpResponseRedirect( '/user/signin' ) )
+    @override_settings( SUPPRESS_AUTHENTICATION = False )
+    def test_persists_when_signed_out( self ):
+        """ A kiosk launch URL usually arrives before sign-in. """
+        response = self.client.get( self.URL, { 'keyboard': 'none' } )
+        self.assertRedirects( response, reverse( 'home' ), fetch_redirect_response = False )
         self.assertIn( COOKIE_NAME, response.cookies )
         return

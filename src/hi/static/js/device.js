@@ -7,13 +7,19 @@
 
       - Markup declares what an action needs via Hi.DEVICE_REQUIRES_ATTR
         (space-separated capability names, e.g. "local_files browser_nav").
-      - One capture-phase click listener blocks any such action when a
-        required capability is missing and asks the server for the
-        explanatory modal. Capture phase runs before inline onclick
-        handlers, jQuery delegated handlers, default link navigation and
-        antinode async actions. It is registered from js_before_content,
-        so it also runs before other document-level capture listeners.
+      - Capture-phase listeners block any such action when a required
+        capability is missing and ask the server for the explanatory
+        modal. Capture phase runs before inline onclick handlers, jQuery
+        delegated handlers, default link navigation and antinode async
+        actions. Being registered from js_before_content, it also runs
+        before document-level capture listeners registered later (e.g.
+        attr-unsaved-guard.js).
+      - Middle-click opens links in a new tab via auxclick, not click, so
+        that is gated too. Browser-native long-press "open in new tab"
+        menus cannot be intercepted reliably.
     */
+
+    const MIDDLE_MOUSE_BUTTON = 1;
 
     const HiDevice = {
         isAvailable: function( capabilityName ) {
@@ -47,7 +53,7 @@
         AN.get( Hi.DEVICE_CAPABILITY_UNAVAILABLE_URL + '?' + params.toString() );
     }
 
-    document.addEventListener( 'click', function( event ) {
+    function _gateAction( event ) {
         if ( ! ( event.target instanceof Element )) {
             return;
         }
@@ -64,6 +70,15 @@
         event.preventDefault();
         event.stopImmediatePropagation();
         _showUnavailableModal( missingCapabilities );
+    }
+
+    document.addEventListener( 'click', _gateAction, true );
+
+    // auxclick also fires for the right button; leave context menus alone.
+    document.addEventListener( 'auxclick', function( event ) {
+        if ( event.button === MIDDLE_MOUSE_BUTTON ) {
+            _gateAction( event );
+        }
     }, true );
 
 })();
