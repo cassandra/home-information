@@ -6,4 +6,11 @@
 {% block interstitial_message %}
 <div>{{ error_message }}</div>
 {% endblock %}
+
+<div class="mt-4">
+  <a id="hi-error-page-home-link" href="{% url 'home' %}"
+     class="btn btn-lg btn-primary">
+    <b>HOME</b>
+  </a>
+</div>
 {% endblock %}
