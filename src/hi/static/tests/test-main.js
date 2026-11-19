@@ -176,5 +176,42 @@
             assert.equal(Hi.getCookie('equation'), 'a=b+c', 'Equals signs in value handled');
         });
     });
-    
+
+    // ===== TAP SLOP TESTS =====
+    QUnit.module('Hi.exceedsTapSlop', function(hooks) {
+        const start = { x: 100, y: 200 };
+
+        function offset( dx, dy ) {
+            return { x: start.x + dx, y: start.y + dy };
+        }
+
+        QUnit.test('touch and pen allow 10px of wobble', function(assert) {
+            ['touch', 'pen'].forEach(function(pointerType) {
+                assert.false(Hi.exceedsTapSlop(start, offset(10, 0), pointerType),
+                             `${pointerType}: at slop is still a tap`);
+                assert.true(Hi.exceedsTapSlop(start, offset(11, 0), pointerType),
+                            `${pointerType}: beyond slop is a drag`);
+            });
+        });
+
+        QUnit.test('mouse allows only 3px', function(assert) {
+            assert.false(Hi.exceedsTapSlop(start, offset(3, 0), 'mouse'), 'At slop is still a tap');
+            assert.true(Hi.exceedsTapSlop(start, offset(4, 0), 'mouse'), 'Beyond slop is a drag');
+        });
+
+        QUnit.test('unknown pointer type uses the forgiving default', function(assert) {
+            assert.false(Hi.exceedsTapSlop(start, offset(10, 0), ''), 'Empty type within default slop');
+            assert.false(Hi.exceedsTapSlop(start, offset(10, 0), undefined), 'Undefined type within default slop');
+            assert.true(Hi.exceedsTapSlop(start, offset(11, 0), undefined), 'Beyond default slop is a drag');
+        });
+
+        QUnit.test('measures each axis independently, in either direction', function(assert) {
+            assert.true(Hi.exceedsTapSlop(start, offset(0, 11), 'touch'), 'Vertical movement counts');
+            assert.true(Hi.exceedsTapSlop(start, offset(-11, 0), 'touch'), 'Negative X counts');
+            assert.true(Hi.exceedsTapSlop(start, offset(0, -11), 'touch'), 'Negative Y counts');
+            assert.false(Hi.exceedsTapSlop(start, offset(10, 10), 'touch'),
+                         'Diagonal within slop on both axes is still a tap');
+        });
+    });
+
 })();

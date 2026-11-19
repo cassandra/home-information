@@ -82,6 +82,9 @@
         normalizeAngle: function(angle) {
             return _normalizeAngle(angle);
         },
+        exceedsTapSlop: function( startPoint, currentPoint, pointerType ) {
+            return _exceedsTapSlop( startPoint, currentPoint, pointerType );
+        },
         displayEventInfo: function ( label, event ) {
             return _displayEventInfo( label, event );
         },
@@ -494,6 +497,27 @@
 
     function _normalizeAngle(angle) {
         return (angle % 360 + 360) % 360;
+    }
+
+    // Tap slop: how far (CSS px) a pointer may wander from its press point
+    // and still be considered a tap rather than a drag. Fingers and styluses
+    // wobble far more than a mouse does. Unknown pointer types get the more
+    // forgiving value so a tap is not lost to an unrecognized device.
+    const TAP_SLOP_PIXELS_BY_POINTER_TYPE = {
+        mouse: 3,
+        touch: 10,
+        pen: 10,
+    };
+    const DEFAULT_TAP_SLOP_PIXELS = 10;
+
+    function _tapSlopPixels( pointerType ) {
+        return TAP_SLOP_PIXELS_BY_POINTER_TYPE[pointerType] ?? DEFAULT_TAP_SLOP_PIXELS;
+    }
+
+    function _exceedsTapSlop( startPoint, currentPoint, pointerType ) {
+        const deltaX = Math.abs( currentPoint.x - startPoint.x );
+        const deltaY = Math.abs( currentPoint.y - startPoint.y );
+        return Math.max( deltaX, deltaY ) > _tapSlopPixels( pointerType );
     }
 
     function _displayEventInfo ( label, event ) {

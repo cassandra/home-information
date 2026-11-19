@@ -21,7 +21,6 @@
     const LAST_MOVE_THROTTLE_THRESHOLD_MS = 10;
     const POINTER_MOVE_THRESHOLD_PIXELS = 2;
     const POTENTIAL_CLICK_TIME_DELTA_THRESHOLD_MS = 150;
-    const POTENTIAL_CLICK_POSITION_DELTA_THRESHOLD = 5;
     const POTENTIAL_CLICK_DELAY_MS = 50;
 
     const activePointers = new Map();
@@ -43,6 +42,7 @@
             };
             this.previous = { ...this.start };
             this.last = { ...this.start };
+            this.isDragCommitted = false;
         }
         get deltaXStart() { return this.last.x - this.start.x; }
         get deltaXPrevious() { return this.last.x - this.previous.x; }
@@ -53,6 +53,23 @@
             this.last.event = newEvent;
             this.last.x = newEvent.clientX;
             this.last.y = newEvent.clientY;
+        }
+        /* A press only becomes a drag once it leaves tap slop, so finger
+           wobble during a tap never reaches the move consumers. On commit
+           the start is rebased to the current point so consumers measuring
+           deltas from start (pan) begin from zero instead of jumping by the
+           slop distance. Returns whether the gesture is a drag. */
+        commitDragIfBeyondTapSlop( moveEvent ) {
+            if ( this.isDragCommitted ) { return true; }
+            var currentPoint = { x: moveEvent.clientX, y: moveEvent.clientY };
+            if ( ! Hi.exceedsTapSlop( this.start, currentPoint, moveEvent.pointerType ) ) {
+                return false;
+            }
+            this.start = { event: moveEvent, ...currentPoint };
+            this.previous = { ...this.start };
+            this.last = { ...this.start };
+            this.isDragCommitted = true;
+            return true;
         }
     }
 
@@ -129,12 +146,10 @@
         }
 
         var timeDeltaMs = performance.now() - gPotentialClickState.startTimeMs;
-        var positionDeltaX = Math.abs( event.clientX - gPotentialClickState.startPosition.x );
-        var positionDeltaY = Math.abs( event.clientY - gPotentialClickState.startPosition.y );
-        var positionDeltaMax = Math.max( positionDeltaX, positionDeltaY );
+        var endPosition = { x: event.clientX, y: event.clientY };
 
         if ( timeDeltaMs < POTENTIAL_CLICK_TIME_DELTA_THRESHOLD_MS
-             && positionDeltaMax < POTENTIAL_CLICK_POSITION_DELTA_THRESHOLD ) {
+             && ! Hi.exceedsTapSlop( gPotentialClickState.startPosition, endPosition, event.pointerType ) ) {
 
             gPotentialClickState.waitingForClick = true;
 
@@ -172,6 +187,7 @@
         }
 
         if ( initialSize === 0 && currentSize === 1 ) {
+            dispatchPointerGestureStart();
             gCurrentSingleEvent = new SinglePointerEvent( event );
             dispatchSinglePointerEventStart( event, gCurrentSingleEvent );
 
@@ -209,7 +225,7 @@
         activePointers.set( event.pointerId, { x: event.clientX, y: event.clientY } );
 
         if ( activePointers.size === 1 ) {
-            if ( gCurrentSingleEvent ) {
+            if ( gCurrentSingleEvent && gCurrentSingleEvent.commitDragIfBeyondTapSlop( event ) ) {
                 gCurrentSingleEvent.update( event );
                 dispatchSinglePointerEventMove( event, gCurrentSingleEvent );
             }
@@ -264,6 +280,15 @@
         Hi.SvgIconCore.handleLastPointerLocation( x, y );
         Hi.SvgPanZoomCore.handleLastPointerLocation( x, y );
         /* Future: path-core position tracking */
+    }
+
+    /* Broadcast (not a first-claim chain): every core must hear that a
+       new gesture began, even one that won't claim it, so each can drop
+       per-gesture state left over from the previous gesture. */
+    function dispatchPointerGestureStart() {
+        Hi.SvgIconCore.handlePointerGestureStart();
+        Hi.SvgPathCore.handlePointerGestureStart();
+        Hi.SvgPanZoomCore.handlePointerGestureStart();
     }
 
     function dispatchSinglePointerEventStart( currentEvent, singlePointerEvent ) {
