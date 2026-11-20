@@ -128,6 +128,9 @@ class HiModalView( View ):
             )
             return modal_response
 
+        # Shown over a page with nothing else on it, so templates can
+        # choose not to be dismissible (nothing to dismiss to).
+        context['is_initial_modal'] = True
         context['initial_modal_template_name'] = modal_template_name
         page_template_name = self.DEFAULT_PAGE_TEMPLATE_NAME
         return render( request,

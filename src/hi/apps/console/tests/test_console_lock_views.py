@@ -8,7 +8,7 @@ import hi.apps.common.datetimeproxy as datetimeproxy
 from hi.apps.console.constants import ConsoleConstants
 from hi.apps.console.unlock_throttle import UnlockThrottle
 from hi.apps.console.views import ConsoleUnlockView
-from hi.testing.view_test_base import AsyncViewTestCase
+from hi.testing.view_test_base import AsyncViewTestCase, DualModeViewTestCase
 
 logging.disable( logging.CRITICAL )
 
@@ -165,4 +165,29 @@ class TestConsoleUnlockThrottle( LockViewTestBase ):
             self.post_pin( '0000' )
         response = self.async_get( reverse( 'console_unlock' ))
         self.assertIn( 'data-disabled-secs=', response.json()['modal'] )
+        return
+
+
+class TestConsoleUnlockModalProtection( DualModeViewTestCase ):
+    """ Protected (not dismissible) only when it is the whole page. """
+
+    def setUp( self ):
+        super().setUp()
+        session = self.client.session
+        session[ConsoleConstants.CONSOLE_LOCKED_SESSION_VAR] = True
+        session.save()
+        return
+
+    def test_full_page_load_is_protected( self ):
+        response = self.client.get( reverse( 'console_unlock' ))
+        content = response.content.decode()
+        self.assertIn( 'data-modal-protected="true"', content )
+        self.assertNotIn( 'id="modal_dismiss_x"', content )
+        return
+
+    def test_async_open_is_dismissible( self ):
+        response = self.async_get( reverse( 'console_unlock' ))
+        content = response.json()['modal']
+        self.assertNotIn( 'data-modal-protected', content )
+        self.assertIn( 'id="modal_dismiss_x"', content )
         return
