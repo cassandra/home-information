@@ -1134,6 +1134,16 @@ function synchronousSubmitHandler() {
     showLoadingInterstitial();
     $( this ).find( 'button[type="submit"]' ).prop('disabled', true);
 }
+
+// A page restored from the back/forward cache keeps the DOM as it was
+// when the browser left it: undo what a synchronous submit did.
+function synchronousSubmitPageShowHandler( event ) {
+    if ( ! event.persisted ) {
+        return;
+    }
+    hideLoadingInterstitial();
+    $( 'form[data-synchronous] button[type="submit"]' ).prop('disabled', false);
+}
     
 //====================
 // Adding handlers that look at special HTML tag attributes to determine
@@ -1153,6 +1163,7 @@ jQuery(function($) {
     $('body').on('click', 'div[data-async]', asyncClickHandler );
     $('body').on('click', 'form[data-async] button', lastButtonClickHandler );
     $('body').on('submit', 'form[data-synchronous]', synchronousSubmitHandler );
+    window.addEventListener( 'pageshow', synchronousSubmitPageShowHandler );
 
     // This is to support auto-submitting from SELECT elements asnychronously.
     //

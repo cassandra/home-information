@@ -20,14 +20,19 @@
         removes, Delete clears. They go to the visible entry, and are
         left alone while an editable element has focus or a modifier is
         held, so normal typing and browser shortcuts still work.
-      - Character matching is exact; no case folding.
+      - Character matching is exact unless data-case-sensitive="false";
+        then case is ignored, but the alphabet's own character is entered.
+      - Paste (under the same focus rules as physical keys) fills the
+        active field, ignoring spaces and dashes; text that is not a valid
+        code is rejected whole with the paste error message.
       - Pointer presses never focus a key, so a later Enter or Space cannot
         re-press the last tapped key. (Tab can still focus keys.)
       - Submission goes through jQuery so antinode's submit handler runs.
         If that request fails without the server re-rendering the entry
         (network loss, an HTML error page), the entry is still in the page
         and still submitting: it is reset with the server-rendered failure
-        message so the keypad is never left dead.
+        message so the keypad is never left dead. Likewise, an entry still
+        submitting on a page restored from the back/forward cache is reset.
       - The server renders any error state; the next edit clears it.
       - The server can render the entry disabled for some seconds (e.g.
         too many wrong attempts). It refuses input while a countdown runs,
@@ -48,6 +53,9 @@
     const COUNTDOWN_STARTED_ATTR = 'data-keypad-countdown-started';
     const COUNTDOWN_SELECTOR = '[data-keypad-countdown]';
     const FAILURE_MESSAGE_ATTR = 'data-failure-message';
+    const PASTE_ERROR_MESSAGE_ATTR = 'data-paste-error-message';
+    // As the server does: codes may be copied with spaces or dashes.
+    const PASTE_SEPARATORS_REGEX = /[\s-]/g;
 
     // External names, as in KeypadAction.
     const ACTION = {
@@ -130,18 +138,35 @@
         }, SUBMIT_DELAY_MS );
     }
 
-    function _recoverFromFailedSubmit( entry ) {
+    function _showError( entry, text ) {
+        entry.classList.add( CSS_CLASS.ERROR );
+        const message = entry.querySelector( MESSAGE_SELECTOR );
+        if ( message ) {
+            message.classList.add( CSS_CLASS.ERROR );
+            message.textContent = text || '';
+        }
+    }
+
+    function _resetSubmitting( entry ) {
         entry.removeAttribute( SUBMITTING_ATTR );
         _inputs( entry ).forEach( function( input ) {
             input.value = '';
         });
         _render( entry );
-        entry.classList.add( CSS_CLASS.ERROR );
-        const message = entry.querySelector( MESSAGE_SELECTOR );
-        if ( message ) {
-            message.classList.add( CSS_CLASS.ERROR );
-            message.textContent = entry.getAttribute( FAILURE_MESSAGE_ATTR ) || '';
+    }
+
+    function _recoverFromFailedSubmit( entry ) {
+        _resetSubmitting( entry );
+        _showError( entry, entry.getAttribute( FAILURE_MESSAGE_ATTR ));
+    }
+
+    // A page restored from the back/forward cache keeps the DOM as it was
+    // when the browser left it, including an entry mid-submit.
+    function _onPageShow( event ) {
+        if ( ! event.persisted ) {
+            return;
         }
+        document.querySelectorAll( `${ENTRY_SELECTOR}[${SUBMITTING_ATTR}]` ).forEach( _resetSubmitting );
     }
 
     // Antinode's own error callback runs first, so an entry the server
@@ -198,8 +223,40 @@
         _render( entry );
     }
 
-    function _isInAlphabet( entry, char ) {
-        return ( char.length === 1 ) && ( entry.dataset.alphabet.indexOf( char ) >= 0 );
+    // The alphabet character a typed or pasted character enters, or null.
+    // Case-insensitive entries still enter the alphabet's own character.
+    function _resolveChar( entry, char ) {
+        if ( char.length !== 1 ) {
+            return null;
+        }
+        const alphabet = entry.dataset.alphabet;
+        if ( alphabet.indexOf( char ) >= 0 ) {
+            return char;
+        }
+        if ( entry.dataset.caseSensitive !== 'false' ) {
+            return null;
+        }
+        const folded = char.toLowerCase();
+        return Array.from( alphabet ).find( c => c.toLowerCase() === folded ) || null;
+    }
+
+    // Fills only the active field, replacing what it holds. All or nothing:
+    // separators are ignored, any other character outside the alphabet
+    // rejects the whole paste.
+    function _paste( entry, text ) {
+        if ( ! _isAcceptingInput( entry )) {
+            return;
+        }
+        const chars = Array.from( text.replace( PASTE_SEPARATORS_REGEX, '' ));
+        const resolved = chars.map( c => _resolveChar( entry, c ));
+        if (( chars.length === 0 )
+            || ( chars.length > _length( entry ))
+            || resolved.includes( null )) {
+            _showError( entry, entry.getAttribute( PASTE_ERROR_MESSAGE_ATTR ));
+            return;
+        }
+        _inputs( entry )[ _activeIndex( entry ) ].value = '';
+        resolved.forEach( c => _appendChar( entry, c ));
     }
 
     function _isEditable( element ) {
@@ -311,12 +368,29 @@
         } else if ( event.key === PHYSICAL_KEY.DELETE ) {
             event.preventDefault();
             _clear( entry );
-        } else if ( _isInAlphabet( entry, event.key )) {
-            event.preventDefault();
-            _flashKey( entry, event.key );
-            _appendChar( entry, event.key );
+        } else {
+            const char = _resolveChar( entry, event.key );
+            if ( char ) {
+                event.preventDefault();
+                _flashKey( entry, char );
+                _appendChar( entry, char );
+            }
         }
     });
+
+    document.addEventListener( 'paste', function( event ) {
+        if ( event.defaultPrevented || _isEditable( document.activeElement )) {
+            return;
+        }
+        const entry = _keyboardEntry();
+        if ( ! entry || ! event.clipboardData ) {
+            return;
+        }
+        event.preventDefault();
+        _paste( entry, event.clipboardData.getData( 'text' ));
+    });
+
+    window.addEventListener( 'pageshow', _onPageShow );
 
     if ( document.readyState === 'loading' ) {
         document.addEventListener( 'DOMContentLoaded', startCountdowns );
