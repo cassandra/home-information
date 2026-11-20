@@ -1,3 +1,4 @@
+import json
 import logging
 from unittest.mock import Mock, patch
 
@@ -136,6 +137,34 @@ class TestAuthenticationMiddleware(BaseTestCase):
             
             # Should NOT call the original get_response
             self.get_response.assert_not_called()
+
+    @override_settings(SUPPRESS_AUTHENTICATION=False)
+    def test_middleware_returns_401_json_for_unauthenticated_ajax_requests(self):
+        """Async callers get a detectable 401 instead of the sign-in page HTML."""
+        request = self.factory.get('/protected-view', HTTP_X_REQUESTED_WITH='XMLHttpRequest')
+        request.user = AnonymousUser()
+
+        with patch('hi.apps.user.middleware.resolve') as mock_resolve:
+            mock_resolve.return_value = Mock(url_name='protected_view', app_name='main')
+            response = self.middleware(request)
+
+        self.assertEqual(response.status_code, 401)
+        self.assertEqual(response['Content-Type'], 'application/json')
+        self.assertIn('error_message', json.loads(response.content))
+        self.get_response.assert_not_called()
+
+    @override_settings(SUPPRESS_AUTHENTICATION=False)
+    def test_middleware_allows_unauthenticated_ajax_requests_to_exempt_urls(self):
+        """Exemptions apply to async requests too."""
+        request = self.factory.get('/user_signin', HTTP_X_REQUESTED_WITH='XMLHttpRequest')
+        request.user = AnonymousUser()
+
+        with patch('hi.apps.user.middleware.resolve') as mock_resolve:
+            mock_resolve.return_value = Mock(url_name='user_signin', app_name='user')
+            response = self.middleware(request)
+
+        self.get_response.assert_called_once_with(request)
+        self.assertEqual(response, self.get_response.return_value)
 
     @override_settings(SUPPRESS_AUTHENTICATION=False)
     def test_middleware_handles_url_resolution_correctly(self):

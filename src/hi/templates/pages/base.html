@@ -59,11 +59,23 @@
     {% include "config/panes/base_page_settings.html" %}
     {% file_viewer_shell %}
 
-    <div id="hi-server-error-msg" role="alert" aria-live="assertive">
+    <div id="hi-server-error-msg" class="hi-status-error-banner" role="alert" aria-live="assertive">
       <svg class="icon" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
         <path d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z"/>
       </svg>
       <div class="msg">Lost Connection To Server</div>
+    </div>
+    <div id="hi-signin-required-msg" class="hi-status-error-banner" role="alert" aria-live="assertive">
+      {% comment %}
+      Reloading without a session lands on the sign-in page.
+      {% endcomment %}
+      <a class="hi-status-error-banner-link" href="{{ request.get_full_path }}">
+        <svg class="icon" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+          <path d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z"/>
+        </svg>
+        <div class="msg">Sign-in Required</div>
+        <div class="hint">Tap to sign in</div>
+      </a>
     </div>
 
     {% block footer_pre_javascript %}{% endblock %}

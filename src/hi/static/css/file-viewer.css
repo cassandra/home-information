@@ -393,13 +393,13 @@ html.hi-file-viewer-open body {
     z-index: 1095;
 }
 
-/* Alerts and the lost-connection message stay visible over the viewer;
+/* Alerts and the status error banners stay visible over the viewer;
    the viewer starts below the banner. The banner's z-index is an inline
    style (alert/panes/alert_banner.html). */
 html.hi-file-viewer-open #hi-alert-banner-container {
     z-index: 1096 !important;
 }
 
-html.hi-file-viewer-open #hi-server-error-msg {
+html.hi-file-viewer-open .hi-status-error-banner {
     z-index: 1096;
 }
