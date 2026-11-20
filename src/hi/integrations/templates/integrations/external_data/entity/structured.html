@@ -10,10 +10,9 @@
       {% for attachment in view_data.attachments %}
       <div class="attr-v2-file-card attr-ext-attachment"
            data-mime-type="{{ attachment.mime_type }}">
-        {% with viewer_item=attachment.file_viewer_item %}
         <button type="button"
                 class="attr-v2-file-thumbnail{% if attachment.thumbnail_url %} has-thumbnail{% endif %}"
-                {% if viewer_item %}{% file_viewer_attrs viewer_item %}{% else %}disabled{% endif %}
+                {% file_viewer_attrs attachment.file_viewer_item %}
                 title="{{ attachment.title }}">
           {% if attachment.thumbnail_url %}
           <img src="{{ attachment.thumbnail_url }}"
@@ -37,7 +36,6 @@
           {% endif %}
           {% endif %}
         </button>
-        {% endwith %}
         <div class="attr-v2-file-info">
           <div class="attr-v2-file-name">{{ attachment.title }}</div>
         </div>

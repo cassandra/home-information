@@ -188,22 +188,36 @@ class TestAttributeModel(BaseTestCase):
         return
 
     def test_file_viewer_item_for_file_missing_from_storage(self):
-        """The item still opens; the size is unknown and the MIME type comes from the name."""
-        attr = ConcreteAttributeModel(
-            name='manual.pdf',
-            value='Owner manual',
-            value_type_str='FILE',
-            attribute_type_str='CUSTOM',
-            file_mime_type=None,
-        )
-        attr.file_value = 'entity/attributes/missing-manual.pdf'
+        """A missing file still opens (the viewer reports the failure) with an unknown size;
+        the MIME type is guessed from the stored file's name when none was recorded."""
+        with self.isolated_media_root():
+            attr = ConcreteAttributeModel(
+                name='Owner manual',
+                value='Owner manual (scan)',
+                value_type_str='FILE',
+                attribute_type_str='CUSTOM',
+                file_mime_type=None,
+            )
+            attr.file_value = 'entity/attributes/missing-manual.pdf'
 
-        item = attr.file_viewer_item
-        self.assertEqual(item.url, attr.file_value.url)
-        self.assertEqual(item.mime_type, 'application/pdf')
-        self.assertEqual(item.title, 'Owner manual')
-        self.assertEqual(item.filename, 'manual.pdf')
-        self.assertIsNone(item.size_bytes)
+            item = attr.file_viewer_item
+            self.assertEqual(item.url, attr.file_value.url)
+            self.assertEqual(item.mime_type, 'application/pdf')
+            self.assertEqual(item.title, 'Owner manual (scan)')
+            self.assertEqual(item.filename, 'Owner manual')
+            self.assertIsNone(item.size_bytes)
+        return
+
+    def test_file_viewer_item_size_for_stored_file(self):
+        with self.isolated_media_root():
+            attr = ConcreteAttributeModel(
+                name='notes.txt',
+                value_type_str='FILE',
+                attribute_type_str='CUSTOM',
+                file_mime_type='text/plain',
+            )
+            attr.file_value = default_storage.save('entity/attributes/notes.txt', ContentFile(b'12345'))
+            self.assertEqual(attr.file_viewer_item.size_bytes, 5)
         return
 
     def test_file_viewer_item_none_without_file(self):

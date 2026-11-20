@@ -6,7 +6,7 @@ from django.conf import settings
 from django.template.defaultfilters import filesizeformat
 from django.templatetags.static import static
 from django.utils.html import format_html_join
-from django.utils.safestring import SafeString
+from django.utils.safestring import SafeString, mark_safe
 
 from hi.constants import DIVID
 
@@ -15,7 +15,8 @@ class FileViewerKind( Enum ):
     """
     How the in-app file viewer presents a file. external_name is what
     file-viewer.js dispatches on and what names the viewer's content
-    regions in panes/file_viewer.html.
+    regions in panes/file_viewer.html. A plain Enum, not LabeledEnum:
+    kinds are never shown to users.
     """
     IMAGE        = ( 'image', )
     PDF          = ( 'pdf', )
@@ -35,20 +36,40 @@ class FileViewerKind( Enum ):
         normalized = ( mime_type or '' ).split( ';', 1 )[ 0 ].strip().lower()
         if normalized in _KIND_BY_MIME_TYPE:
             return _KIND_BY_MIME_TYPE[ normalized ]
-        top_level_type = normalized.split( '/', 1 )[ 0 ]
-        return _KIND_BY_TOP_LEVEL_TYPE.get( top_level_type, cls.UNSUPPORTED )
+        if normalized.startswith( _TEXT_TYPE_PREFIX ):
+            return cls.TEXT
+        return cls.UNSUPPORTED
 
 
+# Only formats current browsers display. Others (e.g. HEIC photos, TIFF
+# scans, QuickTime video) would fail to load in the viewer, so they get
+# "No preview available" and the open-in-new-tab link instead.
 _KIND_BY_MIME_TYPE = {
-    'application/pdf': FileViewerKind.PDF,
+    'application/pdf'  : FileViewerKind.PDF,
+    'image/avif'       : FileViewerKind.IMAGE,
+    'image/bmp'        : FileViewerKind.IMAGE,
+    'image/gif'        : FileViewerKind.IMAGE,
+    'image/jpeg'       : FileViewerKind.IMAGE,
+    'image/png'        : FileViewerKind.IMAGE,
+    'image/svg+xml'    : FileViewerKind.IMAGE,
+    'image/webp'       : FileViewerKind.IMAGE,
+    'video/mp4'        : FileViewerKind.VIDEO,
+    'video/ogg'        : FileViewerKind.VIDEO,
+    'video/webm'       : FileViewerKind.VIDEO,
+    'audio/aac'        : FileViewerKind.AUDIO,
+    'audio/flac'       : FileViewerKind.AUDIO,
+    'audio/mp4'        : FileViewerKind.AUDIO,
+    'audio/mpeg'       : FileViewerKind.AUDIO,
+    'audio/ogg'        : FileViewerKind.AUDIO,
+    'audio/wav'        : FileViewerKind.AUDIO,
+    'audio/webm'       : FileViewerKind.AUDIO,
+    'audio/x-wav'      : FileViewerKind.AUDIO,
+    'application/json' : FileViewerKind.TEXT,
+    'application/xml'  : FileViewerKind.TEXT,
 }
 
-_KIND_BY_TOP_LEVEL_TYPE = {
-    'image': FileViewerKind.IMAGE,
-    'video': FileViewerKind.VIDEO,
-    'audio': FileViewerKind.AUDIO,
-    'text': FileViewerKind.TEXT,
-}
+# Any text type reads as plain text (shown with textContent).
+_TEXT_TYPE_PREFIX = 'text/'
 
 
 @dataclass( frozen = True )
@@ -66,11 +87,14 @@ class FileViewerItem:
     size_bytes  : Optional[ int ]  = None
 
 
-def file_viewer_attrs( item : FileViewerItem ) -> SafeString:
+def file_viewer_attrs( item : Optional[ FileViewerItem ] ) -> SafeString:
     """
-    Attributes that make an element open the item in the in-app file
-    viewer (see file-viewer.js).
+    Attributes that make a button open the item in the in-app file
+    viewer (see file-viewer.js). Without an item (e.g. a file attribute
+    whose file was never stored) the button is disabled.
     """
+    if item is None:
+        return mark_safe( 'disabled' )
     if not item.url:
         # A trigger without a file would open an empty viewer.
         raise ValueError( 'A file viewer trigger needs a file URL' )

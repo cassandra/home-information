@@ -1,3 +1,5 @@
+from typing import Optional
+
 from django import template
 from django.utils.safestring import SafeString
 
@@ -9,10 +11,10 @@ register = template.Library()
 
 
 @register.simple_tag
-def file_viewer_attrs( item : FileViewerItem ) -> SafeString:
+def file_viewer_attrs( item : Optional[ FileViewerItem ] ) -> SafeString:
     """
     Usage: {% file_viewer_attrs attribute.file_viewer_item %} on a
-    <button type="button">.
+    <button type="button">. A missing item renders the button disabled.
     """
     return file_viewer.file_viewer_attrs( item = item )
 

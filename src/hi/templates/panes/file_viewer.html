@@ -39,7 +39,7 @@ it is missing.
     </div>
 
     <div class="hi-file-viewer-region" data-file-viewer-region="{{ kind.IMAGE }}" hidden>
-      <div class="hi-file-viewer-scroll" data-file-viewer-scroll>
+      <div class="hi-file-viewer-scroll" data-file-viewer-scroll tabindex="0" aria-label="Image">
         <div class="hi-file-viewer-image-stage" data-file-viewer-stage>
           <img class="hi-file-viewer-image" alt="" data-file-viewer-media>
         </div>
@@ -52,7 +52,7 @@ it is missing.
          data-pdfjs-wasm-url="{{ pdfjs.wasm_url }}"
          data-pdfjs-standard-font-data-url="{{ pdfjs.standard_font_data_url }}"
          data-pdfjs-icc-url="{{ pdfjs.icc_url }}">
-      <div class="hi-file-viewer-scroll" data-file-viewer-scroll>
+      <div class="hi-file-viewer-scroll" data-file-viewer-scroll tabindex="0" aria-label="PDF pages">
         <div class="hi-file-viewer-pdf-pages" data-file-viewer-pdf-pages></div>
       </div>
       <template data-file-viewer-pdf-page-template>
@@ -76,7 +76,7 @@ it is missing.
     </div>
 
     <div class="hi-file-viewer-region" data-file-viewer-region="{{ kind.TEXT }}" hidden>
-      <div class="hi-file-viewer-scroll">
+      <div class="hi-file-viewer-scroll" tabindex="0" aria-label="Text">
         <pre class="hi-file-viewer-text" data-file-viewer-slot="text"></pre>
       </div>
     </div>

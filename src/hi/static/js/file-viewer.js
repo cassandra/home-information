@@ -34,6 +34,11 @@
         are external links (browser_nav, see device.js). A modal shown
         while the viewer is open, such as the device's "not available"
         message, is raised above the viewer, and keys are left to it.
+        When it closes, focus returns to the viewer (antinode would
+        otherwise focus an [autofocus] element behind it) and the modal
+        underneath keeps its scrolling (Bootstrap clears modal-open).
+      - The alert banner stays above the viewer, which starts below it
+        while it shows (TOP_INSET_PROPERTY) so it never covers Close.
     */
 
     // FileViewerKind external names (hi.apps.common.file_viewer).
@@ -79,8 +84,11 @@
     const STAGE_ATTR = 'data-file-viewer-stage';
     const MEDIA_ATTR = 'data-file-viewer-media';
     const OPEN_TAB_ATTR = 'data-file-viewer-open-tab';
+    const PDF_PAGES_ATTR = 'data-file-viewer-pdf-pages';
+    const PDF_PAGE_TEMPLATE_ATTR = 'data-file-viewer-pdf-page-template';
 
     const OPEN_ROOT_CLASS = 'hi-file-viewer-open';
+    const TOP_INSET_PROPERTY = '--hi-file-viewer-top-inset';
     const ABOVE_VIEWER_CLASS = 'hi-file-viewer-above';
 
     // Bootstrap 4 modal internals (bootstrap.js, Modal._enforceFocus).
@@ -95,24 +103,25 @@
     // Larger text files are not worth reading into the page.
     const TEXT_MAX_BYTES = 1024 * 1024;
 
+    const BOOTSTRAP_MODAL_OPEN_CLASS = 'modal-open';
+    const MODAL_SELECTOR = '.modal';
+
+    const FOCUSABLE_SELECTOR = 'a[href], button, video, audio, [tabindex="0"]';
+
+    // Exposed for tests.
     const HiFileViewer = {
-        open: function( triggerElement ) {
-            _open( triggerElement );
-        },
-        close: function() {
-            _close();
-        },
-        isOpen: function() {
-            return Boolean( _session );
-        },
         nextZoomIndex: function( zoomIndex, action ) {
             return _nextZoomIndex( zoomIndex, action );
+        },
+        readTextWithinLimit: function( response, maxBytes ) {
+            return _readTextWithinLimit( response, maxBytes );
         }
     };
 
     window.Hi.fileViewer = HiFileViewer;
 
     let _viewerElement = null;
+    let _bannerObserver = null;
     let _session = null;   // { file, trigger, zoomIndex, abortController, pdfView }
 
     /* Elements */
@@ -134,6 +143,10 @@
 
     function _media( kind ) {
         return _region( kind ).querySelector( '[' + MEDIA_ATTR + ']' );
+    }
+
+    function _closeButton() {
+        return _viewer().querySelector( '[' + ACTION_ATTR + '="' + ACTION.CLOSE + '"]' );
     }
 
     function _toolbar() {
@@ -182,10 +195,11 @@
         _fillHeader( file );
         _setOpenTabUrl( file.url );
         _suspendModalFocusTrap();
+        _followAlertBanner();
         document.documentElement.classList.add( OPEN_ROOT_CLASS );
         _viewer().hidden = false;
         _showRegion( STATE_REGION.LOADING );
-        _viewer().querySelector( '[' + ACTION_ATTR + '="' + ACTION.CLOSE + '"]' ).focus();
+        _closeButton().focus();
 
         const loader = LOADERS[ file.kind ] || _loadUnsupported;
         loader( _session );
@@ -205,10 +219,34 @@
         _setOpenTabUrl( null );
         _viewer().hidden = true;
         document.documentElement.classList.remove( OPEN_ROOT_CLASS );
+        _stopFollowingAlertBanner();
         _restoreModalFocusTrap();
         if ( session.trigger.isConnected ) {
             session.trigger.focus({ preventScroll: true });
         }
+    }
+
+    // The banner's height is 0 while hidden, so the inset follows it
+    // appearing, collapsing and growing.
+    function _followAlertBanner() {
+        const bannerElement = document.getElementById( Hi.ALERT_BANNER_CONTAINER_ID );
+        if ( ! bannerElement ) {
+            return;
+        }
+        _bannerObserver = new ResizeObserver( function() {
+            const bannerBottom = Math.max( 0, bannerElement.getBoundingClientRect().bottom );
+            _viewer().style.setProperty( TOP_INSET_PROPERTY, bannerBottom + 'px' );
+            _handleResize();
+        });
+        _bannerObserver.observe( bannerElement );
+    }
+
+    function _stopFollowingAlertBanner() {
+        if ( _bannerObserver ) {
+            _bannerObserver.disconnect();
+            _bannerObserver = null;
+        }
+        _viewer().style.removeProperty( TOP_INSET_PROPERTY );
     }
 
     function _suspendModalFocusTrap() {
@@ -301,9 +339,13 @@
     }
 
     function _loadPdf( session ) {
+        const regionElement = _region( KIND.PDF );
         session.pdfView = Hi.fileViewerPdf.createView({
             url           : session.file.url,
-            regionElement : _region( KIND.PDF ),
+            configElement : regionElement,
+            scrollElement : _scrollElementOf( KIND.PDF ),
+            pagesElement  : regionElement.querySelector( '[' + PDF_PAGES_ATTR + ']' ),
+            pageTemplate  : regionElement.querySelector( '[' + PDF_PAGE_TEMPLATE_ATTR + ']' ),
             onPageChange  : _ifCurrent( session, _showPageNumber )
         });
         session.pdfView.load().then(
@@ -326,39 +368,43 @@
         pageElement.textContent = pageNumber + pageElement.dataset.separator + pageCount;
     }
 
+    // Shown at once: the native controls show their own loading state,
+    // and some browsers skip preloading (e.g. in low-power modes).
     function _loadMedia( session, kind ) {
         const mediaElement = _media( kind );
         const options = { once: true, signal: session.abortController.signal };
-        mediaElement.addEventListener( 'loadedmetadata', _ifCurrent( session, function() {
-            _showRegion( kind );
-        }), options );
         mediaElement.addEventListener( 'error', _ifCurrent( session, _showError ), options );
         mediaElement.src = session.file.url;
+        _showRegion( kind );
     }
 
     function _loadText( session ) {
-        _fetchTextWithinLimit( session.file.url, session.abortController.signal ).then(
-            _ifCurrent( session, function( text ) {
-                if ( text === null ) {
-                    _loadUnsupported( session );
-                    return;
-                }
-                _slot( SLOT.TEXT ).textContent = text;
-                _showRegion( KIND.TEXT );
-            }),
-            _ifCurrent( session, _showError )
-        );
+        fetch( session.file.url, { signal: session.abortController.signal })
+            .then( function( response ) {
+                return _readTextWithinLimit( response, TEXT_MAX_BYTES );
+            })
+            .then(
+                _ifCurrent( session, function( text ) {
+                    if ( text === null ) {
+                        _loadUnsupported( session );
+                        return;
+                    }
+                    _slot( SLOT.TEXT ).textContent = text;
+                    _showRegion( KIND.TEXT );
+                }),
+                _ifCurrent( session, _showError )
+            );
     }
 
-    // Resolves to the text, or to null when it exceeds TEXT_MAX_BYTES.
-    // Reads incrementally so an oversized file is not fully downloaded.
-    async function _fetchTextWithinLimit( url, signal ) {
-        const response = await fetch( url, { signal: signal } );
+    // Resolves to the response's text, or to null when it exceeds
+    // maxBytes; rejects for an HTTP error. Reads incrementally so an
+    // oversized file is not fully downloaded.
+    async function _readTextWithinLimit( response, maxBytes ) {
         if ( ! response.ok ) {
             throw new Error( 'File request failed: ' + response.status );
         }
         const declaredLength = Number( response.headers.get( 'Content-Length' ));
-        if ( declaredLength > TEXT_MAX_BYTES ) {
+        if ( declaredLength > maxBytes ) {
             response.body.cancel();
             return null;
         }
@@ -371,7 +417,7 @@
                 break;
             }
             totalBytes += value.length;
-            if ( totalBytes > TEXT_MAX_BYTES ) {
+            if ( totalBytes > maxBytes ) {
                 reader.cancel();
                 return null;
             }
@@ -454,12 +500,16 @@
         _toolbar().querySelector( '[' + ACTION_ATTR + '="' + ACTION.ZOOM_IN + '"]' ).disabled = isMax;
     }
 
-    // Sizes the image to the zoom factor over its fitted size.
+    // Sizes the image to the zoom factor over its fitted size. An image
+    // without intrinsic dimensions (some SVGs) keeps its default size.
     function _resizeImage( zoomFactor ) {
         const regionElement = _region( KIND.IMAGE );
         const scrollElement = _scrollElementOf( KIND.IMAGE );
         const stageStyle = getComputedStyle( regionElement.querySelector( '[' + STAGE_ATTR + ']' ));
         const imageElement = _media( KIND.IMAGE );
+        if ( ! imageElement.naturalWidth || ! imageElement.naturalHeight ) {
+            return;
+        }
 
         const availableWidth = scrollElement.clientWidth
               - parseFloat( stageStyle.paddingLeft ) - parseFloat( stageStyle.paddingRight );
@@ -488,7 +538,7 @@
     }
 
     function _keepTabFocusInside( event ) {
-        const focusable = Array.from( _viewer().querySelectorAll( 'button, video, audio' ))
+        const focusable = Array.from( _viewer().querySelectorAll( FOCUSABLE_SELECTOR ))
               .filter( function( element ) {
                   return ! element.disabled && element.getClientRects().length > 0;
               });
@@ -510,19 +560,34 @@
     /* Modals shown while the viewer is open stack above it. */
 
     function _raiseModal( event ) {
-        if ( _session ) {
-            event.target.classList.add( ABOVE_VIEWER_CLASS );
-        }
-    }
-
-    // Bootstrap adds the backdrop during show, after the show event.
-    function _raiseModalBackdrop( event ) {
-        if ( ! event.target.classList.contains( ABOVE_VIEWER_CLASS )) {
+        if ( ! _session || event.target !== this ) {
             return;
         }
-        const backdrops = document.querySelectorAll( MODAL_BACKDROP_SELECTOR );
-        if ( backdrops.length > 0 ) {
-            backdrops[ backdrops.length - 1 ].classList.add( ABOVE_VIEWER_CLASS );
+        const modalElement = event.target;
+        modalElement.classList.add( ABOVE_VIEWER_CLASS );
+        // Bootstrap appends the backdrop right after the show event.
+        queueMicrotask( function() {
+            const backdrops = document.querySelectorAll( MODAL_BACKDROP_SELECTOR );
+            if ( backdrops.length > 0 ) {
+                backdrops[ backdrops.length - 1 ].classList.add( ABOVE_VIEWER_CLASS );
+            }
+        });
+    }
+
+    // Bound directly on document, so it runs after antinode's handler on
+    // body, which also removes the modal: a delegated binding would no
+    // longer match the detached element.
+    function _handleModalHidden( event ) {
+        const modalElement = event.target;
+        if ( ! modalElement.classList.contains( ABOVE_VIEWER_CLASS )) {
+            return;
+        }
+        modalElement.classList.remove( ABOVE_VIEWER_CLASS );
+        if ( document.querySelector( SHOWN_MODAL_SELECTOR )) {
+            document.body.classList.add( BOOTSTRAP_MODAL_OPEN_CLASS );
+        }
+        if ( _session ) {
+            _closeButton().focus();
         }
     }
 
@@ -562,7 +627,9 @@
     document.addEventListener( 'click', _handleClick );
     document.addEventListener( 'keydown', _handleKeydown, true );
     window.addEventListener( 'resize', _handleResize );
-    $( document ).on( 'show.bs.modal', _raiseModal );
-    $( document ).on( 'shown.bs.modal', _raiseModalBackdrop );
+    // show is delegated, like the app's other modal handlers, so one of
+    // them stopping propagation (attr.js does for shown) cannot skip it.
+    $( document ).on( 'show.bs.modal', MODAL_SELECTOR, _raiseModal );
+    $( document ).on( 'hidden.bs.modal', _handleModalHidden );
 
 })();

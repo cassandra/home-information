@@ -70,6 +70,12 @@ class TestUiFileViewerView(View):
             filename = 'does-not-exist.png',
         ))
         samples.append( FileViewerItem(
+            title = 'HEIC photo (no preview)',
+            url = static( f'{self.SAMPLE_DIRECTORY}/tall.png' ),
+            mime_type = 'image/heic',
+            filename = 'IMG_0001.heic',
+        ))
+        samples.append( FileViewerItem(
             title = 'Broken PDF (error)',
             url = static( f'{self.SAMPLE_DIRECTORY}/notes.txt' ),
             mime_type = 'application/pdf',

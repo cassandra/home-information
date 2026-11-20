@@ -1,10 +1,11 @@
 /**
  * Unit Tests for file-viewer-pdf.js
  *
- * Tests the two calculations behind PDF page display:
+ * Tests the logic behind PDF display that needs no document:
  * - canvas output scale: the device pixel ratio, reduced to keep a
  *   canvas within the pixel budget
  * - current page: the last page starting at or above an offset
+ * - error classification before pdf.js has loaded
  */
 
 (function() {
@@ -16,6 +17,10 @@
             assert.strictEqual( Hi.fileViewerPdf.outputScale( 800, 1000, 2, 16000000 ), 2 );
             assert.strictEqual( Hi.fileViewerPdf.outputScale( 800, 1000, undefined, 16000000 ), 1,
                                 'missing ratio counts as 1' );
+        });
+
+        QUnit.test('output scale is the pixel ratio for a page not yet laid out', function(assert) {
+            assert.strictEqual( Hi.fileViewerPdf.outputScale( 0, 0, 2, 16000000 ), 2 );
         });
 
         QUnit.test('output scale shrinks to keep the canvas within budget', function(assert) {
@@ -31,6 +36,11 @@
             assert.strictEqual( Hi.fileViewerPdf.pageNumberAt( pageTops, 1000 ), 2 );
             assert.strictEqual( Hi.fileViewerPdf.pageNumberAt( pageTops, 2500 ), 3 );
             assert.strictEqual( Hi.fileViewerPdf.pageNumberAt( pageTops, 99999 ), 4 );
+        });
+
+        QUnit.test('errors before pdf.js loads are not document errors', function(assert) {
+            // The suite never loads pdf.js, as when a browser cannot run it.
+            assert.false( Hi.fileViewerPdf.isDocumentError( new Error( 'x' )));
         });
 
         QUnit.test('current page is the first before any page starts', function(assert) {

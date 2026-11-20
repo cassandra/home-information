@@ -13,7 +13,11 @@
     --hi-file-viewer-pdf-max-fit-width: 900px;
 
     position: fixed;
-    inset: 0;
+    /* Below the alert banner while it shows (file-viewer.js). */
+    top: var(--hi-file-viewer-top-inset, 0px);
+    right: 0;
+    bottom: 0;
+    left: 0;
     z-index: 1085;  /* Above Bootstrap modals (1050) and the on-screen keyboard (1080). */
     display: flex;
     flex-direction: column;
@@ -77,10 +81,14 @@ html.hi-file-viewer-open body {
     border-radius: 0.5rem;
 }
 
+/* Close takes focus on every open, so only keyboard focus is shown. */
 .hi-file-viewer-close:hover,
-.hi-file-viewer-close:focus {
+.hi-file-viewer-close:focus-visible {
     color: var(--on-primary-color);
     background-color: var(--primary-highlight-color);
+}
+
+.hi-file-viewer-close:focus {
     outline: none;
 }
 
@@ -104,10 +112,13 @@ html.hi-file-viewer-open body {
 }
 
 .hi-file-viewer-open-tab:hover,
-.hi-file-viewer-open-tab:focus {
+.hi-file-viewer-open-tab:focus-visible {
     color: var(--hi-file-viewer-fg);
     text-decoration: none;
     background-color: rgba( 255, 255, 255, 0.12 );
+}
+
+.hi-file-viewer-open-tab:focus {
     outline: none;
 }
 
@@ -143,7 +154,13 @@ html.hi-file-viewer-open body {
 
 .hi-file-viewer-scroll {
     overflow: auto;
+    overscroll-behavior: contain;
     -webkit-overflow-scrolling: touch;
+}
+
+.hi-file-viewer-scroll:focus-visible {
+    outline: 3px solid rgba( 255, 255, 255, 0.5 );
+    outline-offset: -3px;
 }
 
 /* Image: the stage centers a fitted image and grows with a zoomed one. */
@@ -333,9 +350,13 @@ html.hi-file-viewer-open body {
     font-size: 1rem;
 }
 
+/* Taps leave focus on a button; only keyboard focus is shown. */
 .hi-file-viewer-toolbar button:hover,
-.hi-file-viewer-toolbar button:focus {
+.hi-file-viewer-toolbar button:focus-visible {
     background-color: rgba( 255, 255, 255, 0.12 );
+}
+
+.hi-file-viewer-toolbar button:focus {
     outline: none;
 }
 
@@ -370,4 +391,15 @@ html.hi-file-viewer-open body {
 
 .modal.hi-file-viewer-above {
     z-index: 1095;
+}
+
+/* Alerts and the lost-connection message stay visible over the viewer;
+   the viewer starts below the banner. The banner's z-index is an inline
+   style (alert/panes/alert_banner.html). */
+html.hi-file-viewer-open #hi-alert-banner-container {
+    z-index: 1096 !important;
+}
+
+html.hi-file-viewer-open #hi-server-error-msg {
+    z-index: 1096;
 }

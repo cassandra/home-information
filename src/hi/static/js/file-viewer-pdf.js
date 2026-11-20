@@ -13,7 +13,9 @@
         it is drawn so the scroll height is stable. A page not yet
         fetched takes the first page's size until it is.
       - Only pages near the view hold a drawn canvas; pages leaving it
-        are released, which bounds canvas memory on long documents.
+        are released (canvas and pdf.js page resources), which bounds
+        memory on long documents. A canvas being dropped is first sized
+        to zero: WebKit reclaims canvas memory slowly and caps the total.
       - Zooming resizes every page at once (canvases stretch until
         redrawn), then redraws the pages in view after a short pause so
         repeated taps redraw once. A redraw goes to a fresh canvas that
@@ -37,12 +39,15 @@
     const CURRENT_PAGE_LINE_FRACTION = 1 / 3;
     const MAX_FIT_WIDTH_PROPERTY = '--hi-file-viewer-pdf-max-fit-width';
 
-    const SCROLL_SELECTOR = '[data-file-viewer-scroll]';
-    const PAGES_SELECTOR = '[data-file-viewer-pdf-pages]';
-    const PAGE_TEMPLATE_SELECTOR = 'template[data-file-viewer-pdf-page-template]';
-
     const HiFileViewerPdf = {
-        // options: { url, regionElement, onPageChange( pageNumber, pageCount ) }
+        // options: {
+        //   url,
+        //   configElement:  carries the data-pdfjs-* asset URLs,
+        //   scrollElement:  the scrolling view,
+        //   pagesElement:   receives one page element per page,
+        //   pageTemplate:   <template> whose first element is a page,
+        //   onPageChange( pageNumber, pageCount )
+        // }
         createView: function( options ) {
             return new PdfView( options );
         },
@@ -62,10 +67,10 @@
     let _libraryPromise = null;
     let _library = null;   // set once the import succeeds
 
-    function _loadLibrary( regionElement ) {
+    function _loadLibrary( configElement ) {
         if ( ! _libraryPromise ) {
-            const libraryUrl = regionElement.dataset.pdfjsLibraryUrl;
-            const workerUrl = regionElement.dataset.pdfjsWorkerUrl;
+            const libraryUrl = configElement.dataset.pdfjsLibraryUrl;
+            const workerUrl = configElement.dataset.pdfjsWorkerUrl;
             _libraryPromise = import( libraryUrl ).then( function( pdfjsLib ) {
                 pdfjsLib.GlobalWorkerOptions.workerSrc = workerUrl;
                 _library = pdfjsLib;
@@ -86,6 +91,11 @@
         return ( error instanceof _library.ResponseException )
             || ( error instanceof _library.InvalidPDFException )
             || ( error instanceof _library.PasswordException );
+    }
+
+    function _discardCanvas( canvas ) {
+        canvas.width = 0;
+        canvas.height = 0;
     }
 
     function _outputScale( cssWidth, cssHeight, devicePixelRatio, maxPixels ) {
@@ -119,11 +129,11 @@
 
         constructor( options ) {
             this._url = options.url;
-            this._regionElement = options.regionElement;
+            this._configElement = options.configElement;
+            this._scrollElement = options.scrollElement;
+            this._pagesElement = options.pagesElement;
+            this._pageTemplate = options.pageTemplate;
             this._onPageChange = options.onPageChange;
-            this._scrollElement = this._regionElement.querySelector( SCROLL_SELECTOR );
-            this._pagesElement = this._regionElement.querySelector( PAGES_SELECTOR );
-            this._pageTemplate = this._regionElement.querySelector( PAGE_TEMPLATE_SELECTOR );
 
             this._pdfjsLib = null;
             this._loadingTask = null;
@@ -143,13 +153,13 @@
         // not yet sized or drawn: that waits for the first setZoom, made
         // once the region is visible and can be measured.
         async load() {
-            this._pdfjsLib = await _loadLibrary( this._regionElement );
+            this._pdfjsLib = await _loadLibrary( this._configElement );
             this._throwIfDestroyed();
             this._loadingTask = this._pdfjsLib.getDocument({
                 url                 : this._url,
-                wasmUrl             : this._regionElement.dataset.pdfjsWasmUrl,
-                standardFontDataUrl : this._regionElement.dataset.pdfjsStandardFontDataUrl,
-                iccUrl              : this._regionElement.dataset.pdfjsIccUrl
+                wasmUrl             : this._configElement.dataset.pdfjsWasmUrl,
+                standardFontDataUrl : this._configElement.dataset.pdfjsStandardFontDataUrl,
+                iccUrl              : this._configElement.dataset.pdfjsIccUrl
             });
             this._document = await this._loadingTask.promise;
             this._throwIfDestroyed();
@@ -197,6 +207,7 @@
                 if ( page.renderTask ) {
                     page.renderTask.cancel();
                 }
+                _discardCanvas( page.element.firstElementChild );
             });
             if ( this._loadingTask ) {
                 // Also destroys the document and stops its worker.
@@ -219,9 +230,10 @@
                 number      : pageNumber,
                 element     : element,
                 pdfPage     : null,
-                renderTask  : null,
-                drawnScale  : null,
-                isNearView  : false
+                renderTask      : null,
+                renderingScale  : null,
+                drawnScale      : null,
+                isNearView      : false
             };
         }
 
@@ -230,7 +242,7 @@
             const availableWidth = this._scrollElement.clientWidth
                   - parseFloat( pagesStyle.paddingLeft ) - parseFloat( pagesStyle.paddingRight );
             const maxFitWidth = parseFloat(
-                getComputedStyle( this._regionElement ).getPropertyValue( MAX_FIT_WIDTH_PROPERTY )
+                getComputedStyle( this._scrollElement ).getPropertyValue( MAX_FIT_WIDTH_PROPERTY )
             ) || availableWidth;
             return Math.min( availableWidth, maxFitWidth ) / this._firstPageSize.width;
         }
@@ -297,20 +309,29 @@
             if ( page.drawnScale === scale ) {
                 return;
             }
-            if ( page.renderTask ) {
-                page.renderTask.cancel();
-                page.renderTask = null;
-            }
             if ( ! page.pdfPage ) {
-                page.pdfPage = await this._document.getPage( page.number );
+                try {
+                    page.pdfPage = await this._document.getPage( page.number );
+                } catch ( error ) {
+                    if ( ! this._isDestroyed ) {
+                        console.warn( 'PDF page ' + page.number + ' failed to load:', error );
+                    }
+                    return;
+                }
                 if ( this._isDestroyed ) {
                     return;
                 }
                 // The placeholder had the first page's size.
                 this._sizePage( page );
             }
-            if ( ! page.isNearView || scale !== this._scale ) {
+            if ( ! page.isNearView || scale !== this._scale || page.drawnScale === scale ) {
                 return;
+            }
+            if ( page.renderTask ) {
+                if ( page.renderingScale === scale ) {
+                    return;
+                }
+                page.renderTask.cancel();
             }
 
             const viewport = page.pdfPage.getViewport({ scale: scale });
@@ -327,22 +348,28 @@
                 transform : ( outputScale === 1 ) ? null : [ outputScale, 0, 0, outputScale, 0, 0 ]
             });
             page.renderTask = renderTask;
+            page.renderingScale = scale;
             try {
                 await renderTask.promise;
             } catch ( error ) {
                 if ( ! ( error instanceof this._pdfjsLib.RenderingCancelledException )) {
                     console.warn( 'PDF page ' + page.number + ' failed to render:', error );
                 }
+                _discardCanvas( canvas );
                 return;
             } finally {
                 if ( page.renderTask === renderTask ) {
                     page.renderTask = null;
+                    page.renderingScale = null;
                 }
             }
             if ( this._isDestroyed || ! page.isNearView ) {
+                _discardCanvas( canvas );
                 return;
             }
+            const previousCanvas = page.element.firstElementChild;
             page.element.replaceChildren( canvas );
+            _discardCanvas( previousCanvas );
             page.drawnScale = scale;
         }
 
@@ -350,14 +377,16 @@
             if ( page.renderTask ) {
                 page.renderTask.cancel();
                 page.renderTask = null;
+                page.renderingScale = null;
             }
-            if ( page.drawnScale === null ) {
-                return;
+            if ( page.drawnScale !== null ) {
+                _discardCanvas( page.element.firstElementChild );
+                page.drawnScale = null;
             }
-            const canvas = page.element.firstElementChild;
-            canvas.width = 0;
-            canvas.height = 0;
-            page.drawnScale = null;
+            if ( page.pdfPage ) {
+                // Frees pdf.js's cached drawing data; the page itself stays.
+                page.pdfPage.cleanup();
+            }
         }
 
         _handleScroll() {

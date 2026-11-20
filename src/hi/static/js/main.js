@@ -254,6 +254,9 @@
         DEVICE_REQUIRES_HANDLER_ATTR:        'data-requires-handler',
         DEVICE_REQUIRES_FIELD:               'requires',
 
+        // Alert banner -- mirrors ALERT_BANNER_CONTAINER in hi.constants.DIVID.
+        ALERT_BANNER_CONTAINER_ID:           'hi-alert-banner-container',
+
         // File viewer -- mirrors FILE_VIEWER_* keys in hi.constants.DIVID.
         FILE_VIEWER_ID:                      'hi-file-viewer',
         FILE_VIEWER_URL_ATTR:                'data-file-viewer-url',

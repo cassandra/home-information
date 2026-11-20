@@ -12,6 +12,11 @@ tag in attribute_extras.py.
 {% endcomment %}
 {% ensure_thumbnail attribute %}
 
+{% comment %}
+viewer_item is read once: it stats the stored file for its size, and a
+missing file gives an unknown size rather than an error.
+{% endcomment %}
+{% with viewer_item=attribute.file_viewer_item %}
 <div class="{{ DIVID.ATTR_V2_FILE_CARD_CLASS }}"
      data-attribute-id="{{ attribute.id }}"
      data-url-detect="true"
@@ -19,7 +24,7 @@ tag in attribute_extras.py.
      data-thumbnail-ready="{{ attribute.has_thumbnail|yesno:'true,false' }}"
      data-preview-state="{{ attribute.preview_state }}"
      data-mime-type="{{ attribute.file_mime_type|default:'unknown' }}"
-     data-file-size="{{ attribute.file_value.size|default:0 }}">
+     data-file-size="{{ viewer_item.size_bytes|default:0 }}">
   
   <!-- Hidden field for deletion marking -->
   <input type="hidden"
@@ -42,7 +47,7 @@ tag in attribute_extras.py.
   <!-- File Preview/Thumbnail Area -->
   <button type="button"
           class="attr-v2-file-thumbnail{% if attribute.has_thumbnail %} has-thumbnail{% endif %}{% if attribute.file_mime_type == 'application/pdf' %} is-document{% endif %}"
-          {% file_viewer_attrs attribute.file_viewer_item %}
+          {% file_viewer_attrs viewer_item %}
           title="Tap to view file">
     {% if attribute.has_thumbnail and attribute.thumbnail_url %}
       <img src="{{ attribute.thumbnail_url }}"
@@ -103,7 +108,7 @@ tag in attribute_extras.py.
     </button>
     <button type="button"
             class="btn btn-sm btn-outline-primary"
-            {% file_viewer_attrs attribute.file_viewer_item %}
+            {% file_viewer_attrs viewer_item %}
             title="View file">
       {% icon "eye" size="xl" %}
     </button>
@@ -133,3 +138,4 @@ tag in attribute_extras.py.
     </div>
   </div>
 </div>
+{% endwith %}

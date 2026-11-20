@@ -19,6 +19,8 @@ class TestIconAccessibilityAttrs( SimpleTestCase ):
 
     def test_labeled_icon_is_an_image_with_escaped_label( self ):
         rendered = self.render( '{% icon "eye" aria_label=label title="Tip" %}', label = 'Show "x" <b>' )
-        self.assertIn( 'aria-label="Show &quot;x&quot; &lt;b&gt;" role="img" title="Tip"', rendered )
+        self.assertIn( 'aria-label="Show &quot;x&quot; &lt;b&gt;"', rendered )
+        self.assertIn( 'role="img"', rendered )
+        self.assertIn( 'title="Tip"', rendered )
         self.assertNotIn( 'aria-hidden', rendered )
         return
