@@ -643,14 +643,15 @@ class TestEventManagerEventActions(AsyncEventManagerTestCase):
             
             # Mock external managers but let database operations proceed normally
             mock_alert_manager = AsyncMock()
-            
+
+            # Security level LOW (via the async accessor) doesn't match the alarm action
+            mock_security_manager = MagicMock()
+            mock_security_manager.security_level = SecurityLevel.LOW
+
             with patch.object(self.manager, 'alert_manager_async', return_value=mock_alert_manager), \
                  patch.object(self.manager, 'controller_manager_async'), \
-                 patch.object(self.manager, 'security_manager') as mock_security:
-                
-                # Set current security level to LOW (doesn't match HIGH alarm action)
-                mock_security.return_value.security_level = SecurityLevel.LOW
-                
+                 patch.object(self.manager, 'security_manager_async', return_value=mock_security_manager):
+
                 # Call method under test - let it use real database operations
                 await self.manager._do_new_event_action([event])
                 
