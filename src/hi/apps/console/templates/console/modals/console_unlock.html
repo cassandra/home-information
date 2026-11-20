@@ -1,24 +1,20 @@
-{% extends "modals/action_1.html" %}
-{% load icons %}
+{% extends "modals/no_footer.html" %}
 
 {% block preamble %}
-<form action="{% url 'console_unlock' %}" method="post" class="form" data-async="true">
+{# Stays in the modal: a wrong PIN re-renders only the keypad; success refreshes the page. #}
+<form action="{% url 'console_unlock' %}" method="post" class="form" data-async="true" data-stay-in-modal="true">
   {% csrf_token %}
 {% endblock %}
+
+  {% block header_class %}bg-secondary{% endblock %}
 
   {% block title_text %}
   Console is Locked
   {% endblock %}
 
   {% block body %}
-  {% include "console/panes/lock_password_form.html" %}
-  {% endblock %}
-  
-  {% block action_center %}
-  <button id="hi-console-unlock-button" type="submit" class="btn btn-lg btn-primary"
-        name="action" value="unlock">
-    {% icon "unlock" css_class="hi-icon-left" %}UNLOCK
-  </button>
+  <p class="hi-keypad-prompt">Enter PIN to unlock</p>
+  {% include "panes/keypad_entry.html" %}
   {% endblock %}
 
 {% block postamble %}

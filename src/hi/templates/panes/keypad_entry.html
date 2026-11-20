@@ -1,0 +1,46 @@
+{% comment %}
+On-screen keypad for a fixed-length, fixed-alphabet code (KeypadEntry).
+Behavior lives in js/keypad-entry.js, which reads the data- attributes.
+Must be inside a form; with auto-submit the form submits when the last
+field is full. Server renders error state; the JS only clears it.
+{% endcomment %}
+<div {% if keypad_entry.html_id %}id="{{ keypad_entry.html_id }}" {% endif %}class="hi-keypad-entry{% if keypad_entry.error_message %} is-error{% endif %}"
+     data-keypad-entry
+     data-alphabet="{{ keypad_entry.spec.alphabet }}"
+     data-length="{{ keypad_entry.spec.length }}"
+     data-masked="{{ keypad_entry.spec.masked|yesno:'true,false' }}"
+     data-auto-submit="{{ keypad_entry.spec.auto_submit|yesno:'true,false' }}">
+
+  {% for field in keypad_entry.fields %}
+  <div class="hi-keypad-field{% if forloop.first %} is-active{% endif %}" data-keypad-field>
+    {% if field.label %}
+    <div class="hi-keypad-field-label">{{ field.label }}</div>
+    {% endif %}
+    <div class="hi-keypad-slots" aria-hidden="true">
+      {% for i in keypad_entry.spec.slot_indexes %}
+      <div class="hi-keypad-slot{% if forloop.first %} is-next{% endif %}"></div>
+      {% endfor %}
+    </div>
+    <input type="hidden" name="{{ field.name }}" value="">
+  </div>
+  {% endfor %}
+
+  <div class="hi-keypad-message{% if keypad_entry.error_message %} is-error{% endif %}"
+       role="status" aria-live="polite" data-keypad-message>{{ keypad_entry.error_message|default:'' }}</div>
+
+  <div class="hi-keypad" role="group" aria-label="Keypad"
+       style="grid-template-columns: repeat({{ keypad_entry.spec.columns }}, 1fr);">
+    {% for cell in keypad_entry.spec.cells %}
+    {% if cell.key %}
+    <button type="button" class="hi-keypad-key" data-keypad-key="{{ cell.key }}"
+            aria-label="{{ cell.key }}"
+            style="grid-column: span {{ cell.span }};">{{ cell.key }}</button>
+    {% else %}
+    <button type="button" class="hi-keypad-key hi-keypad-action"
+            data-keypad-action="{{ cell.action.external_name }}"
+            aria-label="{{ cell.action.label }}"
+            style="grid-column: {% if cell.starts_row %}1 / {% endif %}span {{ cell.span }};">{{ cell.action.glyph }}</button>
+    {% endif %}
+    {% endfor %}
+  </div>
+</div>

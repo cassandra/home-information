@@ -51,9 +51,9 @@ urlpatterns = [
           views.ConsoleLockView.as_view(), 
           name='console_lock'),
 
-    path( 'set-lock-password', 
-          views.SetLockPasswordView.as_view(), 
-          name='console_set_lock_password'),
+    path( 'set-lock-pin', 
+          views.SetLockPinView.as_view(), 
+          name='console_set_lock_pin'),
 
     path( 'unlock', 
           views.ConsoleUnlockView.as_view(), 

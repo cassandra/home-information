@@ -1,0 +1,145 @@
+/* On-screen keypad entry: panes/keypad_entry.html, js/keypad-entry.js */
+
+.hi-keypad-entry {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.hi-keypad-prompt {
+  font-size: 1.05rem;
+  text-align: center;
+  margin: 0 0 0.25rem;
+}
+
+.hi-keypad-field {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin: 0.35rem 0;
+}
+.hi-keypad-field-label {
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--muted-color);
+  margin-bottom: 0.25rem;
+}
+.hi-keypad-field.is-active .hi-keypad-field-label {
+  color: var(--primary-color);
+  font-weight: 600;
+}
+
+.hi-keypad-slots {
+  display: flex;
+  gap: 0.6rem;
+}
+.hi-keypad-slot {
+  width: 3rem;
+  height: 3.4rem;
+  border: 2px solid var(--line-color);
+  border-radius: 0.4rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.6rem;
+  font-weight: 600;
+  background: var(--white);
+  transition: border-color 0.1s;
+}
+.hi-keypad-field.is-active .hi-keypad-slot.is-next {
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 3px rgba(23, 112, 114, 0.2);
+}
+.hi-keypad-slot.is-filled {
+  border-color: var(--primary-highlight-color);
+}
+.hi-keypad-entry[data-masked="true"] .hi-keypad-slot.is-filled::after {
+  content: "";
+  width: 0.8rem;
+  height: 0.8rem;
+  border-radius: 50%;
+  background: var(--black);
+}
+.hi-keypad-entry.is-error .hi-keypad-slot {
+  border-color: var(--error-highlight-color);
+}
+.hi-keypad-entry.is-error .hi-keypad-slots {
+  animation: hi-keypad-shake 0.35s;
+}
+@keyframes hi-keypad-shake {
+  0%, 100% { transform: translateX(0); }
+  20%, 60% { transform: translateX(-8px); }
+  40%, 80% { transform: translateX(8px); }
+}
+
+.hi-keypad-message {
+  min-height: 1.5rem;
+  font-size: 0.95rem;
+  margin: 0.35rem 0 0.1rem;
+  text-align: center;
+}
+.hi-keypad-message.is-error {
+  color: var(--error-highlight-color);
+  font-weight: 600;
+}
+
+.hi-keypad {
+  display: grid;
+  gap: 0.5rem;
+  margin: 0.5rem 0 0.75rem;
+  width: 100%;
+  max-width: 320px;
+}
+.hi-keypad-key {
+  min-height: 4rem;
+  font-size: 1.7rem;
+  font-weight: 500;
+  border-radius: 0.5rem;
+  border: 1px solid var(--line-color);
+  background: var(--muted-bg-light);
+  color: var(--black);
+  cursor: pointer;
+  touch-action: manipulation;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+}
+.hi-keypad-key:active,
+.hi-keypad-key.is-pressed {
+  background: var(--primary-color);
+  border-color: var(--primary-color);
+  color: var(--on-primary-color);
+}
+.hi-keypad-key:focus-visible {
+  outline: 3px solid rgba(23, 112, 114, 0.5);
+  outline-offset: 1px;
+}
+.hi-keypad-key.hi-keypad-action {
+  font-size: 1rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  background: var(--white);
+  color: var(--muted-color);
+}
+
+.hi-keypad-key.hi-keypad-action[data-keypad-action="backspace"] {
+  font-size: 1.5rem;
+}
+
+.hi-keypad-hint {
+  width: 100%;
+  font-size: 0.85rem;
+  color: #6c5300;
+  background: var(--warning-bg-light);
+  border-left: 3px solid var(--warning-color);
+  padding: 0.4rem 0.6rem;
+  margin: 0.25rem 0 0.5rem;
+}
+
+@media (max-height: 760px) {
+  .hi-keypad-key {
+    min-height: 3.3rem;
+    font-size: 1.45rem;
+  }
+}

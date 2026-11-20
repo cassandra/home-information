@@ -1,10 +1,14 @@
 from django.core.exceptions import BadRequest
 from django.http import Http404, HttpRequest, HttpResponseRedirect
+from django.template.loader import render_to_string
 from django.urls import reverse
 from django.views.generic import View
 from datetime import datetime
+from typing import List
 from django.utils import timezone
 
+import hi.apps.common.antinode as antinode
+from hi.apps.common.keypad_spec import KeypadEntry, KeypadField
 from hi.apps.entity.view_mixins import EntityViewMixin
 from hi.apps.sense.models import Sensor
 from hi.apps.sense.view_mixins import SenseViewMixin
@@ -213,35 +217,89 @@ class ConsoleLockView( View ):
 
     def post( self, request, *args, **kwargs ):
         if not ConsoleSettingsHelper().get_console_lock_pin():
-            return SetLockPasswordView().get( request, *args, **kwargs )
+            return SetLockPinView().get( request, *args, **kwargs )
         request.session[ConsoleConstants.CONSOLE_LOCKED_SESSION_VAR] = True
         return ConsoleUnlockView().get( request, *args, **kwargs )
 
+
+class LockPinModalView( HiModalView ):
+    """ Modal whose body is the lock PIN keypad over KEYPAD_FIELDS. """
+
+    KEYPAD_FIELDS : List[ KeypadField ] = []
+    KEYPAD_HTML_ID : str = None
+
+    def keypad_entry( self, error_message : str = None ) -> KeypadEntry:
+        return KeypadEntry(
+            spec = ConsoleConstants.LOCK_PIN_KEYPAD,
+            fields = self.KEYPAD_FIELDS,
+            error_message = error_message,
+            html_id = self.KEYPAD_HTML_ID,
+        )
+
+    def keypad_response( self, request, status : int, error_message : str = None ):
+        return self.modal_response(
+            request,
+            context = { 'keypad_entry': self.keypad_entry( error_message = error_message ) },
+            status = status,
+        )
+
+    def keypad_replace_response( self, request, status : int, error_message : str = None ):
+        """ Re-renders only the keypad, for forms that stay in the modal. """
+        content = render_to_string(
+            'panes/keypad_entry.html',
+            { 'keypad_entry': self.keypad_entry( error_message = error_message ) },
+            request = request,
+        )
+        return antinode.response(
+            replace_map = { self.KEYPAD_HTML_ID: content },
+            status = status,
+        )
+
     
-class SetLockPasswordView( HiModalView ):
+class SetLockPinView( LockPinModalView ):
+
+    PIN_FIELD = KeypadField( name = 'pin', label = 'New PIN' )
+    CONFIRM_FIELD = KeypadField( name = 'pin_confirm', label = 'Confirm PIN' )
+    KEYPAD_FIELDS = [ PIN_FIELD, CONFIRM_FIELD ]
 
     def get_template_name( self ) -> str:
-        return 'console/modals/set_lock_password.html'
+        return 'console/modals/set_lock_pin.html'
     
     def get( self, request, *args, **kwargs ):
-        return self.modal_response( request )
+        return self.keypad_response( request, status = 200 )
     
     def post( self, request, *args, **kwargs ):
-        input_pin = request.POST.get('password')
+        input_pin = request.POST.get( self.PIN_FIELD.name )
+        confirm_pin = request.POST.get( self.CONFIRM_FIELD.name )
         if not ConsoleConstants.LOCK_PIN_KEYPAD.is_valid( input_pin ):
-            raise BadRequest( 'PIN must be exactly 4 digits.' )
+            return self.keypad_response(
+                request,
+                status = 400,
+                error_message = f'PIN must be exactly {ConsoleConstants.LOCK_PIN_KEYPAD.length} digits.',
+            )
+        if confirm_pin != input_pin:
+            return self.keypad_response(
+                request,
+                status = 400,
+                error_message = 'PINs did not match. Try again.',
+            )
+
         ConsoleSettingsHelper().set_console_lock_pin( pin = input_pin )
         request.session[ConsoleConstants.CONSOLE_LOCKED_SESSION_VAR] = True
         return ConsoleUnlockView().get( request, *args, **kwargs )
 
     
-class ConsoleUnlockView( HiModalView ):
+class ConsoleUnlockView( LockPinModalView ):
+
+    PIN_FIELD = KeypadField( name = 'pin' )
+    KEYPAD_FIELDS = [ PIN_FIELD ]
+    KEYPAD_HTML_ID = 'hi-console-unlock-keypad'
 
     def get_template_name( self ) -> str:
         return 'console/modals/console_unlock.html'
 
     def get(self, request, *args, **kwargs):
-        return self.modal_response( request, status = 403 )
+        return self.keypad_response( request, status = 403 )
                                     
     def post(self, request, *args, **kwargs):
 
@@ -250,18 +308,15 @@ class ConsoleUnlockView( HiModalView ):
         # up security here if/when needed, but eventual login requirements
         # and its session will be the main auth method.
         
-        input_pin = request.POST.get('password')
-        if not input_pin:
-            raise BadRequest( 'No PIN provided.' )
-
+        input_pin = request.POST.get( self.PIN_FIELD.name )
         lock_pin = ConsoleSettingsHelper().get_console_lock_pin()
 
-        if lock_pin and ( input_pin != lock_pin ):
-            raise BadRequest( 'Invalid PIN.' )
-                               
         # N.B. The console can be locked without a valid PIN (e.g., the
         # stored value is a legacy password). Since it would then be
         # impossible to unlock, we unlock in that case.
+
+        if lock_pin and ( input_pin != lock_pin ):
+            return self.keypad_replace_response( request, status = 400, error_message = 'Incorrect PIN' )
 
         request.session[ConsoleConstants.CONSOLE_LOCKED_SESSION_VAR] = False
         return self.refresh_response( request= request )
