@@ -252,7 +252,16 @@
         // Device capabilities -- mirrors DEVICE_* keys in hi.constants.DIVID.
         DEVICE_REQUIRES_ATTR:                'data-requires',
         DEVICE_REQUIRES_HANDLER_ATTR:        'data-requires-handler',
-        DEVICE_REQUIRES_FIELD:               'requires'
+        DEVICE_REQUIRES_FIELD:               'requires',
+
+        // File viewer -- mirrors FILE_VIEWER_* keys in hi.constants.DIVID.
+        FILE_VIEWER_ID:                      'hi-file-viewer',
+        FILE_VIEWER_URL_ATTR:                'data-file-viewer-url',
+        FILE_VIEWER_KIND_ATTR:               'data-file-viewer-kind',
+        FILE_VIEWER_TITLE_ATTR:              'data-file-viewer-title',
+        FILE_VIEWER_FILENAME_ATTR:           'data-file-viewer-filename',
+        FILE_VIEWER_MIME_TYPE_ATTR:          'data-file-viewer-mime-type',
+        FILE_VIEWER_SIZE_ATTR:               'data-file-viewer-size'
     };
     
     window.Hi = Hi;

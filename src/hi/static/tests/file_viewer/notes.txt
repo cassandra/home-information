@@ -1,0 +1,6 @@
+Service notes (sample)
+
+2024-10-02  Annual service. Replaced filter.
+2025-01-14  Short-cycling reported. Pressure switch hose cleared.
+
+<b>This markup must show as text, not bold.</b>

@@ -11,4 +11,8 @@ urlpatterns = [
     path('icons',
          views.TestUiIconBrowserView.as_view(), 
          name='common_tests_ui_icons'),
+
+    path('file-viewer',
+         views.TestUiFileViewerView.as_view(),
+         name='common_tests_ui_file_viewer'),
 ]

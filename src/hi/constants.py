@@ -239,6 +239,17 @@ DIVID = {
     'DEVICE_REQUIRES_HANDLER_ATTR': 'data-requires-handler',
     'DEVICE_REQUIRES_FIELD': 'requires',
 
+    # File viewer -- a trigger element carries the file it shows (see
+    # hi.apps.common.file_viewer); file-viewer.js opens the overlay on
+    # click. Mirror in ``src/hi/static/js/main.js`` (``Hi.FILE_VIEWER_*``).
+    'FILE_VIEWER_ID': 'hi-file-viewer',
+    'FILE_VIEWER_URL_ATTR': 'data-file-viewer-url',
+    'FILE_VIEWER_KIND_ATTR': 'data-file-viewer-kind',
+    'FILE_VIEWER_TITLE_ATTR': 'data-file-viewer-title',
+    'FILE_VIEWER_FILENAME_ATTR': 'data-file-viewer-filename',
+    'FILE_VIEWER_MIME_TYPE_ATTR': 'data-file-viewer-mime-type',
+    'FILE_VIEWER_SIZE_ATTR': 'data-file-viewer-size',
+
     # Location SVG Editor Grid Structure
     'LOCATION_SVG_EDIT_TOP': 'hi-location-svg-editor-top',
     'LOCATION_SVG_EDIT_BOTTOM': 'hi-location-svg-editor-bottom',

@@ -1,6 +1,7 @@
 {% load static %}
 {% load pipeline %}
 {% load device_tags %}
+{% load file_viewer_tags %}
 {% device_capability_available 'keyboard' as device_has_keyboard %}
 <!doctype html>
 <html class="no-js" lang="en">
@@ -56,7 +57,8 @@
     {% block content %}{% endblock %}
 
     {% include "config/panes/base_page_settings.html" %}
-    
+    {% file_viewer_shell %}
+
     <div id="hi-server-error-msg" role="alert" aria-live="assertive">
       <svg class="icon" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
         <path d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z"/>

@@ -1,0 +1,88 @@
+{% load icons %}
+{% comment %}
+In-app file viewer overlay, rendered once per page by the
+file_viewer_shell tag. Behavior lives in js/file-viewer.js, which
+reads the data-file-viewer-* hooks below: it shows one region at a
+time, fills the slots, and acts on the actions. It never builds
+markup. Kind regions are named by FileViewerKind external names;
+"loading" and "error" are viewer states.
+{% endcomment %}
+<div id="{{ DIVID.FILE_VIEWER_ID }}" class="hi-file-viewer"
+     role="dialog" aria-modal="true" aria-labelledby="{{ DIVID.FILE_VIEWER_ID }}-title" hidden>
+
+  <div class="hi-file-viewer-header">
+    <div class="hi-file-viewer-titles">
+      <div class="hi-file-viewer-title" id="{{ DIVID.FILE_VIEWER_ID }}-title" data-file-viewer-slot="title"></div>
+      <div class="hi-file-viewer-subtitle" data-file-viewer-slot="subtitle" data-separator=" &middot; "></div>
+    </div>
+    <button type="button" class="hi-file-viewer-close" data-file-viewer-action="close" aria-label="Close file viewer">
+      {% icon "close" size="lg" %}
+      <span class="hi-file-viewer-close-label">Close</span>
+    </button>
+  </div>
+
+  <div class="hi-file-viewer-body">
+
+    <div class="hi-file-viewer-region" data-file-viewer-region="loading" hidden>
+      <div class="hi-file-viewer-message">
+        <div class="hi-file-viewer-spinner" role="status" aria-label="Loading"></div>
+      </div>
+    </div>
+
+    <div class="hi-file-viewer-region" data-file-viewer-region="{{ kind.IMAGE }}" hidden>
+      <div class="hi-file-viewer-scroll" data-file-viewer-scroll>
+        <div class="hi-file-viewer-image-stage" data-file-viewer-stage>
+          <img class="hi-file-viewer-image" alt="" data-file-viewer-media>
+        </div>
+      </div>
+    </div>
+
+    <div class="hi-file-viewer-region" data-file-viewer-region="{{ kind.VIDEO }}" hidden>
+      <div class="hi-file-viewer-media-stage">
+        <video class="hi-file-viewer-video" controls playsinline preload="metadata" data-file-viewer-media></video>
+      </div>
+    </div>
+
+    <div class="hi-file-viewer-region" data-file-viewer-region="{{ kind.AUDIO }}" hidden>
+      <div class="hi-file-viewer-media-stage">
+        <div class="hi-file-viewer-audio-icon">{% icon "audio-enabled" size="xl" %}</div>
+        <audio class="hi-file-viewer-audio" controls preload="metadata" data-file-viewer-media></audio>
+      </div>
+    </div>
+
+    <div class="hi-file-viewer-region" data-file-viewer-region="{{ kind.TEXT }}" hidden>
+      <div class="hi-file-viewer-scroll">
+        <pre class="hi-file-viewer-text" data-file-viewer-slot="text"></pre>
+      </div>
+    </div>
+
+    <div class="hi-file-viewer-region" data-file-viewer-region="{{ kind.UNSUPPORTED }}" hidden>
+      <div class="hi-file-viewer-message">
+        <div class="hi-file-viewer-message-icon">{% icon "upload" size="xl" %}</div>
+        <h2 class="hi-file-viewer-message-title">No preview available</h2>
+        <div class="hi-file-viewer-message-detail">This type of file can't be shown here.</div>
+        <dl class="hi-file-viewer-details">
+          <dt>File</dt><dd data-file-viewer-slot="filename" data-empty-text="Unknown"></dd>
+          <dt>Type</dt><dd data-file-viewer-slot="mime-type" data-empty-text="Unknown"></dd>
+          <dt>Size</dt><dd data-file-viewer-slot="size" data-empty-text="Unknown"></dd>
+        </dl>
+      </div>
+    </div>
+
+    <div class="hi-file-viewer-region" data-file-viewer-region="error" hidden>
+      <div class="hi-file-viewer-message">
+        <div class="hi-file-viewer-message-icon">{% icon "warning" size="xl" %}</div>
+        <h2 class="hi-file-viewer-message-title">Couldn't load this file</h2>
+        <div class="hi-file-viewer-message-detail">The file may have been removed, or its source may be unreachable.</div>
+      </div>
+    </div>
+
+    <div class="hi-file-viewer-toolbar" role="toolbar" aria-label="Zoom" data-file-viewer-toolbar hidden>
+      <button type="button" data-file-viewer-action="zoom-out" aria-label="Zoom out">&minus;</button>
+      <span class="hi-file-viewer-zoom-level" data-file-viewer-slot="zoom-level" aria-live="polite"></span>
+      <button type="button" data-file-viewer-action="zoom-in" aria-label="Zoom in">+</button>
+      <button type="button" class="hi-file-viewer-toolbar-text" data-file-viewer-action="zoom-fit">Fit</button>
+    </div>
+
+  </div>
+</div>
