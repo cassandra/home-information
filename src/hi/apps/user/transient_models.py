@@ -31,13 +31,15 @@ class UserAuthenticationData:
         self._token = token_generator.make_token( user = self._user )
 
         magic_code_generator = MagicCodeGenerator()
-        self._magic_code = magic_code_generator.make_magic_code( request )
+        self._magic_code = magic_code_generator.make_magic_code(
+            request,
+            email_address = self._email_address,
+        )
 
         self._magic_code_form = forms.SigninMagicCodeForm(
             initial = { 'email_address': self._email_address }
         )
-        logger.debug( f'UserAuthenticationData: EMAIL = {self._user},'
-                      f'TOKEN = {self._token}, CODE = {self._magic_code}' )
+        logger.debug( f'UserAuthenticationData: EMAIL = {self._email_address}' )
         return
     
     @property

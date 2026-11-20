@@ -1,13 +1,12 @@
 import logging
-from unittest.mock import Mock, patch
+from unittest.mock import patch
 
-from django.contrib.auth import get_user_model
+from django.contrib.auth import get_user, get_user_model
 from django.contrib.auth.tokens import PasswordResetTokenGenerator
 from django.urls import reverse
 
 from hi.apps.notify.email_sender import EmailSender
-from hi.apps.user.magic_code_generator import MagicCodeStatus, MagicCodeGenerator
-from hi.apps.user.signin_manager import SigninManager
+from hi.apps.user.magic_code_generator import MagicCodeGenerator
 from hi.testing.view_test_base import SyncViewTestCase
 
 logging.disable(logging.CRITICAL)
@@ -15,355 +14,189 @@ logging.disable(logging.CRITICAL)
 User = get_user_model()
 
 
-class TestUserSigninView(SyncViewTestCase):
-    """
-    Tests for UserSigninView - demonstrates user authentication testing.
-    This view handles email-based signin requests.
-    """
+class SigninFlowTestMixin:
+    """ Drives the real sign-in flow, mocking only the outbound email boundary. """
 
-    def setUp(self):
-        super().setUp()
-        # Use the user from parent setUp()
+    MAGIC_CODE_TEMPLATE = 'user/pages/magic_code_signin.html'
 
-    @patch.object(EmailSender, 'is_email_configured')
-    def test_get_signin_page_email_configured(self, mock_is_configured):
-        """Test getting signin page when email is configured."""
-        mock_is_configured.return_value = True
+    def request_signin_code(self, email_address):
+        with patch.object(EmailSender, 'send') as mock_send:
+            response = self.client.post(reverse('user_signin'), {'email': email_address})
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateRendered(response, self.MAGIC_CODE_TEMPLATE)
+        return mock_send, self.client.session.get(MagicCodeGenerator.MAGIC_CODE)
 
-        url = reverse('user_signin')
-        response = self.client.get(url)
+    def submit_signin_code(self, email_address, magic_code):
+        return self.client.post(reverse('user_signin_magic_code'), {
+            'email_address': email_address,
+            'magic_code': magic_code,
+        })
+
+    def assertSignedInAs(self, user):
+        self.assertEqual(get_user(self.client), user)
+
+    def assertNotSignedIn(self):
+        self.assertFalse(get_user(self.client).is_authenticated)
+
+    def assertCodeRejected(self, response, message='Invalid access code.'):
+        self.assertTemplateRendered(response, self.MAGIC_CODE_TEMPLATE)
+        self.assertContains(response, message, status_code=400)
+        self.assertNotSignedIn()
+
+
+class TestUserSigninView(SigninFlowTestMixin, SyncViewTestCase):
+
+    @patch.object(EmailSender, 'is_email_configured', return_value=False)
+    def test_get_signin_page_flags_email_not_configured(self, mock_is_configured):
+        response = self.client.get(reverse('user_signin'))
 
         self.assertSuccessResponse(response)
-        self.assertHtmlResponse(response)
         self.assertTemplateRendered(response, 'user/pages/signin.html')
-        self.assertEqual(response.context['email_not_configured'], False)
-
-    @patch.object(EmailSender, 'is_email_configured')
-    def test_get_signin_page_email_not_configured(self, mock_is_configured):
-        """Test getting signin page when email is not configured."""
-        mock_is_configured.return_value = False
-
-        url = reverse('user_signin')
-        response = self.client.get(url)
-
-        self.assertSuccessResponse(response)
-        self.assertEqual(response.context['email_not_configured'], True)
+        self.assertTrue(response.context['email_not_configured'])
 
     def test_post_signin_already_authenticated(self):
-        """Test POST request when user is already authenticated."""
-        # Force authentication
         self.client.force_login(self.user)
 
-        url = reverse('user_signin')
-        response = self.client.post(url, {'email': 'test@example.com'})
+        response = self.client.post(reverse('user_signin'), {'email': self.user.email})
 
         self.assertEqual(response.status_code, 400)
 
     def test_post_signin_no_email(self):
-        """Test POST request without email."""
-        url = reverse('user_signin')
-        response = self.client.post(url, {})
+        response = self.client.post(reverse('user_signin'), {})
 
         self.assertEqual(response.status_code, 400)
 
     def test_post_signin_invalid_email(self):
-        """Test POST request with invalid email."""
-        url = reverse('user_signin')
-        response = self.client.post(url, {'email': 'invalid-email'})
+        response = self.client.post(reverse('user_signin'), {'email': 'not-an-email'})
 
         self.assertEqual(response.status_code, 400)
 
-    @patch('hi.apps.user.views.SendMagicLinkEmailView')
-    def test_post_signin_existing_user(self, mock_send_view_class):
-        """Test POST request with existing user email."""
-        from django.http import HttpResponse
-        mock_send_view = mock_send_view_class.return_value
-        mock_send_view.send_signin_magic_link.return_value = HttpResponse('mock_response')
+    def test_existing_account_is_sent_code(self):
+        mock_send, magic_code = self.request_signin_code(self.user.email)
 
-        url = reverse('user_signin')
-        _ = self.client.post(url, {'email': self.user.email})
+        mock_send.assert_called_once()
+        self.assertIsNotNone(magic_code)
 
-        # Should delegate to SendMagicLinkEmailView
-        mock_send_view.send_signin_magic_link.assert_called_once()
-        call_kwargs = mock_send_view.send_signin_magic_link.call_args[1]
-        self.assertEqual(call_kwargs['override_user'], self.user)
+    def test_nonexistent_account_gets_unsent_code_bound_to_email(self):
+        """ Session must change exactly as for a real account, so a prior code cannot be used as an oracle. """
+        mock_send, magic_code = self.request_signin_code('nobody@example.com')
 
-    @patch('hi.apps.user.views.SigninMagicCodeView')
-    def test_post_signin_nonexistent_user(self, mock_magic_code_view_class):
-        """Test POST request with nonexistent user email."""
-        from django.http import HttpResponse
-        mock_magic_code_view = mock_magic_code_view_class.return_value
-        mock_magic_code_view.get_response.return_value = HttpResponse('mock_response')
+        mock_send.assert_not_called()
+        self.assertIsNotNone(magic_code)
+        self.assertEqual(self.client.session[MagicCodeGenerator.MAGIC_CODE_EMAIL], 'nobody@example.com')
 
-        url = reverse('user_signin')
-        _ = self.client.post(url, {'email': 'nonexistent@example.com'})
+    def test_new_signin_replaces_pending_code_for_any_email(self):
+        _, first_code = self.request_signin_code(self.user.email)
+        self.request_signin_code('nobody@example.com')
 
-        # Should delegate to SigninMagicCodeView
-        mock_magic_code_view.get_response.assert_called_once()
+        response = self.submit_signin_code(self.user.email, first_code)
 
-    def test_post_signin_email_validation_error(self):
-        """Test POST request with email that fails validation."""
-        url = reverse('user_signin')
-        # Pass actually invalid email format that will fail Django's validate_email
-        response = self.client.post(url, {'email': 'not-an-email'})
+        self.assertCodeRejected(response)
+
+
+class TestSigninMagicCodeView(SigninFlowTestMixin, SyncViewTestCase):
+
+    def test_invalid_form(self):
+        response = self.client.post(reverse('user_signin_magic_code'), {})
 
         self.assertEqual(response.status_code, 400)
 
+    def test_correct_code_signs_in_and_verifies_email(self):
+        _, magic_code = self.request_signin_code(self.user.email)
 
-class TestSendMagicLinkEmailView(SyncViewTestCase):
-    """
-    Tests for SendMagicLinkEmailView - demonstrates magic link email testing.
-    This view sends magic link emails for authentication.
-    """
+        response = self.submit_signin_code(self.user.email, magic_code)
 
-    def setUp(self):
-        super().setUp()
-        # Use the user from parent setUp()
+        self.assertRedirects(response, reverse('home'), fetch_redirect_response=False)
+        self.assertSignedInAs(self.user)
+        self.user.refresh_from_db()
+        self.assertTrue(self.user.email_verified)
 
-    @patch.object(SigninManager, 'send_signin_magic_link_email')
-    @patch('hi.apps.user.views.SigninMagicCodeView')
-    def test_send_signin_magic_link(self, mock_magic_code_view_class, mock_send_email):
-        """Test sending signin magic link email."""
-        mock_magic_code_view = mock_magic_code_view_class.return_value
-        mock_magic_code_view.get_response.return_value = 'mock_response'
+    def test_code_cannot_be_reused(self):
+        _, magic_code = self.request_signin_code(self.user.email)
+        self.submit_signin_code(self.user.email, magic_code)
+        self.client.logout()
 
-        from hi.apps.user.views import SendMagicLinkEmailView
-        view = SendMagicLinkEmailView()
-        
-        # Create a mock request
-        request = self.client.get('/').wsgi_request
-        
-        _ = view.send_signin_magic_link(
-            request=request,
-            override_user=self.user
-        )
+        response = self.submit_signin_code(self.user.email, magic_code)
 
-        # Should call signin manager to send email
-        mock_send_email.assert_called_once()
-        
-        # Should delegate to magic code view for response
-        mock_magic_code_view.get_response.assert_called_once()
+        self.assertCodeRejected(response)
 
-    @patch.object(SigninManager, 'send_signin_magic_link_email')
-    @patch('hi.apps.user.views.SigninMagicCodeView')
-    def test_send_magic_link_creates_user_auth_data(self, mock_magic_code_view_class, mock_send_email):
-        """Test that user authentication data is created properly."""
-        mock_magic_code_view = mock_magic_code_view_class.return_value
-        mock_magic_code_view.get_response.return_value = 'mock_response'
+    def test_wrong_code_rejected(self):
+        self.request_signin_code(self.user.email)
 
-        from hi.apps.user.views import SendMagicLinkEmailView
-        view = SendMagicLinkEmailView()
-        
-        # Create a mock request
-        request = self.client.get('/').wsgi_request
-        
-        view.send_signin_magic_link(
-            request=request,
-            override_user=self.user
-        )
+        response = self.submit_signin_code(self.user.email, 'wxyzwx')
 
-        # Should pass user auth data to signin manager
-        mock_send_email.assert_called_once()
-        call_args = mock_send_email.call_args[1]
-        self.assertIn('user_auth_data', call_args)
+        self.assertCodeRejected(response)
 
+    def test_nonexistent_account_rejected_even_with_matching_code(self):
+        _, magic_code = self.request_signin_code('nobody@example.com')
 
-class TestSigninMagicCodeView(SyncViewTestCase):
-    """
-    Tests for SigninMagicCodeView - demonstrates magic code verification testing.
-    This view handles magic code form submission and verification.
-    """
+        response = self.submit_signin_code('nobody@example.com', magic_code)
 
-    def setUp(self):
-        super().setUp()
-        # Use the user from parent setUp()
+        self.assertCodeRejected(response)
 
-    def test_get_response_method(self):
-        """Test the get_response method renders correctly."""
-        from hi.apps.user.views import SigninMagicCodeView
-        from hi.apps.user.forms import SigninMagicCodeForm
-        
-        view = SigninMagicCodeView()
-        form = SigninMagicCodeForm(initial={'email_address': 'test@example.com'})
-        
-        # Create a mock request
-        request = self.client.get('/').wsgi_request
-        
-        response = view.get_response(request=request, magic_code_form=form)
-        
-        # Should render the magic code template
-        self.assertEqual(response.status_code, 200)
+    def test_no_code_in_session_rejected(self):
+        response = self.submit_signin_code(self.user.email, 'abcdef')
 
-    def test_post_invalid_form(self):
-        """Test POST request with invalid form data."""
-        url = reverse('user_signin_magic_code')
-        # Send completely empty data which should make the form invalid
-        response = self.client.post(url, {})
+        self.assertCodeRejected(response)
 
-        self.assertEqual(response.status_code, 400)
+    def test_code_issued_for_other_account_rejected(self):
+        other_user = User.objects.create_user(email='other@example.com', password='x')
+        _, magic_code = self.request_signin_code(other_user.email)
 
-    def test_post_nonexistent_user(self):
-        """Test POST request with nonexistent user email."""
-        url = reverse('user_signin_magic_code')
-        response = self.client.post(url, {
-            'email_address': 'nonexistent@example.com',
-            'magic_code': '123456'
-        })
+        response = self.submit_signin_code(self.user.email, magic_code)
 
-        self.assertEqual(response.status_code, 400)
+        self.assertCodeRejected(response)
 
-    @patch.object(MagicCodeGenerator, 'check_magic_code')
-    def test_post_invalid_magic_code(self, mock_check_code):
-        """Test POST request with invalid magic code."""
-        # Mock invalid magic code
-        mock_check_code.return_value = MagicCodeStatus.INVALID
+    def test_expired_code_rejected_with_expired_message(self):
+        _, magic_code = self.request_signin_code(self.user.email)
+        expired_now = (MagicCodeGenerator.get_elapsed_seconds()
+                       + MagicCodeGenerator.MAGIC_CODE_TIMEOUT_SECS + 1)
 
-        url = reverse('user_signin_magic_code')
-        response = self.client.post(url, {
-            'email_address': self.user.email,
-            'magic_code': '123456'
-        })
+        with patch.object(MagicCodeGenerator, 'get_elapsed_seconds', return_value=expired_now):
+            response = self.submit_signin_code(self.user.email, magic_code)
 
-        self.assertEqual(response.status_code, 400)
+        self.assertCodeRejected(response, message='Access code has expired.')
 
-    @patch.object(MagicCodeGenerator, 'check_magic_code')
-    def test_post_expired_magic_code(self, mock_check_code):
-        """Test POST request with expired magic code."""
-        # Mock expired magic code
-        mock_check_code.return_value = MagicCodeStatus.EXPIRED
+    def test_too_many_attempts_then_new_code_for_same_email_signs_in(self):
+        _, first_code = self.request_signin_code(self.user.email)
+        for _ in range(MagicCodeGenerator.MAX_FAILED_ATTEMPTS):
+            response = self.submit_signin_code(self.user.email, 'wxyzwx')
+        self.assertCodeRejected(response, message='Too many incorrect attempts.')
 
-        url = reverse('user_signin_magic_code')
-        response = self.client.post(url, {
-            'email_address': self.user.email,
-            'magic_code': '123456'
-        })
+        _, new_code = self.request_signin_code(self.user.email)
+        response = self.submit_signin_code(self.user.email, new_code)
 
-        self.assertEqual(response.status_code, 400)
-
-    @patch.object(MagicCodeGenerator, 'expire_magic_code')
-    @patch.object(SigninManager, 'do_login')
-    @patch.object(MagicCodeGenerator, 'check_magic_code')
-    @patch('hi.apps.user.forms.SigninMagicCodeForm')
-    def test_post_valid_magic_code(self, mock_form_class, mock_check_code, mock_do_login, mock_expire_code):
-        """Test POST request with valid magic code."""
-        # Mock valid form
-        mock_form = Mock()
-        mock_form.is_valid.return_value = True
-        mock_form.cleaned_data = {
-            'email_address': self.user.email,
-            'magic_code': '123456'
-        }
-        mock_form_class.return_value = mock_form
-
-        # Mock valid magic code
-        mock_check_code.return_value = MagicCodeStatus.VALID
-
-        url = reverse('user_signin_magic_code')
-        response = self.client.post(url, {
-            'email_address': self.user.email,
-            'magic_code': '123456'
-        })
-
-        self.assertEqual(response.status_code, 302)
-        expected_url = reverse('home')
-        self.assertEqual(response.url, expected_url)
-        
-        # Should perform login and expire code
-        mock_do_login.assert_called_once()
-        mock_expire_code.assert_called_once()
+        self.assertSignedInAs(self.user)
 
 
-class TestSigninMagicLinkView(SyncViewTestCase):
-    """
-    Tests for SigninMagicLinkView - demonstrates magic link authentication testing.
-    This view handles magic link clicks from emails.
-    """
+class TestSigninMagicLinkView(SigninFlowTestMixin, SyncViewTestCase):
 
-    def setUp(self):
-        super().setUp()
-        # Use the user from parent setUp()
+    BAD_LINK_TEMPLATE = 'user/pages/signin_magic_bad_link.html'
 
-    def test_get_missing_token(self):
-        """Test GET request with missing token."""
-        from django.urls.exceptions import NoReverseMatch
-        with self.assertRaises(NoReverseMatch):
-            reverse('user_signin_magic_link', kwargs={
-                'email': self.user.email,
-                'token': ''
-            })
+    def get_link(self, email_address, token):
+        return self.client.get(reverse('user_signin_magic_link', kwargs={
+            'email': email_address,
+            'token': token,
+        }))
 
-    def test_get_missing_email(self):
-        """Test GET request with missing email."""
-        from django.urls.exceptions import NoReverseMatch
-        with self.assertRaises(NoReverseMatch):
-            reverse('user_signin_magic_link', kwargs={
-                'email': '',
-                'token': 'test-token'
-            })
+    def test_valid_token_signs_in(self):
+        token = PasswordResetTokenGenerator().make_token(user=self.user)
 
-    def test_get_nonexistent_user(self):
-        """Test GET request with nonexistent user email."""
-        url = reverse('user_signin_magic_link', kwargs={
-            'email': 'nonexistent@example.com',
-            'token': 'test-token'
-        })
-        response = self.client.get(url)
-        self.assertEqual(response.status_code, 400)
+        response = self.get_link(self.user.email, token)
 
-    @patch.object(PasswordResetTokenGenerator, 'check_token')
-    def test_get_invalid_token(self, mock_check_token):
-        """Test GET request with invalid token."""
-        mock_check_token.return_value = False
+        self.assertRedirects(response, reverse('home'), fetch_redirect_response=False)
+        self.assertSignedInAs(self.user)
 
-        url = reverse('user_signin_magic_link', kwargs={
-            'email': self.user.email,
-            'token': 'invalid-token'
-        })
-        response = self.client.get(url)
+    def test_invalid_token_shows_bad_link_page(self):
+        response = self.get_link(self.user.email, 'invalid-token')
 
         self.assertSuccessResponse(response)
-        self.assertTemplateRendered(response, 'user/pages/signin_magic_bad_link.html')
+        self.assertTemplateRendered(response, self.BAD_LINK_TEMPLATE)
+        self.assertNotSignedIn()
 
-    @patch.object(SigninManager, 'do_login')
-    @patch.object(PasswordResetTokenGenerator, 'check_token')
-    def test_get_valid_token(self, mock_check_token, mock_do_login):
-        """Test GET request with valid token."""
-        mock_check_token.return_value = True
+    def test_nonexistent_account_matches_invalid_token_response(self):
+        response = self.get_link('nobody@example.com', 'invalid-token')
 
-        url = reverse('user_signin_magic_link', kwargs={
-            'email': self.user.email,
-            'token': 'valid-token'
-        })
-        response = self.client.get(url)
-
-        self.assertEqual(response.status_code, 302)
-        expected_url = reverse('home')
-        self.assertEqual(response.url, expected_url)
-        
-        # Should perform login
-        mock_do_login.assert_called_once()
-
-    @patch.object(PasswordResetTokenGenerator, 'check_token')
-    def test_token_validation_called_correctly(self, mock_check_token):
-        """Test that token validation is called with correct parameters."""
-        mock_check_token.return_value = True
-
-        url = reverse('user_signin_magic_link', kwargs={
-            'email': self.user.email,
-            'token': 'test-token'
-        })
-        _ = self.client.get(url)
-
-        # Should check token with user and token
-        mock_check_token.assert_called_once_with(user=self.user, token='test-token')
-
-    def test_post_not_allowed(self):
-        """Test that POST requests are not allowed."""
-        url = reverse('user_signin_magic_link', kwargs={
-            'email': self.user.email,
-            'token': 'test-token'
-        })
-        response = self.client.post(url)
-
-        self.assertEqual(response.status_code, 405)
-        
+        self.assertSuccessResponse(response)
+        self.assertTemplateRendered(response, self.BAD_LINK_TEMPLATE)
+        self.assertNotSignedIn()
