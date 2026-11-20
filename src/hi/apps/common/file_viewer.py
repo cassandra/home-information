@@ -30,8 +30,9 @@ class FileViewerKind( Enum ):
 
     @classmethod
     def from_mime_type( cls, mime_type : Optional[ str ] ) -> 'FileViewerKind':
-        # MIME types are case-insensitive (RFC 2045).
-        normalized = ( mime_type or '' ).strip().lower()
+        # MIME types are case-insensitive and may carry parameters
+        # (RFC 2045), e.g. "text/plain; charset=utf-8".
+        normalized = ( mime_type or '' ).split( ';', 1 )[ 0 ].strip().lower()
         if normalized in _KIND_BY_MIME_TYPE:
             return _KIND_BY_MIME_TYPE[ normalized ]
         top_level_type = normalized.split( '/', 1 )[ 0 ]
@@ -50,27 +51,37 @@ _KIND_BY_TOP_LEVEL_TYPE = {
 }
 
 
-def file_viewer_attrs( url         : str,
-                       mime_type   : Optional[ str ] = None,
-                       title       : Optional[ str ] = None,
-                       filename    : Optional[ str ] = None,
-                       size_bytes  : Optional[ int ] = None ) -> SafeString:
+@dataclass( frozen = True )
+class FileViewerItem:
     """
-    Attributes that make an element open the given app-served file in
-    the in-app file viewer (see file-viewer.js). Details not known for
-    a file are omitted, and the viewer leaves them out of its display.
+    An app-served file to show in the in-app file viewer. Each source of
+    files (attributes, integration attachments) builds one from itself.
+    Details not known for a file are None, and the viewer leaves them
+    out of its display.
     """
-    if not url:
+    url         : str
+    mime_type   : Optional[ str ]  = None
+    title       : Optional[ str ]  = None
+    filename    : Optional[ str ]  = None
+    size_bytes  : Optional[ int ]  = None
+
+
+def file_viewer_attrs( item : FileViewerItem ) -> SafeString:
+    """
+    Attributes that make an element open the item in the in-app file
+    viewer (see file-viewer.js).
+    """
+    if not item.url:
         # A trigger without a file would open an empty viewer.
         raise ValueError( 'A file viewer trigger needs a file URL' )
-    kind = FileViewerKind.from_mime_type( mime_type )
-    size_text = filesizeformat( size_bytes ) if size_bytes is not None else None
+    kind = FileViewerKind.from_mime_type( item.mime_type )
+    size_text = filesizeformat( item.size_bytes ) if item.size_bytes is not None else None
     attr_values = (
-        ( DIVID['FILE_VIEWER_URL_ATTR'], url ),
+        ( DIVID['FILE_VIEWER_URL_ATTR'], item.url ),
         ( DIVID['FILE_VIEWER_KIND_ATTR'], kind.external_name ),
-        ( DIVID['FILE_VIEWER_TITLE_ATTR'], title or filename ),
-        ( DIVID['FILE_VIEWER_FILENAME_ATTR'], filename ),
-        ( DIVID['FILE_VIEWER_MIME_TYPE_ATTR'], mime_type ),
+        ( DIVID['FILE_VIEWER_TITLE_ATTR'], item.title or item.filename ),
+        ( DIVID['FILE_VIEWER_FILENAME_ATTR'], item.filename ),
+        ( DIVID['FILE_VIEWER_MIME_TYPE_ATTR'], item.mime_type ),
         ( DIVID['FILE_VIEWER_SIZE_ATTR'], size_text ),
     )
     return format_html_join(

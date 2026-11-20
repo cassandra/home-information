@@ -1,32 +1,20 @@
-from typing import Optional
-
 from django import template
 from django.utils.safestring import SafeString
 
 from hi.apps.common import file_viewer
-from hi.apps.common.file_viewer import FileViewerKind, PdfJsAssets
+from hi.apps.common.file_viewer import FileViewerItem, FileViewerKind, PdfJsAssets
 from hi.constants import DIVID
 
 register = template.Library()
 
 
 @register.simple_tag
-def file_viewer_attrs( url         : str,
-                       mime_type   : Optional[ str ] = None,
-                       title       : Optional[ str ] = None,
-                       filename    : Optional[ str ] = None,
-                       size_bytes  : Optional[ int ] = None ) -> SafeString:
+def file_viewer_attrs( item : FileViewerItem ) -> SafeString:
     """
-    Usage: {% file_viewer_attrs url=... mime_type=... title=... filename=... size_bytes=... %}
-    on a <button type="button">. Only url is required.
+    Usage: {% file_viewer_attrs attribute.file_viewer_item %} on a
+    <button type="button">.
     """
-    return file_viewer.file_viewer_attrs(
-        url = url,
-        mime_type = mime_type,
-        title = title,
-        filename = filename,
-        size_bytes = size_bytes,
-    )
+    return file_viewer.file_viewer_attrs( item = item )
 
 
 @register.inclusion_tag( 'panes/file_viewer.html' )

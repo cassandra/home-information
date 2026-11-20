@@ -187,6 +187,35 @@ class TestAttributeModel(BaseTestCase):
         self.assertIsNone(attr.thumbnail_relative_path)
         return
 
+    def test_file_viewer_item_for_file_missing_from_storage(self):
+        """The item still opens; the size is unknown and the MIME type comes from the name."""
+        attr = ConcreteAttributeModel(
+            name='manual.pdf',
+            value='Owner manual',
+            value_type_str='FILE',
+            attribute_type_str='CUSTOM',
+            file_mime_type=None,
+        )
+        attr.file_value = 'entity/attributes/missing-manual.pdf'
+
+        item = attr.file_viewer_item
+        self.assertEqual(item.url, attr.file_value.url)
+        self.assertEqual(item.mime_type, 'application/pdf')
+        self.assertEqual(item.title, 'Owner manual')
+        self.assertEqual(item.filename, 'manual.pdf')
+        self.assertIsNone(item.size_bytes)
+        return
+
+    def test_file_viewer_item_none_without_file(self):
+        attr = ConcreteAttributeModel(
+            name='notes',
+            value='text',
+            value_type_str='TEXT',
+            attribute_type_str='CUSTOM',
+        )
+        self.assertIsNone(attr.file_viewer_item)
+        return
+
     def test_thumbnail_relative_path_for_supported_pdf_file(self):
         """Test deterministic thumbnail path generation for supported PDF files."""
         attr = ConcreteAttributeModel(

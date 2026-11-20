@@ -1,4 +1,4 @@
-{% load icons attribute_extras %}
+{% load icons attribute_extras file_viewer_tags %}
 {% comment %}
 V2 File Card Component
 Individual file attribute card with preview, actions, and metadata
@@ -40,10 +40,10 @@ tag in attribute_extras.py.
          value="{{ attribute.order_id }}">
   
   <!-- File Preview/Thumbnail Area -->
-  <div class="attr-v2-file-thumbnail{% if attribute.has_thumbnail %} has-thumbnail{% endif %}{% if attribute.file_mime_type == 'application/pdf' %} is-document{% endif %}" 
-       {{ DIVID.DEVICE_REQUIRES_ATTR }}="browser_nav"
-       onclick="window.open('{{ attribute.file_value.url }}', '_blank');" 
-       title="Tap to view file">
+  <button type="button"
+          class="attr-v2-file-thumbnail{% if attribute.has_thumbnail %} has-thumbnail{% endif %}{% if attribute.file_mime_type == 'application/pdf' %} is-document{% endif %}"
+          {% file_viewer_attrs attribute.file_viewer_item %}
+          title="Tap to view file">
     {% if attribute.has_thumbnail and attribute.thumbnail_url %}
       <img src="{{ attribute.thumbnail_url }}"
            alt="Preview for {{ attribute.value|default:attribute.name }}"
@@ -54,23 +54,22 @@ tag in attribute_extras.py.
       {% comment %}Content-type specific placeholder icons{% endcomment %}
       {% if attribute.file_mime_type|slice:':5' == "image" %}
         {% icon "camera" size="lg" %}
-        <div class="attr-v2-file-type-label">IMAGE</div>
+        <span class="attr-v2-file-type-label">IMAGE</span>
       {% elif attribute.file_mime_type == "application/pdf" %}
         {% icon "upload" size="lg" %}
-        <div class="attr-v2-file-type-label">PDF</div>
+        <span class="attr-v2-file-type-label">PDF</span>
       {% elif attribute.file_mime_type|slice:':4' == "text" %}
         {% icon "edit" size="lg" %}
-        <div class="attr-v2-file-type-label">TEXT</div>
+        <span class="attr-v2-file-type-label">TEXT</span>
       {% elif attribute.file_mime_type|slice:':5' == "video" %}
         {% icon "video" size="lg" %}
-        <div class="attr-v2-file-type-label">VIDEO</div>
+        <span class="attr-v2-file-type-label">VIDEO</span>
       {% else %}
         {% icon "upload" size="lg" %}
-        <div class="attr-v2-file-type-label">FILE</div>
+        <span class="attr-v2-file-type-label">FILE</span>
       {% endif %}
     {% endif %}
-    
-  </div>
+  </button>
   
   <!-- File Info -->
   <div class="{{ DIVID.ATTR_V2_FILE_INFO_CLASS }}">
@@ -104,8 +103,7 @@ tag in attribute_extras.py.
     </button>
     <button type="button"
             class="btn btn-sm btn-outline-primary"
-            {{ DIVID.DEVICE_REQUIRES_ATTR }}="browser_nav"
-            onclick="window.open('{{ attribute.file_value.url }}', '_blank');"
+            {% file_viewer_attrs attribute.file_viewer_item %}
             title="View file">
       {% icon "eye" size="xl" %}
     </button>

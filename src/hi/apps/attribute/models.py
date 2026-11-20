@@ -7,6 +7,7 @@ from django.db import models
 
 from hi.apps.attribute.value_ranges import PredefinedValueRanges
 from hi.apps.common.file_utils import generate_unique_filename
+from hi.apps.common.file_viewer import FileViewerItem
 
 from hi.integrations.transient_models import IntegrationKey
 
@@ -224,6 +225,30 @@ class AttributeModel(models.Model):
         if low_raw > high_raw:
             return None
         return ( low_raw, high_raw )
+
+    @property
+    def file_viewer_item( self ) -> Optional[ FileViewerItem ]:
+        """ This attribute's file for the in-app file viewer, if it has one. """
+        if not self.file_value:
+            return None
+        return FileViewerItem(
+            url = self.file_value.url,
+            mime_type = AttributeThumbnailRules.effective_file_mime_type(
+                file_value = self.file_value,
+                file_mime_type = self.file_mime_type,
+            ),
+            title = self.value,
+            filename = self.name,
+            size_bytes = self._file_size_bytes(),
+        )
+
+    def _file_size_bytes( self ) -> Optional[ int ]:
+        # The file may be missing from storage; the viewer then shows the
+        # size as unknown, and its load fails with a message.
+        try:
+            return self.file_value.size
+        except OSError:
+            return None
 
     @property
     def supports_thumbnail_generation(self):

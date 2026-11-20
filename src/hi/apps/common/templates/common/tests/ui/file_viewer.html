@@ -15,7 +15,7 @@
   <div class="d-flex flex-wrap mb-4">
     {% for sample in samples %}
     <button type="button" class="btn btn-outline-primary mr-2 mb-2"
-            {% file_viewer_attrs url=sample.url mime_type=sample.mime_type title=sample.title filename=sample.filename size_bytes=sample.size_bytes %}>
+            {% file_viewer_attrs sample %}>
       {{ sample.title }}
     </button>
     {% endfor %}
@@ -47,7 +47,7 @@
         <div class="d-flex flex-wrap">
           {% for sample in samples %}
           <button type="button" class="btn btn-outline-primary mr-2 mb-2"
-                  {% file_viewer_attrs url=sample.url mime_type=sample.mime_type title=sample.title filename=sample.filename size_bytes=sample.size_bytes %}>
+                  {% file_viewer_attrs sample %}>
             {{ sample.title }}
           </button>
           {% endfor %}

@@ -1,12 +1,11 @@
-from dataclasses import dataclass
 import os
-from typing import Optional
 
 from django.contrib.staticfiles import finders
 from django.shortcuts import render
 from django.templatetags.static import static
 from django.views.generic import View
 
+from hi.apps.common.file_viewer import FileViewerItem
 from hi.apps.common.templatetags.icons import AVAILABLE_ICONS, ICON_SIZES, ICON_COLORS
 
 
@@ -39,15 +38,6 @@ class TestUiIconBrowserView(View):
         return render(request, "common/tests/ui/icon_browser.html", context)
 
 
-@dataclass
-class FileViewerSample:
-    title       : str
-    url         : str
-    mime_type   : Optional[ str ]
-    filename    : Optional[ str ] = None
-    size_bytes  : Optional[ int ] = None
-
-
 class TestUiFileViewerView(View):
     """
     Opens each kind of file in the in-app file viewer, from the page and
@@ -73,19 +63,19 @@ class TestUiFileViewerView(View):
             self._static_sample( title = title, filename = filename, mime_type = mime_type )
             for title, filename, mime_type in self.SAMPLE_FILES
         ]
-        samples.append( FileViewerSample(
+        samples.append( FileViewerItem(
             title = 'Missing image (error)',
             url = static( f'{self.SAMPLE_DIRECTORY}/does-not-exist.png' ),
             mime_type = 'image/png',
             filename = 'does-not-exist.png',
         ))
-        samples.append( FileViewerSample(
+        samples.append( FileViewerItem(
             title = 'Broken PDF (error)',
             url = static( f'{self.SAMPLE_DIRECTORY}/notes.txt' ),
             mime_type = 'application/pdf',
             filename = 'not-really.pdf',
         ))
-        samples.append( FileViewerSample(
+        samples.append( FileViewerItem(
             title = 'Unknown details',
             url = static( f'{self.SAMPLE_DIRECTORY}/firmware.bin' ),
             mime_type = None,
@@ -98,10 +88,10 @@ class TestUiFileViewerView(View):
     def _static_sample( self,
                         title      : str,
                         filename   : str,
-                        mime_type  : str ) -> FileViewerSample:
+                        mime_type  : str ) -> FileViewerItem:
         path = f'{self.SAMPLE_DIRECTORY}/{filename}'
         file_path = finders.find( path )
-        return FileViewerSample(
+        return FileViewerItem(
             title = title,
             url = static( path ),
             mime_type = mime_type,
