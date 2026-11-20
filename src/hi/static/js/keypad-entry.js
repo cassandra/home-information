@@ -24,6 +24,11 @@
       - Keys never take focus, so a later Enter or Space cannot re-press
         the last tapped key.
       - The server renders any error state; the next edit clears it.
+      - The server can render the entry disabled for some seconds (e.g.
+        too many wrong attempts). It refuses input while a countdown runs,
+        then re-enables. Countdowns start when content is rendered: page
+        load and antinode's post-render hooks. The server still enforces
+        the limit; this only reflects it.
     */
 
     const ENTRY_SELECTOR = '[data-keypad-entry]';
@@ -34,6 +39,9 @@
     const KEY_ATTR = 'data-keypad-key';
     const ACTION_ATTR = 'data-keypad-action';
     const SUBMITTING_ATTR = 'data-keypad-submitting';
+    const DISABLED_SECS_ATTR = 'data-disabled-secs';
+    const COUNTDOWN_STARTED_ATTR = 'data-keypad-countdown-started';
+    const COUNTDOWN_SELECTOR = '[data-keypad-countdown]';
 
     // External names, as in KeypadAction.
     const ACTION = {
@@ -50,12 +58,15 @@
         ACTIVE  : 'is-active',
         FILLED  : 'is-filled',
         NEXT    : 'is-next',
-        ERROR   : 'is-error',
-        PRESSED : 'is-pressed'
+        ERROR    : 'is-error',
+        WAIT     : 'is-wait',
+        DISABLED : 'is-disabled',
+        PRESSED  : 'is-pressed'
     };
 
     const SUBMIT_DELAY_MS = 250;
     const PRESSED_FLASH_MS = 120;
+    const COUNTDOWN_TICK_MS = 250;
 
     function _length( entry ) {
         return parseInt( entry.dataset.length, 10 );
@@ -73,7 +84,7 @@
     }
 
     function _isAcceptingInput( entry ) {
-        return ! entry.hasAttribute( SUBMITTING_ATTR );
+        return ! ( entry.hasAttribute( SUBMITTING_ATTR ) || entry.hasAttribute( DISABLED_SECS_ATTR ));
     }
 
     function _render( entry ) {
@@ -189,6 +200,44 @@
         }, PRESSED_FLASH_MS );
     }
 
+    function _enable( entry ) {
+        entry.removeAttribute( DISABLED_SECS_ATTR );
+        entry.classList.remove( CSS_CLASS.DISABLED );
+        const message = entry.querySelector( MESSAGE_SELECTOR );
+        if ( message && message.classList.contains( CSS_CLASS.WAIT )) {
+            message.classList.remove( CSS_CLASS.WAIT );
+            message.textContent = '';
+        }
+    }
+
+    function _startCountdown( entry ) {
+        entry.setAttribute( COUNTDOWN_STARTED_ATTR, 'true' );
+        const disabledSecs = parseInt( entry.getAttribute( DISABLED_SECS_ATTR ), 10 );
+        const deadlineMs = Date.now() + ( disabledSecs * 1000 );
+        const countdown = entry.querySelector( COUNTDOWN_SELECTOR );
+
+        const timer = setInterval( function() {
+            if ( ! entry.isConnected ) {
+                clearInterval( timer );
+                return;
+            }
+            const remainingSecs = Math.ceil(( deadlineMs - Date.now() ) / 1000 );
+            if ( remainingSecs > 0 ) {
+                if ( countdown ) {
+                    countdown.textContent = remainingSecs;
+                }
+                return;
+            }
+            clearInterval( timer );
+            _enable( entry );
+        }, COUNTDOWN_TICK_MS );
+    }
+
+    function startCountdowns() {
+        const selector = `${ENTRY_SELECTOR}[${DISABLED_SECS_ATTR}]:not([${COUNTDOWN_STARTED_ATTR}])`;
+        document.querySelectorAll( selector ).forEach( _startCountdown );
+    }
+
     document.addEventListener( 'mousedown', function( event ) {
         if ( event.target.closest( `${ENTRY_SELECTOR} [${KEY_ATTR}], ${ENTRY_SELECTOR} [${ACTION_ATTR}]` )) {
             event.preventDefault();
@@ -235,5 +284,19 @@
             _appendChar( entry, event.key );
         }
     });
+
+    if ( document.readyState === 'loading' ) {
+        document.addEventListener( 'DOMContentLoaded', startCountdowns );
+    } else {
+        startCountdowns();
+    }
+    if ( window.AN && window.AN.addAfterAsyncRenderFunction ) {
+        window.AN.addAfterAsyncRenderFunction( startCountdowns );
+        window.AN.addAfterModalRenderFunction( startCountdowns );
+    }
+
+    Hi.keypadEntry = {
+        startCountdowns: startCountdowns
+    };
 
 })();

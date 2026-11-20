@@ -83,6 +83,14 @@
   color: var(--error-highlight-color);
   font-weight: 600;
 }
+.hi-keypad-message.is-wait {
+  color: #8a6200;
+  font-weight: 600;
+}
+.hi-keypad-entry.is-disabled .hi-keypad-key {
+  opacity: 0.4;
+  pointer-events: none;
+}
 
 .hi-keypad {
   display: grid;

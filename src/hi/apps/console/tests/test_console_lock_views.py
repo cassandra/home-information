@@ -3,7 +3,10 @@ from unittest.mock import patch
 
 from django.urls import reverse
 
+import hi.apps.common.datetimeproxy as datetimeproxy
+
 from hi.apps.console.constants import ConsoleConstants
+from hi.apps.console.unlock_throttle import UnlockThrottle
 from hi.apps.console.views import ConsoleUnlockView
 from hi.testing.view_test_base import AsyncViewTestCase
 
@@ -105,4 +108,61 @@ class TestConsoleUnlockView( LockViewTestBase ):
         self.set_locked( True )
         self.async_post( reverse( 'console_unlock' ), { 'pin': '0000' } )
         self.assertFalse( self.is_locked() )
+        return
+
+
+class TestConsoleUnlockThrottle( LockViewTestBase ):
+
+    def setUp( self ):
+        super().setUp()
+        datetimeproxy.reset()
+        self.addCleanup( datetimeproxy.reset )
+        self.set_stored_pin( '1234' )
+        self.set_locked( True )
+        return
+
+    def post_pin( self, pin ):
+        return self.async_post( reverse( 'console_unlock' ), { 'pin': pin } )
+
+    def keypad_html( self, response ):
+        return response.json()['replace'][ConsoleUnlockView.KEYPAD_HTML_ID]
+
+    def test_max_wrong_pins_disable_keypad( self ):
+        for _ in range( UnlockThrottle.MAX_FAILURES - 1 ):
+            self.assertResponseStatusCode( self.post_pin( '0000' ), 400 )
+        response = self.post_pin( '0000' )
+        self.assertResponseStatusCode( response, 429 )
+        self.assertIn( f'data-disabled-secs="{UnlockThrottle.LOCKOUT_SECS}"', self.keypad_html( response ))
+        return
+
+    def test_correct_pin_refused_during_lockout( self ):
+        for _ in range( UnlockThrottle.MAX_FAILURES ):
+            self.post_pin( '0000' )
+        response = self.post_pin( '1234' )
+        self.assertResponseStatusCode( response, 429 )
+        self.assertTrue( self.is_locked() )
+        return
+
+    def test_unlock_allowed_after_lockout_expires( self ):
+        for _ in range( UnlockThrottle.MAX_FAILURES ):
+            self.post_pin( '0000' )
+        datetimeproxy.increment( seconds = UnlockThrottle.LOCKOUT_SECS )
+        self.post_pin( '1234' )
+        self.assertFalse( self.is_locked() )
+        return
+
+    def test_success_resets_failure_count( self ):
+        for _ in range( UnlockThrottle.MAX_FAILURES - 1 ):
+            self.post_pin( '0000' )
+        self.post_pin( '1234' )
+        self.set_locked( True )
+        response = self.post_pin( '0000' )
+        self.assertResponseStatusCode( response, 400 )
+        return
+
+    def test_unlock_prompt_shows_lockout( self ):
+        for _ in range( UnlockThrottle.MAX_FAILURES ):
+            self.post_pin( '0000' )
+        response = self.async_get( reverse( 'console_unlock' ))
+        self.assertIn( 'data-disabled-secs=', response.json()['modal'] )
         return

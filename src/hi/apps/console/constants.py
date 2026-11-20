@@ -10,6 +10,8 @@ class ConsoleConstants:
     )
 
     CONSOLE_LOCKED_SESSION_VAR = 'console_locked'
+    UNLOCK_FAILURE_COUNT_SESSION_VAR = 'console_unlock_failure_count'
+    UNLOCK_LOCKOUT_UNTIL_SESSION_VAR = 'console_unlock_lockout_until'
     CONSOLE_AWAY_LOCK_TIMESTAMP_SESSION_VAR = 'console_away_lock_timestamp'
 
     DEVICE_CAPABILITIES_COOKIE_NAME = 'hi_device_capabilities'

@@ -3,6 +3,7 @@ from django.http import Http404, HttpRequest, HttpResponseRedirect
 from django.template.loader import render_to_string
 from django.urls import reverse
 from django.views.generic import View
+import dataclasses
 from datetime import datetime
 from typing import List
 from django.utils import timezone
@@ -22,6 +23,7 @@ from .constants import ConsoleConstants
 from .console_helper import ConsoleSettingsHelper
 from .device_capabilities import DeviceCapabilitiesCodec, DeviceCapabilitiesCookie
 from .enums import VideoDispatchType
+from .unlock_throttle import UnlockThrottle
 from .video_stream_browsing_helper import VideoStreamBrowsingHelper
 
 
@@ -228,7 +230,7 @@ class LockPinModalView( HiModalView ):
     KEYPAD_FIELDS : List[ KeypadField ] = []
     KEYPAD_HTML_ID : str = None
 
-    def keypad_entry( self, error_message : str = None ) -> KeypadEntry:
+    def keypad_entry( self, request, error_message : str = None ) -> KeypadEntry:
         return KeypadEntry(
             spec = ConsoleConstants.LOCK_PIN_KEYPAD,
             fields = self.KEYPAD_FIELDS,
@@ -239,7 +241,7 @@ class LockPinModalView( HiModalView ):
     def keypad_response( self, request, status : int, error_message : str = None ):
         return self.modal_response(
             request,
-            context = { 'keypad_entry': self.keypad_entry( error_message = error_message ) },
+            context = { 'keypad_entry': self.keypad_entry( request, error_message = error_message ) },
             status = status,
         )
 
@@ -247,7 +249,7 @@ class LockPinModalView( HiModalView ):
         """ Re-renders only the keypad, for forms that stay in the modal. """
         content = render_to_string(
             'panes/keypad_entry.html',
-            { 'keypad_entry': self.keypad_entry( error_message = error_message ) },
+            { 'keypad_entry': self.keypad_entry( request, error_message = error_message ) },
             request = request,
         )
         return antinode.response(
@@ -295,6 +297,12 @@ class ConsoleUnlockView( LockPinModalView ):
     KEYPAD_FIELDS = [ PIN_FIELD ]
     KEYPAD_HTML_ID = 'hi-console-unlock-keypad'
 
+    def keypad_entry( self, request, error_message : str = None ) -> KeypadEntry:
+        return dataclasses.replace(
+            super().keypad_entry( request, error_message = error_message ),
+            disabled_secs = UnlockThrottle( request.session ).remaining_lockout_secs(),
+        )
+
     def get_template_name( self ) -> str:
         return 'console/modals/console_unlock.html'
 
@@ -308,6 +316,10 @@ class ConsoleUnlockView( LockPinModalView ):
         # up security here if/when needed, but eventual login requirements
         # and its session will be the main auth method.
         
+        throttle = UnlockThrottle( request.session )
+        if throttle.remaining_lockout_secs():
+            return self.keypad_replace_response( request, status = 429 )
+
         input_pin = request.POST.get( self.PIN_FIELD.name )
         lock_pin = ConsoleSettingsHelper().get_console_lock_pin()
 
@@ -316,8 +328,11 @@ class ConsoleUnlockView( LockPinModalView ):
         # impossible to unlock, we unlock in that case.
 
         if lock_pin and ( input_pin != lock_pin ):
-            return self.keypad_replace_response( request, status = 400, error_message = 'Incorrect PIN' )
+            throttle.record_failure()
+            status = 429 if throttle.remaining_lockout_secs() else 400
+            return self.keypad_replace_response( request, status = status, error_message = 'Incorrect PIN' )
 
+        throttle.reset()
         request.session[ConsoleConstants.CONSOLE_LOCKED_SESSION_VAR] = False
         return self.refresh_response( request= request )
 

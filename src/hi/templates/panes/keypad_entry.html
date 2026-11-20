@@ -4,8 +4,9 @@ Behavior lives in js/keypad-entry.js, which reads the data- attributes.
 Must be inside a form; with auto-submit the form submits when the last
 field is full. Server renders error state; the JS only clears it.
 {% endcomment %}
-<div {% if keypad_entry.html_id %}id="{{ keypad_entry.html_id }}" {% endif %}class="hi-keypad-entry{% if keypad_entry.error_message %} is-error{% endif %}"
+<div {% if keypad_entry.html_id %}id="{{ keypad_entry.html_id }}" {% endif %}class="hi-keypad-entry{% if keypad_entry.disabled_secs %} is-disabled{% elif keypad_entry.error_message %} is-error{% endif %}"
      data-keypad-entry
+     {% if keypad_entry.disabled_secs %}data-disabled-secs="{{ keypad_entry.disabled_secs }}"{% endif %}
      data-alphabet="{{ keypad_entry.spec.alphabet }}"
      data-length="{{ keypad_entry.spec.length }}"
      data-masked="{{ keypad_entry.spec.masked|yesno:'true,false' }}"
@@ -25,8 +26,12 @@ field is full. Server renders error state; the JS only clears it.
   </div>
   {% endfor %}
 
+  {% if keypad_entry.disabled_secs %}
+  <div class="hi-keypad-message is-wait" role="status" aria-live="polite" data-keypad-message>Too many attempts. Try again in <span data-keypad-countdown>{{ keypad_entry.disabled_secs }}</span>s</div>
+  {% else %}
   <div class="hi-keypad-message{% if keypad_entry.error_message %} is-error{% endif %}"
        role="status" aria-live="polite" data-keypad-message>{{ keypad_entry.error_message|default:'' }}</div>
+  {% endif %}
 
   <div class="hi-keypad" role="group" aria-label="Keypad"
        style="grid-template-columns: repeat({{ keypad_entry.spec.columns }}, 1fr);">

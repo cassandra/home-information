@@ -9,6 +9,7 @@
  *   editable elements keeping their keys
  * - auto-submit when the last field is full, and no input afterwards
  * - clearing a server-rendered error on the next edit
+ * - a server-rendered disabled countdown refusing input, then re-enabling
  */
 
 (function() {
@@ -24,7 +25,8 @@
         }
 
         function addEntry({ alphabet = '1234567890', length = 4, fieldNames = [ 'pin' ],
-                            masked = true, autoSubmit = true, errorMessage = '' } = {}) {
+                            masked = true, autoSubmit = true, errorMessage = '',
+                            disabledSecs = 0 } = {}) {
             const form = document.createElement( 'form' );
             form.submitCount = 0;
             form.requestSubmit = function() { form.submitCount += 1; };
@@ -39,13 +41,19 @@
             const keysHtml = alphabet.split( '' ).map(
                 c => `<button type="button" data-keypad-key="${c}">${c}</button>` ).join( '' );
 
+            const disabledAttr = disabledSecs ? `data-disabled-secs="${disabledSecs}"` : '';
+            const messageHtml = disabledSecs
+                  ? `<div class="hi-keypad-message is-wait" data-keypad-message>Wait
+                       <span data-keypad-countdown>${disabledSecs}</span>s</div>`
+                  : `<div class="hi-keypad-message ${ errorMessage ? 'is-error' : '' }"
+                       data-keypad-message>${errorMessage}</div>`;
             form.innerHTML = `
-                <div class="hi-keypad-entry ${ errorMessage ? 'is-error' : '' }" data-keypad-entry
+                <div class="hi-keypad-entry ${ errorMessage ? 'is-error' : '' } ${ disabledSecs ? 'is-disabled' : '' }"
+                     data-keypad-entry ${disabledAttr}
                      data-alphabet="${alphabet}" data-length="${length}"
                      data-masked="${masked}" data-auto-submit="${autoSubmit}">
                   ${fieldsHtml}
-                  <div class="hi-keypad-message ${ errorMessage ? 'is-error' : '' }"
-                       data-keypad-message>${errorMessage}</div>
+                  ${messageHtml}
                   <div class="hi-keypad">
                     ${keysHtml}
                     <button type="button" data-keypad-action="clear">Clear</button>
@@ -184,6 +192,24 @@
             assert.notOk( entry.classList.contains( 'is-error' ));
             assert.notOk( message.classList.contains( 'is-error' ));
             assert.equal( message.textContent, '' );
+        });
+
+        QUnit.test( 'disabled entry refuses input until its countdown ends', async function( assert ) {
+            const form = addEntry({ disabledSecs: 1 });
+            const entry = form.querySelector( '[data-keypad-entry]' );
+            Hi.keypadEntry.startCountdowns();
+
+            tap( form, '1' );
+            press( '2' );
+            assert.deepEqual( values( form ), [ '' ], 'taps and keys refused' );
+
+            await wait( 1400 );
+            assert.notOk( entry.hasAttribute( 'data-disabled-secs' ));
+            assert.notOk( entry.classList.contains( 'is-disabled' ));
+            assert.equal( form.querySelector( '[data-keypad-message]' ).textContent, '' );
+
+            tap( form, '3' );
+            assert.deepEqual( values( form ), [ '3' ], 'accepts input again' );
         });
     });
 

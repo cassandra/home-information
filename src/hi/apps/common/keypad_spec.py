@@ -107,3 +107,5 @@ class KeypadEntry:
     error_message  : Optional[ str ] = None
     # Set when the server re-renders the entry in place (antinode replace).
     html_id        : Optional[ str ] = None
+    # Seconds the keypad refuses input (e.g., too many wrong attempts).
+    disabled_secs  : int = 0
