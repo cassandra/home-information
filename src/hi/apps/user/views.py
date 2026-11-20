@@ -1,8 +1,9 @@
 import logging
+from typing import Optional
 
 from django.core.exceptions import BadRequest, ValidationError
 from django.core.validators import validate_email
-from django.http import HttpRequest, HttpResponseRedirect
+from django.http import HttpResponseRedirect
 from django.shortcuts import render
 from django.urls import reverse
 from django.views.generic import View
@@ -10,7 +11,7 @@ from django.views.generic import View
 from hi.apps.notify.email_sender import EmailSender
 
 from . import forms
-from .magic_code_generator import MagicCodeStatus
+from .magic_code_generator import MagicCodeGenerator, MagicCodeStatus
 from .signin_manager import SigninManager
 
 logger = logging.getLogger(__name__)
@@ -38,17 +39,19 @@ class UserSigninView( View ):
             raise BadRequest( 'Invalid email provided' )
 
         SigninManager().start_signin( request = request, email_address = email_address )
-        return SigninMagicCodeView().get_response(
-            request = request,
-            magic_code_form = forms.SigninMagicCodeForm(
-                initial = { 'email_address': email_address }
-            )
-        )
+        return HttpResponseRedirect( reverse( 'user_signin_magic_code' ))
 
 
 class SigninMagicCodeView( View ):
+    """
+    The access code page. Submits redirect back here (POST/redirect/GET), so
+    reloading never resubmits an email (sending a new code) or a code (using
+    up an attempt). A failed submit's outcome is carried to the next page
+    load only.
+    """
 
     TEMPLATE_NAME = 'user/pages/magic_code_signin.html'
+    LAST_STATUS_SESSION_VAR = 'signin_magic_code_last_status'
 
     ERROR_MESSAGES = {
         MagicCodeStatus.INVALID: 'Invalid access code.',
@@ -56,35 +59,57 @@ class SigninMagicCodeView( View ):
         MagicCodeStatus.TOO_MANY_ATTEMPTS: 'Too many incorrect attempts. Send a new code to try again.',
         MagicCodeStatus.NO_CODE: 'This access code is no longer valid. Send a new code to try again.',
     }
+    # Only a new code can succeed after these.
+    UNUSABLE_CODE_STATUSES = {
+        MagicCodeStatus.EXPIRED,
+        MagicCodeStatus.TOO_MANY_ATTEMPTS,
+        MagicCodeStatus.NO_CODE,
+    }
 
-    def get_response( self,
-                      request          : HttpRequest,
-                      magic_code_form  : forms.SigninMagicCodeForm,
-                      status           : int                           = 200 ):
+    def get( self, request, *args, **kwargs ):
+        if request.user.is_authenticated:
+            return HttpResponseRedirect( reverse( 'home' ))
+
+        email_address = SigninManager().get_signin_email( request )
+        if not email_address:
+            return HttpResponseRedirect( reverse( 'user_signin' ))
+
+        magic_code_status = self._pop_last_status( request )
+        if ( magic_code_status is None ) and not MagicCodeGenerator().has_pending_code( request ):
+            magic_code_status = MagicCodeStatus.NO_CODE
+
         context = {
-            'magic_code_form': magic_code_form,
+            'email_address': email_address,
         }
-        response = render( request, self.TEMPLATE_NAME, context )
-        response.status_code = status
-        return response
+        message = self.ERROR_MESSAGES.get( magic_code_status )
+        if magic_code_status in self.UNUSABLE_CODE_STATUSES:
+            context['unusable_code_message'] = message
+        else:
+            context['error_message'] = message
+        return render( request, self.TEMPLATE_NAME, context )
 
     def post( self, request, *args, **kwargs ):
 
         magic_code_form = forms.SigninMagicCodeForm( request.POST )
-        if not magic_code_form.is_valid():
-            return self.get_response( request, magic_code_form = magic_code_form, status = 400 )
+        if magic_code_form.is_valid():
+            magic_code_status = SigninManager().signin_with_magic_code(
+                request = request,
+                email_address = magic_code_form.cleaned_data.get('email_address'),
+                magic_code = magic_code_form.cleaned_data.get('magic_code'),
+            )
+            if magic_code_status == MagicCodeStatus.VALID:
+                return HttpResponseRedirect( reverse( 'home' ))
+        else:
+            magic_code_status = MagicCodeStatus.INVALID
 
-        magic_code_status = SigninManager().signin_with_magic_code(
-            request = request,
-            email_address = magic_code_form.cleaned_data.get('email_address'),
-            magic_code = magic_code_form.cleaned_data.get('magic_code'),
-        )
-        error_message = self.ERROR_MESSAGES.get( magic_code_status )
-        if error_message:
-            magic_code_form.add_error( 'magic_code', error_message )
-            return self.get_response( request, magic_code_form = magic_code_form, status = 400 )
+        request.session[self.LAST_STATUS_SESSION_VAR] = magic_code_status.name
+        return HttpResponseRedirect( reverse( 'user_signin_magic_code' ))
 
-        return HttpResponseRedirect( reverse( 'home' ))
+    def _pop_last_status( self, request ) -> Optional[ MagicCodeStatus ]:
+        status_name = request.session.pop( self.LAST_STATUS_SESSION_VAR, None )
+        if status_name is None:
+            return None
+        return MagicCodeStatus[ status_name ]
 
 
 class SigninMagicLinkView( View ):

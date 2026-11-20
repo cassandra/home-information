@@ -86,6 +86,9 @@ class MagicCodeGenerator:
             return MagicCodeStatus.EXPIRED
         return MagicCodeStatus.VALID
 
+    def has_pending_code( self, request ) -> bool:
+        return bool( request.session.get( self.MAGIC_CODE ))
+
     def expire_magic_code( self, request ):
         for key in ( self.MAGIC_CODE,
                      self.MAGIC_CODE_TIMESTAMP,

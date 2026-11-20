@@ -1,4 +1,5 @@
 import logging
+from typing import Optional
 
 from django.contrib.auth import get_user_model
 from django.contrib.auth import login as django_login
@@ -26,6 +27,11 @@ class SigninManager( Singleton ):
     SIGNIN_SUBJECT_TEMPLATE_NAME = 'user/emails/signin_magic_link_subject.txt'
     SIGNIN_MESSAGE_TEXT_TEMPLATE_NAME = 'user/emails/signin_magic_link_message.txt'
     SIGNIN_MESSAGE_HTML_TEMPLATE_NAME = 'user/emails/signin_magic_link_message.html'
+
+    # The email address being signed in. Outlives its magic code, which is
+    # discarded when used, expired or guessed too often, so the code page
+    # can still offer to send a new one.
+    SIGNIN_EMAIL_SESSION_VAR = 'signin_email'
     
     def __init_singleton__(self):
         return
@@ -35,6 +41,7 @@ class SigninManager( Singleton ):
         Issues a code bound to the email address. If no account exists, the
         code is issued but never sent, so the session changes identically.
         """
+        request.session[self.SIGNIN_EMAIL_SESSION_VAR] = email_address
         existing_user = self._get_user( email_address )
         if not existing_user:
             logger.debug( f'No user exists with email: {email_address}' )
@@ -50,6 +57,9 @@ class SigninManager( Singleton ):
             user_auth_data = user_auth_data,
         )
         return
+
+    def get_signin_email( self, request : HttpRequest ) -> Optional[ str ]:
+        return request.session.get( self.SIGNIN_EMAIL_SESSION_VAR )
 
     def signin_with_magic_code( self,
                                 request        : HttpRequest,
@@ -127,6 +137,7 @@ class SigninManager( Singleton ):
     def _signin_verified_user( self, request : HttpRequest, user : UserType ):
         request.user = user
         self.do_login( request = request, verified_email = True )
+        request.session.pop( self.SIGNIN_EMAIL_SESSION_VAR, None )
         return
 
     def _get_user( self, email_address : str ) -> UserType:
