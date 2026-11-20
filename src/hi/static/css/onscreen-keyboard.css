@@ -1,5 +1,21 @@
 /* On-screen keyboard (onscreen-keyboard.js), over simple-keyboard's default theme. */
 
+/* While shown, the keyboard's height is --hi-onscreen-keyboard-inset.
+   Layouts sized with --hi-viewport-height fit above it; a scrolling
+   document gets room to scroll its end above it, and scrollIntoView
+   keeps the field clear of it. The room is a trailing spacer, not body
+   padding: body is height 100% and border-box, so padding would not
+   extend the scrollable area. */
+html.hi-onscreen-keyboard-shown {
+    scroll-padding-bottom: calc( var(--hi-onscreen-keyboard-inset) + 1.5rem );
+}
+
+html.hi-onscreen-keyboard-shown body::after {
+    content: '';
+    display: block;
+    height: var(--hi-onscreen-keyboard-inset);
+}
+
 #hi-onscreen-keyboard {
     position: fixed;
     left: 0;
@@ -18,8 +34,9 @@
     margin: 0 auto;
 }
 
+/* Shorter keys on short displays, so the keyboard leaves room above it. */
 #hi-onscreen-keyboard .hg-button {
-    height: 3.5rem;
+    height: clamp( 2.5rem, 7vh, 3.5rem );
     font-size: 1.5rem;
 }
 

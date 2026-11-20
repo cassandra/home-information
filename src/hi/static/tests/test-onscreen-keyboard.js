@@ -6,6 +6,7 @@
  * - editing with and without selection support, maxlength
  * - Enter: cancelable keydown, newline, implicit form submission
  * - change on leave, layouts by field type, one-shot shift
+ * - publishing its height for layouts while shown
  */
 
 (function() {
@@ -53,12 +54,31 @@
             );
         }
 
-        function press( button ) {
-            findKey( button ).dispatchEvent(
-                new PointerEvent( 'pointerdown', { bubbles: true, cancelable: true } )
-            );
-            document.dispatchEvent( new PointerEvent( 'pointerup', { bubbles: true } ));
+        // The event sequence of a tap: pointerdown, pointerup, click.
+        // Focus moves during the press for a mouse, but after pointerup
+        // (on the compatibility mousedown) for touch.
+        function tap( element, { focusDuringPress = null, focusAfterRelease = null } = {} ) {
+            element.dispatchEvent( new PointerEvent( 'pointerdown', { bubbles: true, cancelable: true } ));
+            if ( focusDuringPress ) {
+                focusDuringPress.focus();
+            }
+            element.dispatchEvent( new PointerEvent( 'pointerup', { bubbles: true } ));
+            if ( focusAfterRelease ) {
+                focusAfterRelease.focus();
+            }
+            element.dispatchEvent( new MouseEvent( 'click', { bubbles: true, cancelable: true } ));
         }
+
+        function press( button ) {
+            tap( findKey( button ));
+        }
+
+        function afterPendingTasks( callback ) {
+            setTimeout( callback, 0 );
+        }
+
+        // Leaving without a click hides after a fallback delay.
+        const AFTER_HIDE_FALLBACK_MS = 400;
 
         function countEvents( field, eventType ) {
             const counter = { count: 0 };
@@ -66,24 +86,31 @@
             return counter;
         }
 
-        QUnit.test('serves only declared, editable text fields on a keyboardless device', function(assert) {
-            function shownOnFocus( field ) {
+        // Completes any hide still waiting for a click.
+        function settled() {
+            document.body.dispatchEvent( new MouseEvent( 'click', { bubbles: true } ));
+            return new Promise( function( resolve ) { setTimeout( resolve, 0 ); } );
+        }
+
+        QUnit.test('serves only declared, editable text fields on a keyboardless device', async function(assert) {
+            async function shownOnFocus( field ) {
+                await settled();
                 field.focus();
                 const shown = isShown();
                 field.blur();
                 return shown;
             }
-            assert.ok( shownOnFocus( addField( '<input type="text">' )), 'text input' );
-            assert.ok( shownOnFocus( addField( '<textarea></textarea>' )), 'textarea' );
-            assert.notOk( shownOnFocus( addField( '<input type="text" readonly>' )), 'readonly' );
-            assert.notOk( shownOnFocus( addField( '<input type="number">' )), 'number input' );
+            assert.ok( await shownOnFocus( addField( '<input type="text">' )), 'text input' );
+            assert.ok( await shownOnFocus( addField( '<textarea></textarea>' )), 'textarea' );
+            assert.notOk( await shownOnFocus( addField( '<input type="text" readonly>' )), 'readonly' );
+            assert.notOk( await shownOnFocus( addField( '<input type="number">' )), 'number input' );
 
             const undeclared = addField( '<input type="text">' );
             undeclared.removeAttribute( Hi.DEVICE_REQUIRES_HANDLER_ATTR );
-            assert.notOk( shownOnFocus( undeclared ), 'handler not declared' );
+            assert.notOk( await shownOnFocus( undeclared ), 'handler not declared' );
 
             Hi.deviceCapabilities = { keyboard: true };
-            assert.notOk( shownOnFocus( addField( '<input type="text">' )), 'device has a keyboard' );
+            assert.notOk( await shownOnFocus( addField( '<input type="text">' )), 'device has a keyboard' );
         });
 
         QUnit.test('typing inserts at the caret and fires input', function(assert) {
@@ -219,15 +246,72 @@
             press( 'a' );
             changed.blur();
             assert.equal( changedEvents.count, 1 );
-            assert.notOk( isShown(), 'keyboard hidden on leave' );
+        });
+
+        QUnit.test('leaving without a click hides after a delay', function(assert) {
+            const done = assert.async();
+            const field = addField( '<input type="text">' );
+            field.focus();
+            field.blur();
+            setTimeout( function() {
+                assert.notOk( isShown() );
+                done();
+            }, AFTER_HIDE_FALLBACK_MS );
+        });
+
+        QUnit.test('publishes its height for layouts only while shown', function(assert) {
+            const done = assert.async();
+            const root = document.documentElement;
+            const field = addField( '<input type="text">' );
+            field.focus();
+            assert.ok( root.classList.contains( 'hi-onscreen-keyboard-shown' ));
+            assert.equal( root.style.getPropertyValue( '--hi-onscreen-keyboard-inset' ),
+                          document.getElementById( 'hi-onscreen-keyboard' ).offsetHeight + 'px' );
+            field.blur();
+            setTimeout( function() {
+                assert.notOk( root.classList.contains( 'hi-onscreen-keyboard-shown' ));
+                assert.equal( root.style.getPropertyValue( '--hi-onscreen-keyboard-inset' ), '' );
+                done();
+            }, AFTER_HIDE_FALLBACK_MS );
         });
 
         QUnit.test('the hide key releases the field', function(assert) {
+            const done = assert.async();
             const field = addField( '<input type="text">' );
             field.focus();
             press( '{hide}' );
-            assert.notOk( isShown() );
             assert.notEqual( document.activeElement, field );
+            afterPendingTasks( function() {
+                assert.notOk( isShown() );
+                done();
+            });
+        });
+
+        QUnit.test('a tap that takes focus keeps the layout until its click is handled', function(assert) {
+            const done = assert.async();
+            const button = document.createElement( 'button' );
+            button.type = 'button';
+            document.getElementById( 'qunit-fixture' ).appendChild( button );
+            let shownAtClick = null;
+            button.addEventListener( 'click', function() { shownAtClick = isShown(); } );
+
+            function check( label, focusTiming, next ) {
+                const field = addField( '<input type="text">' );
+                const changes = countEvents( field, 'change' );
+                shownAtClick = null;
+                field.focus();
+                press( 'a' );
+                tap( button, { [focusTiming]: button } );
+                assert.equal( changes.count, 1, label + ': field released at once' );
+                assert.ok( shownAtClick, label + ': keyboard shown when the click is handled' );
+                afterPendingTasks( function() {
+                    assert.notOk( isShown(), label + ': hidden after the click' );
+                    next();
+                });
+            }
+            check( 'mouse', 'focusDuringPress', function() {
+                check( 'touch', 'focusAfterRelease', done );
+            });
         });
     });
 

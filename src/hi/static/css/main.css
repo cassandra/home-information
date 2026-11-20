@@ -3,6 +3,10 @@
     All Rights Reserved.  
 */
 :root {
+  /* Viewport height left above an on-screen keyboard (onscreen-keyboard.js
+     sets the inset while it is shown). Use instead of 100vh in layouts
+     that contain keyboard-served fields. */
+  --hi-viewport-height: calc(100vh - var(--hi-onscreen-keyboard-inset, 0px));
   --white: #fdfdfd;
   --black: #020204;
   --primary-color: #177072;
@@ -440,7 +444,7 @@ a.clickable-card:active {
     flex-direction: column;
     justify-content: center;
     align-items: center;
-    min-height: 100vh;
+    min-height: var(--hi-viewport-height);
     max-width: 1200px;
     margin: auto;
     padding: 1rem;

@@ -1,4 +1,5 @@
 {% extends "pages/interstitial_page.html" %}
+{% load device_tags %}
 
 {% block interstitial_content %}
 <div>
@@ -24,7 +25,8 @@
 	     name="email"
 	     value=""
 	     autofocus="autofocus"
-	     placeholder="e-mail address" required="" id="hi-signin-email"/>
+	     placeholder="e-mail address" required="" id="hi-signin-email"
+	     {% device_requires_attrs 'keyboard' handlers='on-screen-keyboard' %}/>
     </div>
     <div>
       <button id="hi-signin-button"

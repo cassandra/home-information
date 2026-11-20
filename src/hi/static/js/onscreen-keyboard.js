@@ -18,6 +18,19 @@
         browser's implicit form submission.
       - Taps on the keyboard must not take focus from the field, so
         pointerdown/mousedown defaults are prevented on its container.
+      - While shown, the keyboard's height is published on the root
+        element as INSET_PROPERTY so layouts can fit above it rather than
+        under it (see --hi-viewport-height in main.css). The field is
+        then scrolled into view, and kept there as edits change its size.
+      - Hiding gives that space back, so the page reflows. If focus left
+        because a control was pressed (e.g. a submit button), hiding then
+        would move the control from under the pointer and lose its click.
+        For touch, focus moves on the compatibility mousedown, after
+        pointerup, so a press cannot be detected at focusout. The field
+        is therefore released at once, but hiding always waits for the
+        next click to be handled. A fallback timer covers leaving without
+        a click; it starts once no pointer is down, so a slow mouse press
+        cannot trigger it mid-press.
       - input[type=number] is not served: its value sanitizes partial
         entries such as "-" or "1." to empty, so it cannot be built up
         key by key through .value.
@@ -29,6 +42,9 @@
 
     const CONTAINER_ID = 'hi-onscreen-keyboard';
     const KEYS_CLASS = 'hi-onscreen-keyboard-keys';
+    const SHOWN_ROOT_CLASS = 'hi-onscreen-keyboard-shown';
+    const INSET_PROPERTY = '--hi-onscreen-keyboard-inset';
+    const DEFERRED_HIDE_FALLBACK_MS = 300;
 
     const SERVED_INPUT_TYPES = new Set([ 'text', 'email', 'password', 'search', 'url', 'tel' ]);
 
@@ -113,6 +129,8 @@
     let _field = null;           // the field being served
     let _valueAtEngage = null;
     let _layoutName = LAYOUT_NAME.DEFAULT;
+    let _isPointerDown = false;
+    let _deferredHide = null;    // { timer } while hiding waits for a click
 
     function _isServed( element ) {
         if ( element instanceof HTMLInputElement ) {
@@ -149,7 +167,7 @@
         }
         const field = _field;
         _field = null;
-        _hideKeyboard();
+        _deferHide();
         if ( field.isConnected && ( field.value !== _valueAtEngage )) {
             field.dispatchEvent( new Event( 'change', { bubbles: true } ));
         }
@@ -172,6 +190,14 @@
         _containerElement.addEventListener( 'mousedown', _preventFocusChange );
         document.body.appendChild( _containerElement );
 
+        // Layouts differ in height, and the window may resize.
+        new ResizeObserver( function() {
+            if ( _field ) {
+                _applyInset();
+                _keepFieldVisible();
+            }
+        }).observe( _containerElement );
+
         _keyboard = new SimpleKeyboard.default( keysElement, {
             display: BUTTON_DISPLAY,
             preventMouseDownDefault: true,
@@ -185,15 +211,74 @@
     }
 
     function _showKeyboard( layouts ) {
+        _cancelDeferredHide();
         _ensureKeyboard();
         _layoutName = LAYOUT_NAME.DEFAULT;
         _keyboard.setOptions({ layout: layouts, layoutName: _layoutName });
         _containerElement.hidden = false;
+        document.documentElement.classList.add( SHOWN_ROOT_CLASS );
+        _applyInset();
+        _keepFieldVisible();
     }
 
     function _hideKeyboard() {
+        _cancelDeferredHide();
         if ( _containerElement ) {
             _containerElement.hidden = true;
+        }
+        document.documentElement.classList.remove( SHOWN_ROOT_CLASS );
+        document.documentElement.style.removeProperty( INSET_PROPERTY );
+    }
+
+    function _deferHide() {
+        _cancelDeferredHide();
+        _deferredHide = { timer: null };
+        document.addEventListener( 'click', _onDeferredHideClick, true );
+        if ( ! _isPointerDown ) {
+            _startDeferredHideFallback();
+        }
+    }
+
+    function _startDeferredHideFallback() {
+        _deferredHide.timer = setTimeout( _completeDeferredHide, DEFERRED_HIDE_FALLBACK_MS );
+    }
+
+    // Capture phase runs before the click's own handlers; hide after them.
+    function _onDeferredHideClick() {
+        setTimeout( _completeDeferredHide, 0 );
+    }
+
+    function _onPointerReleased() {
+        _isPointerDown = false;
+        if ( _deferredHide && ( _deferredHide.timer === null )) {
+            _startDeferredHideFallback();
+        }
+    }
+
+    function _completeDeferredHide() {
+        if ( _deferredHide && ! _field ) {
+            _hideKeyboard();
+        }
+    }
+
+    function _cancelDeferredHide() {
+        if ( ! _deferredHide ) {
+            return;
+        }
+        clearTimeout( _deferredHide.timer );
+        document.removeEventListener( 'click', _onDeferredHideClick, true );
+        _deferredHide = null;
+    }
+
+    function _applyInset() {
+        document.documentElement.style.setProperty(
+            INSET_PROPERTY, _containerElement.offsetHeight + 'px'
+        );
+    }
+
+    function _keepFieldVisible() {
+        if ( _field ) {
+            _field.scrollIntoView({ block: 'nearest' });
         }
     }
 
@@ -237,6 +322,7 @@
             _typeText( field, button );
             break;
         }
+        _keepFieldVisible();
     }
 
     // Shift applies to one character, as on touch keyboards.
@@ -350,6 +436,12 @@
     /* Wiring */
 
     Hi.device.registerHandler( HANDLER_NAME, CAPABILITY_NAME );
+
+    document.addEventListener( 'pointerdown', function() {
+        _isPointerDown = true;
+    }, true );
+    document.addEventListener( 'pointerup', _onPointerReleased, true );
+    document.addEventListener( 'pointercancel', _onPointerReleased, true );
 
     document.addEventListener( 'focusin', function( event ) {
         if ( _isServed( event.target )) {
