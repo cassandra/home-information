@@ -327,6 +327,7 @@ PIPELINE = {
                 'js/entity-picker.js',
                 'js/pairing-state-grid.js',
                 'js/keypad-entry.js',
+                'js/file-viewer-pdf.js',
                 'js/file-viewer.js',
             ),
             'output_filename': 'js/js_after_content.js',

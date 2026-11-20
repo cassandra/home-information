@@ -54,6 +54,7 @@ AVAILABLE_ICONS = {
     'map-pin',
     'minus-circle',
     'move',
+    'open-in-new',
     'path',
     'pause',
     'play',

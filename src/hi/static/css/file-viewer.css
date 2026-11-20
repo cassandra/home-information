@@ -3,10 +3,14 @@
 .hi-file-viewer {
     --hi-file-viewer-bg: #141416;
     --hi-file-viewer-bar-bg: rgba( 20, 20, 22, 0.92 );
+    /* Opaque enough that page text under the toolbar does not show through. */
+    --hi-file-viewer-toolbar-bg: rgba( 30, 30, 33, 0.98 );
     --hi-file-viewer-fg: #f2f2f2;
     --hi-file-viewer-muted: #a9a9ad;
     --hi-file-viewer-stage-padding: 1rem;
     --hi-file-viewer-toolbar-clearance: 5.5rem;
+    /* Fit width cap, so pages on wide screens stay readable (file-viewer-pdf.js). */
+    --hi-file-viewer-pdf-max-fit-width: 900px;
 
     position: fixed;
     inset: 0;
@@ -84,12 +88,41 @@ html.hi-file-viewer-open body {
     box-shadow: 0 0 0 3px rgba( 255, 255, 255, 0.5 );
 }
 
+/* Secondary to Close: outlined, same height. */
+.hi-file-viewer-open-tab {
+    flex: 0 0 auto;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    min-width: 56px;
+    min-height: 56px;
+    padding: 0 1rem;
+    font-size: 1rem;
+    color: var(--hi-file-viewer-fg);
+    border: 2px solid rgba( 255, 255, 255, 0.35 );
+    border-radius: 0.5rem;
+}
+
+.hi-file-viewer-open-tab:hover,
+.hi-file-viewer-open-tab:focus {
+    color: var(--hi-file-viewer-fg);
+    text-decoration: none;
+    background-color: rgba( 255, 255, 255, 0.12 );
+    outline: none;
+}
+
+.hi-file-viewer-open-tab:focus-visible {
+    box-shadow: 0 0 0 3px rgba( 255, 255, 255, 0.5 );
+}
+
 @media ( max-width: 575px ) {
     .hi-file-viewer-subtitle,
-    .hi-file-viewer-close-label {
+    .hi-file-viewer-close-label,
+    .hi-file-viewer-open-tab-label {
         display: none;
     }
-    .hi-file-viewer-close {
+    .hi-file-viewer-close,
+    .hi-file-viewer-open-tab {
         padding: 0 0.9rem;
     }
 }
@@ -133,6 +166,32 @@ html.hi-file-viewer-open body {
     user-select: none;
     -webkit-user-drag: none;
     box-shadow: 0 4px 24px rgba( 0, 0, 0, 0.5 );
+}
+
+/* PDF: a continuous column of pages, sized by file-viewer-pdf.js. */
+
+.hi-file-viewer-pdf-pages {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem;
+    width: max-content;
+    min-width: 100%;
+    padding: var(--hi-file-viewer-stage-padding);
+    padding-bottom: var(--hi-file-viewer-toolbar-clearance);
+}
+
+.hi-file-viewer-pdf-page {
+    flex: 0 0 auto;
+    background-color: #fff;
+    box-shadow: 0 4px 24px rgba( 0, 0, 0, 0.5 );
+}
+
+/* Stretches to the page while a redraw at a new zoom is pending. */
+.hi-file-viewer-pdf-canvas {
+    display: block;
+    width: 100%;
+    height: 100%;
 }
 
 /* Video and audio */
@@ -219,6 +278,13 @@ html.hi-file-viewer-open body {
     overflow-wrap: anywhere;
 }
 
+.hi-file-viewer-message-action {
+    margin-top: 0.75rem;
+    min-height: 48px;
+    display: inline-flex;
+    align-items: center;
+}
+
 .hi-file-viewer-spinner {
     width: 48px;
     height: 48px;
@@ -244,7 +310,7 @@ html.hi-file-viewer-open body {
     align-items: center;
     gap: 0.25rem;
     padding: 0.35rem;
-    background-color: var(--hi-file-viewer-bar-bg);
+    background-color: var(--hi-file-viewer-toolbar-bg);
     border: 1px solid rgba( 255, 255, 255, 0.12 );
     border-radius: 999px;
     box-shadow: 0 4px 16px rgba( 0, 0, 0, 0.4 );
@@ -277,9 +343,31 @@ html.hi-file-viewer-open body {
     opacity: 0.35;
 }
 
+.hi-file-viewer-page-indicator {
+    display: flex;
+    align-items: center;
+    align-self: stretch;
+    min-width: 5rem;
+    margin-right: 0.25rem;
+    padding: 0 0.75rem;
+    justify-content: center;
+    font-variant-numeric: tabular-nums;
+    color: var(--hi-file-viewer-muted);
+    border-right: 1px solid rgba( 255, 255, 255, 0.15 );
+}
+
 .hi-file-viewer-zoom-level {
     min-width: 4.5rem;
     text-align: center;
     font-variant-numeric: tabular-nums;
     color: var(--hi-file-viewer-muted);
+}
+
+/* A modal shown while the viewer is open (file-viewer.js raises it). */
+.modal-backdrop.hi-file-viewer-above {
+    z-index: 1090;
+}
+
+.modal.hi-file-viewer-above {
+    z-index: 1095;
 }

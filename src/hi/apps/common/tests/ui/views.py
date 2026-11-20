@@ -51,8 +51,9 @@ class FileViewerSample:
 class TestUiFileViewerView(View):
     """
     Opens each kind of file in the in-app file viewer, from the page and
-    from inside a Bootstrap modal. Samples are static test files, plus a
-    missing file for the error state and a file with no details.
+    from inside a Bootstrap modal. Samples are static test files, plus
+    a missing file and a file that is not the PDF it claims to be for
+    the error state, and a file with no details.
     """
 
     SAMPLE_DIRECTORY = 'tests/file_viewer'
@@ -63,7 +64,7 @@ class TestUiFileViewerView(View):
         ( 'Video clip', 'clip.mp4', 'video/mp4' ),
         ( 'Audio tone', 'tone.wav', 'audio/wav' ),
         ( 'Text notes', 'notes.txt', 'text/plain' ),
-        ( 'PDF (until pdf.js is added)', 'missing.pdf', 'application/pdf' ),
+        ( 'PDF manual', 'manual.pdf', 'application/pdf' ),
         ( 'Binary file', 'firmware.bin', 'application/octet-stream' ),
     )
 
@@ -77,6 +78,12 @@ class TestUiFileViewerView(View):
             url = static( f'{self.SAMPLE_DIRECTORY}/does-not-exist.png' ),
             mime_type = 'image/png',
             filename = 'does-not-exist.png',
+        ))
+        samples.append( FileViewerSample(
+            title = 'Broken PDF (error)',
+            url = static( f'{self.SAMPLE_DIRECTORY}/notes.txt' ),
+            mime_type = 'application/pdf',
+            filename = 'not-really.pdf',
         ))
         samples.append( FileViewerSample(
             title = 'Unknown details',

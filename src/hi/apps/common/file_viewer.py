@@ -1,7 +1,10 @@
+from dataclasses import dataclass
 from enum import Enum
 from typing import Optional
 
+from django.conf import settings
 from django.template.defaultfilters import filesizeformat
+from django.templatetags.static import static
 from django.utils.html import format_html_join
 from django.utils.safestring import SafeString
 
@@ -75,3 +78,32 @@ def file_viewer_attrs( url         : str,
         '{}="{}"',
         ( ( name, value ) for name, value in attr_values if value ),
     )
+
+
+@dataclass( frozen = True )
+class PdfJsAssets:
+    """
+    URLs of the vendored pdf.js (legacy build) that the file viewer
+    loads on first use. Resource URLs are directories: pdf.js appends
+    file names to them, so they bypass the static manifest, which keeps
+    unhashed copies of every file.
+    """
+    library_url              : str
+    worker_url               : str
+    wasm_url                 : str
+    standard_font_data_url   : str
+    icc_url                  : str
+
+    STATIC_DIRECTORY = 'pdfjs-6.5.438'
+
+    @classmethod
+    def from_static( cls ) -> 'PdfJsAssets':
+        directory = cls.STATIC_DIRECTORY
+        resource_base_url = f'{settings.STATIC_URL}{directory}'
+        return cls(
+            library_url = static( f'{directory}/build/pdf.min.mjs' ),
+            worker_url = static( f'{directory}/build/pdf.worker.min.mjs' ),
+            wasm_url = f'{resource_base_url}/wasm/',
+            standard_font_data_url = f'{resource_base_url}/standard_fonts/',
+            icc_url = f'{resource_base_url}/iccs/',
+        )

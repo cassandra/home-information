@@ -4,7 +4,7 @@ from django import template
 from django.utils.safestring import SafeString
 
 from hi.apps.common import file_viewer
-from hi.apps.common.file_viewer import FileViewerKind
+from hi.apps.common.file_viewer import FileViewerKind, PdfJsAssets
 from hi.constants import DIVID
 
 register = template.Library()
@@ -37,4 +37,5 @@ def file_viewer_shell() -> dict:
         # A dict, since templates call a class (the enum) instead of
         # looking up its members.
         'kind': { kind.name: kind.external_name for kind in FileViewerKind },
+        'pdfjs': PdfJsAssets.from_static(),
     }

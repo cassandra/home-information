@@ -1,11 +1,16 @@
 {% load icons %}
+{% load device_tags %}
 {% comment %}
 In-app file viewer overlay, rendered once per page by the
 file_viewer_shell tag. Behavior lives in js/file-viewer.js, which
 reads the data-file-viewer-* hooks below: it shows one region at a
 time, fills the slots, and acts on the actions. It never builds
 markup. Kind regions are named by FileViewerKind external names;
-"loading" and "error" are viewer states.
+"loading", "error" and "pdf-unsupported" are viewer states. PDF pages
+are rendered by js/file-viewer-pdf.js into clones of the page template,
+one per page. Open-in-new-tab links get the file's URL on open; like
+any external link, they need browser_nav, and device.js explains when
+it is missing.
 {% endcomment %}
 <div id="{{ DIVID.FILE_VIEWER_ID }}" class="hi-file-viewer"
      role="dialog" aria-modal="true" aria-labelledby="{{ DIVID.FILE_VIEWER_ID }}-title" hidden>
@@ -15,6 +20,10 @@ markup. Kind regions are named by FileViewerKind external names;
       <div class="hi-file-viewer-title" id="{{ DIVID.FILE_VIEWER_ID }}-title" data-file-viewer-slot="title"></div>
       <div class="hi-file-viewer-subtitle" data-file-viewer-slot="subtitle" data-separator=" &middot; "></div>
     </div>
+    <a class="hi-file-viewer-open-tab" data-file-viewer-open-tab aria-label="Open in new tab" {% external_link_attrs %}>
+      {% icon "open-in-new" size="lg" %}
+      <span class="hi-file-viewer-open-tab-label">Open in new tab</span>
+    </a>
     <button type="button" class="hi-file-viewer-close" data-file-viewer-action="close" aria-label="Close file viewer">
       {% icon "close" size="lg" %}
       <span class="hi-file-viewer-close-label">Close</span>
@@ -35,6 +44,22 @@ markup. Kind regions are named by FileViewerKind external names;
           <img class="hi-file-viewer-image" alt="" data-file-viewer-media>
         </div>
       </div>
+    </div>
+
+    <div class="hi-file-viewer-region" data-file-viewer-region="{{ kind.PDF }}" hidden
+         data-pdfjs-library-url="{{ pdfjs.library_url }}"
+         data-pdfjs-worker-url="{{ pdfjs.worker_url }}"
+         data-pdfjs-wasm-url="{{ pdfjs.wasm_url }}"
+         data-pdfjs-standard-font-data-url="{{ pdfjs.standard_font_data_url }}"
+         data-pdfjs-icc-url="{{ pdfjs.icc_url }}">
+      <div class="hi-file-viewer-scroll" data-file-viewer-scroll>
+        <div class="hi-file-viewer-pdf-pages" data-file-viewer-pdf-pages></div>
+      </div>
+      <template data-file-viewer-pdf-page-template>
+        <div class="hi-file-viewer-pdf-page">
+          <canvas class="hi-file-viewer-pdf-canvas" width="0" height="0"></canvas>
+        </div>
+      </template>
     </div>
 
     <div class="hi-file-viewer-region" data-file-viewer-region="{{ kind.VIDEO }}" hidden>
@@ -66,6 +91,9 @@ markup. Kind regions are named by FileViewerKind external names;
           <dt>Type</dt><dd data-file-viewer-slot="mime-type" data-empty-text="Unknown"></dd>
           <dt>Size</dt><dd data-file-viewer-slot="size" data-empty-text="Unknown"></dd>
         </dl>
+        <a class="btn btn-outline-light hi-file-viewer-message-action" data-file-viewer-open-tab {% external_link_attrs %}>
+          {% icon "open-in-new" css_class="hi-icon-left" %}Open in new tab
+        </a>
       </div>
     </div>
 
@@ -74,10 +102,27 @@ markup. Kind regions are named by FileViewerKind external names;
         <div class="hi-file-viewer-message-icon">{% icon "warning" size="xl" %}</div>
         <h2 class="hi-file-viewer-message-title">Couldn't load this file</h2>
         <div class="hi-file-viewer-message-detail">The file may have been removed, or its source may be unreachable.</div>
+        <a class="btn btn-outline-light hi-file-viewer-message-action" data-file-viewer-open-tab {% external_link_attrs %}>
+          {% icon "open-in-new" css_class="hi-icon-left" %}Open in new tab
+        </a>
+      </div>
+    </div>
+
+    <div class="hi-file-viewer-region" data-file-viewer-region="pdf-unsupported" hidden>
+      <div class="hi-file-viewer-message">
+        <div class="hi-file-viewer-message-icon">{% icon "info-circle" size="xl" %}</div>
+        <h2 class="hi-file-viewer-message-title">PDF preview isn't supported here</h2>
+        <div class="hi-file-viewer-message-detail">This device's browser can't show PDFs in the app.</div>
+        <a class="btn btn-outline-light hi-file-viewer-message-action" data-file-viewer-open-tab {% external_link_attrs %}>
+          {% icon "open-in-new" css_class="hi-icon-left" %}Open in new tab
+        </a>
       </div>
     </div>
 
     <div class="hi-file-viewer-toolbar" role="toolbar" aria-label="Zoom" data-file-viewer-toolbar hidden>
+      <span class="hi-file-viewer-page-indicator" data-file-viewer-page-group hidden>
+        <span data-file-viewer-slot="page-indicator" data-separator=" / " aria-live="polite"></span>
+      </span>
       <button type="button" data-file-viewer-action="zoom-out" aria-label="Zoom out">&minus;</button>
       <span class="hi-file-viewer-zoom-level" data-file-viewer-slot="zoom-level" aria-live="polite"></span>
       <button type="button" data-file-viewer-action="zoom-in" aria-label="Zoom in">+</button>

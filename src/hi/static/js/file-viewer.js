@@ -24,13 +24,22 @@
       - Each open is a session. Closing aborts the session's signal,
         which cancels its fetch and removes its media listeners, so late
         events from an earlier file cannot touch a later one.
-      - Zoom steps are multiples of the fitted size. Fit never enlarges
-        an image beyond its natural size.
+      - Zoom steps are multiples of the fitted size, keeping the point at
+        the center of the view in place. Fit never enlarges an image
+        beyond its natural size; a PDF fits its page width to the view.
+      - PDFs are drawn by file-viewer-pdf.js. When pdf.js cannot run in
+        the browser, the viewer says so rather than reporting the file
+        as unloadable.
+      - Open-in-new-tab links get the file's URL while it is shown. They
+        are external links (browser_nav, see device.js). A modal shown
+        while the viewer is open, such as the device's "not available"
+        message, is raised above the viewer, and keys are left to it.
     */
 
     // FileViewerKind external names (hi.apps.common.file_viewer).
     const KIND = {
         IMAGE       : 'image',
+        PDF         : 'pdf',
         VIDEO       : 'video',
         AUDIO       : 'audio',
         TEXT        : 'text',
@@ -38,8 +47,9 @@
     };
 
     const STATE_REGION = {
-        LOADING : 'loading',
-        ERROR   : 'error'
+        LOADING         : 'loading',
+        ERROR           : 'error',
+        PDF_UNSUPPORTED : 'pdf-unsupported'
     };
 
     const ACTION = {
@@ -56,26 +66,31 @@
         MIME_TYPE  : 'mime-type',
         SIZE       : 'size',
         TEXT       : 'text',
-        ZOOM_LEVEL : 'zoom-level'
+        ZOOM_LEVEL : 'zoom-level',
+        PAGE       : 'page-indicator'
     };
 
     const REGION_ATTR = 'data-file-viewer-region';
     const SLOT_ATTR = 'data-file-viewer-slot';
     const ACTION_ATTR = 'data-file-viewer-action';
     const TOOLBAR_ATTR = 'data-file-viewer-toolbar';
+    const PAGE_GROUP_ATTR = 'data-file-viewer-page-group';
     const SCROLL_ATTR = 'data-file-viewer-scroll';
     const STAGE_ATTR = 'data-file-viewer-stage';
     const MEDIA_ATTR = 'data-file-viewer-media';
+    const OPEN_TAB_ATTR = 'data-file-viewer-open-tab';
 
     const OPEN_ROOT_CLASS = 'hi-file-viewer-open';
+    const ABOVE_VIEWER_CLASS = 'hi-file-viewer-above';
 
     // Bootstrap 4 modal internals (bootstrap.js, Modal._enforceFocus).
     const BOOTSTRAP_FOCUS_TRAP_EVENT = 'focusin.bs.modal';
     const BOOTSTRAP_MODAL_DATA_KEY = 'bs.modal';
     const SHOWN_MODAL_SELECTOR = '.modal.show';
+    const MODAL_BACKDROP_SELECTOR = '.modal-backdrop';
 
     const ZOOM_STEPS = [ 1, 1.5, 2, 3, 4 ];
-    const ZOOMABLE_KINDS = new Set([ KIND.IMAGE ]);
+    const ZOOMABLE_KINDS = new Set([ KIND.IMAGE, KIND.PDF ]);
 
     // Larger text files are not worth reading into the page.
     const TEXT_MAX_BYTES = 1024 * 1024;
@@ -98,7 +113,7 @@
     window.Hi.fileViewer = HiFileViewer;
 
     let _viewerElement = null;
-    let _session = null;   // { file, trigger, zoomIndex, abortController }
+    let _session = null;   // { file, trigger, zoomIndex, abortController, pdfView }
 
     /* Elements */
 
@@ -125,6 +140,14 @@
         return _viewer().querySelector( '[' + TOOLBAR_ATTR + ']' );
     }
 
+    function _pageGroup() {
+        return _viewer().querySelector( '[' + PAGE_GROUP_ATTR + ']' );
+    }
+
+    function _scrollElementOf( kind ) {
+        return _region( kind ).querySelector( '[' + SCROLL_ATTR + ']' );
+    }
+
     /* Opening and closing */
 
     function _fileOf( triggerElement ) {
@@ -148,7 +171,8 @@
             file            : file,
             trigger         : triggerElement,
             zoomIndex       : 0,
-            abortController : new AbortController()
+            abortController : new AbortController(),
+            pdfView         : null
         };
 
         // A focused field would keep the on-screen keyboard up.
@@ -156,6 +180,7 @@
             document.activeElement.blur();
         }
         _fillHeader( file );
+        _setOpenTabUrl( file.url );
         _suspendModalFocusTrap();
         document.documentElement.classList.add( OPEN_ROOT_CLASS );
         _viewer().hidden = false;
@@ -173,7 +198,11 @@
         const session = _session;
         _session = null;
         session.abortController.abort();
+        if ( session.pdfView ) {
+            session.pdfView.destroy();
+        }
         _clearContent();
+        _setOpenTabUrl( null );
         _viewer().hidden = true;
         document.documentElement.classList.remove( OPEN_ROOT_CLASS );
         _restoreModalFocusTrap();
@@ -187,7 +216,8 @@
     }
 
     function _restoreModalFocusTrap() {
-        const modal = $( SHOWN_MODAL_SELECTOR ).last().data( BOOTSTRAP_MODAL_DATA_KEY );
+        const modal = $( SHOWN_MODAL_SELECTOR ).not( '.' + ABOVE_VIEWER_CLASS ).last()
+              .data( BOOTSTRAP_MODAL_DATA_KEY );
         if ( modal ) {
             modal._enforceFocus();
         }
@@ -206,6 +236,12 @@
         imageElement.style.height = '';
         _slot( SLOT.TEXT ).textContent = '';
         _toolbar().hidden = true;
+        _pageGroup().hidden = true;
+        [ KIND.IMAGE, KIND.PDF ].forEach( function( kind ) {
+            const scrollElement = _scrollElementOf( kind );
+            scrollElement.scrollTop = 0;
+            scrollElement.scrollLeft = 0;
+        });
     }
 
     function _fillHeader( file ) {
@@ -216,6 +252,16 @@
             .join( subtitleElement.dataset.separator );
     }
 
+    function _setOpenTabUrl( url ) {
+        _viewer().querySelectorAll( '[' + OPEN_TAB_ATTR + ']' ).forEach( function( linkElement ) {
+            if ( url ) {
+                linkElement.setAttribute( 'href', url );
+            } else {
+                linkElement.removeAttribute( 'href' );
+            }
+        });
+    }
+
     function _showRegion( name ) {
         _viewer().querySelectorAll( '[' + REGION_ATTR + ']' ).forEach( function( regionElement ) {
             regionElement.hidden = ( regionElement.getAttribute( REGION_ATTR ) !== name );
@@ -224,16 +270,20 @@
 
     // Runs a session's handler only while that session is still open.
     function _ifCurrent( session, handler ) {
-        return function( value ) {
+        return function( ...args ) {
             if ( session === _session ) {
-                handler( value );
+                handler( ...args );
             }
         };
     }
 
     function _showError() {
+        _showState( STATE_REGION.ERROR );
+    }
+
+    function _showState( stateRegion ) {
         _toolbar().hidden = true;
-        _showRegion( STATE_REGION.ERROR );
+        _showRegion( stateRegion );
     }
 
     /* Loaders, one per kind */
@@ -244,10 +294,36 @@
         imageElement.addEventListener( 'load', _ifCurrent( session, function() {
             _showRegion( KIND.IMAGE );
             _toolbar().hidden = false;
-            _applyZoom();
+            _applyZoom({ keepViewCenter: false });
         }), options );
         imageElement.addEventListener( 'error', _ifCurrent( session, _showError ), options );
         imageElement.src = session.file.url;
+    }
+
+    function _loadPdf( session ) {
+        session.pdfView = Hi.fileViewerPdf.createView({
+            url           : session.file.url,
+            regionElement : _region( KIND.PDF ),
+            onPageChange  : _ifCurrent( session, _showPageNumber )
+        });
+        session.pdfView.load().then(
+            _ifCurrent( session, function() {
+                _showRegion( KIND.PDF );
+                _toolbar().hidden = false;
+                _pageGroup().hidden = false;
+                _applyZoom({ keepViewCenter: false });
+            }),
+            _ifCurrent( session, function( error ) {
+                _showState( Hi.fileViewerPdf.isDocumentError( error )
+                            ? STATE_REGION.ERROR
+                            : STATE_REGION.PDF_UNSUPPORTED );
+            })
+        );
+    }
+
+    function _showPageNumber( pageNumber, pageCount ) {
+        const pageElement = _slot( SLOT.PAGE );
+        pageElement.textContent = pageNumber + pageElement.dataset.separator + pageCount;
     }
 
     function _loadMedia( session, kind ) {
@@ -319,6 +395,7 @@
 
     const LOADERS = {
         [ KIND.IMAGE ]       : _loadImage,
+        [ KIND.PDF ]         : _loadPdf,
         [ KIND.VIDEO ]       : function( session ) { _loadMedia( session, KIND.VIDEO ); },
         [ KIND.AUDIO ]       : function( session ) { _loadMedia( session, KIND.AUDIO ); },
         [ KIND.TEXT ]        : _loadText,
@@ -343,10 +420,29 @@
         _applyZoom();
     }
 
-    function _applyZoom() {
-        const zoomIndex = _session.zoomIndex;
-        _updateZoomControls( zoomIndex );
-        _resizeImage( ZOOM_STEPS[ zoomIndex ] );
+    // The first layout of a file has no view center worth keeping.
+    function _applyZoom( { keepViewCenter = true } = {} ) {
+        const kind = _session.file.kind;
+        const zoomFactor = ZOOM_STEPS[ _session.zoomIndex ];
+        _updateZoomControls( _session.zoomIndex );
+        const resize = ( kind === KIND.PDF )
+              ? function() { _session.pdfView.setZoom( zoomFactor ); }
+              : function() { _resizeImage( zoomFactor ); };
+        if ( keepViewCenter ) {
+            _keepingViewCenter( _scrollElementOf( kind ), resize );
+        } else {
+            resize();
+        }
+    }
+
+    // Runs resize, then scrolls so the point that was at the center of
+    // the view is at the center again.
+    function _keepingViewCenter( scrollElement, resize ) {
+        const centerX = ( scrollElement.scrollLeft + scrollElement.clientWidth / 2 ) / scrollElement.scrollWidth;
+        const centerY = ( scrollElement.scrollTop + scrollElement.clientHeight / 2 ) / scrollElement.scrollHeight;
+        resize();
+        scrollElement.scrollLeft = centerX * scrollElement.scrollWidth - scrollElement.clientWidth / 2;
+        scrollElement.scrollTop = centerY * scrollElement.scrollHeight - scrollElement.clientHeight / 2;
     }
 
     function _updateZoomControls( zoomIndex ) {
@@ -358,16 +454,12 @@
         _toolbar().querySelector( '[' + ACTION_ATTR + '="' + ACTION.ZOOM_IN + '"]' ).disabled = isMax;
     }
 
-    // Sizes the image to the zoom factor over its fitted size, keeping
-    // the point at the center of the view in place.
+    // Sizes the image to the zoom factor over its fitted size.
     function _resizeImage( zoomFactor ) {
         const regionElement = _region( KIND.IMAGE );
-        const scrollElement = regionElement.querySelector( '[' + SCROLL_ATTR + ']' );
+        const scrollElement = _scrollElementOf( KIND.IMAGE );
         const stageStyle = getComputedStyle( regionElement.querySelector( '[' + STAGE_ATTR + ']' ));
         const imageElement = _media( KIND.IMAGE );
-
-        const centerX = ( scrollElement.scrollLeft + scrollElement.clientWidth / 2 ) / scrollElement.scrollWidth;
-        const centerY = ( scrollElement.scrollTop + scrollElement.clientHeight / 2 ) / scrollElement.scrollHeight;
 
         const availableWidth = scrollElement.clientWidth
               - parseFloat( stageStyle.paddingLeft ) - parseFloat( stageStyle.paddingRight );
@@ -378,15 +470,12 @@
                                    1 );
         imageElement.style.width = Math.round( imageElement.naturalWidth * fitScale * zoomFactor ) + 'px';
         imageElement.style.height = Math.round( imageElement.naturalHeight * fitScale * zoomFactor ) + 'px';
-
-        scrollElement.scrollLeft = centerX * scrollElement.scrollWidth - scrollElement.clientWidth / 2;
-        scrollElement.scrollTop = centerY * scrollElement.scrollHeight - scrollElement.clientHeight / 2;
     }
 
     /* Keyboard: Escape closes; Tab stays within the viewer. */
 
     function _handleKeydown( event ) {
-        if ( ! _session ) {
+        if ( ! _session || _hasModalAbove() ) {
             return;
         }
         if ( event.key === 'Escape' ) {
@@ -416,6 +505,29 @@
             event.preventDefault();
             first.focus();
         }
+    }
+
+    /* Modals shown while the viewer is open stack above it. */
+
+    function _raiseModal( event ) {
+        if ( _session ) {
+            event.target.classList.add( ABOVE_VIEWER_CLASS );
+        }
+    }
+
+    // Bootstrap adds the backdrop during show, after the show event.
+    function _raiseModalBackdrop( event ) {
+        if ( ! event.target.classList.contains( ABOVE_VIEWER_CLASS )) {
+            return;
+        }
+        const backdrops = document.querySelectorAll( MODAL_BACKDROP_SELECTOR );
+        if ( backdrops.length > 0 ) {
+            backdrops[ backdrops.length - 1 ].classList.add( ABOVE_VIEWER_CLASS );
+        }
+    }
+
+    function _hasModalAbove() {
+        return Boolean( document.querySelector( SHOWN_MODAL_SELECTOR + '.' + ABOVE_VIEWER_CLASS ));
     }
 
     /* Event wiring */
@@ -450,5 +562,7 @@
     document.addEventListener( 'click', _handleClick );
     document.addEventListener( 'keydown', _handleKeydown, true );
     window.addEventListener( 'resize', _handleResize );
+    $( document ).on( 'show.bs.modal', _raiseModal );
+    $( document ).on( 'shown.bs.modal', _raiseModalBackdrop );
 
 })();
