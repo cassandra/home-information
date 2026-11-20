@@ -4,7 +4,11 @@ echo "Initial Django admin initialization."
 cd /src
 
 echo "Collecting static files..."
-python manage.py collectstatic --noinput
+# Without collected static files every page fails, so do not start.
+if ! python manage.py collectstatic --noinput; then
+    echo "ERROR: collectstatic failed; not starting."
+    exit 1
+fi
 
 echo "Running migrations..."
 python manage.py migrate --noinput
