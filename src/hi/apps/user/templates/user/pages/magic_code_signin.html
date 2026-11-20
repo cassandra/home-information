@@ -1,63 +1,42 @@
-{% extends "pages/interstitial_page.html" %}
+{% extends "pages/front_door_page.html" %}
 
-{% block interstitial_content %}
+{% block front_door_content %}
 {% if unusable_code_message %}
-<div class="h3">Code No Longer Valid</div>
+<div class="hi-front-door-title">Code No Longer Valid</div>
 <div class="alert alert-danger my-3" role="alert">{{ unusable_code_message }}</div>
 {% else %}
-<div class="h3" >Email Sent</div>
-<div class="my-3">
-  Look in your inbox for the access code to sign in.
-</div>
-
-<div class="my-3">
-  <form role="form" class="form"
-	method="POST"
-	action="{% url 'user_signin_magic_code' %}"
-	autocomplete="off"
-	data-synchronous="true">
-    {% csrf_token %}
-    <input type="hidden" name="email_address" value="{{ email_address }}">
-    <div class="d-flex input-group input-group-lg">
-      <input type="text"
-	     class="form-control"
-	     name="magic_code"
-	     autofocus="autofocus"
-	     placeholder="access code"
-	     maxlength="12"
-	     required=""
-	     id="hi-magic-code-input"
-	     width="8">
-      <div class="input-group-append">
-	<button id="hi-magic-code-submit-button"
-		type="submit" name="submit" value="main"
-		class="main btn btn-primary">SUBMIT</button>
-      </div>
-    </div>
-    <div class=" text-left text-danger mt-2">
-      <small class="form-error">{{ error_message|default:'' }}</small>
-    </div>
-  </form>
-</div>
-
-<div class="text-muted my-4">
-  If you do not receive this email in the next few minutes, check that the email address "{{ email_address }}" is valid and has been registered.
-</div>
+<div class="hi-front-door-title">Enter Access Code</div>
+<p class="hi-front-door-prompt">
+  We emailed a {{ keypad_entry.spec.length }}-letter code to <span class="font-weight-bold text-break">{{ email_address }}</span>.
+</p>
+<form method="POST"
+      action="{% url 'user_signin_magic_code' %}"
+      autocomplete="off"
+      data-synchronous="true">
+  {% csrf_token %}
+  <input type="hidden" name="email_address" value="{{ email_address }}">
+  {% include "panes/keypad_entry.html" %}
+</form>
 {% endif %}
 
-<div class="d-flex flex-wrap my-3">
-  <form method="POST" action="{% url 'user_signin' %}"
-	class="mr-3 mb-2" data-synchronous="true">
+<div class="hi-front-door-actions">
+  <form method="POST" action="{% url 'user_signin' %}" data-synchronous="true">
     {% csrf_token %}
     <input type="hidden" name="email" value="{{ email_address }}">
     <button id="hi-signin-new-code-button" type="submit"
-	    class="btn btn-lg btn-outline-primary">
+	    class="btn btn-lg {% if unusable_code_message %}btn-primary{% else %}btn-outline-primary{% endif %}">
       Send a new code
     </button>
   </form>
   <a id="hi-signin-different-email-link" href="{% url 'user_signin' %}"
-     class="btn btn-lg btn-outline-secondary mb-2">
+     class="btn btn-lg btn-outline-secondary">
     Use a different email
   </a>
 </div>
+
+{% if not unusable_code_message %}
+<div class="small text-muted mt-3">
+  No email after a few minutes? Check your spam folder and that the address is registered.
+</div>
+{% endif %}
 {% endblock %}

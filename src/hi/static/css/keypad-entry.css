@@ -61,6 +61,11 @@
   border-radius: 50%;
   background: var(--black);
 }
+/* Unmasked codes show their characters: monospace keeps similar letters distinct. */
+.hi-keypad-entry[data-masked="false"] .hi-keypad-slot,
+.hi-keypad-entry[data-masked="false"] .hi-keypad-key:not(.hi-keypad-action) {
+  font-family: SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+}
 .hi-keypad-entry.is-error .hi-keypad-slot {
   border-color: var(--error-highlight-color);
 }

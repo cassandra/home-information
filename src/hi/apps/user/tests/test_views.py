@@ -6,6 +6,7 @@ from django.contrib.auth.tokens import PasswordResetTokenGenerator
 from django.urls import reverse
 
 from hi.apps.notify.email_sender import EmailSender
+from hi.apps.user.constants import UserConstants
 from hi.apps.user.magic_code_generator import MagicCodeGenerator
 from hi.testing.view_test_base import SyncViewTestCase
 
@@ -131,6 +132,16 @@ class TestSigninMagicCodeView(SigninFlowTestMixin, SyncViewTestCase):
         self.assertContains(page, self.CODE_ENTRY_MARKUP)
         self.assertNotContains(page, 'Invalid access code.')
 
+    def test_code_entry_keypad_renders_magic_code_spec(self):
+        spec = UserConstants.MAGIC_CODE_KEYPAD
+        self.request_signin_code(self.user.email)
+
+        page = self.get_code_page()
+
+        self.assertContains(page, f'data-alphabet="{spec.alphabet}"')
+        self.assertContains(page, f'data-length="{spec.length}"')
+        self.assertContains(page, 'data-case-sensitive="false"')
+
     def test_get_while_signed_in_redirects_home(self):
         self.client.force_login(self.user)
 
@@ -190,7 +201,8 @@ class TestSigninMagicCodeView(SigninFlowTestMixin, SyncViewTestCase):
 
         response = self.submit_signin_code(self.user.email, 'wxyzwx')
 
-        self.assertCodeRejected(response)
+        page = self.assertCodeRejected(response)
+        self.assertContains(page, 'hi-keypad-entry is-error', msg_prefix='keypad shown in error state')
 
     def test_nonexistent_account_rejected_even_with_matching_code(self):
         _, magic_code = self.request_signin_code('nobody@example.com')

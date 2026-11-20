@@ -10,7 +10,10 @@ from django.views.generic import View
 
 from hi.apps.notify.email_sender import EmailSender
 
+from hi.apps.common.keypad_spec import KeypadEntry, KeypadField
+
 from . import forms
+from .constants import UserConstants
 from .magic_code_generator import MagicCodeGenerator, MagicCodeStatus
 from .signin_manager import SigninManager
 
@@ -51,6 +54,7 @@ class SigninMagicCodeView( View ):
     """
 
     TEMPLATE_NAME = 'user/pages/magic_code_signin.html'
+    MAGIC_CODE_FIELD = KeypadField( name = 'magic_code' )
     LAST_STATUS_SESSION_VAR = 'signin_magic_code_last_status'
 
     ERROR_MESSAGES = {
@@ -77,7 +81,15 @@ class SigninMagicCodeView( View ):
         magic_code_status = self._pop_last_status( request )
         if ( magic_code_status is None ) and not MagicCodeGenerator().has_pending_code( request ):
             magic_code_status = MagicCodeStatus.NO_CODE
+        return self.render_page( request,
+                                 email_address = email_address,
+                                 magic_code_status = magic_code_status )
 
+    def render_page( self,
+                     request,
+                     email_address      : str,
+                     magic_code_status  : Optional[ MagicCodeStatus ] ):
+        """ Code entry, showing why the last code failed, or that only a new code can succeed. """
         context = {
             'email_address': email_address,
         }
@@ -85,7 +97,11 @@ class SigninMagicCodeView( View ):
         if magic_code_status in self.UNUSABLE_CODE_STATUSES:
             context['unusable_code_message'] = message
         else:
-            context['error_message'] = message
+            context['keypad_entry'] = KeypadEntry(
+                spec = UserConstants.MAGIC_CODE_KEYPAD,
+                fields = ( self.MAGIC_CODE_FIELD, ),
+                error_message = message,
+            )
         return render( request, self.TEMPLATE_NAME, context )
 
     def post( self, request, *args, **kwargs ):
