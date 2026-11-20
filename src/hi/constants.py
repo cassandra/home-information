@@ -229,11 +229,14 @@ DIVID = {
     'EXT_REF_DIRECTION_LEFT': 'left',
     'EXT_REF_DIRECTION_RIGHT': 'right',
 
-    # Device capabilities -- markup declares the capabilities an action
-    # needs (space-separated external names, e.g. "local_files") and
-    # device.js gates the click. Mirror in ``src/hi/static/js/main.js``
+    # Device capabilities -- markup declares the capabilities an element
+    # needs (space-separated external names, e.g. "local_files") and,
+    # optionally, the in-app handlers that can stand in for a missing
+    # one. device.js gates the click when a missing capability has no
+    # loaded handler. Mirror in ``src/hi/static/js/main.js``
     # (``Hi.DEVICE_*``).
     'DEVICE_REQUIRES_ATTR': 'data-requires',
+    'DEVICE_REQUIRES_HANDLER_ATTR': 'data-requires-handler',
     'DEVICE_REQUIRES_FIELD': 'requires',
 
     # Location SVG Editor Grid Structure

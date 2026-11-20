@@ -1,0 +1,53 @@
+/* On-screen keyboard (onscreen-keyboard.js), over simple-keyboard's default theme. */
+
+/* While shown, the keyboard's height is --hi-onscreen-keyboard-inset.
+   Layouts sized with --hi-viewport-height fit above it; a scrolling
+   document gets room to scroll its end above it, and scrollIntoView
+   keeps the field clear of it. The room is a trailing spacer, not body
+   padding: body is height 100% and border-box, so padding would not
+   extend the scrollable area. */
+html.hi-onscreen-keyboard-shown {
+    scroll-padding-bottom: calc( var(--hi-onscreen-keyboard-inset) + 1.5rem );
+}
+
+html.hi-onscreen-keyboard-shown body::after {
+    content: '';
+    display: block;
+    height: var(--hi-onscreen-keyboard-inset);
+}
+
+#hi-onscreen-keyboard {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 1080;  /* Above Bootstrap modals (1050) and their backdrops. */
+    padding: 0.5rem;
+    background-color: #ececec;
+    box-shadow: 0 -2px 8px rgba( 0, 0, 0, 0.25 );
+    touch-action: manipulation;
+    user-select: none;
+}
+
+#hi-onscreen-keyboard .hi-onscreen-keyboard-keys {
+    max-width: 64rem;
+    margin: 0 auto;
+}
+
+/* Shorter keys on short displays, so the keyboard leaves room above it. */
+#hi-onscreen-keyboard .hg-button {
+    height: clamp( 2.5rem, 7vh, 3.5rem );
+    font-size: 1.5rem;
+}
+
+#hi-onscreen-keyboard .hg-button.hg-functionBtn {
+    font-size: 1.1rem;
+}
+
+#hi-onscreen-keyboard .hg-button.hg-button-space {
+    flex-grow: 6;
+}
+
+#hi-onscreen-keyboard .hg-button:active {
+    background: #cfd8dc;
+}

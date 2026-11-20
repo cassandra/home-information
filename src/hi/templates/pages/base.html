@@ -1,5 +1,7 @@
 {% load static %}
 {% load pipeline %}
+{% load device_tags %}
+{% device_capability_available 'keyboard' as device_has_keyboard %}
 <!doctype html>
 <html class="no-js" lang="en">
   <head>
@@ -37,6 +39,7 @@
     <link rel="apple-touch-icon" href="{% static 'img/hi-icon-196x196.png' %}" sizes="196x196">
     <link rel="apple-touch-icon" href="{% static 'img/hi-icon-512x512.png' %}" sizes="512x512">
     {% stylesheet 'css_head' %}
+    {% if not device_has_keyboard %}{% stylesheet 'css_onscreen_keyboard' %}{% endif %}
     {% block head_css %}{% endblock %}
     {% block head_javascript %}{% endblock %}
   </head>
@@ -63,6 +66,7 @@
 
     {% block footer_pre_javascript %}{% endblock %}
     {% javascript 'js_after_content' %}
+    {% if not device_has_keyboard %}{% javascript 'js_onscreen_keyboard' %}{% endif %}
     {% block footer_post_javascript %}{% endblock %}
 
     <!-- Service Worker Registration -->

@@ -5,14 +5,27 @@
     /*
       DEVICE CAPABILITIES
 
-      - Markup declares what an action needs via Hi.DEVICE_REQUIRES_ATTR
+      - Markup declares what an element needs via Hi.DEVICE_REQUIRES_ATTR
         (space-separated capability names, e.g. "local_files browser_nav").
-      - Capture-phase listeners block any such action when a required
-        capability is missing and ask the server for the explanatory
-        modal. Capture phase runs before inline onclick handlers, jQuery
-        delegated handlers, default link navigation and antinode async
-        actions. Being registered from js_before_content, it also runs
-        before document-level capture listeners registered later (e.g.
+      - Markup may also name in-app handlers that can stand in for a
+        missing capability via Hi.DEVICE_REQUIRES_HANDLER_ATTR (e.g.
+        "on-screen-keyboard"). A handler module registers itself, and the
+        capability it stands in for, when it loads; a declared handler
+        that never registered meets nothing.
+      - Scope differs by purpose. The click gate honors the nearest
+        declaring ancestor (e.g. a link wrapping an icon). A handler acts
+        only on an element that itself declares the requirement and the
+        handler (isHandlerActiveFor), so declare handler-served
+        requirements on the field, not on a container: a container
+        declaration would pass the gate yet never engage the handler.
+      - A requirement is unmet when the device lacks the capability and
+        no declared, registered handler stands in for it.
+      - Capture-phase listeners block any such action when a requirement
+        is unmet and ask the server for the explanatory modal. Capture
+        phase runs before inline onclick handlers, jQuery delegated
+        handlers, default link navigation and antinode async actions.
+        Being registered from js_before_content, it also runs before
+        document-level capture listeners registered later (e.g.
         attr-unsaved-guard.js).
       - Middle-click opens links in a new tab via auxclick, not click, so
         that is gated too. Browser-native long-press "open in new tab"
@@ -25,29 +38,68 @@
         isAvailable: function( capabilityName ) {
             return _isAvailable( capabilityName );
         },
-        getMissingCapabilities: function( requiresValue ) {
-            return _getMissingCapabilities( requiresValue );
+        registerHandler: function( handlerName, capabilityName ) {
+            _registerHandler( handlerName, capabilityName );
+        },
+        getUnmetRequirements: function( requiresValue, handlersValue ) {
+            return _getUnmetRequirements( requiresValue, handlersValue );
+        },
+        isHandlerActiveFor: function( handlerName, element ) {
+            return _isHandlerActiveFor( handlerName, element );
         }
     };
 
     window.Hi.device = HiDevice;
 
+    // Handler name -> the capability name it stands in for.
+    const _handlerCapabilities = new Map();
+
     function _isAvailable( capabilityName ) {
         return Hi.deviceCapabilities[capabilityName] !== false;
     }
 
-    function _getMissingCapabilities( requiresValue ) {
-        if ( ! requiresValue ) {
-            return [];
-        }
-        return requiresValue.trim().split( /\s+/ ).filter( function( name ) {
-            return ! _isAvailable( name );
+    function _registerHandler( handlerName, capabilityName ) {
+        _handlerCapabilities.set( handlerName, capabilityName );
+    }
+
+    function _parseNames( attrValue ) {
+        return ( attrValue || '' ).split( /\s+/ ).filter( Boolean );
+    }
+
+    function _getHandledCapabilities( handlersValue ) {
+        return _parseNames( handlersValue )
+            .filter( function( handlerName ) {
+                return _handlerCapabilities.has( handlerName );
+            })
+            .map( function( handlerName ) {
+                return _handlerCapabilities.get( handlerName );
+            });
+    }
+
+    function _getUnmetRequirements( requiresValue, handlersValue ) {
+        const handledCapabilities = _getHandledCapabilities( handlersValue );
+        return _parseNames( requiresValue ).filter( function( capabilityName ) {
+            return ! _isAvailable( capabilityName )
+                && ! handledCapabilities.includes( capabilityName );
         });
     }
 
-    function _showUnavailableModal( missingCapabilities ) {
+    // True when the element relies on this handler right now: it declares
+    // the handler, requires the capability the handler stands in for, and
+    // the device lacks that capability.
+    function _isHandlerActiveFor( handlerName, element ) {
+        if ( ! _handlerCapabilities.has( handlerName )) {
+            return false;
+        }
+        const capabilityName = _handlerCapabilities.get( handlerName );
+        return _parseNames( element.getAttribute( Hi.DEVICE_REQUIRES_HANDLER_ATTR )).includes( handlerName )
+            && _parseNames( element.getAttribute( Hi.DEVICE_REQUIRES_ATTR )).includes( capabilityName )
+            && ! _isAvailable( capabilityName );
+    }
+
+    function _showUnavailableModal( unmetRequirements ) {
         const params = new URLSearchParams();
-        missingCapabilities.forEach( function( name ) {
+        unmetRequirements.forEach( function( name ) {
             params.append( Hi.DEVICE_REQUIRES_FIELD, name );
         });
         AN.get( Hi.DEVICE_CAPABILITY_UNAVAILABLE_URL + '?' + params.toString() );
@@ -61,15 +113,16 @@
         if ( ! requiringElement ) {
             return;
         }
-        const missingCapabilities = _getMissingCapabilities(
-            requiringElement.getAttribute( Hi.DEVICE_REQUIRES_ATTR )
+        const unmetRequirements = _getUnmetRequirements(
+            requiringElement.getAttribute( Hi.DEVICE_REQUIRES_ATTR ),
+            requiringElement.getAttribute( Hi.DEVICE_REQUIRES_HANDLER_ATTR )
         );
-        if ( missingCapabilities.length === 0 ) {
+        if ( unmetRequirements.length === 0 ) {
             return;
         }
         event.preventDefault();
         event.stopImmediatePropagation();
-        _showUnavailableModal( missingCapabilities );
+        _showUnavailableModal( unmetRequirements );
     }
 
     document.addEventListener( 'click', _gateAction, true );

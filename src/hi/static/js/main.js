@@ -251,6 +251,7 @@
 
         // Device capabilities -- mirrors DEVICE_* keys in hi.constants.DIVID.
         DEVICE_REQUIRES_ATTR:                'data-requires',
+        DEVICE_REQUIRES_HANDLER_ATTR:        'data-requires-handler',
         DEVICE_REQUIRES_FIELD:               'requires'
     };
     

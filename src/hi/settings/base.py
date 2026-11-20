@@ -144,9 +144,11 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 
     'hi.middleware.NoStoreMiddleware',
+    # Before ExceptionMiddleware: its error pages extend pages/base.html,
+    # which reads device capabilities. Cookie-only, so it cannot fail.
+    'hi.apps.console.middleware.DeviceCapabilitiesMiddleware',
     'hi.middleware.ExceptionMiddleware',
     'hi.middleware.ViewMiddleware',
-    'hi.apps.console.middleware.DeviceCapabilitiesMiddleware',
     'hi.apps.console.middleware.ConsoleLockMiddleware',
     'hi.apps.user.middleware.AuthenticationMiddleware',
 ]
@@ -280,6 +282,13 @@ PIPELINE = {
             ),
             'output_filename': 'css/css_location_svg_edit.css',
         },
+        'css_onscreen_keyboard': {
+            'source_filenames': (
+                'css/simple-keyboard-3.8.206.css',
+                'css/onscreen-keyboard.css',
+            ),
+            'output_filename': 'css/css_onscreen_keyboard.css',
+        },
     },
     'JAVASCRIPT': {
         'js_before_content': {
@@ -343,6 +352,13 @@ PIPELINE = {
                 'js/svg-bg-event-listeners.js',
             ),
             'output_filename': 'js/js_location_svg_edit.js',
+        },
+        'js_onscreen_keyboard': {
+            'source_filenames': (
+                'js/simple-keyboard-3.8.206.min.js',
+                'js/onscreen-keyboard.js',
+            ),
+            'output_filename': 'js/js_onscreen_keyboard.js',
         },
     }
 }
