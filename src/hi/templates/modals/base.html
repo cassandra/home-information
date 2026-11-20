@@ -36,10 +36,12 @@
       {% block body %}
       {% endblock %}
     </div>
+    {% block footer_container %}
     <div class="modal-footer d-flex justify-content-around {% block footer_class %}{% endblock %}">
       {% block footer %}
       {% endblock %}
     </div>  
+    {% endblock %}
     {% block after_footer %}
     {% endblock %}
     {% block postamble %}

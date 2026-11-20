@@ -55,6 +55,7 @@
     let gLastStartServerDate = null;
     let gLastServerDate = null;
     let gLayoutChangeTimestamp = Hi.layoutChangeTimestamp;
+    let gWasConsoleLocked = false;
     
     function startServerPolling() {
         Hi.watchdog.add( ServerPollingWatchdogType, 
@@ -156,8 +157,13 @@
         }
     }
 
+    // Prompt only when the session becomes locked (e.g. Away auto-lock).
+    // A dismissed unlock modal then stays dismissed, leaving the console
+    // viewable; any interaction re-prompts through the lock middleware.
     function handleConsoleLockState( isConsoleLocked ) {
-        if ( ! isConsoleLocked ) {
+        const isNewlyLocked = isConsoleLocked && ! gWasConsoleLocked;
+        gWasConsoleLocked = isConsoleLocked;
+        if ( ! isNewlyLocked ) {
             return;
         }
 

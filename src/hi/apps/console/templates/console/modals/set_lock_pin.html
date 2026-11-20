@@ -1,0 +1,20 @@
+{% extends "modals/no_footer.html" %}
+
+{% block preamble %}
+<form action="{% url 'console_set_lock_pin' %}" method="post" class="form" autocomplete="off" data-async="true">
+  {% csrf_token %}
+{% endblock %}
+
+  {% block title_text %}
+  Set Console Lock PIN
+  {% endblock %}
+
+  {% block body %}
+  <p class="hi-keypad-prompt">Choose a {{ keypad_entry.spec.length }}-digit PIN to unlock this console.</p>
+  {% include "panes/keypad_entry.html" %}
+  <div class="hi-keypad-hint">Don't reuse a bank card or phone PIN.</div>
+  {% endblock %}
+
+{% block postamble %}
+</form>
+{% endblock %}
