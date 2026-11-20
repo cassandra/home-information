@@ -3,6 +3,7 @@
 
     const HiStatus = {
         init: function() {
+            initSigninRequiredBanner();
             startServerPolling();
         },
     };
@@ -26,6 +27,8 @@
     const ServerPollingIntervalMs = Hi.API_STATUS_POLLING_INTERVAL_MS ?? (3 * 1000);
     const PollingErrorNotifyTimeMs = 60 * 1000;
     const ServerErrorMessageSelector = '#hi-server-error-msg';
+    const SigninRequiredMessageSelector = '#hi-signin-required-msg';
+    const HttpUnauthorizedStatus = 401;
     const ServerPollingUrl = Hi.API_STATUS_URL;
     const ServerStartTimestampAttr = 'startTimestamp';
     const ServerTimestampAttr = 'timestamp';
@@ -52,6 +55,7 @@
     let gServerPollingTimer = null;
     let gLastServerPollSuccessTime = (new Date()).getTime();
     let gIsServerErrorShowing = false;
+    let gIsSigninRequiredShowing = false;
     let gLastStartServerDate = null;
     let gLastServerDate = null;
     let gLayoutChangeTimestamp = Hi.layoutChangeTimestamp;
@@ -104,10 +108,15 @@
             success: function( data, status, xhr ) {
                 try {
                     Hi.watchdog.ok( ServerPollingWatchdogType );
-                    clearServerErrorIfNeeded();
-                    gLastServerPollSuccessTime = (new Date()).getTime();
-                    handleServerResponse( data, status, xhr );
-                    
+                    if ( $.isPlainObject( data ) ) {
+                        clearServerErrorIfNeeded();
+                        clearSigninRequiredIfNeeded();
+                        gLastServerPollSuccessTime = (new Date()).getTime();
+                        handleServerResponse( data, status, xhr );
+                    } else {
+                        console.error( 'Server polling error: response is not a JSON object.' );
+                        handlePollingError();
+                    }
                 } catch (e) {
                     console.error( `Exception parsing server response: ${e} (line=${e.lineNumber})` );
                 } finally {
@@ -118,7 +127,11 @@
                 try {
                     Hi.watchdog.ok( ServerPollingWatchdogType );
                     console.error( `Server polling error [${xhr.status}] : ${thrownError}` );
-                    handlePollingError();
+                    if ( xhr.status === HttpUnauthorizedStatus ) {
+                        notifySigninRequired();
+                    } else {
+                        handlePollingError();
+                    }
 
                 } catch (e) {
                     console.error( `Exception handling polling error: ${e} (line=${e.lineNumber})` );
@@ -279,6 +292,7 @@
         if ( gIsServerErrorShowing ) {
             return;
         }
+        clearSigninRequiredIfNeeded();
         $(ServerErrorMessageSelector).show();
         gIsServerErrorShowing = true;
         Hi.audio.startAudibleSignal( Hi.audio.WARNING_SIGNAL_NAME );
@@ -291,6 +305,36 @@
         $(ServerErrorMessageSelector).hide();
         gIsServerErrorShowing = false;
         Hi.audio.startAudibleSignal( Hi.audio.INFO_SIGNAL_NAME );
+    }
+
+    // The session is gone (e.g., cookie cleared, secret key changed), so
+    // nothing will update until the user signs in again. A 401 is
+    // definitive, so this shows immediately rather than after a grace period.
+    // The server answered, so this replaces any lost-connection message.
+    function notifySigninRequired() {
+        if ( gIsSigninRequiredShowing ) {
+            return;
+        }
+        clearServerErrorIfNeeded();
+        $(SigninRequiredMessageSelector).show();
+        gIsSigninRequiredShowing = true;
+        Hi.audio.startAudibleSignal( Hi.audio.WARNING_SIGNAL_NAME );
+    }
+
+    function clearSigninRequiredIfNeeded() {
+        if ( ! gIsSigninRequiredShowing ) {
+            return;
+        }
+        $(SigninRequiredMessageSelector).hide();
+        gIsSigninRequiredShowing = false;
+        Hi.audio.startAudibleSignal( Hi.audio.INFO_SIGNAL_NAME );
+    }
+
+    // Reloading an unauthenticated session lands on the sign-in page.
+    function initSigninRequiredBanner() {
+        $(document).on( 'click', SigninRequiredMessageSelector, function() {
+            location.reload();
+        });
     }
 
     function handleTransientViewSuggestion( suggestionData ) {
