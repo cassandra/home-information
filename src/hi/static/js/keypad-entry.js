@@ -21,8 +21,13 @@
         left alone while an editable element has focus or a modifier is
         held, so normal typing and browser shortcuts still work.
       - Character matching is exact; no case folding.
-      - Keys never take focus, so a later Enter or Space cannot re-press
-        the last tapped key.
+      - Pointer presses never focus a key, so a later Enter or Space cannot
+        re-press the last tapped key. (Tab can still focus keys.)
+      - Submission goes through jQuery so antinode's submit handler runs.
+        If that request fails without the server re-rendering the entry
+        (network loss, an HTML error page), the entry is still in the page
+        and still submitting: it is reset with the server-rendered failure
+        message so the keypad is never left dead.
       - The server renders any error state; the next edit clears it.
       - The server can render the entry disabled for some seconds (e.g.
         too many wrong attempts). It refuses input while a countdown runs,
@@ -42,6 +47,7 @@
     const DISABLED_SECS_ATTR = 'data-disabled-secs';
     const COUNTDOWN_STARTED_ATTR = 'data-keypad-countdown-started';
     const COUNTDOWN_SELECTOR = '[data-keypad-countdown]';
+    const FAILURE_MESSAGE_ATTR = 'data-failure-message';
 
     // External names, as in KeypadAction.
     const ACTION = {
@@ -120,8 +126,33 @@
         }
         entry.setAttribute( SUBMITTING_ATTR, 'true' );
         setTimeout( function() {
-            form.requestSubmit();
+            $( form ).trigger( 'submit' );
         }, SUBMIT_DELAY_MS );
+    }
+
+    function _recoverFromFailedSubmit( entry ) {
+        entry.removeAttribute( SUBMITTING_ATTR );
+        _inputs( entry ).forEach( function( input ) {
+            input.value = '';
+        });
+        _render( entry );
+        entry.classList.add( CSS_CLASS.ERROR );
+        const message = entry.querySelector( MESSAGE_SELECTOR );
+        if ( message ) {
+            message.classList.add( CSS_CLASS.ERROR );
+            message.textContent = entry.getAttribute( FAILURE_MESSAGE_ATTR ) || '';
+        }
+    }
+
+    // Antinode's own error callback runs first, so an entry the server
+    // re-rendered is already detached and not matched here.
+    function _onAjaxError( event, jqXHR, ajaxSettings ) {
+        document.querySelectorAll( `${ENTRY_SELECTOR}[${SUBMITTING_ATTR}]` ).forEach( function( entry ) {
+            const form = entry.closest( 'form' );
+            if ( form && ( form.getAttribute( 'action' ) === ajaxSettings.url )) {
+                _recoverFromFailedSubmit( entry );
+            }
+        });
     }
 
     function _appendChar( entry, char ) {
@@ -253,6 +284,8 @@
             return;
         }
         if ( key ) {
+            // Explicit feedback: iOS Safari may not apply :active on tap.
+            _flashKey( entry, key.getAttribute( KEY_ATTR ));
             _appendChar( entry, key.getAttribute( KEY_ATTR ));
         } else if ( action.getAttribute( ACTION_ATTR ) === ACTION.CLEAR ) {
             _clear( entry );
@@ -290,6 +323,8 @@
     } else {
         startCountdowns();
     }
+    $( document ).on( 'ajaxError', _onAjaxError );
+
     if ( window.AN && window.AN.addAfterAsyncRenderFunction ) {
         window.AN.addAfterAsyncRenderFunction( startCountdowns );
         window.AN.addAfterModalRenderFunction( startCountdowns );

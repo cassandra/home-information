@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 from enum import Enum
-from typing import List, Optional
+from typing import List, Optional, Tuple
 
 
 class KeypadAction( Enum ):
@@ -40,6 +40,10 @@ class KeypadSpec:
     masked       : bool = True
 
     def __post_init__( self ):
+        if not self.alphabet:
+            raise ValueError( 'KeypadSpec alphabet is empty.' )
+        if self.length < 1:
+            raise ValueError( 'KeypadSpec length must be at least 1.' )
         # Two columns are the minimum to fit CLEAR and BACKSPACE.
         if self.columns < 2:
             raise ValueError( 'KeypadSpec needs at least 2 columns.' )
@@ -103,7 +107,7 @@ class KeypadEntry:
     """
 
     spec           : KeypadSpec
-    fields         : List[ KeypadField ]
+    fields         : Tuple[ KeypadField, ... ]
     error_message  : Optional[ str ] = None
     # Set when the server re-renders the entry in place (antinode replace).
     html_id        : Optional[ str ] = None

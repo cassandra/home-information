@@ -2,6 +2,7 @@ from django.http import HttpRequest
 from django.urls import reverse
 
 from hi.apps.security.security_manager import SecurityManager
+from hi.apps.user.access import has_content_access
 
 from .console_helper import ConsoleSettingsHelper
 from .constants import ConsoleConstants
@@ -29,6 +30,12 @@ class ConsoleLockMiddleware:
         return self.process_response( request, response )
 
     def process_request( self, request ):
+        # The lock protects content. A session that can only reach the
+        # sign-in flow has nothing to protect, and locking it would block
+        # signing in (sign-in pages would get the unlock prompt).
+        if not has_content_access( request ):
+            return None
+
         self._process_away_auto_lock( request )
 
         if request.session.get( ConsoleConstants.CONSOLE_LOCKED_SESSION_VAR, False ):

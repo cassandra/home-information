@@ -1,7 +1,7 @@
 {% extends "modals/no_footer.html" %}
 
 {% block preamble %}
-<form action="{% url 'console_set_lock_pin' %}" method="post" class="form" data-async="true">
+<form action="{% url 'console_set_lock_pin' %}" method="post" class="form" autocomplete="off" data-async="true">
   {% csrf_token %}
 {% endblock %}
 

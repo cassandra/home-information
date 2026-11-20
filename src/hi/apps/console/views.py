@@ -5,7 +5,7 @@ from django.urls import reverse
 from django.views.generic import View
 import dataclasses
 from datetime import datetime
-from typing import List
+from typing import Tuple
 from django.utils import timezone
 
 import hi.apps.common.antinode as antinode
@@ -227,15 +227,13 @@ class ConsoleLockView( View ):
 class LockPinModalView( HiModalView ):
     """ Modal whose body is the lock PIN keypad over KEYPAD_FIELDS. """
 
-    KEYPAD_FIELDS : List[ KeypadField ] = []
-    KEYPAD_HTML_ID : str = None
+    KEYPAD_FIELDS : Tuple[ KeypadField, ... ] = ()
 
     def keypad_entry( self, request, error_message : str = None ) -> KeypadEntry:
         return KeypadEntry(
             spec = ConsoleConstants.LOCK_PIN_KEYPAD,
             fields = self.KEYPAD_FIELDS,
             error_message = error_message,
-            html_id = self.KEYPAD_HTML_ID,
         )
 
     def keypad_response( self, request, status : int, error_message : str = None ):
@@ -245,24 +243,12 @@ class LockPinModalView( HiModalView ):
             status = status,
         )
 
-    def keypad_replace_response( self, request, status : int, error_message : str = None ):
-        """ Re-renders only the keypad, for forms that stay in the modal. """
-        content = render_to_string(
-            'panes/keypad_entry.html',
-            { 'keypad_entry': self.keypad_entry( request, error_message = error_message ) },
-            request = request,
-        )
-        return antinode.response(
-            replace_map = { self.KEYPAD_HTML_ID: content },
-            status = status,
-        )
-
     
 class SetLockPinView( LockPinModalView ):
 
     PIN_FIELD = KeypadField( name = 'pin', label = 'New PIN' )
     CONFIRM_FIELD = KeypadField( name = 'pin_confirm', label = 'Confirm PIN' )
-    KEYPAD_FIELDS = [ PIN_FIELD, CONFIRM_FIELD ]
+    KEYPAD_FIELDS = ( PIN_FIELD, CONFIRM_FIELD )
 
     def get_template_name( self ) -> str:
         return 'console/modals/set_lock_pin.html'
@@ -277,7 +263,7 @@ class SetLockPinView( LockPinModalView ):
             return self.keypad_response(
                 request,
                 status = 400,
-                error_message = f'PIN must be exactly {ConsoleConstants.LOCK_PIN_KEYPAD.length} digits.',
+                error_message = ConsoleConstants.LOCK_PIN_FORMAT_MESSAGE,
             )
         if confirm_pin != input_pin:
             return self.keypad_response(
@@ -294,13 +280,26 @@ class SetLockPinView( LockPinModalView ):
 class ConsoleUnlockView( LockPinModalView ):
 
     PIN_FIELD = KeypadField( name = 'pin' )
-    KEYPAD_FIELDS = [ PIN_FIELD ]
+    KEYPAD_FIELDS = ( PIN_FIELD, )
     KEYPAD_HTML_ID = 'hi-console-unlock-keypad'
 
     def keypad_entry( self, request, error_message : str = None ) -> KeypadEntry:
         return dataclasses.replace(
             super().keypad_entry( request, error_message = error_message ),
+            html_id = self.KEYPAD_HTML_ID,
             disabled_secs = UnlockThrottle( request.session ).remaining_lockout_secs(),
+        )
+
+    def keypad_replace_response( self, request, status : int, error_message : str = None ):
+        """ Re-renders only the keypad: the unlock form stays in its modal. """
+        content = render_to_string(
+            'panes/keypad_entry.html',
+            { 'keypad_entry': self.keypad_entry( request, error_message = error_message ) },
+            request = request,
+        )
+        return antinode.response(
+            replace_map = { self.KEYPAD_HTML_ID: content },
+            status = status,
         )
 
     def get_template_name( self ) -> str:

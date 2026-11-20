@@ -67,6 +67,11 @@
 .hi-keypad-entry.is-error .hi-keypad-slots {
   animation: hi-keypad-shake 0.35s;
 }
+@media (prefers-reduced-motion: reduce) {
+  .hi-keypad-entry.is-error .hi-keypad-slots {
+    animation: none;
+  }
+}
 @keyframes hi-keypad-shake {
   0%, 100% { transform: translateX(0); }
   20%, 60% { transform: translateX(-8px); }

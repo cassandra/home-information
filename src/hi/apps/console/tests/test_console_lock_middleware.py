@@ -2,7 +2,8 @@ import logging
 from unittest.mock import Mock, patch
 
 from django.http import HttpResponse
-from django.test import RequestFactory
+from django.contrib.auth.models import AnonymousUser
+from django.test import RequestFactory, override_settings
 from django.urls import reverse
 
 from hi.apps.console.constants import ConsoleConstants
@@ -134,4 +135,41 @@ class TestConsoleLockMiddleware( BaseTestCase ):
                 '3',
             )
             self.assertTrue( request.session[ConsoleConstants.CONSOLE_LOCKED_SESSION_VAR] )
+        return
+
+
+@override_settings( SUPPRESS_AUTHENTICATION = False )
+class TestConsoleLockMiddlewareSignedOut( BaseTestCase ):
+    """ A signed-out session can only reach sign-in, so it is never locked. """
+
+    def setUp( self ):
+        super().setUp()
+        self.middleware = ConsoleLockMiddleware( Mock( return_value = HttpResponse( 'ok' ) ))
+        return
+
+    def _signed_out_request( self, session ):
+        request = RequestFactory().get( reverse( 'home' ) )
+        request.user = AnonymousUser()
+        request.session = session
+        return request
+
+    def test_away_auto_lock_skipped( self ):
+        request = self._signed_out_request( {} )
+        with patch( 'hi.apps.console.middleware.SecurityManager' ) as mock_security_manager, \
+             patch( 'hi.apps.console.middleware.ConsoleSettingsHelper' ) as mock_helper:
+            mock_security_manager.return_value.get_console_away_lock_timestamp.return_value = '2'
+            mock_helper.return_value.get_console_lock_pin.return_value = '1234'
+
+            response = self.middleware.process_request( request )
+
+        self.assertIsNone( response )
+        self.assertNotIn( ConsoleConstants.CONSOLE_LOCKED_SESSION_VAR, request.session )
+        return
+
+    def test_locked_session_not_blocked( self ):
+        request = self._signed_out_request( { ConsoleConstants.CONSOLE_LOCKED_SESSION_VAR: True } )
+        with patch( 'hi.apps.console.middleware.SecurityManager' ) as mock_security_manager:
+            mock_security_manager.return_value.get_console_away_lock_timestamp.return_value = None
+            response = self.middleware.process_request( request )
+        self.assertIsNone( response )
         return

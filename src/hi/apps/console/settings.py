@@ -21,9 +21,7 @@ def validate_lock_pin( value : str ):
     if is_blank( value ):
         return
     if not ConsoleConstants.LOCK_PIN_KEYPAD.is_valid( value ):
-        raise ValidationError(
-            f'Must be exactly {ConsoleConstants.LOCK_PIN_KEYPAD.length} digits.'
-        )
+        raise ValidationError( ConsoleConstants.LOCK_PIN_FORMAT_MESSAGE )
     return
 
 

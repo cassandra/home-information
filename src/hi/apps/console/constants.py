@@ -8,6 +8,7 @@ class ConsoleConstants:
         length = 4,
         columns = 3,
     )
+    LOCK_PIN_FORMAT_MESSAGE = f'PIN must be exactly {LOCK_PIN_KEYPAD.length} digits.'
 
     CONSOLE_LOCKED_SESSION_VAR = 'console_locked'
     UNLOCK_FAILURE_COUNT_SESSION_VAR = 'console_unlock_failure_count'

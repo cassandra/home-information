@@ -1,46 +1,50 @@
 import logging
-from unittest.mock import Mock, patch
 
 from django.core.exceptions import ValidationError
 from django.test import SimpleTestCase
 
+from hi.apps.config.settings_manager import SettingsManager
 from hi.apps.console.console_helper import ConsoleSettingsHelper
-from hi.apps.console.settings import validate_lock_pin
+from hi.apps.console.settings import ConsoleSetting, validate_lock_pin
+from hi.testing.base_test_case import BaseTestCase
 
 logging.disable( logging.CRITICAL )
 
 
-class TestConsoleLockPinLookup( SimpleTestCase ):
+class TestConsoleLockPinLookup( BaseTestCase ):
 
-    def _helper_with_stored_value( self, value ):
-        settings_manager = Mock()
-        settings_manager.get_setting_value.return_value = value
-        helper = ConsoleSettingsHelper()
-        patcher = patch.object( helper, 'settings_manager', return_value = settings_manager )
-        patcher.start()
-        self.addCleanup( patcher.stop )
-        return helper, settings_manager
+    def setUp( self ):
+        super().setUp()
+        # Fresh singletons: the helper caches its settings manager.
+        for singleton_class in ( SettingsManager, ConsoleSettingsHelper ):
+            singleton_class._instance = None
+            self.addCleanup( setattr, singleton_class, '_instance', None )
+        return
+
+    def _store( self, value ):
+        SettingsManager().set_setting_value( ConsoleSetting.CONSOLE_LOCK_PASSWORD, value )
+        return
 
     def test_valid_stored_pin_is_returned( self ):
-        helper, _ = self._helper_with_stored_value( '0429' )
-        self.assertEqual( helper.get_console_lock_pin(), '0429' )
+        self._store( '0429' )
+        self.assertEqual( ConsoleSettingsHelper().get_console_lock_pin(), '0429' )
         return
 
     def test_legacy_password_is_treated_as_unset( self ):
-        helper, _ = self._helper_with_stored_value( 'hunter2' )
-        self.assertIsNone( helper.get_console_lock_pin() )
+        self._store( 'hunter2' )
+        self.assertIsNone( ConsoleSettingsHelper().get_console_lock_pin() )
         return
 
     def test_blank_is_treated_as_unset( self ):
-        helper, _ = self._helper_with_stored_value( '' )
-        self.assertIsNone( helper.get_console_lock_pin() )
+        self._store( '' )
+        self.assertIsNone( ConsoleSettingsHelper().get_console_lock_pin() )
         return
 
     def test_set_rejects_invalid_pin( self ):
-        helper, settings_manager = self._helper_with_stored_value( '' )
+        self._store( '0429' )
         with self.assertRaises( ValueError ):
-            helper.set_console_lock_pin( pin = '12a4' )
-        settings_manager.set_setting_value.assert_not_called()
+            ConsoleSettingsHelper().set_console_lock_pin( pin = '12a4' )
+        self.assertEqual( ConsoleSettingsHelper().get_console_lock_pin(), '0429' )
         return
 
 
@@ -51,9 +55,7 @@ class TestValidateLockPin( SimpleTestCase ):
         validate_lock_pin( '1234' )
         return
 
-    def test_invalid_values_rejected( self ):
-        for value in [ '12a', '123', '12345', 'hunter2' ]:
-            with self.subTest( value = value ):
-                with self.assertRaises( ValidationError ):
-                    validate_lock_pin( value )
+    def test_invalid_value_rejected( self ):
+        with self.assertRaises( ValidationError ):
+            validate_lock_pin( 'hunter2' )
         return

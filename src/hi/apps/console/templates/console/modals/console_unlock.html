@@ -6,7 +6,7 @@ Stays in the modal: a wrong PIN re-renders only the keypad; success refreshes th
 As the initial modal (full page load while locked) the page behind it is empty, so it is
 not dismissible; over a normal page it is, leaving the console viewable read-only.
 {% endcomment %}
-<form action="{% url 'console_unlock' %}" method="post" class="form" data-async="true" data-stay-in-modal="true"
+<form action="{% url 'console_unlock' %}" method="post" class="form" autocomplete="off" data-async="true" data-stay-in-modal="true"
       {% if is_initial_modal %}data-modal-protected="true"{% endif %}>
   {% csrf_token %}
 {% endblock %}

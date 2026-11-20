@@ -1,6 +1,6 @@
-from django.conf import settings
 from django.urls import resolve
 
+from .access import has_content_access
 from .views import UserSigninView
 
 
@@ -22,7 +22,7 @@ class AuthenticationMiddleware:
 
     def __call__(self, request):
         
-        if settings.SUPPRESS_AUTHENTICATION or request.user.is_authenticated:
+        if has_content_access( request ):
             return self.get_response( request )
 
         resolver_match = resolve( request.path )

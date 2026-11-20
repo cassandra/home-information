@@ -10,6 +10,7 @@
  * - auto-submit when the last field is full, and no input afterwards
  * - clearing a server-rendered error on the next edit
  * - a server-rendered disabled countdown refusing input, then re-enabling
+ * - recovering from a failed submit the server never re-rendered
  */
 
 (function() {
@@ -24,12 +25,26 @@
             return new Promise( resolve => setTimeout( resolve, ms ));
         }
 
+        // Polls rather than sleeping a fixed time: background tabs slow timers.
+        async function waitFor( condition, timeoutMs = 3000 ) {
+            const startMs = Date.now();
+            while ( ! condition() && (( Date.now() - startMs ) < timeoutMs )) {
+                await wait( 50 );
+            }
+            return condition();
+        }
+
         function addEntry({ alphabet = '1234567890', length = 4, fieldNames = [ 'pin' ],
                             masked = true, autoSubmit = true, errorMessage = '',
                             disabledSecs = 0 } = {}) {
             const form = document.createElement( 'form' );
+            form.setAttribute( 'action', '/test/keypad' );
             form.submitCount = 0;
-            form.requestSubmit = function() { form.submitCount += 1; };
+            // Stands in for antinode's jQuery submit handler.
+            $( form ).on( 'submit', function( event ) {
+                event.preventDefault();
+                form.submitCount += 1;
+            });
 
             const fieldsHtml = fieldNames.map( name => `
                 <div class="hi-keypad-field" data-keypad-field>
@@ -49,7 +64,8 @@
                        data-keypad-message>${errorMessage}</div>`;
             form.innerHTML = `
                 <div class="hi-keypad-entry ${ errorMessage ? 'is-error' : '' } ${ disabledSecs ? 'is-disabled' : '' }"
-                     data-keypad-entry ${disabledAttr}
+                     data-keypad-entry ${disabledAttr} data-failure-message="Failed"
+
                      data-alphabet="${alphabet}" data-length="${length}"
                      data-masked="${masked}" data-auto-submit="${autoSubmit}">
                   ${fieldsHtml}
@@ -170,11 +186,9 @@
             assert.equal( form.submitCount, 0, 'not before the last field is full' );
 
             tap( form, '2' );
-            tap( form, '9' );
             tapAction( form, 'clear' );
-            await wait( AFTER_SUBMIT_DELAY_MS );
-            assert.equal( form.submitCount, 1 );
-            assert.deepEqual( values( form ), [ '12', '12' ], 'no edits while submitting' );
+            assert.ok( await waitFor( () => form.submitCount === 1 ));
+            assert.deepEqual( values( form ), [ '12', '12' ], 'clear refused while submitting' );
         });
 
         QUnit.test( 'no submit without auto-submit', async function( assert ) {
@@ -203,13 +217,31 @@
             press( '2' );
             assert.deepEqual( values( form ), [ '' ], 'taps and keys refused' );
 
-            await wait( 1400 );
-            assert.notOk( entry.hasAttribute( 'data-disabled-secs' ));
+            assert.ok( await waitFor( () => ! entry.hasAttribute( 'data-disabled-secs' )));
             assert.notOk( entry.classList.contains( 'is-disabled' ));
             assert.equal( form.querySelector( '[data-keypad-message]' ).textContent, '' );
 
             tap( form, '3' );
             assert.deepEqual( values( form ), [ '3' ], 'accepts input again' );
+        });
+
+        QUnit.test( 'a failed submit the server never re-rendered resets the keypad', async function( assert ) {
+            const form = addEntry();
+            [ '1', '2', '3', '4' ].forEach( k => tap( form, k ));
+            assert.ok( await waitFor( () => form.submitCount === 1 ));
+
+            $( document ).trigger( 'ajaxError', [ {}, { url: '/test/other' } ] );
+            tap( form, '5' );
+            assert.deepEqual( values( form ), [ '1234' ], 'other requests do not reset it' );
+
+            $( document ).trigger( 'ajaxError', [ {}, { url: '/test/keypad' } ] );
+            const message = form.querySelector( '[data-keypad-message]' );
+            assert.equal( message.textContent, 'Failed' );
+            assert.deepEqual( values( form ), [ '' ] );
+
+            tap( form, '5' );
+            assert.deepEqual( values( form ), [ '5' ], 'accepts input again' );
+            assert.equal( message.textContent, '', 'next edit clears the failure message' );
         });
     });
 

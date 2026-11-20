@@ -1,11 +1,13 @@
 import logging
-from unittest.mock import patch
 
 from django.urls import reverse
 
 import hi.apps.common.datetimeproxy as datetimeproxy
 
+from hi.apps.config.settings_manager import SettingsManager
+from hi.apps.console.console_helper import ConsoleSettingsHelper
 from hi.apps.console.constants import ConsoleConstants
+from hi.apps.console.settings import ConsoleSetting
 from hi.apps.console.unlock_throttle import UnlockThrottle
 from hi.apps.console.views import ConsoleUnlockView
 from hi.testing.view_test_base import AsyncViewTestCase, DualModeViewTestCase
@@ -17,14 +19,19 @@ class LockViewTestBase( AsyncViewTestCase ):
 
     def setUp( self ):
         super().setUp()
-        patcher = patch( 'hi.apps.console.views.ConsoleSettingsHelper' )
-        self.mock_helper = patcher.start().return_value
-        self.addCleanup( patcher.stop )
+        # Fresh singletons: the helper caches its settings manager.
+        for singleton_class in ( SettingsManager, ConsoleSettingsHelper ):
+            singleton_class._instance = None
+            self.addCleanup( setattr, singleton_class, '_instance', None )
         return
 
-    def set_stored_pin( self, pin ):
-        self.mock_helper.get_console_lock_pin.return_value = pin
+    def set_stored_pin( self, value ):
+        """ Stores the raw setting value; may be a legacy non-PIN password. """
+        SettingsManager().set_setting_value( ConsoleSetting.CONSOLE_LOCK_PASSWORD, value or '' )
         return
+
+    def stored_pin( self ):
+        return ConsoleSettingsHelper().get_console_lock_pin()
 
     def set_locked( self, is_locked ):
         session = self.client.session
@@ -38,8 +45,8 @@ class LockViewTestBase( AsyncViewTestCase ):
 
 class TestConsoleLockView( LockViewTestBase ):
 
-    def test_without_valid_pin_prompts_to_set_pin( self ):
-        self.set_stored_pin( None )
+    def test_legacy_password_prompts_to_set_pin( self ):
+        self.set_stored_pin( 'hunter2' )
         response = self.async_post( reverse( 'console_lock' ))
         self.assertTemplateRendered( response, 'console/modals/set_lock_pin.html' )
         self.assertFalse( self.is_locked() )
@@ -58,7 +65,7 @@ class TestSetLockPinView( LockViewTestBase ):
     def test_matching_valid_pin_is_stored_and_locks( self ):
         response = self.async_post( reverse( 'console_set_lock_pin' ),
                                     { 'pin': '0429', 'pin_confirm': '0429' } )
-        self.mock_helper.set_console_lock_pin.assert_called_once_with( pin = '0429' )
+        self.assertEqual( self.stored_pin(), '0429' )
         self.assertTrue( self.is_locked() )
         self.assertTemplateRendered( response, 'console/modals/console_unlock.html' )
         return
@@ -69,7 +76,7 @@ class TestSetLockPinView( LockViewTestBase ):
         self.assertResponseStatusCode( response, 400 )
         self.assertTemplateRendered( response, 'console/modals/set_lock_pin.html' )
         self.assertIn( 'PINs did not match', response.content.decode() )
-        self.mock_helper.set_console_lock_pin.assert_not_called()
+        self.assertIsNone( self.stored_pin() )
         self.assertFalse( self.is_locked() )
         return
 
@@ -78,7 +85,7 @@ class TestSetLockPinView( LockViewTestBase ):
                                     { 'pin': '12a4', 'pin_confirm': '12a4' } )
         self.assertResponseStatusCode( response, 400 )
         self.assertIn( 'PIN must be exactly 4 digits', response.content.decode() )
-        self.mock_helper.set_console_lock_pin.assert_not_called()
+        self.assertIsNone( self.stored_pin() )
         return
 
 
@@ -103,8 +110,8 @@ class TestConsoleUnlockView( LockViewTestBase ):
         self.assertTrue( self.is_locked() )
         return
 
-    def test_without_valid_pin_any_entry_unlocks( self ):
-        self.set_stored_pin( None )
+    def test_legacy_password_any_entry_unlocks( self ):
+        self.set_stored_pin( 'hunter2' )
         self.set_locked( True )
         self.async_post( reverse( 'console_unlock' ), { 'pin': '0000' } )
         self.assertFalse( self.is_locked() )
@@ -140,6 +147,7 @@ class TestConsoleUnlockThrottle( LockViewTestBase ):
             self.post_pin( '0000' )
         response = self.post_pin( '1234' )
         self.assertResponseStatusCode( response, 429 )
+        self.assertIn( 'data-disabled-secs=', self.keypad_html( response ))
         self.assertTrue( self.is_locked() )
         return
 

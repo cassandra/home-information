@@ -1,8 +1,10 @@
 {% comment %}
 On-screen keypad for a fixed-length, fixed-alphabet code (KeypadEntry).
 Behavior lives in js/keypad-entry.js, which reads the data- attributes.
-Must be inside a form; with auto-submit the form submits when the last
-field is full. Server renders error state; the JS only clears it.
+Must be inside a form, which should set autocomplete="off" so a reload
+cannot restore partial entries. With auto-submit the form submits when the
+last field is full. Server renders error state; the JS only clears it.
+failure-message is shown if a submit fails without a server re-render.
 {% endcomment %}
 <div {% if keypad_entry.html_id %}id="{{ keypad_entry.html_id }}" {% endif %}class="hi-keypad-entry{% if keypad_entry.disabled_secs %} is-disabled{% elif keypad_entry.error_message %} is-error{% endif %}"
      data-keypad-entry
@@ -10,7 +12,8 @@ field is full. Server renders error state; the JS only clears it.
      data-alphabet="{{ keypad_entry.spec.alphabet }}"
      data-length="{{ keypad_entry.spec.length }}"
      data-masked="{{ keypad_entry.spec.masked|yesno:'true,false' }}"
-     data-auto-submit="{{ keypad_entry.spec.auto_submit|yesno:'true,false' }}">
+     data-auto-submit="{{ keypad_entry.spec.auto_submit|yesno:'true,false' }}"
+     data-failure-message="Something went wrong. Try again.">
 
   {% for field in keypad_entry.fields %}
   <div class="hi-keypad-field{% if forloop.first %} is-active{% endif %}" data-keypad-field>
@@ -27,7 +30,10 @@ field is full. Server renders error state; the JS only clears it.
   {% endfor %}
 
   {% if keypad_entry.disabled_secs %}
-  <div class="hi-keypad-message is-wait" role="status" aria-live="polite" data-keypad-message>Too many attempts. Try again in <span data-keypad-countdown>{{ keypad_entry.disabled_secs }}</span>s</div>
+  <div class="hi-keypad-message is-wait" role="status" aria-live="polite" data-keypad-message>
+    <span class="sr-only">Too many attempts. Try again in {{ keypad_entry.disabled_secs }} seconds.</span>
+    <span aria-hidden="true">Too many attempts. Try again in <span data-keypad-countdown>{{ keypad_entry.disabled_secs }}</span>s</span>
+  </div>
   {% else %}
   <div class="hi-keypad-message{% if keypad_entry.error_message %} is-error{% endif %}"
        role="status" aria-live="polite" data-keypad-message>{{ keypad_entry.error_message|default:'' }}</div>
