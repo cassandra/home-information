@@ -1130,9 +1130,26 @@ function hideLoadingInterstitial() {
     $('#antinode-loader').hide();
 };
 
+const SYNC_SUBMIT_DISABLED_ATTR = 'data-an-sync-submit-disabled';
+
 function synchronousSubmitHandler() {
     showLoadingInterstitial();
-    $( this ).find( 'button[type="submit"]' ).prop('disabled', true);
+    $( this ).find( 'button[type="submit"]:not(:disabled)' )
+        .prop( 'disabled', true )
+        .attr( SYNC_SUBMIT_DISABLED_ATTR, 'true' );
+}
+
+// A page restored from the back/forward cache keeps the DOM as it was
+// when the browser left it: undo what a synchronous submit did (only the
+// buttons it disabled, not any the server rendered disabled).
+function synchronousSubmitPageShowHandler( event ) {
+    if ( ! event.persisted ) {
+        return;
+    }
+    hideLoadingInterstitial();
+    $( `[${SYNC_SUBMIT_DISABLED_ATTR}]` )
+        .prop( 'disabled', false )
+        .removeAttr( SYNC_SUBMIT_DISABLED_ATTR );
 }
     
 //====================
@@ -1153,6 +1170,7 @@ jQuery(function($) {
     $('body').on('click', 'div[data-async]', asyncClickHandler );
     $('body').on('click', 'form[data-async] button', lastButtonClickHandler );
     $('body').on('submit', 'form[data-synchronous]', synchronousSubmitHandler );
+    window.addEventListener( 'pageshow', synchronousSubmitPageShowHandler );
 
     // This is to support auto-submitting from SELECT elements asnychronously.
     //

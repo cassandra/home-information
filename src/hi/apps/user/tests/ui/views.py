@@ -6,18 +6,48 @@ from django.shortcuts import render
 from django.views.generic import View
 
 from hi.apps.notify.email_sender import EmailSender
+from hi.apps.user.magic_code_generator import MagicCodeStatus
 from hi.apps.user.signin_manager import SigninManager
-from hi.apps.user.transient_models import UserAuthenticationData
+from hi.apps.user.transient_models import MagicCodePageState, UserAuthenticationData
+from hi.apps.user.views import SigninMagicCodeView
 
 from hi.testing.ui.email_test_views import EmailTestViewView
+
+
+UI_TEST_EMAIL_ADDRESS = 'someone.with.a.long.address@example.com'
+
+MAGIC_CODE_PAGE_STATES = {
+    'entry': MagicCodePageState( email_address = UI_TEST_EMAIL_ADDRESS, is_code_usable = True ),
+    'invalid': MagicCodePageState( email_address = UI_TEST_EMAIL_ADDRESS, is_code_usable = True,
+                                   status = MagicCodeStatus.INVALID, attempts_remaining = 2 ),
+    'invalid_last_attempt': MagicCodePageState( email_address = UI_TEST_EMAIL_ADDRESS, is_code_usable = True,
+                                                status = MagicCodeStatus.INVALID, attempts_remaining = 1 ),
+    'expired': MagicCodePageState( email_address = UI_TEST_EMAIL_ADDRESS, is_code_usable = False,
+                                   status = MagicCodeStatus.EXPIRED ),
+    'too_many_attempts': MagicCodePageState( email_address = UI_TEST_EMAIL_ADDRESS, is_code_usable = False,
+                                             status = MagicCodeStatus.TOO_MANY_ATTEMPTS ),
+    'no_code': MagicCodePageState( email_address = UI_TEST_EMAIL_ADDRESS, is_code_usable = False,
+                                   status = MagicCodeStatus.NO_CODE ),
+}
 
 
 class TestUiUserHomeView( View ):
 
     def get(self, request, *args, **kwargs):
         context = {
+            'magic_code_page_states': MAGIC_CODE_PAGE_STATES.keys(),
         }
         return render(request, "user/tests/ui/home.html", context )
+
+
+class TestUiMagicCodePageView( View ):
+    """ The access code page in any state; some are slow to reach for real. """
+
+    def get( self, request, *args, **kwargs ):
+        state = kwargs.get( 'state' )
+        if state not in MAGIC_CODE_PAGE_STATES:
+            raise BadRequest( f'Unknown access code page state "{state}".' )
+        return SigninMagicCodeView().render_page( request, page_state = MAGIC_CODE_PAGE_STATES[ state ] )
 
     
 class TestUiViewSigninEmailView( EmailTestViewView ):

@@ -80,4 +80,6 @@ class TestKeypadSpecCells( SimpleTestCase ):
             KeypadSpec( alphabet = '', length = 4, columns = 3 )
         with self.assertRaises( ValueError ):
             KeypadSpec( alphabet = '12', length = 0, columns = 3 )
+        with self.assertRaises( ValueError ):
+            KeypadSpec( alphabet = 'abA', length = 4, columns = 3, case_sensitive = False )
         return

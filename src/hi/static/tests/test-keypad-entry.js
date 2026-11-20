@@ -5,12 +5,16 @@
  * panes/keypad_entry.html:
  * - filling fields in order, backspace across fields, clear
  * - masked and unmasked slots
- * - physical keys: alphabet filtering, exact matching, modifiers, and
- *   editable elements keeping their keys
+ * - physical keys: alphabet filtering, exact or case-insensitive matching,
+ *   modifiers, and editable elements keeping their keys
+ * - paste: separators ignored, invalid text rejected whole, active field only
  * - auto-submit when the last field is full, and no input afterwards
  * - clearing a server-rendered error on the next edit
  * - a server-rendered disabled countdown refusing input, then re-enabling
  * - recovering from a failed submit the server never re-rendered
+ * - resetting a submitting entry on a page restored from the back/forward cache
+ * - announcing progress to screen readers
+ * - keys and paste going only to an entry in an open modal
  */
 
 (function() {
@@ -36,7 +40,8 @@
 
         function addEntry({ alphabet = '1234567890', length = 4, fieldNames = [ 'pin' ],
                             masked = true, autoSubmit = true, errorMessage = '',
-                            disabledSecs = 0 } = {}) {
+                            disabledSecs = 0, caseSensitive = true,
+                            container = document.getElementById( 'qunit-fixture' ) } = {}) {
             const form = document.createElement( 'form' );
             form.setAttribute( 'action', '/test/keypad' );
             form.submitCount = 0;
@@ -65,10 +70,11 @@
             form.innerHTML = `
                 <div class="hi-keypad-entry ${ errorMessage ? 'is-error' : '' } ${ disabledSecs ? 'is-disabled' : '' }"
                      data-keypad-entry ${disabledAttr} data-failure-message="Failed"
-
+                     data-paste-error-message="Bad paste" data-case-sensitive="${caseSensitive}"
                      data-alphabet="${alphabet}" data-length="${length}"
                      data-masked="${masked}" data-auto-submit="${autoSubmit}">
                   ${fieldsHtml}
+                  <div data-keypad-progress></div>
                   ${messageHtml}
                   <div class="hi-keypad">
                     ${keysHtml}
@@ -76,8 +82,15 @@
                     <button type="button" data-keypad-action="backspace">Bksp</button>
                   </div>
                 </div>`;
-            document.getElementById( 'qunit-fixture' ).appendChild( form );
+            container.appendChild( form );
             return form;
+        }
+
+        function addOpenModal() {
+            const modal = document.createElement( 'div' );
+            modal.className = 'modal show';
+            document.getElementById( 'qunit-fixture' ).appendChild( modal );
+            return modal;
         }
 
         function tap( form, key ) {
@@ -93,6 +106,19 @@
                 { key: key, bubbles: true, cancelable: true }, options ));
             document.dispatchEvent( event );
             return event;
+        }
+
+        function paste( text ) {
+            const clipboardData = new DataTransfer();
+            clipboardData.setData( 'text/plain', text );
+            const event = new ClipboardEvent( 'paste', {
+                clipboardData: clipboardData, bubbles: true, cancelable: true });
+            document.dispatchEvent( event );
+            return event;
+        }
+
+        function messageText( form ) {
+            return form.querySelector( '[data-keypad-message]' ).textContent;
         }
 
         function values( form ) {
@@ -152,6 +178,71 @@
             assert.ok( handled.defaultPrevented, 'handled keys are consumed' );
             assert.notOk( ignored.defaultPrevented, 'other keys pass through' );
             assert.notOk( wrongCase.defaultPrevented, 'no case folding' );
+        });
+
+        QUnit.test( 'case-insensitive physical keys enter the alphabet character', function( assert ) {
+            const form = addEntry({ alphabet: 'abc', length: 3, masked: false, autoSubmit: false,
+                                    caseSensitive: false });
+            const upper = press( 'B' );
+            press( 'c' );
+            const outside = press( 'Z' );
+            assert.deepEqual( values( form ), [ 'bc' ] );
+            assert.ok( upper.defaultPrevented );
+            assert.notOk( outside.defaultPrevented );
+        });
+
+        QUnit.test( 'paste ignores separators and auto-submits a complete code', async function( assert ) {
+            const form = addEntry({ alphabet: 'abcd', length: 4, masked: false, caseSensitive: false });
+            const event = paste( ' AB-c d ' );
+            assert.ok( event.defaultPrevented );
+            assert.deepEqual( values( form ), [ 'abcd' ] );
+            assert.ok( await waitFor( () => form.submitCount === 1 ));
+        });
+
+        QUnit.test( 'paste replaces a partial entry', function( assert ) {
+            const form = addEntry({ autoSubmit: false });
+            tap( form, '9' );
+            paste( '12' );
+            assert.deepEqual( values( form ), [ '12' ] );
+        });
+
+        QUnit.test( 'invalid or over-long paste is rejected whole', function( assert ) {
+            const form = addEntry({ autoSubmit: false });
+            tap( form, '7' );
+            paste( '12a4' );
+            assert.deepEqual( values( form ), [ '7' ], 'invalid character' );
+            assert.equal( messageText( form ), 'Bad paste' );
+
+            paste( '12345' );
+            assert.deepEqual( values( form ), [ '7' ], 'too long' );
+
+            paste( ' - ' );
+            assert.deepEqual( values( form ), [ '7' ], 'only separators' );
+
+            tap( form, '8' );
+            assert.equal( messageText( form ), '', 'next edit clears the paste error' );
+        });
+
+        QUnit.test( 'paste fills only the active field', function( assert ) {
+            const form = addEntry({ length: 2, fieldNames: [ 'pin', 'pin_confirm' ], autoSubmit: false });
+            paste( '12' );
+            assert.deepEqual( values( form ), [ '12', '' ] );
+            paste( '34' );
+            assert.deepEqual( values( form ), [ '12', '34' ] );
+            paste( '123' );
+            assert.deepEqual( values( form ), [ '12', '34' ], 'longer than one field is rejected' );
+        });
+
+        QUnit.test( 'paste is left alone while an editable element has focus', function( assert ) {
+            const form = addEntry();
+            const text = document.createElement( 'input' );
+            text.type = 'text';
+            document.getElementById( 'qunit-fixture' ).appendChild( text );
+            text.focus();
+            const event = paste( '12' );
+            text.blur();
+            assert.notOk( event.defaultPrevented );
+            assert.deepEqual( values( form ), [ '' ] );
         });
 
         QUnit.test( 'physical Backspace and Delete edit', function( assert ) {
@@ -242,6 +333,47 @@
             tap( form, '5' );
             assert.deepEqual( values( form ), [ '5' ], 'accepts input again' );
             assert.equal( message.textContent, '', 'next edit clears the failure message' );
+        });
+
+        QUnit.test( 'progress is announced as characters are entered', function( assert ) {
+            const form = addEntry({ autoSubmit: false });
+            const progress = form.querySelector( '[data-keypad-progress]' );
+            tap( form, '1' );
+            tap( form, '2' );
+            assert.equal( progress.textContent, '2 of 4 entered' );
+            tapAction( form, 'clear' );
+            assert.equal( progress.textContent, '0 of 4 entered' );
+        });
+
+        QUnit.test( 'with a modal open, keys and paste skip an entry behind it', function( assert ) {
+            const pageForm = addEntry({ autoSubmit: false });
+            const modal = addOpenModal();
+            const ignored = press( '1' );
+            paste( '23' );
+            assert.notOk( ignored.defaultPrevented );
+            assert.deepEqual( values( pageForm ), [ '' ], 'page entry untouched' );
+
+            const modalForm = addEntry({ autoSubmit: false, container: modal });
+            press( '4' );
+            paste( '56' );
+            assert.deepEqual( values( modalForm ), [ '56' ], 'modal entry gets them' );
+            assert.deepEqual( values( pageForm ), [ '' ] );
+        });
+
+        QUnit.test( 'a page restored from the back/forward cache resets a submitting entry', async function( assert ) {
+            const form = addEntry();
+            [ '1', '2', '3', '4' ].forEach( k => tap( form, k ));
+            assert.ok( await waitFor( () => form.submitCount === 1 ));
+
+            window.dispatchEvent( new PageTransitionEvent( 'pageshow', { persisted: false }));
+            tap( form, '5' );
+            assert.deepEqual( values( form ), [ '1234' ], 'a normal page load does not reset it' );
+
+            window.dispatchEvent( new PageTransitionEvent( 'pageshow', { persisted: true }));
+            assert.deepEqual( values( form ), [ '' ] );
+            assert.equal( messageText( form ), '', 'no error shown' );
+            tap( form, '5' );
+            assert.deepEqual( values( form ), [ '5' ], 'accepts input again' );
         });
     });
 

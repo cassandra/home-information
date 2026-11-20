@@ -1,13 +1,29 @@
+from dataclasses import dataclass
 import logging
+from typing import Optional
 
 from django.contrib.auth.models import User as UserType
 from django.contrib.auth.tokens import PasswordResetTokenGenerator
 from django.http import HttpRequest
 
-from .magic_code_generator import MagicCodeGenerator
-from . import forms
+from .magic_code_generator import MagicCodeGenerator, MagicCodeStatus
 
 logger = logging.getLogger(__name__)
+
+
+@dataclass( frozen = True )
+class MagicCodePageState:
+    """
+    What the access code page shows. ``status`` explains the last outcome:
+    for a usable code, a wrong guess (or None); otherwise why only a new
+    code can succeed. After a wrong guess, ``attempts_remaining`` says how
+    many more the code can take.
+    """
+
+    email_address       : str
+    is_code_usable      : bool
+    status              : Optional[ MagicCodeStatus ] = None
+    attempts_remaining  : Optional[ int ] = None
 
 
 class UserAuthenticationData:
@@ -36,9 +52,6 @@ class UserAuthenticationData:
             email_address = self._email_address,
         )
 
-        self._magic_code_form = forms.SigninMagicCodeForm(
-            initial = { 'email_address': self._email_address }
-        )
         logger.debug( f'UserAuthenticationData: EMAIL = {self._email_address}' )
         return
     
@@ -57,7 +70,3 @@ class UserAuthenticationData:
     @property
     def magic_code(self):
         return self._magic_code
-                   
-    @property
-    def magic_code_form(self):
-        return self._magic_code_form

@@ -61,6 +61,11 @@
   border-radius: 50%;
   background: var(--black);
 }
+/* Unmasked codes show their characters: monospace keeps similar letters distinct. */
+.hi-keypad-entry[data-masked="false"] .hi-keypad-slot,
+.hi-keypad-entry[data-masked="false"] .hi-keypad-key:not(.hi-keypad-action) {
+  font-family: SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+}
 .hi-keypad-entry.is-error .hi-keypad-slot {
   border-color: var(--error-highlight-color);
 }
@@ -148,6 +153,18 @@
   border-left: 3px solid var(--warning-color);
   padding: 0.4rem 0.6rem;
   margin: 0.25rem 0 0.5rem;
+}
+
+/* Narrow phones: six slots must fit inside a padded card. */
+@media (max-width: 400px) {
+  .hi-keypad-slots {
+    gap: 0.4rem;
+  }
+  .hi-keypad-slot {
+    width: 2.4rem;
+    height: 2.9rem;
+    font-size: 1.35rem;
+  }
 }
 
 @media (max-height: 760px) {

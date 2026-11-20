@@ -10,6 +10,10 @@ urlpatterns = [
           views.TestUiUserHomeView.as_view(), 
           name='user_tests_ui'),
 
+    re_path( r'^signin/code/(?P<state>\w+)$',
+             views.TestUiMagicCodePageView.as_view(), 
+             name='user_tests_ui_magic_code_page'),
+
     re_path( r'^email/signin/view/(?P<email_type>\w+)$',
              views.TestUiViewSigninEmailView.as_view(), 
              name='user_tests_ui_view_signin_email'),

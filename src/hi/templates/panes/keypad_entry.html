@@ -4,7 +4,8 @@ Behavior lives in js/keypad-entry.js, which reads the data- attributes.
 Must be inside a form, which should set autocomplete="off" so a reload
 cannot restore partial entries. With auto-submit the form submits when the
 last field is full. Server renders error state; the JS only clears it.
-failure-message is shown if a submit fails without a server re-render.
+failure-message is shown if a submit fails without a server re-render;
+paste-error-message if pasted text is not a valid code.
 {% endcomment %}
 <div {% if keypad_entry.html_id %}id="{{ keypad_entry.html_id }}" {% endif %}class="hi-keypad-entry{% if keypad_entry.disabled_secs %} is-disabled{% elif keypad_entry.error_message %} is-error{% endif %}"
      data-keypad-entry
@@ -13,7 +14,9 @@ failure-message is shown if a submit fails without a server re-render.
      data-length="{{ keypad_entry.spec.length }}"
      data-masked="{{ keypad_entry.spec.masked|yesno:'true,false' }}"
      data-auto-submit="{{ keypad_entry.spec.auto_submit|yesno:'true,false' }}"
-     data-failure-message="Something went wrong. Try again.">
+     data-case-sensitive="{{ keypad_entry.spec.case_sensitive|yesno:'true,false' }}"
+     data-failure-message="Something went wrong. Try again."
+     data-paste-error-message="Pasted text is not a valid code.">
 
   {% for field in keypad_entry.fields %}
   <div class="hi-keypad-field{% if forloop.first %} is-active{% endif %}" data-keypad-field>
@@ -28,6 +31,8 @@ failure-message is shown if a submit fails without a server re-render.
     <input type="hidden" name="{{ field.name }}" value="">
   </div>
   {% endfor %}
+
+  <div class="sr-only" aria-live="polite" data-keypad-progress></div>
 
   {% if keypad_entry.disabled_secs %}
   <div class="hi-keypad-message is-wait" role="status" aria-live="polite" data-keypad-message>

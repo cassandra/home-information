@@ -28,6 +28,23 @@
       
     </div>
 
+    <div class="col-xl-4 col-lg-4 col-md-6 col-12">
+      <div class="panel panel-default">
+	<div class="panel-heading">
+	  <h3 class="panel-title text-primary">Sign-In Pages</h3>
+	</div>
+	<div class="panel-body">
+	  <ul>
+	    <li><a href="{% url 'user_signin' %}">Sign in</a></li>
+	    <li><a href="{% url 'user_signin_magic_link' token='not-a-token' email='nobody@example.com' %}">Bad sign-in link</a></li>
+	    {% for state in magic_code_page_states %}
+	    <li><a href="{% url 'user_tests_ui_magic_code_page' state=state %}">Access code: {{ state }}</a></li>
+	    {% endfor %}
+	  </ul>
+	</div>
+      </div>
+    </div>
+
   </div>
 </div>
 {% endblock %}

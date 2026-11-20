@@ -1,9 +1,12 @@
 from datetime import datetime
 from enum import Enum
 import re
+from typing import Optional
 
 from django.utils import timezone
 from django.utils.crypto import constant_time_compare, get_random_string
+
+from .constants import UserConstants
 
 
 class MagicCodeStatus(Enum):
@@ -12,6 +15,7 @@ class MagicCodeStatus(Enum):
     EXPIRED             = 1
     VALID               = 2
     TOO_MANY_ATTEMPTS   = 3
+    NO_CODE             = 4
     
 
 class MagicCodeGenerator:
@@ -23,6 +27,9 @@ class MagicCodeGenerator:
       - single use: consumed when redeemed successfully;
       - short lived: expires after MAGIC_CODE_TIMEOUT_SECS;
       - limited to MAX_FAILED_ATTEMPTS wrong guesses before it is discarded.
+
+    Redeeming with no code in the session (already used, discarded, or never
+    issued) reports NO_CODE, as only a new code can succeed.
 
     Usage:
         Generate:
@@ -45,15 +52,13 @@ class MagicCodeGenerator:
 
     MAGIC_CODE_TIMEOUT_SECS = 15 * 60
     MAX_FAILED_ATTEMPTS = 5
-    MAGIC_CODE_CHARS = 'abcdefhkpqrstwxy'
-    MAGIC_CODE_LENGTH = 6
 
     BASE_DATETIME = timezone.make_aware( datetime(2001, 1, 1) )
 
     def make_magic_code( self, request, email_address : str ) -> str:
 
-        magic_code = get_random_string( length = self.MAGIC_CODE_LENGTH,
-                                        allowed_chars = self.MAGIC_CODE_CHARS )
+        magic_code = get_random_string( length = UserConstants.MAGIC_CODE_KEYPAD.length,
+                                        allowed_chars = UserConstants.MAGIC_CODE_KEYPAD.alphabet )
 
         request.session[self.MAGIC_CODE] = magic_code
         request.session[self.MAGIC_CODE_TIMESTAMP] = self.get_elapsed_seconds()
@@ -64,23 +69,32 @@ class MagicCodeGenerator:
     def redeem_magic_code( self, request, email_address : str, magic_code : str ) -> MagicCodeStatus:
         """ Any outcome other than a wrong guess under the attempt limit consumes the code. """
 
-        expected_magic_code = request.session.get( self.MAGIC_CODE )
-        if not expected_magic_code:
-            return MagicCodeStatus.INVALID
+        unusable_status = self.unusable_code_status( request )
+        if unusable_status:
+            self.expire_magic_code( request )
+            return unusable_status
 
         if not self._matches( request,
-                              expected_magic_code = expected_magic_code,
+                              expected_magic_code = request.session.get( self.MAGIC_CODE ),
                               email_address = email_address,
                               magic_code = magic_code ):
             return self._record_failed_attempt( request )
 
-        magic_code_origin_timestamp = request.session.get( self.MAGIC_CODE_TIMESTAMP )
         self.expire_magic_code( request )
+        return MagicCodeStatus.VALID
 
-        elapsed_secs = self.get_elapsed_seconds() - magic_code_origin_timestamp
+    def remaining_attempts( self, request ) -> int:
+        """ Wrong guesses the pending code can still take before it is discarded. """
+        return self.MAX_FAILED_ATTEMPTS - request.session.get( self.MAGIC_CODE_FAILED_ATTEMPTS, 0 )
+
+    def unusable_code_status( self, request ) -> Optional[ MagicCodeStatus ]:
+        """ Why no code in the session can be redeemed (NO_CODE or EXPIRED), or None if one can. """
+        if not request.session.get( self.MAGIC_CODE ):
+            return MagicCodeStatus.NO_CODE
+        elapsed_secs = self.get_elapsed_seconds() - request.session.get( self.MAGIC_CODE_TIMESTAMP )
         if elapsed_secs > self.get_timeout_seconds():
             return MagicCodeStatus.EXPIRED
-        return MagicCodeStatus.VALID
+        return None
 
     def expire_magic_code( self, request ):
         for key in ( self.MAGIC_CODE,

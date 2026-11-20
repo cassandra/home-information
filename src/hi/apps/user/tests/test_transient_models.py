@@ -108,36 +108,6 @@ class TestUserAuthenticationData(BaseTestCase):
         # Verify token was still generated for the actual user
         mock_token_generator.make_token.assert_called_once_with(user=self.user)
 
-    @patch('hi.apps.user.transient_models.forms.SigninMagicCodeForm')
-    @patch('hi.apps.user.transient_models.MagicCodeGenerator')
-    @patch('hi.apps.user.transient_models.PasswordResetTokenGenerator')
-    def test_user_authentication_data_creates_magic_code_form(self, mock_token_gen_class, mock_magic_gen_class, mock_form_class):
-        """Test UserAuthenticationData creates SigninMagicCodeForm with correct initial data."""
-        mock_token_generator = Mock()
-        mock_token_generator.make_token.return_value = 'form-token-abc'
-        mock_token_gen_class.return_value = mock_token_generator
-        
-        mock_magic_generator = Mock()
-        mock_magic_generator.make_magic_code.return_value = 'form123'
-        mock_magic_gen_class.return_value = mock_magic_generator
-        
-        mock_form = Mock()
-        mock_form_class.return_value = mock_form
-        
-        request = self.factory.get('/test')
-        request.user = self.user
-        request.session = {}
-        
-        auth_data = UserAuthenticationData(request)
-        
-        # Verify form was created with correct initial data
-        mock_form_class.assert_called_once_with(
-            initial={'email_address': 'test@example.com'}
-        )
-        
-        # Verify magic_code_form property returns the form
-        self.assertEqual(auth_data.magic_code_form, mock_form)
-
     @patch('hi.apps.user.transient_models.MagicCodeGenerator')
     @patch('hi.apps.user.transient_models.PasswordResetTokenGenerator')
     def test_user_authentication_data_with_both_overrides(self, mock_token_gen_class, mock_magic_gen_class):

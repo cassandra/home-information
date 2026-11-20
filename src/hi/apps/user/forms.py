@@ -1,19 +1,15 @@
 from django import forms
 
-from .magic_code_generator import MagicCodeGenerator
+from .constants import UserConstants
 
 
 class SigninMagicCodeForm(forms.Form):
+    """
+    Validates the access code page's submit; the page renders its own inputs.
+    The email address comes from the sign-in in progress, not the form.
+    """
 
-    email_address = forms.CharField(
-        max_length = 128,
-        widget = forms.HiddenInput(),
-    )
-
+    # Room for a code pasted or typed with separators, which redeeming ignores.
     magic_code = forms.CharField(
-        label = '',
-        max_length = 2 * MagicCodeGenerator.MAGIC_CODE_LENGTH,
-        widget = forms.TextInput( attrs = { 'autofocus': 'autofocus',
-                                            'placeholder': 'access code',
-                                            'width': str(2 * MagicCodeGenerator.MAGIC_CODE_LENGTH) } ),
-        required = True )
+        max_length = 2 * UserConstants.MAGIC_CODE_KEYPAD.length,
+    )

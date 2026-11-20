@@ -1,6 +1,7 @@
 import logging
 from unittest.mock import Mock, patch
 
+from hi.apps.user.constants import UserConstants
 from hi.apps.user.magic_code_generator import MagicCodeGenerator, MagicCodeStatus
 from hi.testing.base_test_case import BaseTestCase
 
@@ -28,14 +29,14 @@ class TestMagicCodeGenerator(BaseTestCase):
     def test_make_magic_code_uses_allowed_alphabet(self):
         magic_code = self.make_code()
 
-        self.assertEqual(len(magic_code), MagicCodeGenerator.MAGIC_CODE_LENGTH)
-        self.assertTrue(all(c in MagicCodeGenerator.MAGIC_CODE_CHARS for c in magic_code))
+        self.assertEqual(len(magic_code), UserConstants.MAGIC_CODE_KEYPAD.length)
+        self.assertTrue(UserConstants.MAGIC_CODE_KEYPAD.is_valid(magic_code))
 
     def test_correct_code_is_valid_and_single_use(self):
         magic_code = self.make_code()
 
         self.assertEqual(self.redeem(magic_code), MagicCodeStatus.VALID)
-        self.assertEqual(self.redeem(magic_code), MagicCodeStatus.INVALID)
+        self.assertEqual(self.redeem(magic_code), MagicCodeStatus.NO_CODE)
 
     def test_code_entry_ignores_case_whitespace_and_dashes(self):
         magic_code = self.make_code()
@@ -44,8 +45,8 @@ class TestMagicCodeGenerator(BaseTestCase):
 
         self.assertEqual(result, MagicCodeStatus.VALID)
 
-    def test_no_code_in_session_is_invalid(self):
-        self.assertEqual(self.redeem('abcdef'), MagicCodeStatus.INVALID)
+    def test_no_code_in_session_is_no_code(self):
+        self.assertEqual(self.redeem('abcdef'), MagicCodeStatus.NO_CODE)
 
     def test_correct_code_with_different_email_is_invalid(self):
         magic_code = self.make_code()
@@ -67,7 +68,7 @@ class TestMagicCodeGenerator(BaseTestCase):
         final_attempt = self.redeem(magic_code, email_address='other@example.com')
 
         self.assertEqual(final_attempt, MagicCodeStatus.TOO_MANY_ATTEMPTS)
-        self.assertEqual(self.redeem(magic_code), MagicCodeStatus.INVALID)
+        self.assertEqual(self.redeem(magic_code), MagicCodeStatus.NO_CODE)
 
     def test_new_code_resets_failed_attempts(self):
         self.make_code()
@@ -86,7 +87,16 @@ class TestMagicCodeGenerator(BaseTestCase):
         mock_elapsed_seconds.return_value = 1000 + MagicCodeGenerator.MAGIC_CODE_TIMEOUT_SECS + 1
 
         self.assertEqual(self.redeem(magic_code), MagicCodeStatus.EXPIRED)
-        self.assertEqual(self.redeem(magic_code), MagicCodeStatus.INVALID)
+        self.assertEqual(self.redeem(magic_code), MagicCodeStatus.NO_CODE)
+
+    @patch.object(MagicCodeGenerator, 'get_elapsed_seconds')
+    def test_expired_code_reports_expired_for_any_guess_and_is_discarded(self, mock_elapsed_seconds):
+        mock_elapsed_seconds.return_value = 1000
+        self.make_code()
+        mock_elapsed_seconds.return_value = 1000 + MagicCodeGenerator.MAGIC_CODE_TIMEOUT_SECS + 1
+
+        self.assertEqual(self.redeem('wxyzwx'), MagicCodeStatus.EXPIRED)
+        self.assertEqual(self.redeem('wxyzwx'), MagicCodeStatus.NO_CODE)
 
     @patch.object(MagicCodeGenerator, 'get_elapsed_seconds')
     def test_code_at_timeout_boundary_is_valid(self, mock_elapsed_seconds):
