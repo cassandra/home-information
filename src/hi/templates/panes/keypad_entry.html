@@ -32,6 +32,8 @@ paste-error-message if pasted text is not a valid code.
   </div>
   {% endfor %}
 
+  <div class="sr-only" aria-live="polite" data-keypad-progress></div>
+
   {% if keypad_entry.disabled_secs %}
   <div class="hi-keypad-message is-wait" role="status" aria-live="polite" data-keypad-message>
     <span class="sr-only">Too many attempts. Try again in {{ keypad_entry.disabled_secs }} seconds.</span>

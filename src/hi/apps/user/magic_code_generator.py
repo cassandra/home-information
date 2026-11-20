@@ -1,6 +1,7 @@
 from datetime import datetime
 from enum import Enum
 import re
+from typing import Optional
 
 from django.utils import timezone
 from django.utils.crypto import constant_time_compare, get_random_string
@@ -68,26 +69,28 @@ class MagicCodeGenerator:
     def redeem_magic_code( self, request, email_address : str, magic_code : str ) -> MagicCodeStatus:
         """ Any outcome other than a wrong guess under the attempt limit consumes the code. """
 
-        expected_magic_code = request.session.get( self.MAGIC_CODE )
-        if not expected_magic_code:
-            return MagicCodeStatus.NO_CODE
+        unusable_status = self.unusable_code_status( request )
+        if unusable_status:
+            self.expire_magic_code( request )
+            return unusable_status
 
         if not self._matches( request,
-                              expected_magic_code = expected_magic_code,
+                              expected_magic_code = request.session.get( self.MAGIC_CODE ),
                               email_address = email_address,
                               magic_code = magic_code ):
             return self._record_failed_attempt( request )
 
-        magic_code_origin_timestamp = request.session.get( self.MAGIC_CODE_TIMESTAMP )
         self.expire_magic_code( request )
-
-        elapsed_secs = self.get_elapsed_seconds() - magic_code_origin_timestamp
-        if elapsed_secs > self.get_timeout_seconds():
-            return MagicCodeStatus.EXPIRED
         return MagicCodeStatus.VALID
 
-    def has_pending_code( self, request ) -> bool:
-        return bool( request.session.get( self.MAGIC_CODE ))
+    def unusable_code_status( self, request ) -> Optional[ MagicCodeStatus ]:
+        """ Why no code in the session can be redeemed (NO_CODE or EXPIRED), or None if one can. """
+        if not request.session.get( self.MAGIC_CODE ):
+            return MagicCodeStatus.NO_CODE
+        elapsed_secs = self.get_elapsed_seconds() - request.session.get( self.MAGIC_CODE_TIMESTAMP )
+        if elapsed_secs > self.get_timeout_seconds():
+            return MagicCodeStatus.EXPIRED
+        return None
 
     def expire_magic_code( self, request ):
         for key in ( self.MAGIC_CODE,

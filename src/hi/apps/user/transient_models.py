@@ -1,12 +1,27 @@
+from dataclasses import dataclass
 import logging
+from typing import Optional
 
 from django.contrib.auth.models import User as UserType
 from django.contrib.auth.tokens import PasswordResetTokenGenerator
 from django.http import HttpRequest
 
-from .magic_code_generator import MagicCodeGenerator
+from .magic_code_generator import MagicCodeGenerator, MagicCodeStatus
 
 logger = logging.getLogger(__name__)
+
+
+@dataclass( frozen = True )
+class MagicCodePageState:
+    """
+    What the access code page shows. ``status`` explains the last outcome:
+    for a usable code, a wrong guess (or None); otherwise why only a new
+    code can succeed.
+    """
+
+    email_address   : str
+    is_code_usable  : bool
+    status          : Optional[ MagicCodeStatus ] = None
 
 
 class UserAuthenticationData:

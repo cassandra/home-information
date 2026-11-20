@@ -44,6 +44,9 @@
     const ENTRY_SELECTOR = '[data-keypad-entry]';
     const FIELD_INPUT_SELECTOR = '[data-keypad-field] input';
     const FIELD_SELECTOR = '[data-keypad-field]';
+    const FIELD_LABEL_SELECTOR = '.hi-keypad-field-label';
+    const PROGRESS_SELECTOR = '[data-keypad-progress]';
+    const OPEN_MODAL_SELECTOR = '.modal.show';
     const SLOT_SELECTOR = '.hi-keypad-slot';
     const MESSAGE_SELECTOR = '[data-keypad-message]';
     const KEY_ATTR = 'data-keypad-key';
@@ -115,6 +118,20 @@
                 slot.textContent = ( isFilled && ! isMasked ) ? value[slotIndex] : '';
             });
         });
+        _renderProgress( entry, activeIndex );
+    }
+
+    // Slots are hidden from screen readers; this announces how far along the active field is.
+    function _renderProgress( entry, activeIndex ) {
+        const progress = entry.querySelector( PROGRESS_SELECTOR );
+        if ( ! progress ) {
+            return;
+        }
+        const field = entry.querySelectorAll( FIELD_SELECTOR )[ activeIndex ];
+        const label = field.querySelector( FIELD_LABEL_SELECTOR );
+        const prefix = label ? `${label.textContent.trim()}: ` : '';
+        const count = field.querySelector( 'input' ).value.length;
+        progress.textContent = `${prefix}${count} of ${_length( entry )} entered`;
     }
 
     function _clearError( entry ) {
@@ -269,9 +286,13 @@
         return [ 'INPUT', 'TEXTAREA', 'SELECT' ].includes( element.tagName );
     }
 
-    // The entry physical keys go to: the last one rendered and visible.
+    // The entry physical keys and paste go to: the last one rendered and
+    // visible, within the topmost open modal if there is one (never one in
+    // the page behind it).
     function _keyboardEntry() {
-        const visible = Array.from( document.querySelectorAll( ENTRY_SELECTOR ))
+        const openModals = document.querySelectorAll( OPEN_MODAL_SELECTOR );
+        const scope = openModals.length ? openModals[openModals.length - 1] : document;
+        const visible = Array.from( scope.querySelectorAll( ENTRY_SELECTOR ))
               .filter( entry => entry.getClientRects().length > 0 );
         return visible.length ? visible[visible.length - 1] : null;
     }

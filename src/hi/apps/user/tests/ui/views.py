@@ -8,19 +8,24 @@ from django.views.generic import View
 from hi.apps.notify.email_sender import EmailSender
 from hi.apps.user.magic_code_generator import MagicCodeStatus
 from hi.apps.user.signin_manager import SigninManager
-from hi.apps.user.transient_models import UserAuthenticationData
+from hi.apps.user.transient_models import MagicCodePageState, UserAuthenticationData
 from hi.apps.user.views import SigninMagicCodeView
 
 from hi.testing.ui.email_test_views import EmailTestViewView
 
 
-# Access code page states: name -> the status the page shows (None: plain code entry).
+UI_TEST_EMAIL_ADDRESS = 'someone.with.a.long.address@example.com'
+
 MAGIC_CODE_PAGE_STATES = {
-    'entry': None,
-    'invalid': MagicCodeStatus.INVALID,
-    'expired': MagicCodeStatus.EXPIRED,
-    'too_many_attempts': MagicCodeStatus.TOO_MANY_ATTEMPTS,
-    'no_code': MagicCodeStatus.NO_CODE,
+    'entry': MagicCodePageState( email_address = UI_TEST_EMAIL_ADDRESS, is_code_usable = True ),
+    'invalid': MagicCodePageState( email_address = UI_TEST_EMAIL_ADDRESS, is_code_usable = True,
+                                   status = MagicCodeStatus.INVALID ),
+    'expired': MagicCodePageState( email_address = UI_TEST_EMAIL_ADDRESS, is_code_usable = False,
+                                   status = MagicCodeStatus.EXPIRED ),
+    'too_many_attempts': MagicCodePageState( email_address = UI_TEST_EMAIL_ADDRESS, is_code_usable = False,
+                                             status = MagicCodeStatus.TOO_MANY_ATTEMPTS ),
+    'no_code': MagicCodePageState( email_address = UI_TEST_EMAIL_ADDRESS, is_code_usable = False,
+                                   status = MagicCodeStatus.NO_CODE ),
 }
 
 
@@ -40,11 +45,7 @@ class TestUiMagicCodePageView( View ):
         state = kwargs.get( 'state' )
         if state not in MAGIC_CODE_PAGE_STATES:
             raise BadRequest( f'Unknown access code page state "{state}".' )
-        return SigninMagicCodeView().render_page(
-            request,
-            email_address = 'someone.with.a.long.address@example.com',
-            magic_code_status = MAGIC_CODE_PAGE_STATES[ state ],
-        )
+        return SigninMagicCodeView().render_page( request, page_state = MAGIC_CODE_PAGE_STATES[ state ] )
 
     
 class TestUiViewSigninEmailView( EmailTestViewView ):

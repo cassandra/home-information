@@ -2,10 +2,10 @@
 
 {% block front_door_content %}
 {% if unusable_code_message %}
-<div class="hi-front-door-title">Code No Longer Valid</div>
+<h1 class="hi-front-door-title">Code No Longer Valid</h1>
 <div class="alert alert-danger my-3" role="alert">{{ unusable_code_message }}</div>
 {% else %}
-<div class="hi-front-door-title">Enter Access Code</div>
+<h1 class="hi-front-door-title">Enter Access Code</h1>
 <p class="hi-front-door-prompt">
   We emailed a {{ keypad_entry.spec.length }}-letter code to <span class="font-weight-bold text-break">{{ email_address }}</span>.
 </p>
@@ -14,7 +14,6 @@
       autocomplete="off"
       data-synchronous="true">
   {% csrf_token %}
-  <input type="hidden" name="email_address" value="{{ email_address }}">
   {% include "panes/keypad_entry.html" %}
 </form>
 {% endif %}

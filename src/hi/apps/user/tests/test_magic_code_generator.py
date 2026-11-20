@@ -90,6 +90,15 @@ class TestMagicCodeGenerator(BaseTestCase):
         self.assertEqual(self.redeem(magic_code), MagicCodeStatus.NO_CODE)
 
     @patch.object(MagicCodeGenerator, 'get_elapsed_seconds')
+    def test_expired_code_reports_expired_for_any_guess_and_is_discarded(self, mock_elapsed_seconds):
+        mock_elapsed_seconds.return_value = 1000
+        self.make_code()
+        mock_elapsed_seconds.return_value = 1000 + MagicCodeGenerator.MAGIC_CODE_TIMEOUT_SECS + 1
+
+        self.assertEqual(self.redeem('wxyzwx'), MagicCodeStatus.EXPIRED)
+        self.assertEqual(self.redeem('wxyzwx'), MagicCodeStatus.NO_CODE)
+
+    @patch.object(MagicCodeGenerator, 'get_elapsed_seconds')
     def test_code_at_timeout_boundary_is_valid(self, mock_elapsed_seconds):
         mock_elapsed_seconds.return_value = 1000
         magic_code = self.make_code()

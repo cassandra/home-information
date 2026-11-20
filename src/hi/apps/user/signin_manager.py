@@ -12,7 +12,7 @@ from hi.apps.common.singleton import Singleton
 from hi.apps.notify.email_sender import EmailData, EmailSender
 
 from .magic_code_generator import MagicCodeGenerator, MagicCodeStatus
-from .transient_models import UserAuthenticationData
+from .transient_models import MagicCodePageState, UserAuthenticationData
 
 logger = logging.getLogger(__name__)
 
@@ -32,7 +32,16 @@ class SigninManager( Singleton ):
     # discarded when used, expired or guessed too often, so the code page
     # can still offer to send a new one.
     SIGNIN_EMAIL_SESSION_VAR = 'signin_email'
-    
+    # Outcome of the last failed code submit, for the next code page only.
+    LAST_CODE_STATUS_SESSION_VAR = 'signin_magic_code_last_status'
+
+    # Outcomes after which only a new code can succeed.
+    CODE_UNUSABLE_STATUSES = {
+        MagicCodeStatus.EXPIRED,
+        MagicCodeStatus.TOO_MANY_ATTEMPTS,
+        MagicCodeStatus.NO_CODE,
+    }
+
     def __init_singleton__(self):
         return
 
@@ -42,6 +51,7 @@ class SigninManager( Singleton ):
         code is issued but never sent, so the session changes identically.
         """
         request.session[self.SIGNIN_EMAIL_SESSION_VAR] = email_address
+        request.session.pop( self.LAST_CODE_STATUS_SESSION_VAR, None )
         existing_user = self._get_user( email_address )
         if not existing_user:
             logger.debug( f'No user exists with email: {email_address}' )
@@ -58,27 +68,61 @@ class SigninManager( Singleton ):
         )
         return
 
-    def get_signin_email( self, request : HttpRequest ) -> Optional[ str ]:
-        return request.session.get( self.SIGNIN_EMAIL_SESSION_VAR )
+    def get_magic_code_page_state( self, request : HttpRequest ) -> Optional[ MagicCodePageState ]:
+        """
+        None if no sign-in is in progress. Whether the code is usable comes
+        from the session; the last failed submit only refines the reason.
+        """
+        last_status = self._pop_last_code_status( request )
+        email_address = request.session.get( self.SIGNIN_EMAIL_SESSION_VAR )
+        if not email_address:
+            return None
+
+        unusable_status = MagicCodeGenerator().unusable_code_status( request )
+        if unusable_status is None:
+            return MagicCodePageState(
+                email_address = email_address,
+                is_code_usable = True,
+                status = last_status if last_status == MagicCodeStatus.INVALID else None,
+            )
+        return MagicCodePageState(
+            email_address = email_address,
+            is_code_usable = False,
+            status = last_status if last_status in self.CODE_UNUSABLE_STATUSES else unusable_status,
+        )
 
     def signin_with_magic_code( self,
-                                request        : HttpRequest,
-                                email_address  : str,
-                                magic_code     : str ) -> MagicCodeStatus:
-        magic_code_status = MagicCodeGenerator().redeem_magic_code(
-            request,
-            email_address = email_address,
-            magic_code = magic_code,
-        )
+                                request     : HttpRequest,
+                                magic_code  : str ) -> MagicCodeStatus:
+        """ Redeems for the email being signed in; a failure is kept for the next code page. """
+        email_address = request.session.get( self.SIGNIN_EMAIL_SESSION_VAR )
+        if email_address:
+            magic_code_status = MagicCodeGenerator().redeem_magic_code(
+                request,
+                email_address = email_address,
+                magic_code = magic_code,
+            )
+        else:
+            magic_code_status = MagicCodeStatus.NO_CODE
+
         if magic_code_status == MagicCodeStatus.VALID:
             existing_user = self._get_user( email_address )
             if existing_user:
                 self._signin_verified_user( request, existing_user )
             else:
-                magic_code_status = MagicCodeStatus.INVALID
+                # Redeeming used up the code. Not revealing: with no account
+                # the code was never sent, so it cannot be entered correctly.
+                magic_code_status = MagicCodeStatus.NO_CODE
 
+        if magic_code_status != MagicCodeStatus.VALID:
+            self._set_last_code_status( request, magic_code_status )
         logger.debug( f'Signin Magic Code: Email={email_address}, Status={magic_code_status}' )
         return magic_code_status
+
+    def reject_malformed_code( self, request : HttpRequest ):
+        """ A submit with no readable code: shown as a wrong code, without using an attempt. """
+        self._set_last_code_status( request, MagicCodeStatus.INVALID )
+        return
 
     def signin_with_magic_link( self,
                                 request        : HttpRequest,
@@ -137,8 +181,20 @@ class SigninManager( Singleton ):
     def _signin_verified_user( self, request : HttpRequest, user : UserType ):
         request.user = user
         self.do_login( request = request, verified_email = True )
+        # Signed in by either path: the other is spent too.
+        MagicCodeGenerator().expire_magic_code( request )
         request.session.pop( self.SIGNIN_EMAIL_SESSION_VAR, None )
+        request.session.pop( self.LAST_CODE_STATUS_SESSION_VAR, None )
         return
+
+    def _set_last_code_status( self, request : HttpRequest, magic_code_status : MagicCodeStatus ):
+        request.session[self.LAST_CODE_STATUS_SESSION_VAR] = magic_code_status.name
+        return
+
+    def _pop_last_code_status( self, request : HttpRequest ) -> Optional[ MagicCodeStatus ]:
+        status_name = request.session.pop( self.LAST_CODE_STATUS_SESSION_VAR, None )
+        # Unknown names (e.g., from an older release) are dropped, not errors.
+        return MagicCodeStatus.__members__.get( status_name ) if status_name else None
 
     def _get_user( self, email_address : str ) -> UserType:
         return get_user_model().objects.filter( email = email_address ).first()

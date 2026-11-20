@@ -13,6 +13,8 @@
  * - a server-rendered disabled countdown refusing input, then re-enabling
  * - recovering from a failed submit the server never re-rendered
  * - resetting a submitting entry on a page restored from the back/forward cache
+ * - announcing progress to screen readers
+ * - keys and paste going only to an entry in an open modal
  */
 
 (function() {
@@ -38,7 +40,8 @@
 
         function addEntry({ alphabet = '1234567890', length = 4, fieldNames = [ 'pin' ],
                             masked = true, autoSubmit = true, errorMessage = '',
-                            disabledSecs = 0, caseSensitive = true } = {}) {
+                            disabledSecs = 0, caseSensitive = true,
+                            container = document.getElementById( 'qunit-fixture' ) } = {}) {
             const form = document.createElement( 'form' );
             form.setAttribute( 'action', '/test/keypad' );
             form.submitCount = 0;
@@ -71,6 +74,7 @@
                      data-alphabet="${alphabet}" data-length="${length}"
                      data-masked="${masked}" data-auto-submit="${autoSubmit}">
                   ${fieldsHtml}
+                  <div data-keypad-progress></div>
                   ${messageHtml}
                   <div class="hi-keypad">
                     ${keysHtml}
@@ -78,8 +82,15 @@
                     <button type="button" data-keypad-action="backspace">Bksp</button>
                   </div>
                 </div>`;
-            document.getElementById( 'qunit-fixture' ).appendChild( form );
+            container.appendChild( form );
             return form;
+        }
+
+        function addOpenModal() {
+            const modal = document.createElement( 'div' );
+            modal.className = 'modal show';
+            document.getElementById( 'qunit-fixture' ).appendChild( modal );
+            return modal;
         }
 
         function tap( form, key ) {
@@ -322,6 +333,31 @@
             tap( form, '5' );
             assert.deepEqual( values( form ), [ '5' ], 'accepts input again' );
             assert.equal( message.textContent, '', 'next edit clears the failure message' );
+        });
+
+        QUnit.test( 'progress is announced as characters are entered', function( assert ) {
+            const form = addEntry({ autoSubmit: false });
+            const progress = form.querySelector( '[data-keypad-progress]' );
+            tap( form, '1' );
+            tap( form, '2' );
+            assert.equal( progress.textContent, '2 of 4 entered' );
+            tapAction( form, 'clear' );
+            assert.equal( progress.textContent, '0 of 4 entered' );
+        });
+
+        QUnit.test( 'with a modal open, keys and paste skip an entry behind it', function( assert ) {
+            const pageForm = addEntry({ autoSubmit: false });
+            const modal = addOpenModal();
+            const ignored = press( '1' );
+            paste( '23' );
+            assert.notOk( ignored.defaultPrevented );
+            assert.deepEqual( values( pageForm ), [ '' ], 'page entry untouched' );
+
+            const modalForm = addEntry({ autoSubmit: false, container: modal });
+            press( '4' );
+            paste( '56' );
+            assert.deepEqual( values( modalForm ), [ '56' ], 'modal entry gets them' );
+            assert.deepEqual( values( pageForm ), [ '' ] );
         });
 
         QUnit.test( 'a page restored from the back/forward cache resets a submitting entry', async function( assert ) {
