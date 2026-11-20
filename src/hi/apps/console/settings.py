@@ -1,7 +1,11 @@
+from django.core.exceptions import ValidationError
+
+from hi.apps.common.utils import is_blank
 from hi.apps.config.setting_enums import SettingEnum, SettingDefinition
 from hi.apps.attribute.enums import AttributeValueType
 from hi.apps.attribute.value_ranges import PredefinedValueRanges
 
+from .constants import ConsoleConstants
 from .enums import Theme, DisplayUnits
 
 Label = 'Console'
@@ -10,6 +14,17 @@ Label = 'Console'
 DEFAULT_LATITUDE = 30.268043
 DEFAULT_LONGITUDE = -97.742804
 DEFAULT_GEO_LOCATION = f'{DEFAULT_LATITUDE:.6}, {DEFAULT_LONGITUDE:.6}'
+
+
+def validate_lock_pin( value : str ):
+    # Blank means no PIN is set.
+    if is_blank( value ):
+        return
+    if not ConsoleConstants.LOCK_PIN_KEYPAD.is_valid( value ):
+        raise ValidationError(
+            f'Must be exactly {ConsoleConstants.LOCK_PIN_KEYPAD.length} digits.'
+        )
+    return
 
 
 class ConsoleSetting( SettingEnum ):
@@ -50,14 +65,16 @@ class ConsoleSetting( SettingEnum ):
         is_required = True,
         initial_value = str( Theme.default() ),
     )
+    # Member name predates the PIN; it is the stored setting key.
     CONSOLE_LOCK_PASSWORD = SettingDefinition(
-        label = 'Lock Password',
-        description = 'Password to use to unlock console',
+        label = 'Lock PIN',
+        description = "4-digit PIN to unlock the console. Don't reuse a bank card or phone PIN.",
         value_type = AttributeValueType.SECRET,
         value_range = None,
         is_editable = True,
         is_required = False,
         initial_value = '',
+        validator = validate_lock_pin,
     )
     SLEEP_OVERLAY_OPACITY = SettingDefinition(
         label = 'Sleep Overlay Opacity',

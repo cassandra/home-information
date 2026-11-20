@@ -53,8 +53,7 @@ class ConsoleLockMiddleware:
         if request.session.get( ConsoleConstants.CONSOLE_LOCKED_SESSION_VAR, False ):
             return
 
-        lock_password = ConsoleSettingsHelper().get_console_lock_password()
-        if not lock_password:
+        if not ConsoleSettingsHelper().get_console_lock_pin():
             return
 
         request.session[ConsoleConstants.CONSOLE_LOCKED_SESSION_VAR] = True

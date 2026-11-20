@@ -1,7 +1,7 @@
 import importlib
 from dataclasses import dataclass
 from enum import Enum
-from typing import Dict, List, Optional, Union
+from typing import Callable, Dict, List, Optional, Union
 
 from hi.apps.attribute.enums import AttributeValueType
 
@@ -20,6 +20,9 @@ class SettingDefinition:
     is_editable       : bool
     is_required       : bool
     initial_value     : str
+    # Optional per-setting check applied when the value is edited.
+    # Raises ``django.core.exceptions.ValidationError`` on bad input.
+    validator         : Optional[ Callable[ [ str ], None ] ] = None
 
 
 class SettingEnum(Enum):

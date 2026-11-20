@@ -1,6 +1,6 @@
 import logging
 import re
-from typing import Dict, Iterable
+from typing import Dict, Iterable, Optional
 
 from django.http import HttpRequest
 
@@ -53,11 +53,17 @@ class ConsoleSettingsHelper( Singleton, SettingsMixin ):
     def is_console_locked( self, request : HttpRequest ) -> bool:
         return request.session.get( ConsoleConstants.CONSOLE_LOCKED_SESSION_VAR, False )
     
-    def get_console_lock_password( self ) -> str:
-        return self.settings_manager().get_setting_value( ConsoleSetting.CONSOLE_LOCK_PASSWORD )
+    def get_console_lock_pin( self ) -> Optional[ str ]:
+        """ None if unset or not a valid PIN (e.g., a legacy free-form password). """
+        value = self.settings_manager().get_setting_value( ConsoleSetting.CONSOLE_LOCK_PASSWORD )
+        if ConsoleConstants.LOCK_PIN_KEYPAD.is_valid( value ):
+            return value
+        return None
 
-    def set_console_lock_password( self, password : str ):
-        self.settings_manager().set_setting_value( ConsoleSetting.CONSOLE_LOCK_PASSWORD, password )
+    def set_console_lock_pin( self, pin : str ):
+        if not ConsoleConstants.LOCK_PIN_KEYPAD.is_valid( pin ):
+            raise ValueError( 'Invalid console lock PIN.' )
+        self.settings_manager().set_setting_value( ConsoleSetting.CONSOLE_LOCK_PASSWORD, pin )
         return
     
     def get_display_units( self ) -> DisplayUnits:

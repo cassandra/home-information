@@ -30,7 +30,7 @@ class TestConsoleLockMiddleware( BaseTestCase ):
              patch( 'hi.apps.console.middleware.ConsoleSettingsHelper' ) as mock_helper, \
              patch( 'hi.apps.console.middleware.ConsoleUnlockView' ) as mock_unlock_view:
             mock_security_manager.return_value.get_console_away_lock_timestamp.return_value = '2'
-            mock_helper.return_value.get_console_lock_password.return_value = 'secret'
+            mock_helper.return_value.get_console_lock_pin.return_value = '1234'
             mock_unlock_view.return_value.get.return_value = HttpResponse( 'locked', status = 403 )
 
             response = self.middleware.process_request( request )
@@ -95,15 +95,15 @@ class TestConsoleLockMiddleware( BaseTestCase ):
             self.assertNotIn( ConsoleConstants.CONSOLE_LOCKED_SESSION_VAR, request.session )
         return
 
-    def test_new_auto_lock_version_without_password_does_not_lock( self ):
-        """Middleware records event version but does not lock when no password exists."""
+    def test_new_auto_lock_version_without_valid_pin_does_not_lock( self ):
+        """Middleware records event version but does not lock when no valid PIN exists."""
         request = self.factory.get( reverse( 'home' ) )
         request.session = {}
 
         with patch( 'hi.apps.console.middleware.SecurityManager' ) as mock_security_manager, \
              patch( 'hi.apps.console.middleware.ConsoleSettingsHelper' ) as mock_helper:
             mock_security_manager.return_value.get_console_away_lock_timestamp.return_value = '2'
-            mock_helper.return_value.get_console_lock_password.return_value = ''
+            mock_helper.return_value.get_console_lock_pin.return_value = None
 
             response = self.middleware.process_request( request )
 

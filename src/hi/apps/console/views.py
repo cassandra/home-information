@@ -212,8 +212,7 @@ class EntityVideoSensorHistoryLaterView( BaseEntityVideoSensorHistoryView ):
 class ConsoleLockView( View ):
 
     def post( self, request, *args, **kwargs ):
-        lock_password = ConsoleSettingsHelper().get_console_lock_password()
-        if not lock_password:
+        if not ConsoleSettingsHelper().get_console_lock_pin():
             return SetLockPasswordView().get( request, *args, **kwargs )
         request.session[ConsoleConstants.CONSOLE_LOCKED_SESSION_VAR] = True
         return ConsoleUnlockView().get( request, *args, **kwargs )
@@ -228,10 +227,10 @@ class SetLockPasswordView( HiModalView ):
         return self.modal_response( request )
     
     def post( self, request, *args, **kwargs ):
-        input_password = request.POST.get('password')
-        if not input_password:
-            raise BadRequest( 'No password provided.' )
-        ConsoleSettingsHelper().set_console_lock_password( password = input_password )
+        input_pin = request.POST.get('password')
+        if not ConsoleConstants.LOCK_PIN_KEYPAD.is_valid( input_pin ):
+            raise BadRequest( 'PIN must be exactly 4 digits.' )
+        ConsoleSettingsHelper().set_console_lock_pin( pin = input_pin )
         request.session[ConsoleConstants.CONSOLE_LOCKED_SESSION_VAR] = True
         return ConsoleUnlockView().get( request, *args, **kwargs )
 
@@ -251,19 +250,18 @@ class ConsoleUnlockView( HiModalView ):
         # up security here if/when needed, but eventual login requirements
         # and its session will be the main auth method.
         
-        input_password = request.POST.get('password')
-        if not input_password:
-            raise BadRequest( 'No password provided.' )
+        input_pin = request.POST.get('password')
+        if not input_pin:
+            raise BadRequest( 'No PIN provided.' )
 
-        lock_password = ConsoleSettingsHelper().get_console_lock_password()
+        lock_pin = ConsoleSettingsHelper().get_console_lock_pin()
 
-        if lock_password and ( input_password != lock_password ):
-            raise BadRequest( 'Invalid password.' )
+        if lock_pin and ( input_pin != lock_pin ):
+            raise BadRequest( 'Invalid PIN.' )
                                
-        # N.B. It should not be possible to get into state where console is
-        # locked without a password set.  However, if it happens, it would
-        # be impossible to unlock the console. Thus, we'll unlock in that
-        # exceptional case.
+        # N.B. The console can be locked without a valid PIN (e.g., the
+        # stored value is a legacy password). Since it would then be
+        # impossible to unlock, we unlock in that case.
 
         request.session[ConsoleConstants.CONSOLE_LOCKED_SESSION_VAR] = False
         return self.refresh_response( request= request )

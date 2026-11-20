@@ -1,7 +1,9 @@
+from typing import Optional
+
 from django.db import models
 
 from hi.apps.attribute.models import AttributeModel, AttributeValueHistoryModel
-from hi.apps.config.setting_enums import SettingEnum
+from hi.apps.config.setting_enums import SettingDefinition, SettingEnum
 
 
 class Subsystem( models.Model ):
@@ -57,21 +59,23 @@ class SubsystemAttribute( AttributeModel ):
         """Return the history model class for SubsystemAttribute."""
         return SubsystemAttributeHistory
     
-    def get_attribute_default_value(self):
-        """Return the default value for this attribute, or None if not found."""
+    @property
+    def setting_definition( self ) -> Optional[ SettingDefinition ]:
+        """ None if the setting key no longer resolves (e.g., stale row). """
         try:
-            enum = SettingEnum.from_key(self.setting_key)
-            return enum.definition.initial_value
+            return SettingEnum.from_key( self.setting_key ).definition
         except (ValueError, ImportError, AttributeError, TypeError):
             return None
 
+    def get_attribute_default_value(self):
+        """Return the default value for this attribute, or None if not found."""
+        definition = self.setting_definition
+        return definition.initial_value if definition else None
+
     @property
     def display_description( self ):
-        try:
-            enum = SettingEnum.from_key( self.setting_key )
-            return enum.definition.description or ''
-        except (ValueError, ImportError, AttributeError, TypeError):
-            return ''
+        definition = self.setting_definition
+        return ( definition.description or '' ) if definition else ''
     
 
 class SubsystemAttributeHistory(AttributeValueHistoryModel):
