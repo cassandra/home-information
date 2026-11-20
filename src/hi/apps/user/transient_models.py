@@ -39,8 +39,7 @@ class UserAuthenticationData:
         self._magic_code_form = forms.SigninMagicCodeForm(
             initial = { 'email_address': self._email_address }
         )
-        logger.debug( f'UserAuthenticationData: EMAIL = {self._user},'
-                      f'TOKEN = {self._token}, CODE = {self._magic_code}' )
+        logger.debug( f'UserAuthenticationData: EMAIL = {self._email_address}' )
         return
     
     @property

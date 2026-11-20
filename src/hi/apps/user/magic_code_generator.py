@@ -2,9 +2,8 @@ from datetime import datetime
 from enum import Enum
 import re
 
-from django.conf import settings
 from django.utils import timezone
-from django.utils.crypto import get_random_string
+from django.utils.crypto import constant_time_compare, get_random_string
 
 
 class MagicCodeStatus(Enum):
@@ -15,80 +14,99 @@ class MagicCodeStatus(Enum):
     
 
 class MagicCodeGenerator:
-    """ 
-    Used to generate and validate one-time login codes for password-less logins.
+    """
+    Used to generate and redeem one-time login codes for password-less logins.
 
-    Uses sessions to store code to be validated from user input. The code is
-    bound to the email address it was sent to, so a code is only valid when
-    submitted with that same email address.
+    Uses sessions to store the code to be validated from user input. A code is:
+      - bound to the email address it was issued for;
+      - single use: consumed when redeemed successfully;
+      - short lived: expires after MAGIC_CODE_TIMEOUT_SECS;
+      - limited to MAX_FAILED_ATTEMPTS wrong guesses before it is discarded.
 
     Usage:
         Generate:
-            magic_code_generator = MagicCodeGenerator()
-            magic_code = magic_code_generator.make_magic_code( request, email_address = email_address )
+            magic_code = MagicCodeGenerator().make_magic_code( request, email_address = email_address )
             <email magic code to user>
             <show a form to user to accept magic code entry>
 
-        Validate:
-            magic_code = <user submits form with magic code they entered>
-            magic_code_generator = MagicCodeGenerator()
-            status = magic_code_generator.check_magic_code( request,
+        Redeem:
+            status = MagicCodeGenerator().redeem_magic_code( request,
                                                              email_address = email_address,
                                                              magic_code = magic_code )
             if status == MagicCodeStatus.VALID:
-                magic_code_generator.expire_magic_code( request )
-
+                <sign in the user>
     """
 
     MAGIC_CODE = 'magic_code'
     MAGIC_CODE_TIMESTAMP = 'magic_code_timestamp'
     MAGIC_CODE_EMAIL = 'magic_code_email'
+    MAGIC_CODE_FAILED_ATTEMPTS = 'magic_code_failed_attempts'
 
-    MAGIC_CODE_TIMEOUT_SECS = settings.PASSWORD_RESET_TIMEOUT
+    MAGIC_CODE_TIMEOUT_SECS = 15 * 60
+    MAX_FAILED_ATTEMPTS = 5
     MAGIC_CODE_CHARS = 'abcdefhkpqrstwxy'
     MAGIC_CODE_LENGTH = 6
-    
+
     BASE_DATETIME = timezone.make_aware( datetime(2001, 1, 1) )
-    
-    def make_magic_code( self, request, email_address : str ):
+
+    def make_magic_code( self, request, email_address : str ) -> str:
 
         magic_code = get_random_string( length = self.MAGIC_CODE_LENGTH,
                                         allowed_chars = self.MAGIC_CODE_CHARS )
-        magic_code_origin_timestamp = self.get_elapsed_seconds()
 
         request.session[self.MAGIC_CODE] = magic_code
-        request.session[self.MAGIC_CODE_TIMESTAMP] = magic_code_origin_timestamp
+        request.session[self.MAGIC_CODE_TIMESTAMP] = self.get_elapsed_seconds()
         request.session[self.MAGIC_CODE_EMAIL] = email_address
-        
+        request.session[self.MAGIC_CODE_FAILED_ATTEMPTS] = 0
         return magic_code
 
-    def check_magic_code( self, request, email_address : str, magic_code : str ) -> MagicCodeStatus:
+    def redeem_magic_code( self, request, email_address : str, magic_code : str ) -> MagicCodeStatus:
+        """ Any outcome other than a wrong guess under the attempt limit consumes the code. """
 
         expected_magic_code = request.session.get( self.MAGIC_CODE )
         if not expected_magic_code:
             return MagicCodeStatus.INVALID
 
-        if email_address != request.session.get( self.MAGIC_CODE_EMAIL ):
+        if not self._matches( request,
+                              expected_magic_code = expected_magic_code,
+                              email_address = email_address,
+                              magic_code = magic_code ):
+            self._record_failed_attempt( request )
             return MagicCodeStatus.INVALID
 
-        magic_code = re.sub( r'[\-\s]', '', magic_code )
-        if magic_code.lower() != expected_magic_code.lower():
-            return MagicCodeStatus.INVALID
-        
         magic_code_origin_timestamp = request.session.get( self.MAGIC_CODE_TIMESTAMP )
-        current_timestamp = self.get_elapsed_seconds()
-        timeout_secs = self.get_timeout_seconds()
-        
-        if ( current_timestamp - magic_code_origin_timestamp ) > timeout_secs:
-            return MagicCodeStatus.EXPIRED
+        self.expire_magic_code( request )
 
+        elapsed_secs = self.get_elapsed_seconds() - magic_code_origin_timestamp
+        if elapsed_secs > self.get_timeout_seconds():
+            return MagicCodeStatus.EXPIRED
         return MagicCodeStatus.VALID
 
     def expire_magic_code( self, request ):
-        request.session[self.MAGIC_CODE] = None
-        request.session[self.MAGIC_CODE_TIMESTAMP] = None
-        request.session[self.MAGIC_CODE_EMAIL] = None
+        for key in ( self.MAGIC_CODE,
+                     self.MAGIC_CODE_TIMESTAMP,
+                     self.MAGIC_CODE_EMAIL,
+                     self.MAGIC_CODE_FAILED_ATTEMPTS ):
+            request.session.pop( key, None )
         return
+
+    def _matches( self, request, expected_magic_code : str, email_address : str, magic_code : str ) -> bool:
+        if email_address != request.session.get( self.MAGIC_CODE_EMAIL ):
+            return False
+        normalized_magic_code = re.sub( r'[\-\s]', '', magic_code ).lower()
+        return constant_time_compare( normalized_magic_code, expected_magic_code.lower() )
+
+    def _record_failed_attempt( self, request ):
+        failed_attempts = request.session.get( self.MAGIC_CODE_FAILED_ATTEMPTS, 0 ) + 1
+        if failed_attempts >= self.MAX_FAILED_ATTEMPTS:
+            self.expire_magic_code( request )
+        else:
+            request.session[self.MAGIC_CODE_FAILED_ATTEMPTS] = failed_attempts
+        return
+
+    @classmethod
+    def get_timeout_minutes(cls):
+        return cls.get_timeout_seconds() // 60
 
     @classmethod
     def get_elapsed_seconds(cls):

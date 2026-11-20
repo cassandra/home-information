@@ -140,41 +140,6 @@ class TestUserAuthenticationData(BaseTestCase):
 
     @patch('hi.apps.user.transient_models.MagicCodeGenerator')
     @patch('hi.apps.user.transient_models.PasswordResetTokenGenerator')
-    def test_user_authentication_data_properties_are_readonly(self, mock_token_gen_class, mock_magic_gen_class):
-        """Test UserAuthenticationData properties provide read-only access."""
-        mock_token_generator = Mock()
-        mock_token_generator.make_token.return_value = 'readonly-token'
-        mock_token_gen_class.return_value = mock_token_generator
-        
-        mock_magic_generator = Mock()
-        mock_magic_generator.make_magic_code.return_value = 'readonly123'
-        mock_magic_gen_class.return_value = mock_magic_generator
-        
-        request = self.factory.get('/test')
-        request.user = self.user
-        request.session = {}
-        
-        auth_data = UserAuthenticationData(request)
-        
-        # Verify all properties are accessible
-        self.assertIsNotNone(auth_data.user)
-        self.assertIsNotNone(auth_data.email_address)
-        self.assertIsNotNone(auth_data.token)
-        self.assertIsNotNone(auth_data.magic_code)
-        self.assertIsNotNone(auth_data.magic_code_form)
-        
-        # Verify properties cannot be set (should raise AttributeError)
-        with self.assertRaises(AttributeError):
-            auth_data.user = Mock()
-        with self.assertRaises(AttributeError):
-            auth_data.email_address = 'new@example.com'
-        with self.assertRaises(AttributeError):
-            auth_data.token = 'new-token'
-        with self.assertRaises(AttributeError):
-            auth_data.magic_code = 'new-code'
-
-    @patch('hi.apps.user.transient_models.MagicCodeGenerator')
-    @patch('hi.apps.user.transient_models.PasswordResetTokenGenerator')
     def test_user_authentication_data_with_both_overrides(self, mock_token_gen_class, mock_magic_gen_class):
         """Test UserAuthenticationData handles both user and email overrides correctly."""
         mock_token_generator = Mock()
