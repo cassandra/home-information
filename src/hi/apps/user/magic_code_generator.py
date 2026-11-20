@@ -8,9 +8,10 @@ from django.utils.crypto import constant_time_compare, get_random_string
 
 class MagicCodeStatus(Enum):
 
-    INVALID  = 0
-    EXPIRED  = 1
-    VALID    = 2
+    INVALID             = 0
+    EXPIRED             = 1
+    VALID               = 2
+    TOO_MANY_ATTEMPTS   = 3
     
 
 class MagicCodeGenerator:
@@ -71,8 +72,7 @@ class MagicCodeGenerator:
                               expected_magic_code = expected_magic_code,
                               email_address = email_address,
                               magic_code = magic_code ):
-            self._record_failed_attempt( request )
-            return MagicCodeStatus.INVALID
+            return self._record_failed_attempt( request )
 
         magic_code_origin_timestamp = request.session.get( self.MAGIC_CODE_TIMESTAMP )
         self.expire_magic_code( request )
@@ -96,13 +96,13 @@ class MagicCodeGenerator:
         normalized_magic_code = re.sub( r'[\-\s]', '', magic_code ).lower()
         return constant_time_compare( normalized_magic_code, expected_magic_code.lower() )
 
-    def _record_failed_attempt( self, request ):
+    def _record_failed_attempt( self, request ) -> MagicCodeStatus:
         failed_attempts = request.session.get( self.MAGIC_CODE_FAILED_ATTEMPTS, 0 ) + 1
         if failed_attempts >= self.MAX_FAILED_ATTEMPTS:
             self.expire_magic_code( request )
-        else:
-            request.session[self.MAGIC_CODE_FAILED_ATTEMPTS] = failed_attempts
-        return
+            return MagicCodeStatus.TOO_MANY_ATTEMPTS
+        request.session[self.MAGIC_CODE_FAILED_ATTEMPTS] = failed_attempts
+        return MagicCodeStatus.INVALID
 
     @classmethod
     def get_timeout_minutes(cls):

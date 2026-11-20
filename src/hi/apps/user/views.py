@@ -52,7 +52,8 @@ class SigninMagicCodeView( View ):
 
     ERROR_MESSAGES = {
         MagicCodeStatus.INVALID: 'Invalid access code.',
-        MagicCodeStatus.EXPIRED: 'Access code has expired.',
+        MagicCodeStatus.EXPIRED: 'Access code has expired. Send a new code to try again.',
+        MagicCodeStatus.TOO_MANY_ATTEMPTS: 'Too many incorrect attempts. Send a new code to try again.',
     }
 
     def get_response( self,

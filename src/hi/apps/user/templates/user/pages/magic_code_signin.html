@@ -42,9 +42,18 @@
   If you do not receive this email in the next few minutes, check that the email address "{{ magic_code_form.email_address.value }}" is valid and has been registered.
 </div>
 
-<div class="my-3">
+<div class="d-flex flex-wrap my-3">
+  <form method="POST" action="{% url 'user_signin' %}"
+	class="mr-3 mb-2" data-synchronous="true">
+    {% csrf_token %}
+    <input type="hidden" name="email" value="{{ magic_code_form.email_address.value }}">
+    <button id="hi-signin-new-code-button" type="submit"
+	    class="btn btn-lg btn-outline-primary">
+      Send a new code
+    </button>
+  </form>
   <a id="hi-signin-different-email-link" href="{% url 'user_signin' %}"
-     class="btn btn-lg btn-outline-secondary">
+     class="btn btn-lg btn-outline-secondary mb-2">
     Use a different email
   </a>
 </div>

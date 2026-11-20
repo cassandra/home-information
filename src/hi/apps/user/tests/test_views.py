@@ -157,6 +157,17 @@ class TestSigninMagicCodeView(SigninFlowTestMixin, SyncViewTestCase):
 
         self.assertCodeRejected(response, message='Access code has expired.')
 
+    def test_too_many_attempts_then_new_code_for_same_email_signs_in(self):
+        _, first_code = self.request_signin_code(self.user.email)
+        for _ in range(MagicCodeGenerator.MAX_FAILED_ATTEMPTS):
+            response = self.submit_signin_code(self.user.email, 'wxyzwx')
+        self.assertCodeRejected(response, message='Too many incorrect attempts.')
+
+        _, new_code = self.request_signin_code(self.user.email)
+        response = self.submit_signin_code(self.user.email, new_code)
+
+        self.assertSignedInAs(self.user)
+
 
 class TestSigninMagicLinkView(SigninFlowTestMixin, SyncViewTestCase):
 

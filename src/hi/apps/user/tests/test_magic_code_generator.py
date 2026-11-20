@@ -63,8 +63,10 @@ class TestMagicCodeGenerator(BaseTestCase):
         magic_code = self.make_code()
         for _ in range(MagicCodeGenerator.MAX_FAILED_ATTEMPTS - 1):
             self.redeem('wxyzwx')
-        self.redeem(magic_code, email_address='other@example.com')
 
+        final_attempt = self.redeem(magic_code, email_address='other@example.com')
+
+        self.assertEqual(final_attempt, MagicCodeStatus.TOO_MANY_ATTEMPTS)
         self.assertEqual(self.redeem(magic_code), MagicCodeStatus.INVALID)
 
     def test_new_code_resets_failed_attempts(self):
