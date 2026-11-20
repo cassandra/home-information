@@ -475,6 +475,67 @@ a.clickable-card:active {
     }
 }
 
+/* Sign-in "front door" pages: pages/front_door_page.html */
+
+.hi-front-door {
+    --hi-front-door-gradient-light: #1f8f91;
+    --hi-front-door-gradient-dark: #0c3e3f;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: var(--hi-viewport-height);
+    padding: 1.25rem;
+    box-sizing: border-box;
+    background: linear-gradient( 160deg,
+                                 var(--hi-front-door-gradient-light) 0%,
+                                 var(--primary-color) 45%,
+                                 var(--hi-front-door-gradient-dark) 100% );
+}
+
+.hi-front-door-card {
+    width: 100%;
+    max-width: 30rem;
+    background: var(--white);
+    border-radius: 0.75rem;
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.28), 0 2px 6px rgba(0, 0, 0, 0.12);
+    padding: 1.4rem 1.5rem 1rem;
+    text-align: center;
+}
+
+.hi-front-door-title {
+    font-size: 1.6rem;
+    font-weight: 600;
+    color: var(--primary-highlight-color);
+    margin-bottom: 0.25rem;
+}
+
+.hi-front-door-prompt {
+    color: var(--muted-color);
+    margin-bottom: 0.75rem;
+}
+
+.hi-front-door-actions {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 0.5rem;
+    margin-top: 0.25rem;
+}
+
+.hi-front-door-logo {
+    display: flex;
+    justify-content: center;
+    margin-top: 1rem;
+    padding-top: 0.8rem;
+    border-top: 1px solid #eee;
+}
+.hi-front-door-logo img {
+    width: 96px;
+    height: auto;
+    opacity: 0.7;
+}
+
 #hi-top-content {
     height: calc( var(--top-buttons-height) - 1 );
     border-bottom: 1px solid var(--line-color);

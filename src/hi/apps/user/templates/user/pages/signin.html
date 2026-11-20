@@ -1,40 +1,35 @@
-{% extends "pages/interstitial_page.html" %}
+{% extends "pages/front_door_page.html" %}
 {% load device_tags %}
 
-{% block interstitial_content %}
-<div>
-  {% if email_not_configured %}
-  <div class="alert alert-danger">
-    <div class="h4" >Email Not Configured</div>
-    <p>
-      The email settings are is not properly configured.  The Sign In feature requires emails to work.
-    </p>
-    <p class="font-weight-bold">
-      You will not be able to sign in unless you disable the Sign In feature or properly configure the email settings.
-    </p>
-  </div>
-  {% endif %}
-  <form class="sigin form" method="post" 
-	action="{% url 'user_signin' %}"
-	data-synchronous="true">
-    {% csrf_token %}
-    <div class="h3 text-center">Sign In</div>
-    <div class="d-flex mt-3">
-      <input class="" style="width: 20rem;"
-	     type="email"
-	     name="email"
-	     value=""
-	     autofocus="autofocus"
-	     placeholder="e-mail address" required="" id="hi-signin-email"
-	     {% device_requires_attrs 'keyboard' handlers='on-screen-keyboard' %}/>
-    </div>
-    <div>
-      <button id="hi-signin-button"
-	      role="button" type="submit"
-	      class="btn btn-lg btn-primary my-4">
-	<b>Sign In</b>
-      </button>
-    </div>
-  </form>
+{% block front_door_content %}
+{% if email_not_configured %}
+<div class="alert alert-danger text-left">
+  <div class="h5">Email Not Configured</div>
+  <p>
+    The email settings are not properly configured. The Sign In feature requires emails to work.
+  </p>
+  <p class="font-weight-bold mb-0">
+    You will not be able to sign in unless you disable the Sign In feature or properly configure the email settings.
+  </p>
 </div>
+{% endif %}
+<div class="hi-front-door-title">Sign In</div>
+<p class="hi-front-door-prompt">We'll email you a code to sign in.</p>
+<form class="form" method="post"
+      action="{% url 'user_signin' %}"
+      data-synchronous="true">
+  {% csrf_token %}
+  <input class="form-control form-control-lg mb-3"
+	 type="email"
+	 name="email"
+	 value=""
+	 autofocus="autofocus"
+	 placeholder="e-mail address" required="" id="hi-signin-email"
+	 {% device_requires_attrs 'keyboard' handlers='on-screen-keyboard' %}/>
+  <button id="hi-signin-button"
+	  type="submit"
+	  class="btn btn-lg btn-primary btn-block">
+    <b>Sign In</b>
+  </button>
+</form>
 {% endblock %}

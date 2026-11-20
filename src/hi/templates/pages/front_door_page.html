@@ -1,0 +1,19 @@
+{% extends "pages/base.html" %}
+{% load static %}
+
+{% comment %}
+The "front door": sign-in pages shown before anyone is signed in. One card,
+centered on a primary-color background, with the logo at its foot.
+{% endcomment %}
+
+{% block content %}
+<div class="hi-front-door">
+  <div class="hi-front-door-card">
+    {% block front_door_content %}
+    {% endblock %}
+    <div class="hi-front-door-logo">
+      <img src="{% static 'img/hi-logo-149x64.png' %}" alt="Home Information">
+    </div>
+  </div>
+</div>
+{% endblock %}

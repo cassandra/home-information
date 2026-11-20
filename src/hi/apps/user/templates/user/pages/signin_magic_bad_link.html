@@ -1,16 +1,13 @@
-{% extends "pages/interstitial_page.html" %}
+{% extends "pages/front_door_page.html" %}
 
-{% block interstitial_content %}
-<p>
+{% block front_door_content %}
+<div class="hi-front-door-title">Link No Longer Valid</div>
+<p class="hi-front-door-prompt">
   The sign-in link has either expired or has already been used.
+  Sign in again to get a new link.
 </p>
-<p>
-  Sign-in again to generate a new link.
-</p>
-<div>
-  <a id="player-signin-link" href="{% url 'user_signin' %}"
-     class="btn btn-lg btn-primary">
-    <b>SIGN IN</b>
-  </a>
-</div>
+<a id="hi-signin-link" href="{% url 'user_signin' %}"
+   class="btn btn-lg btn-primary btn-block">
+  <b>Sign In</b>
+</a>
 {% endblock %}
