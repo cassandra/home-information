@@ -15,6 +15,8 @@ Default partials live under
 from dataclasses import dataclass, field
 from typing import Dict, List, Optional
 
+from hi.apps.common.file_viewer import FileViewerItem
+
 
 @dataclass
 class NameValuePair:
@@ -36,6 +38,17 @@ class AttachmentRef:
     mime_type: str
     thumbnail_url: Optional[str] = None
     open_url: Optional[str] = None
+
+    @property
+    def file_viewer_item(self) -> Optional[FileViewerItem]:
+        """The attachment for the in-app file viewer, if it can be opened."""
+        if not self.open_url:
+            return None
+        return FileViewerItem(
+            url=self.open_url,
+            mime_type=self.mime_type,
+            title=self.title,
+        )
 
 
 @dataclass

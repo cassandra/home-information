@@ -80,3 +80,19 @@ class ExternalViewDataDefaultTemplateNameTests(TestCase):
             CustomTemplateViewData(template_name='')
         with self.assertRaises(ValueError):
             CustomTemplateViewData(template_name='   ')
+
+
+class AttachmentRefFileViewerItemTests(TestCase):
+
+    def test_attachment_opens_from_its_open_url(self):
+        attachment = AttachmentRef(
+            id='a1', title='Receipt', mime_type='image/png', open_url='/proxy/a1',
+        )
+        item = attachment.file_viewer_item
+        self.assertEqual(item.url, '/proxy/a1')
+        self.assertEqual(item.mime_type, 'image/png')
+        self.assertEqual(item.title, 'Receipt')
+
+    def test_attachment_without_open_url_has_no_item(self):
+        attachment = AttachmentRef(id='a1', title='Receipt', mime_type='image/png')
+        self.assertIsNone(attachment.file_viewer_item)

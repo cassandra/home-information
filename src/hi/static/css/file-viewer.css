@@ -1,0 +1,405 @@
+/* In-app file viewer overlay (file-viewer.js, panes/file_viewer.html). */
+
+.hi-file-viewer {
+    --hi-file-viewer-bg: #141416;
+    --hi-file-viewer-bar-bg: rgba( 20, 20, 22, 0.92 );
+    /* Opaque enough that page text under the toolbar does not show through. */
+    --hi-file-viewer-toolbar-bg: rgba( 30, 30, 33, 0.98 );
+    --hi-file-viewer-fg: #f2f2f2;
+    --hi-file-viewer-muted: #a9a9ad;
+    --hi-file-viewer-stage-padding: 1rem;
+    --hi-file-viewer-toolbar-clearance: 5.5rem;
+    /* Fit width cap, so pages on wide screens stay readable (file-viewer-pdf.js). */
+    --hi-file-viewer-pdf-max-fit-width: 900px;
+
+    position: fixed;
+    /* Below the alert banner while it shows (file-viewer.js). */
+    top: var(--hi-file-viewer-top-inset, 0px);
+    right: 0;
+    bottom: 0;
+    left: 0;
+    z-index: 1085;  /* Above Bootstrap modals (1050) and the on-screen keyboard (1080). */
+    display: flex;
+    flex-direction: column;
+    background-color: var(--hi-file-viewer-bg);
+    color: var(--hi-file-viewer-fg);
+    touch-action: manipulation;
+}
+
+html.hi-file-viewer-open,
+html.hi-file-viewer-open body {
+    overflow: hidden;
+}
+
+/* Header */
+
+.hi-file-viewer-header {
+    flex: 0 0 auto;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: max( 0.5rem, env( safe-area-inset-top )) 0.75rem 0.5rem 1rem;
+    background-color: var(--hi-file-viewer-bar-bg);
+    border-bottom: 1px solid rgba( 255, 255, 255, 0.08 );
+}
+
+.hi-file-viewer-titles {
+    flex: 1 1 auto;
+    min-width: 0;
+}
+
+.hi-file-viewer-title,
+.hi-file-viewer-subtitle {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.hi-file-viewer-title {
+    font-size: 1.15rem;
+    font-weight: 600;
+}
+
+.hi-file-viewer-subtitle {
+    font-size: 0.85rem;
+    color: var(--hi-file-viewer-muted);
+}
+
+.hi-file-viewer-close {
+    flex: 0 0 auto;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    min-width: 56px;
+    min-height: 56px;
+    padding: 0 1.25rem;
+    font-size: 1.15rem;
+    font-weight: 600;
+    color: var(--on-primary-color);
+    background-color: var(--primary-color);
+    border: 2px solid rgba( 255, 255, 255, 0.25 );
+    border-radius: 0.5rem;
+}
+
+/* Close takes focus on every open, so only keyboard focus is shown. */
+.hi-file-viewer-close:hover,
+.hi-file-viewer-close:focus-visible {
+    color: var(--on-primary-color);
+    background-color: var(--primary-highlight-color);
+}
+
+.hi-file-viewer-close:focus {
+    outline: none;
+}
+
+.hi-file-viewer-close:focus-visible {
+    box-shadow: 0 0 0 3px rgba( 255, 255, 255, 0.5 );
+}
+
+/* Secondary to Close: outlined, same height. */
+.hi-file-viewer-open-tab {
+    flex: 0 0 auto;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    min-width: 56px;
+    min-height: 56px;
+    padding: 0 1rem;
+    font-size: 1rem;
+    color: var(--hi-file-viewer-fg);
+    border: 2px solid rgba( 255, 255, 255, 0.35 );
+    border-radius: 0.5rem;
+}
+
+.hi-file-viewer-open-tab:hover,
+.hi-file-viewer-open-tab:focus-visible {
+    color: var(--hi-file-viewer-fg);
+    text-decoration: none;
+    background-color: rgba( 255, 255, 255, 0.12 );
+}
+
+.hi-file-viewer-open-tab:focus {
+    outline: none;
+}
+
+.hi-file-viewer-open-tab:focus-visible {
+    box-shadow: 0 0 0 3px rgba( 255, 255, 255, 0.5 );
+}
+
+@media ( max-width: 575px ) {
+    .hi-file-viewer-subtitle,
+    .hi-file-viewer-close-label,
+    .hi-file-viewer-open-tab-label {
+        display: none;
+    }
+    .hi-file-viewer-close,
+    .hi-file-viewer-open-tab {
+        padding: 0 0.9rem;
+    }
+}
+
+/* Body and regions */
+
+.hi-file-viewer-body {
+    flex: 1 1 auto;
+    position: relative;
+    min-height: 0;
+}
+
+.hi-file-viewer-region,
+.hi-file-viewer-scroll {
+    position: absolute;
+    inset: 0;
+}
+
+.hi-file-viewer-scroll {
+    overflow: auto;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+}
+
+.hi-file-viewer-scroll:focus-visible {
+    outline: 3px solid rgba( 255, 255, 255, 0.5 );
+    outline-offset: -3px;
+}
+
+/* Image: the stage centers a fitted image and grows with a zoomed one. */
+
+.hi-file-viewer-image-stage {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 100%;
+    min-height: 100%;
+    width: max-content;
+    padding: var(--hi-file-viewer-stage-padding);
+    /* Fitted images stay clear of the toolbar. */
+    padding-bottom: var(--hi-file-viewer-toolbar-clearance);
+}
+
+.hi-file-viewer-image {
+    display: block;
+    max-width: none;
+    user-select: none;
+    -webkit-user-drag: none;
+    box-shadow: 0 4px 24px rgba( 0, 0, 0, 0.5 );
+}
+
+/* PDF: a continuous column of pages, sized by file-viewer-pdf.js. */
+
+.hi-file-viewer-pdf-pages {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem;
+    width: max-content;
+    min-width: 100%;
+    padding: var(--hi-file-viewer-stage-padding);
+    padding-bottom: var(--hi-file-viewer-toolbar-clearance);
+}
+
+.hi-file-viewer-pdf-page {
+    flex: 0 0 auto;
+    background-color: #fff;
+    box-shadow: 0 4px 24px rgba( 0, 0, 0, 0.5 );
+}
+
+/* Stretches to the page while a redraw at a new zoom is pending. */
+.hi-file-viewer-pdf-canvas {
+    display: block;
+    width: 100%;
+    height: 100%;
+}
+
+/* Video and audio */
+
+.hi-file-viewer-media-stage {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 1rem;
+    padding: var(--hi-file-viewer-stage-padding);
+}
+
+.hi-file-viewer-video {
+    max-width: 100%;
+    max-height: 100%;
+    background-color: #000;
+}
+
+.hi-file-viewer-audio {
+    width: min( 640px, 100% );
+}
+
+.hi-file-viewer-audio-icon {
+    opacity: 0.6;
+}
+
+/* Text */
+
+.hi-file-viewer-text {
+    max-width: 60rem;
+    margin: 0 auto;
+    padding: 1.5rem;
+    font-size: 0.95rem;
+    color: var(--hi-file-viewer-fg);
+    white-space: pre-wrap;
+    word-break: break-word;
+}
+
+/* Loading, unsupported and error messages */
+
+.hi-file-viewer-message {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+    padding: 2rem;
+    text-align: center;
+}
+
+.hi-file-viewer-message-icon {
+    opacity: 0.6;
+}
+
+.hi-file-viewer-message-title {
+    margin: 0;
+    font-size: 1.35rem;
+}
+
+.hi-file-viewer-message-detail {
+    color: var(--hi-file-viewer-muted);
+}
+
+.hi-file-viewer-details {
+    display: grid;
+    grid-template-columns: auto auto;
+    gap: 0.25rem 1rem;
+    margin: 0.5rem 0 0;
+    text-align: left;
+}
+
+.hi-file-viewer-details dt {
+    font-weight: normal;
+    color: var(--hi-file-viewer-muted);
+}
+
+.hi-file-viewer-details dd {
+    margin: 0;
+    overflow-wrap: anywhere;
+}
+
+.hi-file-viewer-message-action {
+    margin-top: 0.75rem;
+    min-height: 48px;
+    display: inline-flex;
+    align-items: center;
+}
+
+.hi-file-viewer-spinner {
+    width: 48px;
+    height: 48px;
+    border: 4px solid rgba( 255, 255, 255, 0.2 );
+    border-top-color: var(--hi-file-viewer-fg);
+    border-radius: 50%;
+    animation: hi-file-viewer-spin 0.9s linear infinite;
+}
+
+@keyframes hi-file-viewer-spin {
+    to { transform: rotate( 360deg ); }
+}
+
+/* Toolbar: floats at the bottom, within thumb reach on touch screens. */
+
+.hi-file-viewer-toolbar {
+    position: absolute;
+    left: 50%;
+    bottom: max( 1rem, env( safe-area-inset-bottom ));
+    transform: translateX( -50% );
+    z-index: 1;
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    padding: 0.35rem;
+    background-color: var(--hi-file-viewer-toolbar-bg);
+    border: 1px solid rgba( 255, 255, 255, 0.12 );
+    border-radius: 999px;
+    box-shadow: 0 4px 16px rgba( 0, 0, 0, 0.4 );
+}
+
+.hi-file-viewer-toolbar button {
+    min-width: 52px;
+    min-height: 52px;
+    font-size: 1.5rem;
+    font-weight: 600;
+    line-height: 1;
+    color: var(--hi-file-viewer-fg);
+    background-color: transparent;
+    border: 0;
+    border-radius: 999px;
+}
+
+.hi-file-viewer-toolbar button.hi-file-viewer-toolbar-text {
+    padding: 0 1rem;
+    font-size: 1rem;
+}
+
+/* Taps leave focus on a button; only keyboard focus is shown. */
+.hi-file-viewer-toolbar button:hover,
+.hi-file-viewer-toolbar button:focus-visible {
+    background-color: rgba( 255, 255, 255, 0.12 );
+}
+
+.hi-file-viewer-toolbar button:focus {
+    outline: none;
+}
+
+.hi-file-viewer-toolbar button:disabled {
+    opacity: 0.35;
+}
+
+.hi-file-viewer-page-indicator {
+    display: flex;
+    align-items: center;
+    align-self: stretch;
+    min-width: 5rem;
+    margin-right: 0.25rem;
+    padding: 0 0.75rem;
+    justify-content: center;
+    font-variant-numeric: tabular-nums;
+    color: var(--hi-file-viewer-muted);
+    border-right: 1px solid rgba( 255, 255, 255, 0.15 );
+}
+
+.hi-file-viewer-zoom-level {
+    min-width: 4.5rem;
+    text-align: center;
+    font-variant-numeric: tabular-nums;
+    color: var(--hi-file-viewer-muted);
+}
+
+/* A modal shown while the viewer is open (file-viewer.js raises it). */
+.modal-backdrop.hi-file-viewer-above {
+    z-index: 1090;
+}
+
+.modal.hi-file-viewer-above {
+    z-index: 1095;
+}
+
+/* Alerts and the lost-connection message stay visible over the viewer;
+   the viewer starts below the banner. The banner's z-index is an inline
+   style (alert/panes/alert_banner.html). */
+html.hi-file-viewer-open #hi-alert-banner-container {
+    z-index: 1096 !important;
+}
+
+html.hi-file-viewer-open #hi-server-error-msg {
+    z-index: 1096;
+}

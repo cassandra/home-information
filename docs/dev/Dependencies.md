@@ -138,3 +138,26 @@ brew install poppler
 sudo apt install poppler-utils
 ```
 
+
+### pdf.js
+
+_Vendored; nothing to install. Renders PDFs in the in-app file viewer (`file-viewer-pdf.js`)._
+
+[pdf.js](https://github.com/mozilla/pdf.js) (Mozilla, Apache-2.0) is checked in under `src/hi/static/pdfjs-<version>/`, taken from the `pdfjs-dist` npm package:
+
+- `build/`: the **legacy** build (`legacy/build/pdf.min.mjs`, `pdf.worker.min.mjs`). Per the pdf.js FAQ, it supports Chrome 125+, Firefox ESR, and Safari 18+ (so iOS/iPadOS 18+, which every iOS browser shares). Older browsers show the viewer's "Couldn't load this file" message for PDFs.
+- `wasm/`: image decoders for scanned PDFs (JBIG2, JPEG 2000) and color management (qcms), with their non-wasm fallbacks. QuickJS (PDF form scripting) is left out.
+- `iccs/`, `standard_fonts/`: color profile and fonts for PDFs that use, without embedding, the standard fonts.
+- `cmaps/` (CJK text) is left out.
+- License files from the package are kept alongside each part.
+
+The browser loads these only when a PDF is opened; the resource folders only when a document needs them.
+
+**Serving:** the build ships as `.mjs` ES modules, which browsers load only with a JavaScript content type. `package/docker_nginx.conf` maps `.mjs` for `/static/`, since nginx's `mime.types` does not.
+
+**Updating:** watch the [pdf.js releases](https://github.com/mozilla/pdf.js/releases) and security advisories. To update:
+
+1. `npm pack pdfjs-dist@<version>` and extract it.
+2. Create `src/hi/static/pdfjs-<version>/` with the same files as the current version, then remove the old directory.
+3. Update `PdfJsAssets.STATIC_DIRECTORY` in `src/hi/apps/common/file_viewer.py`.
+4. Check the PDF samples on the File Viewer UI test page (`/testing/ui/common/file-viewer`).

@@ -13,6 +13,7 @@ Usage:
 
 from django import template
 from django.template.loader import get_template
+from django.utils.html import format_html_join
 from django.utils.safestring import mark_safe
 
 register = template.Library()
@@ -53,6 +54,7 @@ AVAILABLE_ICONS = {
     'map-pin',
     'minus-circle',
     'move',
+    'open-in-new',
     'path',
     'pause',
     'play',
@@ -140,21 +142,19 @@ def icon(name, size='md', color=None, aria_label=None, title=None, css_class='')
     class_attr = ' '.join(classes)
     
     # Build accessibility attributes
-    accessibility_attrs = []
-    
     if aria_label:
         # Meaningful icon - has semantic meaning
-        accessibility_attrs.append(f'aria-label="{aria_label}"')
-        accessibility_attrs.append('role="img"')
+        accessibility_attrs = [ ( 'aria-label', aria_label ), ( 'role', 'img' ) ]
     else:
         # Decorative icon - no semantic meaning
-        accessibility_attrs.append('aria-hidden="true"')
-    
+        accessibility_attrs = [ ( 'aria-hidden', 'true' ) ]
+
     if title:
-        accessibility_attrs.append(f'title="{title}"')
-    
-    accessibility_str = ' '.join(accessibility_attrs)
-    
+        accessibility_attrs.append( ( 'title', title ) )
+
+    # Safe markup, so the icon template does not escape the quotes.
+    accessibility_str = format_html_join( ' ', '{}="{}"', accessibility_attrs )
+
     try:
         # Load the specific icon template
         icon_template = get_template(f'icons/{name}.html')

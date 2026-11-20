@@ -1,0 +1,62 @@
+{% extends "pages/base.html" %}
+{% load file_viewer_tags %}
+{% block head_title %}HI: File Viewer{% endblock %}
+
+{% block content %}
+<div class="container-fluid m-4">
+
+  <h2 class="text-info">File Viewer</h2>
+  <p class="text-muted">
+    Each button opens its file in the in-app viewer. Close (or Escape)
+    should return here with nothing changed.
+  </p>
+
+  <h3 class="text-primary">From the page</h3>
+  <div class="d-flex flex-wrap mb-4">
+    {% for sample in samples %}
+    <button type="button" class="btn btn-outline-primary mr-2 mb-2"
+            {% file_viewer_attrs sample %}>
+      {{ sample.title }}
+    </button>
+    {% endfor %}
+  </div>
+
+  <h3 class="text-primary">From inside a modal</h3>
+  <p class="text-muted">
+    Type in the field, open a file, then close it: the modal and the
+    typed text should still be there, and Escape should close only the
+    viewer.
+  </p>
+  <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#hi-test-file-viewer-modal">
+    Open modal
+  </button>
+
+</div>
+
+<div class="modal fade" id="hi-test-file-viewer-modal" tabindex="-1" role="dialog" aria-hidden="true">
+  <div class="modal-dialog modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Modal with files</h5>
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <input type="text" class="form-control mb-3" placeholder="Unsaved text">
+        <div class="d-flex flex-wrap">
+          {% for sample in samples %}
+          <button type="button" class="btn btn-outline-primary mr-2 mb-2"
+                  {% file_viewer_attrs sample %}>
+            {{ sample.title }}
+          </button>
+          {% endfor %}
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-dismiss="modal">Done</button>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,5 +1,5 @@
 {% load icons %}
-{% load device_tags %}
+{% load file_viewer_tags %}
 {% load attribute_extras %}
 
 <div class="attr-v2-external-structured">
@@ -10,37 +10,35 @@
       {% for attachment in view_data.attachments %}
       <div class="attr-v2-file-card attr-ext-attachment"
            data-mime-type="{{ attachment.mime_type }}">
-        <a class="attr-ext-attachment__link"
-           href="{{ attachment.open_url }}"
-           {% external_link_attrs %}
-           title="{{ attachment.title }}">
-          <div class="attr-v2-file-thumbnail{% if attachment.thumbnail_url %} has-thumbnail{% endif %}">
-            {% if attachment.thumbnail_url %}
-            <img src="{{ attachment.thumbnail_url }}"
-                 alt="{{ attachment.title }}"
-                 class="attr-v2-file-thumbnail-image"
-                 loading="lazy"
-                 decoding="async">
-            {% else %}
-            {% if attachment.mime_type|slice:":5" == "image" %}
-              {% icon "camera" size="lg" %}
-              <div class="attr-v2-file-type-label">IMAGE</div>
-            {% elif attachment.mime_type == "application/pdf" %}
-              {% icon "upload" size="lg" %}
-              <div class="attr-v2-file-type-label">PDF</div>
-            {% elif attachment.mime_type|slice:":5" == "video" %}
-              {% icon "video" size="lg" %}
-              <div class="attr-v2-file-type-label">VIDEO</div>
-            {% else %}
-              {% icon "upload" size="lg" %}
-              <div class="attr-v2-file-type-label">FILE</div>
-            {% endif %}
-            {% endif %}
-          </div>
-          <div class="attr-v2-file-info">
-            <div class="attr-v2-file-name">{{ attachment.title }}</div>
-          </div>
-        </a>
+        <button type="button"
+                class="attr-v2-file-thumbnail{% if attachment.thumbnail_url %} has-thumbnail{% endif %}"
+                {% file_viewer_attrs attachment.file_viewer_item %}
+                title="{{ attachment.title }}">
+          {% if attachment.thumbnail_url %}
+          <img src="{{ attachment.thumbnail_url }}"
+               alt="{{ attachment.title }}"
+               class="attr-v2-file-thumbnail-image"
+               loading="lazy"
+               decoding="async">
+          {% else %}
+          {% if attachment.mime_type|slice:":5" == "image" %}
+            {% icon "camera" size="lg" %}
+            <span class="attr-v2-file-type-label">IMAGE</span>
+          {% elif attachment.mime_type == "application/pdf" %}
+            {% icon "upload" size="lg" %}
+            <span class="attr-v2-file-type-label">PDF</span>
+          {% elif attachment.mime_type|slice:":5" == "video" %}
+            {% icon "video" size="lg" %}
+            <span class="attr-v2-file-type-label">VIDEO</span>
+          {% else %}
+            {% icon "upload" size="lg" %}
+            <span class="attr-v2-file-type-label">FILE</span>
+          {% endif %}
+          {% endif %}
+        </button>
+        <div class="attr-v2-file-info">
+          <div class="attr-v2-file-name">{{ attachment.title }}</div>
+        </div>
       </div>
       {% endfor %}
     </div>
