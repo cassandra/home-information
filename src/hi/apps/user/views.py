@@ -75,6 +75,8 @@ class SigninMagicCodeView( View ):
             'email_address': page_state.email_address,
         }
         message = self.MESSAGES.get( page_state.status )
+        if page_state.attempts_remaining is not None:
+            message = f'{message} {self._attempts_left_text( page_state.attempts_remaining )}'
         if page_state.is_code_usable:
             context['keypad_entry'] = KeypadEntry(
                 spec = UserConstants.MAGIC_CODE_KEYPAD,
@@ -84,6 +86,10 @@ class SigninMagicCodeView( View ):
         else:
             context['unusable_code_message'] = message
         return render( request, self.TEMPLATE_NAME, context )
+
+    def _attempts_left_text( self, attempts_remaining : int ) -> str:
+        noun = 'attempt' if attempts_remaining == 1 else 'attempts'
+        return f'{attempts_remaining} {noun} left.'
 
     def post( self, request, *args, **kwargs ):
         if request.user.is_authenticated:

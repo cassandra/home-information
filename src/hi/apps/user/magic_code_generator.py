@@ -83,6 +83,10 @@ class MagicCodeGenerator:
         self.expire_magic_code( request )
         return MagicCodeStatus.VALID
 
+    def remaining_attempts( self, request ) -> int:
+        """ Wrong guesses the pending code can still take before it is discarded. """
+        return self.MAX_FAILED_ATTEMPTS - request.session.get( self.MAGIC_CODE_FAILED_ATTEMPTS, 0 )
+
     def unusable_code_status( self, request ) -> Optional[ MagicCodeStatus ]:
         """ Why no code in the session can be redeemed (NO_CODE or EXPIRED), or None if one can. """
         if not request.session.get( self.MAGIC_CODE ):

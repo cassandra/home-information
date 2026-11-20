@@ -3,7 +3,10 @@
 {% block front_door_content %}
 {% if unusable_code_message %}
 <h1 class="hi-front-door-title">Code No Longer Valid</h1>
-<div class="alert alert-danger my-3" role="alert">{{ unusable_code_message }}</div>
+<p class="hi-front-door-prompt">
+  Signing in as <span class="font-weight-bold text-break">{{ email_address }}</span>.
+</p>
+<div class="alert alert-danger mb-3" role="alert">{{ unusable_code_message }}</div>
 {% else %}
 <h1 class="hi-front-door-title">Enter Access Code</h1>
 <p class="hi-front-door-prompt">

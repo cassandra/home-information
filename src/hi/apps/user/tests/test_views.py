@@ -50,7 +50,10 @@ class SigninFlowTestMixin:
     def assertCodeEntry(self, page, error_status=None):
         keypad_entry = page.context.get('keypad_entry')
         self.assertIsNotNone(keypad_entry, 'code entry shown')
-        self.assertEqual(keypad_entry.error_message, self.MESSAGES.get(error_status))
+        if error_status is None:
+            self.assertIsNone(keypad_entry.error_message)
+        else:
+            self.assertTrue(keypad_entry.error_message.startswith(self.MESSAGES[error_status]))
 
     def assertCodeUnusable(self, page, status):
         self.assertNotIn('keypad_entry', page.context)
@@ -164,6 +167,18 @@ class TestSigninMagicCodeView(SigninFlowTestMixin, SyncViewTestCase):
         response = self.submit_signin_code('wxyzwx')
 
         self.assertCodeRejected(response)
+
+    def test_wrong_code_says_how_many_attempts_remain(self):
+        self.request_signin_code(self.user.email)
+
+        first = self.assertCodeRejected(self.submit_signin_code('wxyzwx'))
+        for _ in range(MagicCodeGenerator.MAX_FAILED_ATTEMPTS - 3):
+            self.submit_signin_code('wxyzwx')
+        last = self.assertCodeRejected(self.submit_signin_code('wxyzwx'))
+
+        remaining = MagicCodeGenerator.MAX_FAILED_ATTEMPTS - 1
+        self.assertIn(f'{remaining} attempts left.', first.context['keypad_entry'].error_message)
+        self.assertIn('1 attempt left.', last.context['keypad_entry'].error_message)
 
     def test_malformed_submit_rejected_without_using_an_attempt(self):
         _, magic_code = self.request_signin_code(self.user.email)

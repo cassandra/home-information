@@ -16,12 +16,14 @@ class MagicCodePageState:
     """
     What the access code page shows. ``status`` explains the last outcome:
     for a usable code, a wrong guess (or None); otherwise why only a new
-    code can succeed.
+    code can succeed. After a wrong guess, ``attempts_remaining`` says how
+    many more the code can take.
     """
 
-    email_address   : str
-    is_code_usable  : bool
-    status          : Optional[ MagicCodeStatus ] = None
+    email_address       : str
+    is_code_usable      : bool
+    status              : Optional[ MagicCodeStatus ] = None
+    attempts_remaining  : Optional[ int ] = None
 
 
 class UserAuthenticationData:

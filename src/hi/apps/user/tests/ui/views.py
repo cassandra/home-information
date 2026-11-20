@@ -19,7 +19,9 @@ UI_TEST_EMAIL_ADDRESS = 'someone.with.a.long.address@example.com'
 MAGIC_CODE_PAGE_STATES = {
     'entry': MagicCodePageState( email_address = UI_TEST_EMAIL_ADDRESS, is_code_usable = True ),
     'invalid': MagicCodePageState( email_address = UI_TEST_EMAIL_ADDRESS, is_code_usable = True,
-                                   status = MagicCodeStatus.INVALID ),
+                                   status = MagicCodeStatus.INVALID, attempts_remaining = 2 ),
+    'invalid_last_attempt': MagicCodePageState( email_address = UI_TEST_EMAIL_ADDRESS, is_code_usable = True,
+                                                status = MagicCodeStatus.INVALID, attempts_remaining = 1 ),
     'expired': MagicCodePageState( email_address = UI_TEST_EMAIL_ADDRESS, is_code_usable = False,
                                    status = MagicCodeStatus.EXPIRED ),
     'too_many_attempts': MagicCodePageState( email_address = UI_TEST_EMAIL_ADDRESS, is_code_usable = False,

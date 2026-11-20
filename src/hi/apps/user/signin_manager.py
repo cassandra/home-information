@@ -78,12 +78,16 @@ class SigninManager( Singleton ):
         if not email_address:
             return None
 
-        unusable_status = MagicCodeGenerator().unusable_code_status( request )
+        magic_code_generator = MagicCodeGenerator()
+        unusable_status = magic_code_generator.unusable_code_status( request )
         if unusable_status is None:
+            if last_status != MagicCodeStatus.INVALID:
+                return MagicCodePageState( email_address = email_address, is_code_usable = True )
             return MagicCodePageState(
                 email_address = email_address,
                 is_code_usable = True,
-                status = last_status if last_status == MagicCodeStatus.INVALID else None,
+                status = MagicCodeStatus.INVALID,
+                attempts_remaining = magic_code_generator.remaining_attempts( request ),
             )
         return MagicCodePageState(
             email_address = email_address,
