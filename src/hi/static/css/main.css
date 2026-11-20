@@ -979,8 +979,11 @@ input[type="password"],
     margin-top: 0.75rem;
     font-size: 1.1rem;
 }
-.hi-status-error-banner-actionable {
-    cursor: pointer;
+.hi-status-error-banner-link,
+.hi-status-error-banner-link:hover {
+    display: block;
+    color: inherit;
+    text-decoration: none;
 }
 
 svg[action-state="move"] {

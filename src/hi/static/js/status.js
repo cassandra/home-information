@@ -3,7 +3,6 @@
 
     const HiStatus = {
         init: function() {
-            initSigninRequiredBanner();
             startServerPolling();
         },
     };
@@ -53,7 +52,7 @@
     const AlarmMessageHtmlAttr = 'alarmMessageHtml';
     
     let gServerPollingTimer = null;
-    let gLastServerPollSuccessTime = (new Date()).getTime();
+    let gLastHealthyServerResponseTime = (new Date()).getTime();
     let gIsServerErrorShowing = false;
     let gIsSigninRequiredShowing = false;
     let gLastStartServerDate = null;
@@ -111,7 +110,7 @@
                     if ( $.isPlainObject( data ) ) {
                         clearServerErrorIfNeeded();
                         clearSigninRequiredIfNeeded();
-                        gLastServerPollSuccessTime = (new Date()).getTime();
+                        recordHealthyServerResponse();
                         handleServerResponse( data, status, xhr );
                     } else {
                         console.error( 'Server polling error: response is not a JSON object.' );
@@ -128,6 +127,7 @@
                     Hi.watchdog.ok( ServerPollingWatchdogType );
                     console.error( `Server polling error [${xhr.status}] : ${thrownError}` );
                     if ( xhr.status === HttpUnauthorizedStatus ) {
+                        recordHealthyServerResponse();
                         notifySigninRequired();
                     } else {
                         handlePollingError();
@@ -278,9 +278,14 @@
         }
     }
     
+    // A 401 counts: the server answered, so the connection is not lost.
+    function recordHealthyServerResponse() {
+        gLastHealthyServerResponseTime = (new Date()).getTime();
+    }
+
     function handlePollingError() {
         var nowTime = (new Date()).getTime();
-        var elapsedMs = nowTime - gLastServerPollSuccessTime;
+        var elapsedMs = nowTime - gLastHealthyServerResponseTime;
         if ( Hi.DEBUG ) { console.log( `Polling error elapsedMs=${elapsedMs}` ); }
         
         if ( elapsedMs >= PollingErrorNotifyTimeMs ) {
@@ -292,7 +297,7 @@
         if ( gIsServerErrorShowing ) {
             return;
         }
-        clearSigninRequiredIfNeeded();
+        hideSigninRequired();
         $(ServerErrorMessageSelector).show();
         gIsServerErrorShowing = true;
         Hi.audio.startAudibleSignal( Hi.audio.WARNING_SIGNAL_NAME );
@@ -302,9 +307,14 @@
         if ( ! gIsServerErrorShowing ) {
             return;
         }
+        hideServerError();
+        Hi.audio.startAudibleSignal( Hi.audio.INFO_SIGNAL_NAME );
+    }
+
+    // Silent, so swapping banners plays only the new banner's signal.
+    function hideServerError() {
         $(ServerErrorMessageSelector).hide();
         gIsServerErrorShowing = false;
-        Hi.audio.startAudibleSignal( Hi.audio.INFO_SIGNAL_NAME );
     }
 
     // The session is gone (e.g., cookie cleared, secret key changed), so
@@ -315,7 +325,7 @@
         if ( gIsSigninRequiredShowing ) {
             return;
         }
-        clearServerErrorIfNeeded();
+        hideServerError();
         $(SigninRequiredMessageSelector).show();
         gIsSigninRequiredShowing = true;
         Hi.audio.startAudibleSignal( Hi.audio.WARNING_SIGNAL_NAME );
@@ -325,16 +335,13 @@
         if ( ! gIsSigninRequiredShowing ) {
             return;
         }
-        $(SigninRequiredMessageSelector).hide();
-        gIsSigninRequiredShowing = false;
+        hideSigninRequired();
         Hi.audio.startAudibleSignal( Hi.audio.INFO_SIGNAL_NAME );
     }
 
-    // Reloading an unauthenticated session lands on the sign-in page.
-    function initSigninRequiredBanner() {
-        $(document).on( 'click', SigninRequiredMessageSelector, function() {
-            location.reload();
-        });
+    function hideSigninRequired() {
+        $(SigninRequiredMessageSelector).hide();
+        gIsSigninRequiredShowing = false;
     }
 
     function handleTransientViewSuggestion( suggestionData ) {
