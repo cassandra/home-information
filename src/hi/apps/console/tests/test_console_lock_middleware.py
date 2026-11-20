@@ -138,6 +138,32 @@ class TestConsoleLockMiddleware( BaseTestCase ):
         return
 
 
+    def test_admin_not_blocked_when_locked( self ):
+        """Django admin stays reachable while locked: it is the recovery path."""
+        request = self.factory.get( reverse( 'admin:index' ) )
+        request.session = { ConsoleConstants.CONSOLE_LOCKED_SESSION_VAR: True }
+
+        with patch( 'hi.apps.console.middleware.SecurityManager' ) as mock_security_manager:
+            mock_security_manager.return_value.get_console_away_lock_timestamp.return_value = None
+            response = self.middleware.process_request( request )
+
+        self.assertIsNone( response )
+        return
+
+    def test_unknown_path_blocked_when_locked( self ):
+        request = self.factory.get( '/no/such/path/' )
+        request.session = { ConsoleConstants.CONSOLE_LOCKED_SESSION_VAR: True }
+
+        with patch( 'hi.apps.console.middleware.SecurityManager' ) as mock_security_manager, \
+             patch( 'hi.apps.console.middleware.ConsoleUnlockView' ) as mock_unlock_view:
+            mock_security_manager.return_value.get_console_away_lock_timestamp.return_value = None
+            mock_unlock_view.return_value.get.return_value = HttpResponse( 'locked', status = 403 )
+            response = self.middleware.process_request( request )
+
+        self.assertIsNotNone( response )
+        return
+
+
 @override_settings( SUPPRESS_AUTHENTICATION = False )
 class TestConsoleLockMiddlewareSignedOut( BaseTestCase ):
     """ A signed-out session can only reach sign-in, so it is never locked. """
