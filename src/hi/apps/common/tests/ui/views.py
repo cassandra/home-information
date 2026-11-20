@@ -64,7 +64,7 @@ class TestUiFileViewerView(View):
         ( 'Audio tone', 'tone.wav', 'audio/wav' ),
         ( 'Text notes', 'notes.txt', 'text/plain' ),
         ( 'PDF (until pdf.js is added)', 'missing.pdf', 'application/pdf' ),
-        ( 'Zip archive', 'archive.zip', 'application/zip' ),
+        ( 'Binary file', 'firmware.bin', 'application/octet-stream' ),
     )
 
     def get(self, request, *args, **kwargs):
@@ -80,7 +80,7 @@ class TestUiFileViewerView(View):
         ))
         samples.append( FileViewerSample(
             title = 'Unknown details',
-            url = static( f'{self.SAMPLE_DIRECTORY}/archive.zip' ),
+            url = static( f'{self.SAMPLE_DIRECTORY}/firmware.bin' ),
             mime_type = None,
         ))
         context = {
