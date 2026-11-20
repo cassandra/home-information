@@ -118,7 +118,7 @@ class TestSigninMagicCodeView(SigninFlowTestMixin, SyncViewTestCase):
 
         response = self.submit_signin_code(self.user.email, magic_code)
 
-        self.assertCodeRejected(response)
+        self.assertCodeRejected(response, message='This access code is no longer valid.')
 
     def test_wrong_code_rejected(self):
         self.request_signin_code(self.user.email)
@@ -137,7 +137,7 @@ class TestSigninMagicCodeView(SigninFlowTestMixin, SyncViewTestCase):
     def test_no_code_in_session_rejected(self):
         response = self.submit_signin_code(self.user.email, 'abcdef')
 
-        self.assertCodeRejected(response)
+        self.assertCodeRejected(response, message='This access code is no longer valid.')
 
     def test_code_issued_for_other_account_rejected(self):
         other_user = User.objects.create_user(email='other@example.com', password='x')

@@ -3,8 +3,8 @@ import logging
 from django import forms
 from django.test import TestCase
 
+from hi.apps.user.constants import UserConstants
 from hi.apps.user.forms import SigninMagicCodeForm
-from hi.apps.user.magic_code_generator import MagicCodeGenerator
 
 logging.disable(logging.CRITICAL)
 
@@ -38,7 +38,7 @@ class TestSigninMagicCodeForm(TestCase):
         
         # Verify field type and properties
         self.assertIsInstance(magic_code_field, forms.CharField)
-        self.assertEqual(magic_code_field.max_length, 2 * MagicCodeGenerator.MAGIC_CODE_LENGTH)
+        self.assertEqual(magic_code_field.max_length, 2 * UserConstants.MAGIC_CODE_KEYPAD.length)
         self.assertTrue(magic_code_field.required)
         self.assertEqual(magic_code_field.label, '')
 
@@ -54,7 +54,7 @@ class TestSigninMagicCodeForm(TestCase):
         widget_attrs = magic_code_field.widget.attrs
         self.assertEqual(widget_attrs['autofocus'], 'autofocus')
         self.assertEqual(widget_attrs['placeholder'], 'access code')
-        self.assertEqual(widget_attrs['width'], str(2 * MagicCodeGenerator.MAGIC_CODE_LENGTH))
+        self.assertEqual(widget_attrs['width'], str(2 * UserConstants.MAGIC_CODE_KEYPAD.length))
 
     def test_form_validation_with_valid_data(self):
         """Test form validation passes with valid email and magic code."""
@@ -93,7 +93,7 @@ class TestSigninMagicCodeForm(TestCase):
     def test_form_handles_magic_code_length_constraint(self):
         """Test form handles magic code length based on generator constraints."""
         # Test with code at max length (should be valid)
-        max_length_code = 'x' * (2 * MagicCodeGenerator.MAGIC_CODE_LENGTH)
+        max_length_code = 'x' * (2 * UserConstants.MAGIC_CODE_KEYPAD.length)
         form_data = {
             'email_address': 'test@example.com',
             'magic_code': max_length_code
@@ -105,7 +105,7 @@ class TestSigninMagicCodeForm(TestCase):
     def test_form_handles_oversized_magic_code(self):
         """Test form validation fails with oversized magic code."""
         # Test with code exceeding max length (should be invalid)
-        oversized_code = 'x' * (2 * MagicCodeGenerator.MAGIC_CODE_LENGTH + 1)
+        oversized_code = 'x' * (2 * UserConstants.MAGIC_CODE_KEYPAD.length + 1)
         form_data = {
             'email_address': 'test@example.com',
             'magic_code': oversized_code
@@ -133,7 +133,7 @@ class TestSigninMagicCodeForm(TestCase):
         magic_code_field = form.fields['magic_code']
         
         # Verify max length is exactly double the generator's code length
-        expected_max_length = 2 * MagicCodeGenerator.MAGIC_CODE_LENGTH
+        expected_max_length = 2 * UserConstants.MAGIC_CODE_KEYPAD.length
         self.assertEqual(magic_code_field.max_length, expected_max_length)
         
         # Verify widget width attribute matches max length

@@ -1,6 +1,6 @@
 from django import forms
 
-from .magic_code_generator import MagicCodeGenerator
+from .constants import UserConstants
 
 
 class SigninMagicCodeForm(forms.Form):
@@ -12,8 +12,8 @@ class SigninMagicCodeForm(forms.Form):
 
     magic_code = forms.CharField(
         label = '',
-        max_length = 2 * MagicCodeGenerator.MAGIC_CODE_LENGTH,
+        max_length = 2 * UserConstants.MAGIC_CODE_KEYPAD.length,
         widget = forms.TextInput( attrs = { 'autofocus': 'autofocus',
                                             'placeholder': 'access code',
-                                            'width': str(2 * MagicCodeGenerator.MAGIC_CODE_LENGTH) } ),
+                                            'width': str(2 * UserConstants.MAGIC_CODE_KEYPAD.length) } ),
         required = True )

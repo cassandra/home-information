@@ -33,11 +33,14 @@ class KeypadSpec:
     and the order the keys are laid out in.
     """
 
-    alphabet     : str
-    length       : int
-    columns      : int
-    auto_submit  : bool = True
-    masked       : bool = True
+    alphabet        : str
+    length          : int
+    columns         : int
+    auto_submit     : bool = True
+    masked          : bool = True
+    # When False, physical keys and pasted text match alphabet characters
+    # regardless of case; the alphabet's own character is what gets entered.
+    case_sensitive  : bool = True
 
     def __post_init__( self ):
         if not self.alphabet:
@@ -49,6 +52,8 @@ class KeypadSpec:
             raise ValueError( 'KeypadSpec needs at least 2 columns.' )
         if len( set( self.alphabet )) != len( self.alphabet ):
             raise ValueError( 'KeypadSpec alphabet has duplicate characters.' )
+        if not self.case_sensitive and ( len({ c.casefold() for c in self.alphabet }) != len( self.alphabet )):
+            raise ValueError( 'KeypadSpec alphabet has characters that differ only by case.' )
         return
 
     def is_valid( self, value : str ) -> bool:

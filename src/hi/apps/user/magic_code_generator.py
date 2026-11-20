@@ -5,6 +5,8 @@ import re
 from django.utils import timezone
 from django.utils.crypto import constant_time_compare, get_random_string
 
+from .constants import UserConstants
+
 
 class MagicCodeStatus(Enum):
 
@@ -12,6 +14,7 @@ class MagicCodeStatus(Enum):
     EXPIRED             = 1
     VALID               = 2
     TOO_MANY_ATTEMPTS   = 3
+    NO_CODE             = 4
     
 
 class MagicCodeGenerator:
@@ -23,6 +26,9 @@ class MagicCodeGenerator:
       - single use: consumed when redeemed successfully;
       - short lived: expires after MAGIC_CODE_TIMEOUT_SECS;
       - limited to MAX_FAILED_ATTEMPTS wrong guesses before it is discarded.
+
+    Redeeming with no code in the session (already used, discarded, or never
+    issued) reports NO_CODE, as only a new code can succeed.
 
     Usage:
         Generate:
@@ -45,15 +51,13 @@ class MagicCodeGenerator:
 
     MAGIC_CODE_TIMEOUT_SECS = 15 * 60
     MAX_FAILED_ATTEMPTS = 5
-    MAGIC_CODE_CHARS = 'abcdefhkpqrstwxy'
-    MAGIC_CODE_LENGTH = 6
 
     BASE_DATETIME = timezone.make_aware( datetime(2001, 1, 1) )
 
     def make_magic_code( self, request, email_address : str ) -> str:
 
-        magic_code = get_random_string( length = self.MAGIC_CODE_LENGTH,
-                                        allowed_chars = self.MAGIC_CODE_CHARS )
+        magic_code = get_random_string( length = UserConstants.MAGIC_CODE_KEYPAD.length,
+                                        allowed_chars = UserConstants.MAGIC_CODE_KEYPAD.alphabet )
 
         request.session[self.MAGIC_CODE] = magic_code
         request.session[self.MAGIC_CODE_TIMESTAMP] = self.get_elapsed_seconds()
@@ -66,7 +70,7 @@ class MagicCodeGenerator:
 
         expected_magic_code = request.session.get( self.MAGIC_CODE )
         if not expected_magic_code:
-            return MagicCodeStatus.INVALID
+            return MagicCodeStatus.NO_CODE
 
         if not self._matches( request,
                               expected_magic_code = expected_magic_code,

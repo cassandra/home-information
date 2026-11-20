@@ -5,7 +5,6 @@ from django.contrib.auth.tokens import PasswordResetTokenGenerator
 from django.http import HttpRequest
 
 from .magic_code_generator import MagicCodeGenerator
-from . import forms
 
 logger = logging.getLogger(__name__)
 
@@ -36,9 +35,6 @@ class UserAuthenticationData:
             email_address = self._email_address,
         )
 
-        self._magic_code_form = forms.SigninMagicCodeForm(
-            initial = { 'email_address': self._email_address }
-        )
         logger.debug( f'UserAuthenticationData: EMAIL = {self._email_address}' )
         return
     
@@ -57,7 +53,3 @@ class UserAuthenticationData:
     @property
     def magic_code(self):
         return self._magic_code
-                   
-    @property
-    def magic_code_form(self):
-        return self._magic_code_form
