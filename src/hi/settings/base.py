@@ -144,9 +144,11 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 
     'hi.middleware.NoStoreMiddleware',
+    # Before ExceptionMiddleware: its error pages extend pages/base.html,
+    # which reads device capabilities. Cookie-only, so it cannot fail.
+    'hi.apps.console.middleware.DeviceCapabilitiesMiddleware',
     'hi.middleware.ExceptionMiddleware',
     'hi.middleware.ViewMiddleware',
-    'hi.apps.console.middleware.DeviceCapabilitiesMiddleware',
     'hi.apps.console.middleware.ConsoleLockMiddleware',
     'hi.apps.user.middleware.AuthenticationMiddleware',
 ]

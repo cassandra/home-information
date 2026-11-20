@@ -16,8 +16,13 @@ def device_requires_attrs(
     Element attributes declaring the capabilities it needs from the
     device and, optionally, the in-app handlers that can stand in for a
     missing one. A missing capability without a loaded handler blocks
-    the action with an explanation instead (see device.js).
+    the action with an explanation instead (see device.js). Declare
+    handler-served requirements on the field itself, which is where the
+    handler looks for them.
     """
+    if not capabilities:
+        # An empty declaration would silently gate nothing.
+        raise ValueError( 'A device requirement needs at least one capability' )
     requires_attr = format_html(
         '{}="{}"',
         DIVID['DEVICE_REQUIRES_ATTR'],

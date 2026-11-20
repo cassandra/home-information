@@ -24,6 +24,10 @@ class TestDeviceRequiresAttrs( SimpleTestCase ):
         self.assertEqual( with_handlers,
                           'data-requires="keyboard" data-requires-handler="on-screen-keyboard"' )
 
+    def test_empty_declaration_fails( self ):
+        with self.assertRaises( ValueError ):
+            device_requires_attrs( [], handlers = [ DeviceRequirementHandler.ON_SCREEN_KEYBOARD ] )
+
 
 class TestDeviceRequiresAttrsTag( SimpleTestCase ):
 
@@ -34,10 +38,8 @@ class TestDeviceRequiresAttrsTag( SimpleTestCase ):
                                    handlers = [ DeviceRequirementHandler.ON_SCREEN_KEYBOARD ] ),
         )
 
-    def test_unknown_or_missing_names_fail( self ):
+    def test_unknown_names_fail( self ):
         with self.assertRaises( ValueError ):
             device_tags.device_requires_attrs( 'keybaord' )
         with self.assertRaises( ValueError ):
             device_tags.device_requires_attrs( 'keyboard', handlers = 'onscreen-keyboard' )
-        with self.assertRaises( ValueError ):
-            device_tags.device_requires_attrs( handlers = 'on-screen-keyboard' )

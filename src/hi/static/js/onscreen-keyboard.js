@@ -11,8 +11,9 @@
         this handler, and the device has no keyboard.
       - simple-keyboard only renders keys. This module owns all editing,
         so the field's value is the single source of truth.
-      - Edits fire "input"; leaving a field whose value changed fires
-        "change", since programmatic edits never trigger it natively.
+      - Edits fire "input"; leaving a field whose value changed, or
+        pressing Enter in an input, fires "change", since programmatic
+        edits never trigger it natively.
       - Enter first dispatches a cancelable keydown, as existing handlers
         may suppress it. Otherwise: newline in a textarea, or the
         browser's implicit form submission.
@@ -130,7 +131,7 @@
     let _valueAtEngage = null;
     let _layoutName = LAYOUT_NAME.DEFAULT;
     let _isPointerDown = false;
-    let _deferredHide = null;    // { timer } while hiding waits for a click
+    let _deferredHide = null;    // { fallbackTimer, clickTimer } while hiding waits for a click
 
     function _isServed( element ) {
         if ( element instanceof HTMLInputElement ) {
@@ -168,9 +169,19 @@
         const field = _field;
         _field = null;
         _deferHide();
-        if ( field.isConnected && ( field.value !== _valueAtEngage )) {
-            field.dispatchEvent( new Event( 'change', { bubbles: true } ));
+        if ( field.isConnected ) {
+            _commitChange( field );
         }
+    }
+
+    // Programmatic edits never fire change natively, so fire it where a
+    // physical keyboard would: on leaving the field, and on Enter.
+    function _commitChange( field ) {
+        if ( field.value === _valueAtEngage ) {
+            return;
+        }
+        _valueAtEngage = field.value;
+        field.dispatchEvent( new Event( 'change', { bubbles: true } ));
     }
 
     /* Keyboard display */
@@ -232,7 +243,7 @@
 
     function _deferHide() {
         _cancelDeferredHide();
-        _deferredHide = { timer: null };
+        _deferredHide = { fallbackTimer: null, clickTimer: null };
         document.addEventListener( 'click', _onDeferredHideClick, true );
         if ( ! _isPointerDown ) {
             _startDeferredHideFallback();
@@ -240,17 +251,19 @@
     }
 
     function _startDeferredHideFallback() {
-        _deferredHide.timer = setTimeout( _completeDeferredHide, DEFERRED_HIDE_FALLBACK_MS );
+        _deferredHide.fallbackTimer = setTimeout( _completeDeferredHide, DEFERRED_HIDE_FALLBACK_MS );
     }
 
     // Capture phase runs before the click's own handlers; hide after them.
     function _onDeferredHideClick() {
-        setTimeout( _completeDeferredHide, 0 );
+        if ( _deferredHide.clickTimer === null ) {
+            _deferredHide.clickTimer = setTimeout( _completeDeferredHide, 0 );
+        }
     }
 
     function _onPointerReleased() {
         _isPointerDown = false;
-        if ( _deferredHide && ( _deferredHide.timer === null )) {
+        if ( _deferredHide && ( _deferredHide.fallbackTimer === null )) {
             _startDeferredHideFallback();
         }
     }
@@ -265,7 +278,8 @@
         if ( ! _deferredHide ) {
             return;
         }
-        clearTimeout( _deferredHide.timer );
+        clearTimeout( _deferredHide.fallbackTimer );
+        clearTimeout( _deferredHide.clickTimer );
         document.removeEventListener( 'click', _onDeferredHideClick, true );
         _deferredHide = null;
     }
@@ -399,6 +413,7 @@
             _insertText( field, '\n' );
             return;
         }
+        _commitChange( field );
         _submitImplicitly( field.form );
     }
 
@@ -425,12 +440,10 @@
         }
     }
 
+    // form.elements never lists input[type=image], so it is not considered.
     function _isSubmitButton( control ) {
-        if ( control instanceof HTMLButtonElement ) {
-            return control.type === 'submit';
-        }
-        return ( control instanceof HTMLInputElement )
-            && (( control.type === 'submit' ) || ( control.type === 'image' ));
+        return (( control instanceof HTMLButtonElement ) || ( control instanceof HTMLInputElement ))
+            && ( control.type === 'submit' );
     }
 
     /* Wiring */
@@ -446,6 +459,10 @@
     document.addEventListener( 'focusin', function( event ) {
         if ( _isServed( event.target )) {
             _engage( event.target );
+        } else if ( _field ) {
+            // The field lost focus without focusout, as when it is removed
+            // from the page (browsers differ on firing it then).
+            _disengage();
         }
     });
 

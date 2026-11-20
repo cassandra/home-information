@@ -94,6 +94,20 @@ class DeviceCapabilitiesCodec:
                  if name in name_set ]
 
     @classmethod
+    def capability_for_name( cls, name : str ) -> DeviceCapability:
+        """ Strict, for declarations in code and templates: unknown names raise. """
+        if name not in cls.NAME_TO_CAPABILITY:
+            raise ValueError( f'Unknown device capability name: {name}' )
+        return cls.NAME_TO_CAPABILITY[ name ]
+
+    @classmethod
+    def handler_for_name( cls, name : str ) -> DeviceRequirementHandler:
+        """ Strict, for declarations in code and templates: unknown names raise. """
+        if name not in cls.NAME_TO_HANDLER:
+            raise ValueError( f'Unknown device requirement handler name: {name}' )
+        return cls.NAME_TO_HANDLER[ name ]
+
+    @classmethod
     def from_cookie_value( cls, cookie_value : Optional[ str ] ) -> DeviceCapabilities:
         """ Malformed or unrecognized entries are ignored. """
         declared = dict()

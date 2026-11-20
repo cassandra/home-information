@@ -12,6 +12,12 @@
         "on-screen-keyboard"). A handler module registers itself, and the
         capability it stands in for, when it loads; a declared handler
         that never registered meets nothing.
+      - Scope differs by purpose. The click gate honors the nearest
+        declaring ancestor (e.g. a link wrapping an icon). A handler acts
+        only on an element that itself declares the requirement and the
+        handler (isHandlerActiveFor), so declare handler-served
+        requirements on the field, not on a container: a container
+        declaration would pass the gate yet never engage the handler.
       - A requirement is unmet when the device lacks the capability and
         no declared, registered handler stands in for it.
       - Capture-phase listeners block any such action when a requirement
@@ -46,14 +52,14 @@
     window.Hi.device = HiDevice;
 
     // Handler name -> the capability name it stands in for.
-    const _handlerCapabilities = {};
+    const _handlerCapabilities = new Map();
 
     function _isAvailable( capabilityName ) {
         return Hi.deviceCapabilities[capabilityName] !== false;
     }
 
     function _registerHandler( handlerName, capabilityName ) {
-        _handlerCapabilities[handlerName] = capabilityName;
+        _handlerCapabilities.set( handlerName, capabilityName );
     }
 
     function _parseNames( attrValue ) {
@@ -63,10 +69,10 @@
     function _getHandledCapabilities( handlersValue ) {
         return _parseNames( handlersValue )
             .filter( function( handlerName ) {
-                return Object.prototype.hasOwnProperty.call( _handlerCapabilities, handlerName );
+                return _handlerCapabilities.has( handlerName );
             })
             .map( function( handlerName ) {
-                return _handlerCapabilities[handlerName];
+                return _handlerCapabilities.get( handlerName );
             });
     }
 
@@ -82,10 +88,10 @@
     // the handler, requires the capability the handler stands in for, and
     // the device lacks that capability.
     function _isHandlerActiveFor( handlerName, element ) {
-        if ( ! Object.prototype.hasOwnProperty.call( _handlerCapabilities, handlerName )) {
+        if ( ! _handlerCapabilities.has( handlerName )) {
             return false;
         }
-        const capabilityName = _handlerCapabilities[handlerName];
+        const capabilityName = _handlerCapabilities.get( handlerName );
         return _parseNames( element.getAttribute( Hi.DEVICE_REQUIRES_HANDLER_ATTR )).includes( handlerName )
             && _parseNames( element.getAttribute( Hi.DEVICE_REQUIRES_ATTR )).includes( capabilityName )
             && ! _isAvailable( capabilityName );
