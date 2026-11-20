@@ -84,6 +84,11 @@ class SigninMagicCodeView( View ):
 
     TEMPLATE_NAME = 'user/pages/magic_code_signin.html'
 
+    ERROR_MESSAGES = {
+        MagicCodeStatus.INVALID: 'Invalid access code.',
+        MagicCodeStatus.EXPIRED: 'Access code has expired.',
+    }
+
     def get_response( self,
                       request          : HttpRequest,
                       magic_code_form  : forms.SigninMagicCodeForm,
@@ -103,32 +108,27 @@ class SigninMagicCodeView( View ):
 
         email_address = magic_code_form.cleaned_data.get('email_address')
         magic_code = magic_code_form.cleaned_data.get('magic_code')
-        
-        User = get_user_model()
-        try:
-            existing_user = User.objects.get( email = email_address )
-        except User.DoesNotExist:
-            raise BadRequest( 'Email is invalid.' )
 
+        # Every failure, including a nonexistent account, must produce the
+        # same response so as not to reveal which email addresses have accounts.
         magic_code_generator = MagicCodeGenerator()
-        magic_code_status = magic_code_generator.check_magic_code( request, magic_code = magic_code )
+        magic_code_status = magic_code_generator.check_magic_code(
+            request,
+            email_address = email_address,
+            magic_code = magic_code,
+        )
+        existing_user = None
+        if magic_code_status == MagicCodeStatus.VALID:
+            existing_user = get_user_model().objects.filter( email = email_address ).first()
+            if not existing_user:
+                magic_code_status = MagicCodeStatus.INVALID
 
-        if magic_code_status == MagicCodeStatus.INVALID:
-            error_message = 'Invalid access code.'
-        elif magic_code_status == MagicCodeStatus.EXPIRED:
-            error_message = 'Access code has expired.'
-        elif magic_code_status == MagicCodeStatus.VALID:
-            error_message = None
-        else:
-            error_message = 'Access code generated an unexpected error.'
+        logger.debug( f'Signin Magic: Email={email_address}, Status={magic_code_status}' )
 
-        logger.debug( f'Signin Magic: Email={email_address}, Code={magic_code}, Status={magic_code_status}' )
-
+        error_message = self.ERROR_MESSAGES.get( magic_code_status )
         if error_message:
             magic_code_form.add_error( 'magic_code', error_message )
             return self.get_response( request, magic_code_form = magic_code_form, status = 400 )
-        
-        logger.debug( f'Signin Magic: Email={email_address}, Code={magic_code}, Status={magic_code_status}' )
 
         request.user = existing_user
         SigninManager().do_login( request = request, verified_email = True )

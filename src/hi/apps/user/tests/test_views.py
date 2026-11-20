@@ -202,15 +202,66 @@ class TestSigninMagicCodeView(SyncViewTestCase):
 
         self.assertEqual(response.status_code, 400)
 
-    def test_post_nonexistent_user(self):
-        """Test POST request with nonexistent user email."""
+    def _issue_session_magic_code(self, email_address):
+        """Store a magic code in the client session, as the signin step would."""
+        session = self.client.session
+        session[MagicCodeGenerator.MAGIC_CODE] = 'abcdef'
+        session[MagicCodeGenerator.MAGIC_CODE_TIMESTAMP] = MagicCodeGenerator.get_elapsed_seconds()
+        session[MagicCodeGenerator.MAGIC_CODE_EMAIL] = email_address
+        session.save()
+        return 'abcdef'
+
+    def _assert_invalid_code_response(self, response):
+        self.assertEqual(response.status_code, 400)
+        self.assertTemplateRendered(response, 'user/pages/magic_code_signin.html')
+        self.assertContains(response, 'Invalid access code.', status_code=400)
+        self.assertNotIn('_auth_user_id', self.client.session)
+
+    def test_post_nonexistent_user_matches_invalid_code_response(self):
+        """Test a nonexistent account is indistinguishable from a bad code."""
         url = reverse('user_signin_magic_code')
         response = self.client.post(url, {
             'email_address': 'nonexistent@example.com',
-            'magic_code': '123456'
+            'magic_code': 'abcdef'
         })
 
-        self.assertEqual(response.status_code, 400)
+        self._assert_invalid_code_response(response)
+
+    def test_post_without_session_code_is_rejected(self):
+        """Test posting a code when none was issued gives the form error, not a server error."""
+        url = reverse('user_signin_magic_code')
+        response = self.client.post(url, {
+            'email_address': self.user.email,
+            'magic_code': 'abcdef'
+        })
+
+        self._assert_invalid_code_response(response)
+
+    def test_post_code_issued_for_other_email_is_rejected(self):
+        """Test a valid code cannot be used to sign in as a different account."""
+        other_user = User.objects.create_user(email='other@example.com', password='x')
+        magic_code = self._issue_session_magic_code(other_user.email)
+
+        url = reverse('user_signin_magic_code')
+        response = self.client.post(url, {
+            'email_address': self.user.email,
+            'magic_code': magic_code
+        })
+
+        self._assert_invalid_code_response(response)
+
+    def test_post_code_for_matching_email_signs_in(self):
+        """Test a code submitted with the email it was issued for signs in that user."""
+        magic_code = self._issue_session_magic_code(self.user.email)
+
+        url = reverse('user_signin_magic_code')
+        response = self.client.post(url, {
+            'email_address': self.user.email,
+            'magic_code': magic_code
+        })
+
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(int(self.client.session['_auth_user_id']), self.user.id)
 
     @patch.object(MagicCodeGenerator, 'check_magic_code')
     def test_post_invalid_magic_code(self, mock_check_code):

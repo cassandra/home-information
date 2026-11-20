@@ -18,26 +18,31 @@ class MagicCodeGenerator:
     """ 
     Used to generate and validate one-time login codes for password-less logins.
 
-    Uses sessions to store code to be validated from user input.
+    Uses sessions to store code to be validated from user input. The code is
+    bound to the email address it was sent to, so a code is only valid when
+    submitted with that same email address.
 
     Usage:
         Generate:
             magic_code_generator = MagicCodeGenerator()
-            magic_code = magic_code_generator.make_magic_code( request )
+            magic_code = magic_code_generator.make_magic_code( request, email_address = email_address )
             <email magic code to user>
             <show a form to user to accept magic code entry>
 
         Validate:
             magic_code = <user submits form with magic code they entered>
             magic_code_generator = MagicCodeGenerator()
-            is_valid = magic_code_generator.check_magic_code( request, magic_code = magic_code )
-            if is_valid:
+            status = magic_code_generator.check_magic_code( request,
+                                                             email_address = email_address,
+                                                             magic_code = magic_code )
+            if status == MagicCodeStatus.VALID:
                 magic_code_generator.expire_magic_code( request )
 
     """
 
     MAGIC_CODE = 'magic_code'
     MAGIC_CODE_TIMESTAMP = 'magic_code_timestamp'
+    MAGIC_CODE_EMAIL = 'magic_code_email'
 
     MAGIC_CODE_TIMEOUT_SECS = settings.PASSWORD_RESET_TIMEOUT
     MAGIC_CODE_CHARS = 'abcdefhkpqrstwxy'
@@ -45,7 +50,7 @@ class MagicCodeGenerator:
     
     BASE_DATETIME = timezone.make_aware( datetime(2001, 1, 1) )
     
-    def make_magic_code( self, request ):
+    def make_magic_code( self, request, email_address : str ):
 
         magic_code = get_random_string( length = self.MAGIC_CODE_LENGTH,
                                         allowed_chars = self.MAGIC_CODE_CHARS )
@@ -53,14 +58,20 @@ class MagicCodeGenerator:
 
         request.session[self.MAGIC_CODE] = magic_code
         request.session[self.MAGIC_CODE_TIMESTAMP] = magic_code_origin_timestamp
+        request.session[self.MAGIC_CODE_EMAIL] = email_address
         
         return magic_code
 
-    def check_magic_code( self, request, magic_code ) -> MagicCodeStatus:
+    def check_magic_code( self, request, email_address : str, magic_code : str ) -> MagicCodeStatus:
+
+        expected_magic_code = request.session.get( self.MAGIC_CODE )
+        if not expected_magic_code:
+            return MagicCodeStatus.INVALID
+
+        if email_address != request.session.get( self.MAGIC_CODE_EMAIL ):
+            return MagicCodeStatus.INVALID
 
         magic_code = re.sub( r'[\-\s]', '', magic_code )
-        
-        expected_magic_code = request.session.get( self.MAGIC_CODE )
         if magic_code.lower() != expected_magic_code.lower():
             return MagicCodeStatus.INVALID
         
@@ -76,6 +87,7 @@ class MagicCodeGenerator:
     def expire_magic_code( self, request ):
         request.session[self.MAGIC_CODE] = None
         request.session[self.MAGIC_CODE_TIMESTAMP] = None
+        request.session[self.MAGIC_CODE_EMAIL] = None
         return
 
     @classmethod

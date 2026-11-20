@@ -47,7 +47,9 @@ class TestUserAuthenticationData(BaseTestCase):
         
         # Verify generators were called correctly
         mock_token_generator.make_token.assert_called_once_with(user=self.user)
-        mock_magic_generator.make_magic_code.assert_called_once_with(request)
+        mock_magic_generator.make_magic_code.assert_called_once_with(
+            request, email_address='test@example.com',
+        )
 
     @patch('hi.apps.user.transient_models.MagicCodeGenerator')
     @patch('hi.apps.user.transient_models.PasswordResetTokenGenerator')
