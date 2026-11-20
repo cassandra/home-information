@@ -283,6 +283,7 @@ PIPELINE = {
         'css_onscreen_keyboard': {
             'source_filenames': (
                 'css/simple-keyboard-3.8.206.css',
+                'css/onscreen-keyboard.css',
             ),
             'output_filename': 'css/css_onscreen_keyboard.css',
         },
@@ -353,6 +354,7 @@ PIPELINE = {
         'js_onscreen_keyboard': {
             'source_filenames': (
                 'js/simple-keyboard-3.8.206.min.js',
+                'js/onscreen-keyboard.js',
             ),
             'output_filename': 'js/js_onscreen_keyboard.js',
         },

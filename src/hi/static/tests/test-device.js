@@ -88,6 +88,29 @@
             assert.deepEqual( Hi.device.getUnmetRequirements( 'local_files browser_nav' ), [] );
         });
 
+        QUnit.test('isHandlerActiveFor needs the declaration, the requirement and the missing capability', function(assert) {
+            function element( requiresValue, handlersValue ) {
+                const el = document.createElement( 'input' );
+                el.setAttribute( Hi.DEVICE_REQUIRES_ATTR, requiresValue );
+                el.setAttribute( Hi.DEVICE_REQUIRES_HANDLER_ATTR, handlersValue );
+                return el;
+            }
+            assert.ok( Hi.device.isHandlerActiveFor( 'test-files-handler',
+                                                     element( 'local_files', 'test-files-handler' )));
+            assert.notOk( Hi.device.isHandlerActiveFor( 'test-files-handler',
+                                                        element( 'local_files', 'other-handler' )),
+                          'handler not declared' );
+            assert.notOk( Hi.device.isHandlerActiveFor( 'test-files-handler',
+                                                        element( 'browser_nav', 'test-files-handler' )),
+                          'its capability not required' );
+            assert.notOk( Hi.device.isHandlerActiveFor( 'test-keyboard-handler',
+                                                        element( 'keyboard', 'test-keyboard-handler' )),
+                          'capability present' );
+            assert.notOk( Hi.device.isHandlerActiveFor( 'test-unregistered-handler',
+                                                        element( 'local_files', 'test-unregistered-handler' )),
+                          'handler not registered' );
+        });
+
         QUnit.test('click is blocked and modal requested when a capability is missing', function(assert) {
             const result = clickRequiring( 'keyboard local_files' );
             assert.notOk( result.actionRan, 'element click handler did not run' );

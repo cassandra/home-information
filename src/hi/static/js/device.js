@@ -37,6 +37,9 @@
         },
         getUnmetRequirements: function( requiresValue, handlersValue ) {
             return _getUnmetRequirements( requiresValue, handlersValue );
+        },
+        isHandlerActiveFor: function( handlerName, element ) {
+            return _isHandlerActiveFor( handlerName, element );
         }
     };
 
@@ -73,6 +76,19 @@
             return ! _isAvailable( capabilityName )
                 && ! handledCapabilities.includes( capabilityName );
         });
+    }
+
+    // True when the element relies on this handler right now: it declares
+    // the handler, requires the capability the handler stands in for, and
+    // the device lacks that capability.
+    function _isHandlerActiveFor( handlerName, element ) {
+        if ( ! Object.prototype.hasOwnProperty.call( _handlerCapabilities, handlerName )) {
+            return false;
+        }
+        const capabilityName = _handlerCapabilities[handlerName];
+        return _parseNames( element.getAttribute( Hi.DEVICE_REQUIRES_HANDLER_ATTR )).includes( handlerName )
+            && _parseNames( element.getAttribute( Hi.DEVICE_REQUIRES_ATTR )).includes( capabilityName )
+            && ! _isAvailable( capabilityName );
     }
 
     function _showUnavailableModal( unmetRequirements ) {
