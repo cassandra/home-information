@@ -7,6 +7,7 @@ from hi.apps.common.utils import is_blank, str_to_bool
 
 from .enums import AttributeType, AttributeValueType
 from .thumbnail import AttributeThumbnail
+from .crypto import encrypt_value, decrypt_value
 
 
 class RegularAttributeBaseFormSet(forms.BaseInlineFormSet):
@@ -103,6 +104,10 @@ class AttributeForm( forms.ModelForm ):
         # For boolean attributes, keep string field but set initial as string consistently  
         if instance and instance.value_type.is_boolean:
             self.initial['value'] = str(str_to_bool(instance.value))
+
+        if instance and instance.value_type.is_secret:
+            if instance.value:
+                self.initial['value'] = decrypt_value(instance.value)
             
         for field in self.fields.values():
             if self._show_as_editable or ( instance and instance.is_editable ):
@@ -197,6 +202,7 @@ class AttributeForm( forms.ModelForm ):
 
             if self.cleaned_data.get('secret'):
                 instance.value_type_str = str( AttributeValueType.SECRET )
+                instance.value = encrypt_value(instance.value)
             else:
                 instance.value_type_str = str(AttributeValueType.TEXT)
 
