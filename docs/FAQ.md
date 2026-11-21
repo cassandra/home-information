@@ -45,7 +45,7 @@ We also provide some helper scripts [Helper Scripts README](../scripts/README.md
 ## Technical Requirements
 
 ### Q: What devices can I use to access it?
-**A:** Any device with a modern web browser: computers, tablets, smartphones. The interface works especially well on tablets as a dedicated home management display.
+**A:** Any device with a modern web browser: computers, tablets, smartphones. The interface works especially well on tablets as a dedicated home management display. For an always-on display, see [Kiosk Setup](KioskSetup.md).
 
 ### Q: Does it require internet access?
 **A:** Core functionality works completely offline. Internet access is only needed for weather data, email alerts, and if you choose to integrate with cloud-based services. The system is designed to gracefully handle internet outages.

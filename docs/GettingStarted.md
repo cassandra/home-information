@@ -107,9 +107,9 @@ In the editor, you can swap out the default property/house images for your own c
 
 ### Alert Sounds
 
-For features that use sounds (e.g., alerts), this allows toggling to mute and unmute.  The alert sounds are considered "auto-play" by browsers, so you may need to allow this in the browser in order to hear the alert sounds.  If you see "blocked' on this button, click it to see more info about fixing it.
+For features that use sounds (e.g., alerts), this allows toggling to mute and unmute.  The alert sounds are considered "auto-play" by browsers, so you may need to allow this in the browser in order to hear the alert sounds.  If you see "Blocked" on this button, click it to see more info about fixing it. For a display that should always play alerts, see [Kiosk Setup](KioskSetup.md).
 
 ### Locking Feature
 
-When visitors are in your house, be they friends, acquaintances, service or maintenance people, you may want to temporarily lock the screen so they cannot access the information you've stored. To unlock, it uses a password you set the first time you lock the screen.  This is is just a light security convenience against casual snooping. Locking the device itself is better protection.
+When visitors are in your house, be they friends, acquaintances, service or maintenance people, you may want to temporarily lock the screen so they cannot access the information you've stored. To unlock, enter a 4-digit PIN on the on-screen keypad. You set the PIN the first time you lock the screen.  This is just a light security convenience against casual snooping. Locking the device itself is better protection.
 
