@@ -4,6 +4,8 @@
  * Tests capability gating of actions marked with Hi.DEVICE_REQUIRES_ATTR:
  * - which required capabilities count as unmet, including handlers
  *   declared via Hi.DEVICE_REQUIRES_HANDLER_ATTR standing in for them
+ * - text-entry controls require the keyboard by default, and how that
+ *   default combines with explicit and ancestor declarations
  * - the capture-phase click listener blocks only when one is unmet
  */
 
@@ -141,6 +143,90 @@
         QUnit.test('click proceeds when all required capabilities are present', function(assert) {
             const result = clickRequiring( 'keyboard' );
             assert.ok( result.actionRan, 'element click handler ran' );
+            assert.notOk( result.defaultPrevented, 'default action not prevented' );
+            assert.equal( requestedUrls.length, 0, 'no modal request' );
+        });
+
+        function createControl( tagName, attrs = {}, parent = null ) {
+            const control = document.createElement( tagName );
+            Object.keys( attrs ).forEach( function( name ) {
+                control.setAttribute( name, attrs[name] );
+            });
+            ( parent || document.getElementById( 'qunit-fixture' )).appendChild( control );
+            return control;
+        }
+
+        function click( element ) {
+            const notCanceled = element.dispatchEvent(
+                new MouseEvent( 'click', { bubbles: true, cancelable: true } )
+            );
+            return { defaultPrevented: ! notCanceled };
+        }
+
+        QUnit.test('text-entry controls require the keyboard by default', function(assert) {
+            Hi.deviceCapabilities.keyboard = false;
+            [ 'text', 'email', 'password', 'search', 'url', 'tel' ].forEach( function( type ) {
+                assert.deepEqual( Hi.device.getUnmetRequirementsFor( createControl( 'input', { type: type } )),
+                                  [ 'keyboard' ], type );
+            });
+            assert.deepEqual( Hi.device.getUnmetRequirementsFor( createControl( 'input' )),
+                              [ 'keyboard' ], 'input without a type is text' );
+            assert.deepEqual( Hi.device.getUnmetRequirementsFor( createControl( 'textarea' )),
+                              [ 'keyboard' ], 'textarea' );
+        });
+
+        QUnit.test('controls not used for typing have no default requirement', function(assert) {
+            Hi.deviceCapabilities.keyboard = false;
+            assert.deepEqual( Hi.device.getUnmetRequirementsFor(
+                createControl( 'input', { type: 'text', disabled: '' } )), [], 'disabled' );
+            assert.deepEqual( Hi.device.getUnmetRequirementsFor(
+                createControl( 'textarea', { readonly: '' } )), [], 'read-only' );
+            assert.deepEqual( Hi.device.getUnmetRequirementsFor(
+                createControl( 'input', { type: 'number' } )), [], 'number has step arrows' );
+            assert.deepEqual( Hi.device.getUnmetRequirementsFor(
+                createControl( 'input', { type: 'checkbox' } )), [], 'checkbox' );
+            assert.deepEqual( Hi.device.getUnmetRequirementsFor(
+                createControl( 'input', { type: 'hidden' } )), [], 'hidden' );
+            assert.deepEqual( Hi.device.getUnmetRequirementsFor( createControl( 'div' )), [], 'div' );
+        });
+
+        QUnit.test('a control\'s own declaration replaces the default', function(assert) {
+            Hi.deviceCapabilities.keyboard = false;
+            const served = createControl( 'input', {
+                type: 'email',
+                [Hi.DEVICE_REQUIRES_ATTR]: 'keyboard',
+                [Hi.DEVICE_REQUIRES_HANDLER_ATTR]: 'test-keyboard-handler'
+            });
+            assert.deepEqual( Hi.device.getUnmetRequirementsFor( served ), [], 'handler stands in' );
+            const filesOnly = createControl( 'input', { [Hi.DEVICE_REQUIRES_ATTR]: 'local_files' } );
+            assert.deepEqual( Hi.device.getUnmetRequirementsFor( filesOnly ), [ 'local_files' ] );
+        });
+
+        QUnit.test('a control\'s default comes before a declaring ancestor', function(assert) {
+            const container = createControl( 'div', { [Hi.DEVICE_REQUIRES_ATTR]: 'local_files' } );
+            const textInput = createControl( 'input', { type: 'text' }, container );
+            const checkbox = createControl( 'input', { type: 'checkbox' }, container );
+            assert.deepEqual( Hi.device.getUnmetRequirementsFor( textInput ), [], 'keyboard present' );
+            assert.deepEqual( Hi.device.getUnmetRequirementsFor( checkbox ), [ 'local_files' ],
+                              'no default, so the ancestor applies' );
+        });
+
+        QUnit.test('clicking a text field without a keyboard is blocked and blurs it', function(assert) {
+            Hi.deviceCapabilities.keyboard = false;
+            const textInput = createControl( 'input', { type: 'text' } );
+            textInput.focus();
+            const result = click( textInput );
+            assert.ok( result.defaultPrevented, 'default action prevented' );
+            assert.notEqual( document.activeElement, textInput, 'field blurred' );
+            assert.equal( requestedUrls.length, 1, 'one modal request' );
+            assert.equal( requestedUrls[0],
+                          Hi.DEVICE_CAPABILITY_UNAVAILABLE_URL
+                          + '?' + Hi.DEVICE_REQUIRES_FIELD + '=keyboard' );
+        });
+
+        QUnit.test('clicking a text field with a keyboard proceeds', function(assert) {
+            const textarea = createControl( 'textarea' );
+            const result = click( textarea );
             assert.notOk( result.defaultPrevented, 'default action not prevented' );
             assert.equal( requestedUrls.length, 0, 'no modal request' );
         });
