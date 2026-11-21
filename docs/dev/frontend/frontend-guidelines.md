@@ -296,6 +296,7 @@ def test_modal_view_async_request(self):
 - Mock internal Django components
 
 ## Related Documentation
+- Device capabilities (keyboardless and kiosk devices): [Device Capabilities](device-capabilities.md)
 - Icon system: [Icon System](icon-system.md)
 - Style guidelines: [Style Guidelines](style-guidelines.md)
 - Template conventions: [Template Conventions](template-conventions.md)
