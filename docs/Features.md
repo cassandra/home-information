@@ -116,9 +116,9 @@ Home Information provides comprehensive tools for organizing, monitoring, and co
 
 ### Screen Management
 - **Sleep mode** - dim the interface for always-on displays without disrupting functionality
-- **Screen lock** - temporary password protection for when visitors are present
+- **Screen lock** - 4-digit PIN lock, entered on an on-screen keypad, for when visitors are present
 - **Sound controls** - mute/unmute alerts and system sounds
-- **Always-on friendly** - designed for dedicated home displays
+- **Always-on friendly** - designed for dedicated home displays (see [Kiosk Setup](KioskSetup.md))
 
 ### Editing & Administration
 - **Visual editing mode** - drag and drop items, resize, and reshape areas

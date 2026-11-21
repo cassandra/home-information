@@ -119,6 +119,7 @@ For technical details, see our [Development Documentation](docs/Development.md).
 - [Layout Editor](docs/Editing.md) - Show how to use the layout editor
 - [Integrations](docs/Integrations.md) - Home Assistant, Frigate, Paperless-ngx, Immich, HomeBox and ZoneMinder setup
 - [Deployment Options](docs/Deployment.md) - Network access, custom compose stacks, production configuration
+- [Kiosk Setup](docs/KioskSetup.md) - Always-on displays: requirements, device capabilities, use without a keyboard
 - [FAQ](docs/FAQ.md) - Common questions and answers
 
 ### Contributors  
