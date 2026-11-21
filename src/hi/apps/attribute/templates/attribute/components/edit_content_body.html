@@ -1,4 +1,4 @@
-{% load icons static %}
+{% load icons static device_tags %}
 {% comment %}
 Generic V2 Content Body Fragment
 Contains the main content area - used by both initial load and updates
@@ -94,7 +94,7 @@ by using the AttributeItemEditContext pattern.
         {% block file_upload_button %}
         <button type="button"
                 class="btn btn-sm btn-outline-primary mb-0"
-                {{ DIVID.DEVICE_REQUIRES_ATTR }}="local_files"
+                {% device_requires_attrs 'local_files' %}
                 onclick="window.Hi.attr.showAddFile(this, '{{ attr_item_context.file_input_html_id }}');">
           {% icon "upload" size="sm" css_class="hi-icon-left" %}Add File
         </button>
@@ -103,6 +103,7 @@ by using the AttributeItemEditContext pattern.
         <button id="{{ attr_item_context.add_attribute_button_html_id }}"
                 type="button"
                 class="btn btn-sm btn-outline-primary"
+                {% device_requires_attrs 'keyboard' %}
                 onclick="window.Hi.attr.showAddAttribute('#{{ attr_page_context.container_html_id }}');">
           {% icon "plus" size="sm" css_class="hi-icon-left" %}Add Info
         </button>

@@ -35,8 +35,7 @@
         while the viewer is open, such as the device's "not available"
         message, is raised above the viewer, and keys are left to it.
         When it closes, focus returns to the viewer (antinode would
-        otherwise focus an [autofocus] element behind it) and the modal
-        underneath keeps its scrolling (Bootstrap clears modal-open).
+        otherwise focus an [autofocus] element behind it).
       - The alert banner stays above the viewer, which starts below it
         while it shows (TOP_INSET_PROPERTY) so it never covers Close.
     */
@@ -103,7 +102,6 @@
     // Larger text files are not worth reading into the page.
     const TEXT_MAX_BYTES = 1024 * 1024;
 
-    const BOOTSTRAP_MODAL_OPEN_CLASS = 'modal-open';
     const MODAL_SELECTOR = '.modal';
 
     const FOCUSABLE_SELECTOR = 'a[href], button, video, audio, [tabindex="0"]';
@@ -583,9 +581,6 @@
             return;
         }
         modalElement.classList.remove( ABOVE_VIEWER_CLASS );
-        if ( document.querySelector( SHOWN_MODAL_SELECTOR )) {
-            document.body.classList.add( BOOTSTRAP_MODAL_OPEN_CLASS );
-        }
         if ( _session ) {
             _closeButton().focus();
         }

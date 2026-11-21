@@ -2,6 +2,7 @@
 {% load common_tags %}
 {% load attribute_extras %}
 {% load static %}
+{% load device_tags %}
   
 {% comment %}
 V2 Attribute Card Component
@@ -89,6 +90,7 @@ Individual attribute attribute card with value editing and actions
           <button type="button"
                   class="btn btn-sm btn-outline-secondary"
                   title="Edit value"
+                  {% device_requires_attrs 'keyboard' %}
                   onclick="Hi.attr.enterAttributeEditMode(this)">
             {% icon "edit" size="sm" %}
           </button>

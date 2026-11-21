@@ -1,6 +1,9 @@
+{% load device_tags %}
 {% comment %}
 Float Attribute Value Component
-Renders a number input for float attributes
+Renders a number input for float attributes. Unlike integers, it requires
+the keyboard explicitly: with step="any" the step arrows move by 1 whatever
+the range, so they cannot stand in for typing (see device.js).
 {% endcomment %}
 
 <div class="attr-v2-float-value">
@@ -11,6 +14,7 @@ Renders a number input for float attributes
          class="form-control"
          value="{{ attribute_form.value.value|default_if_none:'' }}"
          step="any"
+         {% device_requires_attrs 'keyboard' %}
          {% if bounds %}min="{{ bounds.0 }}" max="{{ bounds.1 }}"{% endif %}
          {% if attribute_form.instance and not attribute_form.instance.is_editable %}disabled="true"{% endif %} />
   {% endwith %}

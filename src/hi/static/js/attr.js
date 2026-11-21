@@ -1458,7 +1458,19 @@
         if (selection && !selection.isCollapsed) {
             return;
         }
+        // Don't enter edit mode if the device cannot type into the field.
+        // The value then reads like a read-only one; the edit (pencil)
+        // button is where the device limitation is explained.
+        if (!_canTypeIntoTextEditField(event.currentTarget)) {
+            return;
+        }
         _enterTextEditMode(event.currentTarget);
+    }
+
+    function _canTypeIntoTextEditField(readContent) {
+        const wrapper = readContent.closest(Hi.ATTR_V2_TEXT_VALUE_WRAPPER_SELECTOR);
+        const editField = wrapper ? wrapper.querySelector(Hi.ATTR_V2_TEXT_EDIT_FIELD_SELECTOR) : null;
+        return !editField || Hi.device.getUnmetRequirementsFor(editField).length === 0;
     }
 
     function _enterTextEditMode(button) {

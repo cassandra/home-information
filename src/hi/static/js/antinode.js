@@ -1191,6 +1191,11 @@ jQuery(function($) {
     });
     $('body').on('hidden.bs.modal', '.modal', function() {
         handleModalHiddenEvent( $(this) );
+        // Bootstrap clears modal-open whenever any modal hides, even one
+        // stacked above another; a modal still shown needs it to scroll.
+        if ( $('.modal.show').length > 0 ) {
+            $('body').addClass('modal-open');
+        }
         $('body').find('[autofocus]').focus();
     });
 

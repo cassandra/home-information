@@ -18,6 +18,15 @@
         handler (isHandlerActiveFor), so declare handler-served
         requirements on the field, not on a container: a container
         declaration would pass the gate yet never engage the handler.
+      - Text-entry controls (KEYBOARD_ENTRY_INPUT_TYPES and textarea)
+        that declare nothing themselves require the keyboard by default,
+        unless disabled or read-only. A control's own declaration
+        replaces the default (e.g. to name the on-screen keyboard
+        handler); otherwise its default comes before any declaring
+        ancestor. getUnmetRequirementsFor resolves this for an element,
+        so other modules can ask before acting on a field
+        programmatically (e.g. focusing it), which the click gate never
+        sees.
       - A requirement is unmet when the device lacks the capability and
         no declared, registered handler stands in for it.
       - Capture-phase listeners block any such action when a requirement
@@ -26,13 +35,23 @@
         handlers, default link navigation and antinode async actions.
         Being registered from js_before_content, it also runs before
         document-level capture listeners registered later (e.g.
-        attr-unsaved-guard.js).
+        attr-unsaved-guard.js). A tap focuses a control before its click
+        arrives, so a blocked element that has focus is blurred.
       - Middle-click opens links in a new tab via auxclick, not click, so
         that is gated too. Browser-native long-press "open in new tab"
         menus cannot be intercepted reliably.
     */
 
     const MIDDLE_MOUSE_BUTTON = 1;
+    const KEYBOARD_CAPABILITY_NAME = 'keyboard';
+
+    // Input types whose value can only be typed. Others are operated
+    // through native controls: number has step arrows (rendered wherever
+    // a device lacks a system keyboard), and checkbox, range, date,
+    // color, etc. have their own.
+    const KEYBOARD_ENTRY_INPUT_TYPES = new Set([
+        'text', 'email', 'password', 'search', 'url', 'tel'
+    ]);
 
     const HiDevice = {
         isAvailable: function( capabilityName ) {
@@ -43,6 +62,9 @@
         },
         getUnmetRequirements: function( requiresValue, handlersValue ) {
             return _getUnmetRequirements( requiresValue, handlersValue );
+        },
+        getUnmetRequirementsFor: function( element ) {
+            return _getUnmetRequirementsFor( element );
         },
         isHandlerActiveFor: function( handlerName, element ) {
             return _isHandlerActiveFor( handlerName, element );
@@ -84,6 +106,42 @@
         });
     }
 
+    function _isKeyboardEntryControl( element ) {
+        const isEntryControl = ( element instanceof HTMLTextAreaElement )
+              || (( element instanceof HTMLInputElement )
+                  && KEYBOARD_ENTRY_INPUT_TYPES.has( element.type ));
+        return isEntryControl && ! element.disabled && ! element.readOnly;
+    }
+
+    function _hasDeclaration( element ) {
+        return element.hasAttribute( Hi.DEVICE_REQUIRES_ATTR );
+    }
+
+    // The element whose requirements govern actions on the given one:
+    // itself if it declares or has a default, else the nearest declaring
+    // ancestor, else null.
+    function _findRequiringElement( element ) {
+        if ( ! _hasDeclaration( element ) && _isKeyboardEntryControl( element )) {
+            return element;
+        }
+        return element.closest( '[' + Hi.DEVICE_REQUIRES_ATTR + ']' );
+    }
+
+    function _getUnmetRequirementsOf( requiringElement ) {
+        if ( ! _hasDeclaration( requiringElement )) {
+            return _getUnmetRequirements( KEYBOARD_CAPABILITY_NAME, null );
+        }
+        return _getUnmetRequirements(
+            requiringElement.getAttribute( Hi.DEVICE_REQUIRES_ATTR ),
+            requiringElement.getAttribute( Hi.DEVICE_REQUIRES_HANDLER_ATTR )
+        );
+    }
+
+    function _getUnmetRequirementsFor( element ) {
+        const requiringElement = _findRequiringElement( element );
+        return requiringElement ? _getUnmetRequirementsOf( requiringElement ) : [];
+    }
+
     // True when the element relies on this handler right now: it declares
     // the handler, requires the capability the handler stands in for, and
     // the device lacks that capability.
@@ -109,19 +167,19 @@
         if ( ! ( event.target instanceof Element )) {
             return;
         }
-        const requiringElement = event.target.closest( '[' + Hi.DEVICE_REQUIRES_ATTR + ']' );
+        const requiringElement = _findRequiringElement( event.target );
         if ( ! requiringElement ) {
             return;
         }
-        const unmetRequirements = _getUnmetRequirements(
-            requiringElement.getAttribute( Hi.DEVICE_REQUIRES_ATTR ),
-            requiringElement.getAttribute( Hi.DEVICE_REQUIRES_HANDLER_ATTR )
-        );
+        const unmetRequirements = _getUnmetRequirementsOf( requiringElement );
         if ( unmetRequirements.length === 0 ) {
             return;
         }
         event.preventDefault();
         event.stopImmediatePropagation();
+        if ( document.activeElement === requiringElement ) {
+            requiringElement.blur();
+        }
         _showUnavailableModal( unmetRequirements );
     }
 
