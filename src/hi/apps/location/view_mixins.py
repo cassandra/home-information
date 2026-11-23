@@ -16,7 +16,28 @@ from hi.hi_async_view import HiSideView
 class LocationViewMixin:
 
     LOCATION_VIEW_TEMPLATE_NAME = 'location/panes/location_view.html'
-    
+
+    # Query params that override a LocationView's stored geometry with the
+    # pan/zoom the user explored (see LocationViewView).
+    SVG_VIEW_BOX_PARAM_NAME = 'svg_view_box'
+    SVG_ROTATE_PARAM_NAME = 'svg_rotate'
+
+    def url_without_geometry_override( self, url : str ) -> str:
+        """ The given URL's path and query, minus the geometry override
+        params, so loading it shows the stored geometry. """
+        parsed_url = urllib.parse.urlparse( url )
+        query_params = urllib.parse.parse_qs( parsed_url.query, keep_blank_values = True )
+        query_params.pop( self.SVG_VIEW_BOX_PARAM_NAME, None )
+        query_params.pop( self.SVG_ROTATE_PARAM_NAME, None )
+        return urllib.parse.urlunparse((
+            '',
+            '',
+            parsed_url.path,
+            parsed_url.params,
+            urllib.parse.urlencode( query_params, doseq = True ),
+            parsed_url.fragment,
+        ))
+
     def get_location( self, request, *args, **kwargs ) -> Location:
         """ Assumes there is a required location_id in kwargs """
         try:

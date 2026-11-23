@@ -127,7 +127,7 @@ class LocationViewView( HiGridView, LocationViewMixin ):
         query string. Returns (SvgViewBox|None, rotate_str|None). The
         rotate override is only honored alongside a valid viewbox, since
         the two together represent one explored geometry."""
-        svg_view_box_str = request.GET.get( 'svg_view_box' )
+        svg_view_box_str = request.GET.get( self.SVG_VIEW_BOX_PARAM_NAME )
         if not svg_view_box_str:
             return ( None, None )
         try:
@@ -135,7 +135,7 @@ class LocationViewView( HiGridView, LocationViewMixin ):
         except ( ValueError, TypeError ):
             return ( None, None )
 
-        svg_rotate_override = request.GET.get( 'svg_rotate' )
+        svg_rotate_override = request.GET.get( self.SVG_ROTATE_PARAM_NAME )
         try:
             float( svg_rotate_override )
         except ( ValueError, TypeError ):

@@ -700,6 +700,60 @@ class TestLocationViewEditModeView(DualModeViewTestCase):
         self.location_view.refresh_from_db()
         self.assertEqual(self.location_view.name, 'Updated View')
 
+    def _post_edit(self, referer=None, **overrides):
+        data = {
+            'name': self.location_view.name,
+            'location_view_type_str': self.location_view.location_view_type_str,
+            'svg_style_name_str': 'color',
+            'svg_view_box_str': self.location_view.svg_view_box_str,
+            'svg_rotate': str(self.location_view.svg_rotate),
+            'order_id': str(self.location_view.order_id),
+        }
+        data.update(overrides)
+        headers = dict(self.async_http_headers)
+        if referer:
+            headers['HTTP_REFERER'] = referer
+        url = reverse('location_view_edit_mode', kwargs={'location_view_id': self.location_view.id})
+        response = self.client.post(url, data=data, **headers)
+        self.assertSuccessResponse(response)
+        return response.json()
+
+    def test_post_geometry_change_reloads_without_geometry_override(self):
+        # The page URL's override params would otherwise hide the
+        # geometry just saved; other params (the side pane) must survive.
+        payload = self._post_edit(
+            referer='http://testserver/location/view/1?svg_view_box=1+2+3+4&svg_rotate=0&details=%2Fside',
+            svg_rotate='180',
+        )
+
+        self.assertEqual(payload.get('location'), '/location/view/1?details=%2Fside')
+        self.location_view.refresh_from_db()
+        self.assertEqual(float(self.location_view.svg_rotate), 180.0)
+
+    def test_post_view_box_change_reloads_without_geometry_override(self):
+        payload = self._post_edit(
+            referer='http://testserver/location/view/1?svg_view_box=1+2+3+4&svg_rotate=0',
+            svg_view_box_str='10 20 30 40',
+        )
+
+        self.assertEqual(payload.get('location'), '/location/view/1')
+
+    def test_post_without_geometry_change_refreshes(self):
+        # A name-only edit keeps the user's current pan/zoom.
+        payload = self._post_edit(
+            referer='http://testserver/location/view/1?svg_view_box=1+2+3+4&svg_rotate=0',
+            name='Renamed View',
+        )
+
+        self.assertTrue(payload.get('refresh'))
+        self.assertNotIn('location', payload)
+
+    def test_post_geometry_change_without_referer_refreshes(self):
+        payload = self._post_edit(svg_rotate='180')
+
+        self.assertTrue(payload.get('refresh'))
+        self.assertNotIn('location', payload)
+
     def test_post_invalid_edit(self):
         """Test POST request with invalid edit data."""
         url = reverse('location_view_edit_mode', kwargs={'location_view_id': self.location_view.id})
