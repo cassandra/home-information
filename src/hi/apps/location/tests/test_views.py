@@ -258,6 +258,69 @@ class TestLocationViewView(DualModeViewTestCase):
         session = self.client.session
         self.assertEqual(session.get('view_type'), str(ViewType.LOCATION_VIEW))
 
+    def _set_stale_session_geometry(self):
+        # Same view, so only the render (not a view switch) can change it.
+        self.setSessionViewParameters(
+            view_type=ViewType.LOCATION_VIEW,
+            location_view=self.location_view,
+        )
+        session = self.client.session
+        session['last_svg_view_box_str'] = '1 2 3 4'
+        session['last_svg_rotate'] = '0'
+        session.save()
+
+    def _get_location_view(self, query_params=None):
+        url = reverse('location_view', kwargs={'location_view_id': self.location_view.id})
+        response = self.client.get(url, query_params or {})
+        self.assertSuccessResponse(response)
+        return self.client.session
+
+    def test_render_without_geometry_override_clears_session_geometry(self):
+        # The stored geometry is what is shown, so stale session geometry
+        # must not be carried into later edit operations.
+        self._set_stale_session_geometry()
+
+        session = self._get_location_view()
+
+        self.assertIsNone(session.get('last_svg_view_box_str'))
+        self.assertIsNone(session.get('last_svg_rotate'))
+
+    def test_render_with_geometry_override_records_it_in_session(self):
+        self._set_stale_session_geometry()
+
+        session = self._get_location_view({
+            'svg_view_box': '10 20 30 40',
+            'svg_rotate': '180',
+        })
+
+        self.assertEqual(session.get('last_svg_view_box_str'),
+                         str(SvgViewBox.from_attribute_value('10 20 30 40')))
+        self.assertEqual(session.get('last_svg_rotate'), '180')
+
+    def test_render_with_invalid_rotate_records_view_box_only(self):
+        self._set_stale_session_geometry()
+
+        session = self._get_location_view({
+            'svg_view_box': '10 20 30 40',
+            'svg_rotate': 'bogus',
+        })
+
+        self.assertEqual(session.get('last_svg_view_box_str'),
+                         str(SvgViewBox.from_attribute_value('10 20 30 40')))
+        self.assertIsNone(session.get('last_svg_rotate'))
+
+    def test_render_with_invalid_view_box_clears_session_geometry(self):
+        # An invalid override is ignored, so the stored geometry is shown.
+        self._set_stale_session_geometry()
+
+        session = self._get_location_view({
+            'svg_view_box': 'not a view box',
+            'svg_rotate': '180',
+        })
+
+        self.assertIsNone(session.get('last_svg_view_box_str'))
+        self.assertIsNone(session.get('last_svg_rotate'))
+
     def test_nonexistent_location_view_returns_404(self):
         """Test that accessing nonexistent location view returns 404."""
         url = reverse('location_view', kwargs={'location_view_id': 99999})

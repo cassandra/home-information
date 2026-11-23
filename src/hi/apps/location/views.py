@@ -92,16 +92,24 @@ class LocationViewView( HiGridView, LocationViewMixin ):
                 next_id = location_view.id ):
             raise ForceSynchronousException()
         
+        svg_view_box_override, svg_rotate_override = self._get_geometry_override( request )
+
         request.view_parameters.view_type = ViewType.LOCATION_VIEW
         request.view_parameters.update_location_view( location_view )
+        # The session geometry must match what this render shows, since
+        # edit operations (e.g. EntityAddView) reload with it. With no
+        # override the stored geometry is shown, so the session's is
+        # cleared (None) and those operations fall back to stored too.
+        request.view_parameters.set_last_svg_geometry(
+            svg_view_box = svg_view_box_override,
+            svg_rotate = svg_rotate_override,
+        )
         request.view_parameters.to_session( request )
 
         location_view_data = LocationManager().get_location_view_data(
             location_view = location_view,
             include_status_display_data = bool( not request.view_parameters.is_editing ),
         )
-
-        svg_view_box_override, svg_rotate_override = self._get_geometry_override( request )
 
         return {
             'is_async_request': is_ajax( request ),
