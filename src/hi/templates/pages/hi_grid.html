@@ -31,7 +31,7 @@
   </div>
 </div>
 
-<div id="hi-sleep-overlay" style="opacity: {{ SLEEP_OVERLAY_OPACITY }};"></div>
+<div id="hi-sleep-overlay" class="{% if SLEEP_MODE_ACTIVE %}sleeping{% endif %}" style="opacity: {{ SLEEP_OVERLAY_OPACITY }};"></div>
 
 {% endblock %}
 

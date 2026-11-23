@@ -28,6 +28,9 @@
         // Layout change marker at page render; status polling reloads when it changes.
         layoutChangeTimestamp: window.HiClientConfig?.LAYOUT_CHANGE_TIMESTAMP || null,
 
+        // Present while sleep mode is active; the server reads it to render the overlay.
+        SLEEP_MODE_COOKIE_NAME: window.HiClientConfig?.SLEEP_MODE_COOKIE_NAME ?? 'hi_sleep_mode',
+
         MAIN_AREA_SELECTOR: '#hi-main-content',
         LOCATION_VIEW_AREA_SELECTOR: '#hi-location-view-main',
         LOCATION_VIEW_SVG_CLASS: 'hi-location-view-svg',
@@ -59,6 +62,9 @@
         },
         getCookie: function( name ) {
             return _getCookie( name );
+        },
+        deleteCookie: function( name ) {
+            return _deleteCookie( name );
         },
         submitForm: function( formElement ) {
             return _submitForm( formElement );
@@ -314,9 +320,14 @@
                 return decodeURIComponent( cookie.substring( nameEQ.length ));
             }
         }
-        return null;    
+        return null;
     }
-    
+
+    function _deleteCookie( name ) {
+        document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/`;
+        return true;
+    }
+
     function _submitForm( formElement ) {
         let form = $(formElement).closest('form');
         if ( Hi.DEBUG ) { console.debug( 'Submitting form:', formElement, form ); }

@@ -43,6 +43,8 @@
     */
 
     const SleepOverlaySelector = '#hi-sleep-overlay';
+    const SleepingClass = 'sleeping';
+    const SleepModeCookieValue = 'on';  // Only the cookie's presence matters.
     const AudioStateSettingName = 'audioState';
     const AudioStateEnabled = 'enabled';
     const AudioStateDisabled = 'disabled';
@@ -84,14 +86,19 @@
 		return true;
     }
 
+    // Delegated so it also wakes an overlay the server rendered as sleeping.
+    $(document).on( 'click', SleepOverlaySelector, function() {
+		Hi.settings.disableSleepMode();
+    });
+
     function _enableSleepMode() {
-		let sleepOverlay = $(SleepOverlaySelector);
-		$(sleepOverlay).show();
-		$(sleepOverlay).off( 'click').on('click', Hi.settings.disableSleepMode );
+		Hi.setCookie( Hi.SLEEP_MODE_COOKIE_NAME, SleepModeCookieValue );
+		$(SleepOverlaySelector).addClass( SleepingClass );
     }
 
     function _disableSleepMode() {
-		$(SleepOverlaySelector).hide();
+		Hi.deleteCookie( Hi.SLEEP_MODE_COOKIE_NAME );
+		$(SleepOverlaySelector).removeClass( SleepingClass );
     }
 
 })();

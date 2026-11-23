@@ -1,6 +1,7 @@
 from django.utils.functional import SimpleLazyObject
 
 from hi.apps.console.console_helper import ConsoleSettingsHelper
+from hi.apps.console.sleep_mode import SleepModeCookie
 
 
 def settings_context(request):
@@ -8,6 +9,7 @@ def settings_context(request):
     return {
         'USER_TIMEZONE': console_helper.get_tz_name(),
         'SLEEP_OVERLAY_OPACITY': console_helper.get_sleep_overlay_opacity(),
+        'SLEEP_MODE_ACTIVE': SleepModeCookie.is_active( request ),
     }
 
 
