@@ -17,3 +17,5 @@ class ConsoleConstants:
 
     DEVICE_CAPABILITIES_COOKIE_NAME = 'hi_device_capabilities'
     DEVICE_CAPABILITIES_COOKIE_MAX_AGE_SECS = 10 * 365 * 24 * 60 * 60
+
+    SLEEP_MODE_COOKIE_NAME = 'hi_sleep_mode'

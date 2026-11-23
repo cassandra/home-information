@@ -71,7 +71,7 @@ If the kiosk's browser opens a fixed start address every time it starts, use thi
 
 A kiosk that is on all the time is often too bright at night. Two options, which work together:
 
-- **Home Information's Sleep button** covers the screen with a very dark overlay. Everything keeps running, including alerts. Tap the screen to wake it.
+- **Home Information's Sleep button** covers the screen with a very dark overlay. Everything keeps running, including alerts. Tap the screen to wake it. Sleep mode stays on through page reloads and browser restarts, as long as the kiosk's browser keeps its cookies (no private/incognito mode or profile that is erased on restart).
 - **Scheduled dimming outside the browser.** Some kiosk setups lower the screen's actual brightness on a schedule, which also saves power and backlight life.
 
 Avoid settings that turn the screen off or put the device to sleep: alerts would no longer be seen, and possibly not heard.

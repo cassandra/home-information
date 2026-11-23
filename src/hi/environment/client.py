@@ -24,6 +24,7 @@ class ClientConfig:
     API_STATUS_POLLING_INTERVAL_MS : int = 3000
     LAYOUT_CHANGE_TIMESTAMP : str = ''
     DEVICE_CAPABILITIES  : dict = field( default_factory = dict )
+    SLEEP_MODE_COOKIE_NAME : str = ''
     
     def to_json_dict(self) -> dict:
         """

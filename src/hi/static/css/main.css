@@ -1315,6 +1315,10 @@ g[hover] {
     transition: opacity 0.3s ease;
 }
 
+#hi-sleep-overlay.sleeping {
+    display: block;
+}
+
 .scroll-container {
     overflow-x: auto;
     white-space: nowrap;
