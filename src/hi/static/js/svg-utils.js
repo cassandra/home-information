@@ -132,11 +132,14 @@
 	return { x: 0, y: 0 };
     }
         
+    // The screen CTM includes any canvas rotation, so its a/d entries are
+    // scale * cos(angle) and go to zero or negative as the view rotates.
+    // Each column's length is the true scale at any rotation.
     function _getPixelsPerSvgUnit( svgElement ) {
 	let ctm = $(svgElement)[0].getScreenCTM();
 	return {
-	    scaleX: ctm.a,
-	    scaleY: ctm.d
+	    scaleX: Math.hypot( ctm.a, ctm.b ),
+	    scaleY: Math.hypot( ctm.c, ctm.d )
 	};
     }
 
