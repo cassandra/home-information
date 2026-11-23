@@ -147,5 +147,45 @@
             assert.ok(typeof result3.scale.x === 'number' || isNaN(result3.scale.x), 'Edge case 3 handled gracefully');
         });
     });
-    
+
+    // ===== PIXELS PER SVG UNIT TESTS =====
+    // Uses a real SVG element, so these run in the browser suite only.
+    QUnit.module('SvgUtils.getPixelsPerSvgUnit', function(hooks) {
+        const SVG_NS = 'http://www.w3.org/2000/svg';
+        let container = null;
+
+        hooks.beforeEach(function() {
+            container = document.createElement('div');
+            container.style.position = 'absolute';
+            container.style.left = '0';
+            container.style.top = '0';
+            document.body.appendChild(container);
+        });
+
+        hooks.afterEach(function() {
+            container.remove();
+            container = null;
+        });
+
+        // 200px square showing 100 SVG units: 2 pixels per SVG unit.
+        function createRotatedSvg( angleDegrees ) {
+            const svg = document.createElementNS(SVG_NS, 'svg');
+            svg.setAttribute('width', '200');
+            svg.setAttribute('height', '200');
+            svg.setAttribute('viewBox', '0 0 100 100');
+            svg.style.transformOrigin = '50% 50%';
+            svg.style.transform = `rotate(${angleDegrees}deg)`;
+            container.appendChild(svg);
+            return svg;
+        }
+
+        QUnit.test('scale is positive and unchanged by canvas rotation', function(assert) {
+            [0, 45, 90, 180, 270].forEach(function(angle) {
+                const scale = Hi.svgUtils.getPixelsPerSvgUnit(createRotatedSvg(angle));
+                assert.true(Math.abs(scale.scaleX - 2) < 1e-6, `${angle}deg: scaleX is ${scale.scaleX}`);
+                assert.true(Math.abs(scale.scaleY - 2) < 1e-6, `${angle}deg: scaleY is ${scale.scaleY}`);
+            });
+        });
+    });
+
 })();
