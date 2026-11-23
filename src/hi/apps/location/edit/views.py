@@ -65,6 +65,8 @@ class LocationViewEditModeView( HiSideView, LocationViewMixin, LocationEditViewM
     editing interface and handles form submission.
     """
 
+    GEOMETRY_FIELD_NAMES = frozenset({ 'svg_view_box_str', 'svg_rotate' })
+
     def get_template_name( self ) -> str:
         return 'location/edit/panes/location_view_edit_mode_panel.html'
 
@@ -94,8 +96,19 @@ class LocationViewEditModeView( HiSideView, LocationViewMixin, LocationEditViewM
             )
         
         # Location View name/order can impact many parts of UI. Full refresh is safest in this case.
-        location_view_edit_form.save()     
+        location_view_edit_form.save()
+        if self.GEOMETRY_FIELD_NAMES.intersection( location_view_edit_form.changed_data ):
+            return self._reload_with_stored_geometry( request )
         return antinode.refresh_response()
+
+    def _reload_with_stored_geometry( self, request ):
+        """ A plain refresh would reload the page URL, whose geometry
+        override params (from earlier pans) would hide the geometry just
+        saved, so reload without them. """
+        referer_url = request.headers.get( 'referer' )
+        if not referer_url:
+            return antinode.refresh_response()
+        return antinode.redirect_response( self.url_without_geometry_override( referer_url ) )
 
 
 class LocationItemEditModeView( View ):
