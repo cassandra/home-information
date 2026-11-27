@@ -73,12 +73,12 @@ class AttributeEditFormHandler:
                     attr_item_context   : AttributeItemEditContext,
                     edit_form_data : AttributeEditFormData,
                     request        : HttpRequest ) -> None:
-
+        
         with transaction.atomic():
             if edit_form_data.owner_form:
                 edit_form_data.owner_form.save()
             edit_form_data.regular_attributes_formset.save()
-            
+
             self.process_file_title_updates(
                 attr_item_context = attr_item_context,
                 request = request,
@@ -92,7 +92,7 @@ class AttributeEditFormHandler:
                 request = request,
             )
         return
-    
+
     def process_file_deletions( self,
                                 attr_item_context  : AttributeItemEditContext,
                                 request       : HttpRequest           ) -> None:
